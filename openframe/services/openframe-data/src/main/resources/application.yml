@@ -1,7 +1,9 @@
+server:
+  port: 8083
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/openframe
+      uri: mongodb://admin:password@localhost:27017/openframe
       database: openframe
     cassandra:
       keyspace-name: openframe_events

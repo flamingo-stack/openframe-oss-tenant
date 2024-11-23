@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
+    
     <parent>
         <groupId>com.openframe</groupId>
         <artifactId>openframe-parent</artifactId>
@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>openframe-api</artifactId>
+    <name>OpenFrame API Service</name>
 
     <dependencies>
         <!-- Spring Boot -->
@@ -20,11 +21,16 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- MongoDB -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+
         <!-- Netflix DGS -->
         <dependency>
             <groupId>com.netflix.graphql.dgs</groupId>
             <artifactId>graphql-dgs-spring-boot-starter</artifactId>
-            <version>${netflix.dgs.version}</version>
         </dependency>
 
         <!-- Kafka -->
@@ -33,7 +39,14 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- Testing -->
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -46,6 +59,14 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

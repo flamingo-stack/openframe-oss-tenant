@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: openframe-core
+
+server:
+  port: 8081
+
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-your-256-bit-secret-your-256-bit-secret}
+  expiration: 86400000 # 24 hours in milliseconds
+
+logging:
+  level:
+    com.openframe.core: DEBUG
+    org.springframework.security: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}

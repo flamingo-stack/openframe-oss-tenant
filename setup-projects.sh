@@ -1,3 +1,20 @@
+#!/bin/bash
+
+# Project structure setup script
+mkdir -p openframe
+cd openframe
+
+# Create common directories
+for dir in api core stream data; do
+    mkdir -p services/openframe-$dir/src/main/java/com/openframe/$dir
+    mkdir -p services/openframe-$dir/src/main/resources
+    mkdir -p services/openframe-$dir/src/test/java/com/openframe/$dir
+    mkdir -p services/openframe-$dir/src/test/resources
+done
+
+# Create module-specific POM files
+for dir in api core stream data; do
+    cat > services/openframe-$dir/pom.xml << EOL
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -11,8 +28,8 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>openframe-stream</artifactId>
-    <name>OpenFrame Stream Service</name>
+    <artifactId>openframe-$dir</artifactId>
+    <name>OpenFrame $dir Service</name>
 
     <dependencies>
         <dependency>
@@ -48,3 +65,5 @@
         </plugins>
     </build>
 </project>
+EOL
+done

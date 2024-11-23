@@ -5,7 +5,19 @@ spring:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  data:
+    mongodb:
+      uri: mongodb://admin:password@localhost:27017/openframe
+      database: openframe
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 server:
   port: 8080
@@ -16,11 +28,9 @@ dgs:
     graphiql:
       enabled: true
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,prometheus
-  metrics:
-    tags:
-      application: ${spring.application.name}
+
+logging:
+  level:
+    com.openframe: DEBUG
+    org.springframework.data.mongodb: DEBUG
+    org.springframework.kafka: DEBUG

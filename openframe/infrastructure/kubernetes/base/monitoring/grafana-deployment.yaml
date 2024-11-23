@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:9.5.2
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: config
+          mountPath: /etc/grafana/provisioning
+        - name: storage
+          mountPath: /var/lib/grafana
+      volumes:
+      - name: config
+        configMap:
+          name: grafana-config
+      - name: storage
+        persistentVolumeClaim:
+          claimName: grafana-storage

@@ -1,5 +1,5 @@
-// services/openframe-api/src/main/java/com/openframe/api/model/Event.java
-package com.openframe.api.model;
+// services/openframe-core/src/main/java/com/openframe/core/model/CoreEvent.java
+package com.openframe.core.model;
 
 import java.time.Instant;
 
@@ -10,11 +10,16 @@ import lombok.Data;
 
 @Data
 @Document(collection = "events")
-public class Event {
+public class CoreEvent {
     @Id
     private String id;
     private String type;
     private String payload;
     private Instant timestamp;
     private String userId;
+    private EventStatus status;
+
+    public enum EventStatus {
+        CREATED, PROCESSING, COMPLETED, FAILED
+    }
 }
