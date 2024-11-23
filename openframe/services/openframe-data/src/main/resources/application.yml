@@ -1,0 +1,35 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/openframe
+      database: openframe
+    cassandra:
+      keyspace-name: openframe_events
+      contact-points: localhost
+      port: 9042
+      schema-action: CREATE_IF_NOT_EXISTS
+      local-datacenter: datacenter1
+
+  jpa:
+    properties:
+      hibernate:
+        jdbc.batch_size: 100
+        order_inserts: true
+        order_updates: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    tags:
+      application: openframe-data
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.openframe.data: DEBUG
+    org.springframework.data: INFO

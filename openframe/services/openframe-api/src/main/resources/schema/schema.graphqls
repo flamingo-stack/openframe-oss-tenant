@@ -1,0 +1,23 @@
+type Query {
+    events(userId: ID!, from: String!, to: String!): [Event]
+    eventById(id: ID!): Event
+}
+
+type Mutation {
+    createEvent(input: EventInput!): Event
+    updateEvent(id: ID!, input: EventInput!): Event
+}
+
+type Event {
+    id: ID!
+    type: String!
+    payload: String!
+    timestamp: String!
+    userId: ID!
+}
+
+input EventInput {
+    type: String!
+    payload: String!
+    userId: ID!
+}
