@@ -1,14 +1,13 @@
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY target/*.jar app.jar
 
 COPY target/*.jar app.jar
-COPY ../scripts/debug-network.sh /debug-network.sh
+COPY ../../scripts/debug-network.sh debug-network.sh
 
 # Add debugging tools
 RUN apk add --no-cache iputils bind-tools netcat-openbsd
 
-RUN chmod +x /debug-network.sh
+RUN chmod +x app/debug-network.sh
 
 EXPOSE 8091
 ENTRYPOINT ["java", "-jar", "app.jar"]
