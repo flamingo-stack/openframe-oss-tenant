@@ -1,37 +1,39 @@
-server:
-  port: 8083
 spring:
+  application:
+    name: openframe-data
   data:
     mongodb:
-      uri: mongodb://admin:password@localhost:27017/openframe
+      uri: ${MONGODB_URI:mongodb://admin:password@localhost:27017}
       database: openframe
-    cassandra:
-      keyspace-name: openframe_events
-      contact-points: localhost
-      port: 9042
-      schema-action: CREATE_IF_NOT_EXISTS
-      local-datacenter: datacenter1
+  cassandra:
+    schema-action: CREATE_IF_NOT_EXISTS
+    local-datacenter: datacenter1
+    keyspace-name: openframe_events
+    contact-points: ${CASSANDRA_HOST:localhost}
+    port: ${CASSANDRA_PORT:9042}
+    connection:
+      init-query-timeout: 10s
+      connect-timeout: 10s
+    request:
+      timeout: 10s
+    pool:
+      heartbeat-interval: 30s
+      idle-timeout: 120s
 
-  jpa:
-    properties:
-      hibernate:
-        jdbc.batch_size: 100
-        order_inserts: true
-        order_updates: true
+server:
+  port: 8083
 
 management:
   endpoints:
     web:
       exposure:
         include: health,metrics,prometheus
-  metrics:
-    tags:
-      application: openframe-data
-    export:
-      prometheus:
-        enabled: true
+  health:
+    probes:
+      enabled: true
 
 logging:
   level:
     com.openframe.data: DEBUG
     org.springframework.data: INFO
+    com.datastax.oss.driver: INFO

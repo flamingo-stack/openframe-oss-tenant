@@ -59,7 +59,9 @@ services:
       - cassandra
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/openframe
-      SPRING_DATA_CASSANDRA_CONTACT_POINTS: cassandra:9042
-      SPRING_DATA_CASSANDRA_KEYSPACE: openframe_events
+      SPRING_CASSANDRA_CONTACT_POINTS: cassandra
+      SPRING_CASSANDRA_PORT: 9042
+      SPRING_CASSANDRA_KEYSPACE_NAME: openframe_events
+      SPRING_CASSANDRA_LOCAL_DATACENTER: datacenter1
     networks:
       - openframe-network
