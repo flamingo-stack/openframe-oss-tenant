@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Build the project
-mvn clean install -DskipTests
+# Build the JARs
+echo "Building JARs..."
+mvn clean package -DskipTests
 
 # Create docker network if it doesn't exist
 docker network create openframe-network 2>/dev/null || true

@@ -3,7 +3,7 @@ spring:
     name: openframe-core
 
 server:
-  port: 8081
+  port: 8091
 
 jwt:
   secret: ${JWT_SECRET:your-256-bit-secret-your-256-bit-secret-your-256-bit-secret}

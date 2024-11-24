@@ -14,6 +14,10 @@
     <artifactId>openframe-core</artifactId>
     <name>OpenFrame Core Service</name>
 
+    <properties>
+        <start-class>com.openframe.core.CoreApplication</start-class>
+    </properties>
+
     <dependencies>
         <!-- Spring Boot -->
         <dependency>
@@ -93,10 +97,22 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <mainClass>${start-class}</mainClass>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -67,7 +67,7 @@ services:
     environment:
       NIFI_WEB_HTTPS_PORT: 8443
       SINGLE_USER_CREDENTIALS_USERNAME: admin
-      SINGLE_USER_CREDENTIALS_PASSWORD: password123
+      SINGLE_USER_CREDENTIALS_PASSWORD: password123456789
     volumes:
       - nifi_conf:/opt/nifi/nifi-current/conf
       - nifi_content:/opt/nifi/nifi-current/content_repository
@@ -129,7 +129,7 @@ services:
       - "8081:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123456789
       ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
     depends_on:
       - mongodb

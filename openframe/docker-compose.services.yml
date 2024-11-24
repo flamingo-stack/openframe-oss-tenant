@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: openframe-api
     ports:
-      - "8080:8080"
+      - "8090:8090"
     depends_on:
       - mongodb
       - kafka
@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
     container_name: openframe-core
     ports:
-      - "8081:8081"
+      - "8091:8091"
     depends_on:
       - mongodb
       - kafka
@@ -61,7 +61,9 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/openframe
       SPRING_CASSANDRA_CONTACT_POINTS: cassandra
       SPRING_CASSANDRA_PORT: 9042
-      SPRING_CASSANDRA_KEYSPACE_NAME: openframe_events
-      SPRING_CASSANDRA_LOCAL_DATACENTER: datacenter1
     networks:
       - openframe-network
+
+networks:
+  openframe-network:
+    external: true
