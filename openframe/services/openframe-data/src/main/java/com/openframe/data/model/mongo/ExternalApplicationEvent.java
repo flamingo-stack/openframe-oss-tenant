@@ -9,8 +9,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
 @Data
-@Document(collection = "application_events")
-public class ApplicationEvent {
+@Document(collection = "external_application_events")
+public class ExternalApplicationEvent {
     @Id
     private String id;
     private String type;

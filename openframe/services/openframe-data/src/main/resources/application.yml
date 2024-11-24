@@ -3,22 +3,17 @@ spring:
     name: openframe-data
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://admin:password@localhost:27017}
+      uri: mongodb://admin:password@mongodb:27017/openframe
       database: openframe
+      auto-index-creation: true
   cassandra:
-    schema-action: CREATE_IF_NOT_EXISTS
-    local-datacenter: datacenter1
     keyspace-name: openframe_events
-    contact-points: ${CASSANDRA_HOST:localhost}
+    contact-points: ${CASSANDRA_HOST:cassandra}
     port: ${CASSANDRA_PORT:9042}
-    connection:
-      init-query-timeout: 10s
-      connect-timeout: 10s
-    request:
-      timeout: 10s
-    pool:
-      heartbeat-interval: 30s
-      idle-timeout: 120s
+    local-datacenter: datacenter1
+    schema-action: CREATE_IF_NOT_EXISTS
+  main:
+    allow-bean-definition-overriding: true
 
 server:
   port: 8083
@@ -35,5 +30,6 @@ management:
 logging:
   level:
     com.openframe.data: DEBUG
-    org.springframework.data: INFO
-    com.datastax.oss.driver: INFO
+    org.springframework.data: DEBUG
+    org.springframework.data.mongodb.repository: TRACE
+    org.springframework.beans.factory: TRACE

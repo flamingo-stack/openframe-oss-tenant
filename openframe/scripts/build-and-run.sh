@@ -61,13 +61,6 @@ docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d
 
 echo "All services started. Checking logs..."
 
-# Print important logs
-echo "Zookeeper logs:"
-docker logs openframe-zookeeper
-
-echo "Kafka logs:"
-docker logs openframe-kafka
-
 echo "OpenFrame is running!"
 echo "Access points:"
 echo "- Kafka UI: http://localhost:8080"
