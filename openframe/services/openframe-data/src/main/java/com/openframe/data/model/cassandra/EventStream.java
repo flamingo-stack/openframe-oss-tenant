@@ -1,10 +1,15 @@
 package com.openframe.data.model.cassandra;
 
-import org.springframework.data.cassandra.core.mapping.PrimaryKey;
-import org.springframework.data.cassandra.core.mapping.Table;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.data.cassandra.core.mapping.PrimaryKey;
+import org.springframework.data.cassandra.core.mapping.Table;
+
+import lombok.Data;
+
+@Data
 @Table("event_streams")
 public class EventStream {
     @PrimaryKey
@@ -21,4 +26,3 @@ public class EventStream {
         private Instant timestamp;
     }
 }
-

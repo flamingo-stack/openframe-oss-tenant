@@ -1,10 +1,13 @@
 package com.openframe.data.repository.mongo;
 
-import com.openframe.data.model.mongo.ApplicationEvent;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+
+import com.openframe.data.model.mongo.ApplicationEvent;
 
 public interface ApplicationEventRepository extends MongoRepository<ApplicationEvent, String> {
     

@@ -1,9 +1,14 @@
 package com.openframe.data.model.mongo;
 
+import java.time.Instant;
+import java.util.Map;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import java.time.Instant;
 
+import lombok.Data;
+
+@Data
 @Document(collection = "application_events")
 public class ApplicationEvent {
     @Id
@@ -14,11 +19,10 @@ public class ApplicationEvent {
     private String userId;
     private EventMetadata metadata;
 
-    // Getters, setters, and metadata inner class
+    @Data
     public static class EventMetadata {
         private String source;
         private String version;
         private Map<String, String> tags;
-        // Getters and setters
     }
 }

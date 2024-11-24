@@ -1,12 +1,17 @@
 package com.openframe.data.service;
 
-import com.openframe.data.repository.mongo.ApplicationEventRepository;
-import com.openframe.data.repository.cassandra.EventStreamRepository;
-import com.openframe.data.model.mongo.ApplicationEvent;
-import com.openframe.data.model.cassandra.EventStream;
+import java.time.Instant;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.openframe.data.model.cassandra.EventStream;
+import com.openframe.data.model.mongo.ApplicationEvent;
+import com.openframe.data.repository.cassandra.EventStreamRepository;
+import com.openframe.data.repository.mongo.ApplicationEventRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

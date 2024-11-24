@@ -1,8 +1,13 @@
+// services/openframe-stream/src/main/java/com/openframe/stream/service/EventStreamService.java
 package com.openframe.stream.service;
+
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,24 +16,32 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class EventStreamService {
     
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @KafkaListener(topics = "openframe-events", groupId = "openframe-group")
+    @KafkaListener(topics = "openframe.events", groupId = "openframe-group")
     public void consume(String message) {
         log.info("Received message: {}", message);
-        // Process event
         processEvent(message);
     }
 
-    public void produce(String topic, String message) {
-        kafkaTemplate.send(topic, message)
-            .addCallback(
-                result -> log.info("Message sent successfully"),
-                ex -> log.error("Failed to send message", ex)
-            );
+    public void produce(String topic, Object message) {
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, message);
+        
+        future.whenComplete((result, ex) -> {
+            if (ex == null) {
+                log.info("Message sent successfully to topic {}: {}", topic, result.getRecordMetadata().offset());
+            } else {
+                log.error("Failed to send message to topic {}", topic, ex);
+            }
+        });
     }
 
     private void processEvent(String message) {
-        // Add event processing logic here
+        try {
+            log.info("Processing event: {}", message);
+            produce("openframe.events.processed", message);
+        } catch (Exception e) {
+            log.error("Error processing event", e);
+        }
     }
 }
