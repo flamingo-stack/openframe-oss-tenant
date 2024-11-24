@@ -1,0 +1,65 @@
+services:
+  api:
+    build:
+      context: ./services/openframe-api
+      dockerfile: Dockerfile
+    container_name: openframe-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/openframe
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - openframe-network
+
+  core:
+    build:
+      context: ./services/openframe-core
+      dockerfile: Dockerfile
+    container_name: openframe-core
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/openframe
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - openframe-network
+
+  stream:
+    build:
+      context: ./services/openframe-stream
+      dockerfile: Dockerfile
+    container_name: openframe-stream
+    ports:
+      - "8082:8082"
+    depends_on:
+      - kafka
+      - nifi
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      NIFI_URL: https://nifi:8443
+    networks:
+      - openframe-network
+
+  data:
+    build:
+      context: ./services/openframe-data
+      dockerfile: Dockerfile
+    container_name: openframe-data
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mongodb
+      - cassandra
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/openframe
+      SPRING_DATA_CASSANDRA_CONTACT_POINTS: cassandra:9042
+      SPRING_DATA_CASSANDRA_KEYSPACE: openframe_events
+    networks:
+      - openframe-network

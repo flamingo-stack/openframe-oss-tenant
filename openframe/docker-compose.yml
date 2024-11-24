@@ -1,19 +1,48 @@
-# docker-compose.yml
-version: '3.8'
 services:
+  # Databases
   mongodb:
-    image: mongo:7
-    ports:
-      - "27017:27017"
+    image: mongo:7.0
+    container_name: openframe-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
     volumes:
-      - ./data/mongodb:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - mongodb_data:/data/db
+      - ./init/mongodb:/docker-entrypoint-initdb.d
+    networks:
+      - openframe-network
+
+  cassandra:
+    image: cassandra:4.1
+    container_name: openframe-cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./init/cassandra:/docker-entrypoint-initdb.d
+    environment:
+      - CASSANDRA_CLUSTER_NAME=openframe_cluster
+      - CASSANDRA_DC=datacenter1
+    networks:
+      - openframe-network
+
+  # Message Broker
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: openframe-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - openframe-network
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
+    container_name: openframe-kafka
     depends_on:
       - zookeeper
     ports:
@@ -23,30 +52,79 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - openframe-network
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
+  # NiFi
+  nifi:
+    image: apache/nifi:1.22.0
+    container_name: openframe-nifi
     ports:
-      - "2181:2181"
+      - "8443:8443"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      NIFI_WEB_HTTPS_PORT: 8443
+      SINGLE_USER_CREDENTIALS_USERNAME: admin
+      SINGLE_USER_CREDENTIALS_PASSWORD: password123
+    volumes:
+      - nifi_conf:/opt/nifi/nifi-current/conf
+      - nifi_content:/opt/nifi/nifi-current/content_repository
+      - nifi_database:/opt/nifi/nifi-current/database_repository
+      - nifi_flowfile:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_provenance:/opt/nifi/nifi-current/provenance_repository
+      - nifi_state:/opt/nifi/nifi-current/state
+    networks:
+      - openframe-network
 
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: openframe-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - openframe-network
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: openframe-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    networks:
+      - openframe-network
+
+  # Development Tools
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
+    container_name: openframe-kafka-ui
     ports:
-      - "8090:8080"
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
     depends_on:
       - kafka
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - openframe-network
 
   mongo-express:
     image: mongo-express:latest
+    container_name: openframe-mongo-express
     ports:
       - "8081:8081"
     environment:
@@ -55,3 +133,21 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
     depends_on:
       - mongodb
+    networks:
+      - openframe-network
+
+networks:
+  openframe-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  cassandra_data:
+  nifi_conf:
+  nifi_content:
+  nifi_database:
+  nifi_flowfile:
+  nifi_provenance:
+  nifi_state:
+  prometheus_data:
+  grafana_data:
