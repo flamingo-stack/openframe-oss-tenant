@@ -4,20 +4,30 @@ spring:
   application:
     name: openframe-stream
   kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
-      group-id: openframe-group
+      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      group-id: event-processor
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "com.openframe.stream.model"
-    
+        spring.json.trusted.packages: "*"
+        max.partition.fetch.bytes: 10485760
+        fetch.max.bytes: 10485760
+        receive.buffer.bytes: 10485760
+    producer:
+      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        max.request.size: 10485760
+        buffer.memory: 10485760
+    listener:
+      missing-topics-fatal: false
+      type: single
+      ack-mode: MANUAL_IMMEDIATE
+
 nifi:
   url: http://localhost:8080/nifi-api
   username: admin
@@ -29,14 +39,15 @@ management:
       exposure:
         include: health,metrics,prometheus
   metrics:
-    export:
-      prometheus:
-        enabled: true
     tags:
       application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 logging:
   level:
     com.openframe.stream: DEBUG
-    org.apache.kafka: INFO
-    org.apache.nifi: INFO
+    org.apache.kafka: DEBUG
+    org.springframework.kafka: DEBUG

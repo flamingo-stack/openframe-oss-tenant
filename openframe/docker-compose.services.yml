@@ -40,13 +40,14 @@ services:
       - "8082:8082"
     depends_on:
       - kafka
-      - nifi
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      NIFI_URL: https://nifi:8443
+      SPRING_KAFKA_CONSUMER_GROUP_ID: event-processor
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
     networks:
       - openframe-network
-
+    restart: unless-stopped
+        
   data:
     build:
       context: ./services/openframe-data
