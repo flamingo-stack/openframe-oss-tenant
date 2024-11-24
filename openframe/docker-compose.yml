@@ -36,16 +36,6 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_MAX_CLIENT_CNXNS: 0
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_MAX_SESSION_TIMEOUT: 40000
-      ZOOKEEPER_MIN_SESSION_TIMEOUT: 4000
-    healthcheck:
-      test: echo stat | nc localhost 2181
-      interval: 10s
-      timeout: 10s
-      retries: 3
     networks:
       - openframe-network
 
@@ -53,8 +43,7 @@ services:
     image: confluentinc/cp-kafka:7.4.0
     container_name: openframe-kafka
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
     ports:
       - "9092:9092"
     environment:
@@ -63,17 +52,6 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_HEAP_OPTS: "-Xmx512M -Xms512M"
-      KAFKA_MAX_REQUEST_SIZE: 10485760
-      KAFKA_SOCKET_REQUEST_MAX_BYTES: 10485760
-    healthcheck:
-      test: kafka-topics --bootstrap-server localhost:9092 --list
-      interval: 10s
-      timeout: 10s
-      retries: 3
     networks:
       - openframe-network
 
@@ -161,7 +139,9 @@ services:
 
 networks:
   openframe-network:
+    name: openframe-network
     driver: bridge
+    external: true
 
 volumes:
   mongodb_data:

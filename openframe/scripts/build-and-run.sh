@@ -29,7 +29,7 @@ echo "Initializing monitoring configuration..."
 echo "Building JARs..."
 ./scripts/build-jars.sh
 
-# Create docker network if it doesn't exist
+echo "Creating network..."
 docker network create openframe-network 2>/dev/null || true
 
 # Start Zookeeper and wait for it
@@ -76,6 +76,5 @@ echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
 echo "- Prometheus: http://localhost:9090"
 
-# Monitor stream service logs
-echo "Monitoring stream service logs..."
-docker logs -f openframe-stream
+echo "Testing network connectivity..."
+./scripts/test-network.sh

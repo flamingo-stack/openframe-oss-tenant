@@ -13,6 +13,6 @@ docker exec openframe-stream hostname
 docker exec openframe-stream cat /etc/hosts
 docker exec openframe-stream nc -zv kafka 9092
 
-echo "\nChecking container logs..."
-docker logs openframe-kafka
-docker logs openframe-stream
+# echo "\nChecking container logs..."
+# docker logs openframe-kafka
+# docker logs openframe-stream
