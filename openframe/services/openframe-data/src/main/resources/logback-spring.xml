@@ -44,11 +44,34 @@
         </encoder>
     </appender>
 
+    <!-- Loki Appender -->
+    <appender name="LokiAppender" class="com.github.loki4j.logback.Loki4jAppender">
+        <url>http://loki:3100/loki/api/v1/push</url>
+        <labels>
+            <label>
+                <name>application</name>
+                <value>Test</value>
+            </label>
+            <label>
+                <name>environment</name>
+                <value>dev</value>
+            </label>
+        </labels>
+        <batch>
+            <timeout>1</timeout>
+            <maxEvents>100</maxEvents>
+        </batch>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!-- Loggers -->
     <root level="info">
         <appender-ref ref="ConsoleAppender"/>
         <appender-ref ref="RollingFileAppender"/>
         <appender-ref ref="JsonRollingFileAppender"/>
+        <appender-ref ref="LokiAppender"/>
     </root>
 
 </configuration>

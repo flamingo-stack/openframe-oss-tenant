@@ -141,6 +141,22 @@ services:
     networks:
       - openframe-network
 
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: openframe-loki
+    ports:
+      - "3100:3100"
+    environment:
+      - LOKI_SERVER_LOG_LEVEL=debug
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki/loki-config:/etc/loki 
+      - loki_data:/loki
+      - ./monitoring/loki/:/loki
+    networks:
+      - openframe-network
+    restart: unless-stopped
+
 networks:
   openframe-network:
     name: openframe-network
@@ -148,6 +164,7 @@ networks:
     external: true
 
 volumes:
+  loki_data:
   mongodb_data:
   cassandra_data:
   nifi_conf:
