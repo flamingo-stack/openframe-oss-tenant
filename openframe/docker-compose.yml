@@ -16,6 +16,18 @@ services:
     networks:
       - openframe-network
 
+  mongodb-exporter:
+    image: bitnami/mongodb-exporter:latest
+    container_name: openframe-mongodb_exporter
+    environment: 
+      MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
+    ports:
+      - "9216:9216"
+    depends_on:
+      - mongodb
+    networks:
+      - openframe-network
+
   cassandra:
     build:
       context: infrastructure/cassandra/
@@ -23,12 +35,21 @@ services:
     container_name: openframe-cassandra
     ports:
       - "9042:9042"
+      - "7199:7199"
+      - "9404:9404"
     volumes:
       - cassandra_data:/var/lib/cassandra
       - ./init/cassandra:/docker-entrypoint-initdb.d
+      - ./infrastructure/cassandra/jmx_exporter:/opt/jmx_exporter
+      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
-      - CASSANDRA_CLUSTER_NAME=openframe_cluster
-      - CASSANDRA_DC=datacenter1
+      CASSANDRA_CLUSTER_NAME: openframe_cluster
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_START_RPC: true
+      CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS: 128
+      CASSANDRA_NATIVE_TRANSPORT_PORT_SSL: 9142
+      CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE: 256MB
+      JVM_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9404:/opt/jmx_exporter/config.yml
     networks:
       - openframe-network
 
@@ -37,9 +58,14 @@ services:
     container_name: openframe-zookeeper
     ports:
       - "2181:2181"
+      - "7070:7070"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      JVMFLAGS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=7070:/opt/jmx_exporter/config.yml
+    volumes:
+      - ./infrastructure/zookeeper/jmx_exporter:/opt/jmx_exporter
+      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     networks:
       - openframe-network
 
@@ -50,12 +76,17 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+      - "9308:9308"
+    volumes:
+      - ./infrastructure/kafka/jmx_exporter:/opt/jmx_exporter
+      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml
     networks:
       - openframe-network
 

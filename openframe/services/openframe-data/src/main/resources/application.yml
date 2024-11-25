@@ -36,6 +36,7 @@ management:
       enabled: true
 
 logging:
+  config: classpath:logback-spring.xml
   level:
     com.openframe.data: DEBUG
     org.springframework.data: DEBUG

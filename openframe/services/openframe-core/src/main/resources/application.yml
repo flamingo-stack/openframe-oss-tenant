@@ -10,6 +10,7 @@ jwt:
   expiration: 86400000 # 24 hours in milliseconds
 
 logging:
+  config: classpath:logback-spring.xml
   level:
     com.openframe.core: DEBUG
     org.springframework.security: DEBUG

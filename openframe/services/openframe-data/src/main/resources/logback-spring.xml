@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<configuration debug="true">
+
+    <springProperty name="SPRING_APP_NAME" source="spring.application.name"/>
+    <property name="SPRING_CONTAINER_IP" value="${CONTAINER_IP:-localhost}" />
 
     <!-- Console Appender -->
     <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
@@ -44,31 +47,17 @@
         </encoder>
     </appender>
 
-    <!-- Define the Loki appender -->
+    <!-- Loki Appender -->
     <appender name="LokiRemoteAppender" class="com.github.loki4j.logback.Loki4jAppender">
-        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="net.logstash.logback.layout.LogstashLayout"/>
-        </encoder>
-        <loki4j>
-            <endpoint>
-                <url>http://loki:3100/loki/api/v1/push</url>
-                <connectTimeoutMs>5000</connectTimeoutMs>
-                <readTimeoutMs>5000</readTimeoutMs>
-            </endpoint>
-            <batch>
-                <maxBatchSize>500</maxBatchSize>
-                <maxBatchIntervalMs>2000</maxBatchIntervalMs>
-            </batch>
-            <retry>
-                <maxRetries>3</maxRetries>
-                <minRetryDelayMs>1000</minRetryDelayMs>
-                <maxRetryDelayMs>5000</maxRetryDelayMs>
-            </retry>
-            <staticLabels>
-                <label key="app" value="my-spring-app" />
-                <label key="environment" value="production" />
-            </staticLabels>
-        </loki4j>
+        <http>
+            <url>http://loki:3100/loki/api/v1/push</url>
+        </http>
+        <format>
+            <message class="com.github.loki4j.logback.JsonLayout" />
+            <label>
+                <pattern>app=${SPRING_APP_NAME},host=${SPRING_CONTAINER_IP}</pattern>
+            </label>
+        </format>
     </appender>
 
     <!-- Loggers -->

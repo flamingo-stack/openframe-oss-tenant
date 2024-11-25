@@ -47,6 +47,7 @@ management:
         enabled: true
 
 logging:
+  config: classpath:logback-spring.xml
   level:
     com.openframe.stream: DEBUG
     org.apache.kafka: DEBUG

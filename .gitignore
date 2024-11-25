@@ -7,17 +7,25 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-# https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
-
-# Eclipse m2e generated files
-# Eclipse Core
 .project
-# JDT-specific (Eclipse Java Development Tools)
 .classpath
 .DS_Store
 openframe/.DS_Store
-/openframe/monitoring/loki/loki-wal
-/openframe/monitoring/loki/loki-cache
-/openframe/monitoring/loki/loki-chunks
-/openframe/services/openframe-stream/logs
+**/loki-wal
+**/loki-cache
+**/loki-chunks
+**/openframe-stream/logs
+**/loki-index
+**/jmx_exporter/jmx_prometheus_javaagent.jar
+**/target/
+.idea/
+*.iml
+.vscode/
+**.class
+**.log
+.env
+node_modules/
+.classpath
+**.DS_Store
+**/logs

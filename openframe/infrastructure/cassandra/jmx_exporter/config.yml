@@ -1,0 +1,4 @@
+lowercaseOutputName: true
+rules:
+- pattern: 'org.apache.cassandra.metrics<type=(.*), name=(.*)><>Value'
+  name: cassandra_$1_$2

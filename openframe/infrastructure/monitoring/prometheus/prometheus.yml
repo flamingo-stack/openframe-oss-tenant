@@ -6,7 +6,7 @@ scrape_configs:
   - job_name: 'openframe-services'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['openframe-api:8080', 'openframe-core:8081', 'openframe-stream:8082', 'openframe-data:8083']
+      - targets: ['openframe-api:8090', 'openframe-core:8091', 'openframe-stream:8082', 'openframe-data:8083']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance

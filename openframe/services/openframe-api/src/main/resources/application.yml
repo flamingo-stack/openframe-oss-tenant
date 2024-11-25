@@ -14,14 +14,20 @@ spring:
       database: openframe
       username: openframe
       password: password123456789
+
 management:
   endpoints:
     web:
       exposure:
         include: health,metrics,prometheus
-  metrics:
-    tags:
-      application: ${spring.application.name}
+  endpoint:
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+      tags:
+        application: ${spring.application.name}
+      
 
 server:
   port: 8090
@@ -34,6 +40,7 @@ dgs:
 
 
 logging:
+  config: classpath:logback-spring.xml
   level:
     com.openframe: DEBUG
     org.springframework.data.mongodb: DEBUG
