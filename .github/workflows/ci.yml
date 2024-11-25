@@ -19,3 +19,5 @@ jobs:
         cache: 'maven'
     - name: Build with Maven
       run: mvn -B package --file openframe/pom.xml
+    - name: Run tests
+      run: mvn test --file openframe/pom.xml
