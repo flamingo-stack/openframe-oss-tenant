@@ -30,7 +30,7 @@ spring:
 
 nifi:
   url: http://localhost:8080/nifi-api
-  username: admin
+  username: openframe
   sensitive-properties-key: ${NIFI_PROPERTIES_KEY}
 
 management:

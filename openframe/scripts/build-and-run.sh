@@ -35,7 +35,7 @@ docker network create openframe-network 2>/dev/null || true
 # Start Zookeeper and wait for it
 echo "Starting Zookeeper..."
 docker-compose up -d zookeeper
-sleep 10  # Give Zookeeper time to initialize
+sleep 2  # Give Zookeeper time to initialize
 check_service "zookeeper" 2181
 if [ $? -ne 0 ]; then
     echo "Failed to start Zookeeper. Exiting..."
@@ -45,12 +45,32 @@ fi
 # Start Kafka and wait for it
 echo "Starting Kafka..."
 docker-compose up -d kafka
-sleep 15  # Give Kafka time to initialize
+sleep 2  # Give Kafka time to initialize
 check_service "kafka" 9092
 if [ $? -ne 0 ]; then
     echo "Failed to start Kafka. Exiting..."
     exit 1
 fi
+
+# Start Mongo and wait for it
+echo "Starting MongoDB..."
+docker-compose up -d mongodb
+sleep 2  # Give MongoDB time to initialize
+check_service "mongodb" 27017
+if [ $? -ne 0 ]; then
+    echo "Failed to start MongoDB. Exiting..."
+    exit 1
+fi
+
+# Load initial data into MongoDB
+echo "Loading initial data into MongoDB..."
+docker run -d \
+  --name mongodb \
+  -e MONGO_INITDB_ROOT_USERNAME=openframe \
+  -e MONGO_INITDB_ROOT_PASSWORD=password123456789 \
+  -v /scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro \
+  -p 27017:27017 \
+  mongo:7.0
 
 # Start other services
 echo "Starting remaining services..."

@@ -3,9 +3,13 @@ spring:
     name: openframe-data
   data:
     mongodb:
-      uri: mongodb://admin:password@mongodb:27017/openframe
-      database: openframe
       auto-index-creation: true
+      host: localhost
+      port: 27017
+      database: openframe
+      username: openframe
+      password: password123456789
+
   cassandra:
     keyspace-name: openframe_events
     contact-points: ${CASSANDRA_HOST:cassandra}

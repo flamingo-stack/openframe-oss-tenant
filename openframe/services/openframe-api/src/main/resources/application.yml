@@ -8,8 +8,12 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   data:
     mongodb:
-      uri: mongodb://admin:password@localhost:27017/openframe
+      auto-index-creation: true
+      host: mongodb
+      port: 27017
       database: openframe
+      username: openframe
+      password: password123456789
 management:
   endpoints:
     web:
