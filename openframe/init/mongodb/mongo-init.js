@@ -1,5 +1,11 @@
 db = db.getSiblingDB('openframe');
 
+db.createUser({
+    user: "openframe",
+    pwd: "password123456789",
+    roles: [{ role: "readWrite", db: "openframe" }]
+  });
+
 // Create collections
 db.createCollection('events');
 

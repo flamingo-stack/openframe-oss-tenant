@@ -17,20 +17,32 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EventDataService {
     
-    private final ExternalApplicationEventRepository applicationEventRepository;
+    private final ExternalApplicationEventRepository externalExternalApplicationEventRepository;
     private final EventStreamRepository eventStreamRepository;
     
     @Transactional
     public void storeEvent(ExternalApplicationEvent event, EventStream stream) {
-        applicationEventRepository.save(event);
+        externalExternalApplicationEventRepository.save(event);
         eventStreamRepository.save(stream);
     }
     
-    public List<ExternalApplicationEvent> getApplicationEvents(String userId, Instant start, Instant end) {
-        return applicationEventRepository.findByUserIdAndTimestampBetween(userId, start, end);
+    public EventStream storeEventStream(EventStream event) {
+        return eventStreamRepository.save(event);
+    }
+    
+    public List<ExternalApplicationEvent> getExternalApplicationEvents(String userId, Instant start, Instant end) {
+        return externalExternalApplicationEventRepository.findByUserIdAndTimestampBetween(userId, start, end);
     }
     
     public List<EventStream> getEventStream(String userId, Instant start, Instant end) {
         return eventStreamRepository.findStreamsByUserAndTimeRange(userId, start, end);
+    }
+
+    public List<EventStream> findEventsByUser(String userId) {
+        return eventStreamRepository.findByUserId(userId);
+    }
+
+    public List<EventStream> findEventsByUserAndType(String userId, String eventType) {
+        return eventStreamRepository.findByUserIdAndEventType(userId, eventType);
     }
 }

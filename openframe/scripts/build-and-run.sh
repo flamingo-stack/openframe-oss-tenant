@@ -68,6 +68,23 @@ echo "Loading initial data into MongoDB..."
 # Executing initial data script into MongoDB
 docker exec -it openframe-mongodb mongosh --host localhost --username openframe --password password123456789 /docker-entrypoint-initdb.d/mongo-init.js
 
+# Start Mongo and wait for it
+echo "Starting Cassandra..."
+docker-compose up -d cassandra
+sleep 2  # Give MongoDB time to initialize
+check_service "cassandra" 9042
+if [ $? -ne 0 ]; then
+    echo "Failed to start Cassandra. Exiting..."
+    exit 1
+fi
+
+# Load initial data into MongoDB
+echo "Loading initial data into MongoDB..."
+
+# Executing initial data script into MongoDB
+docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
+
+
 # Start other services
 echo "Starting remaining services..."
 docker-compose up -d

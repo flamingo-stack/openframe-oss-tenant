@@ -17,7 +17,9 @@ services:
       - openframe-network
 
   cassandra:
-    image: cassandra:4.1
+    build:
+      context: infrastructure/cassandra/
+      dockerfile: Dockerfile
     container_name: openframe-cassandra
     ports:
       - "9042:9042"
