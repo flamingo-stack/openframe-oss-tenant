@@ -17,3 +17,7 @@ buildNumber.properties
 .classpath
 .DS_Store
 openframe/.DS_Store
+/openframe/monitoring/loki/loki-wal
+/openframe/monitoring/loki/loki-cache
+/openframe/monitoring/loki/loki-chunks
+/openframe/services/openframe-stream/logs

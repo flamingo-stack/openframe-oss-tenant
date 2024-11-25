@@ -33,45 +33,50 @@
         </rollingPolicy>
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
-                <timestamp/>
-                <level/>
-                <threadName/>
-                <loggerName/>
-                <message/>
-                <mdc/>
-                <stackTrace/>
+                <timestamp />
+                <level />
+                <threadName />
+                <loggerName />
+                <message />
+                <mdc />
+                <stackTrace />
             </providers>
         </encoder>
     </appender>
 
-    <!-- Loki Appender -->
-    <appender name="LokiAppender" class="com.github.loki4j.logback.Loki4jAppender">
-        <url>http://loki:3100/loki/api/v1/push</url>
-        <labels>
-            <label>
-                <name>application</name>
-                <value>Test</value>
-            </label>
-            <label>
-                <name>environment</name>
-                <value>dev</value>
-            </label>
-        </labels>
-        <batch>
-            <timeout>1</timeout>
-            <maxEvents>100</maxEvents>
-        </batch>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n</pattern>
+    <!-- Define the Loki appender -->
+    <appender name="LokiRemoteAppender" class="com.github.loki4j.logback.Loki4jAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="net.logstash.logback.layout.LogstashLayout"/>
         </encoder>
+        <loki4j>
+            <endpoint>
+                <url>http://loki:3100/loki/api/v1/push</url>
+                <connectTimeoutMs>5000</connectTimeoutMs>
+                <readTimeoutMs>5000</readTimeoutMs>
+            </endpoint>
+            <batch>
+                <maxBatchSize>500</maxBatchSize>
+                <maxBatchIntervalMs>2000</maxBatchIntervalMs>
+            </batch>
+            <retry>
+                <maxRetries>3</maxRetries>
+                <minRetryDelayMs>1000</minRetryDelayMs>
+                <maxRetryDelayMs>5000</maxRetryDelayMs>
+            </retry>
+            <staticLabels>
+                <label key="app" value="my-spring-app" />
+                <label key="environment" value="production" />
+            </staticLabels>
+        </loki4j>
     </appender>
 
     <!-- Loggers -->
     <root level="info">
-        <appender-ref ref="ConsoleAppender"/>
-        <appender-ref ref="RollingFileAppender"/>
-        <appender-ref ref="JsonRollingFileAppender"/>
-        <appender-ref ref="LokiAppender"/>
+        <appender-ref ref="ConsoleAppender" />
+        <appender-ref ref="RollingFileAppender" />
+        <appender-ref ref="JsonRollingFileAppender" />
+        <appender-ref ref="LokiRemoteAppender" />
     </root>
 
 </configuration>
