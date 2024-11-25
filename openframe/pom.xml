@@ -25,6 +25,7 @@
         <lombok.version>1.18.30</lombok.version>
         <netflix.dgs.version>7.0.0</netflix.dgs.version>
         <kafka.version>3.6.0</kafka.version>
+        <logback.version>1.5.12</logback.version> 
     </properties>
 
     <modules>
