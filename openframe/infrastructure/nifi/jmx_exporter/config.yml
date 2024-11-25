@@ -1,3 +1,3 @@
 rules:
-- pattern: "org.apache.ZooKeeperService<name0=(.+)><>(.+)"
-  name: zookeeper_$1_$2
+- pattern: "org.apache.nifi<type=(.+), name=(.+)><>Value"
+  name: nifi_$1_$2

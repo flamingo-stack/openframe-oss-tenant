@@ -53,7 +53,7 @@ scrape_configs:
 
   - job_name: 'nifi'
     static_configs:
-      - targets: ['nifi:8443']
+      - targets: ['nifi:9096']
 EOF
 
 # Copy alert rules

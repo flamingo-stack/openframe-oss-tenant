@@ -33,7 +33,7 @@ scrape_configs:
 
   - job_name: 'zookeeper'
     static_configs:
-      - targets: ['zookeeper:2181']
+      - targets: ['zookeeper:7070']
 
   - job_name: 'mongodb'
     static_configs:
@@ -45,4 +45,4 @@ scrape_configs:
 
   - job_name: 'nifi'
     static_configs:
-      - targets: ['nifi:8443']
+      - targets: ['nifi:9096']
