@@ -64,13 +64,9 @@ fi
 
 # Load initial data into MongoDB
 echo "Loading initial data into MongoDB..."
-docker run -d \
-  --name mongodb \
-  -e MONGO_INITDB_ROOT_USERNAME=openframe \
-  -e MONGO_INITDB_ROOT_PASSWORD=password123456789 \
-  -v /scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro \
-  -p 27017:27017 \
-  mongo:7.0
+
+# Executing initial data script into MongoDB
+docker exec -it openframe-mongodb mongosh --host localhost --username openframe --password password123456789 /docker-entrypoint-initdb.d/mongo-init.js
 
 # Start other services
 echo "Starting remaining services..."

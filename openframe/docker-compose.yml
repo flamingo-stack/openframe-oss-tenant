@@ -2,7 +2,7 @@ services:
   # Databases
   mongodb:
     build:
-      context: ./mongo-custom.yml
+      context: infrastructure/mongodb/
       dockerfile: Dockerfile
     container_name: openframe-mongodb
     environment:
