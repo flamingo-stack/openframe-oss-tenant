@@ -1,4 +1,3 @@
-// services/openframe-data/src/main/java/com/openframe/data/model/cassandra/EventStream.java
 package com.openframe.data.model.cassandra;
 
 import java.time.Instant;
@@ -7,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.cassandra.core.cql.Ordering;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
+import org.springframework.data.cassandra.core.mapping.Column;
 import org.springframework.data.cassandra.core.mapping.PrimaryKey;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyClass;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
@@ -14,14 +14,19 @@ import org.springframework.data.cassandra.core.mapping.Table;
 
 import lombok.Data;
 
-@Data
 @Table("event_streams")
+@Data
 public class EventStream {
     @PrimaryKey
     private EventStreamKey key;
     
+    @Column("payload")
     private String payload;
+    
+    @Column("event_type")  // Fixed column name to match database
     private String eventType;
+    
+    @Column("metadata")
     private Map<String, String> metadata;
 
     @PrimaryKeyClass

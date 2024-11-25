@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS event_streams (
     event_id uuid,
     timestamp timestamp,
     payload text,
-    event_type text,
+    event_type text,    -- Fixed column name
     metadata map<text, text>,
     PRIMARY KEY ((user_id), stream_id, event_id, timestamp)
 ) WITH CLUSTERING ORDER BY (stream_id ASC, event_id ASC, timestamp DESC);
