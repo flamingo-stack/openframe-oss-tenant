@@ -1,4 +1,3 @@
-// services/openframe-data/src/main/java/com/openframe/data/repository/cassandra/EventStreamRepository.java
 package com.openframe.data.repository.cassandra;
 
 import java.time.Instant;
@@ -17,6 +16,6 @@ public interface EventStreamRepository extends CassandraRepository<EventStream, 
     @Query("SELECT * FROM event_streams WHERE user_id = ?0 AND event_type = ?1 ALLOW FILTERING")
     List<EventStream> findByUserIdAndEventType(String userId, String eventType);
 
-    @Query("SELECT * FROM event_streams WHERE user_id = ?0 AND timestamp >= ?1 AND timestamp <= ?2 ALLOW FILTERING")
+    @Query(value = "SELECT * FROM event_streams WHERE user_id = ?0 AND timestamp >= ?1 AND timestamp <= ?2 ALLOW FILTERING")
     List<EventStream> findStreamsByUserAndTimeRange(String userId, Instant start, Instant end);
 }

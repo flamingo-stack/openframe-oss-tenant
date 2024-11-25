@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.openframe.data.model.cassandra.EventStream;
@@ -74,5 +76,20 @@ public class TestController {
     @GetMapping("/cassandra/events/{userId}")
     public List<EventStream> getCassandraEvents(@PathVariable String userId) {
         return cassandraRepo.findByUserId(userId);
+    }
+
+    @GetMapping("/cassandra/events")
+    public List<EventStream> getEventsByTimeRange(
+            @RequestParam String userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant end) {
+        return eventDataService.getEventStream(userId, start, end);
+    }
+
+    @GetMapping("/cassandra/events/by-type")
+    public List<EventStream> getEventsByType(
+            @RequestParam String userId,
+            @RequestParam String eventType) {
+        return eventDataService.findEventsByUserAndType(userId, eventType);
     }
 }
