@@ -29,3 +29,5 @@ node_modules/
 .classpath
 **.DS_Store
 **/logs
+.DS_Store
+**/.DS_Store

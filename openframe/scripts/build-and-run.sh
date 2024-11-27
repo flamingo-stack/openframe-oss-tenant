@@ -29,8 +29,8 @@ echo "Initializing monitoring configuration..."
 echo "Building JARs..."
 ./scripts/build-jars.sh
 
-echo "Creating network..."
-docker network create openframe-network 2>/dev/null || true
+# echo "Creating network..."
+# docker network create openframe-network 2>/dev/null || true
 
 # Start Zookeeper and wait for it
 echo "Starting Zookeeper..."
@@ -75,7 +75,7 @@ sleep 2  # Give MongoDB time to initialize
 check_service "cassandra" 9042
 if [ $? -ne 0 ]; then
     echo "Failed to start Cassandra. Exiting..."
-    exit 1
+    exit
 fi
 
 # Load initial data into MongoDB
@@ -84,13 +84,12 @@ echo "Loading initial data into MongoDB..."
 # Executing initial data script into MongoDB
 docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
 
-
 # Start other services
 echo "Starting remaining services..."
 docker-compose up -d
 
 echo "Starting application services..."
-docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d
+docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d --remove-orphans
 
 echo "All services started. Checking logs..."
 

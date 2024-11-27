@@ -1,5 +1,5 @@
 services:
-  # Databases
+  # MongoDB
   mongodb:
     build:
       context: infrastructure/mongodb/
@@ -13,9 +13,13 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./init/mongodb:/docker-entrypoint-initdb.d
+      - mongodb_logs:/var/log/mongodb # Shared volume for logs
     networks:
       - openframe-network
+    depends_on:
+      - loki
 
+  # MongoDB Exporter
   mongodb-exporter:
     image: bitnami/mongodb-exporter:latest
     container_name: openframe-mongodb_exporter
@@ -25,9 +29,11 @@ services:
       - "9216:9216"
     depends_on:
       - mongodb
+      - loki
     networks:
       - openframe-network
 
+  # Cassandra
   cassandra:
     build:
       context: infrastructure/cassandra/
@@ -39,6 +45,7 @@ services:
       - "9404:9404"
     volumes:
       - cassandra_data:/var/lib/cassandra
+      - cassandra_logs:/var/log/cassandra # Shared volume for logs
       - ./init/cassandra:/docker-entrypoint-initdb.d
       - ./infrastructure/cassandra/jmx_exporter:/opt/jmx_exporter
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
@@ -52,9 +59,12 @@ services:
       JVM_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9404:/opt/jmx_exporter/config.yml
     networks:
       - openframe-network
+    depends_on:
+      - loki
 
+  # Zookeeper
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
+    image: confluentinc/cp-zookeeper:latest
     container_name: openframe-zookeeper
     ports:
       - "2181:2181"
@@ -68,16 +78,18 @@ services:
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     networks:
       - openframe-network
-
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: openframe-kafka
     depends_on:
-      - zookeeper
+      - loki
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: openframe-kafka
     ports:
       - "9092:9092"
       - "9308:9308"
     volumes:
+      - kafka_logs:/var/log/kafka # Shared volume for logs
       - ./infrastructure/kafka/jmx_exporter:/opt/jmx_exporter
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
@@ -89,34 +101,38 @@ services:
       KAFKA_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml
     networks:
       - openframe-network
+    depends_on:
+      - loki
+      - zookeeper
 
-  # NiFi
+  # Nifi
   nifi:
-    image: apache/nifi:1.22.0
-    container_name: openframe-nifi
+    build:
+      context: infrastructure/nifi/
+      dockerfile: Dockerfile
     ports:
       - "8443:8443"
       - "9096:9096"
-    environment:
+    environment:  
       NIFI_WEB_HTTPS_PORT: 8443
+      NIFI_WEB_HTTP_HOST: 0.0.0.0
       SINGLE_USER_CREDENTIALS_USERNAME: openframe
       SINGLE_USER_CREDENTIALS_PASSWORD: password123456789
     volumes:
-      - nifi_conf:/opt/nifi/nifi-current/conf
       - nifi_content:/opt/nifi/nifi-current/content_repository
       - nifi_database:/opt/nifi/nifi-current/database_repository
       - nifi_flowfile:/opt/nifi/nifi-current/flowfile_repository
       - nifi_provenance:/opt/nifi/nifi-current/provenance_repository
       - nifi_state:/opt/nifi/nifi-current/state
-      - ./infrastructure/nifi/jmx_exporter:/opt/jmx_exporter
-      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
-      - ./infrastructure/nifi/bootsrap.conf:/opt/nifi/nifi-current/conf/bootstrap.conf
+      - nifi_logs:/opt/nifi/nifi-current/logs
     networks:
       - openframe-network
+    depends_on:
+      - loki
 
-  # Monitoring
+  # Prometheus
   prometheus:
-    image: prom/prometheus:v2.45.0
+    image: prom/prometheus:latest
     container_name: openframe-prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -131,10 +147,12 @@ services:
       - prometheus_data:/prometheus
     networks:
       - openframe-network
-    restart: unless-stopped
-
+    depends_on:
+      - loki
+    
+  # Grafana
   grafana:
-    image: grafana/grafana:10.0.0
+    image: grafana/grafana:latest
     container_name: openframe-grafana
     ports:
       - "3000:3000"
@@ -143,11 +161,15 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=password123456789
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
       - grafana_data:/var/lib/grafana
     networks:
       - openframe-network
+    depends_on:
+      - loki
+      - prometheus
 
-  # Development Tools
+  # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: openframe-kafka-ui
@@ -157,11 +179,13 @@ services:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    depends_on:
-      - kafka
     networks:
       - openframe-network
+    depends_on:
+      - loki
+      - kafka
 
+  # Mongo Express
   mongo-express:
     image: mongo-express:latest
     container_name: openframe-mongo-express
@@ -171,23 +195,48 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: openframe
       ME_CONFIG_MONGODB_ADMINPASSWORD: password123456789
       ME_CONFIG_MONGODB_URL: mongodb://openframe:password123456789@mongodb:27017/
-    depends_on:
-      - mongodb
     networks:
       - openframe-network
+    depends_on:
+      - loki
+      - mongodb
 
+  # Loki
   loki:
-    image: grafana/loki:3.2.1
+    image: grafana/loki:latest
     container_name: openframe-loki
     ports:
       - "3100:3100"
-    environment:
-      - LOKI_SERVER_LOG_LEVEL=debug
-    command: -config.file=/etc/loki/local-config.yaml
+    command:
+      - "-config.file=/etc/loki/local-config.yaml"
+      - "-config.expand-env=true"
+      - "-validation.allow-structured-metadata=false"
     volumes:
-      - ./monitoring/loki/loki-config:/etc/loki 
+      - ./monitoring/loki:/etc/loki
       - loki_data:/loki
-      - ./monitoring/loki/:/loki
+    networks:
+      openframe-network:
+        aliases:
+          - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --try-connect-timeout=1 -O - http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: openframe-promtail
+    volumes:
+      - ./monitoring/promtail:/etc/promtail
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - -config.file=/etc/promtail/config.yml
+      - -config.expand-env=true
+    depends_on:
+      - loki
     networks:
       - openframe-network
     restart: unless-stopped
@@ -196,17 +245,19 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
-    external: true
 
 volumes:
   loki_data:
   mongodb_data:
+  mongodb_logs: # MongoDB logs
   cassandra_data:
-  nifi_conf:
+  cassandra_logs: # Cassandra logs
+  kafka_logs: # Kafka logs
   nifi_content:
   nifi_database:
   nifi_flowfile:
   nifi_provenance:
   nifi_state:
+  nifi_logs: # Nifi logs
   prometheus_data:
   grafana_data:

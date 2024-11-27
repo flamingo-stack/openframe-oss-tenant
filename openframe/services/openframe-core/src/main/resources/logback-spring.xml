@@ -55,7 +55,7 @@
         <format>
             <message class="com.github.loki4j.logback.JsonLayout" />
             <label>
-                <pattern>app=${SPRING_APP_NAME},host=${SPRING_CONTAINER_IP}</pattern>
+                <pattern>category=microservices,app=${SPRING_APP_NAME},host=${SPRING_CONTAINER_IP}</pattern>
             </label>
         </format>
     </appender>

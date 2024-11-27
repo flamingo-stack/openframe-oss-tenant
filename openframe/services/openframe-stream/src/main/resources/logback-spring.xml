@@ -50,12 +50,12 @@
     <!-- Loki Appender -->
     <appender name="LokiRemoteAppender" class="com.github.loki4j.logback.Loki4jAppender">
         <http>
-            <url>http://loki:3100/loki/api/v1/push</url>
+            <url>http://openframe-loki:3100/loki/api/v1/push</url>
         </http>
         <format>
             <message class="com.github.loki4j.logback.JsonLayout" />
             <label>
-                <pattern>app=${SPRING_APP_NAME},host=${SPRING_CONTAINER_IP}</pattern>
+                <pattern>category=microservices,app=${SPRING_APP_NAME},host=${SPRING_CONTAINER_IP}</pattern>
             </label>
         </format>
     </appender>
