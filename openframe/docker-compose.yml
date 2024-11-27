@@ -22,7 +22,7 @@ services:
   # MongoDB Exporter
   mongodb-exporter:
     image: bitnami/mongodb-exporter:latest
-    container_name: openframe-mongodb_exporter
+    container_name: openframe-mongodb-exporter
     environment: 
       MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
     ports:
@@ -107,6 +107,7 @@ services:
 
   # Nifi
   nifi:
+    container_name: openframe-nifi
     build:
       context: infrastructure/nifi/
       dockerfile: Dockerfile

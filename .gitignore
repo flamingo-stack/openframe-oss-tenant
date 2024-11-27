@@ -31,3 +31,5 @@ node_modules/
 **/logs
 .DS_Store
 **/.DS_Store
+.DS_Store
+openframe/.DS_Store

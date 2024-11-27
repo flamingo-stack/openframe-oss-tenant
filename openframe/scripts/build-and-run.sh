@@ -21,10 +21,6 @@ check_service() {
     return 0
 }
 
-# Initialize monitoring configuration
-echo "Initializing monitoring configuration..."
-./scripts/init-monitoring.sh
-
 # Build the JARs using the existing script
 echo "Building JARs..."
 ./scripts/build-jars.sh

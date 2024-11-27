@@ -6,22 +6,22 @@ scrape_configs:
   - job_name: 'openframe-api'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['api:8090']
+      - targets: ['openframe-api:8090']
 
   - job_name: 'openframe-core'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['core:8091']
+      - targets: ['openframe-core:8091']
 
   - job_name: 'openframe-stream'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['stream:8082']
+      - targets: ['openframe-stream:8082']
 
   - job_name: 'openframe-data'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['data:8083']
+      - targets: ['openframe-data:8083']
 
   - job_name: 'prometheus'
     static_configs:
@@ -29,20 +29,20 @@ scrape_configs:
 
   - job_name: 'kafka'
     static_configs:
-      - targets: ['kafka:9308']
+      - targets: ['openframe-kafka:9308']
 
   - job_name: 'zookeeper'
     static_configs:
-      - targets: ['zookeeper:7070']
+      - targets: ['openframe-zookeeper:7070']
 
   - job_name: 'mongodb'
     static_configs:
-      - targets: ['mongodb-exporter:9216']
+      - targets: ['openframe-mongodb-exporter:9216']
 
   - job_name: 'cassandra'
     static_configs:
-      - targets: ['cassandra:9404']
+      - targets: ['openframe-cassandra:9404']
 
   - job_name: 'nifi'
     static_configs:
-      - targets: ['nifi:9096']
+      - targets: ['openframe-nifi:9096']
