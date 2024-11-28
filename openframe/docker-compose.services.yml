@@ -1,4 +1,29 @@
 services:
+
+  config-server:
+    build:
+      context: ./services/openframe-config
+      dockerfile: Dockerfile
+    container_name: openframe-config
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USERNAME=config
+      - CONFIG_SERVER_PASSWORD=secret
+      - GIT_USERNAME=${GIT_USERNAME}
+      - GIT_PASSWORD=${GIT_PASSWORD}
+    networks:
+      - openframe-network
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   api:
     build:
       context: ./services/openframe-api
@@ -7,6 +32,7 @@ services:
     ports:
       - "8090:8090"
     depends_on:
+      - config-server
       - mongodb
       - kafka
     environment:
@@ -23,6 +49,7 @@ services:
     ports:
       - "8091:8091"
     depends_on:
+      - config-server
       - mongodb
       - kafka
     environment:
@@ -40,6 +67,7 @@ services:
       - "8082:8082"
     depends_on:
       - kafka
+      - config-server
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
@@ -60,6 +88,8 @@ services:
       pinot-controller:
         condition: service_healthy
       pinot-server:
+        condition: service_healthy
+      config-server:
         condition: service_healthy
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
