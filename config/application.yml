@@ -1,0 +1,11 @@
+# Common properties shared across all services
+logging:
+  level:
+    root: INFO
+    com.openframe: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" 

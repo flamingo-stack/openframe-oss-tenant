@@ -26,7 +26,7 @@
         <netflix.dgs.version>7.0.0</netflix.dgs.version>
         <kafka.version>3.6.0</kafka.version>
         <logback.version>1.5.12</logback.version>
-        <pinot.version>LATEST</pinot.version>
+        <pinot.version>1.2.0</pinot.version>
     </properties>
 
     <modules>
@@ -34,10 +34,12 @@
         <module>services/openframe-core</module>
         <module>services/openframe-stream</module>
         <module>services/openframe-data</module>
+        <module>services/openframe-config</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
+
             <!-- Spring Cloud -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -91,6 +93,7 @@
                 <version>${lombok.version}</version>
                 <scope>provided</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 

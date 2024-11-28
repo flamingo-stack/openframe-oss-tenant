@@ -1,0 +1,26 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/OpenFrame-AI/openframe-backend
+          default-label: main
+          search-paths: openframe/config
+  main:
+    allow-circular-references: true
+  security:
+    user:
+      name: ${CONFIG_SERVER_USERNAME:config}
+      password: ${CONFIG_SERVER_PASSWORD:secret}
+
+# Enable actuator endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

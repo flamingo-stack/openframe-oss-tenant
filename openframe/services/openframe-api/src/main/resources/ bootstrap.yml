@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: openframe-api
+  cloud:
+    config:
+      uri: http://openframe-config:8888
+      fail-fast: true
+      username: ${CONFIG_SERVER_USERNAME:config}
+      password: ${CONFIG_SERVER_PASSWORD:secret} 
