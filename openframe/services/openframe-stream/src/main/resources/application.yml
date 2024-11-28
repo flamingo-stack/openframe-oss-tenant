@@ -29,9 +29,16 @@ spring:
       ack-mode: MANUAL_IMMEDIATE
 
 nifi:
-  url: http://localhost:8080/nifi-api
+  url: http://openframe-nifi:8080/nifi-api
   username: openframe
   sensitive-properties-key: ${NIFI_PROPERTIES_KEY}
+
+pinot:
+  controller:
+    url: http://openframe-pinot-controller:9000
+  broker:
+    url: http://openframe-pinot-broker:8099
+
 
 management:
   endpoints:

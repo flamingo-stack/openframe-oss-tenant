@@ -106,6 +106,12 @@
             <version>1.5.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.pinot</groupId>
+            <artifactId>pinot-java-client</artifactId>
+            <version>${pinot.version}</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

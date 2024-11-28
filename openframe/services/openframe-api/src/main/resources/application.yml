@@ -2,7 +2,7 @@ spring:
   application:
     name: openframe-api
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: openframe-kafka:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -28,6 +28,11 @@ management:
       tags:
         application: ${spring.application.name}
       
+pinot:
+  controller:
+    url: http://openframe-pinot-controller:9000
+  broker:
+    url: http://openframe-pinot-broker:8099
 
 server:
   port: 8090
