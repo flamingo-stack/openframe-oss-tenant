@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.openframe</groupId>
@@ -14,7 +14,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.0</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <properties>
@@ -25,7 +25,8 @@
         <lombok.version>1.18.30</lombok.version>
         <netflix.dgs.version>7.0.0</netflix.dgs.version>
         <kafka.version>3.6.0</kafka.version>
-        <logback.version>1.5.12</logback.version> 
+        <logback.version>1.5.12</logback.version>
+        <pinot.version>LATEST</pinot.version>
     </properties>
 
     <modules>
@@ -66,6 +67,12 @@
                 <groupId>com.openframe</groupId>
                 <artifactId>openframe-data</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.pinot</groupId>
+                <artifactId>pinot-java-client</artifactId>
+                <version>${pinot.version}</version>
             </dependency>
 
             <!-- Netflix DGS -->
@@ -136,7 +143,7 @@
         </pluginManagement>
     </build>
 
-     <repositories>
+    <repositories>
         <repository>
             <id>apache.snapshots</id>
             <name>Apache Development Snapshot Repository</name>
