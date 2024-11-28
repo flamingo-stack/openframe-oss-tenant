@@ -46,3 +46,7 @@ scrape_configs:
   - job_name: 'nifi'
     static_configs:
       - targets: ['openframe-nifi:9096']
+
+  - job_name: 'pinot'
+    static_configs:
+      - targets: ['openframe-pinot-controller:9011', 'openframe-pinot-broker:9012', 'openframe-pinot-server:9013']

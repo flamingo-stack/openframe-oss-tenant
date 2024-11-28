@@ -53,8 +53,14 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - mongodb
-      - cassandra
+      cassandra:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      pinot-controller:
+        condition: service_healthy
+      pinot-server:
+        condition: service_healthy
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
       SPRING_CASSANDRA_CONTACT_POINTS: cassandra

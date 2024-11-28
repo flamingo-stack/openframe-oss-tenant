@@ -1,0 +1,104 @@
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  # Pinot Controller metrics
+  - pattern: "Pinot.Controller<type=ControllerMetrics><>([^:]+)"
+    name: pinot_controller_$1
+    type: GAUGE
+    attrNameSnakeCase: true
+
+  # Pinot Server metrics
+  - pattern: "Pinot.Server<type=ServerMetrics><>([^:]+)"
+    name: pinot_server_$1
+    type: GAUGE
+    attrNameSnakeCase: true
+
+  # Query metrics
+  - pattern: "Pinot<type=BrokerMetrics><>([^:]+)_([0-9]+)thPercentile"
+    name: pinot_query_latency_percentile
+    type: GAUGE
+    labels:
+      percentile: "$2"
+    attrNameSnakeCase: true
+
+  # Table metrics
+  - pattern: "Pinot<type=BrokerMetrics, table=([^,]+)><>([^:]+)"
+    name: pinot_table_$2
+    type: GAUGE
+    labels:
+      table: "$1"
+    attrNameSnakeCase: true
+
+  # Segment metrics
+  - pattern: "Pinot<type=ServerMetrics, table=([^,]+)><>([^:]+)"
+    name: pinot_segment_$2
+    type: GAUGE
+    labels:
+      table: "$1"
+    attrNameSnakeCase: true
+
+  # Memory metrics
+  - pattern: "java.lang<type=Memory><HeapMemoryUsage>([^:]+)"
+    name: jvm_memory_heap_$1
+    type: GAUGE
+    attrNameSnakeCase: true
+
+  - pattern: "java.lang<type=Memory><NonHeapMemoryUsage>([^:]+)"
+    name: jvm_memory_nonheap_$1
+    type: GAUGE
+    attrNameSnakeCase: true
+
+  # Garbage collection metrics
+  - pattern: "java.lang<type=GarbageCollector, name=([^,]+)><>CollectionCount"
+    name: jvm_gc_collection_count
+    type: COUNTER
+    labels:
+      gc: "$1"
+
+  - pattern: "java.lang<type=GarbageCollector, name=([^,]+)><>CollectionTime"
+    name: jvm_gc_collection_time_seconds
+    type: COUNTER
+    labels:
+      gc: "$1"
+
+  # Thread metrics
+  - pattern: "java.lang<type=Threading><>ThreadCount"
+    name: jvm_threads_current
+    type: GAUGE
+
+  - pattern: "java.lang<type=Threading><>DaemonThreadCount"
+    name: jvm_threads_daemon
+    type: GAUGE
+
+  # Query execution metrics
+  - pattern: "Pinot<type=BrokerMetrics><>([^:]+)LatencyMs"
+    name: pinot_query_latency_ms
+    type: GAUGE
+    labels:
+      operation: "$1"
+
+  # Connection metrics
+  - pattern: "Pinot<type=ConnectionPoolMetrics><>([^:]+)"
+    name: pinot_connection_pool_$1
+    type: GAUGE
+    attrNameSnakeCase: true
+
+  # Error metrics
+  - pattern: "Pinot<type=BrokerMetrics><>([^:]+)Exceptions"
+    name: pinot_exceptions_total
+    type: COUNTER
+    labels:
+      type: "$1"
+
+whitelistObjectNames:
+  - "Pinot:*"
+  - "java.lang:type=Memory"
+  - "java.lang:type=GarbageCollector,*"
+  - "java.lang:type=Threading"
+
+blacklistObjectNames:
+  - "java.lang:type=MemoryPool,*"
+  - "java.lang:type=OperatingSystem"
+  - "java.lang:type=Runtime"
+  - "java.lang:type=ClassLoading"
+  - "java.lang:type=Compilation"

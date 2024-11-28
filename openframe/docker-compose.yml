@@ -18,6 +18,12 @@ services:
       - openframe-network
     depends_on:
       - loki
+    healthcheck:
+      test: ["CMD", "mongosh", "--username", "openframe", "--password", "password123456789", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # MongoDB Exporter
   mongodb-exporter:
@@ -56,7 +62,26 @@ services:
       CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS: 128
       CASSANDRA_NATIVE_TRANSPORT_PORT_SSL: 9142
       CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE: 256MB
+      # Skip some startup checks
+      CASSANDRA_SKIP_WAIT_FOR_GOSSIP_TO_SETTLE: 0
+      # Reduce time it waits for other seeds
+      CASSANDRA_RING_DELAY: 0
+      # Skip automatic bootstrap on startup
+      CASSANDRA_AUTO_BOOTSTRAP: "false"
+      # Reduce the delay before starting the compaction process
+      CASSANDRA_COMPACTION_THROUGHPUT_MB_PER_SEC: 0
+      # Reduce initial heap size
+      HEAP_NEWSIZE: 128M
+      MAX_HEAP_SIZE: 512M
+      # Reduce delay before accepting CQL connections
+      CASSANDRA_INITIAL_TOKEN: "-9223372036854775808"
       JVM_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9404:/opt/jmx_exporter/config.yml
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'select now() from system.local;' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     networks:
       - openframe-network
     depends_on:
@@ -71,6 +96,7 @@ services:
       - "7070:7070"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      ZOO_4LW_COMMANDS_WHITELIST: "*" # Allow all 4-letter commands
       ZOOKEEPER_TICK_TIME: 2000
       EXTRA_ARGS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=7070:/opt/jmx_exporter/config.yml
     volumes:
@@ -78,6 +104,12 @@ services:
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     networks:
       - openframe-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/commands/stat || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     depends_on:
       - loki
 
@@ -95,15 +127,21 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://openframe-kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml
-    networks:
+      KAFKA_CREATE_TOPICS: "pinot-events:1:1"
+      KAFKA_OPTS: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml -Dzookeeper.connect.timeout.ms=60000 -Dzookeeper.session.timeout.ms=60000"
+    networks: 
       - openframe-network
     depends_on:
       - loki
       - zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --list --bootstrap-server localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Nifi
   nifi:
@@ -226,6 +264,88 @@ services:
       retries: 5
     restart: unless-stopped
 
+  pinot-controller:
+    image: apachepinot/pinot:latest
+    container_name: openframe-pinot-controller
+    command: StartController -configFileName /opt/pinot/config/pinot.conf
+    ports:
+      - "9000:9000"
+      - "9011:9011"  # JMX Exporter metrics
+    volumes:
+      - ./infrastructure/pinot/config:/opt/pinot/config
+      - pinot_controller_data:/opt/pinot/data
+      - ./infrastructure/pinot/jmx_exporter:/opt/jmx_exporter
+      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
+    environment:
+      JAVA_OPTS: >
+        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9011:/opt/jmx_exporter/config.yml
+        -Xmx1G -Xms1G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    networks:
+      - openframe-network
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  pinot-broker:
+    image: apachepinot/pinot:latest
+    container_name: openframe-pinot-broker
+    command: StartBroker -clusterName openframe-pinot -zkAddress openframe-zookeeper:2181 -configFileName /opt/pinot/config/pinot.conf
+    ports:
+      - "8099:8099"
+      - "9012:9012"  # JMX Exporter metrics
+    volumes:
+      - ./infrastructure/pinot/config:/opt/pinot/config
+      - pinot_broker_data:/opt/pinot/data
+      - ./infrastructure/pinot/jmx_exporter:/opt/jmx_exporter
+      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
+    environment:
+      JAVA_OPTS: >
+        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9012:/opt/jmx_exporter/config.yml
+        -Xmx2G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    networks:
+      - openframe-network
+    depends_on:
+      pinot-controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8099/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  pinot-server:
+    image: apachepinot/pinot:latest
+    container_name: openframe-pinot-server
+    command: StartServer -clusterName openframe-pinot -zkAddress openframe-zookeeper:2181 -configFileName /opt/pinot/config/pinot.conf
+    ports:
+      - "8097:8097"  # Admin port
+      - "9013:9013"  # JMX Exporter metrics
+    volumes:
+      - ./infrastructure/pinot/config:/opt/pinot/config
+      - pinot_server_data:/opt/pinot/data
+      - ./infrastructure/pinot/jmx_exporter:/opt/jmx_exporter
+      - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
+    environment:
+      JAVA_OPTS: >
+        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9013:/opt/jmx_exporter/config.yml
+        -Xmx2G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    networks:
+      - openframe-network
+    depends_on:
+      pinot-controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8097/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   promtail:
     image: grafana/promtail:latest
     container_name: openframe-promtail
@@ -262,3 +382,6 @@ volumes:
   nifi_logs: # Nifi logs
   prometheus_data:
   grafana_data:
+  pinot_broker_data:
+  pinot_server_data:
+  pinot_controller_data:
