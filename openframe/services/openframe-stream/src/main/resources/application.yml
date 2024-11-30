@@ -2,7 +2,7 @@ spring:
   application:
     name: openframe-stream
   config:
-    import: configserver:${CONFIG_SERVER_URL:http://openframe-config-server:8888}
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
   profiles:
     group:
       local: local-config
@@ -11,5 +11,16 @@ spring:
 spring:
   config:
     activate:
-      on-profile: local-config
-    import: "optional:configserver:http://localhost:8888"
+      on-profile: local
+  cloud:
+    config:
+      fail-fast: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: default
+  cloud:
+    config:
+      uri: http://openframe-config-server:8888
