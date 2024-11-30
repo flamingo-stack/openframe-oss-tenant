@@ -3,7 +3,6 @@ package com.openframe.config.controller;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,18 +12,24 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/logging")
 public class LoggingConfigController {
 
-    @Value("${log.config-server-url}")
-    private String configServerUrl;
-
     @GetMapping(value = "/{filename:.+}", produces = MediaType.APPLICATION_XML_VALUE)
-    public ResponseEntity<String> getLoggingConfig(@PathVariable String filename) throws Exception {
+    public ResponseEntity<String> getLoggingConfig(@PathVariable String filename, HttpServletRequest request) throws Exception {
         ClassPathResource resource = new ClassPathResource("logging/" + filename);
         String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-        content = StringUtils.replace(content, "logging/", configServerUrl + "/logging/");
+        
+        // Build the base URL from the request
+        String serverUrl = request.getScheme() + "://" + request.getServerName();
+        if (request.getServerPort() != 80 && request.getServerPort() != 443) {
+            serverUrl += ":" + request.getServerPort();
+        }
+        
+        content = StringUtils.replace(content, "logging/", serverUrl + "/logging/");
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(content);

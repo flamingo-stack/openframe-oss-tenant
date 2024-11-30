@@ -49,5 +49,26 @@
         "org.junit.jupiter.api.Assumptions.*",
         "org.junit.jupiter.api.DynamicContainer.*",
         "org.junit.jupiter.api.DynamicTest.*"
-    ]
+    ],
+    "java.debug.settings": {
+        "console": "internalConsole",
+        "hotCodeReplace": "auto",
+        "logLevel": "verbose"
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "type": "java",
+                "name": "Debug Stream Application",
+                "request": "launch",
+                "mainClass": "com.openframe.stream.StreamApplication",
+                "projectName": "openframe-stream",
+                "env": {
+                    "SPRING_PROFILES_ACTIVE": "local"
+                },
+                "vmArgs": "-Dspring.profiles.active=local"
+            }
+        ]
+    }
 }
