@@ -3,7 +3,7 @@
     <!-- Wait for Spring properties to be available -->
     <springProperty scope="context" name="SPRING_APP_NAME" source="spring.application.name"/>
     <springProperty scope="context" name="LOKI_ADDRESS" source="loki.url" defaultValue="http://localhost:3100"/>
-    <springProperty scope="context" name="LOG_PATH" value="log.path" defaultValue="logs" />
+    <springProperty scope="context" name="LOG_PATH" source="log.path" defaultValue="logs" />
     
     <property name="SPRING_CONTAINER_IP" value="${CONTAINER_IP:-localhost}" />
     
