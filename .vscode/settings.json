@@ -2,5 +2,52 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.compile.nullAnalysis.mode": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,
-    "maven.view": "flat"
+    "maven.view": "flat",
+    "java.maven.downloadSources": true,
+    "java.maven.updateSnapshots": true,
+    "maven.terminal.customEnv": [
+        {
+            "environmentVariable": "MAVEN_HOME",
+            "value": "/Users/michaelassraf/apache-maven-3.9.9"  
+        },
+        {
+            "environmentVariable": "M2_HOME",
+            "value": "/Users/michaelassraf/apache-maven-3.9.9"
+        }
+    ],
+    "java.home": "/Library/Java/JavaVirtualMachines/temurin-22.jdk/Contents/Home",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-22",
+            "path": "/Library/Java/JavaVirtualMachines/temurin-22.jdk/Contents/Home",
+            "default": true
+        }
+    ],
+    "java.project.referencedLibraries": [
+        "**/target/**.jar",
+        "lib/**/*.jar",
+        "${user.home}/.m2/repository/**/*.jar"
+    ],
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.metadata/**",
+        "**/archetype-resources/**",
+        "**/META-INF/maven/**"
+    ],
+    "java.completion.importOrder": [
+        "java",
+        "javax",
+        "org",
+        "com"
+    ],
+    "maven.pomfile.autoUpdateEffectivePOM": true,
+    "java.configuration.maven.notCoveredPluginExecutionSeverity": "ignore",
+    "java.completion.favoriteStaticMembers": [
+        "org.junit.Assert.*",
+        "org.junit.Assume.*",
+        "org.junit.jupiter.api.Assertions.*",
+        "org.junit.jupiter.api.Assumptions.*",
+        "org.junit.jupiter.api.DynamicContainer.*",
+        "org.junit.jupiter.api.DynamicTest.*"
+    ]
 }

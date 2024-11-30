@@ -1,0 +1,4 @@
+set MAVEN_OPTS=-Xmx2048m
+set M2_HOME=C:\path\to\your\maven
+set MAVEN_HOME=C:\path\to\your\maven
+set PATH=%M2_HOME%\bin;%PATH% 
