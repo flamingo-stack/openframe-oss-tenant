@@ -3,13 +3,15 @@ server:
 
 spring:
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:openframe-kafka:9092}
+    bootstrap-servers: openframe-kafka:9092
   data:
     mongodb:
-      uri: mongodb://${MONGODB_USERNAME:openframe}:${MONGODB_PASSWORD:password123456789}@${MONGODB_HOST:mongodb}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:openframe}
+      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe
+    cassandra:
+      contact-points: openframe-cassandra
 
 pinot:
   controller:
-    url: ${PINOT_CONTROLLER_URL:http://openframe-pinot-controller:9000}
+    url: http://openframe-pinot-controller:9000
   broker:
-    url: ${PINOT_BROKER_URL:http://openframe-pinot-broker:8099} 
+    url: http://openframe-pinot-broker:8099

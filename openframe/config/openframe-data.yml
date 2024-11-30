@@ -7,7 +7,7 @@ spring:
       auto-index-creation: true
   cassandra:
     keyspace-name: openframe_events
-    port: ${CASSANDRA_PORT:9042}
+    port: 9042
     local-datacenter: datacenter1
     schema-action: CREATE_IF_NOT_EXISTS
     request:

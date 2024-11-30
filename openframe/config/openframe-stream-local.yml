@@ -6,6 +6,11 @@ spring:
     bootstrap-servers: localhost:9092
     consumer:
       bootstrap-servers: localhost:9092
+    data:
+      mongodb:
+        uri: mongodb://openframe:password123456789@localhost:27017/openframe
+      cassandra:
+        contact-points: localhost
 
 pinot:
   broker:

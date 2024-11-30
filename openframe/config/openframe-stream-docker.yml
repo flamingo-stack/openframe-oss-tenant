@@ -6,6 +6,11 @@ spring:
     bootstrap-servers: openframe-kafka:9092
     consumer:
       bootstrap-servers: openframe-kafka:9092
+    data:
+      mongodb:
+        uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe
+      cassandra:
+        contact-points: openframe-cassandra
 
 pinot:
   broker:
