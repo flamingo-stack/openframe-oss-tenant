@@ -1,0 +1,12 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/openframe
+          jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
+
+logging:
+  level:
+    com.openframe: DEBUG
+    org.springframework: DEBUG

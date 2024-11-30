@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: openframe-api
+  kafka:
+    bootstrap-servers: openframe-kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  data:
+    mongodb:
+      auto-index-creation: true
+      host: mongodb
+      port: 27017
+      database: openframe
+      username: openframe
+      password: password123456789
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+      tags:
+        application: ${spring.application.name}
+      
+pinot:
+  controller:
+    url: http://openframe-pinot-controller:9000
+  broker:
+    url: http://openframe-pinot-broker:8099
+
+server:
+  port: 8090
+
+dgs:
+  graphql:
+    path: /graphql
+    graphiql:
+      enabled: true
+
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    com.openframe: DEBUG
+    org.springframework.data.mongodb: DEBUG
+    org.springframework.kafka: DEBUG

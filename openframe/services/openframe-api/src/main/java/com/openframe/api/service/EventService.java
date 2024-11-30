@@ -13,10 +13,8 @@ import org.springframework.stereotype.Service;
 import com.openframe.api.model.Event;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class EventService {
     

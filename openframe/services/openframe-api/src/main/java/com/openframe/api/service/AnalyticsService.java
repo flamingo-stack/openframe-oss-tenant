@@ -8,15 +8,11 @@ import java.util.Map;
 import org.apache.pinot.client.Connection;
 import org.apache.pinot.client.ResultSet;
 import org.apache.pinot.client.ResultSetGroup;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import ch.qos.logback.classic.Logger;
 
 @Service
 public class AnalyticsService {
-
-    private final Logger logger = (Logger) LoggerFactory.getLogger(AnalyticsService.class);
+    
     private final Connection pinotConnection;
 
     public AnalyticsService(Connection pinotConnection) {
@@ -39,7 +35,6 @@ public class AnalyticsService {
             }
             return results;
         } catch (Exception e) {
-            logger.error("Failed to execute Pinot query: {}", sqlQuery, e);
             throw new RuntimeException("Failed to execute query", e);
         }
     }

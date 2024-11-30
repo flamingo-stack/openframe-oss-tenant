@@ -23,6 +23,11 @@ scrape_configs:
     static_configs:
       - targets: ['openframe-data:8083']
 
+  - job_name: 'openframe-config'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['openframe-data:8888']
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']

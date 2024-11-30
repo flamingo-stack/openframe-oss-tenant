@@ -14,17 +14,20 @@ spring:
           username: ${GITHUB_USERNAME:michaelassraf}
           password: ${GITHUB_TOKEN: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}
           clone-on-start: true
-  security:
-    basic:
-      enabled: false  # Disable basic auth
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.actuator.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
 
-# Enable actuator endpoints for monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true

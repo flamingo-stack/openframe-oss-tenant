@@ -138,10 +138,11 @@ services:
       - loki
       - zookeeper
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --list --bootstrap-server localhost:9092"]
+      test: ["CMD-SHELL", "curl localhost:9092 | grep Empty || exit 0"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
 
   # Nifi
   nifi:

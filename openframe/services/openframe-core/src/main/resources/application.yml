@@ -1,25 +1,14 @@
 spring:
   application:
     name: openframe-core
-
-server:
-  port: 8091
-
-jwt:
-  secret: ${JWT_SECRET:your-256-bit-secret-your-256-bit-secret-your-256-bit-secret}
-  expiration: 86400000 # 24 hours in milliseconds
-
-logging:
-  config: classpath:logback-spring.xml
-  level:
-    com.openframe.core: DEBUG
-    org.springframework.security: DEBUG
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,prometheus
-  metrics:
-    tags:
-      application: ${spring.application.name}
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://openframe-config-server:8888}
+  profiles:
+    group:
+      local: local-config
+---
+spring:
+  config:
+    activate:
+      on-profile: local-config
+    import: "optional:configserver:http://localhost:8888"

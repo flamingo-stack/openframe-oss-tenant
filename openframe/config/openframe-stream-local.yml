@@ -1,0 +1,10 @@
+server:
+  port: 8082
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+
+pinot:
+  broker:
+    url: http://localhost:8099

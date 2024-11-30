@@ -1,44 +1,14 @@
 spring:
   application:
-    name: openframe-data
-  data:
-    mongodb:
-      auto-index-creation: true
-      host: localhost
-      port: 27017
-      database: openframe
-      username: openframe
-      password: password123456789
-  cassandra:
-    keyspace-name: openframe_events
-    contact-points: ${CASSANDRA_HOST:cassandra}
-    port: ${CASSANDRA_PORT:9042}
-    local-datacenter: datacenter1
-    schema-action: CREATE_IF_NOT_EXISTS
-    request:
-      timeout: 20s
-    connection:
-      connect-timeout: 20s
-      init-query-timeout: 20s
-    controlconnection:
-      timeout: 20s
-
-server:
-  port: 8083
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,prometheus
-  health:
-    probes:
-      enabled: true
-
-logging:
-  config: classpath:logback-spring.xml
-  level:
-    com.openframe.data: DEBUG
-    org.springframework.data: DEBUG
-    org.springframework.data.mongodb.repository: TRACE
-    org.springframework.beans.factory: TRACE
+    name: openframe-data  # This name should match the config file name in the config repo
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://openframe-config-server:8888}
+  profiles:
+    group:
+      local: local-config
+---
+spring:
+  config:
+    activate:
+      on-profile: local-config
+    import: "optional:configserver:http://localhost:8888"

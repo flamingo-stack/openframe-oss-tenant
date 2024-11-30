@@ -9,39 +9,37 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class EventStreamService {
-    
+
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @KafkaListener(topics = "openframe.events", groupId = "openframe-group")
     public void consume(String message) {
-        log.info("Received message: {}", message);
+        System.out.println(String.format("Received message: {}", message));
         processEvent(message);
     }
 
     public void produce(String topic, Object message) {
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, message);
-        
+
         future.whenComplete((result, ex) -> {
             if (ex == null) {
-                log.info("Message sent successfully to topic {}: {}", topic, result.getRecordMetadata().offset());
+                System.out.println(String.format("Message sent successfully to topic {}: {}", topic, result.getRecordMetadata().offset()));
             } else {
-                log.error("Failed to send message to topic {}", topic, ex);
+                System.out.println(String.format("Failed to send message to topic {}", topic, ex));
             }
         });
     }
 
     private void processEvent(String message) {
         try {
-            log.info("Processing event: {}", message);
+            System.out.println(String.format("Processing event: {}", message));
             produce("openframe.events.processed", message);
         } catch (Exception e) {
-            log.error("Error processing event", e);
+            System.out.println(String.format("Error processing event", e));
         }
     }
 }

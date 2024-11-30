@@ -1,7 +1,0 @@
-spring:
-  application:
-    name: openframe-api
-  cloud:
-    config:
-      uri: http://openframe-config:8888
-      fail-fast: true

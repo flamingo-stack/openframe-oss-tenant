@@ -1,4 +1,0 @@
-logging:
-  level:
-    com.openframe: INFO
-    org.springframework: INFO 
