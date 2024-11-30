@@ -4,6 +4,8 @@ server:
 spring:
   kafka:
     bootstrap-servers: localhost:9092
+    consumer:
+      bootstrap-servers: localhost:9092
 
 pinot:
   broker:

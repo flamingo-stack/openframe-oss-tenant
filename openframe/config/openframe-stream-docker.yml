@@ -4,6 +4,8 @@ server:
 spring:
   kafka:
     bootstrap-servers: openframe-kafka:9092
+    consumer:
+      bootstrap-servers: openframe-kafka:9092
 
 pinot:
   broker:
