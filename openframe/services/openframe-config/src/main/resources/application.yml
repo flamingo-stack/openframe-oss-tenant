@@ -16,7 +16,7 @@ spring:
           clone-on-start: true
           searchPaths:
             - openframe/config
-            - openframe/config/shared
+            - openframe/config/shared-logging
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
