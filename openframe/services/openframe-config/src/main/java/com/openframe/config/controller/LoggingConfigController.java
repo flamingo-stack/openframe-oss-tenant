@@ -17,7 +17,7 @@ public class LoggingConfigController {
 
     @GetMapping(value = "/{filename:.+}", produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<String> getLoggingConfig(@PathVariable String filename) throws Exception {
-        ClassPathResource resource = new ClassPathResource("config/shared/" + filename);
+        ClassPathResource resource = new ClassPathResource("logging/" + filename);
         String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
