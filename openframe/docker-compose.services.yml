@@ -4,13 +4,13 @@ services:
     build:
       context: ./services/openframe-config
       dockerfile: Dockerfile
-    container_name: openframe-config
+    container_name: openframe-config-server
     ports:
       - "8888:8888"
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://openframe-config-server:8888/xml/shared-logback-spring.xml"]
       interval: 30s
       timeout: 10s
       retries: 5
