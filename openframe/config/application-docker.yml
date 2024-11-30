@@ -1,0 +1,13 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER_URI}
+          jwk-set-uri: ${AUTH_JWK_URI}
+
+logging:
+  level:
+    root: INFO
+    com.openframe: DEBUG
+    org.springframework: INFO 

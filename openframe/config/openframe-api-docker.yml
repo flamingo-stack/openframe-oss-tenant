@@ -1,0 +1,15 @@
+server:
+  port: 8090
+
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:openframe-kafka:9092}
+  data:
+    mongodb:
+      uri: mongodb://${MONGODB_USERNAME:openframe}:${MONGODB_PASSWORD:password123456789}@${MONGODB_HOST:mongodb}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:openframe}
+
+pinot:
+  controller:
+    url: ${PINOT_CONTROLLER_URL:http://openframe-pinot-controller:9000}
+  broker:
+    url: ${PINOT_BROKER_URL:http://openframe-pinot-broker:8099} 

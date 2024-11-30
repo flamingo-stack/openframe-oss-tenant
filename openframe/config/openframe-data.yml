@@ -4,11 +4,9 @@ server:
 spring:
   data:
     mongodb:
-      uri: mongodb://${MONGODB_USERNAME:openframe}:${MONGODB_PASSWORD:password123456789}@${MONGODB_HOST:mongodb}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:openframe}
       auto-index-creation: true
   cassandra:
     keyspace-name: openframe_events
-    contact-points: ${CASSANDRA_HOST:cassandra}
     port: ${CASSANDRA_PORT:9042}
     local-datacenter: datacenter1
     schema-action: CREATE_IF_NOT_EXISTS

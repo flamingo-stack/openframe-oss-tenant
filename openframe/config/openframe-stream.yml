@@ -3,7 +3,6 @@ server:
 
 spring:
   kafka:
-    bootstrap-servers: openframe-kafka:9092
     consumer:
       group-id: event-processor
       auto-offset-reset: earliest
@@ -25,6 +24,3 @@ spring:
       type: single
       ack-mode: MANUAL_IMMEDIATE
 
-pinot:
-  broker:
-    url: http://openframe-pinot-broker:8099

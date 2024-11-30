@@ -1,0 +1,11 @@
+server:
+  port: 8091
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://${MONGODB_USERNAME:openframe}:${MONGODB_PASSWORD:password123456789}@${MONGODB_HOST:mongodb}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:openframe}
+
+security:
+  cors:
+    allowed-origins: http://localhost:3000

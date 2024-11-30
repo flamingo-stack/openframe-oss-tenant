@@ -1,0 +1,10 @@
+server:
+  port: 8082
+
+spring:
+  kafka:
+    bootstrap-servers: openframe-kafka:9092
+
+pinot:
+  broker:
+    url: http://openframe-pinot-broker:8099
