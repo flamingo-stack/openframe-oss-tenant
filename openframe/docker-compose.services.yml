@@ -46,9 +46,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - openframe-network
 
@@ -64,8 +61,6 @@ services:
         condition: service_healthy
       config-server:
         condition: service_healthy
-    environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - openframe-network
       
@@ -87,10 +82,6 @@ services:
         condition: service_healthy
       config-server:
         condition: service_healthy
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
-      SPRING_CASSANDRA_CONTACT_POINTS: cassandra
-      SPRING_CASSANDRA_PORT: 9042
     networks:
       - openframe-network
 
