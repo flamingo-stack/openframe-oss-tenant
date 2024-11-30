@@ -6,6 +6,9 @@ spring:
           issuer-uri: http://localhost:8080/auth/realms/openframe
           jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
 
+loki:
+  url: http://localhost:3100/loki/api/v1/push
+
 logging:
   level:
     com.openframe: DEBUG

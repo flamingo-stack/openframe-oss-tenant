@@ -6,6 +6,9 @@ spring:
           issuer-uri: ${AUTH_ISSUER_URI}
           jwk-set-uri: ${AUTH_JWK_URI}
 
+loki:
+  url: http://openframe-loki:3100/loki/api/v1/push
+
 logging:
   level:
     root: INFO

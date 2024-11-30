@@ -29,9 +29,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: openframe-kafka:9092
     networks:
       - openframe-network
 
