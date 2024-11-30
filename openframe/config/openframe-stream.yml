@@ -3,7 +3,7 @@ server:
 
 spring:
   kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:openframe-kafka:9092}
+    bootstrap-servers: openframe-kafka:9092
     consumer:
       group-id: event-processor
       auto-offset-reset: earliest
@@ -27,4 +27,4 @@ spring:
 
 pinot:
   broker:
-    url: ${PINOT_BROKER_URL:http://openframe-pinot-broker:8099} 
+    url: http://openframe-pinot-broker:8099
