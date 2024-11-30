@@ -34,7 +34,9 @@ management:
     metrics:
       export:
         enabled: true
-log:
-  path: logs
+
 logging:
   config: classpath:logging/shared-logback-spring.xml
+
+log:
+  path: logs

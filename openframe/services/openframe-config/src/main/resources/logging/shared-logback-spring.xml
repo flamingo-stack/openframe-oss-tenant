@@ -5,6 +5,7 @@
     <springProperty scope="context" name="LOKI_ADDRESS" source="loki.url" defaultValue="http://localhost:3100"/>
     <property name="SPRING_CONTAINER_IP" value="${CONTAINER_IP:-localhost}" />
     <property name="LOG_PATH" value="${log.path:logs}" />
+    <property name="LOG_INCLUDE" value="${log.include:classpath:logging/shared-logback-includes.xml}" />
 
     <!-- Console Appender -->
     <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
@@ -19,5 +20,5 @@
     </root>
 
     <!-- Include the shared complex configuration -->
-    <include optional="false" resource="/logging/shared-logback-includes.xml"/>
+    <include optional="false" resource="logging/shared-logback-includes.xml"/>
 </configuration> 
