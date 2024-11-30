@@ -18,5 +18,5 @@
     </root>
 
     <!-- Include the shared complex configuration -->
-    <include optional="true" resource="/shared-logback-includes.xml"/>
+    <include optional="true" resource="/xml/shared-logback-includes.xml"/>
 </configuration> 
