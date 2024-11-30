@@ -14,6 +14,9 @@ spring:
           username: ${GITHUB_USERNAME:michaelassraf}
           password: ${GITHUB_TOKEN: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}
           clone-on-start: true
+          searchPaths:
+            - openframe/config
+            - openframe/config/shared
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration

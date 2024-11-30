@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Include shared configuration from config server -->
-    <include resource="optional:configserver:shared-logback-spring.xml"/>
+    <include resource="optional:configserver:{spring.application.name}/shared-logback-spring.xml"/>
     
     <!-- Project-specific overrides can go here if needed -->
 </configuration>
