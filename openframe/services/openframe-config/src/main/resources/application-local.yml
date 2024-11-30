@@ -1,2 +1,5 @@
 loki:
   url: http://localhost:3100/loki/api/v1/push
+
+log:
+  config-server-url: http://localhost:8888/logging/shared-logback-spring.xml
