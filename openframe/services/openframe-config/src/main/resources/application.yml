@@ -36,3 +36,5 @@ management:
         enabled: true
 log:
   path: logs
+logging:
+  config: classpath:logging/shared-logback-spring.xml
