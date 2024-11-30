@@ -1,11 +1,12 @@
 spring:
   application:
-    name: openframe-stream  # This name should match the config file name in the config repo
+    name: openframe-stream
   config:
     import: configserver:${CONFIG_SERVER_URL:http://openframe-config-server:8888}
   profiles:
     group:
       local: local-config
+
 ---
 spring:
   config:
