@@ -14,4 +14,4 @@ logging:
     root: INFO
     com.openframe: DEBUG
     org.springframework: INFO 
-  config: http://localhost:8888/logging/shared-logback-spring.xml
+  config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
