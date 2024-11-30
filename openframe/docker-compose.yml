@@ -119,6 +119,7 @@ services:
     container_name: openframe-kafka
     ports:
       - "9092:9092"
+      - "29092:29092"
       - "9308:9308"
     volumes:
       - kafka_logs:/var/log/kafka
