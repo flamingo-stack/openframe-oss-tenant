@@ -4,6 +4,6 @@ server:
 spring:
   data:
     mongodb:
-      uri: mongodb://openframe:password123456789@$mongodb:27017/openframe
+      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe
   cassandra:
-    contact-points: localhost
+    contact-points: openframe-cassandra
