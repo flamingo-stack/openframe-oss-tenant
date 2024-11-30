@@ -16,7 +16,7 @@ spring:
 spring:
   config:
     activate:
-      on-profile: default
+      on-profile: docker
     import: "optional:configserver:http://openframe-config-server:8888"
   cloud:
     config:
