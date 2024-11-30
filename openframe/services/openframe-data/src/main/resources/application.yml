@@ -1,14 +1,24 @@
 spring:
   application:
     name: openframe-data  # This name should match the config file name in the config repo
-  config:
-    import: configserver:${CONFIG_SERVER_URL:http://openframe-config-server:8888}
-  profiles:
-    group:
-      local: local-config
 ---
 spring:
   config:
     activate:
-      on-profile: local-config
+      on-profile: local
     import: "optional:configserver:http://localhost:8888"
+  cloud:
+    config:
+      fail-fast: true
+      label: main
+
+---
+spring:
+  config:
+    activate:
+      on-profile: default
+    import: "optional:configserver:http://openframe-config-server:8888"
+  cloud:
+    config:
+      fail-fast: true
+      label: main

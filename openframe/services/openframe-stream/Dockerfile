@@ -7,4 +7,4 @@ COPY target/*.jar app.jar
 RUN apk add --no-cache iputils bind-tools netcat-openbsd
 
 EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "export CONTAINER_IP=$(hostname -i) && java -jar app.jar --spring.profiles.active=docker"]
