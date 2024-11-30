@@ -12,6 +12,6 @@ loki:
 logging:
   level:
     root: INFO
-    com.openframe: DEBUG
+    com.openframe: INFO
     org.springframework: INFO 
   config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
