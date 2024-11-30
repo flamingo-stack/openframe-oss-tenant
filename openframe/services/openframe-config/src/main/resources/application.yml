@@ -15,12 +15,7 @@ spring:
           clone-on-start: true
           searchPaths:
             - openframe/config
-            - openframe/config/shared
           default-label: ${CONFIG_GIT_BRANCH:main}
-        native:
-          search-locations:
-            - classpath:/config
-            - classpath:/shared
 
 management:
   endpoints:

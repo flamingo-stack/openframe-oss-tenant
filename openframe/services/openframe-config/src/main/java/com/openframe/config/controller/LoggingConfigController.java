@@ -2,6 +2,7 @@ package com.openframe.config.controller;
 
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class LoggingConfigController {
     public ResponseEntity<String> getLoggingConfig(@PathVariable String filename) throws Exception {
         ClassPathResource resource = new ClassPathResource("logging/" + filename);
         String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+        content = StringUtils.replace(content, "logging/", "/logging/");
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(content);
