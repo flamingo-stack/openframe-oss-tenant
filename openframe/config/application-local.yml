@@ -13,3 +13,4 @@ logging:
   level:
     com.openframe: DEBUG
     org.springframework: DEBUG
+  config: http://localhost:8888/openframe-config/shared/logback-spring.xml

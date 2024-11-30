@@ -9,18 +9,18 @@ spring:
       server:
         git:
           uri: https://github.com/OpenFrame-AI/openframe-backend
-          default-label: main
           search-paths: openframe/config
           username: ${GITHUB_USERNAME:michaelassraf}
           password: ${GITHUB_TOKEN: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}
           clone-on-start: true
           searchPaths:
             - openframe/config
-            - openframe/config/shared-logging
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-      - org.springframework.boot.actuator.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+            - openframe/config/shared
+          default-label: ${CONFIG_GIT_BRANCH:main}
+        native:
+          search-locations:
+            - classpath:/config
+            - classpath:/shared
 
 management:
   endpoints:

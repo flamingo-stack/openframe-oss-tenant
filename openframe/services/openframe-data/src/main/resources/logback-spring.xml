@@ -2,11 +2,11 @@
 <configuration>
     <!-- Include shared configuration from config server -->
     <springProfile name="local">
-        <include resource="optional:http://localhost:8888/xml/shared-logback-spring.xml"/>
+        <include resource="optional:http://localhost:8888/logging/shared-logback-spring.xml"/>
     </springProfile>
     
     <springProfile name="docker">
-        <include resource="optional:http://openframe-config-server:8888/xml/shared-logback-spring.xml"/>
+        <include resource="optional:http://openframe-config-server:8888/logging/shared-logback-spring.xml"/>
     </springProfile>
     
     <!-- Project-specific overrides can go here if needed -->

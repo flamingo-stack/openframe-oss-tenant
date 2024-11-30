@@ -2,9 +2,9 @@
 <included>
     <!-- Rolling File Appender (Text Format) -->
     <appender name="RollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/${SPRING_APP_NAME}.log</file>
+        <file>${LOG_PATH}/${SPRING_APP_NAME}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/${SPRING_APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/${SPRING_APP_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <totalSizeCap>50MB</totalSizeCap>
             <maxHistory>30</maxHistory>
@@ -16,9 +16,9 @@
 
     <!-- Rolling File Appender (JSON Format) -->
     <appender name="JsonRollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/${SPRING_APP_NAME}.json</file>
+        <file>${LOG_PATH}/${SPRING_APP_NAME}.json</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/${SPRING_APP_NAME}.%d{yyyy-MM-dd}.%i.json</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/${SPRING_APP_NAME}.%d{yyyy-MM-dd}.%i.json</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <totalSizeCap>50MB</totalSizeCap>
             <maxHistory>30</maxHistory>
@@ -26,7 +26,7 @@
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
                 <timestamp />
-                <level />
+                <logLevel />
                 <threadName />
                 <loggerName />
                 <message />
@@ -49,7 +49,7 @@
         </format>
     </appender>
 
-    <!-- Add additional appenders to root after properties are loaded -->
+    <!-- Add additional appenders to root -->
     <root>
         <appender-ref ref="RollingFileAppender" />
         <appender-ref ref="JsonRollingFileAppender" />
