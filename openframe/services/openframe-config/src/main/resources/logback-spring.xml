@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true">
-
-    <springProperty name="SPRING_APP_NAME" source="spring.application.name"/>
+    <!-- Wait for Spring properties to be available -->
+    <springProperty scope="context" name="SPRING_APP_NAME" source="spring.application.name"/>
+    <springProperty scope="context" name="LOKI_ADDRESS" source="loki.url" defaultValue="http://localhost:3100"/>
     <property name="SPRING_CONTAINER_IP" value="${CONTAINER_IP:-localhost}" />
+    <property name="LOG_PATH" value="logs" />
 
     <!-- Console Appender -->
     <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
@@ -11,61 +13,13 @@
         </encoder>
     </appender>
 
-    <!-- Rolling File Appender (Text Format) -->
-    <appender name="RollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/app.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <totalSizeCap>50MB</totalSizeCap>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
-    <!-- Rolling File Appender (JSON Format) -->
-    <appender name="JsonRollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/app.json</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.json</fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <totalSizeCap>50MB</totalSizeCap>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
-            <providers>
-                <timestamp />
-                <level />
-                <threadName />
-                <loggerName />
-                <message />
-                <mdc />
-                <stackTrace />
-            </providers>
-        </encoder>
-    </appender>
-
-    <!-- Loki Appender -->
-    <appender name="LokiRemoteAppender" class="com.github.loki4j.logback.Loki4jAppender">
-        <http>
-            <url>${LOKI_ADDRESS}</url>
-        </http>
-        <format>
-            <message class="com.github.loki4j.logback.JsonLayout" />
-            <label>
-                <pattern>category=microservices,app=${SPRING_APP_NAME},host=${SPRING_CONTAINER_IP}</pattern>
-            </label>
-        </format>
-    </appender>
-
-    <!-- Loggers -->
+    <!-- Base root with console only -->
     <root level="info">
         <appender-ref ref="ConsoleAppender" />
-        <appender-ref ref="RollingFileAppender" />
-        <appender-ref ref="JsonRollingFileAppender" />
-        <appender-ref ref="LokiRemoteAppender" />
     </root>
 
-</configuration>
+    <!-- Include the shared complex configuration -->
+    <springProfile name="!test">
+        <include optional="true" resource="logback-includes.xml"/>
+    </springProfile>
+</configuration> 
