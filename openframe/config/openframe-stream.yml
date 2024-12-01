@@ -23,4 +23,7 @@ spring:
       missing-topics-fatal: false
       type: single
       ack-mode: MANUAL_IMMEDIATE
-  
+      
+security:
+  jwt:
+    enabled: false
