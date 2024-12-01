@@ -1,9 +1,4 @@
 # Common properties shared across all services
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
-
 management:
   endpoints:
     web:
@@ -32,6 +27,9 @@ management:
         "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
   data:
     mongodb:
       auto-index-creation: true
