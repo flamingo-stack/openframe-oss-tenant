@@ -1,3 +1,15 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/openframe
+          jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 loki:
   url: http://localhost:3100/loki/api/v1/push
 
@@ -7,8 +19,4 @@ logging:
     com.openframe: INFO
     org.springframework: INFO 
   config: http://localhost:8888/logging/shared-logback-spring.xml
-spring:
-  data:
-    redis:
-      host: localhost
-      port: 6379
+  
