@@ -2,17 +2,6 @@
 spring:
   kafka:
     bootstrap-servers: localhost:9092
-  data:
-    mongodb:
-      uri: mongodb://openframe:password123456789@localhost:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
-    cassandra:
-      contact-points: localhost
-  redis:
-    host: localhost
-    port: 6379
-  cloud:
-    config:
-      fail-fast: false
 
 # Pinot connection details
 pinot:

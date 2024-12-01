@@ -1,16 +1,4 @@
-# Stream service specific configuration for local environment
-server:
-  port: 8082
-
+# Stream service local environment configuration
 spring:
   kafka:
     bootstrap-servers: localhost:9092
-    consumer:
-      bootstrap-servers: localhost:9092
-  data:
-    mongodb:
-      uri: mongodb://openframe:password123456789@localhost:27017/openframe
-
-pinot:
-  broker:
-    url: http://localhost:8099

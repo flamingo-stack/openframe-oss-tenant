@@ -42,15 +42,6 @@ datastax:
     config-loader:
       debug: true
 
-# Docker security configuration
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/auth/realms/openframe
-          jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
-
 # Docker logging configuration
 logging:
   config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
