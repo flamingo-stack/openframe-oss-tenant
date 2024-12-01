@@ -7,6 +7,7 @@ spring:
     # Docker Cassandra connection
     cassandra:
       contact-points: openframe-cassandra
+      local-datacenter: datacenter1
     # Docker Redis connection (only used by API)
     redis:
       host: openframe-redis
