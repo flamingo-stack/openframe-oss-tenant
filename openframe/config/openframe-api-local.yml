@@ -10,7 +10,9 @@ spring:
     cassandra:
       contact-points: localhost
   redis:
-    enabled: false
+    enabled: true
+    host: localhost
+    port: 6379
   cloud:
     config:
       fail-fast: false

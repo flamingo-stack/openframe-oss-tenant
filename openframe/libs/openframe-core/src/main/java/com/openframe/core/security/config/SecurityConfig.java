@@ -30,7 +30,8 @@ public class SecurityConfig {
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/**", "/api/core/health", "/logging/**").permitAll()
+                .requestMatchers("/actuator/**", "/health", "/health/**", "/logging/**").permitAll()
+                .requestMatchers("/api/core/health").permitAll()
                 .anyRequest().authenticated());
             
         if (jwtSecret != null) {
