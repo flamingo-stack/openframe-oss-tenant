@@ -9,6 +9,42 @@ spring:
     redis:
       host: openframe-redis
       port: 6379
+    cassandra:
+      # Add advanced driver options for debugging
+      advanced:
+        config-reload-interval: 0
+        connection:
+          warn-on-init-error: true
+          pool:
+            local:
+              debug:
+                connection-errors: true
+      # Enable driver metrics
+      metrics:
+        enabled: true
+        session-enabled: true
+
+datastax:
+  java-driver:
+    advanced:
+      connection:
+        pool:
+          local:
+            size: 1
+    basic:
+      request:
+        timeout: 10s
+      session-keyspace: openframe
+    advanced.metrics:
+      session:
+        enabled: true
+        cql-requests:
+          enabled: true
+      node:
+        enabled: true
+    # Enable driver configuration debugging
+    config-loader:
+      debug: true
 
 loki:
   url: http://openframe-loki:3100/loki/api/v1/push
@@ -21,5 +57,9 @@ logging:
     com.datastax.oss.driver: DEBUG
     com.datastax.driver: DEBUG
     org.springframework.data.cassandra: DEBUG
+    # Add more specific driver logging
+    com.datastax.oss.driver.internal.core.session: TRACE
+    com.datastax.oss.driver.internal.core.pool: TRACE
+    com.datastax.oss.driver.internal.core.config: DEBUG
   config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
   
