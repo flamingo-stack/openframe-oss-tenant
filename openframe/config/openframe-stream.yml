@@ -6,6 +6,9 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  redis:
+    enabled: false
   kafka:
     consumer:
       group-id: event-processor

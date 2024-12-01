@@ -39,6 +39,23 @@ services:
     networks:
       - openframe-network
 
+  # Redis
+  redis:
+    image: redis:7.2-alpine
+    container_name: openframe-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   # Cassandra
   cassandra:
     build:
@@ -389,3 +406,4 @@ volumes:
   pinot_broker_data:
   pinot_server_data:
   pinot_controller_data:
+  redis_data:

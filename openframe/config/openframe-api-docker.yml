@@ -9,6 +9,9 @@ spring:
       uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe
     cassandra:
       contact-points: openframe-cassandra
+  redis:
+    host: openframe-redis
+    port: 6379
 
 security:
   cors:

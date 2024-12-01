@@ -1,6 +1,15 @@
 spring:
   application:
     name: openframe-stream
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+
+security:
+  jwt:
+    enabled: false
+
 ---
 spring:
   config:

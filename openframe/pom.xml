@@ -34,6 +34,7 @@
         <loki.version>1.5.2</loki.version>
         <slf4j.api.version>2.0.7</slf4j.api.version>
         <slf4j.impl.version>2.21.1</slf4j.impl.version>
+        <opensaml.version>4.3.0</opensaml.version>
     </properties>
 
     <modules>
@@ -297,20 +298,8 @@
                 <version>${logback.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.slf4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-log4j2</artifactId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -322,20 +311,8 @@
                 <version>${logback.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.slf4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-log4j2</artifactId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -347,20 +324,8 @@
                 <version>${logstash.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.slf4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-log4j2</artifactId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -371,24 +336,28 @@
                 <version>${loki.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.slf4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-starter-log4j2</artifactId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
 
+            <!-- OpenSAML Dependencies -->
+            <dependency>
+                <groupId>org.opensaml</groupId>
+                <artifactId>opensaml-core</artifactId>
+                <version>${opensaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opensaml</groupId>
+                <artifactId>opensaml-saml-api</artifactId>
+                <version>${opensaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opensaml</groupId>
+                <artifactId>opensaml-saml-impl</artifactId>
+                <version>${opensaml.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -730,6 +699,11 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <id>shibboleth</id>
+            <name>Shibboleth Repository</name>
+            <url>https://build.shibboleth.net/nexus/content/repositories/releases/</url>
         </repository>
     </repositories>
 </project>
