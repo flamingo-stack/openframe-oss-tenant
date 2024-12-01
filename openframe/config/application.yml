@@ -25,7 +25,9 @@ spring:
     mongodb:
       auto-index-creation: true
     cassandra:
+      enabled: true  # Enable Cassandra for stream service
       keyspace-name: openframe_events
+      keyspace: openframe
       port: 9042
       local-datacenter: datacenter1
       schema-action: CREATE_IF_NOT_EXISTS
