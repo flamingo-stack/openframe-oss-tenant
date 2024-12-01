@@ -18,6 +18,7 @@ logging:
     org.springframework: DEBUG
     org.springframework.boot.autoconfigure: DEBUG
     org.springframework.security: DEBUG
+    org.mongodb.driver: DEBUG 
 
 debug: true
 

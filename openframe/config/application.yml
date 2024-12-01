@@ -30,8 +30,11 @@ spring:
   data:
     mongodb:
       auto-index-creation: true
+      connect-timeout: 10000
+      socket-timeout: 10000
+      max-wait-time: 10000
+      server-selection-timeout: 10000
     cassandra:
-      enabled: true  # Enable Cassandra for stream service
       keyspace-name: openframe_events
       keyspace: openframe
       port: 9042
