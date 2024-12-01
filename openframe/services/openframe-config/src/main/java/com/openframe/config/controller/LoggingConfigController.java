@@ -22,14 +22,14 @@ public class LoggingConfigController {
     public ResponseEntity<String> getLoggingConfig(@PathVariable String filename, HttpServletRequest request) throws Exception {
         ClassPathResource resource = new ClassPathResource("logging/" + filename);
         String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-        
+
         // Build the base URL from the request
         String serverUrl = request.getScheme() + "://" + request.getServerName();
         if (request.getServerPort() != 80 && request.getServerPort() != 443) {
             serverUrl += ":" + request.getServerPort();
         }
-        
-        content = StringUtils.replace(content, "logging/", serverUrl + "/logging/");
+
+        content = StringUtils.replace(content, "\"logging/", "\"" + serverUrl + "/logging/");
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(content);
