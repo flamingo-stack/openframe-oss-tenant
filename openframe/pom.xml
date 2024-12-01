@@ -358,6 +358,13 @@
                 <artifactId>opensaml-saml-impl</artifactId>
                 <version>${opensaml.version}</version>
             </dependency>
+
+            <!-- Monitoring -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

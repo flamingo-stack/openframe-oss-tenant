@@ -11,9 +11,18 @@ management:
       show-details: always
     prometheus:
       enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+      sla:
+        "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
 spring:
   data:
