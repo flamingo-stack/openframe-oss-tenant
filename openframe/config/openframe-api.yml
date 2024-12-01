@@ -11,6 +11,16 @@ spring:
     timeout: 2000
     connect-timeout: 2000
 
+logging:
+  level:
+    root: INFO
+    com.openframe: DEBUG
+    org.springframework: DEBUG
+    org.springframework.boot.autoconfigure: DEBUG
+    org.springframework.security: DEBUG
+
+debug: true
+
 dgs:
   graphql:
     path: /graphql
@@ -29,8 +39,6 @@ security:
     exposed-headers: Authorization
     allow-credentials: true
     max-age: 3600 
-
-security:
   jwt:
     enabled: true
 

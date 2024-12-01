@@ -12,6 +12,15 @@ spring:
   redis:
     host: localhost
     port: 6379
+  cloud:
+    config:
+      fail-fast: false
+
+logging:
+  level:
+    root: DEBUG
+    com.openframe: DEBUG
+    org.springframework: DEBUG
 
 security:
   cors:

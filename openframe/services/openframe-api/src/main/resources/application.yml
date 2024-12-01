@@ -1,6 +1,7 @@
 spring:
   application:
     name: openframe-api
+
 ---
 spring:
   config:
