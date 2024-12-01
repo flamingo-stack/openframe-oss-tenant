@@ -10,17 +10,26 @@ spring:
     enabled: true
     timeout: 2000
     connect-timeout: 2000
+  main:
+    lazy-initialization: false
+    allow-bean-definition-overriding: true
 
 logging:
   level:
     root: INFO
     com.openframe: DEBUG
     org.springframework: DEBUG
-    org.springframework.boot.autoconfigure: DEBUG
+    org.springframework.boot.autoconfigure: TRACE
     org.springframework.security: DEBUG
-    org.mongodb.driver: DEBUG 
+    org.springframework.data: DEBUG
+    org.springframework.web: DEBUG
+    org.mongodb.driver: DEBUG
+    org.apache.kafka: DEBUG
+    org.springframework.kafka: DEBUG
+    org.springframework.security.oauth2: TRACE
 
 debug: true
+trace: true
 
 dgs:
   graphql:
