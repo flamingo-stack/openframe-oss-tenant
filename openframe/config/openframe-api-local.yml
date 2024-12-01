@@ -1,6 +1,4 @@
-server:
-  port: 8090
-
+# API service local environment configuration
 spring:
   kafka:
     bootstrap-servers: localhost:9092
@@ -16,6 +14,7 @@ spring:
     config:
       fail-fast: false
 
+# Pinot connection details
 pinot:
   controller:
     url: http://localhost:9000

@@ -1,6 +1,7 @@
 server:
   port: 8090
 
+# API service common configuration
 spring:
   redis:
     enabled: true
