@@ -16,12 +16,6 @@ spring:
     config:
       fail-fast: false
 
-logging:
-  level:
-    root: DEBUG
-    com.openframe: DEBUG
-    org.springframework: DEBUG
-
 security:
   cors:
     allowed-origins: http://localhost:3000

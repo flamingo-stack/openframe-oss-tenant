@@ -4,6 +4,9 @@ management:
     web:
       exposure:
         include: health,metrics,prometheus
+    jmx:
+      exposure:
+        exclude: "*"
   endpoint:
     health:
       probes:
@@ -13,6 +16,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+
+jmx:
+  enabled: false
 
 logging:
   pattern:
