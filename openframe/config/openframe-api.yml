@@ -58,4 +58,13 @@ dgs:
 # Pinot configuration
 pinot:
   enabled: true
+  client:
+    controller:
+      timeoutMs: 60000
+    broker:
+      timeoutMs: 60000
+    connection:
+      timeoutMs: 60000
+    query:
+      timeoutMs: 60000
 

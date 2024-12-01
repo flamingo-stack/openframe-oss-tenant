@@ -8,6 +8,7 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.apache.pinot.client.PinotClientAutoConfiguration
+      - org.apache.pinot.spring.boot.PinotAutoConfiguration
   redis:
     enabled: false
   kafka:
