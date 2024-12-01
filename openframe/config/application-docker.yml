@@ -3,8 +3,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AUTH_ISSUER_URI}
-          jwk-set-uri: ${AUTH_JWK_URI}
+          issuer-uri: http://localhost:8080/auth/realms/openframe
+          jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
 
 loki:
   url: http://openframe-loki:3100/loki/api/v1/push

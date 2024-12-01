@@ -2,6 +2,10 @@ server:
   port: 8082
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
   kafka:
     consumer:
       group-id: event-processor
@@ -23,7 +27,7 @@ spring:
       missing-topics-fatal: false
       type: single
       ack-mode: MANUAL_IMMEDIATE
-      
+
 security:
   jwt:
     enabled: false
