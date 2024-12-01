@@ -15,6 +15,9 @@ spring:
     # Common Cassandra configuration
     cassandra:
       port: 9042
+      local-datacenter: datacenter1
+      keyspace-name: openframe_events
+      keyspace: openframe
       schema-action: CREATE_IF_NOT_EXISTS
       request:
         timeout: 20s
@@ -23,6 +26,33 @@ spring:
         init-query-timeout: 20s
       controlconnection:
         timeout: 20s
+
+# DataStax driver configuration
+datastax:
+  java-driver:
+    basic:
+      request:
+        timeout: 10s
+      session-keyspace: openframe
+      load-balancing-policy:
+        local-datacenter: datacenter1
+    advanced:
+      connection:
+        pool:
+          local:
+            size: 1
+      metrics:
+        session:
+          enabled: true
+        node:
+          enabled: true
+      control-connection:
+        schema-agreement:
+          timeout: 20s
+      protocol:
+        version: V4
+    config-loader:
+      debug: true
 
 # Common monitoring configuration
 management:

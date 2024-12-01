@@ -7,40 +7,10 @@ spring:
     # Docker Cassandra connection
     cassandra:
       contact-points: openframe-cassandra
-      local-datacenter: datacenter1
-      keyspace-name: openframe_events
-      keyspace: openframe
     # Docker Redis connection (only used by API)
     redis:
       host: openframe-redis
       port: 6379
-
-# Docker DataStax driver configuration
-datastax:
-  java-driver:
-    basic:
-      request:
-        timeout: 10s
-      session-keyspace: openframe
-      load-balancing-policy:
-        local-datacenter: datacenter1
-    advanced:
-      connection:
-        pool:
-          local:
-            size: 1
-      metrics:
-        session:
-          enabled: true
-        node:
-          enabled: true
-      control-connection:
-        schema-agreement:
-          timeout: 20s
-      protocol:
-        version: V4
-    config-loader:
-      debug: true
 
 # Docker logging configuration
 logging:
