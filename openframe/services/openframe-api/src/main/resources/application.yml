@@ -1,23 +1,17 @@
 spring:
   application:
     name: openframe-api
-  config:
-    import: configserver:http://localhost:8888
-  cloud:
-    config:
-      fail-fast: false
-      profile: local
-      label: main
 
 ---
 spring:
   config:
     activate:
       on-profile: local
+    import: "optional:configserver:http://localhost:8888"
 
 ---
 spring:
   config:
     activate:
       on-profile: docker
-    import: configserver:http://openframe-config-server:8888
+    import: "optional:configserver:http://openframe-config-server:8888"
