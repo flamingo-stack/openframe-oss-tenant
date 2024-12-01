@@ -23,19 +23,4 @@ spring:
       missing-topics-fatal: false
       type: single
       ack-mode: MANUAL_IMMEDIATE
-    spring:
-  data:
-    mongodb:
-      auto-index-creation: true
-    cassandra:
-      keyspace-name: openframe_events
-      port: 9042
-      local-datacenter: datacenter1
-      schema-action: CREATE_IF_NOT_EXISTS
-      request:
-        timeout: 20s
-      connection:
-        connect-timeout: 20s
-        init-query-timeout: 20s
-      controlconnection:
-        timeout: 20s 
+  
