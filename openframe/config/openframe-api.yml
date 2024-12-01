@@ -61,8 +61,14 @@ pinot:
   client:
     controller:
       timeoutMs: 60000
+      url: ${pinot.controller.url}
+      host: ${pinot.client.controller.host}
+      port: ${pinot.client.controller.port}
     broker:
       timeoutMs: 60000
+      url: ${pinot.broker.url}
+      host: ${pinot.client.broker.host}
+      port: ${pinot.client.broker.port}
     connection:
       timeoutMs: 60000
     query:
