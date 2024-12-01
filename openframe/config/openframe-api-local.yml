@@ -3,15 +3,14 @@ server:
 
 spring:
   kafka:
-    bootstrap-servers: openframe-kafka:29092
+    bootstrap-servers: localhost:29092
   data:
     mongodb:
-      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+      uri: mongodb://openframe:password123456789@localhost:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
     cassandra:
-      contact-points: openframe-cassandra
+      contact-points: localhost
   redis:
-    enabled: true
-    host: openframe-redis
+    host: localhost
     port: 6379
   cloud:
     config:
@@ -19,7 +18,7 @@ spring:
 
 pinot:
   controller:
-    url: http://openframe-pinot-controller:9000
+    url: http://localhost:9000
   broker:
-    url: http://openframe-pinot-broker:8099
+    url: http://localhost:8099
 

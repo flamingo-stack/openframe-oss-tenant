@@ -8,6 +8,11 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   redis:
     enabled: true
+  data:
+    cassandra:
+      enabled: true
+    mongodb:
+      enabled: true
     
   main:
     allow-bean-definition-overriding: true
