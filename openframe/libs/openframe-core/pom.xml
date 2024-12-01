@@ -62,7 +62,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
         <!-- Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -152,7 +152,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
         <!-- Data -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -176,7 +176,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
         <!-- Redis -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -199,6 +198,11 @@
                     <artifactId>spring-boot-starter-log4j2</artifactId>
                 </exclusion>
             </exclusions>
+
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
         </dependency>
 
         <!-- WebSocket -->
@@ -224,7 +228,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
         <!-- Utilities -->
         <dependency>
             <groupId>org.projectlombok</groupId>

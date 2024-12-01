@@ -10,6 +10,14 @@ spring:
     enabled: true
     timeout: 2000
     connect-timeout: 2000
+    lettuce:
+      shutdown-timeout: 2000ms
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+    client-type: lettuce
   main:
     lazy-initialization: false
     allow-bean-definition-overriding: true
@@ -27,6 +35,8 @@ logging:
     org.apache.kafka: DEBUG
     org.springframework.kafka: DEBUG
     org.springframework.security.oauth2: TRACE
+    org.springframework.data.redis: DEBUG
+    io.lettuce.core: DEBUG
 
 debug: true
 trace: true

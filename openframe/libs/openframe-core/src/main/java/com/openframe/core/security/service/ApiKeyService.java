@@ -1,9 +1,11 @@
 package com.openframe.core.security.service;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(name = "spring.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class ApiKeyService {
     
     private final RedisTemplate<String, String> redisTemplate;
