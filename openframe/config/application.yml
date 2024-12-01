@@ -26,10 +26,16 @@ management:
       sla:
         "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
+security:
+  jwt:
+    enabled: false
+
 spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
   data:
     mongodb:
       auto-index-creation: true
@@ -62,3 +68,6 @@ spring:
           min-idle: 0
           max-wait: 1000ms
       client-type: lettuce
+
+
+      
