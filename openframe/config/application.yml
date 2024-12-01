@@ -11,7 +11,7 @@ management:
       show-details: always
     prometheus:
       enabled: true
-    metrics:
+    metrics: 
       enabled: true
   prometheus:
     metrics:
