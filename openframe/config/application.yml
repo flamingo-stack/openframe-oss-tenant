@@ -1,5 +1,9 @@
 # Common properties shared across all services
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
   data:
     # Common MongoDB configuration
     mongodb:
@@ -11,9 +15,6 @@ spring:
     # Common Cassandra configuration
     cassandra:
       port: 9042
-      local-datacenter: datacenter1
-      keyspace-name: openframe_events
-      keyspace: openframe
       schema-action: CREATE_IF_NOT_EXISTS
       request:
         timeout: 20s
@@ -22,12 +23,8 @@ spring:
         init-query-timeout: 20s
       controlconnection:
         timeout: 20s
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
 
-# Monitoring configuration
+# Common monitoring configuration
 management:
   endpoints:
     web:
@@ -55,41 +52,7 @@ management:
       sla:
         "[http.server.requests]": [10ms, 50ms, 100ms, 500ms]
 
-# DataStax driver configuration
-datastax:
-  java-driver:
-    advanced:
-      connection:
-        pool:
-          local:
-            size: 1
-    basic:
-      request:
-        timeout: 10s
-      session-keyspace: openframe
-    advanced.metrics:
-      session:
-        enabled: true
-        cql-requests:
-          enabled: true
-      node:
-        enabled: true
-    config-loader:
-      debug: true
-
-# Default logging configuration
-logging:
-  level:
-    root: INFO
-    com.openframe: INFO
-    org.springframework: INFO
-    com.datastax.oss.driver: DEBUG
-    com.datastax.driver: DEBUG
-    org.springframework.data.cassandra: DEBUG
-    com.datastax.oss.driver.internal.core.session: TRACE
-    com.datastax.oss.driver.internal.core.pool: TRACE
-    com.datastax.oss.driver.internal.core.config: DEBUG
-
+# Common security configuration
 security:
   jwt:
     enabled: false

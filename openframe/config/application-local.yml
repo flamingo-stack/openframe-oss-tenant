@@ -7,11 +7,43 @@ spring:
     # Local Cassandra connection
     cassandra:
       contact-points: localhost
+      local-datacenter: datacenter1
+      keyspace-name: openframe_events
+      keyspace: openframe
     # Local Redis connection (only used by API)
     redis:
       host: localhost
       port: 6379
 
+# Local DataStax driver configuration
+datastax:
+  java-driver:
+    basic:
+      request:
+        timeout: 10s
+      session-keyspace: openframe
+      load-balancing-policy:
+        local-datacenter: datacenter1
+    advanced:
+      connection:
+        pool:
+          local:
+            size: 1
+      metrics:
+        session:
+          enabled: true
+        node:
+          enabled: true
+      control-connection:
+        schema-agreement:
+          timeout: 20s
+      protocol:
+        version: V4
+    config-loader:
+      debug: true
+
+# Local security configuration
+spring:
   security:
     oauth2:
       resourceserver:
@@ -22,6 +54,16 @@ spring:
 # Local logging configuration
 logging:
   config: http://localhost:8888/logging/shared-logback-spring.xml
+  level:
+    root: INFO
+    com.openframe: INFO
+    org.springframework: INFO
+    com.datastax.oss.driver: DEBUG
+    com.datastax.driver: DEBUG
+    org.springframework.data.cassandra: DEBUG
+    com.datastax.oss.driver.internal.core.session: TRACE
+    com.datastax.oss.driver.internal.core.pool: TRACE
+    com.datastax.oss.driver.internal.core.config: DEBUG
 
 # Local monitoring endpoints
 loki:
