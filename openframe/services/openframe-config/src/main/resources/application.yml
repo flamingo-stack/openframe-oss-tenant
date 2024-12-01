@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: config-server
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+  mvc:
+    problemdetails:
+      enabled: true
   cloud:
     config:
       server:
@@ -21,14 +30,31 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,prometheus
-  metrics:
-    tags:
-      application: ${spring.application.name}
+        include: '*'
+    enabled-by-default: true
+  endpoint:
+    health:
+      enabled: true
+      show-details: always
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
   prometheus:
     metrics:
       export:
         enabled: true
+        descriptions: true
+  metrics:
+    enable:
+      all: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+      sla:
+        "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
 logging:
   config: classpath:logging/shared-logback-spring.xml

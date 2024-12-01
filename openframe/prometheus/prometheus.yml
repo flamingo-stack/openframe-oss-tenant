@@ -9,14 +9,14 @@ scrape_configs:
       - targets: ['openframe-api:8090']
     scrape_interval: 5s
 
-  - job_name: 'openframe-config'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['openframe-config-server:8888']
-    scrape_interval: 5s
-
   - job_name: 'openframe-stream'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['openframe-stream:8070']
+    scrape_interval: 5s
+
+  - job_name: 'openframe-config'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['openframe-config-server:8888']
     scrape_interval: 5s

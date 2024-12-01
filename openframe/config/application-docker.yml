@@ -15,3 +15,8 @@ logging:
     com.openframe: INFO
     org.springframework: INFO 
   config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
+spring:
+  data:
+    redis:
+      host: openframe-redis
+      port: 6379

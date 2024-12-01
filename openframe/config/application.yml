@@ -1,4 +1,9 @@
 # Common properties shared across all services
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
+
 management:
   endpoints:
     web:
@@ -10,6 +15,8 @@ management:
       enabled: true
       show-details: always
     prometheus:
+      enabled: true
+    metrics:
       enabled: true
   prometheus:
     metrics:
@@ -45,3 +52,15 @@ spring:
         init-query-timeout: 20s
       controlconnection:
         timeout: 20s
+    redis:
+      timeout: 2000
+      connect-timeout: 2000
+      lettuce:
+        shutdown-timeout: 2000ms
+        pool:
+          enabled: true
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 1000ms
+      client-type: lettuce

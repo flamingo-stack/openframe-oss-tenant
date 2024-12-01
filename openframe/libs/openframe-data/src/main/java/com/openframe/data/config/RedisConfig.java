@@ -1,4 +1,4 @@
-package com.openframe.core.config;
+package com.openframe.data.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

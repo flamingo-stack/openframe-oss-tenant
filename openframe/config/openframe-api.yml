@@ -8,19 +8,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   redis:
     enabled: true
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    timeout: 2000
-    connect-timeout: 2000
-    lettuce:
-      shutdown-timeout: 2000ms
-      pool:
-        enabled: true
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: 1000ms
-    client-type: lettuce
+    
   main:
     allow-bean-definition-overriding: true
 
