@@ -14,6 +14,7 @@ spring:
       server-selection-timeout: 10000
     # Common Cassandra configuration
     cassandra:
+      enabled: true
       port: 9042
       local-datacenter: datacenter1
       keyspace-name: openframe_events
@@ -26,51 +27,6 @@ spring:
         init-query-timeout: 20s
       controlconnection:
         timeout: 20s
-
-# DataStax driver configuration
-datastax:
-  java-driver:
-    basic:
-      request:
-        timeout: 10s
-        consistency: LOCAL_QUORUM
-      session-keyspace: openframe
-      load-balancing-policy:
-        local-datacenter: datacenter1
-        filter:
-          class: TokenAwarePolicy
-    advanced:
-      connection:
-        init-query-timeout: 20s
-        set-keyspace-timeout: 20s
-        pool:
-          local:
-            size: 1
-      metrics:
-        session:
-          enabled: true
-          cql-requests:
-            enabled: true
-            highest-latency: 5s
-            refresh-interval: 5s
-        node:
-          enabled: true
-          cql-messages:
-            enabled: true
-      control-connection:
-        schema-agreement:
-          timeout: 20s
-        timeout: 20s
-      metadata:
-        schema:
-          enabled: true
-          refreshed-keyspaces: openframe
-      protocol:
-        version: V4
-      retry-policy:
-        class: DefaultRetryPolicy
-    config-loader:
-      debug: true
 
 # Common monitoring configuration
 management:

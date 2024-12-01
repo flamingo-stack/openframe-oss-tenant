@@ -4,7 +4,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.cassandra.config.AbstractCassandraConfiguration;
+import org.springframework.data.cassandra.config.CqlSessionFactoryBean;
 import org.springframework.data.cassandra.repository.config.EnableCassandraRepositories;
+
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "true", matchIfMissing = false)
@@ -22,5 +26,17 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
     @Override
     protected String getLocalDataCenter() {
         return localDatacenter;
+    }
+
+    @Override
+    public CqlSessionFactoryBean cassandraSession() {
+        CqlSessionFactoryBean bean = super.cassandraSession();
+        bean.setLocalDatacenter(localDatacenter);
+        bean.setSessionBuilderConfigurer(builder -> 
+            builder.withConfigLoader(DriverConfigLoader.programmaticBuilder()
+                .withString(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER, localDatacenter)
+                .build())
+        );
+        return bean;
     }
 }
