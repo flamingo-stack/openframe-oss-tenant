@@ -21,4 +21,3 @@ pinot:
     url: http://localhost:9000
   broker:
     url: http://localhost:8099
-

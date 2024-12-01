@@ -1,21 +1,9 @@
 server:
   port: 8090
-  
+
 spring:
   kafka:
-    bootstrap-servers: openframe-kafka:29092
-  data:
-    mongodb:
-      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
-    cassandra:
-      contact-points: openframe-cassandra
-  redis:
-    enabled: true
-    host: openframe-redis
-    port: 6379
-  cloud:
-    config:
-      fail-fast: false
+    bootstrap-servers: openframe-kafka:9092
 
 pinot:
   controller:

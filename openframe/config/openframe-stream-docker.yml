@@ -1,17 +1,4 @@
-server:
-  port: 8082
-
+# Stream service docker environment configuration
 spring:
   kafka:
-    bootstrap-servers: openframe-kafka:29092
-    consumer:
-      bootstrap-servers: openframe-kafka:29092
-    data:
-      mongodb:
-        uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe
-      cassandra:
-        contact-points: openframe-cassandra
-
-pinot:
-  broker:
-    url: http://openframe-pinot-broker:8099
+    bootstrap-servers: openframe-kafka:9092

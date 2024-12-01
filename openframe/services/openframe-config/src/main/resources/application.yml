@@ -4,9 +4,9 @@ server:
 spring:
   application:
     name: config-server
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
+  # autoconfigure:
+    # exclude:
+    #   - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
@@ -18,7 +18,6 @@ spring:
       server:
         git:
           uri: https://github.com/OpenFrame-AI/openframe-backend
-          search-paths: openframe/config
           username: ${GITHUB_USERNAME:michaelassraf}
           password: ${GITHUB_TOKEN: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}
           clone-on-start: true

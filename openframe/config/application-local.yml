@@ -1,21 +1,29 @@
+# Local environment specific configuration
 spring:
+  data:
+    # Local MongoDB connection
+    mongodb:
+      uri: mongodb://openframe:password123456789@localhost:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+    # Local Cassandra connection
+    cassandra:
+      contact-points: localhost
+    # Local Redis connection (only used by API)
+    redis:
+      host: localhost
+      port: 6379
+
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8080/auth/realms/openframe
           jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
-  data:
-    redis:
-      host: localhost
-      port: 6379
 
+# Local logging configuration
+logging:
+  config: http://localhost:8888/logging/shared-logback-spring.xml
+
+# Local monitoring endpoints
 loki:
   url: http://localhost:3100/loki/api/v1/push
-
-logging:
-  level:
-    root: INFO
-    com.openframe: INFO
-    org.springframework: INFO 
-  config: http://localhost:8888/logging/shared-logback-spring.xml
+  

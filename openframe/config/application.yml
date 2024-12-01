@@ -1,4 +1,33 @@
 # Common properties shared across all services
+spring:
+  data:
+    # Common MongoDB configuration
+    mongodb:
+      auto-index-creation: true
+      connect-timeout: 10000
+      socket-timeout: 10000
+      max-wait-time: 10000
+      server-selection-timeout: 10000
+    # Common Cassandra configuration
+    cassandra:
+      port: 9042
+      local-datacenter: datacenter1
+      keyspace-name: openframe_events
+      keyspace: openframe
+      schema-action: CREATE_IF_NOT_EXISTS
+      request:
+        timeout: 20s
+      connection:
+        connect-timeout: 20s
+        init-query-timeout: 20s
+      controlconnection:
+        timeout: 20s
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+
+# Monitoring configuration
 management:
   endpoints:
     web:
@@ -11,7 +40,7 @@ management:
       show-details: always
     prometheus:
       enabled: true
-    metrics: 
+    metrics:
       enabled: true
   prometheus:
     metrics:
@@ -24,50 +53,46 @@ management:
       percentiles-histogram:
         "[http.server.requests]": true
       sla:
-        "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
+        "[http.server.requests]": [10ms, 50ms, 100ms, 500ms]
+
+# DataStax driver configuration
+datastax:
+  java-driver:
+    advanced:
+      connection:
+        pool:
+          local:
+            size: 1
+    basic:
+      request:
+        timeout: 10s
+      session-keyspace: openframe
+    advanced.metrics:
+      session:
+        enabled: true
+        cql-requests:
+          enabled: true
+      node:
+        enabled: true
+    config-loader:
+      debug: true
+
+# Default logging configuration
+logging:
+  level:
+    root: INFO
+    com.openframe: INFO
+    org.springframework: INFO
+    com.datastax.oss.driver: DEBUG
+    com.datastax.driver: DEBUG
+    org.springframework.data.cassandra: DEBUG
+    com.datastax.oss.driver.internal.core.session: TRACE
+    com.datastax.oss.driver.internal.core.pool: TRACE
+    com.datastax.oss.driver.internal.core.config: DEBUG
 
 security:
   jwt:
     enabled: false
-
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
-  data:
-    mongodb:
-      auto-index-creation: true
-      connect-timeout: 10000
-      socket-timeout: 10000
-      max-wait-time: 10000
-      server-selection-timeout: 10000
-    cassandra:
-      keyspace-name: openframe_events
-      keyspace: openframe
-      port: 9042
-      local-datacenter: datacenter1
-      schema-action: CREATE_IF_NOT_EXISTS
-      request:
-        timeout: 20s
-      connection:
-        connect-timeout: 20s
-        init-query-timeout: 20s
-      controlconnection:
-        timeout: 20s
-    redis:
-      timeout: 2000
-      connect-timeout: 2000
-      lettuce:
-        shutdown-timeout: 2000ms
-        pool:
-          enabled: true
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: 1000ms
-      client-type: lettuce
 
 
       

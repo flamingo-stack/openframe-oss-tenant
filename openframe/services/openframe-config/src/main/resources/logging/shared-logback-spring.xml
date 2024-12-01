@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true" scan="true">
     <!-- Wait for Spring properties to be available -->
-    <springProperty scope="context" name="SPRING_APP_NAME" source="spring.application.name"/>
+    <springProperty scope="context" name="SPRING_APP_NAME" source="spring.application.name" defaultValue="app"/>
     <springProperty scope="context" name="LOKI_ADDRESS" source="loki.url" defaultValue="http://localhost:3100/loki/api/v1/push"/>
     <springProperty scope="context" name="LOG_PATH" source="log.path" defaultValue="logs" />
     

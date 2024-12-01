@@ -2,21 +2,43 @@ server:
   port: 8090
 
 spring:
-  kafka:
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   redis:
     enabled: true
-  data:
-    cassandra:
-      enabled: true
-    mongodb:
-      enabled: true
-    
-  main:
-    allow-bean-definition-overriding: true
+    timeout: 2000
+    connect-timeout: 2000
+    lettuce:
+      shutdown-timeout: 2000ms
+      pool:
+        enabled: true
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+    client-type: lettuce
+  cloud:
+    config:
+      fail-fast: false
 
+# API service specific monitoring
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# API service specific logging
 logging:
   level:
     root: INFO
@@ -24,10 +46,16 @@ logging:
     org.springframework: DEBUG
     org.springframework.data.redis: DEBUG
     io.lettuce.core: DEBUG
+    org.apache.pinot: DEBUG
 
+# GraphQL configuration
 dgs:
   graphql:
     path: /graphql
     graphiql:
       enabled: true
+
+# Pinot configuration
+pinot:
+  enabled: true
 

@@ -1,65 +1,29 @@
+# Docker environment specific configuration
 spring:
+  data:
+    # Docker MongoDB connection
+    mongodb:
+      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+    # Docker Cassandra connection
+    cassandra:
+      contact-points: openframe-cassandra
+    # Docker Redis connection (only used by API)
+    redis:
+      host: openframe-redis
+      port: 6379
+
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8080/auth/realms/openframe
           jwk-set-uri: http://localhost:8080/auth/realms/openframe/protocol/openid-connect/certs
-  data:
-    redis:
-      host: openframe-redis
-      port: 6379
-    cassandra:
-      # Add advanced driver options for debugging
-      advanced:
-        config-reload-interval: 0
-        connection:
-          warn-on-init-error: true
-          pool:
-            local:
-              debug:
-                connection-errors: true
-      # Enable driver metrics
-      metrics:
-        enabled: true
-        session-enabled: true
 
-datastax:
-  java-driver:
-    advanced:
-      connection:
-        pool:
-          local:
-            size: 1
-    basic:
-      request:
-        timeout: 10s
-      session-keyspace: openframe
-    advanced.metrics:
-      session:
-        enabled: true
-        cql-requests:
-          enabled: true
-      node:
-        enabled: true
-    # Enable driver configuration debugging
-    config-loader:
-      debug: true
+# Docker logging configuration
+logging:
+  config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
 
+# Docker monitoring endpoints
 loki:
   url: http://openframe-loki:3100/loki/api/v1/push
-
-logging:
-  level:
-    root: INFO
-    com.openframe: INFO
-    org.springframework: INFO
-    com.datastax.oss.driver: DEBUG
-    com.datastax.driver: DEBUG
-    org.springframework.data.cassandra: DEBUG
-    # Add more specific driver logging
-    com.datastax.oss.driver.internal.core.session: TRACE
-    com.datastax.oss.driver.internal.core.pool: TRACE
-    com.datastax.oss.driver.internal.core.config: DEBUG
-  config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
   

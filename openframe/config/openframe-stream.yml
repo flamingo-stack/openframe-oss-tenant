@@ -1,38 +1,48 @@
+# Stream service common configuration
 server:
   port: 8082
 
 spring:
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.apache.pinot.client.PinotClientAutoConfiguration
   redis:
     enabled: false
   kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      group-id: event-processor
+      group-id: openframe-stream
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        max.partition.fetch.bytes: 10485760
-        fetch.max.bytes: 10485760
-        receive.buffer.bytes: 10485760
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        max.request.size: 10485760
-        buffer.memory: 10485760
-    listener:
-      missing-topics-fatal: false
-      type: single
-      ack-mode: MANUAL_IMMEDIATE
-  data:
-    cassandra:
+  cloud:
+    config:
+      fail-fast: false
+
+# Stream service specific monitoring
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
       enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
 
 security:
   jwt:
