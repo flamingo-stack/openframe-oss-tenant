@@ -3,28 +3,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,prometheus
-    jmx:
-      exposure:
-        exclude: "*"
+        include: "*"
+    enabled-by-default: true
   endpoint:
     health:
-      probes:
-        enabled: true
+      enabled: true
+      show-details: always
     prometheus:
       enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
-
-jmx:
-  enabled: false
-
-logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-log:
-  path: logs
 
 spring:
   data:
@@ -46,4 +35,4 @@ spring:
         connect-timeout: 20s
         init-query-timeout: 20s
       controlconnection:
-        timeout: 20s 
+        timeout: 20s
