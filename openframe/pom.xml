@@ -37,16 +37,30 @@
     </properties>
 
     <modules>
-        <module>services/openframe-api</module>
-        <module>services/openframe-core</module>
-        <module>services/openframe-stream</module>
-        <module>services/openframe-data</module>
+        <!-- Libraries -->
+        <module>libs/openframe-core</module>
+        <module>libs/openframe-data</module>
+        
+        <!-- Services -->
         <module>services/openframe-config</module>
+        <module>services/openframe-api</module>
+        <module>services/openframe-stream</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
-
+            <!-- OpenFrame Libraries -->
+            <dependency>
+                <groupId>com.openframe</groupId>
+                <artifactId>openframe-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe</groupId>
+                <artifactId>openframe-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
             <!-- Spring Cloud -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -82,17 +96,7 @@
             </dependency>
             <dependency>
                 <groupId>com.openframe</groupId>
-                <artifactId>openframe-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.openframe</groupId>
                 <artifactId>openframe-stream</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.openframe</groupId>
-                <artifactId>openframe-data</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- Netflix DGS -->

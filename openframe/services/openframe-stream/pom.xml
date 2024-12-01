@@ -187,6 +187,16 @@
             </exclusions>
         </dependency>
 
+        <!-- OpenFrame Dependencies -->
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-data</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

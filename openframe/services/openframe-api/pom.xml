@@ -20,6 +20,15 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-data</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.netflix.graphql.dgs</groupId>
             <artifactId>graphql-dgs-spring-boot-starter</artifactId>
             <exclusions>

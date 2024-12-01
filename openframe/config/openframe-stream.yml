@@ -39,4 +39,3 @@ spring:
         init-query-timeout: 20s
       controlconnection:
         timeout: 20s 
-

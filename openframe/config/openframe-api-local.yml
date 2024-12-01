@@ -3,15 +3,25 @@ server:
 
 spring:
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:29092
   data:
     mongodb:
       uri: mongodb://openframe:password123456789@localhost:27017/openframe
     cassandra:
       contact-points: localhost
-      
+
+security:
+  cors:
+    allowed-origins: http://localhost:3000
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER_URI}
+          jwk-set-uri: ${AUTH_JWK_URI}
+
 pinot:
   controller:
     url: http://localhost:9000
   broker:
     url: http://localhost:8099
+

@@ -32,23 +32,6 @@ services:
     networks:
       - openframe-network
 
-  core:
-    build:
-      context: ./services/openframe-core
-      dockerfile: Dockerfile
-    container_name: openframe-core
-    ports:
-      - "8091:8091"
-    depends_on:
-      config-server:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    networks:
-      - openframe-network
-
   stream:
     build:
       context: ./services/openframe-stream
@@ -64,27 +47,6 @@ services:
     networks:
       - openframe-network
       
-  data:
-    build:
-      context: ./services/openframe-data
-      dockerfile: Dockerfile
-    container_name: openframe-data
-    ports:
-      - "8083:8083"
-    depends_on:
-      cassandra:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      pinot-controller:
-        condition: service_healthy
-      pinot-server:
-        condition: service_healthy
-      config-server:
-        condition: service_healthy
-    networks:
-      - openframe-network
-
 networks:
   openframe-network:
     name: openframe-network

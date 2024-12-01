@@ -1,9 +1,0 @@
-server:
-  port: 8083
-
-spring:
-  data:
-    mongodb:
-      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe
-  cassandra:
-    contact-points: openframe-cassandra
