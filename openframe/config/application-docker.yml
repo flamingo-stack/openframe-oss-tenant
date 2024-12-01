@@ -17,6 +17,9 @@ logging:
   level:
     root: INFO
     com.openframe: INFO
-    org.springframework: INFO 
+    org.springframework: INFO
+    com.datastax.oss.driver: DEBUG
+    com.datastax.driver: DEBUG
+    org.springframework.data.cassandra: DEBUG
   config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
   
