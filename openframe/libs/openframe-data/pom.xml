@@ -51,6 +51,13 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- Pinot -->
+        <dependency>
+            <groupId>org.apache.pinot</groupId>
+            <artifactId>pinot-java-client</artifactId>
+            <version>${pinot.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

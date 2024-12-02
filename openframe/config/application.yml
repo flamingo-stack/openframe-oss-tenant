@@ -40,6 +40,9 @@ management:
     web:
       exposure:
         include: "*"
+      base-path: /actuator
+      path-mapping:
+        prometheus: prometheus
     enabled-by-default: true
   endpoint:
     health:
@@ -56,6 +59,7 @@ management:
       export:
         enabled: true
         step: 1m
+        descriptions: true
   metrics:
     enable:
       all: true
@@ -84,6 +88,7 @@ security:
 
 logging:
   level:
+    root: INFO
     org.springframework.data.cassandra: DEBUG
     com.datastax.oss.driver: DEBUG
     com.openframe.data.config: DEBUG
@@ -98,6 +103,8 @@ logging:
     io.micrometer.core.instrument.logging: TRACE
     org.springframework.web.servlet.mvc.method.annotation: DEBUG
     org.springframework.web.servlet.handler: TRACE  # For detailed request mapping
+    org.springframework.web: DEBUG
+    org.springframework.boot.web: DEBUG
 
 
       
