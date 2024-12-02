@@ -8,9 +8,6 @@ spring:
     cassandra:
       contact-points: openframe-cassandra
       local-datacenter: datacenter1
-      advanced:
-        timestamp-generator:
-          class: com.datastax.oss.driver.internal.core.time.AtomicTimestampGenerator
       request:
         timeout: 20s
       connection:

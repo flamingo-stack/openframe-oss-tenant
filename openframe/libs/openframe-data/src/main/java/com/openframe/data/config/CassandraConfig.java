@@ -39,7 +39,7 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
             return builder.withConfigLoader(DriverConfigLoader.programmaticBuilder()
                 .withString(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER, localDatacenter)
                 .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, 
-                    "com.datastax.oss.driver.internal.core.time.AtomicTimestampGenerator")
+                    "com.datastax.oss.driver.internal.core.time.ServerSideTimestampGenerator")
                 .build());
         });
         return bean;

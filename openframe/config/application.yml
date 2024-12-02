@@ -25,6 +25,9 @@ spring:
         init-query-timeout: 20s
       controlconnection:
         timeout: 20s
+      advanced:
+        timestamp-generator:
+          class: com.datastax.oss.driver.internal.core.time.ServerSideTimestampGenerator
 
 # Common monitoring configuration
 management:

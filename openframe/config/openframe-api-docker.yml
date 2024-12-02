@@ -2,7 +2,3 @@
 spring:
   kafka:
     bootstrap-servers: openframe-kafka:9092
-
-
-
-
