@@ -1,5 +1,10 @@
 # Common properties shared across all services
 spring:
+  mvc:
+    contentnegotiation:
+      favor-parameter: true
+      media-types:
+        actuator: application/vnd.spring-boot.actuator.v3+json
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
@@ -95,14 +100,6 @@ logging:
     io.micrometer.core.instrument.logging: TRACE
     org.springframework.web.servlet.mvc.method.annotation: DEBUG
     org.springframework.web.servlet.handler: TRACE  # For detailed request mapping
-
-# Add content type configuration
-spring:
-  mvc:
-    contentnegotiation:
-      favor-parameter: true
-      media-types:
-        actuator: application/vnd.spring-boot.actuator.v3+json
 
 
       
