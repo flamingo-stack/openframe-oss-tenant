@@ -41,8 +41,6 @@ management:
       exposure:
         include: prometheus,health,info,metrics
       base-path: /actuator
-      path-mapping:
-        prometheus: metrics
     enabled-by-default: false
   endpoint:
     health:
@@ -50,34 +48,28 @@ management:
       show-details: always
     prometheus:
       enabled: true
-      cache:
-        time-to-live: 1000ms
-    metrics:
-      enabled: true
     info:
       enabled: true
-  prometheus:
     metrics:
-      export:
-        enabled: true
-        descriptions: true
-        step: 1m
+      enabled: true
   metrics:
     enable:
       all: true
-    use-global-registry: true
-    web:
-      server:
-        request:
-          autotime:
-            enabled: true
-    tags:
-      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
     distribution:
       percentiles-histogram:
         "[http.server.requests]": true
       sla:
         "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
+    tags:
+      application: ${spring.application.name}
+    web:
+      server:
+        request:
+          autotime:
+            enabled: true
 
 # Common security configuration
 security:
