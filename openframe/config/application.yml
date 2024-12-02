@@ -34,7 +34,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,prometheus,metrics
     enabled-by-default: true
   endpoint:
     health:
@@ -48,14 +48,17 @@ management:
     metrics:
       export:
         enabled: true
+        descriptions: true
   metrics:
+    enable:
+      all: true
     tags:
       application: ${spring.application.name}
     distribution:
       percentiles-histogram:
         "[http.server.requests]": true
       sla:
-        "[http.server.requests]": [10ms, 50ms, 100ms, 500ms]
+        "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
 # Common security configuration
 security:
@@ -67,6 +70,14 @@ logging:
     org.springframework.data.cassandra: DEBUG
     com.datastax.oss.driver: DEBUG
     com.openframe.data.config: DEBUG
+    # Actuator and metrics logging
+    org.springframework.boot.actuate: DEBUG
+    org.springframework.boot.actuate.metrics: DEBUG
+    org.springframework.boot.actuate.endpoint: DEBUG
+    org.springframework.boot.actuate.endpoint.web: DEBUG
+    io.micrometer: DEBUG
+    io.micrometer.prometheus: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation: DEBUG  # For endpoint mapping debugging
 
 
       
