@@ -14,11 +14,9 @@ spring:
       server-selection-timeout: 10000
     # Common Cassandra configuration
     cassandra:
-      enabled: true
       port: 9042
       local-datacenter: datacenter1
       keyspace-name: openframe_events
-      keyspace: openframe
       schema-action: CREATE_IF_NOT_EXISTS
       request:
         timeout: 20s
@@ -60,6 +58,12 @@ management:
 security:
   jwt:
     enabled: false
+
+logging:
+  level:
+    org.springframework.data.cassandra: DEBUG
+    com.datastax.oss.driver: DEBUG
+    com.openframe.data.config: DEBUG
 
 
       

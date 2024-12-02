@@ -3,6 +3,9 @@ server:
   port: 8082
 
 spring:
+  data:
+    cassandra:
+      enabled: true
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
@@ -25,26 +28,3 @@ spring:
   cloud:
     config:
       fail-fast: false
-
-# Stream service specific monitoring
-management:
-  endpoints:
-    web:
-      base-path: /actuator
-      exposure:
-        include: health,info,prometheus
-  endpoint:
-    health:
-      show-details: always
-    prometheus:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    tags:
-      application: ${spring.application.name}
-
-security:
-  jwt:
-    enabled: false

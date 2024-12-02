@@ -18,9 +18,12 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
     @Value("${spring.data.cassandra.local-datacenter}")
     private String localDatacenter;
 
+    @Value("${spring.data.cassandra.keyspace-name}")
+    private String keyspaceName;
+
     @Override
     protected String getKeyspaceName() {
-        return "openframe";
+        return keyspaceName;
     }
 
     @Override
@@ -32,11 +35,11 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
     public CqlSessionFactoryBean cassandraSession() {
         CqlSessionFactoryBean bean = super.cassandraSession();
         bean.setLocalDatacenter(localDatacenter);
-        bean.setSessionBuilderConfigurer(builder -> 
-            builder.withConfigLoader(DriverConfigLoader.programmaticBuilder()
+        bean.setSessionBuilderConfigurer(builder -> {
+            return builder.withConfigLoader(DriverConfigLoader.programmaticBuilder()
                 .withString(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER, localDatacenter)
-                .build())
-        );
+                .build());
+        });
         return bean;
     }
 }

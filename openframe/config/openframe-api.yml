@@ -3,6 +3,9 @@ server:
 
 # API service common configuration
 spring:
+  data:
+    cassandra:
+      enabled: true
   redis:
     enabled: true
     timeout: 2000
@@ -26,7 +29,7 @@ management:
     web:
       base-path: /actuator
       exposure:
-        include: health,info,prometheus
+        include: '*'
   endpoint:
     health:
       show-details: always
