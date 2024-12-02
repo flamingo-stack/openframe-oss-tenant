@@ -1,4 +1,3 @@
-// services/openframe-stream/src/main/java/com/openframe/stream/service/EventStreamService.java
 package com.openframe.stream.service;
 
 import java.util.concurrent.CompletableFuture;

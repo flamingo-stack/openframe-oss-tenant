@@ -13,16 +13,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class AnalyticsService {
     
-    private final Connection pinotConnection;
+    private final Connection pinotControllerConnection;
 
-    public AnalyticsService(Connection pinotConnection) {
-        this.pinotConnection = pinotConnection;
+    public AnalyticsService(Connection pinotControllerConnection) {
+        this.pinotControllerConnection = pinotControllerConnection;
     }
 
     public List<Map<String, Object>> executeQuery(String sqlQuery) {
         try {
-            ResultSetGroup resultSetGroup = pinotConnection.execute(sqlQuery);
-            ResultSet resultSet = resultSetGroup.getResultSet(0);
+                ResultSetGroup resultSetGroup = pinotControllerConnection.execute(sqlQuery);
+                ResultSet resultSet = resultSetGroup.getResultSet(0);
 
             List<Map<String, Object>> results = new ArrayList<>();
             for (int i = 0; i < resultSet.getRowCount(); i++) {

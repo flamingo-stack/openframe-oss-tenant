@@ -1,4 +1,4 @@
-package com.openframe.stream.config;
+package com.openframe.data.config;
 
 import java.util.HashMap;
 import java.util.Map;

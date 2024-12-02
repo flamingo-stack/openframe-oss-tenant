@@ -23,25 +23,6 @@ spring:
     config:
       fail-fast: false
 
-# API service specific monitoring
-management:
-  endpoints:
-    web:
-      base-path: /actuator
-      exposure:
-        include: '*'
-  endpoint:
-    health:
-      show-details: always
-    prometheus:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    tags:
-      application: ${spring.application.name}
-
 # API service specific logging
 logging:
   level:
@@ -58,8 +39,3 @@ dgs:
     path: /graphql
     graphiql:
       enabled: true
-
-# Pinot configuration
-pinot:
-  enabled: true
-

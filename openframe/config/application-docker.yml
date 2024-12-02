@@ -30,4 +30,10 @@ logging:
 # Docker monitoring endpoints
 loki:
   url: http://openframe-loki:3100/loki/api/v1/push
-  
+
+# Pinot connection details
+pinot:
+  controller:
+    url: http://openframe-pinot-controller:9000
+  broker:
+    url: http://openframe-pinot-broker:8099

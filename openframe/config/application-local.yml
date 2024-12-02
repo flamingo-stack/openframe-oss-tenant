@@ -30,4 +30,11 @@ logging:
 # Local monitoring endpoints
 loki:
   url: http://localhost:3100/loki/api/v1/push
+
+# Pinot connection details
+pinot:
+  controller:
+    url: http://localhost:9000
+  broker:
+    url: http://localhost:8099
   

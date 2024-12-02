@@ -4,23 +4,24 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.pinot.client.Connection;
+import org.apache.pinot.spi.data.readers.GenericRow;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PinotIngestionService {
 
-    private final Connection pinotConnection;
+    private final Connection pinotBrokerConnection;
 
-    public PinotIngestionService(Connection pinotConnection) {
-        this.pinotConnection = pinotConnection;
+    public PinotIngestionService(Connection pinotBrokerConnection) {
+        this.pinotBrokerConnection = pinotBrokerConnection;
     }
 
     public void ingestData(String tableName, Map<String, Object> data) {
         try {
-            org.apache.pinot.spi.data.readers.GenericRow row = new org.apache.pinot.spi.data.readers.GenericRow();
+            GenericRow row = new GenericRow();
             data.forEach(row::putField);
 
-            pinotConnection.execute(
+            pinotBrokerConnection.execute(
                     String.format("INSERT INTO %s VALUES %s",
                             tableName,
                             convertToInsertValues(data))

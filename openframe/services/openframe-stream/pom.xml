@@ -46,17 +46,6 @@
             <artifactId>spring-boot-configuration-processor</artifactId>
         </dependency>
 
-        <!-- Kafka -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-        </dependency>
-
         <!-- NiFi -->
         <dependency>
             <groupId>org.apache.nifi</groupId>
