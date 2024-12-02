@@ -39,9 +39,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: prometheus,health,info,metrics
-      base-path: /actuator
-    enabled-by-default: false
+        include: "*"
+    enabled-by-default: true
   endpoint:
     health:
       enabled: true
@@ -52,12 +51,19 @@ management:
       enabled: true
     metrics:
       enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 1m
   metrics:
     enable:
       all: true
     export:
       prometheus:
         enabled: true
+        step: 1m
+        descriptions: true
     distribution:
       percentiles-histogram:
         "[http.server.requests]": true
