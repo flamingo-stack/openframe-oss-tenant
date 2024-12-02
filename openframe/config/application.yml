@@ -39,19 +39,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
-      base-path: /actuator
-      path-mapping:
-        prometheus: prometheus
+        include: '*'
     enabled-by-default: true
   endpoint:
+    prometheus:
+      enabled: true
     health:
       enabled: true
       show-details: always
-    prometheus:
-      enabled: true
-    info:
-      enabled: true
     metrics:
       enabled: true
   metrics:
@@ -59,11 +54,6 @@ management:
       all: true
     tags:
       application: ${spring.application.name}
-    distribution:
-      percentiles-histogram:
-        "[http.server.requests]": true
-      sla:
-        "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
 # Common security configuration
 security:

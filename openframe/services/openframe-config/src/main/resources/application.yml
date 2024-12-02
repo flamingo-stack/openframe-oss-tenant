@@ -29,31 +29,30 @@ management:
         include: '*'
     enabled-by-default: true
   endpoint:
+    prometheus:
+      enabled: true
     health:
       enabled: true
       show-details: always
-    prometheus:
-      enabled: true
     metrics:
       enabled: true
-  prometheus:
-    metrics:
-      export:
-        enabled: true
-        descriptions: true
   metrics:
     enable:
       all: true
     tags:
       application: ${spring.application.name}
-    distribution:
-      percentiles-histogram:
-        "[http.server.requests]": true
-      sla:
-        "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
 
 logging:
   config: classpath:logging/shared-logback-spring.xml
+  level:
+    root: INFO
+    org.springframework.boot.actuate: DEBUG
+    org.springframework.boot.actuate.metrics: DEBUG
+    org.springframework.boot.actuate.endpoint: DEBUG
+    io.micrometer: DEBUG
+    org.springframework.boot.actuate.autoconfigure.metrics: DEBUG
+    org.springframework.boot.actuate.metrics.export.prometheus: DEBUG
+  
 
 log:
   path: logs

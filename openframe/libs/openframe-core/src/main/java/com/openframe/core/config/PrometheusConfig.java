@@ -1,16 +1,11 @@
-package com.openframe.core.config;
+// package com.openframe.core.config;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+// import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusMetricsExportAutoConfiguration;
+// import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+// import org.springframework.context.annotation.Configuration;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-
-@Configuration
-public class PrometheusConfig {
-
-    @Bean
-    public MeterRegistry meterRegistry() {
-        return new SimpleMeterRegistry();
-    }
-} 
+// @Configuration
+// @AutoConfigureBefore(PrometheusMetricsExportAutoConfiguration.class)
+// public class PrometheusConfig {
+//     // Let Spring Boot handle the Prometheus configuration
+// } 
