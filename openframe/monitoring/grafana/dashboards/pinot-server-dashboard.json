@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Cassandra Cluster Health",
+      "title": "Pinot Server Overview",
       "type": "row"
     },
     {
@@ -38,19 +38,14 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 1
       },
@@ -61,27 +56,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_table_livediskspaceused",
-          "legendFormat": "Storage Load",
+          "expr": "jvm_threads_current",
+          "legendFormat": "Current Threads",
           "refId": "A"
         }
       ],
-      "title": "Storage Load",
+      "title": "Current Threads",
       "type": "stat"
     },
     {
@@ -134,14 +122,13 @@
               }
             ]
           },
-          "unit": "ms"
-        },
-        "overrides": []
+          "unit": "bytes"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 9,
+        "x": 6,
         "y": 1
       },
       "id": 3,
@@ -159,25 +146,17 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_auth_scope_role_permissions_speculativesamplelatencynanos",
-          "legendFormat": "Read Latency",
+          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
+          "legendFormat": "Heap Used",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos",
-          "legendFormat": "Write Latency",
+          "expr": "jvm_memory_bytes_committed{area=\"heap\"}",
+          "legendFormat": "Heap Committed",
           "refId": "B"
         }
       ],
-      "title": "Read/Write Latency",
+      "title": "JVM Heap Memory Usage",
       "type": "timeseries"
     },
     {
@@ -230,13 +209,12 @@
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 9,
+        "x": 15,
         "y": 1
       },
       "id": 4,
@@ -254,16 +232,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos[5m])",
-          "legendFormat": "Operations Rate",
+          "expr": "rate(process_cpu_seconds_total[5m])",
+          "legendFormat": "CPU Usage",
           "refId": "A"
         }
       ],
-      "title": "Operations Rate",
+      "title": "CPU Usage",
       "type": "timeseries"
     },
     {
@@ -276,7 +250,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Memory & Cache",
+      "title": "Thread States & GC",
       "type": "row"
     },
     {
@@ -328,10 +302,8 @@
                 "value": null
               }
             ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
+          }
+        }
       },
       "gridPos": {
         "h": 8,
@@ -354,25 +326,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
-          "legendFormat": "Heap Memory Used",
+          "expr": "jvm_threads_state",
+          "legendFormat": "{{state}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
-          "legendFormat": "Heap Memory Max",
-          "refId": "B"
         }
       ],
-      "title": "JVM Heap Usage",
+      "title": "Thread States",
       "type": "timeseries"
     },
     {
@@ -424,9 +383,9 @@
                 "value": null
               }
             ]
-          }
-        },
-        "overrides": []
+          },
+          "unit": "s"
+        }
       },
       "gridPos": {
         "h": 8,
@@ -449,25 +408,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_cache_scope_keycache_oneminutehitrate",
-          "legendFormat": "Key Cache Hit Rate",
+          "expr": "rate(jvm_gc_collection_seconds_sum[5m])",
+          "legendFormat": "{{gc}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_keycachehitrate",
-          "legendFormat": "Row Cache Hit Rate",
-          "refId": "B"
         }
       ],
-      "title": "Cache Hit Rates",
+      "title": "GC Collection Time",
       "type": "timeseries"
     },
     {
@@ -480,7 +426,7 @@
       },
       "id": 8,
       "panels": [],
-      "title": "System Metrics",
+      "title": "Memory Details",
       "type": "row"
     },
     {
@@ -532,9 +478,9 @@
                 "value": null
               }
             ]
-          }
-        },
-        "overrides": []
+          },
+          "unit": "bytes"
+        }
       },
       "gridPos": {
         "h": 8,
@@ -557,16 +503,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "jvm_memory_pool_bytes_used{pool=~\"G1.*\"}",
+          "legendFormat": "{{pool}} Used",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "G1 GC Memory Pools",
       "type": "timeseries"
     },
     {
@@ -620,8 +562,7 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -644,32 +585,24 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Network Transmit",
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "Resident Memory",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Network Receive",
+          "expr": "process_virtual_memory_bytes",
+          "legendFormat": "Virtual Memory",
           "refId": "B"
         }
       ],
-      "title": "Network I/O",
+      "title": "Process Memory",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["cassandra", "database", "storage"],
+  "tags": ["pinot", "server", "analytics", "database"],
   "templating": {
     "list": []
   },
@@ -679,8 +612,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Cassandra Overview",
-  "uid": "cassandra-overview",
+  "title": "Pinot Server Overview",
+  "uid": "pinot-server-overview",
   "version": 1,
   "weekStart": ""
 } 

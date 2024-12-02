@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Cassandra Cluster Health",
+      "title": "Loki Overview",
       "type": "row"
     },
     {
@@ -38,19 +38,15 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
               }
             ]
-          }
-        },
-        "overrides": []
+          },
+          "unit": "none"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 1
       },
@@ -61,9 +57,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -72,16 +66,12 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_table_livediskspaceused",
-          "legendFormat": "Storage Load",
+          "expr": "sum(loki_distributor_lines_received_total)",
+          "legendFormat": "Total Lines",
           "refId": "A"
         }
       ],
-      "title": "Storage Load",
+      "title": "Total Log Lines Received",
       "type": "stat"
     },
     {
@@ -134,14 +124,13 @@
               }
             ]
           },
-          "unit": "ms"
-        },
-        "overrides": []
+          "unit": "bytes"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 9,
+        "x": 6,
         "y": 1
       },
       "id": 3,
@@ -159,25 +148,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_auth_scope_role_permissions_speculativesamplelatencynanos",
-          "legendFormat": "Read Latency",
+          "expr": "rate(loki_distributor_bytes_received_total[5m])",
+          "legendFormat": "Bytes Received",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos",
-          "legendFormat": "Write Latency",
-          "refId": "B"
         }
       ],
-      "title": "Read/Write Latency",
+      "title": "Ingestion Rate",
       "type": "timeseries"
     },
     {
@@ -229,14 +205,14 @@
                 "value": null
               }
             ]
-          }
-        },
-        "overrides": []
+          },
+          "unit": "s"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 9,
+        "x": 15,
         "y": 1
       },
       "id": 4,
@@ -254,16 +230,17 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos[5m])",
-          "legendFormat": "Operations Rate",
+          "expr": "histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route=~\"loki_api_v1_query_range\"}[5m])) by (le))",
+          "legendFormat": "99th Percentile",
           "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{route=~\"loki_api_v1_query_range\"}[5m])) by (le))",
+          "legendFormat": "50th Percentile",
+          "refId": "B"
         }
       ],
-      "title": "Operations Rate",
+      "title": "Query Latency",
       "type": "timeseries"
     },
     {
@@ -276,7 +253,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Memory & Cache",
+      "title": "Cache & Storage",
       "type": "row"
     },
     {
@@ -329,9 +306,8 @@
               }
             ]
           },
-          "unit": "bytes"
-        },
-        "overrides": []
+          "unit": "percent"
+        }
       },
       "gridPos": {
         "h": 8,
@@ -354,219 +330,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
-          "legendFormat": "Heap Memory Used",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
-          "legendFormat": "Heap Memory Max",
-          "refId": "B"
-        }
-      ],
-      "title": "JVM Heap Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 10
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_cache_scope_keycache_oneminutehitrate",
-          "legendFormat": "Key Cache Hit Rate",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_keycachehitrate",
-          "legendFormat": "Row Cache Hit Rate",
-          "refId": "B"
-        }
-      ],
-      "title": "Cache Hit Rates",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 18
-      },
-      "id": 8,
-      "panels": [],
-      "title": "System Metrics",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 19
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "sum(rate(loki_cache_hits[5m])) by (name) / sum(rate(loki_cache_fetched_keys[5m])) by (name) * 100",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "Cache Hit Ratio",
       "type": "timeseries"
     },
     {
@@ -620,16 +389,15 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 19
+        "y": 10
       },
-      "id": 10,
+      "id": 7,
       "options": {
         "legend": {
           "calcs": [],
@@ -644,32 +412,24 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Network Transmit",
+          "expr": "sum(loki_cache_memory_bytes{cache=~\"chunksembedded-cache|frontend.embedded-cache\"})",
+          "legendFormat": "Cache Memory",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Network Receive",
+          "expr": "process_resident_memory_bytes{job=\"loki\"}",
+          "legendFormat": "Process Memory",
           "refId": "B"
         }
       ],
-      "title": "Network I/O",
+      "title": "Memory Usage",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["cassandra", "database", "storage"],
+  "tags": ["loki", "logging", "monitoring"],
   "templating": {
     "list": []
   },
@@ -679,8 +439,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Cassandra Overview",
-  "uid": "cassandra-overview",
+  "title": "Loki Overview",
+  "uid": "loki-overview",
   "version": 1,
   "weekStart": ""
 } 

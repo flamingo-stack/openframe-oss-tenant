@@ -57,8 +57,11 @@ limits_config:
   ingestion_burst_size_mb: 64
   max_global_streams_per_user: 5000
   reject_old_samples: true
-  reject_old_samples_max_age: 168h
-  retention_period: 744h
+  reject_old_samples_max_age: 720h
+  retention_period: 720h
+  creation_grace_period: 24h
+  max_cache_freshness_per_query: 10m
+  split_queries_by_interval: 15m
 
 query_range:
   align_queries_with_step: true

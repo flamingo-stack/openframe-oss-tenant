@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Cassandra Cluster Health",
+      "title": "Config Server Overview",
       "type": "row"
     },
     {
@@ -38,19 +38,15 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
               }
             ]
-          }
-        },
-        "overrides": []
+          },
+          "unit": "s"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 1
       },
@@ -61,27 +57,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_table_livediskspaceused",
-          "legendFormat": "Storage Load",
+          "expr": "process_uptime_seconds{application=\"config-server\"}",
+          "legendFormat": "Uptime",
           "refId": "A"
         }
       ],
-      "title": "Storage Load",
+      "title": "Server Uptime",
       "type": "stat"
     },
     {
@@ -134,14 +123,13 @@
               }
             ]
           },
-          "unit": "ms"
-        },
-        "overrides": []
+          "unit": "s"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 9,
+        "x": 6,
         "y": 1
       },
       "id": 3,
@@ -159,25 +147,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_auth_scope_role_permissions_speculativesamplelatencynanos",
-          "legendFormat": "Read Latency",
+          "expr": "rate(spring_cloud_config_environment_find_seconds_sum{application=\"config-server\"}[5m])",
+          "legendFormat": "Config Find Time",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos",
-          "legendFormat": "Write Latency",
-          "refId": "B"
         }
       ],
-      "title": "Read/Write Latency",
+      "title": "Configuration Retrieval Time",
       "type": "timeseries"
     },
     {
@@ -230,13 +205,12 @@
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 9,
+        "x": 15,
         "y": 1
       },
       "id": 4,
@@ -254,16 +228,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos[5m])",
-          "legendFormat": "Operations Rate",
+          "expr": "rate(logback_events_total{application=\"config-server\"}[5m])",
+          "legendFormat": "{{level}}",
           "refId": "A"
         }
       ],
-      "title": "Operations Rate",
+      "title": "Log Events Rate",
       "type": "timeseries"
     },
     {
@@ -276,7 +246,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Memory & Cache",
+      "title": "JVM Metrics",
       "type": "row"
     },
     {
@@ -330,8 +300,7 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -354,25 +323,22 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
-          "legendFormat": "Heap Memory Used",
+          "expr": "jvm_memory_used_bytes{application=\"config-server\",area=\"heap\"}",
+          "legendFormat": "Heap Used",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
-          "legendFormat": "Heap Memory Max",
+          "expr": "jvm_memory_committed_bytes{application=\"config-server\",area=\"heap\"}",
+          "legendFormat": "Heap Committed",
           "refId": "B"
+        },
+        {
+          "expr": "jvm_memory_max_bytes{application=\"config-server\",area=\"heap\"}",
+          "legendFormat": "Heap Max",
+          "refId": "C"
         }
       ],
-      "title": "JVM Heap Usage",
+      "title": "JVM Heap Memory Usage",
       "type": "timeseries"
     },
     {
@@ -425,8 +391,7 @@
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -449,25 +414,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_cache_scope_keycache_oneminutehitrate",
-          "legendFormat": "Key Cache Hit Rate",
+          "expr": "jvm_threads_states_threads{application=\"config-server\"}",
+          "legendFormat": "{{state}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_keycachehitrate",
-          "legendFormat": "Row Cache Hit Rate",
-          "refId": "B"
         }
       ],
-      "title": "Cache Hit Rates",
+      "title": "JVM Thread States",
       "type": "timeseries"
     },
     {
@@ -533,8 +485,7 @@
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -557,13 +508,14 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_cpu_seconds_total[5m])",
+          "expr": "process_cpu_usage{application=\"config-server\"}",
           "legendFormat": "CPU Usage",
           "refId": "A"
+        },
+        {
+          "expr": "system_cpu_usage{application=\"config-server\"}",
+          "legendFormat": "System CPU Usage",
+          "refId": "B"
         }
       ],
       "title": "CPU Usage",
@@ -620,8 +572,7 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -644,32 +595,24 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Network Transmit",
+          "expr": "disk_free_bytes{application=\"config-server\"}",
+          "legendFormat": "Disk Free",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Network Receive",
+          "expr": "disk_total_bytes{application=\"config-server\"}",
+          "legendFormat": "Disk Total",
           "refId": "B"
         }
       ],
-      "title": "Network I/O",
+      "title": "Disk Usage",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["cassandra", "database", "storage"],
+  "tags": ["openframe", "config", "microservice"],
   "templating": {
     "list": []
   },
@@ -679,8 +622,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Cassandra Overview",
-  "uid": "cassandra-overview",
+  "title": "OpenFrame Config Server Overview",
+  "uid": "openframe-config-server-overview",
   "version": 1,
   "weekStart": ""
 } 

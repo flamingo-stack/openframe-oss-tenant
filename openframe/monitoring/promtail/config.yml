@@ -4,70 +4,114 @@ server:
 
 positions:
   filename: /tmp/positions.yaml
+  sync_period: 10s
+  ignore_invalid_yaml: true
 
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+  - url: http://openframe-loki:3100/loki/api/v1/push
+    external_labels:
+      host: ${HOSTNAME}
+    batchwait: 1s
+    batchsize: 102400
+    backoff_config:
+      min_period: 1s
+      max_period: 5s
+    timeout: 10s
+    tenant_id: "default"
 
 scrape_configs:
-  - job_name: containers
+  - job_name: docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-        filters:
-          - name: name
-            values: ["openframe-*"]
-
     relabel_configs:
-      # Set job name from container name
       - source_labels: ['__meta_docker_container_name']
-        regex: '/?openframe-(.+)'
-        target_label: 'job'
+        regex: '.*openframe-(api|config|stream).*'
+        action: drop
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
         replacement: '$1'
-      
-      # Set category type
-      - source_labels: ['job']
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        replacement: '$1'
+        target_label: 'service_name'
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.*(loki|promtail|grafana).*'
+        replacement: 'logging'
         target_label: 'category'
-        regex: '(mongodb|cassandra)'
-        replacement: 'database'
-      - source_labels: ['job']
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.*stream.*'
+        replacement: 'stream'
         target_label: 'category'
-        regex: '(kafka|zookeeper)'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.*analytics.*'
+        replacement: 'analytics'
+        target_label: 'category'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.*kafka.*'
         replacement: 'messaging'
-      - source_labels: ['job']
         target_label: 'category'
-        regex: '(prometheus|grafana|mongodb-exporter)'
-        replacement: 'monitoring'
-      - source_labels: ['job']
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.*(mongo|cassandra|redis).*'
+        replacement: 'database'
         target_label: 'category'
-        regex: '(kafka-ui|mongo-express)'
-        replacement: 'dev-tools'
-      - source_labels: ['job']
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.*api.*'
+        replacement: 'microservices'
         target_label: 'category'
-        regex: 'nifi'
-        replacement: 'stream-processing'
-
-      # Use Docker container IP for host
-      - source_labels: ['__meta_docker_container_ip']
-        target_label: 'host'
-
-      # Drop ALL unwanted labels
-      - action: labeldrop
-        regex: '__.*|stream|service_name|service'
-
+      - source_labels: ['category']
+        regex: ''
+        replacement: 'other'
+        target_label: 'category'
     pipeline_stages:
+      - docker: {}
       - json:
           expressions:
-            output: log
-            timestamp: time
-      - output:
-          source: output
-      # Additional stage to remove any labels that might be added from log content
+            log: log
+            stream: stream
+            time: time
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+          action_on_failure: fudge
+          location: UTC
       - static_labels:
-          job: ${job}
-          category: ${category}
-          host: ${host}
-      # Drop everything else
-      - labeldrop:
-          - __stream_shard__
-          - stream
-          - service_name
+          job: docker
+          env: dev
+      - labels:
+          stream:
+          container:
+          service_name:
+          container_id:
+          category:
+      - output:
+          source: log
+
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
+          category: system
+    pipeline_stages:
+      - match:
+          selector: '{job="varlogs"}'
+          stages:
+            - regex:
+                expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+            - timestamp:
+                source: timestamp
+                format: '2006-01-02 15:04:05'
+                action_on_failure: fudge
+                location: UTC
+            - static_labels:
+                host: ${HOSTNAME}
+                job: varlogs
+                source: system
+                env: dev
+                category: system

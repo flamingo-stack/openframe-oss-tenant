@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Cassandra Cluster Health",
+      "title": "Prometheus Overview",
       "type": "row"
     },
     {
@@ -41,16 +41,15 @@
               },
               {
                 "color": "red",
-                "value": 1
+                "value": 80
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 1
       },
@@ -61,27 +60,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_table_livediskspaceused",
-          "legendFormat": "Storage Load",
+          "expr": "prometheus_tsdb_head_series",
+          "legendFormat": "Active Series",
           "refId": "A"
         }
       ],
-      "title": "Storage Load",
+      "title": "Active Series",
       "type": "stat"
     },
     {
@@ -134,14 +126,13 @@
               }
             ]
           },
-          "unit": "ms"
-        },
-        "overrides": []
+          "unit": "bytes"
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 9,
+        "x": 6,
         "y": 1
       },
       "id": 3,
@@ -159,25 +150,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_auth_scope_role_permissions_speculativesamplelatencynanos",
-          "legendFormat": "Read Latency",
+          "expr": "prometheus_tsdb_storage_blocks_bytes",
+          "legendFormat": "Storage Size",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos",
-          "legendFormat": "Write Latency",
-          "refId": "B"
         }
       ],
-      "title": "Read/Write Latency",
+      "title": "Storage Size",
       "type": "timeseries"
     },
     {
@@ -219,24 +197,13 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 9,
+        "x": 15,
         "y": 1
       },
       "id": 4,
@@ -254,16 +221,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos[5m])",
-          "legendFormat": "Operations Rate",
+          "expr": "rate(prometheus_tsdb_head_samples_appended_total[5m])",
+          "legendFormat": "Samples/sec",
           "refId": "A"
         }
       ],
-      "title": "Operations Rate",
+      "title": "Sample Ingestion Rate",
       "type": "timeseries"
     },
     {
@@ -276,7 +239,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Memory & Cache",
+      "title": "Query Performance",
       "type": "row"
     },
     {
@@ -319,19 +282,8 @@
               "mode": "off"
             }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
+          "unit": "s"
+        }
       },
       "gridPos": {
         "h": 8,
@@ -354,25 +306,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
-          "legendFormat": "Heap Memory Used",
+          "expr": "rate(prometheus_engine_query_duration_seconds_sum[5m])",
+          "legendFormat": "Query Duration",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
-          "legendFormat": "Heap Memory Max",
-          "refId": "B"
         }
       ],
-      "title": "JVM Heap Usage",
+      "title": "Query Duration",
       "type": "timeseries"
     },
     {
@@ -414,19 +353,8 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -449,25 +377,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_cache_scope_keycache_oneminutehitrate",
-          "legendFormat": "Key Cache Hit Rate",
+          "expr": "rate(prometheus_engine_queries[5m])",
+          "legendFormat": "Queries/sec",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_keycachehitrate",
-          "legendFormat": "Row Cache Hit Rate",
-          "refId": "B"
         }
       ],
-      "title": "Cache Hit Rates",
+      "title": "Query Rate",
       "type": "timeseries"
     },
     {
@@ -480,7 +395,7 @@
       },
       "id": 8,
       "panels": [],
-      "title": "System Metrics",
+      "title": "Target Management",
       "type": "row"
     },
     {
@@ -522,19 +437,8 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -557,16 +461,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "prometheus_sd_discovered_targets",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "Discovered Targets",
       "type": "timeseries"
     },
     {
@@ -609,19 +509,8 @@
               "mode": "off"
             }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
+          "unit": "s"
+        }
       },
       "gridPos": {
         "h": 8,
@@ -644,32 +533,19 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Network Transmit",
+          "expr": "prometheus_target_interval_length_seconds",
+          "legendFormat": "{{interval}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Network Receive",
-          "refId": "B"
         }
       ],
-      "title": "Network I/O",
+      "title": "Scrape Interval Length",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["cassandra", "database", "storage"],
+  "tags": ["prometheus", "monitoring", "metrics"],
   "templating": {
     "list": []
   },
@@ -679,8 +555,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Cassandra Overview",
-  "uid": "cassandra-overview",
+  "title": "Prometheus Overview",
+  "uid": "prometheus-overview",
   "version": 1,
   "weekStart": ""
 } 

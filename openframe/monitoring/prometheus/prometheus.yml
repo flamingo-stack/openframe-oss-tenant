@@ -8,29 +8,27 @@ scrape_configs:
     static_configs:
       - targets: ['openframe-api:8090']
 
-  - job_name: 'openframe-core'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['openframe-core:8091']
-
   - job_name: 'openframe-stream'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['openframe-stream:8082']
 
-  - job_name: 'openframe-data'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['openframe-data:8083']
-
   - job_name: 'openframe-config'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['openframe-data:8888']
+      - targets: ['openframe-config-server:8888']
 
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['openframe-loki:3100']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['openframe-redis-exporter:9121']
 
   - job_name: 'kafka'
     static_configs:

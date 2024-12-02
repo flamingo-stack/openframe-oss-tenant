@@ -197,7 +197,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -259,6 +259,46 @@ services:
       - loki
       - mongodb
 
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: openframe-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://openframe-redis:6379
+    networks:
+      - openframe-network
+    depends_on:
+      - redis
+      - loki
+
+  # Promtail
+  promtail:
+    image: grafana/promtail:latest
+    container_name: openframe-promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail:/etc/promtail
+    command:
+      - "-config.file=/etc/promtail/config.yml"
+      - "-config.expand-env=true"
+    environment:
+      - HOSTNAME=promtail
+    networks:
+      - openframe-network
+    depends_on:
+      - loki
+    user: root
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
+
   # Loki
   loki:
     image: grafana/loki:latest
@@ -269,13 +309,13 @@ services:
       - "-config.file=/etc/loki/local-config.yaml"
       - "-config.expand-env=true"
       - "-validation.allow-structured-metadata=false"
+    environment:
+      - LOKI_RETENTION_PERIOD=24h
     volumes:
       - ./monitoring/loki:/etc/loki
       - loki_data:/loki
     networks:
-      openframe-network:
-        aliases:
-          - loki
+      - openframe-network
     healthcheck:
       test: ["CMD-SHELL", "wget -q --try-connect-timeout=1 -O - http://localhost:3100/ready || exit 1"]
       interval: 10s
@@ -364,22 +404,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: openframe-promtail
-    volumes:
-      - ./monitoring/promtail:/etc/promtail
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    command:
-      - -config.file=/etc/promtail/config.yml
-      - -config.expand-env=true
-    depends_on:
-      - loki
-    networks:
-      - openframe-network
-    restart: unless-stopped
 
 networks:
   openframe-network:
