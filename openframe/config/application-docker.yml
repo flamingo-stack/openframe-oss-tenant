@@ -10,7 +10,7 @@ spring:
       local-datacenter: datacenter1
       advanced:
         timestamp-generator:
-          class: MonotonicTimestampGenerator
+          class: com.datastax.oss.driver.internal.core.time.MonotonicTimestampGenerator
           force-java-clock: true
       request:
         timeout: 20s
