@@ -1,11 +1,10 @@
 package com.openframe.data.config;
 
-import javax.annotation.PostConstruct;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.cassandra.config.AbstractCassandraConfiguration;
 import org.springframework.data.cassandra.config.CqlSessionFactoryBean;
@@ -14,7 +13,6 @@ import org.springframework.data.cassandra.repository.config.EnableCassandraRepos
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "true", matchIfMissing = false)
@@ -60,25 +58,8 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
         return bean;
     }
 
-    @PostConstruct
-    public void logSessionDetails() {
-        try {
-            CqlSession session = cassandraSession().getObject();
-            if (session != null) {
-                DriverExecutionProfile config = session.getContext().getConfig().getDefaultProfile();
-                logger.info("Cassandra Session Details:");
-                logger.info("Connected Nodes: {}", session.getMetadata().getNodes());
-                logger.info("Current Datacenter: {}", getLocalDataCenter());
-                logger.info("Current Keyspace: {}", session.getKeyspace().orElse(null));
-                logger.info("Contact Points from Config: {}", 
-                    config.getStringList(DefaultDriverOption.CONTACT_POINTS));
-                logger.info("Load Balancing DC: {}", 
-                    config.getString(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER));
-            } else {
-                logger.warn("Could not obtain Cassandra session for logging details");
-            }
-        } catch (Exception e) {
-            logger.error("Error while trying to log Cassandra session details", e);
-        }
+    @Bean
+    public CassandraSessionLogger cassandraSessionLogger(CqlSession session) {
+        return new CassandraSessionLogger(session);
     }
 }
