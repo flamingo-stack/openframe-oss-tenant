@@ -84,10 +84,10 @@ logging:
     # Actuator and metrics logging
     org.springframework.boot.actuate: DEBUG
     org.springframework.boot.actuate.metrics: TRACE
-    org.springframework.boot.actuate.endpoint: DEBUG
+    org.springframework.boot.actuate.endpoint: TRACE
     org.springframework.boot.actuate.endpoint.web: TRACE
     org.springframework.boot.actuate.metrics.export.prometheus: TRACE
-    io.micrometer: DEBUG
+    io.micrometer: TRACE
     io.micrometer.prometheus: TRACE
     io.micrometer.core.instrument.logging: TRACE
     org.springframework.web.servlet.mvc.method.annotation: DEBUG
