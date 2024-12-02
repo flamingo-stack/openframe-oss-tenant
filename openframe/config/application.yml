@@ -54,32 +54,16 @@ management:
       enabled: true
     metrics:
       enabled: true
-  prometheus:
-    metrics:
-      export:
-        enabled: true
-        step: 1m
-        descriptions: true
   metrics:
     enable:
       all: true
-    export:
-      prometheus:
-        enabled: true
-        step: 1m
-        descriptions: true
+    tags:
+      application: ${spring.application.name}
     distribution:
       percentiles-histogram:
         "[http.server.requests]": true
       sla:
         "[http.server.requests]": [10ms, 50ms, 100ms, 200ms, 500ms]
-    tags:
-      application: ${spring.application.name}
-    web:
-      server:
-        request:
-          autotime:
-            enabled: true
 
 # Common security configuration
 security:

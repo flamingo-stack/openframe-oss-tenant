@@ -32,13 +32,14 @@
         <kafka.version>3.6.0</kafka.version>
         <pinot.version>1.2.0</pinot.version>
         <micrometer.version>1.14.1</micrometer.version>
+        <simpleclient.version>0.16.0</simpleclient.version>
         <loki.version>1.5.2</loki.version>
         <slf4j.api.version>2.0.7</slf4j.api.version>
         <slf4j.impl.version>2.21.1</slf4j.impl.version>
         <opensaml.version>4.3.0</opensaml.version>
         <spring-data-mongodb.version>4.2.0</spring-data-mongodb.version>
         <esri.geometry.version>2.2.4</esri.geometry.version>
-        <tinkergraph.gremlin.core.version>3.4.0</tinkergraph.gremlin.core.version>
+        <tinkergraph.gremlin.version>3.4.0</tinkergraph.gremlin.version>
     </properties>
 
     <modules>
@@ -80,6 +81,14 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-observation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient_common</artifactId>
         </dependency>
 
         <!-- Logging Dependencies -->
@@ -138,7 +147,7 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>tinkergraph-gremlin</artifactId>
-                <version>${tinkergraph.gremlin.core.version}</version>
+                <version>${tinkergraph.gremlin.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.esri.geometry</groupId>
