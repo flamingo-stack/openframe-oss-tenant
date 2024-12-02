@@ -4,9 +4,6 @@ server:
 spring:
   application:
     name: config-server
-  # autoconfigure:
-    # exclude:
-    #   - org.springframework.boot.actuate.autoconfigure.metrics.Log4J2MetricsAutoConfiguration
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
