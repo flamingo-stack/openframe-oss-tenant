@@ -3,12 +3,6 @@ spring:
   kafka:
     bootstrap-servers: openframe-kafka:9092
 
-# Pinot connection details
-pinot:
-  controller:
-    url: http://openframe-pinot-controller:9000
-  broker:
-    url: http://openframe-pinot-broker:8099
 
 
 

@@ -19,6 +19,8 @@ spring:
         min-idle: 0
         max-wait: 1000ms
     client-type: lettuce
+  kafka:
+    enabled: false
   cloud:
     config:
       fail-fast: false

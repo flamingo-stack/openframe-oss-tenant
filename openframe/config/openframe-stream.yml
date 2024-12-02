@@ -28,6 +28,3 @@ spring:
   cloud:
     config:
       fail-fast: false
-
-pinot:
-  enabled: false
