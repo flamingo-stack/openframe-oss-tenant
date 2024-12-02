@@ -4,10 +4,21 @@ spring:
     # Local MongoDB connection
     mongodb:
       uri: mongodb://openframe:password123456789@localhost:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
-    # Local Cassandra connection
+    # Docker Cassandra connection
     cassandra:
       contact-points: localhost
       local-datacenter: datacenter1
+      advanced:
+        timestamp-generator:
+          class: MonotonicTimestampGenerator
+          force-java-clock: true
+      request:
+        timeout: 20s
+      connection:
+        connect-timeout: 20s
+        init-query-timeout: 20s
+      controlconnection:
+        timeout: 20s
     # Local Redis connection (only used by API)
     redis:
       host: localhost

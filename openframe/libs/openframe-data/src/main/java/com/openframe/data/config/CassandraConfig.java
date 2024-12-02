@@ -38,6 +38,8 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
         bean.setSessionBuilderConfigurer(builder -> {
             return builder.withConfigLoader(DriverConfigLoader.programmaticBuilder()
                 .withString(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER, localDatacenter)
+                .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, "MonotonicTimestampGenerator")
+                .withBoolean(DefaultDriverOption.TIMESTAMP_GENERATOR_FORCE_JAVA_CLOCK, true)
                 .build());
         });
         return bean;
