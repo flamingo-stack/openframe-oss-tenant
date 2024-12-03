@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+  data:
+    mongodb:
+      database: openframe-test   
+
+jwt:
+  secret: test-secret-key-for-jwt-token-generation-in-tests
+  expiration: 3600000
+
+  

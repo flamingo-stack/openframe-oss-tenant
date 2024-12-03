@@ -18,17 +18,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.api.config.SecurityTestConfig;
+import com.openframe.api.config.TestConfig;
 import com.openframe.api.dto.AuthRequest;
 import com.openframe.api.dto.AuthResponse;
 import com.openframe.api.dto.RegisterRequest;
 import com.openframe.api.service.AuthenticationService;
+import com.openframe.api.repository.UserRepository;
+import com.openframe.api.service.JwtService;
 
-@WebMvcTest(AuthController.class)
-@Import(SecurityTestConfig.class)
-@ActiveProfiles("docker")
+import org.springframework.security.authentication.AuthenticationManager;
+
+import com.openframe.data.repository.UserRepository;
+
+import org.springframework.data.mongodb.core.MongoTemplate;
+
+import com.openframe.api.service.EventService;
+import com.openframe.data.config.MongoIndexConfig;
+
+@WebMvcTest(controllers = AuthController.class)
+@Import({SecurityTestConfig.class})
+@ActiveProfiles("test")
 @TestPropertySource(
-        locations = "classpath:application.yml"
+    properties = {
+        "spring.main.allow-bean-definition-overriding=true"
+    }
 )
+@MockBean(MongoIndexConfig.class)
 class AuthControllerTest {
 
     @Autowired
@@ -39,6 +54,21 @@ class AuthControllerTest {
 
     @MockBean
     private AuthenticationService authenticationService;
+
+    @MockBean
+    private UserRepository userRepository;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private AuthenticationManager authenticationManager;
+
+    @MockBean
+    private EventService eventService;
+
+    @MockBean
+    private MongoTemplate mongoTemplate;
 
     @Test
     void register_ValidRequest_ReturnsToken() throws Exception {
