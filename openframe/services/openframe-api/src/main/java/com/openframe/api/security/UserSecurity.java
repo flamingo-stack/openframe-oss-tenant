@@ -8,9 +8,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.openframe.core.model.User;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@Getter
 public class UserSecurity implements UserDetails {
     
     private final User user;

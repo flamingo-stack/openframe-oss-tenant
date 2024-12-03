@@ -1,0 +1,4 @@
+pinot:
+  broker:
+    host: localhost
+    port: 8099 

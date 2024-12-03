@@ -3,8 +3,12 @@ spring:
     name: openframe-api
 
 jwt:
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
+  public:
+    key: classpath:certs/public.pem
+  private:
+    key: classpath:certs/private.pem
+  secret: ${JWT_SECRET:your_jwt_secret_key_min_32_chars_long}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 ---
 spring:
