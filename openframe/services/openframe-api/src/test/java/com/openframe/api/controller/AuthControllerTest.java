@@ -38,7 +38,7 @@ import com.openframe.data.config.MongoIndexConfig;
 @WebMvcTest(controllers = AuthController.class)
 @Import({SecurityTestConfig.class})
 @ActiveProfiles("test")
-@TestPropertySource(
+@TestPropertySource( 
     properties = {
         "spring.main.allow-bean-definition-overriding=true"
     }
