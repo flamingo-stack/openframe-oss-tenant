@@ -47,7 +47,8 @@ public class OAuthService {
 
     private TokenResponse handleAuthorizationCode(String code, String clientId, String clientSecret) {
         var client = validateClient(clientId, clientSecret);
-        var token = tokenRepository.findByAccessToken(code);
+        var token = tokenRepository.findByAccessToken(code)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid authorization code"));
         
         User user = userRepository.findById(token.getUserId())
             .orElseThrow(() -> new IllegalStateException("User not found"));
@@ -91,8 +92,31 @@ public class OAuthService {
     }
 
     private TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {
-        // Implement refresh token flow
-        return null;
+        // Validate client
+        validateClient(clientId, clientSecret);
+        
+        // Find token in database
+        var token = tokenRepository.findByRefreshToken(refreshToken)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+        
+        // Check if refresh token is expired
+        if (token.getRefreshTokenExpiry().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Refresh token expired");
+        }
+        
+        // Get user
+        User user = userRepository.findById(token.getUserId())
+            .orElseThrow(() -> new IllegalStateException("User not found"));
+        
+        UserDetails userDetails = new UserSecurity(user);
+        
+        // Generate new tokens
+        return TokenResponse.builder()
+            .accessToken(jwtService.generateToken(userDetails))
+            .refreshToken(generateRefreshToken()) // Generate new refresh token
+            .tokenType("Bearer")
+            .expiresIn(3600)
+            .build();
     }
 
     private OAuthClient validateClient(String clientId, String clientSecret) {

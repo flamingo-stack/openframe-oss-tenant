@@ -12,11 +12,10 @@ import lombok.Data;
 public class OAuthToken {
     @Id
     private String id;
+    private String userId;
+    private String clientId;
     private String accessToken;
     private String refreshToken;
-    private String clientId;
-    private String userId;
-    private String[] scopes;
     private Instant accessTokenExpiry;
     private Instant refreshTokenExpiry;
 } 
