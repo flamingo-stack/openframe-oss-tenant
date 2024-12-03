@@ -230,12 +230,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route=~\"loki_api_v1_query_range\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(loki_ingester_client_request_duration_seconds_bucket{operation=\"/logproto.StreamData/GetStreamRates\"}[5m])) by (le))",
           "legendFormat": "99th Percentile",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{route=~\"loki_api_v1_query_range\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(loki_ingester_client_request_duration_seconds_bucket{operation=\"/logproto.StreamData/GetStreamRates\"}[5m])) by (le))",
           "legendFormat": "50th Percentile",
           "refId": "B"
         }

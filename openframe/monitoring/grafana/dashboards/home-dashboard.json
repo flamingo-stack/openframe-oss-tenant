@@ -148,7 +148,7 @@
         },
         "textMode": "auto"
       },
-      "title": "Config Server",
+      "title": "OpenFrame Config Server",
       "type": "stat",
       "targets": [
         {
@@ -216,7 +216,7 @@
         },
         "textMode": "auto"
       },
-      "title": "Stream Service",
+      "title": "OpenFrame Stream Service",
       "type": "stat",
       "targets": [
         {
