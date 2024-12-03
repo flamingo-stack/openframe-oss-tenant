@@ -41,3 +41,10 @@ dgs:
     path: /graphql
     graphiql:
       enabled: true
+jwt:
+  public:
+    key: classpath:certs/public.pem
+  private:
+    key: classpath:certs/private.pem
+  secret: ${JWT_SECRET:your_jwt_secret_key_min_32_chars_long}
+  expiration: ${JWT_EXPIRATION:86400000}
