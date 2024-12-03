@@ -12,6 +12,7 @@ public class OAuthClient {
     private String id;
     private String clientId;
     private String clientSecret;
+    private String machineId;
     private String[] redirectUris;
     private String[] grantTypes;  // "authorization_code", "password", "client_credentials", "refresh_token"
     private String[] scopes;

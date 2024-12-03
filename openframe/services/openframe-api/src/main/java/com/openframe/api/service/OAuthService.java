@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Service;
 
 import com.openframe.api.dto.oauth.AuthorizationResponse;
@@ -87,8 +88,23 @@ public class OAuthService {
     }
 
     private TokenResponse handleClientCredentials(String clientId, String clientSecret) {
-        // Implement client credentials flow
-        return null;
+        // Validate client credentials
+        OAuthClient client = validateClient(clientId, clientSecret);
+        
+        // Generate token with client-specific claims
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+            .issuer("https://auth.openframe.com")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plus(1, ChronoUnit.HOURS))
+            .subject(client.getClientId())
+            .claim("grant_type", "client_credentials")
+            .build();
+        
+        return TokenResponse.builder()
+            .accessToken(jwtService.generateToken(claims))
+            .tokenType("Bearer")
+            .expiresIn(3600)
+            .build();
     }
 
     private TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {

@@ -33,6 +33,10 @@ public class JwtService {
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
+    public String generateToken(JwtClaimsSet claims) {
+        return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+    }
+
     public String extractUsername(String token) {
         return decoder.decode(token).getSubject();
     }
@@ -42,5 +46,18 @@ public class JwtService {
         Jwt jwt = decoder.decode(token);
         return username.equals(userDetails.getUsername()) && 
                !jwt.getExpiresAt().isBefore(Instant.now());
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwt jwt = decoder.decode(token);
+            return !jwt.getExpiresAt().isBefore(Instant.now());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String extractMachineId(String token) {
+        return decoder.decode(token).getSubject();
     }
 } 
