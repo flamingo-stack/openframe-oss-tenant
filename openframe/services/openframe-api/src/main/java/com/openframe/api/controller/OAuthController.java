@@ -2,6 +2,8 @@ package com.openframe.api.controller;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class OAuthController {
     
     private final OAuthService oauthService;
+    private static final Logger log = LoggerFactory.getLogger(OAuthController.class);
 
     @PostMapping("/authorize")
     public ResponseEntity<AuthorizationResponse> authorize(
@@ -41,8 +44,14 @@ public class OAuthController {
             @RequestParam(required = false) String password,
             @RequestParam String client_id,
             @RequestParam String client_secret) {
-        return ResponseEntity.ok(oauthService.token(
-            grant_type, code, refresh_token, username, password, client_id, client_secret));
+        log.debug("Token request - grant_type: {}, client_id: {}", grant_type, client_id);
+        try {
+            return ResponseEntity.ok(oauthService.token(
+                grant_type, code, refresh_token, username, password, client_id, client_secret));
+        } catch (Exception e) {
+            log.error("Token error", e);
+            throw e;
+        }
     }
 
     @PostMapping("/register")

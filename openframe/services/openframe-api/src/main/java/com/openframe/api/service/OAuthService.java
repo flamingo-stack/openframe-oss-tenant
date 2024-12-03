@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -29,6 +31,7 @@ public class OAuthService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger log = LoggerFactory.getLogger(OAuthService.class);
 
     public TokenResponse token(String grantType, String code, String refreshToken,
             String username, String password, String clientId, String clientSecret) {
@@ -88,8 +91,11 @@ public class OAuthService {
     }
 
     private TokenResponse handleClientCredentials(String clientId, String clientSecret) {
-        // Validate client credentials
+        // Validate client
         OAuthClient client = validateClient(clientId, clientSecret);
+        if (client == null) {
+            throw new IllegalArgumentException("Invalid client credentials");
+        }
         
         // Generate token with client-specific claims
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -98,6 +104,7 @@ public class OAuthService {
             .expiresAt(Instant.now().plus(1, ChronoUnit.HOURS))
             .subject(client.getClientId())
             .claim("grant_type", "client_credentials")
+            .claim("scopes", client.getScopes())
             .build();
         
         return TokenResponse.builder()
@@ -136,7 +143,22 @@ public class OAuthService {
     }
 
     private OAuthClient validateClient(String clientId, String clientSecret) {
-        return clientRepository.findByClientId(clientId);
+        log.debug("Validating client: {}", clientId);
+        OAuthClient client = clientRepository.findByClientId(clientId);
+        
+        if (client == null) {
+            log.error("Client not found: {}", clientId);
+            throw new IllegalArgumentException("Client not found");
+        }
+        
+        if (clientSecret != null) {
+            if (!clientSecret.equals(client.getClientSecret())) {
+                log.error("Invalid client secret for client: {}", clientId);
+                throw new IllegalArgumentException("Invalid client secret");
+            }
+        }
+        
+        return client;
     }
 
     private String generateRefreshToken() {
