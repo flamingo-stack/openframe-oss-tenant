@@ -64,7 +64,7 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_StandaloneServer_port2181_NumAliveConnections:_7",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_NumAliveConnections:.*\", job=\"zookeeper\"}",
           "legendFormat": "Active Connections",
           "refId": "A"
         }
@@ -80,7 +80,37 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -116,7 +146,7 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_StandaloneServer_port2181_DataDirSize:_107981",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_DataDirSize:.*\", job=\"zookeeper\"}",
           "legendFormat": "Data Size",
           "refId": "A"
         }
@@ -297,12 +327,12 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_StandaloneServer_port2181_AvgRequestLatency:_0_2951 * 1000",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_AvgRequestLatency:.*\", job=\"zookeeper\"} * 1000",
           "legendFormat": "Average Request Latency",
           "refId": "A"
         },
         {
-          "expr": "zookeeper_StandaloneServer_port2181_MaxRequestLatency:_30 * 1000",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_MaxRequestLatency:.*\", job=\"zookeeper\"} * 1000",
           "legendFormat": "Max Request Latency",
           "refId": "B"
         }
@@ -373,7 +403,7 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_StandaloneServer_port2181_OutstandingRequests:_0",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_OutstandingRequests:.*\", job=\"zookeeper\"}",
           "legendFormat": "Outstanding Requests",
           "refId": "A"
         }
@@ -468,12 +498,12 @@
       },
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
+          "expr": "jvm_memory_bytes_used{area=\"heap\",job=\"zookeeper\"}",
           "legendFormat": "Heap Used",
           "refId": "A"
         },
         {
-          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
+          "expr": "jvm_memory_bytes_max{area=\"heap\",job=\"zookeeper\"}",
           "legendFormat": "Heap Max",
           "refId": "B"
         }
@@ -544,7 +574,7 @@
       },
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum[5m])",
+          "expr": "rate(jvm_gc_collection_seconds_sum{job=\"zookeeper\"}[5m])",
           "legendFormat": "{{gc}}",
           "refId": "A"
         }

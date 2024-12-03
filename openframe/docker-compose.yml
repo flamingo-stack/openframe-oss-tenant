@@ -155,8 +155,10 @@ services:
     networks: 
       - openframe-network
     depends_on:
-      - loki
-      - zookeeper
+      loki:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl localhost:9092 | grep Empty || exit 0"]
       interval: 30s
@@ -217,6 +219,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=openframe
       - GF_SECURITY_ADMIN_PASSWORD=password123456789
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/home-dashboard.json
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
@@ -317,10 +321,11 @@ services:
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --try-connect-timeout=1 -O - http://localhost:3100/ready || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "wget -q --spider --tries=1 http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
     restart: unless-stopped
 
   pinot-controller:

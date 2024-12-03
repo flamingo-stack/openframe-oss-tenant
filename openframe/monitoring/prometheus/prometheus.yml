@@ -37,6 +37,10 @@ scrape_configs:
   - job_name: 'zookeeper'
     static_configs:
       - targets: ['openframe-zookeeper:7070']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'zookeeper'
 
   - job_name: 'mongodb'
     static_configs:
