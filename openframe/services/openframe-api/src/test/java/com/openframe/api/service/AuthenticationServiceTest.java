@@ -55,7 +55,7 @@ class AuthenticationServiceTest {
         registerRequest.setPassword("Password123!");
 
         authRequest = new AuthRequest();
-        authRequest.setUsername("testuser");
+        authRequest.setEmail("test@example.com");
         authRequest.setPassword("Password123!");
 
         user = new User();
@@ -100,7 +100,7 @@ class AuthenticationServiceTest {
 
     @Test
     void authenticate_Success() {
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
         when(jwtService.generateToken(any())).thenReturn("jwt-token");
 
         var response = authenticationService.authenticate(authRequest);

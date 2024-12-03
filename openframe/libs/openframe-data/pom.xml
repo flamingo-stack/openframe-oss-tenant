@@ -17,6 +17,7 @@
     <description>Data access library for OpenFrame platform</description>
 
     <dependencies>
+        
         <dependency>
             <groupId>com.openframe</groupId>
             <artifactId>openframe-core</artifactId>

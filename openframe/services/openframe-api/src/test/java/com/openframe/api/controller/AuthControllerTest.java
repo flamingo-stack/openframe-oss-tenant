@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -18,27 +20,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.api.config.SecurityTestConfig;
-import com.openframe.api.config.TestConfig;
 import com.openframe.api.dto.AuthRequest;
 import com.openframe.api.dto.AuthResponse;
 import com.openframe.api.dto.RegisterRequest;
 import com.openframe.api.service.AuthenticationService;
-import com.openframe.api.repository.UserRepository;
-import com.openframe.api.service.JwtService;
-
-import org.springframework.security.authentication.AuthenticationManager;
-
-import com.openframe.data.repository.UserRepository;
-
-import org.springframework.data.mongodb.core.MongoTemplate;
-
 import com.openframe.api.service.EventService;
+import com.openframe.api.service.JwtService;
 import com.openframe.data.config.MongoIndexConfig;
+import com.openframe.data.repository.UserRepository;
 
 @WebMvcTest(controllers = AuthController.class)
 @Import({SecurityTestConfig.class})
 @ActiveProfiles("test")
-@TestPropertySource( 
+@TestPropertySource(
     properties = {
         "spring.main.allow-bean-definition-overriding=true"
     }
@@ -75,12 +69,12 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest();
         request.setUsername("testuser");
         request.setEmail("test@example.com");
-        request.setPassword("Password123!");
+        request.setPassword("Test123!@#");
 
         when(authenticationService.register(any()))
                 .thenReturn(new AuthResponse("test-token"));
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -90,27 +84,32 @@ class AuthControllerTest {
     @Test
     void register_InvalidRequest_ReturnsBadRequest() throws Exception {
         RegisterRequest request = new RegisterRequest();
-        request.setUsername(""); // Invalid username
-        request.setEmail("invalid-email"); // Invalid email
-        request.setPassword("weak"); // Invalid password
+        request.setUsername("");  // Invalid - blank username
+        request.setEmail("invalid-email");  // Invalid email format
+        request.setPassword("weak");  // Invalid password
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors.username").exists())
+                .andExpect(jsonPath("$.errors.email").exists())
+                .andExpect(jsonPath("$.errors.password").exists());
     }
 
     @Test
     @WithMockUser
     void authenticate_ValidCredentials_ReturnsToken() throws Exception {
         AuthRequest request = new AuthRequest();
-        request.setUsername("testuser");
+        request.setEmail("test@example.com");
         request.setPassword("Password123!");
 
         when(authenticationService.authenticate(any()))
                 .thenReturn(new AuthResponse("test-token"));
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -118,15 +117,18 @@ class AuthControllerTest {
     }
 
     @Test
-    @WithMockUser
     void authenticate_InvalidRequest_ReturnsBadRequest() throws Exception {
         AuthRequest request = new AuthRequest();
-        request.setUsername("");
-        request.setPassword("");
+        request.setEmail("invalid-email");  // Invalid email format
+        request.setPassword("");  // Invalid - blank password
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors.email").exists())
+                .andExpect(jsonPath("$.errors.password").exists());
     }
 }
