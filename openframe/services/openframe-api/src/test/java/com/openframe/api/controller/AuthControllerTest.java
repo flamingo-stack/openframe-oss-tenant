@@ -9,6 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,7 +25,10 @@ import com.openframe.api.service.AuthenticationService;
 
 @WebMvcTest(AuthController.class)
 @Import(SecurityTestConfig.class)
-@ActiveProfiles("test")
+@ActiveProfiles("docker")
+@TestPropertySource(
+        locations = "classpath:application.yml"
+)
 class AuthControllerTest {
 
     @Autowired
@@ -43,7 +48,7 @@ class AuthControllerTest {
         request.setPassword("Password123!");
 
         when(authenticationService.register(any()))
-            .thenReturn(new AuthResponse("test-token"));
+                .thenReturn(new AuthResponse("test-token"));
 
         mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -73,7 +78,7 @@ class AuthControllerTest {
         request.setPassword("Password123!");
 
         when(authenticationService.authenticate(any()))
-            .thenReturn(new AuthResponse("test-token"));
+                .thenReturn(new AuthResponse("test-token"));
 
         mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -94,4 +99,4 @@ class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
-} 
+}
