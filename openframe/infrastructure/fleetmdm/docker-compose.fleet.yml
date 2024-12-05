@@ -54,11 +54,7 @@ services:
       - "8070:8070"
     environment:
       FLEET_CONFIG: /etc/fleet/fleet.yml
-      FLEET_MDM_APPLE_BM_CERT_PATH: /etc/fleet/certs/mdm/mdm-bm.crt
-      FLEET_MDM_APPLE_BM_KEY_PATH: /etc/fleet/certs/mdm/mdm-bm.key
-      FLEET_MDM_APPLE_SCEP_CERT: /etc/fleet/certs/mdm/scep.crt
-      FLEET_MDM_APPLE_SCEP_KEY: /etc/fleet/certs/mdm/scep.key
-      FLEET_SETUP_ADMIN_EMAIL: "api@openframe.local"
+      FLEET_SETUP_ADMIN_EMAIL: "admin@openframe.local"
       FLEET_SETUP_ADMIN_PASSWORD: "openframe123!"
       FLEET_SETUP_ORG_NAME: "OpenFrame"
       FLEET_SETUP_AUTO_INIT: "true"
@@ -69,6 +65,7 @@ services:
 
 volumes:
   fleet-mysql:
+    name: fleet-mysql-data
   fleet-redis:
   fleet-logs:
 
