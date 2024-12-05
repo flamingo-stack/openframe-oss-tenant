@@ -32,6 +32,10 @@ public class SecurityConfig {
                 .requestMatchers("/ws/v1/data/*/eventsource").permitAll()
                 .requestMatchers("/ws/v1/data/*/xhr").permitAll()
                 .requestMatchers("/ws/v1/data/*/xhr_send").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/websocket/**").permitAll()
+                .requestMatchers("/ws/**").permitAll()
                 .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));

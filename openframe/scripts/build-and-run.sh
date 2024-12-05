@@ -25,67 +25,24 @@ check_service() {
 echo "Building JARs..."
 ./scripts/build-jars.sh
 
-# echo "Creating network..."
-# docker network create openframe-network 2>/dev/null || true
-
-# Start Zookeeper and wait for it
-echo "Starting Zookeeper..."
-docker-compose up -d zookeeper
-sleep 2  # Give Zookeeper time to initialize
-check_service "zookeeper" 2181
-if [ $? -ne 0 ]; then
-    echo "Failed to start Zookeeper. Exiting..."
-    exit 1
-fi
-
-# Start Kafka and wait for it
-echo "Starting Kafka..."
-docker-compose up -d kafka
-sleep 2  # Give Kafka time to initialize
-check_service "kafka" 9092
-if [ $? -ne 0 ]; then
-    echo "Failed to start Kafka. Exiting..."
-    exit 1
-fi
-
-# Start Mongo and wait for it
-echo "Starting MongoDB..."
-docker-compose up -d mongodb
-sleep 2  # Give MongoDB time to initialize
-check_service "mongodb" 27017
-if [ $? -ne 0 ]; then
-    echo "Failed to start MongoDB. Exiting..."
-    exit 1
-fi
-
-# Load initial data into MongoDB
-echo "Loading initial data into MongoDB..."
-
-# Executing initial data script into MongoDB
-docker exec -it openframe-mongodb mongosh --host localhost --username openframe --password password123456789 /docker-entrypoint-initdb.d/mongo-init.js
-
-# Start Mongo and wait for it
-echo "Starting Cassandra..."
-docker-compose up -d cassandra
-sleep 2  # Give MongoDB time to initialize
-check_service "cassandra" 9042
-if [ $? -ne 0 ]; then
-    echo "Failed to start Cassandra. Exiting..."
-    exit
-fi
-
-# Load initial data into MongoDB
-echo "Loading initial data into MongoDB..."
-
-# Executing initial data script into MongoDB
-docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
-
-# Start other services
-echo "Starting remaining services..."
+# Start core services
+echo "Starting core services..."
 docker-compose up -d
 
+# Start Fleet MDM with a clean state
+echo "Starting Fleet MDM..."
+docker-compose -f infrastructure/fleetmdm/docker-compose.fleet.yml up -d
+
+# Add Fleet health check
+check_service "fleet" 8070
+if [ $? -ne 0 ]; then
+    echo "Failed to start Fleet MDM. Exiting..."
+    exit 1
+fi
+
+# Start application services
 echo "Starting application services..."
-docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d --remove-orphans
+docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d
 
 echo "All services started. Checking logs..."
 
@@ -96,6 +53,33 @@ echo "- MongoDB Express: http://localhost:8081"
 echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
 echo "- Prometheus: http://localhost:9090"
+echo "- Fleet MDM: http://localhost:8070"
+
+# Print Fleet credentials
+echo -e "\nFleet MDM Credentials:"
+echo "Admin User:     admin@openframe.com"
+echo "Admin Password: AdminPassword123!@#$"
+echo "API User:       api@openframe.com"
+echo "API Password:   ApiPassword123!@#$"
+
+# Wait for Fleet API token to be generated
+echo -e "\nWaiting for Fleet API token..."
+max_attempts=30
+attempt=1
+while ! docker exec openframe-fleet cat /var/log/osquery/api_token.txt > /dev/null 2>&1; do
+    if [ $attempt -eq $max_attempts ]; then
+        echo "API token not available after $max_attempts attempts"
+        break
+    fi
+    echo "Waiting for Fleet API token to be generated... (attempt $attempt/$max_attempts)"
+    attempt=$((attempt + 1))
+    sleep 5
+done
+
+if [ $attempt -lt $max_attempts ]; then
+    echo -e "\nFleet API Token:"
+    docker exec openframe-fleet cat /var/log/osquery/api_token.txt
+fi
 
 echo "Testing network connectivity..."
 ./scripts/test-network.sh

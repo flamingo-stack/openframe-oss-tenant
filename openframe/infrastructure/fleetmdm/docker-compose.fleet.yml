@@ -1,0 +1,79 @@
+services:
+  fleet-mysql:
+    image: mysql:8.0
+    container_name: openframe-fleet-mysql
+    hostname: fleet-mysql
+    platform: linux/amd64
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: fleet
+      MYSQL_DATABASE: fleet
+      MYSQL_USER: fleet
+      MYSQL_PASSWORD: fleet
+    volumes:
+      - fleet-mysql:/var/lib/mysql
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fleet", "-pfleet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fleet-redis:
+    image: redis:7.0-alpine
+    container_name: openframe-fleet-redis
+    hostname: fleet-redis
+    restart: always
+    volumes:
+      - fleet-redis:/data
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fleet:
+    depends_on:
+      fleet-mysql:
+        condition: service_healthy
+      fleet-redis:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openframe-fleet
+    hostname: fleet
+    platform: linux/amd64
+    restart: always
+    user: root
+    ports:
+      - "8070:8070"
+    environment:
+      FLEET_CONFIG: /etc/fleet/fleet.yml
+      FLEET_MDM_APPLE_BM_CERT_PATH: /etc/fleet/certs/mdm/mdm-bm.crt
+      FLEET_MDM_APPLE_BM_KEY_PATH: /etc/fleet/certs/mdm/mdm-bm.key
+      FLEET_MDM_APPLE_SCEP_CERT: /etc/fleet/certs/mdm/scep.crt
+      FLEET_MDM_APPLE_SCEP_KEY: /etc/fleet/certs/mdm/scep.key
+      FLEET_SETUP_ADMIN_EMAIL: "api@openframe.local"
+      FLEET_SETUP_ADMIN_PASSWORD: "openframe123!"
+      FLEET_SETUP_ORG_NAME: "OpenFrame"
+      FLEET_SETUP_AUTO_INIT: "true"
+    volumes:
+      - fleet-logs:/var/log/osquery
+    networks:
+      - openframe-network
+
+volumes:
+  fleet-mysql:
+  fleet-redis:
+  fleet-logs:
+
+networks:
+  openframe-network:
+    name: openframe-network
+    driver: bridge
+    external: true

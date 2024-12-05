@@ -1,0 +1,109 @@
+mysql:
+  address: openframe-fleet-mysql:3306
+  database: fleet
+  username: fleet
+  password: fleet
+  max_open_conns: 50
+  max_idle_conns: 50
+  debug: true
+
+redis:
+  address: openframe-fleet-redis:6379
+
+server:
+  address: 0.0.0.0:8070
+  cert: /etc/fleet/certs/tls/server.crt
+  key: /etc/fleet/certs/tls/server.key
+  tls: true
+  tls_compatibility: intermediate
+  private_key: /etc/fleet/keys/jwt.key
+  url_prefix: ""
+  debug: true
+  verbose: true
+  tls_profiles:
+    modern:
+      min_version: TLS12
+      max_version: TLS13
+      cipher_suites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+      curve_preferences:
+        - X25519
+        - secp256r1
+        - secp384r1
+    intermediate:
+      min_version: TLS12
+      max_version: TLS13
+      cipher_suites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      curve_preferences:
+        - X25519
+        - secp256r1
+        - secp384r1
+
+logging:
+  debug: true
+  json: true
+  development: true
+  level: debug
+  disable_banner: false
+  error_retention_period: 24h
+
+mdm:
+  enabled: true
+  server_url: https://fleet.openframe.local:8070
+  apple_scep_challenge: openframe123!
+  apple_scep_signer_validity_days: 365
+  apple_scep_signer_allow_renewal_days: 14
+  apple_dep_sync_periodicity: 1h
+  debug: true
+  windows_wstep_identity_cert_bytes: |
+    -----BEGIN CERTIFICATE-----
+    # Add your Windows WSTEP identity certificate here
+    -----END CERTIFICATE-----
+  windows_wstep_identity_key_bytes: |
+    -----BEGIN RSA PRIVATE KEY-----
+    # Add your Windows WSTEP identity key here
+    -----END RSA PRIVATE KEY-----
+
+auth:
+  bcrypt_cost: 12
+  salt_key_size: 24
+  debug: true
+
+app:
+  token_key_size: 24
+  invite_token_validity_period: 120h
+  enable_scheduled_query_stats: true
+
+session:
+  key_size: 64
+  duration: 120h
+
+osquery:
+  node_key_size: 24
+  host_identifier: uuid
+  label_update_interval: 1h
+  detail_update_interval: 1h
+  result_log_plugin: filesystem
+  status_log_plugin: filesystem
+  max_jitter_percent: 10
+  enable_scheduled_query_stats: true
+
+filesystem:
+  status_log_file: /var/log/osquery/status.log
+  result_log_file: /var/log/osquery/result.log
+  enable_log_rotation: true
+  enable_log_compression: true
+  max_size: 500
+  max_age: 28
+  max_backups: 3 
