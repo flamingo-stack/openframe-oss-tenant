@@ -81,7 +81,7 @@ done
 echo "Initializing Cassandra..."
 docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
 
-docker-compose -f docker-compose.openframe-infrastructure.yml up -f docker-compose.openframe-microservices.yml -d
+docker-compose -f docker-compose.openframe-infrastructure.yml -f docker-compose.openframe-microservices.yml up -d
 
 # Wait for infrastructure to be ready
 wait_for_infrastructure
