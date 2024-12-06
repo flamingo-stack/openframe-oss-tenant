@@ -53,6 +53,7 @@ wait_for_infrastructure() {
             echo "Failed to start $name. Exiting..."
             exit 1
         fi
+        
     done
 }
 
@@ -61,12 +62,31 @@ echo "Building JARs..."
 ./scripts/build-jars.sh
 
 # Start infrastructure services
-echo "Starting application infra and application services..."
-docker-compose -f docker-compose.openframe-infrastructure.yml -f docker-compose.openframe-microservices.yml up -d
-echo "Finished launching application infra and application services..."
+echo "Starting application infra services..."
+docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+
+echo "Finished launching application infra services..."
+
+# Start the infrastructure
+docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+
+# Wait for Cassandra to be healthy
+echo "Waiting for Cassandra to be healthy..."
+until docker-compose -f docker-compose.openframe-infrastructure.yml ps | grep "cassandra" | grep "(healthy)" > /dev/null; do
+    echo "Waiting for Cassandra to be ready..."
+    sleep 5
+done
+
+# Execute initialization scripts
+echo "Initializing Cassandra..."
+docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
+
+docker-compose -f docker-compose.openframe-infrastructure.yml up -f docker-compose.openframe-microservices.yml -d
 
 # Wait for infrastructure to be ready
 wait_for_infrastructure
+
+echo "Finished launching application infra and application services..."
 
 # Start Fleet MDM only after infrastructure is ready
 echo "Starting Fleet MDM..."
