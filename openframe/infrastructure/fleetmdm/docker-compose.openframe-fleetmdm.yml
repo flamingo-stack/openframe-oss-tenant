@@ -1,28 +1,35 @@
+name: openframe-fleetmdm
+
 services:
   fleet-mysql:
-    image: mysql:8.0
+    image: mysql:8.0.35
     container_name: openframe-fleet-mysql
     hostname: fleet-mysql
     platform: linux/amd64
-    command: --default-authentication-plugin=mysql_native_password
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --skip-mysqlx
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: fleet
       MYSQL_DATABASE: fleet
       MYSQL_USER: fleet
       MYSQL_PASSWORD: fleet
+      MYSQL_DEFAULT_AUTHENTICATION_PLUGIN: mysql_native_password
     volumes:
       - fleet-mysql:/var/lib/mysql
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fleet", "-pfleet"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfleet"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   fleet-redis:
-    image: redis:7.0-alpine
+    image: redis:latest
     container_name: openframe-fleet-redis
     hostname: fleet-redis
     restart: always
@@ -73,4 +80,3 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
-    external: true

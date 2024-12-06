@@ -1,4 +1,4 @@
-FROM fleetdm/fleet:v4.60.0
+FROM --platform=linux/arm64/v8 fleetdm/fleet:v4.60.0
 
 USER root
 
@@ -9,8 +9,9 @@ RUN apk update && \
     bash \
     su-exec \
     netcat-openbsd \
-    mysql-client && \
-    npm install -g fleetctl
+    mysql-client
+
+RUN npm install -g fleetctl
 
 # Create necessary directories
 RUN mkdir -p /etc/fleet \

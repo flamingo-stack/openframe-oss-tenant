@@ -1,3 +1,5 @@
+name: openframe-microservices-infrastructure
+
 services:
   # MongoDB
   mongodb:
@@ -41,7 +43,7 @@ services:
 
   # Redis
   redis:
-    image: redis:7.2-alpine
+    image: redis:latest
     container_name: openframe-redis
     ports:
       - "6379:6379"
@@ -68,37 +70,29 @@ services:
       - "9404:9404"
     volumes:
       - cassandra_data:/var/lib/cassandra
-      - cassandra_logs:/var/log/cassandra # Shared volume for logs
+      - cassandra_logs:/var/log/cassandra
       - ./init/cassandra:/docker-entrypoint-initdb.d
       - ./infrastructure/cassandra/jmx_exporter:/opt/jmx_exporter
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
       CASSANDRA_CLUSTER_NAME: openframe_cluster
       CASSANDRA_DC: datacenter1
-      CASSANDRA_START_RPC: true
+      CASSANDRA_START_RPC: "true"
       CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS: 128
       CASSANDRA_NATIVE_TRANSPORT_PORT_SSL: 9142
       CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE: 256MB
-      # Skip some startup checks
-      CASSANDRA_SKIP_WAIT_FOR_GOSSIP_TO_SETTLE: 0
-      # Reduce time it waits for other seeds
-      CASSANDRA_RING_DELAY: 0
-      # Skip automatic bootstrap on startup
-      CASSANDRA_AUTO_BOOTSTRAP: "false"
-      # Reduce the delay before starting the compaction process
-      CASSANDRA_COMPACTION_THROUGHPUT_MB_PER_SEC: 0
-      # Reduce initial heap size
+      CASSANDRA_STARTUP_TIMEOUT: 300
+      CASSANDRA_SYSTEM_AUTH_BOOTSTRAP_DELAY: 0
+      GOSSIP_WAIT_TIME_IN_MS: 0
       HEAP_NEWSIZE: 128M
       MAX_HEAP_SIZE: 512M
-      # Reduce delay before accepting CQL connections
-      CASSANDRA_INITIAL_TOKEN: "-9223372036854775808"
-      JVM_OPTS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9404:/opt/jmx_exporter/config.yml
+      LOCAL_JMX: "no"
+      JMX_PORT: 7199
     healthcheck:
-      test: ["CMD-SHELL", "cqlsh -e 'select now() from system.local;' || exit 1"]
+      test: ["CMD-SHELL", "(nodetool -u cassandra -pw cassandra status && cqlsh -u cassandra -p cassandra -e 'SELECT now() FROM system.local') || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
     networks:
       - openframe-network
     depends_on:
@@ -113,7 +107,7 @@ services:
       - "7070:7070"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-      ZOO_4LW_COMMANDS_WHITELIST: "*" # Allow all 4-letter commands
+      ZOO_4LW_COMMANDS_WHITELIST: "srvr,ruok,conf,stat"
       ZOOKEEPER_TICK_TIME: 2000
       EXTRA_ARGS: -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=7070:/opt/jmx_exporter/config.yml
     volumes:
@@ -122,11 +116,11 @@ services:
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/commands/stat || exit 1"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "curl -f http://localhost:7070/commands/stat || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
     depends_on:
       - loki
 

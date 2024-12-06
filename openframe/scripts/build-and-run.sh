@@ -21,30 +21,92 @@ check_service() {
     return 0
 }
 
-# Build the JARs using the existing script
+# Function to wait for Fleet initialization
+wait_for_fleet_init() {
+    echo "Waiting for Fleet initialization..."
+    local max_attempts=30
+    local attempt=1
+    
+    while [ $attempt -lt $max_attempts ]; do
+        if docker exec openframe-fleet test -f /etc/fleet/api_token.txt; then
+            echo "Fleet initialization completed successfully!"
+            return 0
+        fi
+        echo "Waiting for Fleet initialization... (attempt $attempt/$max_attempts)"
+        attempt=$((attempt + 1))
+        sleep 5
+    done
+    
+    echo "Fleet initialization failed after $max_attempts attempts"
+    docker logs openframe-fleet
+    return 1
+}
+
+# Function to wait for infrastructure services
+wait_for_infrastructure() {
+    echo "Waiting for infrastructure services..."
+    local services=("cassandra:9042" "mongodb:27017" "kafka:9092")
+    
+    for service in "${services[@]}"; do
+        IFS=':' read -r name port <<< "$service"
+        if ! check_service "$name" "$port"; then
+            echo "Failed to start $name. Exiting..."
+            exit 1
+        fi
+    done
+}
+
+# Build the JARs
 echo "Building JARs..."
 ./scripts/build-jars.sh
 
-# Start core services
-echo "Starting core services..."
-docker-compose up -d
+# Start infrastructure services
+echo "Starting application infra and application services..."
+docker-compose -f docker-compose.openframe-infrastructure.yml -f docker-compose.openframe-microservices.yml up -d
+echo "Finished launching application infra and application services..."
 
-# Start Fleet MDM with a clean state
+# Wait for infrastructure to be ready
+wait_for_infrastructure
+
+# Start Fleet MDM only after infrastructure is ready
 echo "Starting Fleet MDM..."
-docker-compose -f infrastructure/fleetmdm/docker-compose.fleet.yml up -d
+docker-compose -f infrastructure/fleetmdm/docker-compose.openframe-fleetmdm.yml up -d
 
-# Add Fleet health check
+# Wait for Fleet to be ready
 check_service "fleet" 8070
 if [ $? -ne 0 ]; then
     echo "Failed to start Fleet MDM. Exiting..."
     exit 1
 fi
 
-# Start application services
-echo "Starting application services..."
-docker-compose -f docker-compose.yml -f docker-compose.services.yml up -d
+# Wait for Fleet initialization to complete
+wait_for_fleet_init
+if [ $? -ne 0 ]; then
+    echo "Failed to initialize Fleet. Exiting..."
+    exit 1
+fi
 
-echo "All services started. Checking logs..."
+echo "Fleet initialized successfully!"
+
+# Display Fleet API token if available
+if docker exec openframe-fleet test -f /etc/fleet/api_token.txt; then
+    echo -e "\nFleet API Token:"
+    docker exec openframe-fleet cat /etc/fleet/api_token.txt
+fi
+
+echo "Testing network connectivity..."
+./scripts/test-network.sh
+
+# Print final status
+echo -e "\nSystem Status:"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep "openframe-"
+
+# Print Fleet credentials
+echo -e "\nFleet MDM Credentials:"
+echo "Admin User:     admin@openframe.local"
+echo "Admin Password: openframe123!"
+echo "API User:       api@openframe.local"
+echo "API Password:   openframe123!"
 
 echo "OpenFrame is running!"
 echo "Access points:"
@@ -54,32 +116,6 @@ echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
 echo "- Prometheus: http://localhost:9090"
 echo "- Fleet MDM: http://localhost:8070"
-
-# Print Fleet credentials
-echo -e "\nFleet MDM Credentials:"
-echo "Admin User:     admin@openframe.com"
-echo "Admin Password: AdminPassword123!@#$"
-echo "API User:       api@openframe.com"
-echo "API Password:   ApiPassword123!@#$"
-
-# Wait for Fleet API token to be generated
-echo -e "\nWaiting for Fleet API token..."
-max_attempts=30
-attempt=1
-while ! docker exec openframe-fleet cat /var/log/osquery/api_token.txt > /dev/null 2>&1; do
-    if [ $attempt -eq $max_attempts ]; then
-        echo "API token not available after $max_attempts attempts"
-        break
-    fi
-    echo "Waiting for Fleet API token to be generated... (attempt $attempt/$max_attempts)"
-    attempt=$((attempt + 1))
-    sleep 5
-done
-
-if [ $attempt -lt $max_attempts ]; then
-    echo -e "\nFleet API Token:"
-    docker exec openframe-fleet cat /var/log/osquery/api_token.txt
-fi
-
-echo "Testing network connectivity..."
-./scripts/test-network.sh
+echo "- OpenFrame Config Service: http://localhost:8090"
+echo "- OpenFrame Stream Service: http://localhost:8091"
+echo "- OpenFrame API Service: http://localhost:8092"

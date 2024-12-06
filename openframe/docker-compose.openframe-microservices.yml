@@ -1,3 +1,5 @@
+name: openframe-microservices-infrastructure
+
 services:
 
   config-server:
@@ -29,6 +31,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      cassandra:
+        condition: service_healthy
     networks:
       - openframe-network
 
@@ -44,6 +48,10 @@ services:
         condition: service_healthy
       config-server:
         condition: service_healthy
+      cassandra:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     networks:
       - openframe-network
       
@@ -51,4 +59,3 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
-    external: true
