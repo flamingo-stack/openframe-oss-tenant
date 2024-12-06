@@ -8,8 +8,7 @@ RUN apk update && \
     npm \
     bash \
     su-exec \
-    netcat-openbsd \
-    mysql-client
+    netcat-openbsd
 
 RUN npm install -g fleetctl
 

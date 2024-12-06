@@ -1,27 +1,6 @@
 #!/bin/bash
 set -ex
 
-# Function to wait for MySQL to be ready
-wait_for_mysql() {
-    echo "Waiting for MySQL to be ready..."
-    until nc -z -w5 openframe-fleet-mysql 3306; do
-        printf '.'
-        sleep 5
-    done
-    echo "MySQL is ready!"
-
-    # Test MySQL connection
-    echo "DEBUG: Testing MySQL connection..."
-    if nc -z -w5 openframe-fleet-mysql 3306; then
-        echo "DEBUG: MySQL port is reachable"
-        if mysql -h openframe-fleet-mysql -u fleet -pfleet -e "SELECT 1;" fleet; then
-            echo "MySQL connection successful!"
-            return 0
-        fi
-    fi
-    return 1
-}
-
 # Function to wait for Fleet to be ready
 wait_for_fleet() {
     echo "Waiting for Fleet to be ready..."
@@ -70,9 +49,6 @@ initialize_fleet() {
         fi
     fi
 }
-
-# Main process
-wait_for_mysql
 
 # Prepare database
 echo "Preparing database..."
