@@ -88,12 +88,6 @@ fi
 
 echo "Fleet initialized successfully!"
 
-# Display Fleet API token if available
-if docker exec openframe-fleet test -f /etc/fleet/api_token.txt; then
-    echo -e "\nFleet API Token:"
-    docker exec openframe-fleet cat /etc/fleet/api_token.txt
-fi
-
 echo "Testing network connectivity..."
 ./scripts/test-network.sh
 
@@ -107,6 +101,11 @@ echo "Admin User:     admin@openframe.local"
 echo "Admin Password: openframe123!"
 echo "API User:       api@openframe.local"
 echo "API Password:   openframe123!"
+# Display Fleet API token if available
+if docker exec openframe-fleet test -f /etc/fleet/api_token.txt; then
+    echo -e "\nFleet API Token:"
+    docker exec openframe-fleet cat /etc/fleet/api_token.txt
+fi
 
 echo "OpenFrame is running!"
 echo "Access points:"
