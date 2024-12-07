@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64/v8 fleetdm/fleet:v4.60.0
+FROM fleetdm/fleet:v4.60.0
 
 USER root
 
@@ -20,13 +20,13 @@ RUN mkdir -p /etc/fleet \
     chmod 755 /var/log/osquery
 
 # Copy scripts and configuration
-COPY fleet-init.sh /fleet-init.sh
+COPY init-fleet.sh /init-fleet.sh
 COPY entrypoint.sh /entrypoint.sh
 COPY fleet.yml /etc/fleet/fleet.yml
 
 # Make scripts executable and set permissions
-RUN chmod +x /fleet-init.sh /entrypoint.sh && \
-    chown fleet:fleet /fleet-init.sh /entrypoint.sh && \
+RUN chmod +x /init-fleet.sh /entrypoint.sh && \
+    chown fleet:fleet /init-fleet.sh /entrypoint.sh && \
     chown fleet:fleet /etc/fleet/fleet.yml && \
     chmod 644 /etc/fleet/fleet.yml
 

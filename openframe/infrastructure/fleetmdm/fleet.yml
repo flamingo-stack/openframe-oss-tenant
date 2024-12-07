@@ -1,14 +1,14 @@
 mysql:
-  address: openframe-fleet-mysql:3306
-  database: fleet
-  username: fleet
-  password: fleet
+  address: openframe-integrated-tools-mysql:3306
+  database: integrated-tools-database
+  username: integrated-tools-user
+  password: integrated-tools-password-1234
   max_open_conns: 50
   max_idle_conns: 50
   debug: true
 
 redis:
-  address: openframe-fleet-redis:6379
+  address: openframe-integrated-tools-redis:6379
 
 server:
   address: 0.0.0.0:8070

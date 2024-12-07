@@ -29,7 +29,7 @@ initialize_fleet() {
         # Check if Fleet is already initialized by looking for the API token
         if [ ! -f "/etc/fleet/api_token.txt" ]; then
             echo "Running Fleet initialization..."
-            /fleet-init.sh
+            /init-fleet.sh
             
             # Wait for API token to be created
             local token_attempts=0

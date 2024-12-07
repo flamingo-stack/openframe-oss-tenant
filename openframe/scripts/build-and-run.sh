@@ -89,8 +89,8 @@ wait_for_infrastructure
 echo "Finished launching application infra and application services..."
 
 # Start Fleet MDM only after infrastructure is ready
-echo "Starting Fleet MDM..."
-docker-compose -f infrastructure/fleetmdm/docker-compose.openframe-fleetmdm.yml up -d
+echo "Starting integrated tools deployment..."
+docker-compose -f docker-compose.openframe-integrated-tools.yml up -d
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070
@@ -106,7 +106,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Fleet initialized successfully!"
+echo "Integrated tools initialized successfully!"
 
 echo "Testing network connectivity..."
 ./scripts/test-network.sh
