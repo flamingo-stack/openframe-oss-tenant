@@ -1,68 +1,111 @@
 <template>
   <div class="login-page">
     <div class="login-card">
-      <div class="login-header">
+      <header class="login-header">
         <h1>Create Account</h1>
         <p>Sign up for OpenFrame</p>
-      </div>
+      </header>
       
       <form @submit.prevent="handleRegister" class="login-form">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <InputText 
-            id="email"
-            v-model="email" 
-            type="email"
+        <!-- Personal Info Section -->
+        <section class="form-section grid">
+          <div class="col-12 md:col-6">
+            <div class="form-group">
+              <label for="firstName">First Name</label>
+              <InputText 
+                id="firstName"
+                v-model="firstName" 
+                class="w-full"
+                placeholder="Enter your first name"
+                :class="{ 'p-invalid': errors.firstName }"
+              />
+              <small class="p-error" v-if="errors.firstName">{{ errors.firstName }}</small>
+            </div>
+          </div>
+
+          <div class="col-12 md:col-6">
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <InputText 
+                id="lastName"
+                v-model="lastName" 
+                class="w-full"
+                placeholder="Enter your last name"
+                :class="{ 'p-invalid': errors.lastName }"
+              />
+              <small class="p-error" v-if="errors.lastName">{{ errors.lastName }}</small>
+            </div>
+          </div>
+        </section>
+
+        <!-- Account Info Section -->
+        <section class="form-section">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <InputText 
+              id="email"
+              v-model="email" 
+              type="email"
+              class="w-full"
+              placeholder="Enter your email"
+              :class="{ 'p-invalid': errors.email }"
+            />
+            <small class="p-error" v-if="errors.email">{{ errors.email }}</small>
+          </div>
+
+          <div class="grid">
+            <div class="col-12 md:col-6">
+              <div class="form-group">
+                <label for="password">Password</label>
+                <Password
+                  id="password"
+                  v-model="password"
+                  class="w-full"
+                  :feedback="true"
+                  :toggleMask="true"
+                  placeholder="Enter your password"
+                  :class="{ 'p-invalid': errors.password }"
+                  inputClass="w-full"
+                />
+                <small class="p-error" v-if="errors.password">{{ errors.password }}</small>
+              </div>
+            </div>
+
+            <div class="col-12 md:col-6">
+              <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <Password
+                  id="confirmPassword"
+                  v-model="confirmPassword"
+                  class="w-full"
+                  :feedback="false"
+                  :toggleMask="true"
+                  placeholder="Confirm your password"
+                  :class="{ 'p-invalid': errors.confirmPassword }"
+                  inputClass="w-full"
+                />
+                <small class="p-error" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</small>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Submit Section -->
+        <section class="form-section">
+          <Button 
+            type="submit" 
+            label="Sign Up" 
             class="w-full"
-            placeholder="Enter your email"
-            :class="{ 'p-invalid': errors.email }"
+            :loading="loading"
+            severity="primary"
+            size="large"
           />
-          <small class="p-error" v-if="errors.email">{{ errors.email }}</small>
-        </div>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <Password
-            id="password"
-            v-model="password"
-            class="w-full"
-            :feedback="true"
-            :toggleMask="true"
-            placeholder="Enter your password"
-            :class="{ 'p-invalid': errors.password }"
-            inputClass="w-full"
-          />
-          <small class="p-error" v-if="errors.password">{{ errors.password }}</small>
-        </div>
-
-        <div class="form-group">
-          <label for="confirmPassword">Confirm Password</label>
-          <Password
-            id="confirmPassword"
-            v-model="confirmPassword"
-            class="w-full"
-            :feedback="false"
-            :toggleMask="true"
-            placeholder="Confirm your password"
-            :class="{ 'p-invalid': errors.confirmPassword }"
-            inputClass="w-full"
-          />
-          <small class="p-error" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</small>
-        </div>
-
-        <Button 
-          type="submit" 
-          label="Sign Up" 
-          class="w-full"
-          :loading="loading"
-          severity="primary"
-          size="large"
-        />
-
-        <div class="mt-4 text-center text-sm">
-          <span class="text-color-secondary">Already have an account? </span>
-          <RouterLink to="/login" class="text-link font-medium">Sign in</RouterLink>
-        </div>
+          <div class="mt-4 text-center text-sm">
+            <span class="text-color-secondary">Already have an account? </span>
+            <RouterLink to="/login" class="text-link font-medium">Sign in</RouterLink>
+          </div>
+        </section>
       </form>
     </div>
   </div>
@@ -77,11 +120,15 @@ import Password from 'primevue/password';
 import Button from 'primevue/button';
 
 const router = useRouter();
+const firstName = ref('');
+const lastName = ref('');
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const loading = ref(false);
 const errors = ref({
+  firstName: '',
+  lastName: '',
   email: '',
   password: '',
   confirmPassword: ''
@@ -90,10 +137,22 @@ const errors = ref({
 const validateForm = () => {
   let isValid = true;
   errors.value = {
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
   };
+
+  if (!firstName.value) {
+    errors.value.firstName = 'First name is required';
+    isValid = false;
+  }
+
+  if (!lastName.value) {
+    errors.value.lastName = 'Last name is required';
+    isValid = false;
+  }
 
   if (!email.value) {
     errors.value.email = 'Email is required';
@@ -125,6 +184,8 @@ const handleRegister = async () => {
   try {
     loading.value = true;
     await AuthService.register({
+      firstName: firstName.value,
+      lastName: lastName.value,
       email: email.value,
       password: password.value,
       confirmPassword: confirmPassword.value
@@ -158,7 +219,7 @@ const handleRegister = async () => {
   border-radius: 1rem;
   padding: 2.5rem;
   width: 100%;
-  max-width: 420px;
+  max-width: 800px;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
@@ -201,17 +262,6 @@ const handleRegister = async () => {
 
 :deep(.p-password-input) {
   width: 100%;
-}
-
-.text-link {
-  color: #00E5BE;  /* Brand teal from pitch deck */
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.text-link:hover {
-  color: #33eacc;
-  text-decoration: underline;
 }
 
 .text-color-secondary {
@@ -269,5 +319,21 @@ const handleRegister = async () => {
 :deep(.p-button .p-button-label) {
   font-weight: 600;
   line-height: 1.5;
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
 }
 </style> 

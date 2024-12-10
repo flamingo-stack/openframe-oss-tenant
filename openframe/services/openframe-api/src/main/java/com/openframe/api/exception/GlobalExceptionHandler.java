@@ -14,6 +14,9 @@ import org.springframework.web.context.request.WebRequest;
 
 import com.openframe.api.dto.ErrorResponse;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -47,14 +50,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
-        ErrorResponse error = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validation Failed")
-            .message(ex.getMessage())
-            .path(request.getDescription(false))
-            .build();
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        log.error("Validation error: ", ex);
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse(ex.getMessage(), 400));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
+        log.error("Internal error: ", ex);
+        return ResponseEntity.internalServerError()
+            .body(new ErrorResponse("Internal server error", 500));
     }
 
 } 

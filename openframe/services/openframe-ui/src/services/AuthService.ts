@@ -1,3 +1,5 @@
+import authConfig from '../config/auth.config';
+
 const API_URL = 'http://localhost:8090';
 
 export interface LoginCredentials {
@@ -6,7 +8,15 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials extends LoginCredentials {
+  firstName: string;
+  lastName: string;
   confirmPassword: string;
+}
+
+interface ErrorResponse {
+  message: string;
+  status: number;
+  error: string;
 }
 
 export class AuthService {
@@ -20,13 +30,14 @@ export class AuthService {
         grant_type: 'password',
         username: credentials.email,
         password: credentials.password,
-        client_id: 'test_client',
-        client_secret: 'test_secret'
+        client_id: authConfig.clientId,
+        client_secret: authConfig.clientSecret
       })
     });
 
     if (!response.ok) {
-      throw new Error('Login failed');
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || 'Login failed');
     }
 
     const data = await response.json();

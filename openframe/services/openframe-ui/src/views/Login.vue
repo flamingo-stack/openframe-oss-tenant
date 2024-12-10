@@ -7,6 +7,10 @@
       </div>
       
       <form @submit.prevent="handleLogin" class="login-form">
+        <div v-if="loginError" class="p-error mb-4 text-center">
+          {{ loginError }}
+        </div>
+        
         <div class="form-group">
           <label for="email">Email</label>
           <InputText 
@@ -38,7 +42,7 @@
         <div class="flex align-items-center justify-content-between mb-4">
           <div class="flex align-items-center gap-2">
             <Checkbox v-model="rememberMe" :binary="true" id="rememberMe" />
-            <label for="rememberMe" class="cursor-pointer">Remember me</label>
+            <label for="rememberMe" class="cursor-pointer form-text">Remember me</label>
           </div>
           <RouterLink to="/forgot-password" class="text-link">Forgot password?</RouterLink>
         </div>
@@ -79,6 +83,7 @@ const errors = ref({
   email: '',
   password: ''
 });
+const loginError = ref('');
 
 const validateForm = () => {
   let isValid = true;
@@ -105,8 +110,9 @@ const validateForm = () => {
 
 const handleLogin = async () => {
   if (!validateForm()) return;
-
+  
   try {
+    loginError.value = '';
     loading.value = true;
     await AuthService.login({
       email: email.value,
@@ -115,6 +121,7 @@ const handleLogin = async () => {
     router.push('/');
   } catch (error) {
     console.error('Login failed:', error);
+    loginError.value = error instanceof Error ? error.message : 'Login failed';
   } finally {
     loading.value = false;
   }
@@ -146,12 +153,15 @@ const handleLogin = async () => {
 .login-header h1 {
   font-size: 1.875rem;
   font-weight: 600;
-  color: #1E1B4B;
+  color: var(--text-color);
+  margin: 0;
   margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 
 .login-header p {
-  color: #6b7280;
+  color: var(--text-color-secondary);
+  margin: 0;
   font-size: 1rem;
 }
 
@@ -162,14 +172,9 @@ const handleLogin = async () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #1E1B4B;
+  color: var(--text-color);
   font-weight: 500;
   font-size: 0.875rem;
-}
-
-.form-group label,
-.cursor-pointer {
-  color: #1E1B4B;
 }
 
 :deep(.p-inputtext) {
@@ -186,39 +191,23 @@ const handleLogin = async () => {
   height: 1.25rem;
 }
 
-:deep(a), 
-.text-link,
-a.text-link,
-RouterLink {
-  color: #6EF7D9 !important;
-  text-decoration: none;
-  transition: color 0.2s;
+.text-color-secondary {
+  color: var(--text-secondary);
 }
 
-:deep(a:hover),
-.text-link:hover {
-  color: #9FFAE6 !important;
-}
-
-@media screen and (max-width: 640px) {
-  .login-card {
-    padding: 2rem;
-  }
-}
-
+/* Button styling */
 :deep(.p-button) {
-  background: #00E5BE;
-  border-color: #00E5BE;
   padding: 1rem;
+  font-weight: 500;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 :deep(.p-button:hover) {
-  background: #33eacc;
-  border-color: #33eacc;
-}
-
-:deep(.p-button.p-button-lg) {
-  padding: 1rem;
+  background: var(--primary-light);
+  border-color: var(--primary-light);
 }
 
 :deep(.p-button:focus) {
@@ -230,46 +219,17 @@ RouterLink {
   line-height: 1.5;
 }
 
-/* Checkbox styling */
-:deep(.p-checkbox .p-checkbox-box) {
-  border-color: #d1d5db;
+@media screen and (max-width: 640px) {
+  .login-card {
+    padding: 2rem;
+  }
 }
 
-:deep(.p-checkbox .p-checkbox-box.p-highlight) {
-  border-color: #00E5BE;
-  background: #00E5BE;
-}
-
-:deep(.p-checkbox:hover .p-checkbox-box) {
-  border-color: #00E5BE;
-}
-
-/* Remember me text */
-.cursor-pointer {
-  color: #1E1B4B;
-  font-size: 0.875rem;
-}
-
-/* Secondary text (Don't have an account?) */
-.text-color-secondary {
-  color: #6b7280;
-}
-
-/* Direct selector for the Forgot password link */
-a[href="/forgot-password"] {
-  color: #00E5BE !important;
-}
-
-a[href="/forgot-password"]:hover {
-  color: #33eacc !important;
-}
-
-/* Direct selector for the Sign up link */
-a[href="/register"] {
-  color: #00E5BE !important;
-}
-
-a[href="/register"]:hover {
-  color: #33eacc !important;
+.p-error {
+  color: var(--red-500);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--red-50);
+  border: 1px solid var(--red-200);
 }
 </style> 

@@ -1,6 +1,4 @@
-package com.openframe.core.model;
-
-import java.time.Instant;
+package com.openframe.api.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -16,6 +14,4 @@ public class User {
     private String firstName;
     private String lastName;
     private String password;
-    private String resetToken;
-    private Instant resetTokenExpiry;
 } 

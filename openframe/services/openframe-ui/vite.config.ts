@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  server: {
-    port: 5173
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: ({ source, type }) => {
+          if (type === 'asset' && source?.toString().includes('text/css')) {
+            return 'assets/styles.[hash].css'
+          }
+          return 'assets/[name]-[hash][extname]'
+        }
+      }
+    }
   }
 })

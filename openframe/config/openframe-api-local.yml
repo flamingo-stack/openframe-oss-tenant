@@ -2,3 +2,9 @@
 spring:
   kafka:
     bootstrap-servers: localhost:9092
+
+oauth:
+  client:
+    default:
+      id: openframe_web_dashboard_dev
+      secret: dev_secret

@@ -59,10 +59,13 @@ services:
     build:
       context: ./services/openframe-ui
       dockerfile: Dockerfile
+    environment:
+      - VITE_CLIENT_ID=prod_client
+      - VITE_CLIENT_SECRET=${CLIENT_SECRET}  # From host environment
     ports:
-      - "8080:80"
+      - "4000:80"
     depends_on:
-      - openframe-api
+      - api
     networks:
       - openframe-network
       
