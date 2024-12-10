@@ -41,7 +41,9 @@ RUN dpkg --add-architecture arm64 && \
     libpango1.0-dev:arm64 \
     libcairo2-dev:arm64 \
     libatk1.0-dev:arm64 \
-    libgdk-pixbuf2.0-dev:arm64
+    libgdk-pixbuf2.0-dev:arm64 \
+    xz-utils \
+    libglu1-mesa
 
 # Install vcpkg with error handling
 RUN git clone https://github.com/Microsoft/vcpkg.git /vcpkg && \
@@ -88,6 +90,22 @@ RUN PKG_CONFIG=/usr/local/bin/aarch64-pkg-config \
     cargo build --release --target=aarch64-unknown-linux-gnu -vv \
     --no-default-features \
     $RUSTDESK_FEATURE_FLAGS
+
+# Install Flutter
+RUN git clone https://github.com/flutter/flutter.git /flutter && \
+    cd /flutter && \
+    git checkout ${FLUTTER_VERSION} && \
+    /flutter/bin/flutter doctor && \
+    /flutter/bin/flutter config --no-analytics && \
+    /flutter/bin/flutter precache
+ENV PATH="/flutter/bin:${PATH}"
+
+WORKDIR /src/flutter
+RUN flutter pub get && \
+    flutter build linux --release
+
+# Copy Flutter build artifacts in final stage
+COPY --from=builder /src/flutter/build/linux/x64/release/bundle /usr/local/share/rustdesk/
 
 FROM debian:stable-slim
 RUN apt update && \

@@ -1,0 +1,57 @@
+/* Reset styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+}
+
+.logo-text {
+  font-family: 'Ubuntu', sans-serif !important;
+}
+
+:root {
+  /* Primary brand colors */
+  --primary-color: #00E5BE;
+  --primary-dark: #00b396;
+  --primary-light: #33eacc;
+  
+  /* Brand accent colors */
+  --brand-blue: #1E1B4B;
+  --brand-gold: #FFB800;
+  
+  /* Text colors */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  
+  /* Link colors */
+  --link-color: var(--primary-color);
+  --link-hover: var(--primary-dark);
+  
+  /* Background colors */
+  --surface-ground: var(--brand-blue);
+  --surface-card: #ffffff;
+  --surface-border: #e5e7eb;
+  --surface-hover: #f3f4f6;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-gold {
+  color: var(--brand-gold) !important;
+}
+
+/* Add any other global styles here */

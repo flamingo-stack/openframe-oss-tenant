@@ -54,6 +54,17 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
+
+  openframe-ui:
+    build:
+      context: ./services/openframe-ui
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - openframe-api
+    networks:
+      - openframe-network
       
 networks:
   openframe-network:
