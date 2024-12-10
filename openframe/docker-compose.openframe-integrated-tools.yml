@@ -32,7 +32,6 @@ services:
     image: redis:latest
     container_name: openframe-integrated-tools-redis
     hostname: openframe-integrated-tools-redis
-    restart: always
     volumes:
       - integrated-tools-redis:/data
     networks:
@@ -44,22 +43,23 @@ services:
       retries: 5
 
   integrated-tools-postgresql:
-    image: postgres:12-alpine
+    image: postgres:15
     container_name: openframe-integrated-tools-postgresql
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U integrated-tools-user"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     environment:
       POSTGRES_USER: integrated-tools-user
       POSTGRES_PASSWORD: integrated-tools-password-1234
-      POSTGRES_DB: integrated-tools-database
+      POSTGRES_MULTIPLE_DATABASES: integrated-tools-database,integrated-tools-database-authentik
     volumes:
       - integrated-tools-postgresql:/var/lib/postgresql/data
+      - ./infrastructure/postgresql/init-scripts:/docker-entrypoint-initdb.d
     networks:
       - openframe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U integrated-tools-user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   fleet:
     depends_on:
@@ -83,7 +83,20 @@ services:
       FLEET_SETUP_ADMIN_PASSWORD: "openframe123!"
       FLEET_SETUP_ORG_NAME: "OpenFrame"
       FLEET_SETUP_AUTO_INIT: "true"
+      FLEET_MYSQL_ADDRESS: openframe-integrated-tools-mysql:3306
+      FLEET_MYSQL_DATABASE: integrated-tools-database
+      FLEET_MYSQL_USERNAME: integrated-tools-user
+      FLEET_MYSQL_PASSWORD: integrated-tools-password-1234
+      FLEET_REDIS_ADDRESS: openframe-integrated-tools-redis:6379
+      FLEET_AUTH_JWT_KEY: "fleet-jwt-secret-123"
+      FLEET_ENROLL_SECRET: "fleet-enroll-secret-123"
+      FLEET_API_USER_NAME: "API User"
+      FLEET_API_USER_EMAIL: "api@openframe.local"
+      FLEET_API_USER_PASSWORD: "openframe123!"
+      FLEET_SERVER_PORT: "8070"
+      FLEET_SETUP_ADMIN_NAME: "Admin"
     volumes:
+      - ./infrastructure/fleetmdm/fleet.yml:/etc/fleet/fleet.yml:ro
       - integrated-tools-fleet-logs:/var/log/osquery
     networks:
       - openframe-network
@@ -100,7 +113,7 @@ services:
       AUTHENTIK_REDIS__HOST: openframe-integrated-tools-redis
       AUTHENTIK_POSTGRESQL__HOST: openframe-integrated-tools-postgresql
       AUTHENTIK_POSTGRESQL__USER: integrated-tools-user
-      AUTHENTIK_POSTGRESQL__NAME: integrated-tools-database
+      AUTHENTIK_POSTGRESQL__NAME: integrated-tools-database-authentik
       AUTHENTIK_POSTGRESQL__PASSWORD: integrated-tools-password-1234
       AUTHENTIK_SECRET_KEY: X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA
       AUTHENTIK_ERROR_REPORTING__ENABLED: false
@@ -140,7 +153,7 @@ services:
       AUTHENTIK_REDIS__HOST: openframe-integrated-tools-redis
       AUTHENTIK_POSTGRESQL__HOST: openframe-integrated-tools-postgresql
       AUTHENTIK_POSTGRESQL__USER: integrated-tools-user
-      AUTHENTIK_POSTGRESQL__NAME: integrated-tools-database
+      AUTHENTIK_POSTGRESQL__NAME: integrated-tools-database-authentik
       AUTHENTIK_POSTGRESQL__PASSWORD: integrated-tools-password-1234
       AUTHENTIK_SECRET_KEY: X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA
       AUTHENTIK_ERROR_REPORTING__ENABLED: false
@@ -166,6 +179,75 @@ services:
       integrated-tools-redis:
         condition: service_healthy
 
+  # RustDesk Signal Server
+  rustdesk-hbbs:
+    image: rustdesk/rustdesk-server:latest
+    container_name: openframe-rustdesk-hbbs
+    ports:
+      - "21115:21115"  # TCP
+      - "21116:21116"  # TCP
+      - "21116:21116/udp"  # UDP
+    command: hbbs --key 71832463748716346 --relay-servers openframe-rustdesk-hbbr:21117
+    environment:
+      RELAY: openframe-rustdesk-hbbr:21117
+      KEY: "71832463748716346"
+      REDIS_HOST: integrated-tools-redis
+      REDIS_PORT: 6379
+      MAX_SESSIONS: 100
+      MAX_CONNECTIONS_PER_IP: 10
+      LOG_LEVEL: info
+      LOG_FILE: /root/rustdesk.log
+    volumes:
+      - rustdesk-data:/root
+      - ./infrastructure/rustdesk/config.toml:/root/config.toml:ro
+    networks:
+      - openframe-network
+    depends_on:
+      integrated-tools-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "21115"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # RustDesk Relay Server
+  rustdesk-hbbr:
+    image: rustdesk/rustdesk-server:latest
+    container_name: openframe-rustdesk-hbbr
+    ports:
+      - "21117:21117"  # TCP
+      - "21118:21118"  # TCP
+      - "21119:21119"  # TCP
+    command: hbbr --key 71832463748716346
+    environment:
+      KEY: "71832463748716346"
+    volumes:
+      - rustdesk-data:/root
+    networks:
+      - openframe-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "21117"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # rustdesk-client-builder:
+  #   build:
+  #     context: ./infrastructure/rustdesk/client
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - RENDEZVOUS_SERVER="${SERVER_IP:-localhost}"
+  #     - APP_NAME="OpenFrame Remote"
+  #     - COMPANY_NAME="OpenFrame"
+  #     - SERVER_KEY=71832463748716346
+  #   volumes:
+  #     - ./dist:/usr/src/rustdesk/target/release
+
 volumes:
   integrated-tools-mysql:
     name: integrated-tools-mysql-data
@@ -175,6 +257,8 @@ volumes:
     name: integrated-tools-fleet-logs-data
   integrated-tools-postgresql:
     name: integrated-tools-postgresql-data
+  rustdesk-data:
+    name: rustdesk-data-data
 
 networks:
   openframe-network:

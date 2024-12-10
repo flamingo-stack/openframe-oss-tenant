@@ -1,11 +1,19 @@
-#!/bin/bash
-set -ex
+#!/bin/sh
+set -e
+
+# Extract host and port from MySQL address
+MYSQL_HOST=$(echo $FLEET_MYSQL_ADDRESS | cut -d':' -f1)
+MYSQL_PORT=$(echo $FLEET_MYSQL_ADDRESS | cut -d':' -f2)
+
+# Extract host and port from Redis address
+REDIS_HOST=$(echo $FLEET_REDIS_ADDRESS | cut -d':' -f1)
+REDIS_PORT=$(echo $FLEET_REDIS_ADDRESS | cut -d':' -f2)
 
 # Function to wait for Fleet to be ready
 wait_for_fleet() {
     echo "Waiting for Fleet to be ready..."
-    local attempts=0
-    local max_attempts=30  # 2.5 minutes timeout
+    attempts=0
+    max_attempts=30  # 2.5 minutes timeout
     
     while [ $attempts -lt $max_attempts ]; do
         if curl --output /dev/null --silent --fail http://localhost:8070/setup; then
@@ -13,9 +21,7 @@ wait_for_fleet() {
             return 0
         fi
         attempts=$((attempts + 1))
-        echo "Attempt $attempts/$max_attempts failed. Fleet logs:"
-        tail -n 5 /tmp/fleet.log
-        printf '.'
+        echo "Attempt $attempts/$max_attempts failed. Retrying..."
         sleep 5
     done
     
@@ -23,48 +29,33 @@ wait_for_fleet() {
     return 1
 }
 
-# Function to initialize Fleet
-initialize_fleet() {
-    if [ "$FLEET_SETUP_AUTO_INIT" = "true" ]; then
-        # Check if Fleet is already initialized by looking for the API token
-        if [ ! -f "/etc/fleet/api_token.txt" ]; then
-            echo "Running Fleet initialization..."
-            /init-fleet.sh
-            
-            # Wait for API token to be created
-            local token_attempts=0
-            while [ ! -f "/etc/fleet/api_token.txt" ] && [ $token_attempts -lt 10 ]; do
-                echo "Waiting for API token to be created... (attempt $((token_attempts + 1))/10)"
-                sleep 2
-                token_attempts=$((token_attempts + 1))
-            done
-            
-            if [ ! -f "/etc/fleet/api_token.txt" ]; then
-                echo "WARNING: API token was not created after initialization"
-            else
-                echo "Fleet initialization completed successfully"
-            fi
-        else
-            echo "Fleet already initialized (API token exists), skipping initialization"
-        fi
-    fi
-}
+echo "Waiting for MySQL ($MYSQL_HOST:$MYSQL_PORT) to be ready..."
+until nc -z $MYSQL_HOST $MYSQL_PORT; do
+    echo "MySQL is not ready yet..."
+    sleep 2
+done
 
-# Prepare database
+echo "Waiting for Redis ($REDIS_HOST:$REDIS_PORT) to be ready..."
+until nc -z $REDIS_HOST $REDIS_PORT; do
+    echo "Redis is not ready yet..."
+    sleep 2
+done
+
 echo "Preparing database..."
-/usr/bin/fleet prepare db --config /etc/fleet/fleet.yml --no-prompt | tee /tmp/fleet-prepare.log
-echo "DEBUG: Database preparation completed"
+fleet prepare db --config "$FLEET_CONFIG" --no-prompt
 
-# Start Fleet server
 echo "Starting Fleet server..."
-/usr/bin/fleet serve --config /etc/fleet/fleet.yml | tee /tmp/fleet.log &
+fleet serve --config "$FLEET_CONFIG" &
 FLEET_PID=$!
 
 # Wait for Fleet to be ready
 wait_for_fleet
 
-# Initialize Fleet if needed
-initialize_fleet
+# Initialize Fleet using fleetctl
+if [ "$FLEET_SETUP_AUTO_INIT" = "true" ]; then
+    echo "Running Fleet initialization..."
+    /init-fleet.sh
+fi
 
 # Keep container running and monitor Fleet process
 wait $FLEET_PID

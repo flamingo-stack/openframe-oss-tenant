@@ -1,0 +1,6 @@
+const APP_TITLE = "OpenFrame Remote Desktop";
+const COMPANY_NAME = "OpenFrame";
+const ABOUT_TEXT = "OpenFrame is a secure remote desktop application.";
+const LOADING_TEXT = "Connecting to OpenFrame service...";
+const COPYRIGHT_TEXT = "© 2024 OpenFrame Inc. All rights reserved.";
+const HELP_TEXT = "For support, contact michael@openframe.ai";

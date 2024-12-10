@@ -1,33 +1,38 @@
 mysql:
-  address: openframe-integrated-tools-mysql:3306
-  database: integrated-tools-database
-  username: integrated-tools-user
-  password: integrated-tools-password-1234
+  address: ${FLEET_MYSQL_ADDRESS}
+  database: ${FLEET_MYSQL_DATABASE}
+  username: ${FLEET_MYSQL_USERNAME}
+  password: ${FLEET_MYSQL_PASSWORD}
   max_open_conns: 50
   max_idle_conns: 50
-  debug: true
+  conn_max_lifetime: 60
 
 redis:
-  address: openframe-integrated-tools-redis:6379
+  address: ${FLEET_REDIS_ADDRESS}
 
 server:
   address: 0.0.0.0:8070
+  auth_jwt_key: ${FLEET_AUTH_JWT_KEY}
   tls: false
-  debug: true
-  verbose: true
+  tlscompatibility: true
 
 logging:
-  debug: true
-  json: true
-  development: true
-  level: debug
-  disable_banner: false
-  error_retention_period: 24h
+  debug: false
+  json: false
+  disable_banner: true
+
+osquery:
+  node_key_size: 24
+  status_log_plugin: filesystem
+  result_log_plugin: filesystem
+  enable_log_rotation: true
+  host_identifier: hostname
+  enroll_secret:
+    - ${FLEET_ENROLL_SECRET}
 
 auth:
   bcrypt_cost: 12
   salt_key_size: 24
-  debug: true
 
 app:
   token_key_size: 24
@@ -37,16 +42,6 @@ app:
 session:
   key_size: 64
   duration: 120h
-
-osquery:
-  node_key_size: 24
-  host_identifier: uuid
-  label_update_interval: 1h
-  detail_update_interval: 1h
-  result_log_plugin: filesystem
-  status_log_plugin: filesystem
-  max_jitter_percent: 10
-  enable_scheduled_query_stats: true
 
 filesystem:
   status_log_file: /var/log/osquery/status.log

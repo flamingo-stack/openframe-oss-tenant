@@ -1,0 +1,2 @@
+rendezvous_server = ${RENDEZVOUS_SERVER}
+key = ${SERVER_KEY}
