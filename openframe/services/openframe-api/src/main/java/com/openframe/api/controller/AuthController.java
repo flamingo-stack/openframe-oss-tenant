@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.openframe.api.dto.UserDTO;
+import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.User;
+import com.openframe.data.repository.OAuthClientRepository;
 import com.openframe.data.repository.UserRepository;
 
 @RestController
@@ -28,12 +30,14 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
+    private final OAuthClientRepository clientRepository;
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder, OAuthClientRepository clientRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
+        this.clientRepository = clientRepository;
     }
 
     private String generateAccessToken(User user) {
@@ -58,18 +62,18 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserDTO userDTO) {
-        if (userRepository.findByEmail(userDTO.getEmail()) != null) {
-            return ResponseEntity.badRequest().body("Email already registered");
-        }
-
-        User user = new User();
-        user.setEmail(userDTO.getEmail());
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        
-        userRepository.save(user);
-        return ResponseEntity.ok().build();
+        return userRepository.findByEmail(userDTO.getEmail())
+            .map(user -> ResponseEntity.badRequest().body("Email already registered"))
+            .orElseGet(() -> {
+                User user = new User();
+                user.setEmail(userDTO.getEmail());
+                user.setFirstName(userDTO.getFirstName());
+                user.setLastName(userDTO.getLastName());
+                user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+                
+                userRepository.save(user);
+                return ResponseEntity.ok().build();
+            });
     }
 
     @PostMapping("/oauth/token")
@@ -114,5 +118,31 @@ public class AuthController {
             log.error("Token error", e);
             return ResponseEntity.status(400).body(e.getMessage());
         }
+    }
+
+    @PostMapping("/oauth/register")
+    public ResponseEntity<?> register(
+            @RequestParam String email,
+            @RequestParam String password,
+            @RequestParam String client_id) {
+        
+        // Verify client exists
+        OAuthClient client = clientRepository.findByClientId(client_id);
+        if (client == null) {
+            return ResponseEntity.badRequest().body("Client not found");
+        }
+
+        // Check if user exists
+        if (userRepository.findByEmail(email) != null) {
+            return ResponseEntity.badRequest().body("Email already registered");
+        }
+
+        // Create user
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
+
+        return ResponseEntity.ok().build();
     }
 } 

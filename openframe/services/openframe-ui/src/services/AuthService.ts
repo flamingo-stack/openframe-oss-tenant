@@ -56,12 +56,13 @@ export class AuthService {
       body: new URLSearchParams({
         email: credentials.email,
         password: credentials.password,
-        client_id: 'test_client'
+        client_id: authConfig.clientId
       })
     });
 
     if (!response.ok) {
-      throw new Error('Registration failed');
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || 'Registration failed');
     }
 
     return response.json();
