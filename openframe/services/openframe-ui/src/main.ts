@@ -3,6 +3,9 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import router from './router'
 import App from './App.vue'
+import Sidebar from 'primevue/sidebar'
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
 
 // PrimeVue styles
 import 'primevue/resources/themes/lara-light-blue/theme.css'
@@ -12,6 +15,7 @@ import 'primeflex/primeflex.css'
 
 // Custom styles
 import './style.css'
+import './assets/styles/components.css'
 
 // Check authentication before app mount
 const token = localStorage.getItem('access_token')
@@ -24,5 +28,8 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     app.use(createPinia())
     app.use(router)
     app.use(PrimeVue, { ripple: true })
+    app.component('Sidebar', Sidebar)
+    app.use(ToastService);
+    app.component('Toast', Toast);
     app.mount('#app')
 }

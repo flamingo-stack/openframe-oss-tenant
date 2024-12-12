@@ -1,0 +1,161 @@
+/* Input styles */
+.p-inputtext {
+  padding: 1rem 1rem;
+  height: 3.5rem;
+}
+
+.p-password {
+  width: 100%;
+  display: flex !important;
+}
+
+.p-password .p-password-input {
+  width: 100%;
+  padding: 1rem 3rem 1rem 1rem;
+  height: 3.5rem;
+  flex: 1;
+}
+
+.p-password i,
+.p-password svg {
+  top: 50%;
+  margin-top: -0.5rem;
+  right: 0.75rem;
+}
+
+/* Input groups */
+.p-inputgroup {
+  display: flex;
+  align-items: stretch;
+}
+
+.p-inputgroup .p-inputgroup-addon {
+  padding: 1rem;
+  background: var(--surface-ground);
+  border-color: var(--surface-border);
+  min-height: 3.5rem;
+  min-width: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-color);
+  background: var(--surface-section);
+}
+
+/* Target all buttons within input groups */
+.p-inputgroup .p-button {
+  padding: 0;
+  width: 3.5rem;
+  min-width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+}
+
+.p-inputgroup .p-button .p-button-icon {
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.p-inputgroup .p-button:enabled:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color-alpha-10);
+}
+
+.p-inputgroup .p-button:enabled:hover .p-button-icon {
+  color: var(--primary-color);
+}
+
+/* Button styles */
+.p-button {
+  /* Default button */
+  background: var(--surface-ground);
+  border-color: var(--surface-border);
+  color: var(--text-color);
+}
+
+.p-button:enabled:hover {
+  background: var(--surface-hover);
+  border-color: var(--surface-hover);
+  color: var(--text-color);
+}
+
+/* Primary button */
+.p-button.p-button-primary {
+  background: #00E5BE;
+  border-color: #00E5BE;
+  color: #ffffff;
+}
+
+.p-button.p-button-primary:enabled:hover {
+  background: #00ccaa;
+  border-color: #00ccaa;
+  color: #ffffff;
+}
+
+/* Secondary button */
+.p-button.p-button-secondary {
+  color: #00E5BE;
+}
+
+.p-button.p-button-secondary:enabled:hover {
+  background: rgba(0, 229, 190, 0.04);
+  color: #00ccaa;
+}
+
+/* Text button */
+.p-button.p-button-text {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-color);
+}
+
+.p-button.p-button-text:enabled:hover {
+  background: var(--surface-hover);
+  border-color: transparent;
+  color: var(--text-color);
+}
+
+/* Icon-only button */
+.p-button.p-button-icon-only {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-color-secondary);
+}
+
+.p-button.p-button-icon-only:enabled:hover {
+  background: var(--surface-hover);
+  border-color: transparent;
+  color: var(--text-color);
+}
+
+/* Active state for icon buttons (like in sidebar) */
+.p-button.p-button-icon-only.active {
+  background: #00E5BE;
+  color: #ffffff;
+}
+
+/* Danger button */
+.p-button.p-button-danger {
+  background: #ff4757;
+  border-color: #ff4757;
+  color: #ffffff;
+}
+
+.p-button.p-button-danger:enabled:hover {
+  background: #ff3347;
+  border-color: #ff3347;
+  color: #ffffff;
+}
+
+/* Disabled state */
+.p-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+} 

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
+import Monitoring from '../views/Monitoring.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -23,6 +24,16 @@ const router = createRouter({
       name: 'home',
       component: Home,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/monitoring',
+      name: 'monitoring',
+      component: Monitoring,
+      meta: { 
+        requiresAuth: true,
+        title: 'Monitoring and Tools',
+        icon: 'pi pi-chart-line'
+      }
     }
   ]
 })

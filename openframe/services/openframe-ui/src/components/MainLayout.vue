@@ -2,6 +2,7 @@
   <div class="layout-container">
     <nav class="navbar">
       <div class="navbar-start">
+        <Button icon="pi pi-bars" text rounded @click="toggleMenu" class="menu-button" />
         <div class="brand">
           <div class="brand-name">
             <span class="brand-title">Open<span class="brand-highlight">Frame</span></span>
@@ -9,45 +10,85 @@
             <span class="brand-section">Dashboard</span>
           </div>
         </div>
-        <div class="menu-items">
-          <Button 
-            v-for="item in menuItems" 
-            :key="item.label"
-            :icon="item.icon"
-            :label="item.label"
-            text
-            :class="{ active: route.path === item.to }"
-            @click="router.push(item.to)"
-          />
-        </div>
       </div>
       <div class="navbar-end">
         <Button icon="pi pi-user" text rounded class="mr-2" />
         <Button icon="pi pi-power-off" text rounded severity="secondary" @click="handleLogout" />
       </div>
     </nav>
-    
-    <main class="main-content">
-      <slot></slot>
-    </main>
+
+    <Sidebar 
+      v-model:visible="menuVisible" 
+      :modal="true" 
+      :showCloseIcon="false"
+      class="main-sidebar"
+    >
+      <template #header>
+        <div class="sidebar-header">
+          <Button 
+            icon="pi pi-times" 
+            text 
+            rounded 
+            @click="menuVisible = false"
+            class="close-button"
+          />
+        </div>
+      </template>
+      <div class="menu">
+        <router-link 
+          v-for="item in menuItems" 
+          :key="item.path"
+          :to="item.path"
+          class="menu-item"
+          :class="{ active: route.path === item.path }"
+          @click="menuVisible = false"
+        >
+          <i :class="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </router-link>
+      </div>
+    </Sidebar>
+
+    <div class="layout-content">
+      <main class="main-content">
+        <slot></slot>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
+import Sidebar from 'primevue/sidebar';
 import { AuthService } from '../services/AuthService';
 
 const route = useRoute();
 const router = useRouter();
+const menuVisible = ref(false);
 
 const menuItems = [
   {
     label: 'Dashboard',
     icon: 'pi pi-home',
-    to: '/'
+    path: '/'
+  },
+  {
+    label: 'Monitoring and Tools',
+    icon: 'pi pi-chart-line',
+    path: '/monitoring'
+  },
+  {
+    label: 'Settings',
+    icon: 'pi pi-cog',
+    path: '/settings'
   }
 ];
+
+const toggleMenu = () => {
+  menuVisible.value = !menuVisible.value;
+};
 
 const handleLogout = () => {
   AuthService.logout();
@@ -69,8 +110,80 @@ const handleLogout = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  z-index: 1000;
 }
 
+.menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-content {
+  flex: 1;
+  display: flex;
+  background: var(--surface-ground);
+}
+
+:deep(.main-sidebar) {
+  .p-sidebar {
+    @media screen and (min-width: 768px) {
+      width: 250px;
+    }
+    @media screen and (max-width: 767px) {
+      width: 100%;
+    }
+  }
+
+  .p-sidebar-header {
+    display: block !important;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .p-sidebar-content {
+    padding: 0;
+  }
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  gap: 0.5rem;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  color: var(--text-color);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+  background: var(--surface-hover);
+}
+
+.menu-item.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.menu-item i {
+  font-size: 1.25rem;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Existing navbar styles... */
 .navbar-start {
   display: flex;
   align-items: center;
@@ -116,23 +229,34 @@ const handleLogout = () => {
   font-weight: normal;
 }
 
-.menu-items {
+@media screen and (max-width: 767px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .brand-section {
+    display: none;
+  }
+}
+
+.sidebar-header {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.5rem;
 }
 
-.menu-items .p-button {
-  padding: 0.5rem 1rem;
+.close-button {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
-.menu-items .p-button.active {
-  background: var(--surface-hover);
-}
+:deep(.close-button) {
+  .p-button-icon {
+    font-size: 1rem;
+  }
 
-.main-content {
-  flex: 1;
-  padding: 1.5rem;
-  background: var(--surface-ground);
+  &.p-button {
+    padding: 0.5rem;
+  }
 }
 </style> 
