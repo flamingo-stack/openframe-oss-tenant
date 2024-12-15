@@ -22,25 +22,16 @@ spring:
             - openframe/config
           default-label: ${CONFIG_GIT_BRANCH:main}
 
+# Management server configuration
 management:
+  server:
+    port: 8889
+    base-path: /management
   endpoints:
     web:
+      base-path: /v1
       exposure:
-        include: '*'
-    enabled-by-default: true
-  endpoint:
-    prometheus:
-      enabled: true
-    health:
-      enabled: true
-      show-details: always
-    metrics:
-      enabled: true
-  metrics:
-    enable:
-      all: true
-    tags:
-      application: ${spring.application.name}
+        include: "*"
 
 logging:
   config: classpath:logging/shared-logback-spring.xml

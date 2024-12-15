@@ -15,4 +15,4 @@ openframe:
 
 fleet:
   api:
-    url: http://fleet:8070
+    url: http://openframe-fleet:8070

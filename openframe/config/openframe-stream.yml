@@ -5,9 +5,8 @@ server:
 # Management server configuration
 management:
   server:
-    port: ${server.port + 1}
-    servlet:
-      context-path: /management
+    port: 8083
+    base-path: /management
   endpoints:
     web:
       base-path: /v1

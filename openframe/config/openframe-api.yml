@@ -28,9 +28,8 @@ spring:
 # Management server configuration
 management:
   server:
-    port: ${server.port + 1}
-    servlet:
-      context-path: /management
+    port: 8091
+    base-path: /management
   endpoints:
     web:
       base-path: /v1
