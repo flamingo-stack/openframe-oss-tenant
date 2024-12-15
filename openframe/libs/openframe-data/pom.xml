@@ -59,6 +59,12 @@
             <artifactId>pinot-java-client</artifactId>
             <version>${pinot.version}</version>
         </dependency>
+
+        <!-- Spring Boot starters with Jackson excluded -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

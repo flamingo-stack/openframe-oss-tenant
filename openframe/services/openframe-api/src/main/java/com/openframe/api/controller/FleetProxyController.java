@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.openframe.api.service.IntegratedToolTokenService;
-import com.openframe.data.model.IntegratedToolType;
+import com.openframe.data.model.IntegratedToolTypes;
+import com.openframe.data.service.IntegratedToolService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class FleetProxyController {
     private String fleetApiUrl;
 
     private final RestTemplate restTemplate;
-    private final IntegratedToolTokenService tokenService;
+    private final IntegratedToolService integratedToolService;
 
     @RequestMapping("/**")
     public ResponseEntity<String> proxyRequest(
@@ -48,8 +48,8 @@ public class FleetProxyController {
                 .build()
                 .toUri();
 
-        // Get token from IntegratedToolTokenService
-        String token = tokenService.getActiveToken(IntegratedToolType.FLEET);
+        // Get token from IntegratedToolService
+        String token = integratedToolService.getActiveToken(IntegratedToolTypes.FLEET);
         if (token == null) {
             throw new RuntimeException("No valid Fleet token available");
         }

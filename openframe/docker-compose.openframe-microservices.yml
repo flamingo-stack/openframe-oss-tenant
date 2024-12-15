@@ -43,6 +43,26 @@ services:
     networks:
       - openframe-network
 
+  management:
+    build:
+      context: ./services/openframe-management
+      dockerfile: Dockerfile
+    container_name: openframe-management
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
+      - OPENFRAME_MANAGEMENT_KEY=${OPENFRAME_MANAGEMENT_KEY:-docker-management-key-123}
+    ports:
+      - "8095:8095"
+      - "8096:8096"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - openframe-network
+
   stream:
     build:
       context: ./services/openframe-stream
@@ -74,6 +94,7 @@ services:
       - "4000:80"
     depends_on:
       - api
+      - management
     networks:
       - openframe-network
       

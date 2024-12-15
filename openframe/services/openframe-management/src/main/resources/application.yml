@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: openframe-management
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+    import: "optional:configserver:http://localhost:8888"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+    import: "optional:configserver:http://openframe-config-server:8888" 

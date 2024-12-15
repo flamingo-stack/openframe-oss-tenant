@@ -52,8 +52,8 @@
         <module>services/openframe-config</module>
         <module>services/openframe-api</module>
         <module>services/openframe-stream</module>
+        <module>services/openframe-management</module>
     </modules>
-
 
     <dependencies>
         <!-- Monitoring -->
@@ -106,6 +106,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -126,8 +127,6 @@
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-
-
     </dependencies>
 
     <dependencyManagement>
@@ -142,6 +141,7 @@
                 <artifactId>esri-geometry-api</artifactId>
                 <version>${esri.geometry.version}</version>
             </dependency>
+
             <!-- OpenFrame Libraries -->
             <dependency>
                 <groupId>com.openframe</groupId>
@@ -175,16 +175,12 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
                 <version>${spring-boot.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-to-slf4j</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-api</artifactId>
-                    </exclusion>
-                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-webflux</artifactId>
+                <version>${spring-boot.version}</version>
             </dependency>
 
             <!-- Spring Cloud -->
@@ -279,11 +275,6 @@
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-impl</artifactId>
-                <version>${jjwt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>
             </dependency>
         </dependencies>

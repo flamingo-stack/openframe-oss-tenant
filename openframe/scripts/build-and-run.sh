@@ -109,10 +109,9 @@ fi
 # Register Fleet token with OpenFrame API
 echo "Registering Fleet token with OpenFrame API..."
 FLEET_TOKEN=$(docker exec openframe-fleet cat /etc/fleet/api_token.txt)
-curl -X POST http://localhost:8091/management/v1/tools/FLEET/register-token \
-  -H "X-Management-Key: ${OPENFRAME_MANAGEMENT_KEY:-local-management-key-123}" \
+curl -X POST "http://localhost:8091/management/v1/tools/FLEET" \
   -H "Content-Type: application/json" \
-  -d "{\"token\": \"$FLEET_TOKEN\"}" \
+  -d "{\"token\": \"$FLEET_TOKEN\", \"managementKey\": \"${OPENFRAME_MANAGEMENT_KEY:-local-management-key-123}\"}" \
   --retry 5 \
   --retry-delay 2 \
   --retry-all-errors

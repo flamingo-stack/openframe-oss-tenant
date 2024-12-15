@@ -271,7 +271,7 @@
         "x": 9,
         "y": 1
       },
-      "id": 14,
+      "id": 30,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -284,12 +284,12 @@
         },
         "textMode": "auto"
       },
-      "title": "Cassandra",
+      "title": "OpenFrame Management",
       "type": "stat",
       "targets": [
         {
-          "expr": "up{job=\"cassandra\"}",
-          "legendFormat": "Cassandra"
+          "expr": "up{job=\"openframe-management\"}",
+          "legendFormat": "Management"
         }
       ]
     },
@@ -339,7 +339,7 @@
         "x": 12,
         "y": 1
       },
-      "id": 15,
+      "id": 14,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -352,12 +352,12 @@
         },
         "textMode": "auto"
       },
-      "title": "Kafka",
+      "title": "Cassandra",
       "type": "stat",
       "targets": [
         {
-          "expr": "up{job=\"kafka\"}",
-          "legendFormat": "Kafka"
+          "expr": "up{job=\"cassandra\"}",
+          "legendFormat": "Cassandra"
         }
       ]
     },

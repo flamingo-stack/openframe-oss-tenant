@@ -18,6 +18,11 @@ scrape_configs:
     static_configs:
       - targets: ['openframe-config-server:8889']
 
+  - job_name: 'openframe-management'
+    metrics_path: '/management/v1/prometheus'
+    static_configs:
+      - targets: ['openframe-management:8096']
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']

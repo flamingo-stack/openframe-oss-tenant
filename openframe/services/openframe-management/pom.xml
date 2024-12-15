@@ -11,11 +11,11 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>openframe-config</artifactId>
-    <name>OpenFrame Config Server</name>
+    <artifactId>openframe-management</artifactId>
+    <name>OpenFrame Management Service</name>
 
     <properties>
-        <start-class>com.openframe.config.ConfigServerApplication</start-class>
+        <start-class>com.openframe.management.ManagementApplication</start-class>
     </properties>
 
     <dependencies>
@@ -24,33 +24,22 @@
             <groupId>com.openframe</groupId>
             <artifactId>openframe-core</artifactId>
         </dependency>
-
-        <!-- Spring Cloud Config -->
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-config-server</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-data</artifactId>
         </dependency>
 
-        <!-- Spring Boot starters with Jackson excluded -->
+        <!-- Spring Cloud -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -71,4 +60,4 @@
             </plugin>
         </plugins>
     </build>
-</project>
+</project> 

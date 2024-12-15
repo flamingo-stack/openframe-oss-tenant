@@ -9,7 +9,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 @SpringBootApplication
 @EnableMongoRepositories(basePackages = "com.openframe.data.repository")
 @EnableKafka
-@ComponentScan(basePackages = {"com.openframe.api", "com.openframe.api.management", "com.openframe.data.config"})
+@ComponentScan(basePackages = {"com.openframe.api",  "com.openframe.data.config"})
 public class ApiApplication {
 
     public static void main(String[] args) {

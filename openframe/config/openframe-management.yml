@@ -1,0 +1,35 @@
+server:
+  port: 8095
+
+# Management service common configuration
+spring:
+  data:
+    mongodb:
+      enabled: true
+  kafka:
+    enabled: false
+  cloud:
+    config:
+      fail-fast: false
+
+# Management server configuration
+management:
+  server:
+    port: 8096
+    base-path: /management
+  endpoints:
+    web:
+      base-path: /v1
+      exposure:
+        include: "*"
+  endpoint:
+    tools:
+      enabled: true
+
+# Management service specific logging
+logging:
+  level:
+    root: INFO
+    com.openframe: DEBUG
+    org.springframework: DEBUG
+    org.springframework.data.mongodb: DEBUG 
