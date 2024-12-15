@@ -35,6 +35,9 @@ management:
       base-path: /v1
       exposure:
         include: "*"
+  endpoint:
+    tools:
+      enabled: true
 
 # API service specific logging
 logging:
