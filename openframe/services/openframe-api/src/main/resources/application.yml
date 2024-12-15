@@ -1,8 +1,6 @@
 spring:
   application:
     name: openframe-api
-  main:
-    allow-bean-definition-overriding: true
 
 ---
 spring:

@@ -1,5 +1,7 @@
 # Common properties shared across all services
 spring:
+  main:
+    allow-bean-definition-overriding: true
   mvc:
     contentnegotiation:
       favor-parameter: true
