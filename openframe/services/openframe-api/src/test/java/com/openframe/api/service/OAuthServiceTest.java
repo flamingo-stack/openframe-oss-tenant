@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.data.repository.OAuthClientRepository;
 import com.openframe.data.repository.OAuthTokenRepository;
@@ -33,16 +35,30 @@ class OAuthServiceTest {
 
     @Test
     void authorize_WithValidClient_ShouldReturnAuthCode() {
-        OAuthClient client = new OAuthClient();
-        client.setClientId("test_client");
+        // Arrange
+        String clientId = "test_client";
+        String redirectUri = "http://localhost:3000/callback";
+        String scope = "read write";
+        String state = "xyz";
         
-        when(clientRepository.findByClientId("test_client")).thenReturn(client);
-
-        var response = oauthService.authorize("code", "test_client", 
-            "http://localhost/callback", "read", "test_state");
-
+        OAuthClient client = new OAuthClient();
+        client.setClientId(clientId);
+        client.setGrantTypes(new String[]{"authorization_code"});
+        client.setScopes(new String[]{"read", "write"});
+        
+        when(clientRepository.findByClientId(clientId)).thenReturn(client);
+        
+        // Act
+        AuthorizationResponse response = oauthService.authorize(
+            "code", clientId, redirectUri, scope, state);
+        
+        // Assert
+        assertThat(response).isNotNull();
         assertThat(response.getCode()).isNotNull();
-        assertThat(response.getState()).isEqualTo("test_state");
+        assertThat(response.getState()).isEqualTo(state);
+        assertThat(response.getRedirectUri()).isEqualTo(redirectUri);
+        
+        verify(clientRepository).findByClientId(clientId);
     }
 
     @Test

@@ -151,14 +151,17 @@ public class OAuthService {
             throw new IllegalArgumentException("Client not found");
         }
         
-        // Log the lengths to help debug without exposing secrets
-        log.debug("Stored secret length: {}, Provided secret length: {}", 
-            client.getClientSecret().length(), 
-            clientSecret != null ? clientSecret.length() : 0);
-        
-        if (clientSecret != null && !client.getClientSecret().equals(clientSecret)) {
-            log.error("Invalid client secret for client: {}", clientId);
-            throw new IllegalArgumentException("Invalid client secret");
+        // Only validate secret if one is provided (e.g. not for authorize endpoint)
+        if (clientSecret != null) {
+            // Log the lengths to help debug without exposing secrets
+            log.debug("Stored secret length: {}, Provided secret length: {}", 
+                client.getClientSecret() != null ? client.getClientSecret().length() : 0, 
+                clientSecret.length());
+            
+            if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
+                log.error("Invalid client secret for client: {}", clientId);
+                throw new IllegalArgumentException("Invalid client secret");
+            }
         }
         
         log.debug("Client validation successful for: {}", clientId);
