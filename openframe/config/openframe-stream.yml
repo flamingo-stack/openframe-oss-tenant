@@ -6,15 +6,11 @@ server:
 management:
   server:
     port: 8083
-    base-path: /management
-  endpoints:
-    web:
-      base-path: /v1
-      exposure:
-        include: "*"
 
 spring:
   data:
+    mongodb:
+      enabled: false
     cassandra:
       enabled: true
   autoconfigure:
@@ -26,6 +22,7 @@ spring:
   redis:
     enabled: false
   kafka:
+    enabled: true
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer

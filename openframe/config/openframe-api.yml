@@ -4,6 +4,8 @@ server:
 # API service common configuration
 spring:
   data:
+    mongodb:
+      enabled: true
     cassandra:
       enabled: true
   redis:
@@ -29,15 +31,6 @@ spring:
 management:
   server:
     port: 8091
-    base-path: /management
-  endpoints:
-    web:
-      base-path: /v1
-      exposure:
-        include: "*"
-  endpoint:
-    tools:
-      enabled: true
 
 # API service specific logging
 logging:

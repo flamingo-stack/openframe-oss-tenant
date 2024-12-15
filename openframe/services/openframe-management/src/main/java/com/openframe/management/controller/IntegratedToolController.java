@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/v1/tools")
 @RequiredArgsConstructor
 public class IntegratedToolController {
+
     private static final Logger logger = LoggerFactory.getLogger(IntegratedToolController.class);
     private final IntegratedToolService toolService;
 

@@ -14,6 +14,7 @@ spring:
   data:
     # Common MongoDB configuration
     mongodb:
+      enabled: false
       auto-index-creation: true
       connect-timeout: 10000
       socket-timeout: 10000
@@ -21,6 +22,7 @@ spring:
       server-selection-timeout: 10000
     # Common Cassandra configuration
     cassandra:
+      enabled: false
       port: 9042
       local-datacenter: datacenter1
       keyspace-name: openframe_events
@@ -35,11 +37,15 @@ spring:
       advanced:
         timestamp-generator:
           class: com.datastax.oss.driver.internal.core.time.ServerSideTimestampGenerator
+  kafka:
+    enabled: false
 
 # Common monitoring configuration
 management:
+  base-path: /management
   endpoints:
     web:
+      base-path: /v1
       exposure:
         include: '*'
     enabled-by-default: true
