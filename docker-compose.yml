@@ -1,6 +1,0 @@
-services:
-  grafana:
-    # ... other configurations ...
-    environment:
-      - GF_SECURITY_ALLOW_EMBEDDING=true
-      - GF_SECURITY_COOKIE_SAMESITE=none 
