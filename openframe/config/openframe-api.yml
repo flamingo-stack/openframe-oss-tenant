@@ -53,8 +53,6 @@ jwt:
 oauth:
   client:
     default:
-      id: openframe_web_dashboard
-      secret: test_secret
       grant-types:
         - password
         - refresh_token

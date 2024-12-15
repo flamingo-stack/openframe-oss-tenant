@@ -12,8 +12,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the app
-RUN npm run build
+# Build the app with docker profile
+RUN npm run build -- --mode docker
 
 # Production stage
 FROM nginx:alpine

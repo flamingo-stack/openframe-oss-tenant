@@ -143,21 +143,25 @@ public class OAuthService {
     }
 
     private OAuthClient validateClient(String clientId, String clientSecret) {
-        log.debug("Validating client: {}", clientId);
-        OAuthClient client = clientRepository.findByClientId(clientId);
+        log.debug("Validating client - ID: {}", clientId);
         
+        OAuthClient client = clientRepository.findByClientId(clientId);
         if (client == null) {
             log.error("Client not found: {}", clientId);
             throw new IllegalArgumentException("Client not found");
         }
         
-        if (clientSecret != null) {
-            if (!clientSecret.equals(client.getClientSecret())) {
-                log.error("Invalid client secret for client: {}", clientId);
-                throw new IllegalArgumentException("Invalid client secret");
-            }
+        // Log the lengths to help debug without exposing secrets
+        log.debug("Stored secret length: {}, Provided secret length: {}", 
+            client.getClientSecret().length(), 
+            clientSecret != null ? clientSecret.length() : 0);
+        
+        if (clientSecret != null && !client.getClientSecret().equals(clientSecret)) {
+            log.error("Invalid client secret for client: {}", clientId);
+            throw new IllegalArgumentException("Invalid client secret");
         }
         
+        log.debug("Client validation successful for: {}", clientId);
         return client;
     }
 

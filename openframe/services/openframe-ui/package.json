@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5174",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "vite --mode local",
+    "build": "vite build --mode docker",
+    "preview": "vite preview --mode local",
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {

@@ -24,6 +24,9 @@ public class DataInitializer {
             String clientId = env.getProperty("oauth.client.default.id");
             String clientSecret = env.getProperty("oauth.client.default.secret");
 
+            log.info("Initializing OAuth client - ID: {}", clientId);
+            log.debug("Client secret length: {}", clientSecret != null ? clientSecret.length() : 0);
+
             OAuthClient existingClient = clientRepository.findByClientId(clientId);
             if (existingClient == null) {
                 OAuthClient client = new OAuthClient();
@@ -35,7 +38,13 @@ public class DataInitializer {
                 clientRepository.save(client);
                 log.info("Created OAuth client: {}", clientId);
             } else {
-                log.info("OAuth client already exists: {}", clientId);
+                if (!existingClient.getClientSecret().equals(clientSecret)) {
+                    existingClient.setClientSecret(clientSecret);
+                    clientRepository.save(existingClient);
+                    log.info("Updated OAuth client secret: {}", clientId);
+                } else {
+                    log.info("OAuth client already exists with correct configuration: {}", clientId);
+                }
             }
         };
     }

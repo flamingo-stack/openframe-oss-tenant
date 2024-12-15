@@ -16,8 +16,8 @@ export class AuthService {
       'grant_type': 'password',
       'username': email,
       'password': password,
-      'client_id': 'test_client',
-      'client_secret': 'test_secret'
+      'client_id': import.meta.env.VITE_CLIENT_ID,
+      'client_secret': import.meta.env.VITE_CLIENT_SECRET
     }), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -30,7 +30,7 @@ export class AuthService {
     const response = await axios.post(`${API_URL}/oauth/register`, new URLSearchParams({
       'email': email,
       'password': password,
-      'client_id': 'test_client'
+      'client_id': import.meta.env.VITE_CLIENT_ID
     }), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
