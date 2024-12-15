@@ -16,4 +16,3 @@ openframe:
 fleet:
   api:
     url: http://fleet:8070
-    token: ${FLEET_API_TOKEN}
