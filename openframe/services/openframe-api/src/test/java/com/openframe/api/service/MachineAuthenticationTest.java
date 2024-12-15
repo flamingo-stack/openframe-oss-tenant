@@ -1,5 +1,7 @@
 package com.openframe.api.service;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 
 import com.openframe.api.dto.oauth.TokenResponse;
+import com.openframe.api.security.JwtService;
 import com.openframe.core.model.OAuthClient;
-import com.openframe.data.repository.OAuthClientRepository;
+import com.openframe.data.repository.mongo.OAuthClientRepository;
 
 @ExtendWith(MockitoExtension.class)
 class MachineAuthenticationTest {
@@ -35,7 +38,7 @@ class MachineAuthenticationTest {
         client.setGrantTypes(new String[]{"client_credentials"});
         client.setScopes(new String[]{"metrics:write"});
 
-        when(clientRepository.findByClientId("test_machine")).thenReturn(client);
+        when(clientRepository.findByClientId("test_machine")).thenReturn(Optional.of(client));
         when(jwtService.generateToken(any(JwtClaimsSet.class))).thenReturn("test.jwt.token");
 
         // Act

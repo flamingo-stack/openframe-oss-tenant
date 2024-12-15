@@ -12,7 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.openframe.data.repository.UserRepository;
+import com.openframe.data.repository.mongo.UserRepository;
 
 @TestConfiguration
 public class TestConfig {

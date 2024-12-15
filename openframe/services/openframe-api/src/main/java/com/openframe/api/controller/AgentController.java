@@ -16,8 +16,8 @@ import com.openframe.api.dto.agent.AgentRegistrationRequest;
 import com.openframe.api.dto.agent.AgentRegistrationResponse;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
-import com.openframe.data.repository.MachineRepository;
-import com.openframe.data.repository.OAuthClientRepository;
+import com.openframe.data.repository.mongo.MachineRepository;
+import com.openframe.data.repository.mongo.OAuthClientRepository;
 
 import lombok.RequiredArgsConstructor;
 

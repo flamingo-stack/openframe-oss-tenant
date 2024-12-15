@@ -10,8 +10,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import com.openframe.api.service.JwtService;
-
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -29,10 +27,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             String token = accessor.getFirstNativeHeader("Authorization");
             if (token != null && token.startsWith("Bearer ")) {
                 token = token.substring(7);
-                if (jwtService.validateToken(token)) {
-                    String machineId = jwtService.extractMachineId(token);
+                if (jwtService.isTokenValid(token, null)) {
+                    String username = jwtService.extractUsername(token);
                     SecurityContextHolder.getContext().setAuthentication(
-                        new UsernamePasswordAuthenticationToken(machineId, null, null));
+                        new UsernamePasswordAuthenticationToken(username, null, null));
                 }
             }
         }

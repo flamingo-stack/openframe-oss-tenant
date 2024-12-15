@@ -13,9 +13,10 @@ public class OAuthToken {
     @Id
     private String id;
     private String userId;
-    private String clientId;
     private String accessToken;
     private String refreshToken;
     private Instant accessTokenExpiry;
     private Instant refreshTokenExpiry;
+    private String clientId;
+    private String[] scopes;
 } 

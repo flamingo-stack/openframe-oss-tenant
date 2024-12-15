@@ -12,7 +12,6 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
 
-import com.openframe.api.service.JwtService;
 
 @ExtendWith(MockitoExtension.class)
 class WebSocketAuthenticationTest {
@@ -31,14 +30,14 @@ class WebSocketAuthenticationTest {
 
         Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
 
-        when(jwtService.validateToken("valid.jwt.token")).thenReturn(true);
-        when(jwtService.extractMachineId("valid.jwt.token")).thenReturn("test_machine");
+        when(jwtService.isTokenValid("valid.jwt.token", null)).thenReturn(true);
+        when(jwtService.extractUsername("valid.jwt.token")).thenReturn("test_user");
 
         // Act
         interceptor.preSend(message, null);
 
         // Assert
-        verify(jwtService).validateToken("valid.jwt.token");
-        verify(jwtService).extractMachineId("valid.jwt.token");
+        verify(jwtService).isTokenValid("valid.jwt.token", null);
+        verify(jwtService).extractUsername("valid.jwt.token");
     }
 } 

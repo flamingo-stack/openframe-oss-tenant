@@ -1,4 +1,4 @@
-package com.openframe.api.service;
+package com.openframe.api.security;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -16,48 +16,32 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class JwtService {
-
+    
     private final JwtEncoder encoder;
     private final JwtDecoder decoder;
-
+    
     public String generateToken(UserDetails userDetails) {
-        Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuer("https://auth.openframe.com")
-            .issuedAt(now)
-            .expiresAt(now.plus(1, ChronoUnit.DAYS))
             .subject(userDetails.getUsername())
-            .claim("roles", userDetails.getAuthorities())
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
             .build();
-
+        
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
-
+    
     public String generateToken(JwtClaimsSet claims) {
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
-
+    
     public String extractUsername(String token) {
         return decoder.decode(token).getSubject();
     }
-
+    
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
         Jwt jwt = decoder.decode(token);
-        return username.equals(userDetails.getUsername()) && 
-               !jwt.getExpiresAt().isBefore(Instant.now());
-    }
-
-    public boolean validateToken(String token) {
-        try {
-            Jwt jwt = decoder.decode(token);
-            return !jwt.getExpiresAt().isBefore(Instant.now());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public String extractMachineId(String token) {
-        return decoder.decode(token).getSubject();
+        String username = jwt.getSubject();
+        return username.equals(userDetails.getUsername()) && !jwt.getExpiresAt().isBefore(Instant.now());
     }
 } 

@@ -13,16 +13,18 @@ import org.springframework.stereotype.Service;
 
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
+import com.openframe.api.security.JwtService;
 import com.openframe.api.security.UserSecurity;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.User;
-import com.openframe.data.repository.OAuthClientRepository;
-import com.openframe.data.repository.OAuthTokenRepository;
-import com.openframe.data.repository.UserRepository;
+import com.openframe.data.repository.mongo.OAuthClientRepository;
+import com.openframe.data.repository.mongo.OAuthTokenRepository;
+import com.openframe.data.repository.mongo.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OAuthService {
@@ -145,27 +147,28 @@ public class OAuthService {
     private OAuthClient validateClient(String clientId, String clientSecret) {
         log.debug("Validating client - ID: {}", clientId);
         
-        OAuthClient client = clientRepository.findByClientId(clientId);
-        if (client == null) {
-            log.error("Client not found: {}", clientId);
-            throw new IllegalArgumentException("Client not found");
-        }
-        
-        // Only validate secret if one is provided (e.g. not for authorize endpoint)
-        if (clientSecret != null) {
-            // Log the lengths to help debug without exposing secrets
-            log.debug("Stored secret length: {}, Provided secret length: {}", 
-                client.getClientSecret() != null ? client.getClientSecret().length() : 0, 
-                clientSecret.length());
-            
-            if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
-                log.error("Invalid client secret for client: {}", clientId);
-                throw new IllegalArgumentException("Invalid client secret");
-            }
-        }
-        
-        log.debug("Client validation successful for: {}", clientId);
-        return client;
+        return clientRepository.findByClientId(clientId)
+            .map(client -> {
+                // Only validate secret if one is provided (e.g. not for authorize endpoint)
+                if (clientSecret != null) {
+                    // Log the lengths to help debug without exposing secrets
+                    log.debug("Stored secret length: {}, Provided secret length: {}", 
+                        client.getClientSecret() != null ? client.getClientSecret().length() : 0, 
+                        clientSecret.length());
+                    
+                    if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
+                        log.error("Invalid client secret for client: {}", clientId);
+                        throw new IllegalArgumentException("Invalid client secret");
+                    }
+                }
+                
+                log.debug("Client validation successful for: {}", clientId);
+                return client;
+            })
+            .orElseThrow(() -> {
+                log.error("Client not found: {}", clientId);
+                return new IllegalArgumentException("Client not found");
+            });
     }
 
     private String generateRefreshToken() {

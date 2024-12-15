@@ -52,12 +52,14 @@ class OAuthControllerTest {
 
     @Test
     void token_WithAuthorizationCode_ShouldReturnAccessToken() throws Exception {
+        TokenResponse mockResponse = TokenResponse.builder()
+            .accessToken("test.token")
+            .tokenType("Bearer")
+            .expiresIn(3600)
+            .build();
+
         when(oauthService.token(any(), any(), any(), any(), any(), any(), any()))
-            .thenReturn(TokenResponse.builder()
-                .accessToken("test.token")
-                .tokenType("Bearer")
-                .expiresIn(3600)
-                .build());
+            .thenReturn(mockResponse);
 
         mockMvc.perform(post("/oauth/token")
                 .param("grant_type", "authorization_code")

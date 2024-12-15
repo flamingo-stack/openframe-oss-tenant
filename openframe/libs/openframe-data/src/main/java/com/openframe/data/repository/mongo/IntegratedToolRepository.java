@@ -1,4 +1,4 @@
-package com.openframe.data.repository;
+package com.openframe.data.repository.mongo;
 
 import java.util.Optional;
 

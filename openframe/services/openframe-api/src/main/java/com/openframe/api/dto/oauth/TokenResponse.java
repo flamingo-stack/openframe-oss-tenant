@@ -1,17 +1,21 @@
 package com.openframe.api.dto.oauth;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Data;
 
 @Data
 @Builder
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class TokenResponse {
+    @JsonProperty("access_token")
     private String accessToken;
+    
+    @JsonProperty("refresh_token")
     private String refreshToken;
-    private String tokenType = "Bearer";
-    private long expiresIn;
-    private String scope;
+    
+    @JsonProperty("token_type")
+    private String tokenType;
+    
+    @JsonProperty("expires_in")
+    private int expiresIn;
 } 

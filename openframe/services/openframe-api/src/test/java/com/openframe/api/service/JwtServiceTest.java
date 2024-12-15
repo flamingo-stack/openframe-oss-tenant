@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
+import com.openframe.api.security.JwtService;
 import com.openframe.api.security.UserSecurity;
 import com.openframe.core.model.User;
 

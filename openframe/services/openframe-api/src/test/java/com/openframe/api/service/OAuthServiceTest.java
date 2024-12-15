@@ -1,5 +1,7 @@
 package com.openframe.api.service;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,10 +12,11 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.openframe.api.dto.oauth.AuthorizationResponse;
+import com.openframe.api.security.JwtService;
 import com.openframe.core.model.OAuthClient;
-import com.openframe.data.repository.OAuthClientRepository;
-import com.openframe.data.repository.OAuthTokenRepository;
-import com.openframe.data.repository.UserRepository;
+import com.openframe.data.repository.mongo.OAuthClientRepository;
+import com.openframe.data.repository.mongo.OAuthTokenRepository;
+import com.openframe.data.repository.mongo.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 class OAuthServiceTest {
@@ -46,7 +49,7 @@ class OAuthServiceTest {
         client.setGrantTypes(new String[]{"authorization_code"});
         client.setScopes(new String[]{"read", "write"});
         
-        when(clientRepository.findByClientId(clientId)).thenReturn(client);
+        when(clientRepository.findByClientId(clientId)).thenReturn(Optional.of(client));
         
         // Act
         AuthorizationResponse response = oauthService.authorize(

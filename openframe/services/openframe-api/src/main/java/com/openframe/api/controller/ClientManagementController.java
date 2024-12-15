@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.openframe.api.dto.client.CreateClientRequest;
 import com.openframe.core.model.OAuthClient;
-import com.openframe.data.repository.OAuthClientRepository;
+import com.openframe.data.repository.mongo.OAuthClientRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,10 +43,11 @@ public class ClientManagementController {
 
     @DeleteMapping("/{clientId}")
     public ResponseEntity<?> deleteClient(@PathVariable String clientId) {
-        OAuthClient client = clientRepository.findByClientId(clientId);
-        if (client != null) {
-            clientRepository.delete(client);
-        }
-        return ResponseEntity.ok().build();
+        return clientRepository.findByClientId(clientId)
+            .map(client -> {
+                clientRepository.delete(client);
+                return ResponseEntity.ok().build();
+            })
+            .orElse(ResponseEntity.notFound().build());
     }
 } 
