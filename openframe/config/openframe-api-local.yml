@@ -17,9 +17,3 @@ fleet:
   api:
     url: http://localhost:8070
 
-server:
-  port: 8090
-
-management:
-  server:
-    port: 8091

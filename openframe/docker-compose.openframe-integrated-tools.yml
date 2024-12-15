@@ -179,75 +179,6 @@ services:
       integrated-tools-redis:
         condition: service_healthy
 
-  # RustDesk Signal Server
-  rustdesk-hbbs:
-    image: rustdesk/rustdesk-server:latest
-    container_name: openframe-rustdesk-hbbs
-    ports:
-      - "21115:21115"  # TCP
-      - "21116:21116"  # TCP
-      - "21116:21116/udp"  # UDP
-    command: hbbs --key 71832463748716346 --relay-servers openframe-rustdesk-hbbr:21117
-    environment:
-      RELAY: openframe-rustdesk-hbbr:21117
-      KEY: "71832463748716346"
-      REDIS_HOST: integrated-tools-redis
-      REDIS_PORT: 6379
-      MAX_SESSIONS: 100
-      MAX_CONNECTIONS_PER_IP: 10
-      LOG_LEVEL: info
-      LOG_FILE: /root/rustdesk.log
-    volumes:
-      - rustdesk-data:/root
-      - ./infrastructure/rustdesk/config.toml:/root/config.toml:ro
-    networks:
-      - openframe-network
-    depends_on:
-      integrated-tools-redis:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "21115"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
-
-  # RustDesk Relay Server
-  rustdesk-hbbr:
-    image: rustdesk/rustdesk-server:latest
-    container_name: openframe-rustdesk-hbbr
-    ports:
-      - "21117:21117"  # TCP
-      - "21118:21118"  # TCP
-      - "21119:21119"  # TCP
-    command: hbbr --key 71832463748716346
-    environment:
-      KEY: "71832463748716346"
-    volumes:
-      - rustdesk-data:/root
-    networks:
-      - openframe-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "21117"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
-
-  # rustdesk-client-builder:
-  #   build:
-  #     context: ./infrastructure/rustdesk/client
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     - RENDEZVOUS_SERVER="${SERVER_IP:-localhost}"
-  #     - APP_NAME="OpenFrame Remote"
-  #     - COMPANY_NAME="OpenFrame"
-  #     - SERVER_KEY=71832463748716346
-  #   volumes:
-  #     - ./dist:/usr/src/rustdesk/target/release
-
 volumes:
   integrated-tools-mysql:
     name: integrated-tools-mysql-data
@@ -257,8 +188,6 @@ volumes:
     name: integrated-tools-fleet-logs-data
   integrated-tools-postgresql:
     name: integrated-tools-postgresql-data
-  rustdesk-data:
-    name: rustdesk-data-data
 
 networks:
   openframe-network:

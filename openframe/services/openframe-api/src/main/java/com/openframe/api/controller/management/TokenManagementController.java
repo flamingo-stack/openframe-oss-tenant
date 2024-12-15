@@ -14,21 +14,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.openframe.api.config.ManagementConfig;
-import com.openframe.api.model.IntegratedToolType;
 import com.openframe.api.service.IntegratedToolTokenService;
+import com.openframe.data.model.IntegratedToolType;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/v1/tools")
+@RequiredArgsConstructor
 public class TokenManagementController {
     private static final Logger logger = LoggerFactory.getLogger(TokenManagementController.class);
     
     private final IntegratedToolTokenService tokenService;
     private final ManagementConfig managementConfig;
-
-    public TokenManagementController(IntegratedToolTokenService tokenService, ManagementConfig managementConfig) {
-        this.tokenService = tokenService;
-        this.managementConfig = managementConfig;
-    }
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> healthCheck() {
@@ -39,8 +37,7 @@ public class TokenManagementController {
     public ResponseEntity<?> registerToken(
             @PathVariable IntegratedToolType toolType,
             @RequestBody Map<String, String> request,
-            @RequestHeader("X-Management-Key") String managementKey,
-            @RequestHeader(value = "X-Tool-Metadata", required = false) String metadata) {
+            @RequestHeader("X-Management-Key") String managementKey) {
         
         // Validate management key
         if (!isValidManagementKey(managementKey)) {
@@ -54,12 +51,7 @@ public class TokenManagementController {
         }
 
         try {
-            if (metadata != null) {
-                tokenService.updateToken(toolType, token, metadata);
-            } else {
-                tokenService.updateToken(toolType, token);
-            }
-            
+            tokenService.saveToken(toolType, token);
             logger.info("Successfully registered token for tool: {}", toolType);
             return ResponseEntity.ok(Map.of("status", "success"));
         } catch (Exception e) {

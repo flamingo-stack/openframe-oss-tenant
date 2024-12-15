@@ -14,23 +14,22 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.openframe.api.service.IntegratedToolTokenService;
+import com.openframe.data.model.IntegratedToolType;
+
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/fleet")
+@RequiredArgsConstructor
 public class FleetProxyController {
 
     @Value("${fleet.api.url}")
     private String fleetApiUrl;
 
-    @Value("${fleet.api.token}")
-    private String fleetApiToken;
-
     private final RestTemplate restTemplate;
-
-    public FleetProxyController() {
-        this.restTemplate = new RestTemplate();
-    }
+    private final IntegratedToolTokenService tokenService;
 
     @RequestMapping("/**")
     public ResponseEntity<String> proxyRequest(
@@ -49,8 +48,14 @@ public class FleetProxyController {
                 .build()
                 .toUri();
 
+        // Get token from IntegratedToolTokenService
+        String token = tokenService.getActiveToken(IntegratedToolType.FLEET);
+        if (token == null) {
+            throw new RuntimeException("No valid Fleet token available");
+        }
+
         // Add Fleet API token to headers
-        headers.set("Authorization", "Bearer " + fleetApiToken);
+        headers.set("Authorization", "Bearer " + token);
 
         // Forward the request to Fleet
         HttpEntity<String> httpEntity = new HttpEntity<>(body, headers);
