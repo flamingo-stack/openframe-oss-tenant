@@ -75,6 +75,11 @@ const menuItems = [
     path: '/'
   },
   {
+    label: 'Hosts',
+    icon: 'pi pi-desktop',
+    path: '/hosts'
+  },
+  {
     label: 'Monitoring and Tools',
     icon: 'pi pi-chart-line',
     path: '/monitoring'

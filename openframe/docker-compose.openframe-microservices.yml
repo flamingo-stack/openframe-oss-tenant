@@ -9,6 +9,7 @@ services:
     container_name: openframe-config-server
     ports:
       - "8888:8888"
+      - "8889:8889"
     networks:
       - openframe-network
     healthcheck:
@@ -24,8 +25,12 @@ services:
     container_name: openframe-api
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
+      - FLEET_API_TOKEN=${FLEET_API_TOKEN}
+      - OPENFRAME_MANAGEMENT_KEY=${OPENFRAME_MANAGEMENT_KEY:-docker-management-key-123}
     ports:
       - "8090:8090"
+      - "8091:8091"
     depends_on:
       config-server:
         condition: service_healthy
@@ -45,6 +50,7 @@ services:
     container_name: openframe-stream
     ports:
       - "8082:8082"
+      - "8083:8083"
     depends_on:
       kafka:
         condition: service_healthy

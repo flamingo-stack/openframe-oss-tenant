@@ -6,6 +6,10 @@ import App from './App.vue'
 import Sidebar from 'primevue/sidebar'
 import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 // PrimeVue styles
 import 'primevue/resources/themes/lara-light-blue/theme.css'
@@ -31,5 +35,9 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     app.component('Sidebar', Sidebar)
     app.use(ToastService);
     app.component('Toast', Toast);
+    app.component('Button', Button)
+    app.component('InputText', InputText)
+    app.component('DataTable', DataTable)
+    app.component('Column', Column)
     app.mount('#app')
 }

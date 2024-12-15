@@ -2,6 +2,18 @@
 server:
   port: 8082
 
+# Management server configuration
+management:
+  server:
+    port: ${server.port + 1}
+    servlet:
+      context-path: /management
+  endpoints:
+    web:
+      base-path: /v1
+      exposure:
+        include: "*"
+
 spring:
   data:
     cassandra:

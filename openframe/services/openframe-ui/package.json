@@ -4,12 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --mode local",
+    "dev": "vite --mode development",
     "build": "vite build --mode docker",
-    "preview": "vite preview --mode local",
+    "preview": "vite preview --mode development",
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@vuelidate/core": "^2.0.3",
+    "@vuelidate/validators": "^2.0.4",
     "axios": "^1.6.2",
     "chart.js": "^4.4.1",
     "pinia": "^2.1.7",

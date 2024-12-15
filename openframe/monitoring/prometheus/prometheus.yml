@@ -6,17 +6,17 @@ scrape_configs:
   - job_name: 'openframe-api'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['openframe-api:8090']
+      - targets: ['openframe-api:8091']
 
   - job_name: 'openframe-stream'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['openframe-stream:8082']
+      - targets: ['openframe-stream:8083']
 
   - job_name: 'openframe-config'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['openframe-config-server:8888']
+      - targets: ['openframe-config-server:8889']
 
   - job_name: 'prometheus'
     static_configs:

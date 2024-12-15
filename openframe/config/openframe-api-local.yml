@@ -8,3 +8,12 @@ oauth:
     default:
       id: openframe_web_dashboard_dev
       secret: dev_secret
+
+openframe:
+  management:
+    key: ${OPENFRAME_MANAGEMENT_KEY:local-management-key-123}
+
+fleet:
+  api:
+    url: http://localhost:8070
+    token: ${FLEET_API_TOKEN}
