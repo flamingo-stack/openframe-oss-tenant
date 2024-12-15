@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -18,14 +19,15 @@ import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Order(2)
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/*.html").permitAll()
                 .requestMatchers("/oauth/**").permitAll()
                 .requestMatchers("/ws/v1/data/**").permitAll()
@@ -35,10 +37,9 @@ public class SecurityConfig {
                 .requestMatchers("/ws/v1/data/*/xhr_send").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/websocket/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
+            .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
