@@ -32,9 +32,9 @@ public class IntegratedToolController {
         );
     }
 
-    @GetMapping("/{toolType}")
-    public Map<String, Object> getTool(@PathVariable String toolType) {
-        return toolService.getTool(toolType.toUpperCase())
+    @GetMapping("/{id}")
+    public Map<String, Object> getTool(@PathVariable String id) {
+        return toolService.getTool(id)
             .map(tool -> Map.of("status", "success", "tool", tool))
             .orElse(Map.of("status", "error", "message", "Tool not found"));
     }
@@ -44,20 +44,20 @@ public class IntegratedToolController {
         private IntegratedTool tool;
     }
 
-    @PostMapping("/{toolType}")
+    @PostMapping("/{id}")
     public Map<String, Object> saveTool(
-            @PathVariable String toolType,
+            @PathVariable String id,
             @RequestBody SaveToolRequest request) {
         try {
             IntegratedTool tool = request.getTool();
-            tool.setToolType(toolType.toUpperCase());
+            tool.setId(id);
             tool.setEnabled(true);
 
             IntegratedTool savedTool = toolService.saveTool(tool);
-            log.info("Successfully saved tool configuration for: {}", toolType);
+            log.info("Successfully saved tool configuration for: {}", id);
             return Map.of("status", "success", "tool", savedTool);
         } catch (Exception e) {
-            log.error("Failed to save tool: {}", toolType, e);
+            log.error("Failed to save tool: {}", id, e);
             return Map.of("status", "error", "message", e.getMessage());
         }
     }

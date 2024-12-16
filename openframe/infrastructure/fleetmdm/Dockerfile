@@ -2,25 +2,15 @@ FROM fleetdm/fleet:v4.60.1
 
 USER root
 
-RUN apk update && \
-    apk add --no-cache \
-    curl \
-    npm \
-    bash \
-    netcat-openbsd
-
-RUN npm install -g fleetctl@4.60.1
-
-# Create necessary directories
-RUN mkdir -p /etc/fleet \
-    /var/log/osquery && \
+RUN mkdir -p /bin/init-fleet /etc/fleet /var/log/osquery && \
     chmod 755 /var/log/osquery
 
-COPY fleet.yml /etc/fleet/fleet.yml
-COPY init-fleet.sh /init-fleet.sh
+COPY init.sh /bin/init-fleet/init.sh
 COPY entrypoint.sh /entrypoint.sh
+COPY fleet.yml /etc/fleet/fleet.yml
 
-RUN chmod +x /init-fleet.sh /entrypoint.sh && \
-    chmod 644 /etc/fleet/fleet.yml
+RUN apk add --no-cache bind-tools curl iputils netcat-openbsd nodejs npm && \
+    npm install -g fleetctl@4.60.1 && \
+    chmod +x /bin/init-fleet/init.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -15,10 +15,12 @@ import com.openframe.data.model.cassandra.EventStream.EventStreamKey;
 @ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "true", matchIfMissing = false)
 public interface EventStreamRepository extends CassandraRepository<EventStream, EventStreamKey> {
     
-    List<EventStream> findByUserId(String userId);
+    @Query("SELECT * FROM event_streams WHERE key.user_id = ?0")
+    List<EventStream> findByKeyUserId(String userId);
     
-    List<EventStream> findByUserIdAndEventType(String userId, String eventType);
+    @Query("SELECT * FROM event_streams WHERE key.user_id = ?0 AND event_type = ?1")
+    List<EventStream> findByKeyUserIdAndEventType(String userId, String eventType);
     
-    @Query("SELECT * FROM event_stream WHERE user_id = ?0 AND timestamp >= ?1 AND timestamp <= ?2 ALLOW FILTERING")
+    @Query("SELECT * FROM event_streams WHERE key.user_id = ?0 AND key.timestamp >= ?1 AND key.timestamp <= ?2 ALLOW FILTERING")
     List<EventStream> findStreamsByUserAndTimeRange(String userId, Instant start, Instant end);
 }

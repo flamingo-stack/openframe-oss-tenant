@@ -51,10 +51,10 @@ FLEET_PID=$!
 # Wait for Fleet to be ready
 wait_for_fleet
 
-# Initialize Fleet using fleetctl
-if [ "$FLEET_SETUP_AUTO_INIT" = "true" ]; then
+# Initialize Fleet using fleetctl if API token doesn't exist
+if [ "$FLEET_SETUP_AUTO_INIT" = "true" ] && [ ! -f /etc/fleet/api_token.txt ]; then
     echo "Running Fleet initialization..."
-    /init-fleet.sh
+    ./bin/init-fleet/init.sh
 fi
 
 # Keep container running and monitor Fleet process
