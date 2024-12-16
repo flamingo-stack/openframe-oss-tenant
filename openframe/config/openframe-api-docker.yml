@@ -6,7 +6,7 @@ spring:
 oauth:
   client:
     default:
-      id: openframe_web_dashboard_dev
+      id: openframe_web_dashboard
       secret: dev_secret
 
 openframe:

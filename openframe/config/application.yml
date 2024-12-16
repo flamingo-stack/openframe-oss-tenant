@@ -90,6 +90,3 @@ logging:
     org.springframework.web.servlet.handler: TRACE  # For detailed request mapping
     org.springframework.web: DEBUG
     org.springframework.boot.web: DEBUG
-
-
-      
