@@ -7,6 +7,9 @@
       </header>
       
       <form @submit.prevent="handleRegister" class="login-form">
+        <!-- Global Error Message -->
+        <Message v-if="globalError" severity="error" :closable="false" class="mb-4">{{ globalError }}</Message>
+
         <!-- Personal Info Section -->
         <section class="form-section grid">
           <div class="col-12 md:col-6">
@@ -114,10 +117,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { AuthService } from '../services/AuthService';
+import { AuthService, OAuthError, type RegisterCredentials } from '../services/AuthService';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Button from 'primevue/button';
+import Message from 'primevue/message';
 
 const router = useRouter();
 const firstName = ref('');
@@ -126,6 +130,7 @@ const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const loading = ref(false);
+const globalError = ref('');
 const errors = ref({
   firstName: '',
   lastName: '',
@@ -143,6 +148,7 @@ const validateForm = () => {
     password: '',
     confirmPassword: ''
   };
+  globalError.value = '';
 
   if (!firstName.value) {
     errors.value.firstName = 'First name is required';
@@ -183,13 +189,18 @@ const handleRegister = async () => {
 
   try {
     loading.value = true;
-    await AuthService.register({
+    globalError.value = '';
+    errors.value.email = '';
+
+    const credentials: RegisterCredentials = {
       firstName: firstName.value,
       lastName: lastName.value,
       email: email.value,
       password: password.value,
       confirmPassword: confirmPassword.value
-    });
+    };
+
+    await AuthService.register(credentials);
     
     // After successful registration, log the user in
     await AuthService.login({
@@ -199,6 +210,24 @@ const handleRegister = async () => {
     
     router.push('/');
   } catch (error) {
+    if (error instanceof OAuthError) {
+      switch (error.error) {
+        case 'invalid_request':
+          if (error.error_description.includes('Email already registered')) {
+            errors.value.email = error.error_description;
+          } else {
+            globalError.value = error.error_description;
+          }
+          break;
+        case 'temporarily_unavailable':
+          globalError.value = 'Service is temporarily unavailable. Please try again later.';
+          break;
+        default:
+          globalError.value = error.error_description || 'An unexpected error occurred';
+      }
+    } else {
+      globalError.value = 'An unexpected error occurred. Please try again.';
+    }
     console.error('Registration failed:', error);
   } finally {
     loading.value = false;

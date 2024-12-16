@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.openframe.api.dto.UserDTO;
-import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.api.service.OAuthService;
 import com.openframe.core.model.User;
@@ -59,17 +59,27 @@ public class OAuthController {
     }
 
     @PostMapping("/authorize")
-    public ResponseEntity<AuthorizationResponse> authorize(
+    public ResponseEntity<?> authorize(
             @RequestParam("response_type") String responseType,
             @RequestParam("client_id") String clientId,
             @RequestParam("redirect_uri") String redirectUri,
             @RequestParam(value = "scope", required = false) String scope,
             @RequestParam(value = "state", required = false) String state) {
         
-        return ResponseEntity.ok(oauthService.authorize(responseType, clientId, redirectUri, scope, state));
+        try {
+            return ResponseEntity.ok(oauthService.authorize(responseType, clientId, redirectUri, scope, state));
+        } catch (Exception e) {
+            log.error("Authorization error", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", e.getMessage(),
+                    "state", state
+                ));
+        }
     }
 
-    @PostMapping("/token")
+    @PostMapping(value = "/token", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> token(
             @RequestParam String grant_type,
             @RequestParam(required = false) String code,
@@ -77,15 +87,15 @@ public class OAuthController {
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String password,
             @RequestParam String client_id,
-            @RequestParam String client_secret) {
+            @RequestParam(required = false) String client_secret) {
         
-        log.debug("Token request - username: {}, grant_type: {}, client_id: {}", 
-                 username, grant_type, client_id);
+        log.debug("Token request - grant_type: {}, client_id: {}", grant_type, client_id);
 
         try {
             if ("password".equals(grant_type)) {
                 return clientRepository.findByClientId(client_id)
-                    .filter(client -> client.getClientSecret().equals(client_secret))
+                    .filter(client -> client.getClientSecret() == null || 
+                            (client_secret != null && client.getClientSecret().equals(client_secret)))
                     .flatMap(client -> userRepository.findByEmail(username)
                         .filter(user -> passwordEncoder.matches(password, user.getPassword()))
                         .map(user -> {
@@ -95,12 +105,18 @@ public class OAuthController {
                             Map<String, Object> response = new HashMap<>();
                             response.put("access_token", accessToken);
                             response.put("refresh_token", refreshToken);
-                            response.put("token_type", "bearer");
+                            response.put("token_type", "Bearer");
                             response.put("expires_in", 3600);
+                            response.put("scope", "openid profile email");
 
                             return ResponseEntity.ok(response);
                         }))
-                    .orElse(ResponseEntity.status(401).body(Map.of("error", "Invalid credentials")));
+                    .orElse(ResponseEntity.status(401)
+                        .body(Map.of(
+                            "error", "invalid_grant",
+                            "error_description", "Invalid credentials",
+                            "error_uri", "/docs/errors/auth"
+                        )));
             } else {
                 TokenResponse response = oauthService.token(grant_type, code, refresh_token, 
                     username, password, client_id, client_secret);
@@ -108,38 +124,24 @@ public class OAuthController {
             }
         } catch (Exception e) {
             log.error("Token error", e);
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(400)
+                .body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", e.getMessage()
+                ));
         }
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(
-            @RequestParam String email,
-            @RequestParam String password,
-            @RequestParam String client_id) {
-        
-        return clientRepository.findByClientId(client_id)
-            .map(client -> {
-                if (userRepository.existsByEmail(email)) {
-                    return ResponseEntity.badRequest().body("Email already registered");
-                }
-
-                User user = new User();
-                user.setEmail(email);
-                user.setPassword(passwordEncoder.encode(password));
-                userRepository.save(user);
-
-                return ResponseEntity.ok().build();
-            })
-            .orElse(ResponseEntity.badRequest().body("Client not found"));
-    }
-
-    @PostMapping("/register/full")
-    public ResponseEntity<?> registerFull(@RequestBody UserDTO userDTO, @RequestParam String client_id) {
+    @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> register(@RequestBody UserDTO userDTO, @RequestParam String client_id) {
         return clientRepository.findByClientId(client_id)
             .map(client -> {
                 if (userRepository.existsByEmail(userDTO.getEmail())) {
-                    return ResponseEntity.badRequest().body("Email already registered");
+                    return ResponseEntity.status(409)
+                        .body(Map.of(
+                            "error", "invalid_request",
+                            "error_description", "Email already registered"
+                        ));
                 }
 
                 User user = new User();
@@ -147,10 +149,24 @@ public class OAuthController {
                 user.setFirstName(userDTO.getFirstName());
                 user.setLastName(userDTO.getLastName());
                 user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-                
                 userRepository.save(user);
-                return ResponseEntity.ok().build();
+
+                String accessToken = generateAccessToken(user);
+                String refreshToken = generateRefreshToken(user);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("access_token", accessToken);
+                response.put("refresh_token", refreshToken);
+                response.put("token_type", "Bearer");
+                response.put("expires_in", 3600);
+                response.put("scope", "openid profile email");
+
+                return ResponseEntity.ok(response);
             })
-            .orElse(ResponseEntity.badRequest().body("Client not found"));
+            .orElse(ResponseEntity.status(401)
+                .body(Map.of(
+                    "error", "invalid_client",
+                    "error_description", "Client not found"
+                )));
     }
 } 

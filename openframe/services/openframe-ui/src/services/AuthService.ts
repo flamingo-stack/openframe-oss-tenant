@@ -18,6 +18,7 @@ export interface TokenResponse {
   refresh_token: string;
   token_type: string;
   expires_in: number;
+  scope?: string;
 }
 
 export interface UserInfo {
@@ -27,16 +28,48 @@ export interface UserInfo {
   lastName?: string;
 }
 
-interface ErrorResponse {
-  message: string;
-  status: number;
+export interface ErrorResponse {
   error: string;
+  error_description: string;
+  state?: string;
+}
+
+export type OAuthErrorType = 
+  | 'invalid_request'      // The request is missing a required parameter
+  | 'invalid_client'       // Client authentication failed
+  | 'invalid_grant'        // The provided authorization grant is invalid
+  | 'unauthorized_client'  // The client is not authorized
+  | 'unsupported_grant_type' // The authorization grant type is not supported
+  | 'invalid_scope'        // The requested scope is invalid
+  | 'server_error'         // Internal server error
+  | 'temporarily_unavailable'; // The server is temporarily unavailable
+
+export class OAuthError extends Error {
+  constructor(
+    public error: OAuthErrorType,
+    public error_description: string,
+    public state?: string,
+    public status?: number
+  ) {
+    super(error_description);
+    this.name = 'OAuthError';
+  }
+
+  static fromResponse(response: Response, data: ErrorResponse): OAuthError {
+    return new OAuthError(
+      data.error as OAuthErrorType,
+      data.error_description,
+      data.state,
+      response.status
+    );
+  }
 }
 
 export class AuthService {
   private static getHeaders(includeAuth: boolean = false): HeadersInit {
     const headers: HeadersInit = {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     };
 
     if (includeAuth) {
@@ -50,41 +83,82 @@ export class AuthService {
   }
 
   private static async handleResponse<T>(response: Response): Promise<T> {
-    if (!response.ok) {
-      const errorData: ErrorResponse = await response.json();
-      throw new Error(errorData.message || 'Request failed');
+    let data: T | ErrorResponse;
+    
+    try {
+      data = await response.json();
+    } catch (e) {
+      throw new OAuthError(
+        'server_error',
+        'Failed to parse server response',
+        undefined,
+        response.status
+      );
     }
-    return response.json();
+    
+    if (!response.ok) {
+      const error = data as ErrorResponse;
+      throw OAuthError.fromResponse(response, error);
+    }
+    
+    return data as T;
+  }
+
+  private static handleError(error: unknown): never {
+    if (error instanceof OAuthError) {
+      throw error;
+    }
+
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new OAuthError(
+        'temporarily_unavailable',
+        'Unable to connect to the server',
+        undefined,
+        503
+      );
+    }
+
+    throw new OAuthError(
+      'server_error',
+      error instanceof Error ? error.message : 'Unknown error',
+      undefined,
+      500
+    );
   }
 
   static async login(credentials: LoginCredentials): Promise<TokenResponse> {
-    const response = await fetch(`${API_URL}/oauth/token`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: new URLSearchParams({
-        grant_type: 'password',
-        username: credentials.email,
-        password: credentials.password,
-        client_id: authConfig.clientId,
-        client_secret: authConfig.clientSecret
-      })
-    });
+    try {
+      const response = await fetch(`${API_URL}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: new URLSearchParams({
+          grant_type: 'password',
+          username: credentials.email,
+          password: credentials.password,
+          client_id: authConfig.clientId,
+          client_secret: authConfig.clientSecret
+        })
+      });
 
-    const data = await this.handleResponse<TokenResponse>(response);
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    return data;
+      const data = await this.handleResponse<TokenResponse>(response);
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      return data;
+    } catch (error: unknown) {
+      throw this.handleError(error);
+    }
   }
 
-  static async register(credentials: RegisterCredentials): Promise<void> {
-    const endpoint = credentials.firstName || credentials.lastName ? 
-      '/oauth/register/full' : '/oauth/register';
-
-    if (endpoint === '/oauth/register/full') {
-      const response = await fetch(`${API_URL}${endpoint}?client_id=${authConfig.clientId}`, {
+  static async register(credentials: RegisterCredentials): Promise<TokenResponse> {
+    try {
+      const response = await fetch(`${API_URL}/oauth/register?client_id=${authConfig.clientId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           email: credentials.email,
@@ -94,84 +168,99 @@ export class AuthService {
         })
       });
 
-      await this.handleResponse<void>(response);
-    } else {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: new URLSearchParams({
-          email: credentials.email,
-          password: credentials.password,
-          client_id: authConfig.clientId
-        })
-      });
-
-      await this.handleResponse<void>(response);
+      const data = await this.handleResponse<TokenResponse>(response);
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      return data;
+    } catch (error: unknown) {
+      throw this.handleError(error);
     }
   }
 
   static async refreshToken(refreshToken: string): Promise<TokenResponse> {
-    const response = await fetch(`${API_URL}/oauth/token`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: authConfig.clientId,
-        client_secret: authConfig.clientSecret
-      })
-    });
+    try {
+      const response = await fetch(`${API_URL}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_id: authConfig.clientId,
+          client_secret: authConfig.clientSecret
+        })
+      });
 
-    const data = await this.handleResponse<TokenResponse>(response);
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    return data;
+      const data = await this.handleResponse<TokenResponse>(response);
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      return data;
+    } catch (error: unknown) {
+      throw this.handleError(error);
+    }
   }
 
   static async getUserInfo(): Promise<UserInfo> {
-    const response = await fetch(`${API_URL}/oauth/userinfo`, {
-      method: 'GET',
-      headers: this.getHeaders(true)
-    });
+    try {
+      const response = await fetch(`${API_URL}/.well-known/userinfo`, {
+        method: 'GET',
+        headers: this.getHeaders(true)
+      });
 
-    return this.handleResponse<UserInfo>(response);
+      return this.handleResponse<UserInfo>(response);
+    } catch (error: unknown) {
+      throw this.handleError(error);
+    }
   }
 
   static async authorize(redirectUri: string, scope?: string, state?: string): Promise<string> {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: authConfig.clientId,
-      redirect_uri: redirectUri,
-      ...(scope && { scope }),
-      ...(state && { state })
-    });
+    try {
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: authConfig.clientId,
+        redirect_uri: redirectUri,
+        ...(scope && { scope }),
+        ...(state && { state })
+      });
 
-    const response = await fetch(`${API_URL}/oauth/authorize?${params}`, {
-      method: 'POST',
-      headers: this.getHeaders(true)
-    });
+      const response = await fetch(`${API_URL}/oauth/authorize?${params}`, {
+        method: 'POST',
+        headers: this.getHeaders(true)
+      });
 
-    const data = await this.handleResponse<{ redirect_url: string }>(response);
-    return data.redirect_url;
+      const data = await this.handleResponse<{ redirect_url: string }>(response);
+      return data.redirect_url;
+    } catch (error: unknown) {
+      throw this.handleError(error);
+    }
   }
 
   static async exchangeCode(code: string, redirectUri: string): Promise<TokenResponse> {
-    const response = await fetch(`${API_URL}/oauth/token`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-        client_id: authConfig.clientId,
-        client_secret: authConfig.clientSecret
-      })
-    });
+    try {
+      const response = await fetch(`${API_URL}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: redirectUri,
+          client_id: authConfig.clientId,
+          client_secret: authConfig.clientSecret
+        })
+      });
 
-    const data = await this.handleResponse<TokenResponse>(response);
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    return data;
+      const data = await this.handleResponse<TokenResponse>(response);
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      return data;
+    } catch (error: unknown) {
+      throw this.handleError(error);
+    }
   }
 
   static logout() {

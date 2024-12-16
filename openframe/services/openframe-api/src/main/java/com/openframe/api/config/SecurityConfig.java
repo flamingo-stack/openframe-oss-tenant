@@ -39,6 +39,8 @@ public class SecurityConfig {
                     "/api/clients/**",
                     "/api/agents/register",
                     "/management/**",
+                    "/management/v1/**",
+                    "/management/v1/prometheus",
                     "/v1/**",
                     "/graphql",
                     "/graphiql/**"

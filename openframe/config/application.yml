@@ -45,9 +45,9 @@ management:
   base-path: /management
   endpoints:
     web:
-      base-path: /v1
+      base-path: /management/v1
       exposure:
-        include: '*'
+        include: health,info,prometheus,metrics
     enabled-by-default: true
   endpoint:
     prometheus:
