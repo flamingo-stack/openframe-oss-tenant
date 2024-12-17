@@ -70,19 +70,14 @@ const menuVisible = ref(false);
 
 const menuItems = [
   {
-    label: 'Dashboard',
-    icon: 'pi pi-home',
+    label: 'Monitoring and Tools',
+    icon: 'pi pi-chart-line',
     path: '/'
   },
   {
     label: 'Hosts',
     icon: 'pi pi-desktop',
     path: '/hosts'
-  },
-  {
-    label: 'Monitoring and Tools',
-    icon: 'pi pi-chart-line',
-    path: '/monitoring'
   },
   {
     label: 'Settings',
