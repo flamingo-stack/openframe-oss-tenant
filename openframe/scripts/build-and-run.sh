@@ -139,6 +139,42 @@ register_tool() {
     fi
 
     echo "Registering $name with OpenFrame API..."
+    echo "Executing curl command:"
+    echo "curl -X POST \"http://localhost:8095/v1/tools/$tool_id\" \\"
+    echo "  -H \"Content-Type: application/json\" \\"
+    echo "  -d '{
+        \"tool\": {
+          \"toolType\": \"$tool_type\",
+          \"name\": \"$name\",
+          \"description\": \"$description\",
+          \"url\": \"$url\",
+          \"port\": $port,
+          \"username\": \"$username\",
+          \"password\": \"$password\",
+          \"token\": \"$token\",
+          \"type\": \"$tool_type\",
+          \"category\": \"$category\",
+          \"platformCategory\": \"$platform_category\",
+          \"enabled\": true,
+          \"config\": {
+            \"apiVersion\": \"1.0\",
+            \"basePath\": \"/api\",
+            \"healthCheckEndpoint\": \"/health\",
+            \"healthCheckInterval\": 30,
+            \"connectionTimeout\": 5000,
+            \"readTimeout\": 5000,
+            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
+            \"requiredScopes\": [\"read\", \"write\"],
+            \"tokenConfig\": {
+              \"token\": \"$token\",
+              \"active\": true,
+              \"createdAt\": \"2024-01-01T00:00:00Z\",
+              \"expiresAt\": \"2025-01-01T00:00:00Z\"
+            }
+          }
+        }
+      }'"
+
     curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \
       -d "{

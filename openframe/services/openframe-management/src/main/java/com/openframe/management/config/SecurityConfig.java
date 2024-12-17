@@ -7,15 +7,16 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.openframe.core.config.BaseSecurityConfig;
-
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig extends BaseSecurityConfig {
+public class SecurityConfig {
 
     @Bean
     @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return configureCommonSecurity(http).build();
+        return http
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .csrf(csrf -> csrf.disable())
+            .build();
     }
 } 
