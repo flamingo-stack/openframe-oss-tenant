@@ -9,6 +9,13 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8090',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   },
   resolve: {
     alias: {

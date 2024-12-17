@@ -139,12 +139,14 @@
         </div>
       </section>
     </div>
+    <AuthDebug v-if="isDevelopment" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { useQuery } from '@vue/apollo-composable';
+import { useQuery, provideApolloClient } from '@vue/apollo-composable';
+import { apolloClient } from '../apollo/apolloClient';
 import gql from 'graphql-tag';
 import type { IntegratedTool } from '../types/IntegratedTool';
 import Password from 'primevue/password'
@@ -152,6 +154,7 @@ import { ApolloError } from '@apollo/client/errors';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import InputSwitch from 'primevue/inputswitch';
+import AuthDebug from '../components/AuthDebug.vue';
 
 // Import all logos
 import authentikLogo from '@/assets/authentik-logo.svg'
@@ -170,6 +173,9 @@ import kibanaLogo from '@/assets/kibana-logo.svg'
 import redisLogo from '@/assets/redis-logo.svg'
 import cassandraLogo from '@/assets/cassandra-logo.svg'
 import zookeeperLogo from '@/assets/zookeeper-logo.svg'
+
+// Provide Apollo client at component level
+provideApolloClient(apolloClient);
 
 const INTEGRATED_TOOLS_QUERY = gql`
   query GetIntegratedTools($filter: ToolFilter) {
@@ -301,6 +307,8 @@ onMounted(async () => {
   } catch (e) {
     console.error('Refetch error:', e);
   }
+  const token = localStorage.getItem('access_token');
+  console.debug('Token present in Tools view:', !!token);
 });
 
 // Watch loading state
@@ -400,6 +408,8 @@ const debounce = (fn: Function, delay: number) => {
 const debouncedRefetch = debounce(() => {
   refetch();
 }, 300); // 300ms delay
+
+const isDevelopment = computed(() => import.meta.env.DEV);
 </script>
 
 <style scoped>

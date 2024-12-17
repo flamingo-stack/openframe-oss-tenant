@@ -1,6 +1,6 @@
 import authConfig from '../config/auth.config';
-
-const API_URL = 'http://localhost:8090';
+import axios from 'axios';
+import { config } from '../config/env.config';
 
 export interface LoginCredentials {
   email: string;
@@ -134,34 +134,37 @@ export class AuthService {
   }
 
   static async login(credentials: LoginCredentials): Promise<TokenResponse> {
-    try {
-      const response = await fetch(`${API_URL}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: new URLSearchParams({
-          grant_type: 'password',
-          username: credentials.email,
-          password: credentials.password,
-          client_id: authConfig.clientId,
-          client_secret: authConfig.clientSecret
-        })
-      });
+    const params = new URLSearchParams();
+    params.append('grant_type', 'password');
+    params.append('username', credentials.email);
+    params.append('password', credentials.password);
+    params.append('client_id', 'openframe_web_dashboard_dev');
+    params.append('client_secret', 'dev_secret');
 
-      const data = await this.handleResponse<TokenResponse>(response);
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      return data;
-    } catch (error: unknown) {
-      throw this.handleError(error);
+    const response = await fetch(`${config.API_URL}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString()
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error_description || 'Login failed');
     }
+
+    const tokenResponse = await response.json();
+    
+    localStorage.setItem('access_token', tokenResponse.access_token);
+    localStorage.setItem('refresh_token', tokenResponse.refresh_token);
+    
+    return tokenResponse;
   }
 
   static async register(credentials: RegisterCredentials): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${API_URL}/oauth/register?client_id=${authConfig.clientId}`, {
+      const response = await fetch(`${config.API_URL}/oauth/register?client_id=${authConfig.clientId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -186,7 +189,7 @@ export class AuthService {
 
   static async refreshToken(refreshToken: string): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${API_URL}/oauth/token`, {
+      const response = await fetch(`${config.API_URL}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -211,7 +214,7 @@ export class AuthService {
 
   static async getUserInfo(): Promise<UserInfo> {
     try {
-      const response = await fetch(`${API_URL}/.well-known/userinfo`, {
+      const response = await fetch(`${config.API_URL}/.well-known/userinfo`, {
         method: 'GET',
         headers: this.getHeaders(true)
       });
@@ -232,7 +235,7 @@ export class AuthService {
         ...(state && { state })
       });
 
-      const response = await fetch(`${API_URL}/oauth/authorize?${params}`, {
+      const response = await fetch(`${config.API_URL}/oauth/authorize?${params}`, {
         method: 'POST',
         headers: this.getHeaders(true)
       });
@@ -246,7 +249,7 @@ export class AuthService {
 
   static async exchangeCode(code: string, redirectUri: string): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${API_URL}/oauth/token`, {
+      const response = await fetch(`${config.API_URL}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

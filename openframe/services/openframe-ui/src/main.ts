@@ -11,7 +11,7 @@ import InputText from 'primevue/inputtext'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { DefaultApolloClient } from '@vue/apollo-composable'
-import { apolloClient } from './graphql/config'
+import { apolloClient } from './apollo/apolloClient'
 
 // PrimeVue styles
 import 'primevue/resources/themes/lara-light-blue/theme.css'

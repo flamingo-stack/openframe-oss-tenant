@@ -1,15 +1,18 @@
 import axios from 'axios';
-import { AuthService } from './AuthService';
+import { config } from '../config/env.config';
+import router from '../router';
 
 const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: config.API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add request interceptor
 httpClient.interceptors.request.use(
   (config) => {
-    // Add auth header if token exists
-    const token = AuthService.getAccessToken();
+    const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,25 +26,13 @@ httpClient.interceptors.request.use(
 // Add response interceptor
 httpClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     if (error.response?.status === 401) {
-      // Try to refresh token
-      const refreshToken = AuthService.getRefreshToken();
-      if (refreshToken) {
-        try {
-          const response = await AuthService.refreshToken(refreshToken);
-          // Retry original request
-          const config = error.config;
-          config.headers.Authorization = `Bearer ${response.access_token}`;
-          return httpClient(config);
-        } catch (e) {
-          AuthService.logout();
-          window.location.href = '/login';
-          return Promise.reject(error);
-        }
-      }
-      AuthService.logout();
-      window.location.href = '/login';
+      // Clear auth tokens
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      // Redirect to login
+      router.push('/login');
     }
     return Promise.reject(error);
   }

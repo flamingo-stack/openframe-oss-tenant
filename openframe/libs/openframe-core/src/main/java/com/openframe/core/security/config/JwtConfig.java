@@ -12,7 +12,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.util.FileCopyUtils;
 
@@ -42,6 +44,12 @@ public class JwtConfig {
             
         JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(rsaKey));
         return new NimbusJwtEncoder(jwkSource);
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder() throws Exception {
+        RSAPublicKey rsaPublicKey = loadPublicKey();
+        return NimbusJwtDecoder.withPublicKey(rsaPublicKey).build();
     }
 
     private RSAPublicKey loadPublicKey() throws Exception {

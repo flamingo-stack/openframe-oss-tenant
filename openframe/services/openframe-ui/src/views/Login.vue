@@ -114,14 +114,20 @@ const handleLogin = async () => {
   try {
     loginError.value = '';
     loading.value = true;
+    
     await AuthService.login({
-      email: email.value,
-      password: password.value
+      email: email.value.trim(),
+      password: password.value.trim()
     });
+    
+    if (rememberMe.value) {
+      localStorage.setItem('rememberMe', 'true');
+    }
+    
     router.push('/');
   } catch (error) {
     console.error('Login failed:', error);
-    loginError.value = error instanceof Error ? error.message : 'Login failed';
+    loginError.value = error instanceof Error ? error.message : 'Invalid credentials';
   } finally {
     loading.value = false;
   }
