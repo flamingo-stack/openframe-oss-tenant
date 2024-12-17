@@ -43,7 +43,7 @@
               </div>
               <div class="col-12 md:col-3">
                 <iframe
-                  src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=15&theme=light"
+                  src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=30&theme=light"
                   width="100%"
                   height="100"
                   frameborder="0"
@@ -158,7 +158,7 @@
           <div class="tool-card">
             <h3>Network Traffic</h3>
             <iframe
-              src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=19&theme=light"
+              src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=30&theme=light"
               width="100%"
               height="200"
               frameborder="0"
