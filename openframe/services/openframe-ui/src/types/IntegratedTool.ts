@@ -8,8 +8,13 @@ export interface IntegratedTool {
   type: string;
   port?: string;
   category?: string;
+  platformCategory?: string;
   credentials?: {
     username?: string;
     password?: string;
+    token?: string;
+    apiKey?: string;
+    clientId?: string;
+    clientSecret?: string;
   };
 } 

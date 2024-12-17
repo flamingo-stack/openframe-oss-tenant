@@ -120,60 +120,22 @@ register_tool() {
     local category=${10}
     local platform_category=${11}
 
-    # Check management service health before registration
-    local max_attempts=30
-    local attempt=1
-    echo "Checking management service health before registering $name..."
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s http://localhost:8096/management/v1/health | grep -q '"status":"UP"'; then
-            break
-        fi
-        echo "Management service not ready (attempt $attempt/$max_attempts). Retrying in 5s..."
-        sleep 5
-        attempt=$((attempt + 1))
-    done
-
-    if [ $attempt -gt $max_attempts ]; then
-        echo "Management service not ready after $max_attempts attempts. Skipping registration of $name."
-        return 1
-    fi
-
     echo "Registering $name with OpenFrame API..."
-    echo "Executing curl command:"
-    echo "curl -X POST \"http://localhost:8095/v1/tools/$tool_id\" \\"
-    echo "  -H \"Content-Type: application/json\" \\"
-    echo "  -d '{
-        \"tool\": {
-          \"toolType\": \"$tool_type\",
-          \"name\": \"$name\",
-          \"description\": \"$description\",
-          \"url\": \"$url\",
-          \"port\": $port,
-          \"username\": \"$username\",
-          \"password\": \"$password\",
-          \"token\": \"$token\",
-          \"type\": \"$tool_type\",
-          \"category\": \"$category\",
-          \"platformCategory\": \"$platform_category\",
-          \"enabled\": true,
-          \"config\": {
-            \"apiVersion\": \"1.0\",
-            \"basePath\": \"/api\",
-            \"healthCheckEndpoint\": \"/health\",
-            \"healthCheckInterval\": 30,
-            \"connectionTimeout\": 5000,
-            \"readTimeout\": 5000,
-            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
-            \"requiredScopes\": [\"read\", \"write\"],
-            \"tokenConfig\": {
-              \"token\": \"$token\",
-              \"active\": true,
-              \"createdAt\": \"2024-01-01T00:00:00Z\",
-              \"expiresAt\": \"2025-01-01T00:00:00Z\"
-            }
-          }
-        }
-      }'"
+
+    # Build credentials object based on what's provided
+    local credentials_json="{"
+    if [ ! -z "$username" ]; then
+        credentials_json+="\"username\": \"$username\","
+    fi
+    if [ ! -z "$password" ]; then
+        credentials_json+="\"password\": \"$password\","
+    fi
+    if [ ! -z "$token" ]; then
+        credentials_json+="\"token\": \"$token\","
+    fi
+    # Remove trailing comma if exists
+    credentials_json="${credentials_json%,}"
+    credentials_json+="}"
 
     curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \
@@ -184,13 +146,11 @@ register_tool() {
           \"description\": \"$description\",
           \"url\": \"$url\",
           \"port\": $port,
-          \"username\": \"$username\",
-          \"password\": \"$password\",
-          \"token\": \"$token\",
           \"type\": \"$tool_type\",
           \"category\": \"$category\",
           \"platformCategory\": \"$platform_category\",
           \"enabled\": true,
+          \"credentials\": $credentials_json,
           \"config\": {
             \"apiVersion\": \"1.0\",
             \"basePath\": \"/api\",
@@ -233,11 +193,11 @@ register_tool \
     "Fleet Device Management Platform" \
     "http://openframe-fleet" \
     8070 \
-    "api@openframe.local" \
+    "admin@openframe.local" \
     "openframe123!" \
     "$FLEET_TOKEN" \
-    "Device Management" \
-    "OpenFrame Platform"
+    "Web Application" \
+    "Integrated Tool"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -250,12 +210,12 @@ register_tool \
     "Authentik SSO" \
     "Authentik Identity Provider" \
     "http://openframe-authentik-server" \
-    9000 \
+    5001 \
     "akadmin@openframe.local" \
     "openframe123!" \
     "openframe-api-token-123456789" \
-    "Integrated Tools" \
-    "Platform"
+    "Web Application" \
+    "Integrated Tool"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -272,8 +232,8 @@ register_tool \
     "openframe" \
     "password123456789" \
     "mongodb-token" \
-    "Database" \
-    "OpenFrame Core"
+    "NoSQL Database" \
+    "OpenFrame Datasource"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -287,11 +247,11 @@ register_tool \
     "Redis In-Memory Cache" \
     "redis://openframe-redis" \
     6379 \
-    "default" \
     "" \
-    "redis-token" \
-    "Cache" \
-    "Platform"
+    "" \
+    "" \
+    "In-Memory Database" \
+    "OpenFrame Datasource"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -305,11 +265,11 @@ register_tool \
     "Cassandra Distributed Database" \
     "cassandra://openframe-cassandra" \
     9042 \
-    "cassandra" \
-    "cassandra" \
-    "cassandra-token" \
-    "OpenFrame Datasources" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "NoSQL Database" \
+    "OpenFrame Datasource"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -321,13 +281,31 @@ register_tool \
     "KAFKA" \
     "Kafka Message Broker" \
     "Apache Kafka Event Streaming Platform" \
-    "http://openframe-kafka" \
+    "http://openframe-kafka-ui" \
     9092 \
-    "kafka" \
-    "kafka" \
-    "kafka-token" \
-    "Message Queue" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "Message Broker" \
+    "OpenFrame Service"
+
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+# Register Kafka UI
+register_tool \
+    "kafka-ui" \
+    "KAFKA" \
+    "Kafka UI" \
+    "Web UI for Apache Kafka" \
+    "http://openframe-kafka-ui" \
+    8080 \
+    "" \
+    "" \
+    "" \
+    "Web Application" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -341,11 +319,11 @@ register_tool \
     "Apache Zookeeper Distributed Coordinator" \
     "http://openframe-zookeeper" \
     2181 \
-    "zookeeper" \
-    "zookeeper" \
-    "zookeeper-token" \
+    "" \
+    "" \
+    "" \
     "Service Discovery" \
-    "Platform"
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -361,9 +339,9 @@ register_tool \
     8443 \
     "openframe" \
     "password123456789" \
-    "nifi-token" \
+    "" \
     "Data Integration" \
-    "Platform"
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -377,11 +355,11 @@ register_tool \
     "Prometheus Time Series Database and Monitoring" \
     "http://openframe-prometheus" \
     9090 \
-    "prometheus" \
-    "prometheus" \
-    "prometheus-token" \
-    "Monitoring" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "Time Series Database" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -397,9 +375,9 @@ register_tool \
     3000 \
     "openframe" \
     "password123456789" \
-    "grafana-token" \
-    "Monitoring" \
-    "Platform"
+    "" \
+    "Web Application" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -413,11 +391,11 @@ register_tool \
     "Grafana Loki Log Aggregation System" \
     "http://openframe-loki" \
     3100 \
-    "loki" \
-    "loki" \
-    "loki-token" \
-    "Logging" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "Log Storage" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -431,11 +409,11 @@ register_tool \
     "Apache Pinot Real-time Analytics Database Controller" \
     "http://openframe-pinot-controller" \
     9000 \
-    "pinot" \
-    "pinot" \
-    "pinot-token" \
-    "Analytics" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "Analytics Database" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -449,11 +427,11 @@ register_tool \
     "Apache Pinot Real-time Analytics Database Broker" \
     "http://openframe-pinot-broker" \
     8099 \
-    "pinot" \
-    "pinot" \
-    "pinot-token" \
-    "Analytics" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "Analytics Database" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -467,11 +445,11 @@ register_tool \
     "Apache Pinot Real-time Analytics Database Server" \
     "http://openframe-pinot-server" \
     8097 \
-    "pinot" \
-    "pinot" \
-    "pinot-token" \
-    "Analytics" \
-    "Platform"
+    "" \
+    "" \
+    "" \
+    "Analytics Database" \
+    "OpenFrame Service"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -485,9 +463,9 @@ register_tool \
     "OpenFrame API Gateway Service" \
     "http://openframe-api" \
     8095 \
-    "openframe" \
-    "openframe123!" \
-    "openframe-api-token" \
+    "" \
+    "" \
+    "" \
     "API Gateway" \
     "OpenFrame Core"
 
@@ -499,9 +477,9 @@ register_tool \
     "OpenFrame Configuration Service" \
     "http://openframe-config" \
     8090 \
-    "openframe" \
-    "openframe123!" \
-    "openframe-config-token" \
+    "" \
+    "" \
+    "" \
     "Configuration" \
     "OpenFrame Core"
 
@@ -513,9 +491,9 @@ register_tool \
     "OpenFrame Stream Processing Service" \
     "http://openframe-stream" \
     8091 \
-    "openframe" \
-    "openframe123!" \
-    "openframe-stream-token" \
+    "" \
+    "" \
+    "" \
     "Stream Processing" \
     "OpenFrame Core"
 
@@ -526,10 +504,10 @@ register_tool \
     "OpenFrame UI" \
     "OpenFrame User Interface Service" \
     "http://openframe-ui" \
-    8080 \
-    "openframe" \
-    "openframe123!" \
-    "openframe-ui-token" \
+    4000 \
+    "" \
+    "" \
+    "" \
     "User Interface" \
     "OpenFrame Core"
 

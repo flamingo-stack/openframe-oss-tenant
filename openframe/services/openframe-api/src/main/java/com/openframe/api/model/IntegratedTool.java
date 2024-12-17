@@ -14,6 +14,7 @@ public class IntegratedTool {
     private boolean enabled;
     private String type;
     private String port;
-    private String displayCategory;
+    private String category;
+    private String platformCategory;
     private ToolCredentials credentials;
 } 

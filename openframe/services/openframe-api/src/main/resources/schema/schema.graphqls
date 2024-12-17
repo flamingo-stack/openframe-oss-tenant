@@ -39,6 +39,10 @@ type IntegratedTool {
 type ToolCredentials {
     username: String
     password: String
+    token: String
+    apiKey: String
+    clientId: String
+    clientSecret: String
 }
 
 input ToolFilter {

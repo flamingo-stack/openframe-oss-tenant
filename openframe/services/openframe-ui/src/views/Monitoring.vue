@@ -3,10 +3,15 @@
     <h1>Monitoring</h1>
 
     <!-- Add loading state -->
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="loading" class="loading-spinner">
       <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-      <p>Loading monitoring panels...</p>
     </div>
+
+    <template v-else-if="error">
+      <div class="error-message">
+        {{ error.message }}
+      </div>
+    </template>
 
     <template v-else>
       <section class="mb-4">
@@ -21,7 +26,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=11&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="Services Health Status"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -29,7 +34,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=12&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="Service Uptime"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -37,7 +42,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=13&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="Service Performance"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -45,7 +50,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=14&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="Service Errors"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -53,7 +58,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=30&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="Resource Usage"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -61,7 +66,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=16&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="System Metrics"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -69,7 +74,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=17&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="System Health"
                   ></iframe>
                 </div>
                 <div class="col-12 md:col-3">
@@ -77,7 +82,7 @@
                     src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=18&theme=light&refresh=1s"
                     width="100%"
                     height="100"
-                    frameborder="0"
+                    title="System Load"
                   ></iframe>
                 </div>
               </div>
@@ -91,7 +96,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=26&theme=light&refresh=1s"
                 width="100%"
                 height="300"
-                frameborder="0"
+                title="Memory Usage Chart"
               ></iframe>
             </div>
           </div>
@@ -102,7 +107,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=20&theme=light&refresh=1s"
                 width="100%"
                 height="300"
-                frameborder="0"
+                title="Memory Usage Chart"
               ></iframe>
             </div>
           </div>
@@ -114,7 +119,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=28&theme=light&refresh=1s"
                 width="100%"
                 height="300"
-                frameborder="0"
+                title="API Performance"
               ></iframe>
             </div>
           </div>
@@ -126,7 +131,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=24&theme=light&refresh=1s"
                 width="100%"
                 height="300"
-                frameborder="0"
+                title="Error Rates"
               ></iframe>
             </div>
           </div>
@@ -144,7 +149,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=20&theme=light&refresh=1s"
                 width="100%"
                 height="200"
-                frameborder="0"
+                title="CPU Usage"
               ></iframe>
             </div>
           </div>
@@ -156,7 +161,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=26&theme=light&refresh=1s"
                 width="100%"
                 height="200"
-                frameborder="0"
+                title="Memory Usage"
               ></iframe>
             </div>
           </div>
@@ -168,7 +173,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=19&theme=light&refresh=1s"
                 width="100%"
                 height="200"
-                frameborder="0"
+                title="Network Traffic Chart"
               ></iframe>
             </div>
           </div>
@@ -180,7 +185,7 @@
                 src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=29&theme=light&refresh=1s"
                 width="100%"
                 height="200"
-                frameborder="0"
+                title="System Load Chart"
               ></iframe>
             </div>
           </div>
@@ -193,12 +198,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-const isLoading = ref(true)
+const loading = ref(true)
+const error = ref<Error | null>(null)
 
 onMounted(() => {
   // Add a small delay to ensure Grafana is ready
   setTimeout(() => {
-    isLoading.value = false
+    loading.value = false
   }, 1000)
 })
 </script>
@@ -228,7 +234,15 @@ h2 {
   height: 100%;
 }
 
-.loading-state {
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: var(--primary-color);
+}
+
+.error-message {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -237,7 +251,7 @@ h2 {
   color: var(--text-color-secondary);
 }
 
-.loading-state p {
-  margin-top: 1rem;
+iframe {
+  border: none;
 }
 </style> 
