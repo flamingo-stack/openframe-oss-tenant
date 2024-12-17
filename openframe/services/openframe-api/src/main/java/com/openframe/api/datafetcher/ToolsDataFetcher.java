@@ -33,6 +33,10 @@ public class ToolsDataFetcher {
                 query.addCriteria(Criteria.where("type").is(filter.getType()));
             }
             
+            if (filter.getCategory() != null) {
+                query.addCriteria(Criteria.where("category").is(filter.getCategory()));
+            }
+            
             if (filter.getSearch() != null) {
                 Criteria searchCriteria = new Criteria().orOperator(
                     Criteria.where("name").regex(filter.getSearch(), "i"),

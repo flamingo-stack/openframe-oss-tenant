@@ -31,6 +31,8 @@ type IntegratedTool {
     enabled: Boolean!
     type: String
     port: String
+    category: String
+    platformCategory: String
     credentials: ToolCredentials
 }
 
@@ -43,4 +45,6 @@ input ToolFilter {
     enabled: Boolean
     type: String
     search: String
+    category: String
+    platformCategory: String
 } 

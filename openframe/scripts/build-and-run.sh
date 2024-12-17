@@ -117,6 +117,8 @@ register_tool() {
     local username=$7
     local password=$8
     local token=$9
+    local category=${10}
+    local platform_category=${11}
 
     echo "Registering $name with OpenFrame API..."
     curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
@@ -131,6 +133,9 @@ register_tool() {
           \"username\": \"$username\",
           \"password\": \"$password\",
           \"token\": \"$token\",
+          \"type\": \"$tool_type\",
+          \"category\": \"$category\",
+          \"platformCategory\": \"$platform_category\",
           \"enabled\": true,
           \"config\": {
             \"apiVersion\": \"1.0\",
@@ -176,7 +181,9 @@ register_tool \
     8070 \
     "api@openframe.local" \
     "openframe123!" \
-    "$FLEET_TOKEN"
+    "$FLEET_TOKEN" \
+    "Device Management" \
+    "OpenFrame Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -192,7 +199,9 @@ register_tool \
     9000 \
     "akadmin@openframe.local" \
     "openframe123!" \
-    "openframe-api-token-123456789"
+    "openframe-api-token-123456789" \
+    "Integrated Tools" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -208,7 +217,9 @@ register_tool \
     27017 \
     "openframe" \
     "password123456789" \
-    "mongodb-token"
+    "mongodb-token" \
+    "Database" \
+    "OpenFrame Core"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -224,7 +235,9 @@ register_tool \
     6379 \
     "default" \
     "" \
-    "redis-token"
+    "redis-token" \
+    "Cache" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -240,7 +253,9 @@ register_tool \
     9042 \
     "cassandra" \
     "cassandra" \
-    "cassandra-token"
+    "cassandra-token" \
+    "OpenFrame Datasources" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -256,7 +271,9 @@ register_tool \
     9092 \
     "kafka" \
     "kafka" \
-    "kafka-token"
+    "kafka-token" \
+    "Message Queue" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -272,7 +289,9 @@ register_tool \
     2181 \
     "zookeeper" \
     "zookeeper" \
-    "zookeeper-token"
+    "zookeeper-token" \
+    "Service Discovery" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -288,7 +307,9 @@ register_tool \
     8443 \
     "openframe" \
     "password123456789" \
-    "nifi-token"
+    "nifi-token" \
+    "Data Integration" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -304,7 +325,9 @@ register_tool \
     9090 \
     "prometheus" \
     "prometheus" \
-    "prometheus-token"
+    "prometheus-token" \
+    "Monitoring" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -320,7 +343,9 @@ register_tool \
     3000 \
     "openframe" \
     "password123456789" \
-    "grafana-token"
+    "grafana-token" \
+    "Monitoring" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -336,7 +361,9 @@ register_tool \
     3100 \
     "loki" \
     "loki" \
-    "loki-token"
+    "loki-token" \
+    "Logging" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -352,7 +379,9 @@ register_tool \
     9000 \
     "pinot" \
     "pinot" \
-    "pinot-token"
+    "pinot-token" \
+    "Analytics" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -368,7 +397,9 @@ register_tool \
     8099 \
     "pinot" \
     "pinot" \
-    "pinot-token"
+    "pinot-token" \
+    "Analytics" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
@@ -384,11 +415,69 @@ register_tool \
     8097 \
     "pinot" \
     "pinot" \
-    "pinot-token"
+    "pinot-token" \
+    "Analytics" \
+    "Platform"
 
 if [ $? -ne 0 ]; then
     exit 1
 fi
+
+# Register OpenFrame API Service
+register_tool \
+    "openframe-api" \
+    "OPENFRAME" \
+    "OpenFrame API" \
+    "OpenFrame API Gateway Service" \
+    "http://openframe-api" \
+    8095 \
+    "openframe" \
+    "openframe123!" \
+    "openframe-api-token" \
+    "API Gateway" \
+    "OpenFrame Core"
+
+# Register OpenFrame Config Service
+register_tool \
+    "openframe-config" \
+    "OPENFRAME" \
+    "OpenFrame Config" \
+    "OpenFrame Configuration Service" \
+    "http://openframe-config" \
+    8090 \
+    "openframe" \
+    "openframe123!" \
+    "openframe-config-token" \
+    "Configuration" \
+    "OpenFrame Core"
+
+# Register OpenFrame Stream Service
+register_tool \
+    "openframe-stream" \
+    "OPENFRAME" \
+    "OpenFrame Stream" \
+    "OpenFrame Stream Processing Service" \
+    "http://openframe-stream" \
+    8091 \
+    "openframe" \
+    "openframe123!" \
+    "openframe-stream-token" \
+    "Stream Processing" \
+    "OpenFrame Core"
+
+# Register OpenFrame UI Service
+register_tool \
+    "openframe-ui" \
+    "OPENFRAME" \
+    "OpenFrame UI" \
+    "OpenFrame User Interface Service" \
+    "http://openframe-ui" \
+    8080 \
+    "openframe" \
+    "openframe123!" \
+    "openframe-ui-token" \
+    "User Interface" \
+    "OpenFrame Core"
 
 echo "Integrated tools initialized successfully!"
 

@@ -32,7 +32,7 @@ public class IntegratedToolService {
     public String getActiveToken(String toolType) {
         return getTool(toolType)
             .filter(IntegratedTool::isEnabled)
-            .map(IntegratedTool::getToken)
+            .map(tool -> tool.getCredentials().getToken())
             .orElse(null);
     }
 } 

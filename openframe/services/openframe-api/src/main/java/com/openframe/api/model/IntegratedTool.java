@@ -13,4 +13,7 @@ public class IntegratedTool {
     private String url;
     private boolean enabled;
     private String type;
+    private String port;
+    private String displayCategory;
+    private ToolCredentials credentials;
 } 

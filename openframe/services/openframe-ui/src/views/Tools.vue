@@ -2,24 +2,28 @@
   <div class="tools-dashboard">
     <h1>Tools</h1>
     
-    <div class="filters mb-4">
-      <div class="p-inputgroup">
-        <span class="p-inputgroup-addon">
-          <i class="pi pi-search"></i>
-        </span>
-        <InputText 
-          v-model="filter.search" 
-          placeholder="Search tools..." 
-          @input="refetch()"
+    <div class="filters mb-4 flex align-items-center gap-3">
+      <div class="flex-1">
+        <div class="p-inputgroup">
+          <span class="p-inputgroup-addon">
+            <i class="pi pi-search"></i>
+          </span>
+          <InputText 
+            v-model="filter.search" 
+            placeholder="Search tools..." 
+            @input="debouncedRefetch"
+          />
+        </div>
+      </div>
+      <div class="w-15rem">
+        <Dropdown
+          v-model="filter.type"
+          :options="Object.keys(sectionMap).sort()"
+          placeholder="Filter by type"
+          @change="refetch()"
+          class="w-full"
         />
       </div>
-      <Dropdown
-        v-model="filter.type"
-        :options="Object.keys(sectionMap)"
-        placeholder="Filter by type"
-        @change="refetch()"
-        class="ml-2"
-      />
     </div>
     
     <div v-if="loading" class="loading-state">
@@ -107,6 +111,7 @@ import authentikLogo from '@/assets/authentik-logo.svg'
 import fleetLogo from '@/assets/fleet-logo.svg'
 import rustdeskLogo from '@/assets/rustdesk-logo.svg'
 import grafanaLogo from '@/assets/grafana-logo.svg'
+import lokiLogo from '@/assets/loki-logo.svg'
 import prometheusLogo from '@/assets/prometheus-logo.svg'
 import kafkaLogo from '@/assets/kafka-logo.svg'
 import mongoExpressLogo from '@/assets/mongo-express-logo.svg'
@@ -115,6 +120,9 @@ import nifiLogo from '@/assets/nifi-logo.svg'
 import openframeLogo from '@/assets/openframe-logo.svg'
 import pinotLogo from '@/assets/pinot-logo.svg'
 import kibanaLogo from '@/assets/kibana-logo.svg'
+import redisLogo from '@/assets/redis-logo.svg'
+import cassandraLogo from '@/assets/cassandra-logo.svg'
+import zookeeperLogo from '@/assets/zookeeper-logo.svg'
 
 const INTEGRATED_TOOLS_QUERY = gql`
   query GetIntegratedTools($filter: ToolFilter) {
@@ -126,6 +134,7 @@ const INTEGRATED_TOOLS_QUERY = gql`
       url
       enabled
       type
+      category
       port
       credentials {
         username
@@ -139,19 +148,21 @@ const INTEGRATED_TOOLS_QUERY = gql`
 const filter = ref({
   enabled: true,
   type: null as string | null,
-  search: null as string | null
+  category: null as string | null,
+  search: '' as string
 });
 
 // Update query to use filter
 const { result, loading, error, refetch } = useQuery(
   INTEGRATED_TOOLS_QUERY, 
-  {
+  () => ({
     filter: {
       enabled: filter.value.enabled,
       type: filter.value.type,
-      search: filter.value.search
+      category: filter.value.category,
+      search: filter.value.search || undefined
     }
-  },
+  }),
   {
     fetchPolicy: 'network-only',
     errorPolicy: 'all',
@@ -193,32 +204,34 @@ const logoMap: Record<string, string> = {
   'pinot-controller': pinotLogo,
   'pinot-broker': pinotLogo,
   'pinot-server': pinotLogo,
-  'loki-primary': grafanaLogo,
-  'redis-primary': '',
-  'cassandra-primary': '',
-  'zookeeper-primary': ''
+  'loki-primary': lokiLogo,
+  'redis-primary': redisLogo,
+  'cassandra-primary': cassandraLogo,
+  'zookeeper-primary': zookeeperLogo
 };
 
 // Move sectionMap outside of getToolSection
 const sectionMap: Record<string, string> = {
-  'MONITORING': 'Monitoring & Metrics',
-  'DATABASE': 'Databases',
-  'MESSAGING': 'Message Queues',
-  'SECURITY': 'Security & Access',
-  'STREAMING': 'Data Streaming',
-  'REMOTE': 'Remote Access',
-  'ANALYTICS': 'Analytics',
-  'MANAGEMENT': 'Management'
+  'Monitoring': 'Monitoring & Metrics',
+  'Database': 'Databases',
+  'Message Broker': 'Message Queues',
+  'SSO': 'Security & Access',
+  'Data Integration': 'Data Streaming',
+  'MDM': 'Device Management',
+  'Analytics': 'Analytics',
+  'Cache': 'Caching',
+  'Log Aggregation': 'Logging',
+  'Coordinator': 'Service Discovery'
 };
 
-const getToolSection = (type: string): string => {
-  return sectionMap[type] || 'Other';
+const getToolSection = (tool: IntegratedTool): string => {
+  return tool.category ? sectionMap[tool.category] : 'Other';
 };
 
 const groupedTools = computed(() => {
   const grouped: Record<string, IntegratedTool[]> = {};
   tools.value.forEach(tool => {
-    const section = getToolSection(tool.type);
+    const section = getToolSection(tool);
     if (!grouped[section]) {
       grouped[section] = [];
     }
@@ -280,13 +293,31 @@ const openTool = (tool: IntegratedTool) => {
   }
 };
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text)
-}
+const copyToClipboard = (text: string | undefined) => {
+  if (text) {
+    navigator.clipboard.writeText(text)
+  }
+};
 
-const openInNewTab = (url: string) => {
-  window.open(url, '_blank')
-}
+const openInNewTab = (url: string | undefined) => {
+  if (url) {
+    window.open(url, '_blank')
+  }
+};
+
+// Add debounce function
+const debounce = (fn: Function, delay: number) => {
+  let timeout: number;
+  return (...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+};
+
+// Create debounced refetch
+const debouncedRefetch = debounce(() => {
+  refetch();
+}, 300); // 300ms delay
 </script>
 
 <style scoped>
@@ -386,7 +417,7 @@ h2 {
 
 .p-inputgroup .p-inputgroup-addon {
   padding: 0.5rem 1rem;
-  background: var(--surface-ground);
+  background: white;
   border: 1px solid var(--surface-border);
   width: 5rem;
   display: flex;
