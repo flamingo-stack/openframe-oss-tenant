@@ -97,7 +97,6 @@ services:
       - openframe-network
     depends_on:
       - loki
-
   # Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

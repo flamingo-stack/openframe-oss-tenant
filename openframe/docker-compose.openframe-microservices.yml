@@ -26,7 +26,6 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
-      - FLEET_API_TOKEN=${FLEET_API_TOKEN}
       - OPENFRAME_MANAGEMENT_KEY=${OPENFRAME_MANAGEMENT_KEY:-docker-management-key-123}
     ports:
       - "8090:8090"
@@ -91,7 +90,7 @@ services:
       - VITE_CLIENT_ID=openframe_web_dashboard
       - VITE_CLIENT_SECRET=prod_secret
     ports:
-      - "4000:80"
+      - "80:80"
     depends_on:
       - api
       - management

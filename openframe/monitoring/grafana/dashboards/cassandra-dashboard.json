@@ -44,7 +44,8 @@
                 "value": 1
               }
             ]
-          }
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -76,12 +77,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "cassandra_table_livediskspaceused",
+          "expr": "cassandra_commitlog_totalcommitlogsize",
           "legendFormat": "Storage Load",
           "refId": "A"
         }
       ],
-      "title": "Storage Load",
+      "title": "CommitLog Size",
       "type": "stat"
     },
     {
@@ -133,8 +134,7 @@
                 "value": null
               }
             ]
-          },
-          "unit": "ms"
+          }
         },
         "overrides": []
       },
@@ -163,8 +163,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "cassandra_columnfamily_keyspace_system_auth_scope_role_permissions_speculativesamplelatencynanos",
-          "legendFormat": "Read Latency",
+          "expr": "cassandra_cache_oneminutehitrate{scope=\"KeyCache\"}",
+          "legendFormat": "1min Hit Rate",
           "refId": "A"
         },
         {
@@ -172,12 +172,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos",
-          "legendFormat": "Write Latency",
+          "expr": "cassandra_cache_fifteenminutehitrate{scope=\"KeyCache\"}",
+          "legendFormat": "15min Hit Rate",
           "refId": "B"
         }
       ],
-      "title": "Read/Write Latency",
+      "title": "Cache Hit Rates",
       "type": "timeseries"
     },
     {
@@ -258,7 +258,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(cassandra_columnfamily_keyspace_system_schema_scope_tables_additionalwritelatencynanos[5m])",
+          "expr": "rate(cassandra_commitlog_completedtasks[5m])",
           "legendFormat": "Operations Rate",
           "refId": "A"
         }
@@ -453,7 +453,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "cassandra_cache_scope_keycache_oneminutehitrate",
+          "expr": "cassandra_cache_hitrate{scope=\"KeyCache\"}",
           "legendFormat": "Key Cache Hit Rate",
           "refId": "A"
         },
@@ -462,12 +462,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "cassandra_columnfamily_keyspace_system_schema_scope_tables_keycachehitrate",
-          "legendFormat": "Row Cache Hit Rate",
+          "expr": "cassandra_cache_size{scope=\"KeyCache\"}",
+          "legendFormat": "Key Cache Size",
           "refId": "B"
         }
       ],
-      "title": "Cache Hit Rates",
+      "title": "Cache Stats",
       "type": "timeseries"
     },
     {
@@ -648,8 +648,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Network Transmit",
+          "expr": "cassandra_bufferpool_usedsize{scope=\"networking\"}",
+          "legendFormat": "Network Buffer Used",
           "refId": "A"
         },
         {
@@ -657,19 +657,214 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Network Receive",
+          "expr": "cassandra_bufferpool_capacity{scope=\"networking\"}",
+          "legendFormat": "Network Buffer Capacity",
           "refId": "B"
         }
       ],
-      "title": "Network I/O",
+      "title": "Network Buffer Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "cassandra_compaction_pendingtasks",
+          "legendFormat": "Pending Tasks",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "cassandra_compaction_completedtasks",
+          "legendFormat": "Completed Tasks",
+          "refId": "B"
+        }
+      ],
+      "title": "Compaction Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "jvm_memory_pool_bytes_used{pool=\"CMS Old Gen\"}",
+          "legendFormat": "Old Gen Used",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "jvm_memory_pool_bytes_used{pool=\"Par Eden Space\"}",
+          "legendFormat": "Eden Space Used",
+          "refId": "B"
+        }
+      ],
+      "title": "Memory Pools",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["cassandra", "database", "storage"],
+  "tags": [
+    "cassandra",
+    "database",
+    "storage"
+  ],
   "templating": {
     "list": []
   },

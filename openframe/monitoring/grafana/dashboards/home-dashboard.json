@@ -947,8 +947,12 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "cassandra_table_livediskspaceused",
-          "legendFormat": "Storage Used"
+          "expr": "cassandra_commitlog_totalcommitlogsize",
+          "legendFormat": "CommitLog Size"
+        },
+        {
+          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
+          "legendFormat": "Heap Used"
         }
       ]
     },
@@ -1612,15 +1616,15 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "cassandra_client_requestssize",
-          "legendFormat": "Request Size"
+          "expr": "cassandra_commitlog_completedtasks",
+          "legendFormat": "Completed Operations"
         },
         {
-          "expr": "cassandra_client_connectednativeclients",
-          "legendFormat": "Connected Clients"
+          "expr": "cassandra_compaction_pendingtasks",
+          "legendFormat": "Pending Compactions"
         },
         {
-          "expr": "cassandra_cache_scope_keycache_hitrate",
+          "expr": "cassandra_cache_hitrate{scope=\"KeyCache\"}",
           "legendFormat": "Cache Hit Rate"
         }
       ]
