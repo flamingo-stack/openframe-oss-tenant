@@ -11,6 +11,16 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
+import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,9 +28,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openframe.api.security.JwtAuthenticationFilter;
-import com.openframe.core.config.BaseSecurityConfig;
+import com.openframe.core.security.config.BaseSecurityConfig;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
@@ -29,35 +40,57 @@ public class SecurityConfig extends BaseSecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+    private final JwtDecoder jwtDecoder;
+
+    @Value("${jwt.issuer}")
+    private String issuer;
+
+    @Value("${jwt.audience}")
+    private String expectedAudience;
 
     @Bean
     @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http = configureCommonSecurity(http);
+        
         http
             .cors(Customizer.withDefaults())
-            .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/oauth/**", 
-                               "/api/auth/**", 
-                               "/api/clients/**",
-                               "/api/agents/register",
-                               "/v1/**",
-                               "/graphql",
-                               "/graphiql/**",
-                               "/.well-known/**",
-                               "/oidc/**",
-                               "/management/**",
-                               "/management/v1/**",
-                               "/management/v1/prometheus").permitAll()
+                .requestMatchers(
+                    "/oauth/**", 
+                    "/api/auth/**",
+                    "/graphql",
+                    "/.well-known/**",
+                    "/oidc/**",
+                    "/health").permitAll()
                 .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .decoder(jwtDecoder)
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                )
             )
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public OAuth2TokenValidator<Jwt> jwtValidator() {
+        return new DelegatingOAuth2TokenValidator<Jwt>(
+            new JwtTimestampValidator(),
+            new JwtIssuerValidator(issuer),
+            token -> {
+                if (!token.getAudience().contains(expectedAudience)) {
+                    return OAuth2TokenValidatorResult.failure(
+                        new OAuth2Error("invalid_token", "Invalid audience", null)
+                    );
+                }
+                return OAuth2TokenValidatorResult.success();
+            }
+        );
     }
 
     @Bean

@@ -16,3 +16,11 @@ openframe:
 fleet:
   api:
     url: http://localhost:8070
+
+jwt:
+  issuer: openframe
+  audience: openframe-web
+  publicKey:
+    key: classpath:certs/public.pem
+  privateKey:
+    key: classpath:certs/private.pem

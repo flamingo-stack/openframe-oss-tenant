@@ -83,25 +83,32 @@ export class AuthService {
   }
 
   private static async handleResponse<T>(response: Response): Promise<T> {
-    let data: T | ErrorResponse;
+    const data = await response.json();
     
-    try {
-      data = await response.json();
-    } catch (e) {
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Auto logout if 401 response returned from api
+        this.logout();
+      }
+      
+      const error = (data && data.error_description) || response.statusText;
       throw new OAuthError(
-        'server_error',
-        'Failed to parse server response',
-        undefined,
+        data.error,
+        error,
+        data.state,
         response.status
       );
     }
-    
-    if (!response.ok) {
-      const error = data as ErrorResponse;
-      throw OAuthError.fromResponse(response, error);
+
+    // Store tokens if they exist in response
+    if (data.access_token) {
+      localStorage.setItem('access_token', data.access_token);
     }
-    
-    return data as T;
+    if (data.refresh_token) {
+      localStorage.setItem('refresh_token', data.refresh_token);
+    }
+
+    return data;
   }
 
   private static handleError(error: unknown): never {
@@ -278,5 +285,13 @@ export class AuthService {
 
   static getRefreshToken(): string | null {
     return localStorage.getItem('refresh_token');
+  }
+
+  static getAuthHeader(): Record<string, string> {
+    const token = this.getAccessToken();
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
+    return {};
   }
 } 
