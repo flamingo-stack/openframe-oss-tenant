@@ -7,7 +7,7 @@ oauth:
   client:
     default:
       id: openframe_web_dashboard
-      secret: dev_secret
+      secret: prod_secret
 
 openframe:
   management:
