@@ -9,6 +9,6 @@ import com.openframe.data.model.IntegratedTool;
 
 @Repository
 public interface IntegratedToolRepository extends MongoRepository<IntegratedTool, String> {
-    Optional<IntegratedTool> findByToolType(String toolType);
-    Optional<IntegratedTool> findByToolTypeAndEnabled(String toolType, boolean enabled);
+    Optional<IntegratedTool> findByType(String type);
+    Optional<IntegratedTool> findByTypeAndEnabled(String toolType, boolean enabled);
 } 

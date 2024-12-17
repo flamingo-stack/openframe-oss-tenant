@@ -22,7 +22,7 @@ public class IntegratedToolService {
     }
 
     public Optional<IntegratedTool> getTool(String toolType) {
-        return toolRepository.findByToolType(toolType);
+        return toolRepository.findByType(toolType);
     }
 
     public IntegratedTool saveTool(IntegratedTool tool) {

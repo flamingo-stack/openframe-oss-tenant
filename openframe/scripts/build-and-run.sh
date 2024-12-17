@@ -120,6 +120,24 @@ register_tool() {
     local category=${10}
     local platform_category=${11}
 
+    # Check management service health before registration
+    local max_attempts=30
+    local attempt=1
+    echo "Checking management service health before registering $name..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s http://localhost:8096/management/v1/health | grep -q '"status":"UP"'; then
+            break
+        fi
+        echo "Management service not ready (attempt $attempt/$max_attempts). Retrying in 5s..."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+
+    if [ $attempt -gt $max_attempts ]; then
+        echo "Management service not ready after $max_attempts attempts. Skipping registration of $name."
+        return 1
+    fi
+
     echo "Registering $name with OpenFrame API..."
     curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \
