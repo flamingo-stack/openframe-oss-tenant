@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, provide, h } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import router from './router'
@@ -10,6 +10,8 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import { DefaultApolloClient } from '@vue/apollo-composable'
+import { apolloClient } from './graphql/config'
 
 // PrimeVue styles
 import 'primevue/resources/themes/lara-light-blue/theme.css'
@@ -28,7 +30,12 @@ const currentPath = window.location.pathname
 if (!token && currentPath !== '/login' && currentPath !== '/register') {
     window.location.href = '/login'
 } else {
-    const app = createApp(App)
+    const app = createApp({
+        setup() {
+            provide(DefaultApolloClient, apolloClient)
+            return () => h(App)
+        }
+    })
     app.use(createPinia())
     app.use(router)
     app.use(PrimeVue, { ripple: true })

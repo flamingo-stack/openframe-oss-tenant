@@ -1,23 +1,46 @@
 type Query {
+    integratedTools(filter: ToolFilter): [IntegratedTool]!
     events(userId: ID!, from: String!, to: String!): [Event]
     eventById(id: ID!): Event
 }
 
 type Mutation {
-    createEvent(input: EventInput!): Event
-    updateEvent(id: ID!, input: EventInput!): Event
+    createEvent(input: CreateEventInput!): Event
 }
 
 type Event {
     id: ID!
-    type: String!
-    payload: String!
-    timestamp: String!
     userId: ID!
+    timestamp: String!
+    type: String!
+    data: String
 }
 
-input EventInput {
-    type: String!
-    payload: String!
+input CreateEventInput {
     userId: ID!
+    type: String!
+    data: String
 }
+
+type IntegratedTool {
+    id: ID!
+    name: String!
+    description: String
+    icon: String
+    url: String
+    enabled: Boolean!
+    type: String
+    port: String
+    credentials: ToolCredentials
+}
+
+type ToolCredentials {
+    username: String
+    password: String
+}
+
+input ToolFilter {
+    enabled: Boolean
+    type: String
+    search: String
+} 

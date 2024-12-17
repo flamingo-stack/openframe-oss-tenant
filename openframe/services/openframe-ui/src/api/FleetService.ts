@@ -36,33 +36,43 @@ export interface FleetPolicy {
 }
 
 export class FleetService {
-  private static async request<T>(config: any): Promise<T> {
+  private static instance: FleetService;
+  private baseURL: string;
+
+  private constructor() {
+    this.baseURL = import.meta.env.VITE_API_URL;
+  }
+
+  static getInstance(): FleetService {
+    if (!FleetService.instance) {
+      FleetService.instance = new FleetService();
+    }
+    return FleetService.instance;
+  }
+
+  private async request<T>(config: any): Promise<T> {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('No access token found');
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
     try {
-      const token = localStorage.getItem('access_token')
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-      
-      const response = await axios({
-        ...config,
-        headers: {
-          ...config.headers,
-          ...headers
-        }
-      })
-      return response.data
+      const response = await axios({ ...config, headers });
+      return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || error.message)
-      }
-      throw error
+      console.error('Request failed:', error);
+      throw error;
     }
   }
 
   // Get all hosts
   static async getHosts(): Promise<FleetHost[]> {
-    return this.request({
+    return this.getInstance().request({
       url: `${API_URL}/hosts`,
       method: 'GET',
       headers: {
@@ -73,7 +83,7 @@ export class FleetService {
 
   // Get host by ID
   static async getHost(id: number): Promise<FleetHost> {
-    return this.request({
+    return this.getInstance().request({
       url: `${API_URL}/hosts/${id}`,
       method: 'GET',
       headers: {
@@ -84,7 +94,7 @@ export class FleetService {
 
   // Run live query on hosts
   static async runLiveQuery(query: string, hostIds: number[]): Promise<any> {
-    return this.request({
+    return this.getInstance().request({
       url: `${API_URL}/queries/run`,
       method: 'POST',
       headers: {
@@ -101,7 +111,7 @@ export class FleetService {
 
   // Get policies for a host
   static async getHostPolicies(hostId: number): Promise<FleetPolicy[]> {
-    return this.request({
+    return this.getInstance().request({
       url: `${API_URL}/hosts/${hostId}/policies`,
       method: 'GET',
       headers: {
@@ -112,7 +122,7 @@ export class FleetService {
 
   // Create a new host
   static async createHost(host: Partial<FleetHost>): Promise<FleetHost> {
-    return this.request({
+    return this.getInstance().request({
       url: `${API_URL}/hosts`,
       method: 'POST',
       headers: {

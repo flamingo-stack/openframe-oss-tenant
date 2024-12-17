@@ -14,5 +14,35 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        sourcemapExcludeSources: true
+      }
+    }
+  },
+  optimizeDeps: {
+    include: [
+      'rxjs',
+      '@grafana/experimental',
+      '@grafana/faro-core',
+      '@grafana/faro-web-sdk',
+      '@opentelemetry/api',
+      'dompurify',
+      'micro-memoize',
+      'performance-now',
+      'react-from-dom',
+      'react-inlinesvg',
+      'react-window',
+      'tabbable',
+      '@reduxjs/toolkit',
+      'immer',
+      'react-redux',
+      'html-parse-stringify',
+      'redux',
+      'reselect'
+    ]
   }
 })

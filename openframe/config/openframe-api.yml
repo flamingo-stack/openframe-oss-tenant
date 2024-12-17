@@ -26,6 +26,13 @@ spring:
   cloud:
     config:
       fail-fast: false
+  graphql:
+    graphiql:
+      enabled: true
+    schema:
+      printer:
+        enabled: true
+    path: /graphql
 
 # Management server configuration
 management:
@@ -66,3 +73,7 @@ oauth:
       scopes:
         - read
         - write
+
+openframe:
+  management:
+    url: http://openframe-management:8095

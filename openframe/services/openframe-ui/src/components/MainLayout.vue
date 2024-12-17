@@ -70,9 +70,14 @@ const menuVisible = ref(false);
 
 const menuItems = [
   {
-    label: 'Monitoring and Tools',
+    label: 'Monitoring',
     icon: 'pi pi-chart-line',
     path: '/'
+  },
+  {
+    label: 'Tools',
+    icon: 'pi pi-wrench',
+    path: '/tools'
   },
   {
     label: 'Hosts',

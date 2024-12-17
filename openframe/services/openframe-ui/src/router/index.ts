@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import Monitoring from '../views/Monitoring.vue'
-import HostsView from '@/views/HostsView.vue'
+import Tools from '../views/Tools.vue'
+import HostsView from '../views/HostsView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/login',
@@ -22,12 +23,22 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'home',
+      name: 'monitoring',
       component: Monitoring,
       meta: { 
         requiresAuth: true,
-        title: 'Monitoring and Tools',
+        title: 'Monitoring',
         icon: 'pi pi-chart-line'
+      }
+    },
+    {
+      path: '/tools',
+      name: 'tools',
+      component: Tools,
+      meta: { 
+        requiresAuth: true,
+        title: 'Tools',
+        icon: 'pi pi-cog'
       }
     },
     {
@@ -43,8 +54,18 @@ const router = createRouter({
     {
       path: '/hosts/add',
       name: 'hosts-add',
-      component: () => import('@/views/hosts/AddHost.vue'),
+      component: () => import('../views/hosts/AddHost.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SettingsView,
+      meta: { 
+        requiresAuth: true,
+        title: 'Settings',
+        icon: 'pi pi-cog'
+      }
     }
   ]
 })
