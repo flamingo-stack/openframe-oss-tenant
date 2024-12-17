@@ -10,6 +10,10 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+    contentnegotiation:
+      favor-parameter: true
+      media-types:
+        actuator: application/vnd.spring-boot.actuator.v3+json
   cloud:
     config:
       server:
@@ -26,12 +30,30 @@ spring:
 management:
   server:
     port: 8889
-    base-path: /management
+  base-path: /management
   endpoints:
     web:
-      base-path: /v1
+      base-path: /management/v1
       exposure:
-        include: "*"
+        include: health,info,prometheus,metrics
+    enabled-by-default: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    enable:
+      all: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tags:
+    application: ${spring.application.name}
 
 logging:
   config: classpath:logging/shared-logback-spring.xml
@@ -43,7 +65,6 @@ logging:
     io.micrometer: DEBUG
     org.springframework.boot.actuate.autoconfigure.metrics: DEBUG
     org.springframework.boot.actuate.metrics.export.prometheus: DEBUG
-  
 
 log:
   path: logs

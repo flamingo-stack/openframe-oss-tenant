@@ -19,12 +19,6 @@
     </properties>
 
     <dependencies>
-        <!-- OpenFrame Dependencies -->
-        <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-core</artifactId>
-        </dependency>
-
         <!-- Spring Cloud Config -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -49,6 +43,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Monitoring -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
     </dependencies>
