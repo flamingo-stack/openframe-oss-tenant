@@ -10,14 +10,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.util.FileCopyUtils;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -55,8 +53,7 @@ public class JwtConfig {
     }
 
     private RSAPublicKey loadPublicKey() throws Exception {
-        String pemContent = readKeyFile(publicKey.getKey());
-        String publicKeyPEM = pemContent
+        String publicKeyPEM = publicKey.getValue()
             .replace("-----BEGIN PUBLIC KEY-----", "")
             .replace("-----END PUBLIC KEY-----", "")
             .replaceAll("\\s", "");
@@ -68,8 +65,7 @@ public class JwtConfig {
     }
 
     private RSAPrivateKey loadPrivateKey() throws Exception {
-        String pemContent = readKeyFile(privateKey.getKey());
-        String privateKeyPEM = pemContent
+        String privateKeyPEM = privateKey.getValue()
             .replace("-----BEGIN PRIVATE KEY-----", "")
             .replace("-----END PRIVATE KEY-----", "")
             .replaceAll("\\s", "");
@@ -78,13 +74,6 @@ public class JwtConfig {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
         return (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
-    }
-
-    private String readKeyFile(String path) throws Exception {
-        String resourcePath = path.replace("classpath:", "");
-        ClassPathResource resource = new ClassPathResource(resourcePath);
-        byte[] bytes = FileCopyUtils.copyToByteArray(resource.getInputStream());
-        return new String(bytes);
     }
 
     @Bean
@@ -105,8 +94,8 @@ public class JwtConfig {
     public void setPrivateKey(KeyConfig privateKey) { this.privateKey = privateKey; }
 
     public static class KeyConfig {
-        private String key;
-        public String getKey() { return key; }
-        public void setKey(String key) { this.key = key; }
+        private String value;
+        public String getValue() { return value; }
+        public void setValue(String value) { this.value = value; }
     }
 } 
