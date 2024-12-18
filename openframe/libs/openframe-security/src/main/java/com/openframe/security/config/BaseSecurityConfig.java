@@ -1,23 +1,49 @@
 package com.openframe.security.config;
+
 import java.util.Arrays;
 
+import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.openframe.security.jwt.JwtAuthenticationFilter;
+
 @Configuration
 @EnableWebSecurity
-public class BaseSecurityConfig {
+@EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
+public abstract class BaseSecurityConfig {
+
+    private final ManagementServerProperties managementProperties;
+    private final ServerProperties serverProperties;
+    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final AuthenticationProvider authenticationProvider;
+
+    protected BaseSecurityConfig(
+            ManagementServerProperties managementProperties,
+            ServerProperties serverProperties,
+            JwtAuthenticationFilter jwtAuthFilter,
+            AuthenticationProvider authenticationProvider) {
+        this.managementProperties = managementProperties;
+        this.serverProperties = serverProperties;
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.authenticationProvider = authenticationProvider;
+    }
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
@@ -31,7 +57,18 @@ public class BaseSecurityConfig {
         return jwtAuthenticationConverter;
     }
 
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return configureBaseHttpSecurity(http)
+            .authenticationProvider(authenticationProvider)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .build();
+    }
+
     protected HttpSecurity configureBaseHttpSecurity(HttpSecurity http) throws Exception {
+        String managementContextPath = managementProperties.getBasePath() != null ? 
+            managementProperties.getBasePath() : "/actuator";
+
         return http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -44,7 +81,8 @@ public class BaseSecurityConfig {
                     "/health/**", 
                     "/metrics/**", 
                     "/oauth/token", 
-                    "/oauth/register"
+                    "/oauth/register",
+                    managementContextPath + "/**"
                 ).permitAll()
                 .requestMatchers("/.well-known/userinfo").authenticated()
                 .requestMatchers("/.well-known/openid-configuration").permitAll()
@@ -56,8 +94,12 @@ public class BaseSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return configureBaseHttpSecurity(http).build();
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        String managementContextPath = managementProperties.getBasePath() != null ? 
+            managementProperties.getBasePath() : "/actuator";
+
+        return (web) -> web.ignoring()
+            .requestMatchers(managementContextPath + "/**");
     }
 
     @Bean
