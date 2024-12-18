@@ -3,6 +3,8 @@ server:
 
 # Gateway service common configuration
 spring:
+  main:
+    web-application-type: reactive
   data:
     cassandra:
       enabled: true

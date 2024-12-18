@@ -65,6 +65,5 @@ logging:
     io.micrometer: DEBUG
     org.springframework.boot.actuate.autoconfigure.metrics: DEBUG
     org.springframework.boot.actuate.metrics.export.prometheus: DEBUG
-
-log:
-  path: logs
+  file:
+    path: ${LOG_PATH:logs}

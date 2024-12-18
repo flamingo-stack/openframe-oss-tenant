@@ -1,24 +1,19 @@
 spring:
   application:
     name: openframe-gateway
-  main:
-    web-application-type: reactive
-  config:
-    activate:
-      on-profile: local
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
 ---
 spring:
   config:
+    url: http://localhost:8888
+    activate:
+      on-profile: local
+    import: "optional:configserver:http://localhost:8888"
+
+---
+spring:
+  config:
+    url: http://openframe-config-server:8888
     activate:
       on-profile: docker
-    import: "optional:configserver:http://openframe-config-server:8888"
-
-logging:
-  level:
-    com.openframe: DEBUG
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.security: DEBUG
-  file:
-    path: ${LOG_PATH:logs}
+    import: "optional:configserver:http://openframe-config-server:8888" 
