@@ -1,17 +1,7 @@
 spring:
   application:
     name: openframe-gateway
-  main:
-    web-application-type: reactive
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
-  data:
-    cassandra:
-      enabled: false
-
+    
 ---
 spring:
   config:
