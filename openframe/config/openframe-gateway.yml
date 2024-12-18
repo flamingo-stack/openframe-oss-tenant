@@ -5,7 +5,10 @@ server:
 spring:
   data:
     cassandra:
-      enabled: false
+      enabled: true
+      keyspace-name: openframe
+      schema-action: CREATE_IF_NOT_EXISTS
+      local-datacenter: datacenter1
     mongodb:
       enabled: true
   cloud:
@@ -20,13 +23,6 @@ spring:
             allowedOrigins: "*"
             allowedMethods: "*"
             allowedHeaders: "*"
-  main:
-    web-application-type: reactive
-    autoconfigure:
-      exclude:
-      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
 
 # Management server configuration
 management:
