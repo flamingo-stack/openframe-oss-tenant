@@ -6,9 +6,6 @@ spring:
   data:
     cassandra:
       enabled: true
-      keyspace-name: openframe
-      schema-action: CREATE_IF_NOT_EXISTS
-      local-datacenter: datacenter1
     mongodb:
       enabled: true
   cloud:
@@ -32,9 +29,6 @@ management:
     web:
       exposure:
         include: health,info,metrics
-  health:
-    cassandra:
-      enabled: false
 
 # Gateway service specific logging
 logging:

@@ -1,9 +1,8 @@
 spring:
   application:
     name: openframe-gateway
-    
----
-spring:
+  main:
+    web-application-type: reactive
   config:
     activate:
       on-profile: local
