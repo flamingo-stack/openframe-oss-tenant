@@ -1,7 +1,8 @@
 package com.openframe.data.model;
 
-import lombok.Data;
 import org.springframework.lang.Nullable;
+
+import lombok.Data;
 
 @Data
 public class ToolCredentials {
@@ -17,4 +18,4 @@ public class ToolCredentials {
     private String clientId;
     @Nullable
     private String clientSecret;
-} 
+}

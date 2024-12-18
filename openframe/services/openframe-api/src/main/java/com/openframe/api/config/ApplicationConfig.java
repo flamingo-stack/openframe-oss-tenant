@@ -11,22 +11,35 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.openframe.api.security.UserSecurity;
 import com.openframe.data.repository.mongo.UserRepository;
+import com.openframe.security.UserSecurity;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationConfig {
 
     private final UserRepository userRepository;
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-            .map(UserSecurity::new)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return username -> {
+            log.debug("Loading user details for username: {}", username);
+            return userRepository.findByEmail(username)
+                .map(user -> {
+                    log.debug("Found user: {}", user.getEmail());
+                    var userSecurity = new UserSecurity(user);
+                    log.debug("Created UserSecurity: {}", userSecurity.getUsername());
+                    return userSecurity;
+                })
+                .orElseThrow(() -> {
+                    log.warn("User not found with email: {}", username);
+                    return new UsernameNotFoundException("User not found");
+                });
+        };
     }
 
     @Bean

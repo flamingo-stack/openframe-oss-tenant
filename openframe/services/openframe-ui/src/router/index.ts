@@ -3,7 +3,6 @@ import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
-import HostsView from '../views/HostsView.vue'
 import SettingsView from '../views/SettingsView.vue'
 
 const router = createRouter({
@@ -42,22 +41,6 @@ const router = createRouter({
       }
     },
     {
-      path: '/hosts',
-      name: 'hosts',
-      component: HostsView,
-      meta: { 
-        requiresAuth: true,
-        title: 'Hosts',
-        icon: 'pi pi-desktop'
-      }
-    },
-    {
-      path: '/hosts/add',
-      name: 'hosts-add',
-      component: () => import('../views/hosts/AddHost.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
       path: '/settings',
       name: 'settings',
       component: SettingsView,
@@ -66,6 +49,12 @@ const router = createRouter({
         title: 'Settings',
         icon: 'pi pi-cog'
       }
+    },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('../views/Profile.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

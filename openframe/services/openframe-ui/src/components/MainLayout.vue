@@ -12,7 +12,13 @@
         </div>
       </div>
       <div class="navbar-end">
-        <Button icon="pi pi-user" text rounded class="mr-2" />
+        <Button 
+          icon="pi pi-user" 
+          text 
+          rounded 
+          class="mr-2" 
+          @click="router.push('/profile')"
+        />
         <Button icon="pi pi-power-off" text rounded severity="secondary" @click="handleLogout" />
       </div>
     </nav>
@@ -78,11 +84,6 @@ const menuItems = [
     label: 'Tools',
     icon: 'pi pi-wrench',
     path: '/tools'
-  },
-  {
-    label: 'Hosts',
-    icon: 'pi pi-desktop',
-    path: '/hosts'
   },
   {
     label: 'Settings',

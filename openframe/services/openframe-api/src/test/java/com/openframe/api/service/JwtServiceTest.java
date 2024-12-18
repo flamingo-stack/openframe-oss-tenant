@@ -2,11 +2,13 @@ package com.openframe.api.service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.when;
@@ -15,11 +17,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
-import com.openframe.api.security.JwtService;
-import com.openframe.api.security.UserSecurity;
-import com.openframe.core.model.User;
+import com.openframe.security.jwt.JwtService;
 
 @ExtendWith(MockitoExtension.class)
 class JwtServiceTest {
@@ -35,55 +34,47 @@ class JwtServiceTest {
     
     @Test
     void generateToken_ShouldCreateValidToken() {
-        // Arrange
-        User user = new User();
-        user.setEmail("test@example.com");
-        UserDetails userDetails = new UserSecurity(user);
+        // Given
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+            .withUsername("test@example.com")
+            .password("password")
+            .authorities(Collections.emptyList())
+            .build();
         
-        when(encoder.encode(any(JwtEncoderParameters.class)))
-            .thenReturn(createMockJwt("test.token"));
+        Jwt jwt = Jwt.withTokenValue("token")
+            .header("alg", "RS256")
+            .claim("email", "test@example.com")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .build();
         
-        when(decoder.decode("test.token"))
-            .thenReturn(Jwt.withTokenValue("test.token")
-                .header("alg", "RS256")
-                .subject("test@example.com")
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
-                .build());
-        
-        // Act
+        when(decoder.decode(anyString())).thenReturn(jwt);
+        when(encoder.encode(any())).thenReturn(jwt);
+
+        // When
         String token = jwtService.generateToken(userDetails);
-        
-        // Assert
+
+        // Then
         assertThat(token).isNotNull();
         assertThat(jwtService.isTokenValid(token, userDetails)).isTrue();
     }
     
     @Test
     void extractUsername_ShouldReturnCorrectUsername() {
-        // Arrange
-        String token = "test.token";
-        when(decoder.decode(token))
-            .thenReturn(Jwt.withTokenValue(token)
-                .header("alg", "RS256")
-                .subject("test@example.com")
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
-                .build());
-        
-        // Act
-        String username = jwtService.extractUsername(token);
-        
-        // Assert
-        assertThat(username).isEqualTo("test@example.com");
-    }
-
-    private Jwt createMockJwt(String tokenValue) {
-        return Jwt.withTokenValue(tokenValue)
+        // Given
+        Jwt jwt = Jwt.withTokenValue("token")
             .header("alg", "RS256")
-            .subject("test@example.com")
+            .claim("email", "test@example.com")
             .issuedAt(Instant.now())
             .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
             .build();
+        
+        when(decoder.decode(anyString())).thenReturn(jwt);
+
+        // When
+        String username = jwtService.extractUsername("token");
+
+        // Then
+        assertThat(username).isEqualTo("test@example.com");
     }
 } 

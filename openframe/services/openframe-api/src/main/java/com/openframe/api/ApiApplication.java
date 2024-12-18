@@ -7,7 +7,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 
 @SpringBootApplication
 @EnableKafka
-@ComponentScan(basePackages = {"com.openframe.api", "com.openframe.data", "com.openframe.core"})
+@ComponentScan(basePackages = {"com.openframe.api", "com.openframe.data", "com.openframe.core", "com.openframe.security"})
 public class ApiApplication {
 
     public static void main(String[] args) {

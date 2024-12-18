@@ -1,0 +1,49 @@
+server:
+  port: 8100
+
+# Gateway service common configuration
+spring:
+  data:
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: false
+  cloud:
+    config:
+      fail-fast: false
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+
+# Management server configuration
+management:
+  server:
+    port: 8101
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  health:
+    cassandra:
+      enabled: false
+
+# Gateway service specific logging
+logging:
+  level:
+    root: INFO
+    com.openframe: DEBUG
+    org.springframework: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+
+security:
+  jwt:
+    enabled: true
+    publicKey:
+      key: classpath:certs/public.pem 

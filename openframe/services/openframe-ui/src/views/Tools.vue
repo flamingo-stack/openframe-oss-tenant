@@ -257,7 +257,6 @@ const logoMap: Record<string, string> = {
   'authentik': authentikLogo,
   'prometheus-primary': prometheusLogo,
   'nifi-primary': nifiLogo,
-  'rustdesk': rustdeskLogo,
   'pinot-controller': pinotLogo,
   'pinot-broker': pinotLogo,
   'pinot-server': pinotLogo,

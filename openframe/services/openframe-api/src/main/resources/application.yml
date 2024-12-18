@@ -18,6 +18,6 @@ spring:
 
 logging:
   level:
-    com.openframe.api.security: DEBUG
-    com.openframe.api.exception: DEBUG
+    com.openframe: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.web: DEBUG

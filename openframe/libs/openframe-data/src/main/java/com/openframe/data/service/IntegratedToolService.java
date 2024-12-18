@@ -30,9 +30,10 @@ public class IntegratedToolService {
     }
 
     public String getActiveToken(String toolType) {
-        return getTool(toolType)
-            .filter(IntegratedTool::isEnabled)
-            .map(tool -> tool.getCredentials().getToken())
-            .orElse(null);
+        Optional<IntegratedTool> tool = getTool(toolType);
+        if (tool.isPresent() && tool.get().isEnabled() && tool.get().getCredentials() != null) {
+            return tool.get().getCredentials().getToken();
+        }
+        return null;
     }
 } 

@@ -41,18 +41,21 @@
         <esri.geometry.version>2.2.4</esri.geometry.version>
         <tinkergraph.gremlin.version>3.4.0</tinkergraph.gremlin.version>
         <jjwt.version>0.11.5</jjwt.version>
+        <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
     </properties>
 
     <modules>
         <!-- Libraries -->
         <module>libs/openframe-core</module>
         <module>libs/openframe-data</module>
+        <module>libs/openframe-security</module>
 
         <!-- Services -->
         <module>services/openframe-config</module>
         <module>services/openframe-api</module>
         <module>services/openframe-stream</module>
         <module>services/openframe-management</module>
+        <module>services/openframe-gateway</module>
     </modules>
 
     <dependencies>
@@ -151,6 +154,11 @@
             <dependency>
                 <groupId>com.openframe</groupId>
                 <artifactId>openframe-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe</groupId>
+                <artifactId>openframe-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -276,6 +284,11 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-impl</artifactId>
                 <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jsonwebtoken.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

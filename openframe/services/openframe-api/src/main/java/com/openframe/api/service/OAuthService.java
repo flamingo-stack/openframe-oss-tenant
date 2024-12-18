@@ -13,13 +13,13 @@ import org.springframework.stereotype.Service;
 
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
-import com.openframe.api.security.JwtService;
-import com.openframe.api.security.UserSecurity;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
 import com.openframe.data.repository.mongo.UserRepository;
+import com.openframe.security.jwt.JwtService;
+import com.openframe.security.UserSecurity;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

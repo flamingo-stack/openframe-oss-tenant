@@ -1,8 +1,9 @@
 package com.openframe.api.controller;
 
 import java.util.Arrays;
-import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,9 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.openframe.api.dto.oidc.OpenIDConfiguration;
 import com.openframe.api.dto.oidc.UserInfo;
-import com.openframe.api.security.UserSecurity;
 import com.openframe.api.service.OAuthService;
 import com.openframe.core.model.User;
+import com.openframe.security.UserSecurity;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OpenIDController {
     
+    private static final Logger log = LoggerFactory.getLogger(OpenIDController.class);
+
     private final OAuthService oauthService;
 
     @GetMapping(value = "/openid-configuration", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -44,7 +47,10 @@ public class OpenIDController {
 
     @GetMapping(value = "/userinfo", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserInfo> getUserInfo(@AuthenticationPrincipal UserSecurity userSecurity) {
+        log.debug("Getting user info for principal: {}", userSecurity);
+        
         if (userSecurity == null || userSecurity.getUser() == null) {
+            log.warn("No authenticated user found");
             return ResponseEntity.status(401)
                 .body(UserInfo.builder()
                     .error("invalid_token")
@@ -53,6 +59,8 @@ public class OpenIDController {
         }
 
         User user = userSecurity.getUser();
+        log.debug("Found user: {}", user);
+        
         String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + 
                          (user.getLastName() != null ? " " + user.getLastName() : "").trim();
 

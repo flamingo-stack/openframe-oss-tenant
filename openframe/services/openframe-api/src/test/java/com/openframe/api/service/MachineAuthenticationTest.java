@@ -13,9 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 
 import com.openframe.api.dto.oauth.TokenResponse;
-import com.openframe.api.security.JwtService;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
+import com.openframe.security.jwt.JwtService;
 
 @ExtendWith(MockitoExtension.class)
 class MachineAuthenticationTest {

@@ -1,6 +1,8 @@
 import authConfig from '../config/auth.config';
 import axios from 'axios';
 import { config } from '../config/env.config';
+import { apolloClient } from '../apollo/apolloClient';
+import { gql } from '@apollo/client/core';
 
 export interface LoginCredentials {
   email: string;
@@ -22,10 +24,12 @@ export interface TokenResponse {
 }
 
 export interface UserInfo {
-  id: string;
+  sub: string;
+  name: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
+  given_name: string;
+  family_name: string;
+  email_verified: boolean;
 }
 
 export interface ErrorResponse {
@@ -216,10 +220,17 @@ export class AuthService {
     try {
       const response = await fetch(`${config.API_URL}/.well-known/userinfo`, {
         method: 'GET',
-        headers: this.getHeaders(true)
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Accept': 'application/json'
+        }
       });
 
-      return this.handleResponse<UserInfo>(response);
+      if (!response.ok) {
+        throw new Error('Failed to fetch user info');
+      }
+
+      return response.json();
     } catch (error: unknown) {
       throw this.handleError(error);
     }

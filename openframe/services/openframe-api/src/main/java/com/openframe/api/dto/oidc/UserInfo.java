@@ -12,11 +12,11 @@ import lombok.Builder;
 public class UserInfo {
     private String sub;
     private String name;
+    private String email;
     @JsonProperty("given_name")
     private String givenName;
     @JsonProperty("family_name")
     private String familyName;
-    private String email;
     @JsonProperty("email_verified")
     private Boolean emailVerified;
     private String error;

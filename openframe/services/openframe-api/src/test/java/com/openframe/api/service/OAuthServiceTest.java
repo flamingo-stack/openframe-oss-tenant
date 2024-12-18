@@ -12,11 +12,11 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.openframe.api.dto.oauth.AuthorizationResponse;
-import com.openframe.api.security.JwtService;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
 import com.openframe.data.repository.mongo.UserRepository;
+import com.openframe.security.jwt.JwtService;
 
 @ExtendWith(MockitoExtension.class)
 class OAuthServiceTest {

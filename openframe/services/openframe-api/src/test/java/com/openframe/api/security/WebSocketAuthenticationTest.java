@@ -12,6 +12,8 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
 
+import com.openframe.security.WebSocketAuthInterceptor;
+import com.openframe.security.jwt.JwtService;
 
 @ExtendWith(MockitoExtension.class)
 class WebSocketAuthenticationTest {

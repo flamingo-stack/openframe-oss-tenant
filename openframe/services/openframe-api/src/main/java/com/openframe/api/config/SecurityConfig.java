@@ -8,10 +8,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.openframe.api.security.JwtAuthenticationFilter;
-import com.openframe.core.security.config.BaseSecurityConfig;
+import com.openframe.security.config.BaseSecurityConfig;
+import com.openframe.security.jwt.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
+
 
 @Configuration
 @EnableWebSecurity

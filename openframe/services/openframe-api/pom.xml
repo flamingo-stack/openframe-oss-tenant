@@ -28,6 +28,10 @@
             <groupId>com.openframe</groupId>
             <artifactId>openframe-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-security</artifactId>
+        </dependency>
 
         <!-- Spring Cloud -->
         <dependency>
