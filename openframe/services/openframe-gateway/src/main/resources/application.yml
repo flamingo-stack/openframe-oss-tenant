@@ -1,6 +1,8 @@
 spring:
   application:
     name: openframe-gateway
+  main:
+    web-application-type: reactive
 
 ---
 spring:

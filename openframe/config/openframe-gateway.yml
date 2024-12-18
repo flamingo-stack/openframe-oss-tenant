@@ -4,10 +4,10 @@ server:
 # Gateway service common configuration
 spring:
   data:
-    mongodb:
-      enabled: true
     cassandra:
       enabled: false
+    mongodb:
+      enabled: true
   cloud:
     config:
       fail-fast: false

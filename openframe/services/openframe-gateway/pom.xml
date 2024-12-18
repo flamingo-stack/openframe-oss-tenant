@@ -19,16 +19,6 @@
     </properties>
 
     <dependencies>
-        <!-- OpenFrame Dependencies -->
-        <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-data</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.openframe</groupId>
             <artifactId>openframe-security</artifactId>
@@ -39,36 +29,24 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
 
-        <!-- Spring Security -->
+        <!-- gRPC dependencies -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
         </dependency>
 
-        <!-- Monitoring -->
-        <dependency>
+        <!-- Spring WebFlux -->
+        <!-- <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-        </dependency>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency> -->
 
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 
     <build>

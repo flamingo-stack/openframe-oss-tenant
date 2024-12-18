@@ -42,6 +42,7 @@
         <tinkergraph.gremlin.version>3.4.0</tinkergraph.gremlin.version>
         <jjwt.version>0.11.5</jjwt.version>
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
+        <grpc.version>1.58.0</grpc.version>
     </properties>
 
     <modules>
@@ -245,6 +246,12 @@
                         <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
 
             <!-- Monitoring -->
