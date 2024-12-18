@@ -6,7 +6,7 @@ spring:
   config:
     activate:
       on-profile: local
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
 ---
 spring:
@@ -20,3 +20,5 @@ logging:
     com.openframe: DEBUG
     org.springframework.cloud.gateway: DEBUG
     org.springframework.security: DEBUG
+  file:
+    path: ${LOG_PATH:logs}

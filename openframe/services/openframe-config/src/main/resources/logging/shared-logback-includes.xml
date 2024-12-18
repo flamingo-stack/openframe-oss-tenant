@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <included>
+    <!-- Console Appender -->
+    <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [${SPRING_APP_NAME}] [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!-- Rolling File Appender (Text Format) -->
     <appender name="RollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${SPRING_APP_NAME}.log</file>
@@ -49,8 +56,9 @@
         </format>
     </appender>
 
-    <!-- Add additional appenders to root -->
-    <root>
+    <!-- Add all appenders to root -->
+    <root level="info">
+        <appender-ref ref="ConsoleAppender" />
         <appender-ref ref="RollingFileAppender" />
         <appender-ref ref="JsonRollingFileAppender" />
         <appender-ref ref="LokiRemoteAppender" />

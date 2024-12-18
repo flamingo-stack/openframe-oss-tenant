@@ -27,28 +27,29 @@ public abstract class BaseReactiveSecurityConfig {
         this.serverProperties = serverProperties;
     }
 
+
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        String managementContextPath = managementProperties.getBasePath() != null ? 
-            managementProperties.getBasePath() : "/actuator";
+        String managementContextPath = managementProperties.getBasePath() != null
+                ? managementProperties.getBasePath() : "/actuator";
 
         return http
-            .csrf(ServerHttpSecurity.CsrfSpec::disable)
-            .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-            .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-            .authorizeExchange(exchanges -> exchanges
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .authorizeExchange(exchanges -> exchanges
                 .pathMatchers(
-                    "/health/**", 
-                    "/metrics/**",
-                    managementContextPath + "/**"
+                        "/health/**",
+                        "/metrics/**",
+                        managementContextPath + "/**"
                 ).permitAll()
                 .anyExchange().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(token -> 
-                    Mono.just(new JwtAuthenticationToken(token))
-                ))
-            )
-            .build();
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(token
+                -> Mono.just(new JwtAuthenticationToken(token))
+        ))
+                )
+                .build();
     }
-} 
+}

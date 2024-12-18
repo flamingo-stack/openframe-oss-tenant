@@ -72,8 +72,14 @@ security:
     enabled: false
 
 logging:
+  config: classpath:logging/shared-logback-spring.xml
+  file:
+    path: ${LOG_PATH:logs}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [${spring.application.name}] [%thread] %logger{36} - %msg%n"
   level:
     root: INFO
+    com.openframe: DEBUG
     org.springframework.data.cassandra: DEBUG
     com.datastax.oss.driver: DEBUG
     com.openframe.data.config: DEBUG
