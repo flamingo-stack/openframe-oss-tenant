@@ -15,9 +15,3 @@ spring:
     activate:
       on-profile: docker
     import: "optional:configserver:http://openframe-config-server:8888"
-
-logging:
-  level:
-    com.openframe: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
