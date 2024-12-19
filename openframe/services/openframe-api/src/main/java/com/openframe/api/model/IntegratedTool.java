@@ -17,4 +17,4 @@ public class IntegratedTool {
     private String category;
     private String platformCategory;
     private ToolCredentials credentials;
-} 
+}
