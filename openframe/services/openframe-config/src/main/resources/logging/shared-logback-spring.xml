@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration debug="true" scan="true">
+<configuration debug="true" scan="false">
     <springProperty scope="context" name="SPRING_APP_NAME" source="spring.application.name"/>
     <springProperty scope="context" name="LOG_PATH" source="logging.file.path"/>
     <springProperty scope="context" name="LOKI_ADDRESS" source="loki.url"/>

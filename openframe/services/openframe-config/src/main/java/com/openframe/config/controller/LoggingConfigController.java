@@ -29,7 +29,10 @@ public class LoggingConfigController {
             serverUrl += ":" + request.getServerPort();
         }
 
+        // Replace both the direct reference and the resource reference patterns
         content = StringUtils.replace(content, "\"logging/", "\"" + serverUrl + "/logging/");
+        content = StringUtils.replace(content, "resource=\"logging/", "resource=\"" + serverUrl + "/logging/");
+        
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(content);
