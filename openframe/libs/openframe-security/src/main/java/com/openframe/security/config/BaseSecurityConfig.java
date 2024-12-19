@@ -1,8 +1,7 @@
 package com.openframe.security.config;
 
-import java.util.Arrays;
-
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -18,10 +17,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 
 import com.openframe.security.jwt.JwtAuthenticationFilter;
 
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
@@ -58,52 +57,45 @@ public abstract class BaseSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return configureBaseHttpSecurity(http)
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .build();
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 
     protected HttpSecurity configureBaseHttpSecurity(HttpSecurity http) throws Exception {
-        String managementContextPath = managementProperties.getBasePath() != null ? 
-            managementProperties.getBasePath() : "/actuator";
+        String managementContextPath = managementProperties.getBasePath() != null
+                ? managementProperties.getBasePath() : "/actuator";
 
         return http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(request -> {
-                CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOriginPatterns(Arrays.asList("*localhost*"));
-                config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                config.setAllowedHeaders(Arrays.asList("*"));
-                config.setAllowCredentials(true);
-                return config;
-            }))
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(
-                    "/health/**", 
-                    "/metrics/**", 
-                    "/oauth/token", 
-                    "/oauth/register",
-                    managementContextPath + "/**"
-                ).permitAll()
-                .requestMatchers("/.well-known/userinfo").authenticated()
-                .requestMatchers("/.well-known/openid-configuration").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-            );
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(
+                        auth -> auth
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                .requestMatchers(
+                                        "/health/**",
+                                        "/metrics/**",
+                                        "/oauth/token",
+                                        "/oauth/register",
+                                        managementContextPath + "/**"
+                                )
+                                .permitAll()
+                                .requestMatchers("/.well-known/userinfo").authenticated()
+                                .requestMatchers("/.well-known/openid-configuration").permitAll()
+                                .anyRequest()
+                                .authenticated())
+                .oauth2ResourceServer(
+                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
     }
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        String managementContextPath = managementProperties.getBasePath() != null ? 
-            managementProperties.getBasePath() : "/actuator";
+        String managementContextPath = managementProperties.getBasePath() != null
+                ? managementProperties.getBasePath() : "/actuator";
 
         return (web) -> web.ignoring()
-            .requestMatchers(managementContextPath + "/**");
+                .requestMatchers(managementContextPath + "/**");
     }
-} 
+
+}

@@ -62,6 +62,21 @@ services:
     networks:
       - openframe-network
 
+  openframe-ui:
+    build:
+      context: ./services/openframe-ui
+      dockerfile: Dockerfile
+    environment:
+      - VITE_CLIENT_ID=openframe_web_dashboard
+      - VITE_CLIENT_SECRET=prod_secret
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - management
+    networks:
+      - openframe-network
+
   stream:
     build:
       context: ./services/openframe-stream
@@ -82,21 +97,25 @@ services:
     networks:
       - openframe-network
 
-  openframe-ui:
+  gateway:
     build:
-      context: ./services/openframe-ui
+      context: ./services/openframe-gateway
       dockerfile: Dockerfile
+    container_name: openframe-gateway
     environment:
-      - VITE_CLIENT_ID=openframe_web_dashboard
-      - VITE_CLIENT_SECRET=prod_secret
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
     ports:
-      - "80:80"
+      - "8100:8100"
+      - "8101:8101"
     depends_on:
-      - api
-      - management
+      config-server:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     networks:
       - openframe-network
-      
+
 networks:
   openframe-network:
     name: openframe-network

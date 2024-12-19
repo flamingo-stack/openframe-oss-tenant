@@ -47,8 +47,9 @@ public class CommonSecurityConfig {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
+    
+    // @ConditionalOnWebApplication(type = Type.SERVLET)
     @Bean
-    @ConditionalOnWebApplication(type = Type.SERVLET)
     public JwtDecoder jwtDecoder(JwtConfig jwtUtils) throws Exception {
         return NimbusJwtDecoder.withPublicKey(jwtUtils.loadPublicKey()).build();
     }
