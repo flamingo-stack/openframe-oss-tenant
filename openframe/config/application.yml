@@ -108,3 +108,7 @@ logging:
     
     # Logback
     ch.qos.logback: TRACE
+    # Security & CORS debugging
+    org.springframework.security: TRACE
+    org.springframework.security.web: TRACE
+    com.openframe.security: TRACE
