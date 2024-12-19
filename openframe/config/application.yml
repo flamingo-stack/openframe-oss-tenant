@@ -76,28 +76,35 @@ logging:
     path: logs
   level:
     root: INFO
+    # OpenFrame specific
     com.openframe: TRACE
+    com.openframe.data.config: TRACE
+    
+    # Cassandra related
     org.springframework.data.cassandra: TRACE
     com.datastax.oss.driver: TRACE
-    com.openframe.data.config: TRACE
+    
+    # Spring Boot Actuator
     org.springframework.boot.actuate: DEBUG
     org.springframework.boot.actuate.metrics: TRACE
     org.springframework.boot.actuate.endpoint: TRACE
     org.springframework.boot.actuate.endpoint.web: TRACE
+    org.springframework.boot.actuate.autoconfigure.metrics: TRACE
     org.springframework.boot.actuate.metrics.export.prometheus: TRACE
+    
+    # Micrometer & Prometheus
     io.micrometer: TRACE
     io.micrometer.prometheus: TRACE
     io.micrometer.core.instrument.logging: TRACE
+    
+    # Spring Web
+    org.springframework.web: TRACE
     org.springframework.web.servlet.mvc.method.annotation: TRACE
     org.springframework.web.servlet.handler: TRACE  # For detailed request mapping
-    org.springframework.web: TRACE
     org.springframework.boot.web: TRACE
-    org.springframework.boot.actuate: TRACE
-    org.springframework.boot.actuate.metrics: TRACE
-    org.springframework.boot.actuate.endpoint: TRACE
-    io.micrometer: TRACE
-    org.springframework.boot.actuate.autoconfigure.metrics: TRACE
-    org.springframework.boot.actuate.metrics.export.prometheus: TRACE
+    
+    # Spring Cloud
     org.springframework.cloud.config: TRACE
-    org.springframework.web: TRACE
+    
+    # Logback
     ch.qos.logback: TRACE
