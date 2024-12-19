@@ -68,5 +68,6 @@ logging:
     org.springframework.cloud.config: TRACE
     org.springframework.web: DEBUG
     ch.qos.logback: DEBUG
+    com.openframe.config.controller: DEBUG
   file:
     path: ${LOG_PATH:logs}

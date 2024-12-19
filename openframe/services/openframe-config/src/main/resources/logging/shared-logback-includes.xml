@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<included scan="false">
+<included debug="true" scan="false">
     <!-- Console Appender -->
     <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
