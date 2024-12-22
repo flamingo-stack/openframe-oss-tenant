@@ -1,16 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
-  <defs>
-    <style type="text/css">
-      @font-face {
-        font-family: 'UbuntuEmbedded';
-        font-style: normal;
-        font-weight: 700;
-        src: url('data:font/woff2;base64,BASE64_ENCODED_UBUNTU_BOLD_WOFF2...') format('woff2');
-      }
-    </style>
-  </defs>
- 
-  <text x="10" y="30" font-family="UbuntuEmbedded, sans-serif" font-size="24" font-weight="bold">
-    Open<tspan fill="#00E5BE">Frame</tspan>
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 50">
+  <!-- "Open" in black paths -->
+  <path fill="#000000" d="M15,40 L15,15 C15,12 18,10 20,10 L40,10 C42,10 45,12 45,15 L45,40 C45,43 42,45 40,45 L20,45 C18,45 15,43 15,40 Z M25,25 L35,25" />
+  <!-- Additional path data for “Open” letters... -->
+
+  <!-- "Frame" in teal paths (#00E5BE) -->
+  <path fill="#00E5BE" d="M60,40 L60,15 C60,12 63,10 65,10 L85,10 C87,10 90,12 90,15 L90,40 C90,43 87,45 85,45 L65,45 C63,45 60,43 60,40 Z M70,25 L80,25" />
+  <!-- Additional path data for “Frame” letters... -->
 </svg>
