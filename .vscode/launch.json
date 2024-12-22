@@ -1,0 +1,68 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "OpenFrame UI",
+            "url": "http://localhost:5174",
+            "webRoot": "${workspaceFolder}/openframe/services/openframe-ui",
+            "preLaunchTask": "start-vue"
+        },
+        {
+            "type": "java",
+            "name": "ManagementApplication",
+            "request": "launch",
+            "mainClass": "com.openframe.management.ManagementApplication",
+            "projectName": "openframe-management",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "local"
+            },
+            "vmArgs": "-Dspring.profiles.active=local"
+        },
+        {
+            "type": "java",
+            "name": "API Application",
+            "request": "launch",
+            "mainClass": "com.openframe.api.ApiApplication",
+            "projectName": "openframe-api",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "local"
+            },
+            "vmArgs": "-Dspring.profiles.active=local"
+        },
+        {
+            "type": "java",
+            "name": "Config Server Application",
+            "request": "launch",
+            "mainClass": "com.openframe.config.ConfigServerApplication",
+            "projectName": "openframe-config",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "local"
+            },
+            "vmArgs": "-Dspring.profiles.active=local"
+        },
+        {
+            "type": "java",
+            "name": "Stream Application",
+            "request": "launch",
+            "mainClass": "com.openframe.stream.StreamApplication",
+            "projectName": "openframe-stream",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "local"
+            },
+            "vmArgs": "-Dspring.profiles.active=local"
+        },
+        {
+            "type": "java",
+            "name": "Gateway Application",
+            "request": "launch",
+            "mainClass": "com.openframe.gateway.GatewayApplication",
+            "projectName": "openframe-gateway",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "local"
+            },
+            "vmArgs": "-Dspring.profiles.active=local"
+        }
+    ]
+}
