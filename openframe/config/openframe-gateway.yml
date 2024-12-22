@@ -27,10 +27,6 @@ spring:
 management:
   server:
     port: 8101
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
 
 # Gateway service specific logging
 logging:
