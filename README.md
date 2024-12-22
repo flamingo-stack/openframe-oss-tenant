@@ -1,4 +1,4 @@
-# ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo.svg "OpenFrame Logo")
+# ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
 
 
 [![OpenFrame CI](https://github.com/Flamingo-CX/openframe/actions/workflows/ci.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/ci.yml)
@@ -22,10 +22,10 @@
 OpenFrame is a distributed platform built on microservices architecture, designed for high scalability and resilience.
 
 The purpose of OpenFrame is to create a single data, API, automation, and AI layer on top of a curated list of existing open-source projects, resulting in a unified IT and security platform. This platform offers:
-• A unified dashboard for managing services and workflows.
-• Automated deployments and monitoring.
-• Anomaly detection and AI “copilots” (assistants) for real-time predictive insights.
-• Integrated security controls ensuring consistent and secure access across services.
+- A unified dashboard for managing services and workflows.
+- Automated deployments and monitoring.
+- Anomaly detection and AI “copilots” (assistants) for real-time predictive insights.
+- Integrated security controls ensuring consistent and secure access across services.
 
 By combining proven open-source components like NiFi, Kafka, Pinot, etc., OpenFrame provides an end-to-end solution featuring advanced data flow management, AI-driven analytics, and a tightly integrated security model—all exposed through a cohesive API. This reduces complexity, increases developer productivity, and allows organizations to focus on building new capabilities rather than reinventing core infrastructure.
 
