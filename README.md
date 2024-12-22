@@ -218,13 +218,18 @@ flowchart TB
 ## 3. Core Components
 
 ### 3.1 API Gateway Configuration
-(code block removed)
+Configures Spring Cloud Gateway to route traffic from /graphql and /health routes to the appropriate microservices,
+applying rate-limiting (e.g., Redis) and circuit breaker fallback endpoints. Ensures requests are throttled when needed
+and gracefully rerouted if a service is unavailable.
 
 ### 3.2 Stream Processing Configuration
-(code block removed)
+Defines an Apache NiFi flow that ingests data from Kafka topics like “raw-events,” applies transformations or anomaly
+detection (e.g., IsolationForest), and routes processed data to downstream topics or services for further analysis.
 
 ### 3.3 Kafka Configuration
-(code block removed)
+Specifies bootstrap server addresses, JSON serializers, an idempotent producer mode for guaranteed delivery, and
+declares multiple topics (raw-events, processed-events, anomalies) with partition and replication settings to handle
+heavy loads and ensure fault tolerance.
 
 ### 3.4 Additional Modules
 - openframe-management: A dedicated service for orchestrating and configuring integrated tools (like NiFi, Grafana, etc.) and performing administrative tasks.
@@ -233,10 +238,13 @@ flowchart TB
 - openframe-gateway.yml: YAML configuration for the API gateway (Spring Cloud Gateway) that handles traffic routing, global CORS rules, and custom filters.
 
 ### 3.5 Istio Service Mesh
-(code block removed)
+Uses Istio VirtualService resources and gateways to match URLs like /graphql, define retries (e.g., three attempts),
+and set timeouts (e.g., 10 seconds). Provides traffic management, service discovery, and resiliency within the mesh.
 
 ### 3.6 Circuit Breaker Configuration
-(code block removed)
+Employs libraries such as Resilience4j or Spring Cloud Circuit Breaker to define thresholds, fallback strategies, and
+timing rules. Opens circuits when a service repeatedly fails or is slow, preventing cascading issues and improving
+overall system reliability.
 
 ## 4. Shared Core Library
 OpenFrame includes a “core” library, located under libs/openframe-core, which hosts shared domain models, utilities, and configurations. 
