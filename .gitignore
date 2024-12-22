@@ -10,7 +10,9 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 .project
 .classpath
-.DS_Store
+**.DS_Store**
+**/.DS_Store**
+**/.DS_Store/**
 openframe/.DS_Store
 **/loki-wal
 **/loki-cache
