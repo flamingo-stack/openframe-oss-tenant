@@ -16,6 +16,7 @@
 8. Analytics with Apache Pinot
 9. Security Implementation
 10. Deployment and Observability
+11. Future Enhancements
 
 ## 1. System Overview
 
@@ -217,92 +218,13 @@ flowchart TB
 ## 3. Core Components
 
 ### 3.1 API Gateway Configuration
-```yaml
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: graphql
-          uri: forward:/graphql
-          predicates:
-            - Path=/graphql
-          filters:
-            - name: Authentication
-            - name: RateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 100
-                redis-rate-limiter.burstCapacity: 200
-        
-        - id: health
-          uri: forward:/health
-          predicates:
-            - Path=/health/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: healthCircuitBreaker
-                fallbackUri: forward:/health-fallback
-```
+(code block removed)
 
 ### 3.2 Stream Processing Configuration
-```yaml
-# nifi-config.yaml
-nifi:
-  web:
-    http:
-      port: 8080
-      host: nifi.openframe.local
-      
-  processors:
-    input:
-      - name: ConsumeKafka
-        type: ConsumeKafka_2_6
-        properties:
-          topic: raw-events
-          group.id: nifi-processors
-    
-    processing:
-      - name: AnomalyDetection
-        type: ExecuteScript
-        properties:
-          Script Engine: python
-          Script Body: |
-            import numpy as np
-            from sklearn.ensemble import IsolationForest
-            
-            def detect_anomalies(data):
-                model = IsolationForest(contamination=0.1)
-                return model.fit_predict(data)
-      
-    output:
-      - name: RouteOnAttribute
-        properties:
-          Routing Strategy: Route to Property name
-          Routing Expression: ${anomaly.score:equals('1')}
-```
+(code block removed)
 
 ### 3.3 Kafka Configuration
-```yaml
-kafka:
-  bootstrap-servers: ${KAFKA_SERVERS}
-  producer:
-    key-serializer: org.apache.kafka.common.serialization.StringSerializer
-    value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    properties:
-      enable.idempotence: true
-      max.in.flight.requests.per.connection: 5
-  
-  topics:
-    raw-events:
-      partitions: 12
-      replication-factor: 3
-    processed-events:
-      partitions: 12
-      replication-factor: 3
-    anomalies:
-      partitions: 6
-      replication-factor: 3
-```
+(code block removed)
 
 ### 3.4 Additional Modules
 - openframe-management: A dedicated service for orchestrating and configuring integrated tools (like NiFi, Grafana, etc.) and performing administrative tasks.
@@ -311,57 +233,10 @@ kafka:
 - openframe-gateway.yml: YAML configuration for the API gateway (Spring Cloud Gateway) that handles traffic routing, global CORS rules, and custom filters.
 
 ### 3.5 Istio Service Mesh
-```yaml
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: openframe-api
-spec:
-  hosts:
-    - api.openframe.local
-  gateways:
-    - openframe-gateway
-  http:
-    - match:
-        - uri:
-            prefix: /graphql
-      route:
-        - destination:
-            host: graphql-service
-            port:
-              number: 8080
-      retries:
-        attempts: 3
-        perTryTimeout: 2s
-      timeout: 10s
-```
+(code block removed)
 
 ### 3.6 Circuit Breaker Configuration
-```java
-@Configuration
-public class ResilienceConfig {
-    @Bean
-    public CircuitBreakerRegistry circuitBreakerRegistry() {
-        CircuitBreakerConfig config = CircuitBreakerConfig.custom()
-            .failureRateThreshold(50)
-            .waitDurationInOpenState(Duration.ofSeconds(60))
-            .permittedNumberOfCallsInHalfOpenState(10)
-            .slidingWindowSize(100)
-            .build();
-            
-        return CircuitBreakerRegistry.of(config);
-    }
-
-    @Bean
-    public TimeLimiterRegistry timeLimiterRegistry() {
-        TimeLimiterConfig config = TimeLimiterConfig.custom()
-            .timeoutDuration(Duration.ofSeconds(2))
-            .build();
-            
-        return TimeLimiterRegistry.of(config);
-    }
-}
-```
+(code block removed)
 
 ## 4. Shared Core Library
 OpenFrame includes a “core” library, located under libs/openframe-core, which hosts shared domain models, utilities, and configurations. 
@@ -1653,6 +1528,7 @@ management:
       application: openframe
       environment: ${SPRING_PROFILES_ACTIVE:local}
 ```
+
 ## 11. Future Enhancements
 
 ### 11.1 Planned Features
