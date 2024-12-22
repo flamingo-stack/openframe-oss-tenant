@@ -8,7 +8,7 @@ The OpenFrame Core library contains shared code used across multiple microservic
 • Possibly some base Spring configuration classes used by each microservice.
 
 ## Key Files
-- Dockerfile: Packaging the library if needed (though libraries commonly aren’t containerized).  
+- Dockerfile: Packaging the library if needed (though libraries typically aren’t containerized).  
 - pom.xml: Coordinates shared dependencies.  
 
 ## Usage
@@ -17,4 +17,9 @@ The OpenFrame Core library contains shared code used across multiple microservic
 
 ## Development
 • Make changes here carefully to avoid breaking dependent services.  
-• Run mvn clean install to publish updates to the local Maven repo. 
+• Run mvn clean install to publish updates to the local Maven repo.  
+• Review version numbers to ensure services can pick up updates.
+
+## Testing
+• Use JUnit or similar frameworks for any shared logic.  
+• If integration tests exist, they may rely on ephemeral test containers or local test DBs.

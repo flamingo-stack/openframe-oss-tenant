@@ -12,7 +12,7 @@ OpenFrame Stream handles data ingestion, processing, and real-time transformatio
 - pom.xml (if Java-based NiFi components or custom processors are included).  
 
 ## Running
-1. Make sure Kafka and Zookeeper are up (docker-compose.openframe-infrastructure.yml).  
+1. Ensure Kafka and Zookeeper are up (docker-compose.openframe-infrastructure.yml).  
 2. Spin up NiFi or the stream processors:  
    » docker-compose up -d openframe-stream  
 
@@ -22,8 +22,9 @@ OpenFrame Stream handles data ingestion, processing, and real-time transformatio
 
 ## Troubleshooting
 • Check NiFi logs or Kafka logs for errors in data pipelines.  
-• Validate that relevant topics exist in Kafka.
+• Validate that relevant topics exist in Kafka.  
+• Use NiFi's UI to visually inspect flow graphs and data provenance.
 
 ## Metrics & Monitoring
 • NiFi can expose metrics or be integrated into Prometheus.  
-• NiFi “backpressure” conditions might trigger alerts defined in the openframe/monitoring setup. 
+• NiFi “backpressure” conditions might trigger alerts defined in the openframe/monitoring setup.

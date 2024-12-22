@@ -24,6 +24,11 @@ OpenFrame UI is the front-end dashboard for managing integrated tools, visualizi
 • .env.* files: Store environment-specific settings (API URLs, client secrets, etc.).  
 • Tools can be dynamically loaded if your backend (GraphQL or REST) provides metadata.
 
+## Testing
+• npm run test – Runs unit tests (e.g., with Jest or Vitest).  
+• npm run e2e – (Optional) End-to-end tests with Cypress or similar.
+
 ## Deployment
 • Use Dockerfile or docker-compose to containerize.  
-• Typically hosted behind openframe-gateway or served on its own domain.
+• Typically hosted behind openframe-gateway or served on its own domain.  
+• For production, ensure environment variables (like VITE_API_URL) point to correct backend services.

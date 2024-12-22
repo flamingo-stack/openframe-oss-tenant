@@ -28,6 +28,11 @@ OpenFrame API is the core backend service responsible for:
 • Health checks often at /actuator/health.  
 • Swagger or compiled GraphQL schema may be available if configured.
 
+## Testing
+• mvn test – Runs all JUnit tests and integration tests.  
+• For load or performance tests, consider JMeter or Gatling with the /graphql endpoint.
+
 ## Additional Notes
 • Observability: Exposes Prometheus metrics at /actuator/prometheus (if enabled).  
-• Logging: Configurable via application.yml or environment variables. 
+• Logging: Configurable via application.yml or environment variables.  
+• Custom filters or interceptors can be added for cross-cutting concerns, e.g., request logging or authentication.

@@ -12,4 +12,5 @@ Contains custom shell scripts that help automate builds, environment setup, or m
 
 ## Tips
 • Update the script to register new services or handle custom logic (e.g., migrations, environment checks).  
-• Use environment variables or arguments to customize how scripts behave (production vs. staging). 
+• Use environment variables or arguments to customize how scripts behave (production vs. staging).  
+• Consider logging script outputs to diagnose any build or startup issues.

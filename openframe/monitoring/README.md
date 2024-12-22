@@ -16,4 +16,9 @@ This directory centralizes metrics, dashboards, and alerting configurations. It 
 
 ## Extensibility
 • Add new rules in Prometheus or new Grafana dashboards as microservices expand.  
-• Alert rules are typically stored in separate YAML or integrated into the main prometheus.yml. 
+• Alert rules are typically stored in separate YAML or integrated into the main prometheus.yml.
+
+## Troubleshooting
+• Check the Prometheus console to confirm your targets are “UP.”  
+• Monitor the Grafana logs if dashboards fail to load or show data.  
+• Use alertmanager logs or UI to debug missing or misfired alerts.

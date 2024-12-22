@@ -14,4 +14,5 @@ Central location for various YAML configuration files controlling the behavior o
 
 ## Notes
 • Keep sensitive credentials (passwords, keys) in external environment variables or a secrets manager for production use.  
-• The different “profiles” (e.g., local, docker) make it easier to run in distinct environments. 
+• The different “profiles” (e.g., local, docker) make it easier to run in distinct environments.  
+• Verify the correct config profile is activated (e.g., spring.profiles.active=docker).
