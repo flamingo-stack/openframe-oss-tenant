@@ -1,6 +1,6 @@
 # ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo.svg "OpenFrame Logo")
 
-[![OpenFrame CI](https://github.com/<YOUR_ORG_OR_USERNAME>/<YOUR_REPO>/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/<YOUR_ORG_OR_USERNAME>/<YOUR_REPO>/actions/workflows/ci.yml)
+[![OpenFrame CI](https://github.com/<YOUR_ORG_OR_USERNAME>/<YOUR_REPO>/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Flamingo-CX/openframe/actions/workflows/ci.yml)
 
 # OpenFrame Complete Architecture and Implementation Guide
 
