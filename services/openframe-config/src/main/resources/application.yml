@@ -23,7 +23,7 @@ spring:
           password: ${GITHUB_TOKEN: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}
           clone-on-start: true
           searchPaths:
-            - openframe/config
+            - config
           default-label: ${CONFIG_GIT_BRANCH:main}
 
 # Management server configuration

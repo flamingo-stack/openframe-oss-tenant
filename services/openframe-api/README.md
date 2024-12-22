@@ -12,7 +12,7 @@ OpenFrame API is the core backend service responsible for:
 
 ## Running Locally
 1. Ensure MongoDB, Cassandra, and Kafka are running if your API depends on them.  
-2. Edit openframe/config/openframe-api-local.yml (if needed) with local service endpoints.  
+2. Edit config/openframe-api-local.yml (if needed) with local service endpoints.  
 3. Use Maven to build and start:  
    » mvn clean install  
    » mvn spring-boot:run  

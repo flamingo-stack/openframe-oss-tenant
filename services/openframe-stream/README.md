@@ -27,4 +27,4 @@ OpenFrame Stream handles data ingestion, processing, and real-time transformatio
 
 ## Metrics & Monitoring
 • NiFi can expose metrics or be integrated into Prometheus.  
-• NiFi “backpressure” conditions might trigger alerts defined in the openframe/monitoring setup.
+• NiFi “backpressure” conditions might trigger alerts defined in the monitoring setup.

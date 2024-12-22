@@ -17,7 +17,7 @@ OpenFrame Gateway is an authentication proxy and unified entry point for multipl
   » mvn spring-boot:run  
 
 ## Configuration
-• May read from openframe/config/openframe-gateway-*.yml files to set up route definitions, OAuth providers, or integrated tool endpoints.  
+• May read from config/openframe-gateway-*.yml files to set up route definitions, OAuth providers, or integrated tool endpoints.  
 • Typically sits behind a domain like gateway.openframe.local.
 
 ## Observability
