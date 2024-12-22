@@ -250,4 +250,4 @@ OpenFrame builds upon many excellent open-source projects. We're grateful to all
 
 ---
 
-Built with ❤️ by the OpenFrame team in <a href="https://www.google.com/maps?q=Miami+Beach,+FL" target="_blank">Miami Beach, FL</a>
+Built with ❤️ by the OpenFrame team in [Miami Beach, FL]([https://community.openframe.org](https://www.google.com/maps?q=Miami+Beach,+FL))
