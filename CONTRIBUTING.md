@@ -91,7 +91,7 @@ By contributing to OpenFrame, you confirm that any code, documentation, or other
 --------------------------------------------------------------------------------
 ## 8. Code of Conduct
 
-This project follows a standard Code of Conduct; please respect each other. Be kind, patient, and inclusive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) (if present) for more details.
+This project follows a standard Code of Conduct; please respect each other. Be kind, patient, and inclusive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for more details.
 
 --------------------------------------------------------------------------------
 Thank you again for your contribution! Your input and ideas help improve OpenFrame for everyone. If you have any questions, feel free to reach out via GitHub issues or our community channels.
