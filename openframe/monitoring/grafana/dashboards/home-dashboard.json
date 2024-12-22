@@ -339,6 +339,74 @@
         "x": 12,
         "y": 1
       },
+      "id": 31,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "title": "OpenFrame Gateway",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=\"openframe-gateway\"}",
+          "legendFormat": "Gateway"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 3,
+        "x": 15,
+        "y": 1
+      },
       "id": 14,
       "options": {
         "colorMode": "background",
@@ -404,7 +472,7 @@
       "gridPos": {
         "h": 8,
         "w": 3,
-        "x": 15,
+        "x": 18,
         "y": 1
       },
       "id": 16,
@@ -472,7 +540,7 @@
       "gridPos": {
         "h": 8,
         "w": 3,
-        "x": 18,
+        "x": 21,
         "y": 1
       },
       "id": 17,
@@ -540,7 +608,7 @@
       "gridPos": {
         "h": 8,
         "w": 3,
-        "x": 21,
+        "x": 24,
         "y": 1
       },
       "id": 18,
