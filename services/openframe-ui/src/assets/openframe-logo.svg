@@ -1,5 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
-  <text x="10" y="30" font-family="Ubuntu, sans-serif" font-size="24" font-weight="bold">
+  <defs>
+    <style type="text/css">
+      @font-face {
+        font-family: 'UbuntuEmbedded';
+        font-style: normal;
+        font-weight: 700;
+        src: url('data:font/woff2;base64,BASE64_ENCODED_UBUNTU_BOLD_WOFF2...') format('woff2');
+      }
+    </style>
+  </defs>
+ 
+  <text x="10" y="30" font-family="UbuntuEmbedded, sans-serif" font-size="24" font-weight="bold">
     Open<tspan fill="#00E5BE">Frame</tspan>
   </text>
 </svg>
