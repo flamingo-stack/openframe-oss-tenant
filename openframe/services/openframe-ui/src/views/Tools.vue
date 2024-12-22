@@ -267,7 +267,8 @@ const logoMap: Record<string, string> = {
   'openframe-api': openframeLogo,
   'openframe-config': openframeLogo,
   'openframe-stream': openframeLogo,
-  'openframe-ui': openframeLogo
+  'openframe-ui': openframeLogo,
+  'openframe-gateway': openframeLogo
 };
 
 // Compute unique categories from tools data

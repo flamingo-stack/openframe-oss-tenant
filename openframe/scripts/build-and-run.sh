@@ -511,6 +511,20 @@ register_tool \
     "User Interface" \
     "OpenFrame Core"
 
+# Register OpenFrame Gateway Service
+register_tool \
+    "openframe-gateway" \
+    "OPENFRAME" \
+    "OpenFrame Gateway" \
+    "OpenFrame Gateway Service" \
+    "http://openframe-gateway" \
+    8100 \
+    "" \
+    "" \
+    "" \
+    "Gateway" \
+    "OpenFrame Core"
+
 echo "Integrated tools initialized successfully!"
 
 echo "Testing network connectivity..."
