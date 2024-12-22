@@ -10,7 +10,7 @@
     </style>
   </defs>
  
-  <text x="10" y="30" font-family="UbuntuEmbedded, sans-serif" font-size="24" font-weight="bold">
+  <text x="10" y="30" font-family="UbuntuEmbedded" font-size="24" font-weight="bold">
     Open<tspan fill="#00E5BE">Frame</tspan>
   </text>
 </svg>
