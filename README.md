@@ -63,24 +63,9 @@ Key components:
 - Git 2.42+
 
 ### 1.3 System Requirements
-```yaml
-requirements:
-  performance:
-    latency: 
-      graphql_queries: < 200ms
-      analytics_queries: < 500ms
-      stream_processing: < 100ms
-    throughput: 100,000 events/second
-    availability: 99.99%
-  scaling:
-    users: 10,000+ concurrent
-    data_volume: 1TB+/day
-    retention: 1-7 years
-  compliance:
-    data_encryption: AES-256
-    authentication: OAuth 2.0 + JWT
-    audit_logging: Enabled
-```
+Describes basic performance targets (e.g., max latency < 500ms, 100,000 events/sec throughput), availability goals, 
+and compliance requirements (AES-256 encryption, OAuth 2.0 / JWT authentication, audit logging).
+
 ## 2. Data Flows and System Architecture
 
 ### 2.1 High-Level Architecture
@@ -127,93 +112,17 @@ flowchart LR
 ```
 
 ### 2.3 Data Processing Rules
-```yaml
-nifi_processors:
-  validation:
-    - schema_validation
-    - data_type_check
-    - required_fields
-  
-  enrichment:
-    - geo_location
-    - tenant_context
-    - metadata_injection
-  
-  anomaly_detection:
-    rules:
-      - type: threshold
-        metrics: ["response_time", "error_rate"]
-        window: 5m
-      - type: zscore
-        metrics: ["transaction_volume"]
-        threshold: 3
-    actions:
-      - alert
-      - tag_event
-      - route_to_investigation
-
-  routing:
-    - condition: "event.type == 'metric'"
-      destination: "pinot"
-    - condition: "event.type == 'log'"
-      destination: "cassandra"
-    - condition: "event.priority == 'high'"
-      destination: "alerts"
-```
+Defines NiFi rules and processors that validate and enrich events, apply anomaly detection (e.g., thresholds, Z-score),
+and route them to Kafka or an internal alerts service based on event type or priority.
 
 ### 2.4 Data Storage Strategy
-```yaml
-storage_strategy:
-  mongodb:
-    purpose: "Application data and configurations"
-    data_types:
-      - user_profiles
-      - tenant_configs
-      - system_settings
-    access_patterns:
-      - flexible_queries
-      - CRUD_operations
-      
-  cassandra:
-    purpose: "Event and time-series storage"
-    data_types:
-      - system_events
-      - audit_logs
-      - metrics
-    access_patterns:
-      - time_range_queries
-      - high_volume_writes
-      
-  pinot:
-    purpose: "Analytics and aggregations"
-    data_types:
-      - aggregated_metrics
-      - analytical_views
-    access_patterns:
-      - real_time_analytics
-      - complex_aggregations
-```
+Outlines how MongoDB stores app data and configurations, Cassandra handles time-series events and logs, 
+and Pinot handles real-time analytics and complex aggregations.
 
 ### 2.5 System Integration Points
-```mermaid
-flowchart TB
-    subgraph External_Systems
-        Agents[Agents] --> Gateway
-        Apps[Applications] --> Gateway
-    end
-    
-    subgraph Internal_Systems
-        Gateway --> |GraphQL|Services
-        Services --> |Events|Kafka
-        Services --> |Queries|Databases
-    end
-    
-    subgraph Databases
-        MongoDB
-        Cassandra
-        Pinot
-    end
-```
+This visual depicts how Agents and Applications talk to the Gateway, which routes requests to microservices
+and various data stores. MongoDB, Cassandra, and Pinot are used for application data, event storage, and
+analytics, respectively.
 
 ## 3. Core Components
 
@@ -223,7 +132,7 @@ applying rate-limiting (e.g., Redis) and circuit breaker fallback endpoints. Ens
 and gracefully rerouted if a service is unavailable.
 
 ### 3.2 Stream Processing Configuration
-Defines an Apache NiFi flow that ingests data from Kafka topics like “raw-events,” applies transformations or anomaly
+Defines an Apache NiFi flow that ingests data from Kafka topics like "raw-events," applies transformations or anomaly
 detection (e.g., IsolationForest), and routes processed data to downstream topics or services for further analysis.
 
 ### 3.3 Kafka Configuration
@@ -257,248 +166,30 @@ This library helps maintain consistency across microservices by:
 ## 5. GraphQL Implementation
 
 ### 5.1 Schema Definition
-```graphql
-type Query {
-  # User queries (MongoDB)
-  user(id: ID!): User!
-  users(tenantId: ID!, filter: UserFilter): [User!]!
-
-  # Event queries (Cassandra)
-  events(
-    tenantId: ID!,
-    timeRange: TimeRange!,
-    filter: EventFilter
-  ): [Event!]!
-
-  # Analytics queries (Pinot)
-  analytics(
-    tenantId: ID!,
-    metrics: [String!]!,
-    dimensions: [String!],
-    timeRange: TimeRange!
-  ): AnalyticsResult!
-}
-
-type Mutation {
-  createUser(input: CreateUserInput!): User!
-  updateUser(id: ID!, input: UpdateUserInput!): User!
-  
-  createEvent(input: CreateEventInput!): Event!
-}
-
-type User {
-  id: ID!
-  tenantId: ID!
-  email: String!
-  role: UserRole!
-  settings: JSONObject
-  events: [Event!]!
-  analytics: UserAnalytics!
-}
-
-type Event {
-  id: ID!
-  tenantId: ID!
-  type: String!
-  timestamp: DateTime!
-  data: JSONObject!
-  source: String
-  user: User
-}
-
-type AnalyticsResult {
-  dimensions: [String!]!
-  metrics: [MetricResult!]!
-  timeRange: TimeRange!
-}
-
-input TimeRange {
-  start: DateTime!
-  end: DateTime!
-  granularity: TimeGranularity!
-}
-
-enum TimeGranularity {
-  MINUTE
-  HOUR
-  DAY
-  WEEK
-  MONTH
-}
-```
+Describes the data models, available queries, and mutation endpoints for retrieving and modifying users, events,
+and analytical insights. Incorporates time-based fields (TimeRange) and enumerations for flexible queries.
 
 ### 5.2 GraphQL Configuration
-```java
-@Configuration
-public class GraphQLConfig {
-    @Bean
-    public SchemaProvider schemaProvider() {
-        return new ClasspathSchemaProvider("/schema/**/*.graphql");
-    }
-
-    @Bean
-    public DataLoaderRegistry dataLoaderRegistry(
-            UserDataLoader userDataLoader,
-            EventDataLoader eventDataLoader,
-            AnalyticsDataLoader analyticsDataLoader) {
-        
-        DataLoaderRegistry registry = new DataLoaderRegistry();
-        registry.register("users", userDataLoader.createDataLoader());
-        registry.register("events", eventDataLoader.createDataLoader());
-        registry.register("analytics", analyticsDataLoader.createDataLoader());
-        return registry;
-    }
-}
-```
+Loads a .graphql schema from the classpath and sets up DataLoaderRegistry. Facilitates batching, caching, and
+structured query handling for improved performance across microservices.
 
 ### 5.3 Resolvers Implementation
-```java
-@DgsComponent
-public class QueryResolver {
-    private final UserService userService;
-    private final EventService eventService;
-    private final AnalyticsService analyticsService;
-
-    @DgsQuery
-    public User user(@InputArgument String id) {
-        return userService.findById(id);
-    }
-
-    @DgsQuery
-    public List<Event> events(
-            @InputArgument String tenantId,
-            @InputArgument TimeRange timeRange,
-            @InputArgument(name = "filter", optional = true) EventFilter filter) {
-        
-        return eventService.findEvents(tenantId, timeRange, filter);
-    }
-
-    @DgsQuery
-    public AnalyticsResult analytics(
-            @InputArgument String tenantId,
-            @InputArgument List<String> metrics,
-            @InputArgument List<String> dimensions,
-            @InputArgument TimeRange timeRange) {
-        
-        return analyticsService.getAnalytics(tenantId, metrics, dimensions, timeRange);
-    }
-}
-
-@DgsComponent
-public class DataResolver {
-    @DgsData(parentType = "User", field = "events")
-    public CompletableFuture<List<Event>> userEvents(DgsDataFetchingEnvironment dfe) {
-        User user = dfe.getSource();
-        DataLoader<String, List<Event>> dataLoader = dfe.getDataLoader("events");
-        return dataLoader.load(user.getId());
-    }
-
-    @DgsData(parentType = "User", field = "analytics")
-    public CompletableFuture<UserAnalytics> userAnalytics(DgsDataFetchingEnvironment dfe) {
-        User user = dfe.getSource();
-        DataLoader<String, UserAnalytics> dataLoader = dfe.getDataLoader("analytics");
-        return dataLoader.load(user.getId());
-    }
-}
-```
+Maps each field in the schema (e.g., user, events, analytics) to its underlying service method. Retrieves data
+from MongoDB, Cassandra, or Pinot, ensuring GraphQL queries are served with correct business logic.
 
 ### 5.4 Data Loaders
-```java
-@Component
-public class EventDataLoader {
-    private final EventService eventService;
-
-    public DataLoader<String, List<Event>> createDataLoader() {
-        return DataLoader.newDataLoader(userIds ->
-            CompletableFuture.supplyAsync(() -> {
-                Map<String, List<Event>> eventsByUserId = eventService
-                    .findEventsByUserIds(new HashSet<>(userIds));
-                return userIds.stream()
-                    .map(id -> eventsByUserId.getOrDefault(id, List.of()))
-                    .collect(Collectors.toList());
-            })
-        );
-    }
-}
-
-@Component
-public class AnalyticsDataLoader {
-    private final AnalyticsService analyticsService;
-
-    public DataLoader<String, UserAnalytics> createDataLoader() {
-        return DataLoader.newDataLoader(userIds ->
-            CompletableFuture.supplyAsync(() -> {
-                Map<String, UserAnalytics> analyticsByUserId = analyticsService
-                    .getUserAnalytics(new HashSet<>(userIds));
-                return userIds.stream()
-                    .map(id -> analyticsByUserId.get(id))
-                    .collect(Collectors.toList());
-            })
-        );
-    }
-}
-```
+Implements asynchronous fetching of related objects. Automatically groups and batches queries (e.g., for user
+events), boosting performance and reducing redundant database calls.
 
 ### 5.5 Error Handling
-```java
-@Component
-public class GraphQLExceptionHandler implements DataFetcherExceptionHandler {
-    
-    @Override
-    public DataFetcherExceptionHandlerResult onException(
-            DataFetcherExceptionHandlerParameters handlerParameters) {
-        
-        Throwable exception = handlerParameters.getException();
-        
-        if (exception instanceof BusinessException) {
-            return handleBusinessException((BusinessException) exception);
-        } else if (exception instanceof SecurityException) {
-            return handleSecurityException((SecurityException) exception);
-        }
-        
-        return DataFetcherExceptionHandlerResult.newResult()
-            .error(new GraphQLError(exception))
-            .build();
-    }
-
-    private DataFetcherExceptionHandlerResult handleBusinessException(
-            BusinessException ex) {
-        return DataFetcherExceptionHandlerResult.newResult()
-            .error(GraphQLError.newError()
-                .message(ex.getMessage())
-                .extension("code", ex.getErrorCode())
-                .build())
-            .build();
-    }
-}
-```
+Wraps GraphQL queries/mutations in a custom exception handler, converting domain or security errors into GraphQL errors. 
+Supports custom error codes (e.g., from a BusinessException) and security checks before returning error responses.
 
 ## 6. Service Implementations
 
 ### 6.1 Base Service Configuration
-```java
-@SpringBootApplication
-@EnableDiscoveryClient
-public class OpenFrameApplication {
-    @Bean
-    public LoggingSystem loggingSystem() {
-        return LogbackLoggingSystem.get(ClassLoader.getSystemClassLoader());
-    }
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/graphql/**")
-                    .allowedOrigins("*")
-                    .allowedMethods("GET", "POST")
-                    .allowedHeaders("*");
-            }
-        };
-    }
-}
-```
+Provides the primary Spring Boot entry point, adding logging support, CORS rules, and optional discovery-client features. 
+Ensures each microservice can run with consistent configuration across the OpenFrame ecosystem.
 
 ### 6.2 User Service
 ```java
@@ -1138,488 +829,64 @@ public class TenantSecurityAspect {
 ```
 
 ### 9.3 GraphQL Security
-```java
-@Component
-public class GraphQLSecurityInstrumentation extends SimpleInstrumentation {
-    @Autowired
-    private TenantSecurityService tenantSecurity;
-
-    @Override
-    public CompletableFuture<ExecutionResult> instrumentExecutionResult(
-            ExecutionResult executionResult,
-            InstrumentationExecutionParameters parameters) {
-        
-        Map<String, Object> variables = parameters.getVariables();
-        String tenantId = extractTenantId(variables);
-        
-        if (tenantId != null && !tenantSecurity.isAuthorizedForTenant(tenantId)) {
-            throw new GraphQLSecurityException(
-                "Unauthorized access to tenant: " + tenantId
-            );
-        }
-        
-        return CompletableFuture.completedFuture(executionResult);
-    }
-}
-```
+Intercepts GraphQL requests before execution, extracting tenant info from variables or JWT claims. Enforces
+access checks so users can query only their authorized tenants, throwing exceptions on invalid attempts.
 
 ### 9.4 Data Encryption
-```java
-@Service
-public class EncryptionService {
-    @Value("${encryption.key}")
-    private String encryptionKey;
-    
-    private final Cipher cipher;
-    private final SecretKey key;
-    
-    public EncryptionService() throws Exception {
-        this.cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        this.key = new SecretKeySpec(
-            Base64.getDecoder().decode(encryptionKey), 
-            "AES"
-        );
-    }
-    
-    public String encrypt(String data) throws Exception {
-        byte[] iv = generateIv();
-        cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(128, iv));
-        
-        byte[] encrypted = cipher.doFinal(data.getBytes());
-        byte[] combined = ByteBuffer.allocate(iv.length + encrypted.length)
-            .put(iv)
-            .put(encrypted)
-            .array();
-            
-        return Base64.getEncoder().encodeToString(combined);
-    }
-    
-    public String decrypt(String encryptedData) throws Exception {
-        byte[] decoded = Base64.getDecoder().decode(encryptedData);
-        byte[] iv = Arrays.copyOfRange(decoded, 0, 12);
-        byte[] encrypted = Arrays.copyOfRange(decoded, 12, decoded.length);
-        
-        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, iv));
-        return new String(cipher.doFinal(encrypted));
-    }
-}
-```
+Provides symmetric encryption (AES with GCM) for sensitive fields. Generates IVs, finalizes encryption, and
+stores encoded results. Decryption is similarly managed, ensuring data confidentiality at rest or in transit.
 
 ### 9.5 Audit Logging
-```java
-@Aspect
-@Component
-@Slf4j
-public class AuditLogAspect {
-    @Autowired
-    private KafkaTemplate<String, AuditEvent> kafkaTemplate;
-
-    @Around("@annotation(Audited)")
-    public Object auditOperation(ProceedingJoinPoint joinPoint) throws Throwable {
-        String methodName = joinPoint.getSignature().getName();
-        Authentication auth = SecurityContextHolder.getContext()
-            .getAuthentication();
-        
-        AuditEvent auditEvent = AuditEvent.builder()
-            .userId(auth.getName())
-            .operation(methodName)
-            .timestamp(Instant.now())
-            .parameters(maskSensitiveData(joinPoint.getArgs()))
-            .build();
-        
-        try {
-            Object result = joinPoint.proceed();
-            auditEvent.setStatus("SUCCESS");
-            return result;
-        } catch (Exception e) {
-            auditEvent.setStatus("FAILURE");
-            auditEvent.setError(e.getMessage());
-            throw e;
-        } finally {
-            kafkaTemplate.send("audit-events", auditEvent);
-        }
-    }
-}
-```
+Wraps selected service methods in an auditing aspect. Logs the operation name, parameters, status, and any
+failures to a Kafka topic. Enables a secure audit trail for diagnosing issues or compliance checks.
 
 ### 9.6 Rate Limiting
-```java
-@Configuration
-public class RateLimitConfig {
-    @Bean
-    public RateLimiter rateLimiter(RedisTemplate<String, String> redisTemplate) {
-        return new RedisRateLimiter(redisTemplate);
-    }
-}
-
-@Component
-public class GraphQLRateLimiter {
-    private final RateLimiter rateLimiter;
-    
-    @PreFilter("@rateLimiter.isAllowed(#tenantId)")
-    public void checkRateLimit(String tenantId) {
-        // Rate limit check will be performed by the PreFilter annotation
-    }
-}
-```
+Uses a Redis-based rate limiter to throttle excessive requests. Service methods annotated with PreFilter calls
+verify an incoming user or tenant has not exceeded set limits, preventing abuse or spikes.
 
 ## 10. Deployment and Observability
 
 ### 10.1 Kubernetes Deployment
-```yaml
-# openframe-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: openframe-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: openframe-api
-  template:
-    metadata:
-      labels:
-        app: openframe-api
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-    spec:
-      containers:
-      - name: openframe-api
-        image: openframe/api:latest
-        ports:
-        - containerPort: 8080
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-        env:
-        - name: JAVA_TOOL_OPTIONS
-          value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
-        - name: SPRING_PROFILES_ACTIVE
-          value: "prod"
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 15
-```
+Describes how to run microservices in Kubernetes with horizontal scaling, resource limits (e.g., CPU, memory),
+and readiness/liveness probes. Ensures containers stay healthy and restart on failure automatically.
 
 ### 10.2 Monitoring Stack
-```yaml
-# prometheus-config.yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: openframe-monitor
-spec:
-  selector:
-    matchLabels:
-      app: openframe-api
-  endpoints:
-  - port: http
-    path: /actuator/prometheus
-    interval: 15s
-    scrapeTimeout: 14s
-
----
-# grafana-dashboard.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: openframe-dashboards
-data:
-  openframe-overview.json: |
-    {
-      "dashboard": {
-        "title": "OpenFrame Overview",
-        "panels": [
-          {
-            "title": "GraphQL Query Performance",
-            "type": "graph",
-            "datasource": "Prometheus",
-            "targets": [
-              {
-                "expr": "rate(graphql_query_duration_seconds_sum[5m]) / rate(graphql_query_duration_seconds_count[5m])",
-                "legendFormat": "{{operation}}"
-              }
-            ]
-          },
-          {
-            "title": "Event Processing Rate",
-            "type": "graph",
-            "targets": [
-              {
-                "expr": "sum(rate(nifi_processed_events_total[5m])) by (processor)",
-                "legendFormat": "{{processor}}"
-              }
-            ]
-          },
-          {
-            "title": "Pinot Query Latency",
-            "type": "graph",
-            "targets": [
-              {
-                "expr": "histogram_quantile(0.95, sum(rate(pinot_query_latency_ms_bucket[5m])) by (le))",
-                "legendFormat": "p95"
-              }
-            ]
-          }
-        ]
-      }
-    }
-```
+Declares how Prometheus scrapes each service (via ServiceMonitor) and defines a customizable Grafana dashboard
+to visualize GraphQL performance, NiFi event processing, or Pinot query latency in real time.
 
 ### 10.3 Logging Configuration
-```yaml
-# loki-config.yaml
-auth_enabled: false
-
-server:
-  http_listen_port: 3100
-
-schema_config:
-  configs:
-    - from: 2023-01-01
-      store: boltdb-shipper
-      object_store: s3
-      schema: v11
-      index:
-        prefix: index_
-        period: 24h
-
-storage_config:
-  boltdb_shipper:
-    active_index_directory: /loki/index
-    cache_location: /loki/cache
-    shared_store: s3
-
-limits_config:
-  enforce_metric_name: false
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h
-
-# promtail-config.yaml
-server:
-  http_listen_port: 9080
-
-positions:
-  filename: /var/lib/promtail/positions.yaml
-
-clients:
-  - url: http://loki:3100/loki/api/v1/push
-
-scrape_configs:
-  - job_name: kubernetes-pods
-    kubernetes_sd_configs:
-      - role: pod
-    pipeline_stages:
-      - docker: {}
-      - json:
-          expressions:
-            level: level
-            timestamp: '@timestamp'
-            message: message
-```
+Provides a centralized logging setup (Loki) and a log-shipper agent (Promtail):
+• Defines where logs are collected, stored, and queried.
+• Ensures each container or pod log is automatically aggregated for quick searches.
 
 ### 10.4 Metrics Collection
-```java
-@Configuration
-public class MetricsConfig {
-    @Bean
-    MeterRegistry meterRegistry() {
-        return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-    }
-
-    @Bean
-    GraphQLMetricsInstrumentation metricsInstrumentation(
-            MeterRegistry meterRegistry) {
-        return new GraphQLMetricsInstrumentation(meterRegistry);
-    }
-}
-
-@Component
-public class GraphQLMetricsInstrumentation extends SimpleInstrumentation {
-    private final MeterRegistry meterRegistry;
-
-    @Override
-    public CompletableFuture<ExecutionResult> instrumentExecutionResult(
-            ExecutionResult executionResult,
-            InstrumentationExecutionParameters parameters) {
-        
-        Timer.Sample sample = Timer.start(meterRegistry);
-        return super.instrumentExecutionResult(executionResult, parameters)
-            .thenApply(result -> {
-                sample.stop(Timer.builder("graphql.query.duration")
-                    .tag("operation", parameters.getOperation().getName())
-                    .tag("success", String.valueOf(result.getErrors().isEmpty()))
-                    .register(meterRegistry));
-                return result;
-            });
-    }
-}
-```
+Uses Prometheus instrumentation for capturing application metrics:
+• Tracks GraphQL query durations, success/failure rates, and other service-level metrics.
+• Exposes an endpoint for Prometheus to scrape, powering dashboards and alerts.
 
 ### 10.5 Alerting Rules
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: openframe-alerts
-spec:
-  groups:
-    - name: openframe.rules
-      rules:
-        - alert: HighErrorRate
-          expr: |
-            sum(rate(graphql_errors_total[5m])) 
-            / 
-            sum(rate(graphql_requests_total[5m])) > 0.05
-          for: 5m
-          labels:
-            severity: critical
-          annotations:
-            summary: High GraphQL error rate
-            
-        - alert: SlowQueries
-          expr: |
-            histogram_quantile(0.95, sum(rate(graphql_query_duration_seconds_bucket[5m])) by (le)) > 1
-          for: 5m
-          labels:
-            severity: warning
-            
-        - alert: NiFiBackpressure
-          expr: |
-            nifi_backpressure_bytes_threshold_exceeded > 0
-          for: 15m
-          labels:
-            severity: warning
-            
-        - alert: PinotQueryLatency
-          expr: |
-            histogram_quantile(0.95, sum(rate(pinot_query_latency_ms_bucket[5m])) by (le)) > 1000
-          for: 5m
-          labels:
-            severity: warning
-```
+Defines threshold-based alerts in Prometheus for monitoring things like:
+• High GraphQL error rates, slow query performance.
+• NiFi backpressure or Pinot query latency.
+Warns operators if performance or reliability degrade beyond certain limits.
 
 ### 10.6 Tracing Configuration
-```yaml
-opentelemetry:
-  traces:
-    exporter: jaeger
-  metrics:
-    exporter: prometheus
-  propagators: b3,w3c
-
-jaeger:
-  endpoint: http://jaeger-collector:14250
-  service-name: openframe-api
-
-management:
-  tracing:
-    sampling:
-      probability: 1.0
-  metrics:
-    tags:
-      application: openframe
-      environment: ${SPRING_PROFILES_ACTIVE:local}
-```
+Leverages OpenTelemetry to enable distributed tracing with Jaeger:
+• Captures end-to-end request flows across microservices.
+• Uses sampling, integrated correlation headers, and a collector endpoint to visualize traces.
 
 ## 11. Future Enhancements
 
 ### 11.1 Planned Features
-```yaml
-roadmap:
-  2024_Q1:
-    api_improvements:
-      - GraphQL Subscriptions for real-time updates
-      - Enhanced batching and caching
-      - Automated schema documentation
-      - Query complexity analysis
-
-    streaming_enhancements:
-      - Advanced NiFi processors for ML inference
-      - Real-time anomaly detection improvements
-      - Custom processors for domain-specific transformations
-
-    analytics_features:
-      - Advanced Pinot aggregations
-      - Real-time dashboards
-      - Predictive analytics integration
-      - Custom OLAP cubes
-
-  2024_Q2:
-    scalability:
-      - Multi-region deployment
-      - Cross-region replication
-      - Advanced caching strategies
-      - Query federation
-
-    security:
-      - Zero-trust architecture
-      - Enhanced audit capabilities
-      - Automated compliance reporting
-      - Advanced threat detection
-
-    observability:
-      - Enhanced tracing
-      - Custom metrics
-      - Automated capacity planning
-      - Performance optimization tools
-```
+Outlines upcoming enhancements like GraphQL Subscriptions for real-time updates, advanced NiFi processors with ML,
+multi-region deployments for increased scalability, zero-trust security architectures, and improved caching strategies.
 
 ### 11.2 Technical Debt and Improvements
-```yaml
-improvements:
-  infrastructure:
-    - Upgrade to newer versions of dependencies
-    - Optimize resource usage
-    - Improve deployment automation
-    - Enhanced backup strategies
-
-  code_quality:
-    - Increase test coverage
-    - Implement more design patterns
-    - Improve error handling
-    - Enhanced documentation
-
-  monitoring:
-    - Custom monitoring solutions
-    - Advanced alerting rules
-    - Improved debugging tools
-    - Enhanced logging
-```
+Summarizes high-level cleanup and modernization tasks:
+• Dependency upgrades, resource optimizations, better test coverage.
+• More robust backup strategies and improved automation.
 
 ### 11.3 Research Areas
-```yaml
-research:
-  machine_learning:
-    - Automated anomaly detection
-    - Predictive scaling
-    - Query optimization
-    - Pattern recognition
-
-  streaming:
-    - Enhanced real-time processing
-    - Custom NiFi processors
-    - Advanced routing strategies
-    - Optimization techniques
-
-  analytics:
-    - New Pinot features
-    - Custom aggregations
-    - Real-time analytics
-    - Advanced visualizations
-```
+Investigates longer-term goals (machine learning, NiFi optimizations, OLAP expansions):
+• Automated anomaly detection, pattern recognition, advanced real-time analytics.
+• Possibly new data-aggregation or predictive features still under exploration.
