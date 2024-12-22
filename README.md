@@ -1,4 +1,5 @@
-# ![OpenFrame Logo](https://raw.githubusercontent.com/Flamingo-CX/openframe/<BRANCH_NAME>/services/openframe-ui/src/assets/openframe-logo.svg "OpenFrame Logo")
+# ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo.svg "OpenFrame Logo")
+
 
 [![OpenFrame CI](https://github.com/Flamingo-CX/openframe/actions/workflows/ci.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/ci.yml)
 
