@@ -9,12 +9,13 @@
 1. System Overview
 2. Data Flows and System Architecture
 3. Core Components
-4. GraphQL Implementation
-5. Service Implementations
-6. Database Architecture
-7. Analytics with Apache Pinot
-8. Security Implementation
-9. Deployment and Observability
+4. Shared Core Library
+5. GraphQL Implementation
+6. Service Implementations
+7. Database Architecture
+8. Analytics with Apache Pinot
+9. Security Implementation
+10. Deployment and Observability
 
 ## 1. System Overview
 
@@ -303,22 +304,11 @@ kafka:
       replication-factor: 3
 ```
 
-### 3.4 Service Discovery
-```yaml
-eureka:
-  client:
-    registerWithEureka: true
-    fetchRegistry: true
-    serviceUrl:
-      defaultZone: http://eureka-server:8761/eureka/
-  instance:
-    preferIpAddress: true
-    leaseRenewalIntervalInSeconds: 30
-
-spring:
-  application:
-    name: openframe-service
-```
+### 3.4 Additional Modules
+- openframe-management: A dedicated service for orchestrating and configuring integrated tools (like NiFi, Grafana, etc.) and performing administrative tasks.
+- openframe-data: A shared data-access library that centralizes database repositories, Cassandra models, and Mongo repositories for other services to reuse.
+- openframe-security: A library containing JWT logic, OAuth2 resource server configuration, and fundamental security patterns (e.g., web security config).
+- openframe-gateway.yml: YAML configuration for the API gateway (Spring Cloud Gateway) that handles traffic routing, global CORS rules, and custom filters.
 
 ### 3.5 Istio Service Mesh
 ```yaml
@@ -373,9 +363,17 @@ public class ResilienceConfig {
 }
 ```
 
-## 4. GraphQL Implementation
+## 4. Shared Core Library
+OpenFrame includes a “core” library, located under libs/openframe-core, which hosts shared domain models, utilities, and configurations. 
+This library helps maintain consistency across microservices by:
+- Providing common entities (e.g., User, Device, OAuthToken).
+- Offering baseline services like CoreService for general event processing.
+- Including optional Dockerfiles for debugging, if you need to run openframe-core as a standalone microservice.
+- Containing commented-out or optional dependencies related to Spring Security or JWT for easy integration when required.
 
-### 4.1 Schema Definition
+## 5. GraphQL Implementation
+
+### 5.1 Schema Definition
 ```graphql
 type Query {
   # User queries (MongoDB)
@@ -446,7 +444,7 @@ enum TimeGranularity {
 }
 ```
 
-### 4.2 GraphQL Configuration
+### 5.2 GraphQL Configuration
 ```java
 @Configuration
 public class GraphQLConfig {
@@ -470,7 +468,7 @@ public class GraphQLConfig {
 }
 ```
 
-### 4.3 Resolvers Implementation
+### 5.3 Resolvers Implementation
 ```java
 @DgsComponent
 public class QueryResolver {
@@ -521,7 +519,7 @@ public class DataResolver {
 }
 ```
 
-### 4.4 Data Loaders
+### 5.4 Data Loaders
 ```java
 @Component
 public class EventDataLoader {
@@ -558,7 +556,7 @@ public class AnalyticsDataLoader {
 }
 ```
 
-### 4.5 Error Handling
+### 5.5 Error Handling
 ```java
 @Component
 public class GraphQLExceptionHandler implements DataFetcherExceptionHandler {
@@ -592,9 +590,9 @@ public class GraphQLExceptionHandler implements DataFetcherExceptionHandler {
 }
 ```
 
-## 5. Service Implementations
+## 6. Service Implementations
 
-### 5.1 Base Service Configuration
+### 6.1 Base Service Configuration
 ```java
 @SpringBootApplication
 @EnableDiscoveryClient
@@ -619,7 +617,7 @@ public class OpenFrameApplication {
 }
 ```
 
-### 5.2 User Service
+### 6.2 User Service
 ```java
 @Service
 @Slf4j
@@ -655,7 +653,7 @@ public class UserService {
 }
 ```
 
-### 5.3 Event Service
+### 6.3 Event Service
 ```java
 @Service
 @Slf4j
@@ -700,7 +698,7 @@ public class EventService {
 }
 ```
 
-### 5.4 Analytics Service
+### 6.4 Analytics Service
 ```java
 @Service
 @Slf4j
@@ -761,9 +759,9 @@ public class AnalyticsService {
 }
 ```
 
-## 6. Database Architecture
+## 7. Database Architecture
 
-### 6.1 MongoDB Configuration
+### 7.1 MongoDB Configuration
 ```yaml
 spring:
   data:
@@ -780,7 +778,7 @@ spring:
       auto: true
 ```
 
-### 6.2 Application Data Models
+### 7.2 Application Data Models
 ```java
 @Document(collection = "users")
 public class User {
@@ -835,7 +833,7 @@ public class SystemConfig {
 }
 ```
 
-### 6.3 Cassandra Configuration
+### 7.3 Cassandra Configuration
 ```yaml
 spring:
   data:
@@ -852,7 +850,7 @@ spring:
         init-query-timeout: 10s
 ```
 
-### 6.4 Event Data Models
+### 7.4 Event Data Models
 ```java
 @Table(name = "events")
 public class Event {
@@ -923,7 +921,7 @@ public class AuditLog {
 }
 ```
 
-### 6.5 Database Access Patterns
+### 7.5 Database Access Patterns
 ```java
 @Configuration
 public class DatabaseConfig {
@@ -969,9 +967,9 @@ public class EventRepository {
 }
 ```
 
-## 7. Analytics with Apache Pinot
+## 8. Analytics with Apache Pinot
 
-### 7.1 Pinot Schema Definition
+### 8.1 Pinot Schema Definition
 ```yaml
 schemaName: events
 dimensionFieldSpecs:
@@ -1001,7 +999,7 @@ schemaAnnotations:
   retention.timevalue: "90"
 ```
 
-### 7.2 Table Configuration
+### 8.2 Table Configuration
 ```yaml
 tableName: events
 tableType: HYBRID
@@ -1037,7 +1035,7 @@ streamConfig:
   stream.kafka.consumer.prop.auto.offset.reset: largest
 ```
 
-### 7.3 Analytics Service Implementation
+### 8.3 Analytics Service Implementation
 ```java
 @Service
 @Slf4j
@@ -1098,7 +1096,7 @@ public class PinotAnalyticsService {
 }
 ```
 
-### 7.4 Pinot Query Models
+### 8.4 Pinot Query Models
 ```java
 @Data
 @Builder
@@ -1140,7 +1138,7 @@ public class AnalyticsQuery {
 }
 ```
 
-### 7.5 Realtime Analytics Integration
+### 8.5 Realtime Analytics Integration
 ```java
 @Component
 @Slf4j
@@ -1180,9 +1178,9 @@ public class RealtimeAnalyticsProcessor {
 }
 ```
 
-## 8. Security Implementation
+## 9. Security Implementation
 
-### 8.1 Security Configuration
+### 9.1 Security Configuration
 ```java
 @Configuration
 @EnableWebSecurity
@@ -1223,7 +1221,7 @@ public class SecurityConfig {
 }
 ```
 
-### 8.2 Tenant Security
+### 9.2 Tenant Security
 ```java
 @Aspect
 @Component
@@ -1256,7 +1254,7 @@ public class TenantSecurityAspect {
 }
 ```
 
-### 8.3 GraphQL Security
+### 9.3 GraphQL Security
 ```java
 @Component
 public class GraphQLSecurityInstrumentation extends SimpleInstrumentation {
@@ -1282,7 +1280,7 @@ public class GraphQLSecurityInstrumentation extends SimpleInstrumentation {
 }
 ```
 
-### 8.4 Data Encryption
+### 9.4 Data Encryption
 ```java
 @Service
 public class EncryptionService {
@@ -1324,7 +1322,7 @@ public class EncryptionService {
 }
 ```
 
-### 8.5 Audit Logging
+### 9.5 Audit Logging
 ```java
 @Aspect
 @Component
@@ -1361,7 +1359,7 @@ public class AuditLogAspect {
 }
 ```
 
-### 8.6 Rate Limiting
+### 9.6 Rate Limiting
 ```java
 @Configuration
 public class RateLimitConfig {
@@ -1382,9 +1380,9 @@ public class GraphQLRateLimiter {
 }
 ```
 
-## 9. Deployment and Observability
+## 10. Deployment and Observability
 
-### 9.1 Kubernetes Deployment
+### 10.1 Kubernetes Deployment
 ```yaml
 # openframe-deployment.yaml
 apiVersion: apps/v1
@@ -1435,7 +1433,7 @@ spec:
           periodSeconds: 15
 ```
 
-### 9.2 Monitoring Stack
+### 10.2 Monitoring Stack
 ```yaml
 # prometheus-config.yaml
 apiVersion: monitoring.coreos.com/v1
@@ -1500,7 +1498,7 @@ data:
     }
 ```
 
-### 9.3 Logging Configuration
+### 10.3 Logging Configuration
 ```yaml
 # loki-config.yaml
 auth_enabled: false
@@ -1552,7 +1550,7 @@ scrape_configs:
             message: message
 ```
 
-### 9.4 Metrics Collection
+### 10.4 Metrics Collection
 ```java
 @Configuration
 public class MetricsConfig {
@@ -1590,7 +1588,7 @@ public class GraphQLMetricsInstrumentation extends SimpleInstrumentation {
 }
 ```
 
-### 9.5 Alerting Rules
+### 10.5 Alerting Rules
 ```yaml
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
@@ -1633,7 +1631,7 @@ spec:
             severity: warning
 ```
 
-### 9.6 Tracing Configuration
+### 10.6 Tracing Configuration
 ```yaml
 opentelemetry:
   traces:
@@ -1655,9 +1653,9 @@ management:
       application: openframe
       environment: ${SPRING_PROFILES_ACTIVE:local}
 ```
-## 10. Future Enhancements
+## 11. Future Enhancements
 
-### 10.1 Planned Features
+### 11.1 Planned Features
 ```yaml
 roadmap:
   2024_Q1:
@@ -1698,7 +1696,7 @@ roadmap:
       - Performance optimization tools
 ```
 
-### 10.2 Technical Debt and Improvements
+### 11.2 Technical Debt and Improvements
 ```yaml
 improvements:
   infrastructure:
@@ -1720,7 +1718,7 @@ improvements:
     - Enhanced logging
 ```
 
-### 10.3 Research Areas
+### 11.3 Research Areas
 ```yaml
 research:
   machine_learning:
