@@ -250,4 +250,4 @@ OpenFrame builds upon many excellent open-source projects. We're grateful to all
 
 ---
 
-Built with ❤️ by the OpenFrame team in [Miami Beach, FL](https://www.google.com/maps?q=Miami+Beach,+FL)
+Built with ❤️ by the [Flamingo](flamingo.cx) team in [Miami Beach, FL](https://www.google.com/maps?q=Miami+Beach,+FL)
