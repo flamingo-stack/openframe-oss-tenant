@@ -5,7 +5,7 @@
             "label": "start-vue",
             "type": "npm",
             "script": "dev",
-            "path": "openframe/services/openframe-ui/",
+            "path": "services/openframe-ui/",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "custom",
