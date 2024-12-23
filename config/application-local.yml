@@ -7,13 +7,8 @@ spring:
     # Docker Cassandra connection
     cassandra:
       contact-points: localhost
-      request:
-        timeout: 20s
-      connection:
-        connect-timeout: 20s
-        init-query-timeout: 20s
-      controlconnection:
-        timeout: 20s
+      local-datacenter: datacenter1
+
     # Local Redis connection (only used by API)
     redis:
       host: localhost

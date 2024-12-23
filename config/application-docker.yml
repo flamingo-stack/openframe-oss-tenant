@@ -8,13 +8,7 @@ spring:
     cassandra:
       contact-points: openframe-cassandra
       local-datacenter: datacenter1
-      request:
-        timeout: 20s
-      connection:
-        connect-timeout: 20s
-        init-query-timeout: 20s
-      controlconnection:
-        timeout: 20s
+    
     # Docker Redis connection (only used by API)
     redis:
       host: openframe-redis

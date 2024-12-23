@@ -11,7 +11,7 @@
         },
         {
             "type": "java",
-            "name": "ManagementApplication",
+            "name": "Management Application",
             "request": "launch",
             "mainClass": "com.openframe.management.ManagementApplication",
             "projectName": "openframe-management",
