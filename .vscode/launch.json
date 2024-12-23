@@ -6,7 +6,7 @@
             "request": "launch",
             "name": "OpenFrame UI",
             "url": "http://localhost:5174",
-            "webRoot": "${workspaceFolder}services/openframe-ui",
+            "webRoot": "${workspaceFolder}/services/openframe-ui",
             "preLaunchTask": "start-vue"
         },
         {

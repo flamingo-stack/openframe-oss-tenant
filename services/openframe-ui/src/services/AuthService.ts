@@ -142,8 +142,8 @@ export class AuthService {
     params.append('grant_type', 'password');
     params.append('username', credentials.email);
     params.append('password', credentials.password);
-    params.append('client_id', 'openframe_web_dashboard_dev');
-    params.append('client_secret', 'dev_secret');
+    params.append('client_id', authConfig.clientId);
+    params.append('client_secret', authConfig.clientSecret);
 
     const response = await fetch(`${config.API_URL}/oauth/token`, {
       method: 'POST',

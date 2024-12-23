@@ -87,38 +87,38 @@ logging:
   level:
     root: INFO
     # OpenFrame specific
-    com.openframe: TRACE
-    com.openframe.data.config: TRACE
+    com.openframe: INFO
+    com.openframe.data.config: INFO
     
     # Cassandra related
-    org.springframework.data.cassandra: TRACE
-    com.datastax.oss.driver: TRACE
+    org.springframework.data.cassandra: INFO
+    com.datastax.oss.driver: INFO
     
     # Spring Boot Actuator
-    org.springframework.boot.actuate: DEBUG
-    org.springframework.boot.actuate.metrics: TRACE
-    org.springframework.boot.actuate.endpoint: TRACE
-    org.springframework.boot.actuate.endpoint.web: TRACE
-    org.springframework.boot.actuate.autoconfigure.metrics: TRACE
-    org.springframework.boot.actuate.metrics.export.prometheus: TRACE
+    org.springframework.boot.actuate: INFO
+    org.springframework.boot.actuate.metrics: INFO
+    org.springframework.boot.actuate.endpoint: INFO
+    org.springframework.boot.actuate.endpoint.web: INFO
+    org.springframework.boot.actuate.autoconfigure.metrics: INFO
+    org.springframework.boot.actuate.metrics.export.prometheus: INFO
     
     # Micrometer & Prometheus
-    io.micrometer: TRACE
-    io.micrometer.prometheus: TRACE
-    io.micrometer.core.instrument.logging: TRACE
+    io.micrometer: INFO
+    io.micrometer.prometheus: INFO
+    io.micrometer.core.instrument.logging: INFO
     
     # Spring Web
-    org.springframework.web: TRACE
-    org.springframework.web.servlet.mvc.method.annotation: TRACE
-    org.springframework.web.servlet.handler: TRACE  # For detailed request mapping
-    org.springframework.boot.web: TRACE
+    org.springframework.web: INFO
+    org.springframework.web.servlet.mvc.method.annotation: INFO
+    org.springframework.web.servlet.handler: INFO  # For detailed request mapping
+    org.springframework.boot.web: INFO
     
     # Spring Cloud
-    org.springframework.cloud.config: TRACE
+    org.springframework.cloud.config: INFO
     
     # Logback
-    ch.qos.logback: TRACE
-    # Security & CORS debugging
-    org.springframework.security: TRACE
-    org.springframework.security.web: TRACE
-    com.openframe.security: TRACE
+    ch.qos.logback: INFO
+    # Security & CORS INFOging
+    org.springframework.security: INFO
+    org.springframework.security.web: INFO
+    com.openframe.security: INFO
