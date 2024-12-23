@@ -47,7 +47,7 @@ management:
     web:
       base-path: /management/v1
       exposure:
-        include: health,info,prometheus,metrics
+        include: health,TRACE,prometheus,metrics
     enabled-by-default: true
   endpoint:
     prometheus:
@@ -85,40 +85,40 @@ logging:
   file:
     path: logs
   level:
-    root: INFO
+    root: TRACE
     # OpenFrame specific
-    com.openframe: INFO
-    com.openframe.data.config: INFO
+    com.openframe: TRACE
+    com.openframe.data.config: TRACE
     
     # Cassandra related
-    org.springframework.data.cassandra: INFO
-    com.datastax.oss.driver: INFO
+    org.springframework.data.cassandra: TRACE
+    com.datastax.oss.driver: TRACE
     
     # Spring Boot Actuator
-    org.springframework.boot.actuate: INFO
-    org.springframework.boot.actuate.metrics: INFO
-    org.springframework.boot.actuate.endpoint: INFO
-    org.springframework.boot.actuate.endpoint.web: INFO
-    org.springframework.boot.actuate.autoconfigure.metrics: INFO
-    org.springframework.boot.actuate.metrics.export.prometheus: INFO
+    org.springframework.boot.actuate: TRACE
+    org.springframework.boot.actuate.metrics: TRACE
+    org.springframework.boot.actuate.endpoint: TRACE
+    org.springframework.boot.actuate.endpoint.web: TRACE
+    org.springframework.boot.actuate.autoconfigure.metrics: TRACE
+    org.springframework.boot.actuate.metrics.export.prometheus: TRACE
     
     # Micrometer & Prometheus
-    io.micrometer: INFO
-    io.micrometer.prometheus: INFO
-    io.micrometer.core.instrument.logging: INFO
+    io.micrometer: TRACE
+    io.micrometer.prometheus: TRACE
+    io.micrometer.core.instrument.logging: TRACE
     
     # Spring Web
-    org.springframework.web: INFO
-    org.springframework.web.servlet.mvc.method.annotation: INFO
-    org.springframework.web.servlet.handler: INFO  # For detailed request mapping
-    org.springframework.boot.web: INFO
+    org.springframework.web: TRACE
+    org.springframework.web.servlet.mvc.method.annotation: TRACE
+    org.springframework.web.servlet.handler: TRACE  # For detailed request mapping
+    org.springframework.boot.web: TRACE
     
     # Spring Cloud
-    org.springframework.cloud.config: INFO
+    org.springframework.cloud.config: TRACE
     
     # Logback
-    ch.qos.logback: INFO
+    ch.qos.logback: TRACE
     # Security & CORS debugging
-    org.springframework.security: INFO
-    org.springframework.security.web: INFO
-    com.openframe.security: INFO
+    org.springframework.security: TRACE
+    org.springframework.security.web: TRACE
+    com.openframe.security: TRACE

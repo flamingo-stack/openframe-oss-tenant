@@ -7,7 +7,6 @@ spring:
     # Docker Cassandra connection
     cassandra:
       contact-points: localhost
-      local-datacenter: datacenter1
 
     # Local Redis connection (only used by API)
     redis:
