@@ -6,7 +6,3 @@ spring:
     cassandra:
       contact-points: localhost
       port: 9042
-
-jwt:
-  issuer: openframe
-  audience: openframe-web
