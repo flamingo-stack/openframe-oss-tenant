@@ -39,16 +39,6 @@ management:
   server:
     port: 8091
 
-# API service specific logging
-logging:
-  level:
-    root: INFO
-    com.openframe: DEBUG
-    org.springframework: DEBUG
-    org.springframework.data.redis: DEBUG
-    io.lettuce.core: DEBUG
-    org.apache.pinot: DEBUG
-
 # GraphQL configuration
 dgs:
   graphql:

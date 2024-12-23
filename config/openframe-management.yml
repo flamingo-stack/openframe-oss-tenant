@@ -29,11 +29,3 @@ management:
   health:
     cassandra:
       enabled: false
-
-# Management service specific logging
-logging:
-  level:
-    root: INFO
-    com.openframe: DEBUG
-    org.springframework: DEBUG
-    org.springframework.data.mongodb: DEBUG 

@@ -10,5 +10,3 @@ spring:
 jwt:
   issuer: openframe
   audience: openframe-web
-  publicKey:
-    key: classpath:certs/public.pem 

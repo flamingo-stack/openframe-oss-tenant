@@ -23,16 +23,6 @@ spring:
 # Docker logging configuration
 logging:
   config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
-  level:
-    root: INFO
-    com.openframe: INFO
-    org.springframework: INFO
-    com.datastax.oss.driver: DEBUG
-    com.datastax.driver: DEBUG
-    org.springframework.data.cassandra: DEBUG
-    com.datastax.oss.driver.internal.core.session: TRACE
-    com.datastax.oss.driver.internal.core.pool: TRACE
-    com.datastax.oss.driver.internal.core.config: DEBUG
 
 # Docker monitoring endpoints
 loki:

@@ -28,15 +28,6 @@ management:
   server:
     port: 8101
 
-# Gateway service specific logging
-logging:
-  level:
-    root: INFO
-    com.openframe: DEBUG
-    org.springframework: DEBUG
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.security: DEBUG
-
 jwt:
   issuer: openframe
   audience: openframe-web

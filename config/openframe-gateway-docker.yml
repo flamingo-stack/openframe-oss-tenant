@@ -6,9 +6,3 @@ spring:
     cassandra:
       contact-points: openframe-cassandra
       port: 9042
-
-jwt:
-  issuer: openframe
-  audience: openframe-web
-  publicKey:
-    key: classpath:certs/public.pem 
