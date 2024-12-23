@@ -119,6 +119,6 @@ logging:
     # Logback
     ch.qos.logback: INFO
     # Security & CORS INFOging
-    org.springframework.security: INFO
-    org.springframework.security.web: INFO
-    com.openframe.security: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.web: DEBUG
+    com.openframe.security: DEBUG
