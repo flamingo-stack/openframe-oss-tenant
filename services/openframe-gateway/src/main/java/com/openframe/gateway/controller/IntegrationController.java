@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.openframe.data.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.gateway.service.IntegrationService;
 
@@ -32,25 +33,32 @@ public class IntegrationController {
     private final WebClient.Builder webClientBuilder;
     private final Environment environment;
 
-    private String adjustUrl(String originalUrl) {
-        if (isLocalProfile()) {
-            try {
-                URI uri = new URI(originalUrl);
-                return UriComponentsBuilder.newInstance()
-                    .scheme(uri.getScheme())
-                    .host("localhost")
-                    .port(uri.getPort())
-                    .path(uri.getPath())
-                    .query(uri.getQuery())
-                    .fragment(uri.getFragment())
-                    .build()
-                    .toUriString();
-            } catch (Exception e) {
-                log.error("Failed to parse URL: {}", originalUrl, e);
-                return originalUrl;
+    private URI adjustUrl(IntegratedTool integratedTool, String originalUrl, String toolId) {
+        try {
+            URI integratedToolUri = new URI(integratedTool.getUrl());
+            URI originalUrlUri = new URI(originalUrl);
+            
+            // Extract the path after /tools/{toolId}
+            String fullPath = originalUrlUri.getPath();
+            String toolPath = "/tools/" + toolId;
+            String pathToProxy = fullPath.substring(fullPath.indexOf(toolPath) + toolPath.length());
+            if (pathToProxy.isEmpty()) {
+                pathToProxy = "/";
             }
+
+            return UriComponentsBuilder.newInstance()
+                    .scheme(integratedToolUri.getScheme())
+                    .host(isLocalProfile() ? "localhost" : integratedToolUri.getHost())
+                    .port(integratedTool.getPort())
+                    .path(pathToProxy)
+                    .query(originalUrlUri.getQuery())
+                    .fragment(originalUrlUri.getFragment())
+                    .build(true)
+                    .toUri();
+        } catch (Exception e) {
+            log.error("Failed to parse URL: {}", originalUrl, e);
+            return URI.create(originalUrl);
         }
-        return originalUrl;
     }
 
     private boolean isLocalProfile() {
@@ -66,56 +74,50 @@ public class IntegrationController {
     public Mono<ResponseEntity<String>> healthCheck(@PathVariable String toolId, Authentication auth) {
         log.info("Checking health for tool: {}", toolId);
         return integrationService.testIntegrationConnection(toolId)
-            .map(ResponseEntity::ok)
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @PostMapping("/{toolId}/test")
     public Mono<ResponseEntity<String>> testIntegration(@PathVariable String toolId, Authentication auth) {
         log.info("Testing integration for tool: {}", toolId);
         return integrationService.testIntegrationConnection(toolId)
-            .map(ResponseEntity::ok)
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
     @GetMapping("/{toolId}/**")
     public Mono<ResponseEntity<String>> proxyRequest(@PathVariable String toolId, ServerHttpRequest request) {
         String path = request.getPath().toString();
         log.info("Proxying request for tool: {}, path: {}", toolId, path);
-        
-        // Don't proxy if it's a health check or test endpoint
-        if (path.endsWith("/health") || path.endsWith("/test")) {
-            log.debug("Skipping proxy for health/test endpoint");
-            return Mono.just(ResponseEntity.notFound().build());
-        }
-        
+
         return Mono.justOrEmpty(toolRepository.findById(toolId))
-            .flatMap(tool -> {
-                if (!tool.isEnabled()) {
-                    return Mono.just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
-                }
+                .flatMap(tool -> {
+                    if (!tool.isEnabled()) {
+                        return Mono.just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
+                    }
 
-                // Extract the path after /tools/{toolId}
-                String remainingPath = path.substring(path.indexOf(toolId) + toolId.length());
-                if (remainingPath.isEmpty()) {
-                    remainingPath = "/";
-                }
+                    // Adjust URL based on environment
+                    URI targetUri = adjustUrl(tool, request.getURI().toString(), toolId);
+                    log.debug("Forwarding request to: {} (original URL: {})", targetUri, tool.getUrl());
 
-                // Adjust URL based on environment
-                String targetUrl = adjustUrl(tool.getUrl());
-                log.debug("Forwarding request to: {}{} (original URL: {})", targetUrl, remainingPath, tool.getUrl());
-                
-                // Forward the request
-                return webClientBuilder.build()
-                    .method(request.getMethod())
-                    .uri(targetUrl + remainingPath)
-                    .headers(headers -> headers.addAll(request.getHeaders()))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .map(ResponseEntity::ok)
-                    .doOnSuccess(response -> log.info("Successfully proxied request to {}", tool.getName()))
-                    .doOnError(error -> log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
-            })
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+                    // Forward the request with the tool's token
+                    return webClientBuilder.build()
+                            .method(request.getMethod())
+                            .uri(targetUri)
+                            .headers(headers -> {
+                                headers.addAll(request.getHeaders());
+                                // Use the token from the tool's credentials
+                                if (tool.getCredentials() != null && tool.getCredentials().getToken() != null) {
+                                    headers.setBearerAuth(tool.getCredentials().getToken());
+                                }
+                            })
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .map(ResponseEntity::ok)
+                            .doOnSuccess(response -> log.info("Successfully proxied request to {}", tool.getName()))
+                            .doOnError(error -> log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
+                })
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
-} 
+}
