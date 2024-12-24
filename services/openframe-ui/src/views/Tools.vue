@@ -1,7 +1,7 @@
 <template>
   <div class="tools-dashboard">
     <div class="header-row">
-      <h1>Tools</h1>
+      <h1 class="page-title">Tools</h1>
       <div class="localhost-toggle">
         <InputSwitch v-model="useLocalhost" />
         <span class="toggle-label">Local Deployment</span>
@@ -424,19 +424,11 @@ const isDevelopment = computed(() => import.meta.env.DEV);
   padding: 2rem;
 }
 
-h1 {
-  margin: 0;
+.page-title {
+  margin-bottom: 2rem;
   font-size: 2rem;
   font-weight: 600;
-  color: #00E5BE;
-}
-
-h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-color-secondary);
-  margin-bottom: 1rem;
-  padding-left: 1rem;
+  color: white !important;
 }
 
 .tool-card {
@@ -464,7 +456,7 @@ h2 {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
-  color: var(--text-color);
+  color: var(--text-color-secondary);
 }
 
 .tool-logo {
@@ -515,7 +507,7 @@ h2 {
 
 .p-inputgroup .p-inputgroup-addon {
   padding: 0.5rem 1rem;
-  background: white;
+  background: var(--surface-section);
   border: 1px solid var(--surface-border);
   width: 5rem;
   display: flex;

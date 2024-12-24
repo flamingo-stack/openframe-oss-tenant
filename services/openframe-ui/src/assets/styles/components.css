@@ -2,6 +2,7 @@
 .p-inputtext {
   padding: 1rem 1rem;
   height: 3.5rem;
+  color: var(--text-color);
 }
 
 .p-password {
@@ -31,7 +32,7 @@
 
 .p-inputgroup .p-inputgroup-addon {
   padding: 1rem;
-  background: var(--surface-ground);
+  background: var(--surface-section);
   border-color: var(--surface-border);
   min-height: 3.5rem;
   min-width: 5rem;
@@ -40,7 +41,6 @@
   justify-content: center;
   font-weight: 600;
   color: var(--text-color);
-  background: var(--surface-section);
 }
 
 /* Target all buttons within input groups */
@@ -59,7 +59,7 @@
 
 .p-inputgroup .p-button .p-button-icon {
   font-size: 1rem;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .p-inputgroup .p-button:enabled:hover {
@@ -77,13 +77,13 @@
   /* Default button */
   background: var(--surface-ground);
   border-color: var(--surface-border);
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .p-button:enabled:hover {
   background: var(--surface-hover);
   border-color: var(--surface-hover);
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 /* Primary button */
@@ -113,13 +113,13 @@
 .p-button.p-button-text {
   background: transparent;
   border-color: transparent;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .p-button.p-button-text:enabled:hover {
   background: var(--surface-hover);
   border-color: transparent;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 /* Icon-only button */
@@ -158,4 +158,76 @@
 .p-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Brand styling */
+.brand-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-title {
+  font-family: var(--font-brand-family);
+  font-weight: 500;
+  font-size: 1.25rem;
+  color: var(--text-color);
+}
+
+.brand-highlight {
+  color: var(--primary-color);
+}
+
+.brand-divider {
+  font-family: var(--font-family);
+  color: var(--text-color-muted);
+  font-weight: 400;
+}
+
+.brand-section {
+  color: var(--text-color-muted);
+  font-weight: 400;
+  font-size: 1rem;
+  font-family: var(--font-family);
+}
+
+/* Menu items */
+.menu-item {
+  color: var(--text-color-secondary);
+}
+
+.menu-item:hover {
+  background: var(--surface-hover);
+  color: var(--text-color);
+}
+
+.menu-item.active {
+  background: var(--primary-color);
+  color: #000000;
+}
+
+/* Card and content text */
+.card-title {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.card-subtitle {
+  color: var(--text-color-secondary);
+  font-weight: 400;
+}
+
+.card-content {
+  color: var(--text-color-secondary);
+}
+
+/* Form labels and text */
+.form-label {
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
+.helper-text {
+  color: var(--text-color-muted);
+  font-size: 0.875rem;
 } 

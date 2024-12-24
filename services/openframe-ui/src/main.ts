@@ -10,6 +10,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Tooltip from 'primevue/tooltip'
 import { DefaultApolloClient } from '@vue/apollo-composable'
 import { apolloClient } from './apollo/apolloClient'
 
@@ -41,11 +42,12 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     app.use(router)
     app.use(PrimeVue, { ripple: true })
     app.component('Sidebar', Sidebar)
-    app.use(ToastService);
-    app.component('Toast', Toast);
+    app.component('Toast', Toast)
     app.component('Button', Button)
     app.component('InputText', InputText)
     app.component('DataTable', DataTable)
     app.component('Column', Column)
+    app.directive('tooltip', Tooltip)
+    app.use(ToastService);
     app.mount('#app')
 }

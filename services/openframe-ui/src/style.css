@@ -6,42 +6,126 @@
 }
 
 :root {
-  /* Primary brand colors */
-  --primary-color: #00E5BE;
-  --primary-dark: #00b396;
-  --primary-light: #33eacc;
+  /* Primary brand colors - constant across themes */
+  --primary-color: #FFB800;  /* Gold accent */
+  --primary-dark: #E6A600;   /* Darker gold for hover */
+  --primary-light: #FFCB40;  /* Lighter gold for highlights */
   
-  /* Brand accent colors */
-  --brand-blue: #1E1B4B;
-  --brand-gold: #FFB800;
+  /* Brand colors - constant across themes */
+  --brand-blue: #1B237C;     /* Deep navy blue */
+  --brand-blue-light: #2A33A1; /* Lighter navy */
+  --brand-gold: #FFB800;     /* Gold */
   
+  /* Font families */
+  --font-brand-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+}
+
+/* Light theme (default) */
+:root {
   /* Text colors */
-  --text-primary: #1E1B4B;
-  --text-secondary: #6b7280;
+  --text-color: #374151;          /* Dark gray instead of blue */
+  --text-color-secondary: #4B5563;
+  --text-color-muted: #6B7280;
+  --text-primary: #374151;        /* Dark gray instead of blue */
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
   
   /* Background colors */
-  --surface-ground: var(--brand-blue);
-  --surface-card: #ffffff;
+  --surface-ground: #F8FAFC;    /* Light gray-blue */
+  --surface-card: #FFFFFF;      /* White */
+  --surface-border: #E2E8F0;    /* Light border */
+  --surface-hover: #F1F5F9;     /* Very light blue */
+  --surface-section: #FFFFFF;   /* White for sections */
+  
+  /* Semantic colors */
+  --success: #10b981;
+  --warning: var(--brand-gold);
+  --danger: #ef4444;
+  --info: var(--brand-blue-light);
+
+  /* Shadow */
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color);
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  /* Background colors - adjusted to match Grafana */
+  --surface-ground: #111217;    /* Grafana's main background */
+  --surface-card: #181b1f;      /* Grafana's panel background */
+  --surface-border: #222529;    /* Grafana's border color */
+  --surface-hover: #222529;     /* Hover state */
+  --surface-section: #181b1f;   /* Section background */
+  
+  /* Text colors - improved contrast */
+  --text-color: #FFFFFF;          /* Pure white for primary text */
+  --text-color-secondary: #E2E8F0; /* Light gray for secondary text */
+  --text-color-muted: #94A3B8;    /* Muted but readable text */
+  --text-primary: #FFFFFF;         /* Pure white for primary text */
+  --text-secondary: #E2E8F0;       /* Light gray for secondary text */
+  --text-muted: #94A3B8;          /* Muted but readable text */
+  
+  /* Semantic colors - brighter for dark mode */
+  --success: #34d399;              
+  --warning: var(--brand-gold);    
+  --danger: #f87171;               
+  --info: #93C5FD;                 
+
+  /* Shadow */
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color);
 }
 
 /* Basic global styles */
 body {
   background-color: var(--surface-ground);
-  color: var(--text-primary);
+  color: var(--text-color);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* PrimeVue Sidebar Override */
+.p-sidebar {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+}
+
+.p-sidebar-header,
+.p-sidebar-content {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+}
+
+.p-sidebar-mask {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Card styles */
+.card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-sm);
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
 /* Form text styles */
 .form-text {
-  font-size: 0.875rem;  /* Same size as "Remember me" */
-  color: var(--text-primary);
+  font-size: 0.875rem;
+  color: var(--text-color);
 }
 
 /* Global link styles - single source of truth */
 .text-link {
-  color: var(--surface-ground) !important;
+  color: var(--text-color) !important;
   font-weight: 500;
   text-decoration: none;
   transition: color 0.2s;
@@ -50,4 +134,90 @@ body {
 
 .text-link:hover {
   color: var(--primary-color) !important;
+}
+
+/* PrimeVue Input Overrides */
+.p-dropdown {
+  background: var(--surface-section) !important;
+  border: 1px solid var(--surface-border) !important;
+}
+
+.p-dropdown:not(.p-disabled).p-focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+.p-dropdown .p-dropdown-label {
+  color: var(--text-color) !important;
+  background: var(--surface-section) !important;
+}
+
+.p-dropdown-panel {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  color: var(--text-color) !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  color: var(--text-color) !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+  background: var(--surface-hover) !important;
+}
+
+/* Password Input Override */
+.p-password-input,
+.p-inputtext {
+  background: var(--surface-section) !important;
+  color: var(--text-color) !important;
+  border-color: var(--surface-border) !important;
+}
+
+.p-password-input:enabled:focus,
+.p-inputtext:enabled:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+/* Tool Logo Override */
+.tool-logo {
+  filter: brightness(0) invert(var(--is-dark, 0));
+}
+
+[data-theme="dark"] {
+  --is-dark: 1;
+}
+
+/* PrimeVue Global Overrides */
+.p-component {
+  color: var(--text-color) !important;
+}
+
+.p-inputtext,
+.p-dropdown-label,
+.p-dropdown-item,
+.p-inputgroup-addon {
+  color: var(--text-color) !important;
+}
+
+.p-dropdown-label.p-placeholder {
+  color: var(--text-color-secondary) !important;
+}
+
+/* Card & Headers Override */
+.p-card-title,
+.p-panel-header,
+.p-tabview-title,
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-color) !important;
+}
+
+/* Page Headings */
+.page-title,
+h1:not(.brand-title) {  /* Exclude brand title from this style */
+  color: var(--primary-color) !important;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
 }

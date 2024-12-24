@@ -1,6 +1,6 @@
 <template>
   <div class="monitoring-page">
-    <h1>Monitoring</h1>
+    <h1 class="page-title">Monitoring</h1>
 
     <!-- Add loading state -->
     <div v-if="loading" class="loading-spinner">
@@ -23,7 +23,7 @@
               <div class="grid">
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=11&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(11)"
                     width="100%"
                     height="100"
                     title="Services Health Status"
@@ -31,7 +31,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=12&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(12)"
                     width="100%"
                     height="100"
                     title="Service Uptime"
@@ -39,7 +39,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=13&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(13)"
                     width="100%"
                     height="100"
                     title="Service Performance"
@@ -47,7 +47,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=14&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(14)"
                     width="100%"
                     height="100"
                     title="Service Errors"
@@ -55,7 +55,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=30&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(30)"
                     width="100%"
                     height="100"
                     title="Resource Usage"
@@ -63,7 +63,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=16&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(16)"
                     width="100%"
                     height="100"
                     title="System Metrics"
@@ -71,7 +71,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=17&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(17)"
                     width="100%"
                     height="100"
                     title="System Health"
@@ -79,7 +79,7 @@
                 </div>
                 <div class="col-12 md:col-3">
                   <iframe
-                    src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=18&theme=light&refresh=1s"
+                    :src="getGrafanaUrl(18)"
                     width="100%"
                     height="100"
                     title="System Load"
@@ -93,7 +93,7 @@
           <div class="col-12 md:col-6 mb-3">
             <div class="tool-card">
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=26&theme=light&refresh=1s"
+                :src="getGrafanaUrl(26)"
                 width="100%"
                 height="300"
                 title="Memory Usage Chart"
@@ -104,7 +104,7 @@
           <div class="col-12 md:col-6 mb-3">
             <div class="tool-card">
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=20&theme=light&refresh=1s"
+                :src="getGrafanaUrl(20)"
                 width="100%"
                 height="300"
                 title="Memory Usage Chart"
@@ -116,7 +116,7 @@
           <div class="col-12 md:col-6 mb-3">
             <div class="tool-card">
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=28&theme=light&refresh=1s"
+                :src="getGrafanaUrl(28)"
                 width="100%"
                 height="300"
                 title="API Performance"
@@ -128,7 +128,7 @@
           <div class="col-12 md:col-6 mb-3">
             <div class="tool-card">
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=24&theme=light&refresh=1s"
+                :src="getGrafanaUrl(24)"
                 width="100%"
                 height="300"
                 title="Error Rates"
@@ -146,7 +146,7 @@
             <div class="tool-card">
               <h3>CPU Usage</h3>
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=20&theme=light&refresh=1s"
+                :src="getGrafanaUrl(20)"
                 width="100%"
                 height="200"
                 title="CPU Usage"
@@ -158,7 +158,7 @@
             <div class="tool-card">
               <h3>Memory Usage</h3>
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=26&theme=light&refresh=1s"
+                :src="getGrafanaUrl(26)"
                 width="100%"
                 height="200"
                 title="Memory Usage"
@@ -170,7 +170,7 @@
             <div class="tool-card">
               <h3>Network Traffic</h3>
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=19&theme=light&refresh=1s"
+                :src="getGrafanaUrl(19)"
                 width="100%"
                 height="200"
                 title="Network Traffic Chart"
@@ -182,7 +182,7 @@
             <div class="tool-card">
               <h3>System Load</h3>
               <iframe
-                src="http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=29&theme=light&refresh=1s"
+                :src="getGrafanaUrl(29)"
                 width="100%"
                 height="200"
                 title="System Load Chart"
@@ -196,10 +196,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useThemeStore } from '@/stores/themeStore'
 
 const loading = ref(true)
 const error = ref<Error | null>(null)
+const themeStore = useThemeStore()
+
+const grafanaTheme = computed(() => themeStore.isDark ? 'dark' : 'light')
+
+const getGrafanaUrl = (panelId: number) => {
+  return `http://localhost:3000/d-solo/home/openframe-overview?orgId=1&panelId=${panelId}&theme=${grafanaTheme.value}&refresh=1s`
+}
 
 onMounted(() => {
   // Add a small delay to ensure Grafana is ready
@@ -214,17 +222,18 @@ onMounted(() => {
   padding: 2rem;
 }
 
-h1 {
+.page-title {
   margin-bottom: 2rem;
   font-size: 2rem;
   font-weight: 600;
-  color: #00E5BE;
+  color: white !important;
 }
 
 h2 {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-color-secondary);
+  margin-bottom: 1.5rem;
 }
 
 .tool-card {
@@ -232,6 +241,13 @@ h2 {
   border-radius: var(--border-radius);
   padding: 1.5rem;
   height: 100%;
+}
+
+.tool-card h3 {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  font-size: 1.125rem;
 }
 
 .loading-spinner {
@@ -253,5 +269,6 @@ h2 {
 
 iframe {
   border: none;
+  background: var(--surface-card);
 }
 </style> 

@@ -14,13 +14,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import MainLayout from './components/MainLayout.vue';
+import { useThemeStore } from './stores/themeStore';
 
 const route = useRoute();
 const isAuthPage = computed(() => {
   return ['/login', '/register'].includes(route.path);
+});
+
+const themeStore = useThemeStore();
+
+onMounted(() => {
+  themeStore.initTheme();
 });
 </script>
 

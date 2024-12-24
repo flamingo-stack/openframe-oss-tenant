@@ -1,10 +1,14 @@
 package com.openframe.gateway.service;
 
-import org.springframework.http.HttpHeaders;
+import java.net.URI;
+
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import com.openframe.data.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.IntegratedToolService;
 
@@ -20,30 +24,60 @@ public class IntegrationService {
     private final IntegratedToolRepository toolRepository;
     private final IntegratedToolService toolService;
     private final WebClient.Builder webClientBuilder;
+    private final Environment environment;
+
+    private String adjustUrl(String originalUrl) {
+        if (isLocalProfile()) {
+            try {
+                URI uri = new URI(originalUrl);
+                return UriComponentsBuilder.newInstance()
+                    .scheme(uri.getScheme())
+                    .host("localhost")
+                    .port(uri.getPort())
+                    .path(uri.getPath())
+                    .query(uri.getQuery())
+                    .fragment(uri.getFragment())
+                    .build()
+                    .toUriString();
+            } catch (Exception e) {
+                log.error("Failed to parse URL: {}", originalUrl, e);
+                return originalUrl;
+            }
+        }
+        return originalUrl;
+    }
+
+    private boolean isLocalProfile() {
+        for (String profile : environment.getActiveProfiles()) {
+            if (profile.equals("local")) {
+                return true;
+            }
+        }
+        return environment.getActiveProfiles().length == 0; // Default to local if no profile set
+    }
 
     public Mono<String> testIntegrationConnection(String toolId) {
         return Mono.justOrEmpty(toolRepository.findById(toolId))
-            .switchIfEmpty(Mono.error(new IllegalArgumentException("Tool not found: " + toolId)))
+            .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found: " + toolId)))
             .flatMap(tool -> {
                 if (!tool.isEnabled()) {
-                    return Mono.error(new IllegalStateException("Integration " + tool.getName() + " is not enabled"));
+                    return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Integration " + tool.getName() + " is not enabled"));
                 }
+
+                String targetUrl = adjustUrl(tool.getUrl());
+                log.debug("Testing connection to: {} (original URL: {})", targetUrl, tool.getUrl());
 
                 return webClientBuilder.build()
                     .get()
-                    .uri(tool.getUrl() + "/health")
-                    .headers(headers -> addToolHeaders(headers, tool))
+                    .uri(targetUrl + "/health")
                     .retrieve()
                     .bodyToMono(String.class)
-                    .doOnSuccess(response -> log.info("Successfully connected to {} integration", tool.getName()))
-                    .doOnError(error -> log.error("Failed to connect to {} integration: {}", tool.getName(), error.getMessage()));
+                    .doOnSuccess(response -> log.info("Successfully connected to {} integration at {}", tool.getName(), targetUrl))
+                    .doOnError(error -> log.error("Failed to connect to {} integration at {}: {}", tool.getName(), targetUrl, error.getMessage()));
             });
     }
 
-    private void addToolHeaders(HttpHeaders headers, IntegratedTool tool) {
-        String token = toolService.getActiveToken(tool.getType());
-        if (token != null) {
-            headers.setBearerAuth(token);
-        }
+    public String getActiveToken(String toolType) {
+        return toolService.getActiveToken(toolType);
     }
 } 

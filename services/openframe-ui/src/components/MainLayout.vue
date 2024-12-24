@@ -1,5 +1,5 @@
 <template>
-  <div class="layout-container">
+  <div class="layout-container" :data-theme="isDark ? 'dark' : 'light'">
     <nav class="navbar">
       <div class="navbar-start">
         <Button icon="pi pi-bars" text rounded @click="toggleMenu" class="menu-button" />
@@ -12,6 +12,7 @@
         </div>
       </div>
       <div class="navbar-end">
+        <ThemeToggle />
         <Button 
           icon="pi pi-user" 
           text 
@@ -28,6 +29,10 @@
       :modal="true" 
       :showCloseIcon="false"
       class="main-sidebar"
+      :pt="{
+        root: { class: isDark ? 'dark-theme' : 'light-theme' },
+        content: { class: isDark ? 'dark-theme' : 'light-theme' }
+      }"
     >
       <template #header>
         <div class="sidebar-header">
@@ -69,10 +74,15 @@ import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Sidebar from 'primevue/sidebar';
 import { AuthService } from '../services/AuthService';
+import ThemeToggle from './ThemeToggle.vue'
+import { storeToRefs } from 'pinia'
+import { useThemeStore } from '@/stores/themeStore'
 
 const route = useRoute();
 const router = useRouter();
 const menuVisible = ref(false);
+const themeStore = useThemeStore()
+const { isDark } = storeToRefs(themeStore)
 
 const menuItems = [
   {
@@ -107,6 +117,16 @@ const handleLogout = () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+:deep(.dark-theme) {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+}
+
+:deep(.light-theme) {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
 }
 
 .navbar {
@@ -165,22 +185,24 @@ const handleLogout = () => {
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: var(--border-radius);
-  color: var(--text-color);
+  color: var(--text-color-secondary);
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .menu-item:hover {
   background: var(--surface-hover);
+  color: var(--text-color);
 }
 
 .menu-item.active {
   background: var(--primary-color);
-  color: white;
+  color: black;
 }
 
 .menu-item i {
   font-size: 1.25rem;
+  color: inherit;
 }
 
 .main-content {
@@ -264,5 +286,17 @@ const handleLogout = () => {
   &.p-button {
     padding: 0.5rem;
   }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.theme-indicator {
+  font-size: 0.875rem;
+  color: var(--text-color-muted);
+  margin-right: 1rem;
 }
 </style> 
