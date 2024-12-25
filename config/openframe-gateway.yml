@@ -13,6 +13,13 @@ spring:
   cloud:
     config:
       fail-fast: false
+    gateway:
+      enabled: true
+      default-filters:
+        - LoggingGatewayFilter
+      discovery:
+        locator:
+          enabled: true
 
 # Management server configuration
 management:
@@ -39,7 +46,7 @@ jwt:
       MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDaE661eZM6ESns
       UcJdGmfquTJ5BFK0dw17kYX/7p96N8/s3iUgB7fdgbKuUsHz76nb9FxZh3pkE1vu
       Zhf9dohxGmyCtofEyOxDwvKKjxCS4NfscXNblbgwUYxIFi/zMr3kU08YYrYsR1F/
-      4O1pjORemquQlOB/DuMWoRUKIL0SDqvIc7RSmkONvyGjZdkilaABxbhB/6JdpFYJ
+      4O1pjOTemquQlOB/DuMWoRUKIL0SDqvIc7RSmkONvyGjZdkilaABxbhB/6JdpFYJ
       H4U3i1H0sX+8GaofXcJAP2NrOpJNHmYyn2KH2wbRKoQBjECEQ1e0uN/7Ifa4OmW7
       RFoWS695zxCDlqCWsPNMrjCkXVq8lcKad0O3ZVt8wwJ6GIsjfUs+byo2gmjzsoXv
       WC8T6RZxAgMBAAECggEAGsiuaAaJtmjeQR1HkGofrOdYaMmcTiLjH96fL8Wt255t

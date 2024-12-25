@@ -136,8 +136,9 @@ import InputNumber from 'primevue/inputnumber'
 import InputSwitch from 'primevue/inputswitch'
 import Textarea from 'primevue/textarea'
 import { restClient } from '../apollo/apolloClient'
+import { config as envConfig } from '../config/env.config'
 
-const API_URL = '/tools/fleet/api/v1/fleet'
+const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`
 
 interface ConfigValue {
   [key: string]: string | number | boolean | null | ConfigValue | ConfigValue[]

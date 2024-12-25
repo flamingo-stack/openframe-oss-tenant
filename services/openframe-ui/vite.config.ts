@@ -11,18 +11,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5174,
       strictPort: true,
-      host: true,
-      proxy: {
-        '/api': {
-          target: env.VITE_API_URL,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        },
-        '/tools': {
-          target: env.VITE_GATEWAY_URL,
-          changeOrigin: true
-        }
-      }
+      host: true
     },
     resolve: {
       alias: {
