@@ -96,6 +96,11 @@ const menuItems = [
     path: '/tools'
   },
   {
+    label: 'Mobile Device Management',
+    icon: 'pi pi-mobile',
+    path: '/mdm'
+  },
+  {
     label: 'Settings',
     icon: 'pi pi-cog',
     path: '/settings'
@@ -237,21 +242,25 @@ const handleLogout = () => {
 }
 
 .brand-title {
+  font-family: 'Ubuntu', sans-serif;
   letter-spacing: -0.005em;
   white-space: nowrap;
 }
 
 .brand-highlight {
+  font-family: 'Ubuntu', sans-serif;
   color: var(--primary-color);
 }
 
 .brand-divider {
+  font-family: var(--font-family);
   color: var(--text-color-secondary);
   margin: 0 0.3em;
   font-weight: normal;
 }
 
 .brand-section {
+  font-family: var(--font-family);
   color: var(--text-color-secondary);
   font-size: 0.875rem;
   font-weight: normal;

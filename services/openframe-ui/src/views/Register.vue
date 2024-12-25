@@ -1,282 +1,239 @@
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <header class="login-header">
-        <h1>Create Account</h1>
-        <p>Sign up for OpenFrame</p>
-      </header>
-      
-      <form @submit.prevent="handleRegister" class="login-form">
-        <!-- Global Error Message -->
-        <Message v-if="globalError" severity="error" :closable="false" class="mb-4">{{ globalError }}</Message>
-
-        <!-- Personal Info Section -->
-        <section class="form-section grid">
-          <div class="col-12 md:col-6">
-            <div class="form-group">
-              <label for="firstName">First Name</label>
-              <InputText 
-                id="firstName"
-                v-model="firstName" 
-                class="w-full"
-                placeholder="Enter your first name"
-                :class="{ 'p-invalid': errors.firstName }"
-              />
-              <small class="p-error" v-if="errors.firstName">{{ errors.firstName }}</small>
-            </div>
+  <div class="of-container of-auth">
+    <div class="of-content">
+      <div class="of-header">
+        <h1 class="of-title">Create Account</h1>
+      </div>
+      <p class="of-text-secondary">Join OpenFrame and start your journey</p>
+      <form @submit.prevent="handleSubmit" class="of-form">
+        <div class="form-row">
+          <div class="of-form-group">
+            <label for="firstName" class="of-form-label">First Name</label>
+            <InputText id="firstName" v-model="firstName" class="w-full" />
           </div>
-
-          <div class="col-12 md:col-6">
-            <div class="form-group">
-              <label for="lastName">Last Name</label>
-              <InputText 
-                id="lastName"
-                v-model="lastName" 
-                class="w-full"
-                placeholder="Enter your last name"
-                :class="{ 'p-invalid': errors.lastName }"
-              />
-              <small class="p-error" v-if="errors.lastName">{{ errors.lastName }}</small>
-            </div>
+          <div class="of-form-group">
+            <label for="lastName" class="of-form-label">Last Name</label>
+            <InputText id="lastName" v-model="lastName" class="w-full" />
           </div>
-        </section>
-
-        <!-- Account Info Section -->
-        <section class="form-section">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <InputText 
-              id="email"
-              v-model="email" 
-              type="email"
-              class="w-full"
-              placeholder="Enter your email"
-              :class="{ 'p-invalid': errors.email }"
+        </div>
+        <div class="of-form-group">
+          <label for="email" class="of-form-label">Email</label>
+          <InputText id="email" v-model="email" type="email" class="w-full" />
+        </div>
+        <div class="of-form-group">
+          <label for="password" class="of-form-label">Password</label>
+          <div class="password-wrapper">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              class="p-inputtext w-full"
             />
-            <small class="p-error" v-if="errors.email">{{ errors.email }}</small>
-          </div>
-
-          <div class="grid">
-            <div class="col-12 md:col-6">
-              <div class="form-group">
-                <label for="password">Password</label>
-                <Password
-                  id="password"
-                  v-model="password"
-                  class="w-full"
-                  :feedback="true"
-                  :toggleMask="true"
-                  placeholder="Enter your password"
-                  :class="{ 'p-invalid': errors.password }"
-                  inputClass="w-full"
-                />
-                <small class="p-error" v-if="errors.password">{{ errors.password }}</small>
+            <button
+              type="button"
+              class="password-toggle"
+              @click="showPassword = !showPassword"
+            >
+              <i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" />
+            </button>
+            <div v-if="password" class="password-strength">
+              <div class="strength-meter">
+                <div
+                  class="strength-bar"
+                  :class="passwordStrength.class"
+                  :style="{ width: passwordStrength.percentage + '%' }"
+                ></div>
               </div>
-            </div>
-
-            <div class="col-12 md:col-6">
-              <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <Password
-                  id="confirmPassword"
-                  v-model="confirmPassword"
-                  class="w-full"
-                  :feedback="false"
-                  :toggleMask="true"
-                  placeholder="Confirm your password"
-                  :class="{ 'p-invalid': errors.confirmPassword }"
-                  inputClass="w-full"
-                />
-                <small class="p-error" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</small>
-              </div>
+              <span class="strength-text">{{ passwordStrength.label }}</span>
             </div>
           </div>
-        </section>
-
-        <!-- Submit Section -->
-        <section class="form-section">
-          <Button 
-            type="submit" 
-            label="Sign Up" 
-            class="w-full"
-            :loading="loading"
-            severity="primary"
-            size="large"
-          />
-
-          <div class="mt-4 text-center text-sm">
-            <span class="text-color-secondary">Already have an account? </span>
-            <RouterLink to="/login" class="text-link font-medium">Sign in</RouterLink>
+        </div>
+        <div class="of-form-group">
+          <label for="confirmPassword" class="of-form-label">Confirm Password</label>
+          <div class="password-wrapper">
+            <input
+              id="confirmPassword"
+              v-model="confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              class="p-inputtext w-full"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              @click="showConfirmPassword = !showConfirmPassword"
+            >
+              <i :class="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" />
+            </button>
           </div>
-        </section>
+        </div>
+        <div class="of-form-group">
+          <Button type="submit" :loading="loading" class="of-button w-full">Create Account</Button>
+        </div>
+        <div class="of-text-center">
+          <p class="of-text-secondary">
+            Already have an account? <router-link to="/login" class="of-link">Sign in</router-link>
+          </p>
+        </div>
       </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { AuthService, OAuthError, type RegisterCredentials } from '../services/AuthService';
-import InputText from 'primevue/inputtext';
-import Password from 'primevue/password';
-import Button from 'primevue/button';
-import Message from 'primevue/message';
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import { useToast } from 'primevue/usetoast'
 
-const router = useRouter();
-const firstName = ref('');
-const lastName = ref('');
-const email = ref('');
-const password = ref('');
-const confirmPassword = ref('');
-const loading = ref(false);
-const globalError = ref('');
-const errors = ref({
-  firstName: '',
-  lastName: '',
-  email: '',
-  password: '',
-  confirmPassword: ''
-});
+const router = useRouter()
+const authStore = useAuthStore()
+const toast = useToast()
 
-const validateForm = () => {
-  let isValid = true;
-  errors.value = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  };
-  globalError.value = '';
+const firstName = ref('')
+const lastName = ref('')
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+const loading = ref(false)
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 
-  if (!firstName.value) {
-    errors.value.firstName = 'First name is required';
-    isValid = false;
+const passwordStrength = computed(() => {
+  const pwd = password.value
+  if (!pwd) return { percentage: 0, class: '', label: '' }
+
+  let strength = 0
+  let checks = 0
+
+  // Length check
+  if (pwd.length >= 8) {
+    strength += 25
+    checks++
   }
 
-  if (!lastName.value) {
-    errors.value.lastName = 'Last name is required';
-    isValid = false;
+  // Contains number
+  if (/\d/.test(pwd)) {
+    strength += 25
+    checks++
   }
 
-  if (!email.value) {
-    errors.value.email = 'Email is required';
-    isValid = false;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    errors.value.email = 'Please enter a valid email';
-    isValid = false;
+  // Contains lowercase
+  if (/[a-z]/.test(pwd)) {
+    strength += 25
+    checks++
   }
 
-  if (!password.value) {
-    errors.value.password = 'Password is required';
-    isValid = false;
-  } else if (password.value.length < 8) {
-    errors.value.password = 'Password must be at least 8 characters';
-    isValid = false;
+  // Contains uppercase
+  if (/[A-Z]/.test(pwd)) {
+    strength += 25
+    checks++
   }
 
+  let strengthClass = ''
+  let label = ''
+
+  if (checks === 4) {
+    strengthClass = 'strong'
+    label = 'Strong'
+  } else if (checks >= 2) {
+    strengthClass = 'medium'
+    label = 'Medium'
+  } else {
+    strengthClass = 'weak'
+    label = 'Weak'
+  }
+
+  return {
+    percentage: strength,
+    class: strengthClass,
+    label
+  }
+})
+
+const handleSubmit = async () => {
   if (password.value !== confirmPassword.value) {
-    errors.value.confirmPassword = 'Passwords do not match';
-    isValid = false;
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Passwords do not match',
+      life: 3000
+    })
+    return
   }
-
-  return isValid;
-};
-
-const handleRegister = async () => {
-  if (!validateForm()) return;
 
   try {
-    loading.value = true;
-    globalError.value = '';
-    errors.value.email = '';
-
-    const credentials: RegisterCredentials = {
-      firstName: firstName.value,
-      lastName: lastName.value,
+    loading.value = true
+    await authStore.register({
       email: email.value,
       password: password.value,
-      confirmPassword: confirmPassword.value
-    };
-
-    await AuthService.register(credentials);
-    
-    // After successful registration, log the user in
-    await AuthService.login({
-      email: email.value,
-      password: password.value
-    });
-    
-    router.push('/');
-  } catch (error) {
-    if (error instanceof OAuthError) {
-      switch (error.error) {
-        case 'invalid_request':
-          if (error.error_description.includes('Email already registered')) {
-            errors.value.email = error.error_description;
-          } else {
-            globalError.value = error.error_description;
-          }
-          break;
-        case 'temporarily_unavailable':
-          globalError.value = 'Service is temporarily unavailable. Please try again later.';
-          break;
-        default:
-          globalError.value = error.error_description || 'An unexpected error occurred';
-      }
-    } else {
-      globalError.value = 'An unexpected error occurred. Please try again.';
-    }
-    console.error('Registration failed:', error);
+      confirmPassword: confirmPassword.value,
+      firstName: firstName.value,
+      lastName: lastName.value
+    })
+    router.push('/')
+  } catch (error: any) {
+    console.error('Registration failed:', error)
+    const errorMessage = error.message || 'Registration failed. Please try again.'
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: errorMessage,
+      life: 3000
+    })
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 </script>
 
 <style scoped>
-.login-page {
-  width: 100%;
+.of-container.of-auth {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
 }
 
-.login-card {
+.of-content {
   background: var(--surface-card);
-  border-radius: 1rem;
-  padding: 2.5rem;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
   width: 100%;
-  max-width: 800px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  max-width: 600px;
+  box-shadow: var(--card-shadow);
 }
 
-.login-header {
+.of-header {
   text-align: center;
-  margin-bottom: 2.5rem;
-}
-
-.login-header h1 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
-}
-
-.login-header p {
-  color: var(--text-color-secondary);
-  margin: 0;
-  font-size: 1rem;
-}
-
-.form-group {
   margin-bottom: 1.5rem;
 }
 
-.form-group label {
+.of-text-secondary {
+  text-align: left;
+  margin-bottom: 1.5rem;
+  color: var(--text-color-secondary);
+}
+
+.of-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.of-form-group {
+  margin-bottom: 1rem;
+}
+
+.of-form-label {
   display: block;
   margin-bottom: 0.5rem;
   color: var(--text-color);
@@ -286,83 +243,174 @@ const handleRegister = async () => {
 
 :deep(.p-inputtext) {
   width: 100%;
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
   padding: 0.75rem 1rem;
+  color: var(--text-color);
+  height: 42px;
+  border-radius: var(--border-radius);
+}
+
+:deep(.p-password) {
+  width: 100%;
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  height: 42px;
+  position: relative;
+  overflow: visible;
 }
 
 :deep(.p-password-input) {
   width: 100%;
+  height: 100%;
+  border: none !important;
+  background: var(--surface-ground) !important;
+  padding: 0.75rem 2.5rem 0.75rem 1rem !important;
+  margin: 0;
+  color: var(--text-color);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  border-radius: var(--border-radius);
 }
 
-.text-color-secondary {
-  color: var(--text-secondary);
+:deep(.p-password .p-icon) {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--text-color-secondary);
+  opacity: 0.7;
 }
 
-/* Form text */
-.form-group label {
-  color: var(--text-primary);
+.of-text-center {
+  text-align: center;
+  margin-top: var(--of-spacing-md);
+}
+
+.of-link {
+  color: var(--of-accent);
+  text-decoration: none;
   font-weight: 500;
 }
 
-/* Button styling */
-:deep(.p-button) {
-  background-color: #00E5BE;
-  border-color: #00E5BE;
-}
-
-:deep(.p-button:hover) {
-  background-color: #33eacc;
-  border-color: #33eacc;
-}
-
-/* Checkbox and other PrimeVue overrides */
-:deep(.p-checkbox .p-checkbox-box.p-highlight) {
-  border-color: #00E5BE;
-  background: #00E5BE;
-}
-
-:deep(.p-checkbox:hover .p-checkbox-box) {
-  border-color: #00E5BE;
+.of-link:hover {
+  text-decoration: underline;
 }
 
 @media screen and (max-width: 640px) {
-  .login-card {
-    padding: 2rem;
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .of-content {
+    padding: 1rem;
   }
 }
 
-:deep(.p-button) {
-  padding: 1rem;
-  font-weight: 500;
-  font-size: 1rem;
-  border-radius: 0.5rem;
+:deep(.p-password-panel) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
 }
 
-:deep(.p-button.p-button-lg) {
-  padding: 1rem;
+:deep(.p-password-meter) {
+  height: 3px;
+  background: var(--surface-border);
+  margin: 0;
 }
 
-:deep(.p-button:focus) {
-  box-shadow: 0 0 0 2px var(--surface-ground), 0 0 0 4px var(--primary-color);
+:deep(.p-password-strength) {
+  height: 3px;
+  transition: all 0.2s ease;
 }
 
-:deep(.p-button .p-button-label) {
-  font-weight: 600;
-  line-height: 1.5;
+:deep(.p-password-strength.weak) {
+  background: var(--red-500);
 }
 
-.form-section {
-  margin-bottom: 1.5rem;
+:deep(.p-password-strength.medium) {
+  background: var(--yellow-500);
 }
 
-.form-section:last-child {
-  margin-bottom: 0;
+:deep(.p-password-strength.strong) {
+  background: var(--green-500);
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+:deep(.p-password-info) {
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  color: var(--text-color-secondary);
 }
 
-.form-group:last-child {
-  margin-bottom: 0;
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
+.password-strength {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+}
+
+.strength-meter {
+  height: 3px;
+  background: var(--surface-card);
+  border-radius: 1.5px;
+  overflow: hidden;
+}
+
+.strength-bar {
+  height: 100%;
+  width: 0;
+  transition: all 0.3s ease;
+}
+
+.strength-bar.weak {
+  background: var(--red-500);
+}
+
+.strength-bar.medium {
+  background: var(--yellow-500);
+}
+
+.strength-bar.strong {
+  background: var(--green-500);
+}
+
+.strength-text {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  margin-top: 0.25rem;
+  display: block;
 }
 </style> 

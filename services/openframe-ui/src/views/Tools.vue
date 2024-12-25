@@ -1,7 +1,7 @@
 <template>
   <div class="tools-dashboard">
-    <div class="header-row">
-      <h1 class="page-title">Tools</h1>
+    <div class="of-mdm-header">
+      <h1 class="of-title">Tools</h1>
       <div class="localhost-toggle">
         <InputSwitch v-model="useLocalhost" />
         <span class="toggle-label">Local Deployment</span>
@@ -413,11 +413,18 @@ const isDevelopment = computed(() => import.meta.env.DEV);
 </script>
 
 <style scoped>
-.header-row {
+.of-mdm-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2rem;
+}
+
+.of-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
 }
 
 .tools-dashboard {
@@ -579,5 +586,106 @@ const isDevelopment = computed(() => import.meta.env.DEV);
   top: 50%;
   margin-top: -0.5rem;
   right: 2.5rem;
+}
+
+.tool-actions {
+  display: flex;
+  gap: var(--of-spacing-sm);
+}
+
+.tool-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.tool-action:hover {
+  background: var(--surface-hover);
+}
+
+.tool-action i {
+  font-size: 0.875rem;
+}
+
+:deep(.p-dropdown) {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  transition: border-color 0.2s;
+  height: 42px;
+  min-width: 200px;
+}
+
+:deep(.p-dropdown:hover) {
+  border-color: var(--of-primary);
+}
+
+:deep(.p-dropdown:not(.p-disabled).p-focus) {
+  border-color: var(--of-primary);
+  box-shadow: 0 0 0 1px var(--of-primary);
+}
+
+:deep(.p-dropdown-panel) {
+  background: var(--surface-overlay);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--of-card-radius);
+}
+
+:deep(.p-dropdown-item) {
+  padding: var(--of-spacing-sm) var(--of-spacing-md);
+  color: var(--text-color);
+  transition: background-color 0.2s;
+}
+
+:deep(.p-dropdown-item:hover) {
+  background: var(--surface-hover);
+}
+
+/* Dropdown styles */
+:deep(.p-dropdown) {
+  height: 42px;
+  min-width: 200px;
+}
+
+:deep(.p-dropdown .p-dropdown-label) {
+  display: flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Action button styles */
+.tool-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.tool-action:hover {
+  background: var(--surface-hover);
+}
+
+.tool-action i {
+  font-size: 0.875rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  margin-bottom: 2rem;
 }
 </style> 

@@ -88,52 +88,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* PrimeVue Sidebar Override */
-.p-sidebar {
-  background: var(--surface-card) !important;
-  color: var(--text-color) !important;
-}
-
-.p-sidebar-header,
-.p-sidebar-content {
-  background: var(--surface-card) !important;
-  color: var(--text-color) !important;
-}
-
-.p-sidebar-mask {
-  background: rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Card styles */
-.card {
-  background-color: var(--surface-card);
-  border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-sm);
-  border-radius: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-md);
-}
-
-/* Form text styles */
-.form-text {
-  font-size: 0.875rem;
-  color: var(--text-color);
-}
-
-/* Global link styles - single source of truth */
-.text-link {
-  color: var(--text-color) !important;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.2s;
-  font-size: 0.875rem;
-}
-
-.text-link:hover {
-  color: var(--primary-color) !important;
+/* Brand font usage */
+.brand-title,
+.brand-name {
+  font-family: var(--font-brand-family) !important;
 }
 
 /* PrimeVue Input Overrides */
@@ -150,6 +108,11 @@ body {
 .p-dropdown .p-dropdown-label {
   color: var(--text-color) !important;
   background: var(--surface-section) !important;
+  height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .p-dropdown-panel {
@@ -160,6 +123,7 @@ body {
 
 .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
   color: var(--text-color) !important;
+  padding: 0.75rem 1rem !important;
 }
 
 .p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
@@ -172,12 +136,97 @@ body {
   background: var(--surface-section) !important;
   color: var(--text-color) !important;
   border-color: var(--surface-border) !important;
+  height: 42px !important;
+  text-overflow: ellipsis !important;
+  padding-right: 2.5rem !important;
 }
 
 .p-password-input:enabled:focus,
 .p-inputtext:enabled:focus {
   border-color: var(--primary-color) !important;
   box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+/* Password eye icon alignment */
+.p-password {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.p-password .p-icon {
+  position: absolute !important;
+  right: 0.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  cursor: pointer !important;
+}
+
+/* Button styles */
+.p-button {
+  height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--primary-color) !important;
+  border: none !important;
+  color: var(--surface-900) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 0.75rem 1.25rem !important;
+  border-radius: 6px !important;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.p-button:hover {
+  background: var(--primary-dark) !important;
+  color: var(--surface-900) !important;
+}
+
+.p-button:focus {
+  box-shadow: 0 0 0 2px var(--surface-ground), 0 0 0 4px var(--primary-color) !important;
+}
+
+/* Icon-only button styles */
+.p-button.p-button-icon-only {
+  width: 42px !important;
+  padding: 0 !important;
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  color: var(--text-color) !important;
+}
+
+.p-button.p-button-icon-only:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+  border-color: var(--surface-border) !important;
+}
+
+/* Text button styles */
+.p-button.p-button-text {
+  background: transparent !important;
+  color: var(--text-color-secondary) !important;
+  border: none !important;
+}
+
+.p-button.p-button-text:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+}
+
+/* Full width button */
+.p-button.w-full {
+  width: 100% !important;
+}
+
+[data-theme="dark"] .p-button.p-button-text:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .p-button.p-button-icon-only:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
 }
 
 /* Tool Logo Override */
@@ -189,35 +238,300 @@ body {
   --is-dark: 1;
 }
 
-/* PrimeVue Global Overrides */
-.p-component {
-  color: var(--text-color) !important;
-}
-
-.p-inputtext,
-.p-dropdown-label,
-.p-dropdown-item,
-.p-inputgroup-addon {
-  color: var(--text-color) !important;
-}
-
-.p-dropdown-label.p-placeholder {
-  color: var(--text-color-secondary) !important;
-}
-
 /* Card & Headers Override */
 .p-card-title,
 .p-panel-header,
-.p-tabview-title,
-h1, h2, h3, h4, h5, h6 {
+.p-tabview-title {
   color: var(--text-color) !important;
 }
 
-/* Page Headings */
-.page-title,
-h1:not(.brand-title) {  /* Exclude brand title from this style */
-  color: var(--primary-color) !important;
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 2rem;
+/* Menu dark mode overrides */
+[data-theme="dark"] .p-menuitem-link {
+  color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .p-menuitem-link:hover {
+  background: var(--surface-hover) !important;
+}
+
+[data-theme="dark"] .p-menuitem.p-highlight .p-menuitem-link {
+  background: var(--surface-hover) !important;
+}
+
+[data-theme="dark"] .p-menu {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  padding: 0.5rem !important;
+  width: 100% !important;
+}
+
+[data-theme="dark"] .p-menubar {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+}
+
+[data-theme="dark"] .p-submenu-list {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+}
+
+/* Sidebar dark mode overrides */
+[data-theme="dark"] .p-sidebar {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .p-menu {
+  background: transparent !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .p-menu .p-menuitem-link {
+  color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .p-menu .p-menuitem-link:hover {
+  background: var(--surface-hover) !important;
+}
+
+[data-theme="dark"] .p-menu .p-menuitem-link.p-highlight {
+  background: var(--primary-color) !important;
+  color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .p-menu .p-menuitem-link .p-menuitem-icon {
+  color: var(--text-color) !important;
+}
+
+.p-button.p-button-icon-only {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  color: var(--text-color) !important;
+}
+
+/* Input group styles */
+.p-inputgroup {
+  display: flex !important;
+  align-items: stretch !important;
+}
+
+.p-inputgroup .p-inputgroup-addon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-right: none !important;
+  color: var(--text-color) !important;
+  padding: 0 0.75rem !important;
+  min-width: 42px !important;
+  font-size: 0.875rem !important;
+}
+
+.p-inputgroup .p-inputtext {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  height: 42px !important;
+  background: var(--surface-card) !important;
+  font-size: 0.875rem !important;
+  color: var(--text-color) !important;
+}
+
+.p-inputgroup .p-inputtext::placeholder {
+  color: var(--text-color-secondary) !important;
+}
+
+/* Dropdown styles */
+.p-dropdown {
+  height: 42px !important;
+  background: var(--surface-card) !important;
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.p-dropdown .p-dropdown-label {
+  height: 100% !important;
+  padding: 0 0.75rem !important;
+  background: var(--surface-card) !important;
+  font-size: 0.875rem !important;
+  color: var(--text-color) !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+}
+
+.p-dropdown .p-dropdown-trigger {
+  width: 42px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--text-color) !important;
+  background: var(--surface-card) !important;
+}
+
+.p-dropdown .p-dropdown-clear-icon {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 0.5rem !important;
+  color: var(--text-color) !important;
+}
+
+.p-dropdown:not(.p-disabled).p-focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+.p-dropdown-panel {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 6px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%) !important;
+}
+
+.p-dropdown-panel .p-dropdown-items {
+  padding: 0.5rem 0 !important;
+}
+
+.p-dropdown-panel .p-dropdown-item {
+  padding: 0.5rem 0.75rem !important;
+  color: var(--text-color) !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+}
+
+.p-dropdown-panel .p-dropdown-item:hover {
+  background: var(--surface-hover) !important;
+}
+
+/* Dropdown overlay fixes */
+.p-component-overlay,
+.p-dropdown-panel-overlay,
+.p-connected-overlay,
+.p-overlay,
+.p-overlay-modal {
+  background: none !important;
+  backdrop-filter: none !important;
+}
+
+.p-dropdown-panel {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 6px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%) !important;
+}
+
+.p-dropdown-items-wrapper,
+.p-dropdown-items,
+.p-dropdown-item {
+  background: var(--surface-card) !important;
+}
+
+.p-dropdown-item:hover,
+.p-dropdown-item.p-highlight {
+  background: var(--surface-hover) !important;
+}
+
+/* Remove overlay */
+.p-dropdown-panel-overlay {
+  background: none !important;
+}
+
+.p-overlay-modal {
+  background: none !important;
+}
+
+/* Password Input Override */
+.p-password-input,
+.p-inputtext {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+  border-color: var(--surface-border) !important;
+  height: 42px !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+[data-theme="dark"] .p-dropdown,
+[data-theme="dark"] .p-inputgroup-addon,
+[data-theme="dark"] .p-inputtext {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+}
+
+/* Override PrimeVue's overlay mask */
+.p-component-overlay-enter-active {
+  animation: none !important;
+}
+
+.p-component-overlay-leave-active {
+  animation: none !important;
+}
+
+.p-component-overlay {
+  display: none !important;
+}
+
+/* Override any backdrop filters */
+body::before {
+  display: none !important;
+}
+
+.p-dropdown-panel.p-component.surface-0 {
+  background: var(--surface-card) !important;
+}
+
+.p-dropdown-items-wrapper {
+  background: var(--surface-card) !important;
+}
+
+.p-dropdown-items {
+  background: var(--surface-card) !important;
+  padding: 0 !important;
+}
+
+.p-dropdown-item {
+  background: var(--surface-card) !important;
+  color: var(--text-color) !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+.p-dropdown-item:hover {
+  background: var(--surface-hover) !important;
+}
+
+/* Menu styles */
+.p-menu {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  padding: 0.5rem !important;
+  width: 100% !important;
+}
+
+/* Dark mode menu overrides */
+[data-theme="dark"] .p-menu {
+  background: var(--surface-card) !important;
+}
+
+/* Sidebar menu specific */
+.p-sidebar .p-menu {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Remove display: none from overlay */
+.p-component-overlay {
+  background: none !important;
+  backdrop-filter: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  pointer-events: auto !important;
 }

@@ -1,12 +1,13 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
+import MobileDeviceManagement from '../views/MobileDeviceManagement.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/login',
@@ -38,6 +39,16 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Tools',
         icon: 'pi pi-cog'
+      }
+    },
+    {
+      path: '/mdm',
+      name: 'mdm',
+      component: MobileDeviceManagement,
+      meta: { 
+        requiresAuth: true,
+        title: 'Mobile Device Management',
+        icon: 'pi pi-mobile'
       }
     },
     {
