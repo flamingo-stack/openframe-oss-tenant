@@ -4,13 +4,11 @@ import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServe
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 import com.openframe.security.config.BaseSecurityConfig;
 import com.openframe.security.jwt.JwtAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig extends BaseSecurityConfig {
 
     public SecurityConfig(
