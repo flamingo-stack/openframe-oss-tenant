@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client/core';
+import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink } from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
 import { config } from '../config/env.config';
 import { onError } from "@apollo/client/link/error";
@@ -14,10 +14,6 @@ const httpLink = createHttpLink({
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem('access_token');
   
-  // More detailed debug logging
-  console.log('Apollo Auth Link - Headers before:', headers);
-  console.log('Apollo Auth Link - Token exists:', !!token);
-  
   const updatedHeaders = {
     ...headers,
     Authorization: token ? `Bearer ${token}` : '',
@@ -25,7 +21,6 @@ const authLink = setContext((_, { headers }) => {
     'Accept': '*/*'
   };
   
-  console.log('Apollo Auth Link - Final headers:', updatedHeaders);
   return { headers: updatedHeaders };
 });
 
@@ -73,4 +68,54 @@ export const apolloClient = new ApolloClient({
       errorPolicy: 'all'
     },
   },
-}); 
+});
+
+// Helper function to get auth headers
+const getAuthHeaders = (): HeadersInit => {
+  const token = localStorage.getItem('access_token');
+  return {
+    'Authorization': token ? `Bearer ${token}` : '',
+    'Content-Type': 'application/json',
+    'Accept': '*/*'
+  };
+};
+
+// Add REST methods
+export const restClient = {
+  async get(url: string) {
+    const response = await fetch(url, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error(response.statusText);
+    return response.json();
+  },
+  
+  async post(url: string, data: unknown) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(response.statusText);
+    return response.json();
+  },
+  
+  async patch(url: string, data: unknown) {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(response.statusText);
+    return response.json();
+  },
+  
+  async delete(url: string) {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error(response.statusText);
+    return response.json();
+  }
+}; 

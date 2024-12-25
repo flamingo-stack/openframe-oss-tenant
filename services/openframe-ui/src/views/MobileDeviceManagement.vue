@@ -128,7 +128,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -136,10 +135,9 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import InputSwitch from 'primevue/inputswitch'
 import Textarea from 'primevue/textarea'
+import { restClient } from '../apollo/apolloClient'
 
-const GATEWAY_URL = import.meta.env.DEV ? 'http://localhost:8100' : import.meta.env.VITE_GATEWAY_URL
-
-const API_URL = `${GATEWAY_URL}/tools/fleet/api/v1/fleet`
+const API_URL = '/tools/fleet/api/v1/fleet'
 
 interface ConfigValue {
   [key: string]: string | number | boolean | null | ConfigValue | ConfigValue[]
@@ -157,6 +155,7 @@ const saving = ref(false)
 const error = ref('')
 const config = ref<Config | null>(null)
 const editedConfig = ref<Config>({})
+const changedValues = ref<Record<string, any>>({})
 const expandedItems = ref(new Set<string>())
 const hasChanges = ref(false)
 
@@ -220,15 +219,41 @@ const formatJSON = (obj: unknown): string => {
 const updateConfigValue = (key: string | number, subKey: string | number | null, value: unknown): void => {
   const keyStr = String(key)
   const subKeyStr = subKey ? String(subKey) : null
-  if (subKeyStr === null) {
-    editedConfig.value[keyStr] = value as ConfigValue
-  } else {
-    if (!editedConfig.value[keyStr]) {
-      editedConfig.value[keyStr] = {}
+  const originalValue = subKeyStr === null 
+    ? config.value?.[keyStr]
+    : config.value?.[keyStr]?.[subKeyStr]
+
+  // Only track if value actually changed
+  if (JSON.stringify(value) !== JSON.stringify(originalValue)) {
+    if (subKeyStr === null) {
+      editedConfig.value[keyStr] = value as ConfigValue
+      changedValues.value[keyStr] = value
+    } else {
+      if (!editedConfig.value[keyStr]) {
+        editedConfig.value[keyStr] = {}
+      }
+      editedConfig.value[keyStr][subKeyStr] = value as ConfigValue
+      // Maintain the nested structure
+      if (!changedValues.value[keyStr]) {
+        changedValues.value[keyStr] = {}
+      }
+      changedValues.value[keyStr][subKeyStr] = value
     }
-    editedConfig.value[keyStr][subKeyStr] = value as ConfigValue
+    hasChanges.value = true
+  } else {
+    // Remove from changed values if it's back to original
+    if (subKeyStr === null) {
+      delete changedValues.value[keyStr]
+    } else {
+      if (changedValues.value[keyStr]) {
+        delete changedValues.value[keyStr][subKeyStr]
+        if (Object.keys(changedValues.value[keyStr]).length === 0) {
+          delete changedValues.value[keyStr]
+        }
+      }
+    }
+    hasChanges.value = Object.keys(changedValues.value).length > 0
   }
-  onConfigChange()
 }
 
 const getConfigValue = (key: string | number, subKey: string | number | null): unknown => {
@@ -261,17 +286,12 @@ const saveConfig = async () => {
   saving.value = true
   error.value = ''
   try {
-    const response = await fetch(`${API_URL}/config`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(editedConfig.value),
-    })
-    if (!response.ok) {
-      throw new Error(`Failed to save configuration: ${response.statusText}`)
-    }
+    const response = await restClient.patch(`${API_URL}/config`, changedValues.value)
+    
+    // Update the base config with the changes
     config.value = JSON.parse(JSON.stringify(editedConfig.value))
+    // Clear changed values
+    changedValues.value = {}
     hasChanges.value = false
     toast.add({
       severity: 'success',
@@ -296,13 +316,9 @@ const fetchMDMConfig = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await fetch(`${API_URL}/config`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch configuration: ${response.statusText}`)
-    }
-    const data = await response.json()
-    config.value = data
-    editedConfig.value = JSON.parse(JSON.stringify(data))
+    const response = await restClient.get(`${API_URL}/config`)
+    config.value = response
+    editedConfig.value = JSON.parse(JSON.stringify(response))
     hasChanges.value = false
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to fetch configuration'

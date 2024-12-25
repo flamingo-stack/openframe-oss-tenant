@@ -22,6 +22,7 @@ public class GatewaySecurityConfig extends BaseReactiveSecurityConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.addAllowedOrigin("http://localhost");
         corsConfig.addAllowedOrigin("http://localhost:5174"); // UI development server
         corsConfig.addAllowedMethod("GET");
         corsConfig.addAllowedMethod("POST");

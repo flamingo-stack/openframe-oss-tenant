@@ -1,16 +1,20 @@
 package com.openframe.gateway.controller;
 
 import java.net.URI;
+import java.time.Duration;
 
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -86,8 +90,15 @@ public class IntegrationController {
                 .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
-    @GetMapping("/{toolId}/**")
-    public Mono<ResponseEntity<String>> proxyRequest(@PathVariable String toolId, ServerHttpRequest request) {
+    @RequestMapping(value = "/{toolId}/**", method = {
+        RequestMethod.GET,
+        RequestMethod.POST,
+        RequestMethod.PUT,
+        RequestMethod.PATCH,
+        RequestMethod.DELETE,
+        RequestMethod.OPTIONS
+    })
+    public Mono<ResponseEntity<String>> proxyRequest(@PathVariable String toolId, ServerHttpRequest request, Authentication auth) {
         String path = request.getPath().toString();
         log.info("Proxying request for tool: {}, path: {}", toolId, path);
 
@@ -102,7 +113,7 @@ public class IntegrationController {
                     log.debug("Forwarding request to: {} (original URL: {})", targetUri, tool.getUrl());
 
                     // Forward the request with the tool's token
-                    return webClientBuilder.build()
+                    WebClient.RequestBodySpec requestSpec = webClientBuilder.build()
                             .method(request.getMethod())
                             .uri(targetUri)
                             .headers(headers -> {
@@ -111,10 +122,43 @@ public class IntegrationController {
                                 if (tool.getCredentials() != null && tool.getCredentials().getToken() != null) {
                                     headers.setBearerAuth(tool.getCredentials().getToken());
                                 }
+                                // Forward the user's authentication token
+                                if (auth instanceof JwtAuthenticationToken) {
+                                    headers.setBearerAuth(((JwtAuthenticationToken) auth).getToken().getTokenValue());
+                                }
+                            });
+
+                    // Add request body if present
+                    return request.getBody()
+                            .map(dataBuffer -> {
+                                byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                                dataBuffer.read(bytes);
+                                return bytes;
                             })
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .map(ResponseEntity::ok)
+                            .collectList()
+                            .flatMap(bodyBytes -> {
+                                if (!bodyBytes.isEmpty()) {
+                                    byte[] fullBody = bodyBytes.stream()
+                                            .reduce(new byte[0], (acc, bytes) -> {
+                                                byte[] combined = new byte[acc.length + bytes.length];
+                                                System.arraycopy(acc, 0, combined, 0, acc.length);
+                                                System.arraycopy(bytes, 0, combined, acc.length, bytes.length);
+                                                return combined;
+                                            });
+                                    return requestSpec
+                                            .body(BodyInserters.fromValue(fullBody))
+                                            .retrieve()
+                                            .bodyToMono(String.class)
+                                            .timeout(Duration.ofSeconds(30))
+                                            .map(ResponseEntity::ok);
+                                } else {
+                                    return requestSpec
+                                            .retrieve()
+                                            .bodyToMono(String.class)
+                                            .timeout(Duration.ofSeconds(30))
+                                            .map(ResponseEntity::ok);
+                                }
+                            })
                             .doOnSuccess(response -> log.info("Successfully proxied request to {}", tool.getName()))
                             .doOnError(error -> log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
                 })
