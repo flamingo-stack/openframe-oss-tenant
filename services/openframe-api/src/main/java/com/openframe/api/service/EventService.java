@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import com.openframe.api.model.Event;
+import com.openframe.core.model.Event;
 
 import lombok.RequiredArgsConstructor;
 

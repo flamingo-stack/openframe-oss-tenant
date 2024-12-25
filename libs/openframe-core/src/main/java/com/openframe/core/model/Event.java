@@ -2,9 +2,15 @@ package com.openframe.core.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import lombok.Builder;
+import lombok.Data;
+
 import java.time.Instant;
 
 @Document(collection = "events")
+@Data
+@Builder
 public class Event {
     @Id
     private String id;

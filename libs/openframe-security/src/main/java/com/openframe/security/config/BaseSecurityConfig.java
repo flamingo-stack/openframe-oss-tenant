@@ -20,27 +20,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.openframe.security.jwt.JwtAuthenticationFilter;
 
+import lombok.RequiredArgsConstructor;
+
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
+@RequiredArgsConstructor
 public abstract class BaseSecurityConfig {
 
     private final ManagementServerProperties managementProperties;
     private final ServerProperties serverProperties;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
-
-    protected BaseSecurityConfig(
-            ManagementServerProperties managementProperties,
-            ServerProperties serverProperties,
-            JwtAuthenticationFilter jwtAuthFilter,
-            AuthenticationProvider authenticationProvider) {
-        this.managementProperties = managementProperties;
-        this.serverProperties = serverProperties;
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.authenticationProvider = authenticationProvider;
-    }
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
@@ -97,5 +89,4 @@ public abstract class BaseSecurityConfig {
         return (web) -> web.ignoring()
                 .requestMatchers(managementContextPath + "/**");
     }
-
 }

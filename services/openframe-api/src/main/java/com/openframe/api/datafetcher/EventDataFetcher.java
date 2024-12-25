@@ -9,8 +9,8 @@ import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsMutation;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.InputArgument;
-import com.openframe.api.model.Event;
 import com.openframe.api.service.EventService;
+import com.openframe.core.model.Event;
 
 @DgsComponent
 public class EventDataFetcher {

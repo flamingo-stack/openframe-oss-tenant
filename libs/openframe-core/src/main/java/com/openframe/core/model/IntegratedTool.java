@@ -1,4 +1,4 @@
-package com.openframe.api.model;
+package com.openframe.core.model;
 
 import lombok.Builder;
 import lombok.Data;

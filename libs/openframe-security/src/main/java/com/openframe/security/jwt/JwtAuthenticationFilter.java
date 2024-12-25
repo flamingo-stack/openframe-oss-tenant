@@ -2,8 +2,7 @@ package com.openframe.security.jwt;
 
 import java.io.IOException;
 
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,18 +19,30 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 100)
-@RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+public class JwtAuthenticationFilter extends OncePerRequestFilter implements JwtAuthenticationOperations {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
+
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            UserDetailsService userDetailsService,
+            UserRepository userRepository) {
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public JwtService getJwtService() {
+        return jwtService;
+    }
 
     @Override
     protected void doFilterInternal(
@@ -39,52 +50,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         
-
-        log.info("Processing request: {} {} with auth: {}", request.getMethod(), request.getRequestURI(), request.getHeader("Authorization"));
+        String path = request.getRequestURI();
+        
         // Skip JWT check for OPTIONS requests (CORS preflight)
         if (request.getMethod().equals("OPTIONS")) {
             log.debug("Skipping JWT filter for OPTIONS request");
             filterChain.doFilter(request, response);
             return;
         }
-        
+
         // Skip JWT check for permitted paths
-        String requestPath = request.getRequestURI();
-        if (isPermittedPath(requestPath)) {
-            log.debug("Skipping JWT filter for permitted path: {}", requestPath);
+        if (isPermittedPath(path)) {
+            log.debug("Skipping JWT filter for permitted path: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
-        
-        final String authHeader = request.getHeader("Authorization");
+
+        String authHeader = request.getHeader("Authorization");
         log.info("Processing request: {} {} with auth: {}", 
             request.getMethod(), 
-            request.getRequestURI(),
+            path,
             authHeader != null ? "Bearer token present" : "no auth");
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+
+        String jwt = extractJwt(authHeader);
+        if (jwt == null) {
             log.debug("No valid auth header found, rejecting request");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         try {
-            String jwt = authHeader.substring(7);
-            String userEmail = jwtService.extractUsername(jwt);
-            log.info("Extracted email from JWT: {}", userEmail);
-            
-            // Check if user exists in DB
-            var userExists = userRepository.findByEmail(userEmail);
-            log.info("User exists in DB: {}", userExists.isPresent());
-            
-            if (userEmail != null) {
-                log.debug("Loading user details for email: {}", userEmail);
+            String userEmail = extractUsername(jwt);
+            if (userEmail == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {
                     UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
                     log.debug("Loaded user details: {}", userDetails);
                     
-                    if (jwtService.isTokenValid(jwt, userDetails)) {
-                        log.debug("JWT token is valid");
+                    if (validateToken(jwt, userDetails)) {
                         var user = userRepository.findByEmail(userEmail).orElseThrow();
                         log.debug("Found user in repository: {}", user);
                         var principal = new UserSecurity(user);
@@ -98,6 +105,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                         log.info("Authentication set in SecurityContext");
+                        filterChain.doFilter(request, response);
+                        return;
                     }
                 } catch (UsernameNotFoundException e) {
                     log.error("User not found in database: {}", userEmail);
@@ -107,15 +116,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.error("Error processing JWT token: {}", e.getMessage(), e);
         }
         
-        filterChain.doFilter(request, response);
-    }
-
-    private boolean isPermittedPath(String path) {
-        return path.startsWith("/health") ||
-               path.startsWith("/metrics") ||
-               path.startsWith("/actuator") ||
-               path.startsWith("/oauth/token") ||
-               path.startsWith("/oauth/register") ||
-               path.equals("/.well-known/openid-configuration");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     }
 } 
