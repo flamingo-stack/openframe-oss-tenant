@@ -15,15 +15,19 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.openframe.data.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
+import com.openframe.gateway.config.CurlLoggingHandler;
 import com.openframe.gateway.service.IntegrationService;
 
+import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 
 @RestController
 @RequestMapping("/tools")
@@ -35,6 +39,7 @@ public class IntegrationController {
     private final IntegrationService integrationService;
     private final WebClient.Builder webClientBuilder;
     private final Environment environment;
+    private static final AttributeKey<URI> TARGET_URI = AttributeKey.valueOf("target_uri");
 
     private URI adjustUrl(IntegratedTool integratedTool, String originalUrl, String toolId) {
         try {
@@ -111,8 +116,17 @@ public class IntegrationController {
                     URI targetUri = adjustUrl(tool, request.getURI().toString(), toolId);
                     log.debug("Forwarding request to: {} (original URL: {})", targetUri, tool.getUrl());
 
+                    // Create an HttpClient with the target URI in its attributes
+                    HttpClient httpClient = HttpClient.create()
+                        .doOnConnected(conn -> {
+                            conn.channel().attr(TARGET_URI).set(targetUri);
+                            conn.addHandlerFirst("curl-logger", new CurlLoggingHandler());
+                        });
+
                     // Forward the request with the tool's token
-                    WebClient.RequestBodySpec requestSpec = webClientBuilder.build()
+                    WebClient.RequestBodySpec requestSpec = WebClient.builder()
+                            .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
+                            .build()
                             .method(request.getMethod())
                             .uri(targetUri)
                             .headers(headers -> {
@@ -143,15 +157,55 @@ public class IntegrationController {
                                     return requestSpec
                                             .body(BodyInserters.fromValue(fullBody))
                                             .retrieve()
+                                            .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                                response -> response.bodyToMono(String.class)
+                                                    .flatMap(errorBody -> Mono.error(WebClientResponseException.create(
+                                                        response.statusCode().value(),
+                                                        response.statusCode().toString(),
+                                                        response.headers().asHttpHeaders(),
+                                                        errorBody.getBytes(),
+                                                        null
+                                                    ))))
                                             .bodyToMono(String.class)
                                             .timeout(Duration.ofSeconds(30))
-                                            .map(ResponseEntity::ok);
+                                            .map(ResponseEntity::ok)
+                                            .onErrorResume(e -> {
+                                                if (e instanceof WebClientResponseException) {
+                                                    WebClientResponseException ex = (WebClientResponseException) e;
+                                                    return Mono.just(ResponseEntity
+                                                        .status(ex.getStatusCode())
+                                                        .body(ex.getResponseBodyAsString()));
+                                                }
+                                                return Mono.just(ResponseEntity
+                                                    .status(500)
+                                                    .body(e.getMessage()));
+                                            });
                                 } else {
                                     return requestSpec
                                             .retrieve()
+                                            .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                                response -> response.bodyToMono(String.class)
+                                                    .flatMap(errorBody -> Mono.error(WebClientResponseException.create(
+                                                        response.statusCode().value(),
+                                                        response.statusCode().toString(),
+                                                        response.headers().asHttpHeaders(),
+                                                        errorBody.getBytes(),
+                                                        null
+                                                    ))))
                                             .bodyToMono(String.class)
                                             .timeout(Duration.ofSeconds(30))
-                                            .map(ResponseEntity::ok);
+                                            .map(ResponseEntity::ok)
+                                            .onErrorResume(e -> {
+                                                if (e instanceof WebClientResponseException) {
+                                                    WebClientResponseException ex = (WebClientResponseException) e;
+                                                    return Mono.just(ResponseEntity
+                                                        .status(ex.getStatusCode())
+                                                        .body(ex.getResponseBodyAsString()));
+                                                }
+                                                return Mono.just(ResponseEntity
+                                                    .status(500)
+                                                    .body(e.getMessage()));
+                                            });
                                 }
                             })
                             .doOnSuccess(response -> log.info("Successfully proxied request to {}", tool.getName()))
