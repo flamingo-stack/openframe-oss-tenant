@@ -39,18 +39,18 @@ public abstract class BaseReactiveSecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .authorizeExchange(exchanges -> exchanges
-                .pathMatchers(
-                        "/health/**",
-                        "/metrics/**",
-                        managementContextPath + "/**"
-                ).permitAll()
-                .anyExchange().authenticated()
-                )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(token
-                -> Mono.just(new JwtAuthenticationToken(token))
-        ))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(token
+                                -> Mono.just(new JwtAuthenticationToken(token))
+                        ))
+                )
+                .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers(
+                                "/health/**",
+                                "/metrics/**",
+                                managementContextPath + "/**"
+                        ).permitAll()
+                        .anyExchange().authenticated()
                 )
                 .build();
     }

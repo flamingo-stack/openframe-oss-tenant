@@ -70,6 +70,8 @@ public abstract class BaseSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2ResourceServer(
+                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .authorizeHttpRequests(
                         auth -> auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -84,9 +86,7 @@ public abstract class BaseSecurityConfig {
                                 .requestMatchers("/.well-known/userinfo").authenticated()
                                 .requestMatchers("/.well-known/openid-configuration").permitAll()
                                 .anyRequest()
-                                .authenticated())
-                .oauth2ResourceServer(
-                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                                .authenticated());
     }
 
     @Bean

@@ -39,9 +39,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         
+
+        log.info("Processing request: {} {} with auth: {}", request.getMethod(), request.getRequestURI(), request.getHeader("Authorization"));
         // Skip JWT check for OPTIONS requests (CORS preflight)
         if (request.getMethod().equals("OPTIONS")) {
             log.debug("Skipping JWT filter for OPTIONS request");
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
+        // Skip JWT check for permitted paths
+        String requestPath = request.getRequestURI();
+        if (isPermittedPath(requestPath)) {
+            log.debug("Skipping JWT filter for permitted path: {}", requestPath);
             filterChain.doFilter(request, response);
             return;
         }
@@ -53,8 +63,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             authHeader != null ? "Bearer token present" : "no auth");
         
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.debug("No valid auth header found, continuing filter chain");
-            filterChain.doFilter(request, response);
+            log.debug("No valid auth header found, rejecting request");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
@@ -98,5 +108,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPermittedPath(String path) {
+        return path.startsWith("/health") ||
+               path.startsWith("/metrics") ||
+               path.startsWith("/actuator") ||
+               path.startsWith("/oauth/token") ||
+               path.startsWith("/oauth/register") ||
+               path.equals("/.well-known/openid-configuration");
     }
 } 

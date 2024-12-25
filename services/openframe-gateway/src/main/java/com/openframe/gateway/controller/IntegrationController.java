@@ -7,7 +7,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -121,10 +120,6 @@ public class IntegrationController {
                                 // Use the token from the tool's credentials
                                 if (tool.getCredentials() != null && tool.getCredentials().getToken() != null) {
                                     headers.setBearerAuth(tool.getCredentials().getToken());
-                                }
-                                // Forward the user's authentication token
-                                if (auth instanceof JwtAuthenticationToken) {
-                                    headers.setBearerAuth(((JwtAuthenticationToken) auth).getToken().getTokenValue());
                                 }
                             });
 
