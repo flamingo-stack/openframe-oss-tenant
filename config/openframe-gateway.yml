@@ -13,30 +13,6 @@ spring:
   cloud:
     config:
       fail-fast: false
-    gateway:
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Methods Access-Control-Allow-Headers
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: 
-              - "http://localhost"
-              - "http://localhost:5173"
-              - "http://localhost:5174"
-              - "http://localhost:*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
-            exposedHeaders:
-              - "Authorization"
-              - "Content-Type"
-              - "x-requested-with"
 
 # Management server configuration
 management:
