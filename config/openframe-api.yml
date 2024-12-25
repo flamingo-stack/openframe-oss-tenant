@@ -3,6 +3,8 @@ server:
 
 # API service common configuration
 spring:
+  main:
+    web-application-type: servlet
   data:
     mongodb:
       enabled: true
