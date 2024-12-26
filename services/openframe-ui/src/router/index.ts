@@ -44,22 +44,19 @@ const router = createRouter({
     {
       path: '/mdm',
       name: 'mdm',
-      component: MobileDeviceManagement,
-      meta: { 
+      component: () => import('../views/mdm/MobileDeviceManagement.vue'),
+      meta: {
         requiresAuth: true,
-        title: 'Mobile Device Management',
-        icon: 'pi pi-mobile'
+        icon: 'pi pi-mobile',
+        title: 'Mobile Device Management'
       },
-      redirect: '/mdm/devices',
       children: [
         {
           path: 'devices',
           name: 'mdm-devices',
           component: () => import('../views/mdm/Devices.vue'),
           meta: {
-            requiresAuth: true,
-            title: 'Devices',
-            icon: 'pi pi-mobile'
+            requiresAuth: true
           }
         },
         {
@@ -67,9 +64,7 @@ const router = createRouter({
           name: 'mdm-policies',
           component: () => import('../views/mdm/Policies.vue'),
           meta: {
-            requiresAuth: true,
-            title: 'Policies',
-            icon: 'pi pi-shield'
+            requiresAuth: true
           }
         },
         {
@@ -77,9 +72,7 @@ const router = createRouter({
           name: 'mdm-profiles',
           component: () => import('../views/mdm/Profiles.vue'),
           meta: {
-            requiresAuth: true,
-            title: 'Profiles',
-            icon: 'pi pi-file'
+            requiresAuth: true
           }
         },
         {
@@ -87,10 +80,12 @@ const router = createRouter({
           name: 'mdm-settings',
           component: () => import('../views/mdm/Settings.vue'),
           meta: {
-            requiresAuth: true,
-            title: 'MDM Settings',
-            icon: 'pi pi-cog'
+            requiresAuth: true
           }
+        },
+        {
+          path: '',
+          redirect: '/mdm/devices'
         }
       ]
     },

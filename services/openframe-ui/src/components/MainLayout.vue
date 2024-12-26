@@ -176,29 +176,7 @@ const menuItems: MenuItem[] = [
       {
         label: 'Mobile Device Management',
         icon: 'pi pi-mobile',
-        path: '/mdm/devices',
-        children: [
-          {
-            label: 'Devices',
-            icon: 'pi pi-mobile',
-            path: '/mdm/devices'
-          },
-          {
-            label: 'Policies',
-            icon: 'pi pi-shield',
-            path: '/mdm/policies'
-          },
-          {
-            label: 'Profiles',
-            icon: 'pi pi-file',
-            path: '/mdm/profiles'
-          },
-          {
-            label: 'MDM Settings',
-            icon: 'pi pi-cog',
-            path: '/mdm/settings'
-          }
-        ]
+        path: '/mdm/devices'
       }
     ]
   },
@@ -312,8 +290,9 @@ const handleLogout = () => {
 }
 
 .menu-item.active {
-  background: var(--primary-color);
-  color: black;
+  background: var(--yellow-500);
+  color: var(--surface-900);
+  font-weight: 600;
 }
 
 .menu-item i {
@@ -482,5 +461,11 @@ const handleLogout = () => {
 .menu-item.submenu-header.expanded {
   background: var(--surface-hover);
   color: var(--text-color);
+}
+
+.menu-item.submenu-item.active {
+  background: var(--yellow-500);
+  color: var(--surface-900);
+  font-weight: 600;
 }
 </style> 
