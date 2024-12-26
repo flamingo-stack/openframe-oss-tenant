@@ -3,12 +3,11 @@
     <div class="navigation-header">
       <h2>{{ title }}</h2>
     </div>
-    <ul class="side-menu">
+    <ul class="navigation-menu">
       <li v-for="item in items" 
           :key="item.path" 
-          :class="{ active: isActive(item.path) }"
-          @click="navigate(item.path)">
-        <div class="menu-item">
+          :class="{ active: isActive(item.path) }">
+        <div class="navigation-item" @click="navigate(item.path)">
           <i :class="item.icon"></i>
           <span>{{ item.label }}</span>
         </div>
@@ -45,56 +44,62 @@ const navigate = (path: string) => {
 
 <style scoped>
 .side-navigation {
-  width: 250px;
+  flex: 0 0 250px;
   background: var(--surface-card);
-  border-right: 1px solid var(--surface-border);
-  height: 100%;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* height: 50vh; */
+  display: flex;
+  flex-direction: column;
+  margin: 1rem;
 }
 
 .navigation-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--surface-border);
+  margin-bottom: 1rem;
+  padding: 0.5rem;
 }
 
 .navigation-header h2 {
   margin: 0;
   font-size: 1.25rem;
-  color: var(--text-color);
   font-weight: 600;
+  color: var(--text-color);
 }
 
-.side-menu {
+.navigation-menu {
   list-style: none;
-  padding: 1rem 0;
+  padding: 0;
   margin: 0;
+  overflow-y: auto;
+  flex: 1;
 }
 
-.menu-item {
+.navigation-menu li {
+  margin-bottom: 0.25rem;
+}
+
+.navigation-item {
   display: flex;
   align-items: center;
-  padding: 0.75rem 1.5rem;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  color: var(--text-color-secondary);
-}
-
-.menu-item:hover {
-  background: var(--surface-hover);
+  transition: all 0.2s ease;
   color: var(--text-color);
 }
 
-.menu-item i {
-  margin-right: 0.75rem;
-  font-size: 1.1rem;
+.navigation-item:hover {
+  background: var(--surface-hover);
 }
 
-.menu-item span {
-  font-size: 0.95rem;
+li.active .navigation-item {
+  background: var(--primary-color);
+  color: var(--primary-color-text);
 }
 
-li.active .menu-item {
-  background: var(--yellow-500);
-  color: var(--surface-900);
-  font-weight: 600;
+.navigation-item i {
+  font-size: 1.2rem;
 }
 </style> 

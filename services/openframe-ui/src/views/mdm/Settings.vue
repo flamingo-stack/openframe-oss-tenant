@@ -1,9 +1,5 @@
 <template>
-  <div class="mdm-dashboard">
-    <div class="of-mdm-header">
-      <h1 class="of-title">MDM Settings</h1>
-    </div>
-
+  <div class="mdm-settings">
     <div v-if="error" class="error-message">
       <i class="pi pi-exclamation-triangle" style="font-size: 2rem"></i>
       <span>{{ error }}</span>
@@ -14,128 +10,203 @@
       <span>Loading configuration...</span>
     </div>
 
-    <div v-else>
-      <section v-for="(value, key) in config" :key="key" class="mb-4">
-        <h2>{{ formatKey(key) }}</h2>
-        <div class="grid">
-          <template v-if="typeof value === 'object' && value !== null">
-            <div v-for="(subValue, subKey) in value" 
-                 :key="subKey" 
-                 class="col-12 md:col-6 xl:col-4 mb-3">
-              <div class="tool-card" :class="{ 'non-editable': !isPropertyEditable(subKey, key) }">
-                <div class="tool-header">
-                  <div class="tool-header-left">
-                    <h3>{{ formatKey(subKey) }}</h3>
-                  </div>
-                  <div class="tool-header-right">
-                    <div class="tool-tags">
-                      <Button v-if="hasPropertyChanges(key, subKey)"
-                        icon="pi pi-save"
-                        class="p-button-text p-button-sm save-button"
-                        @click="saveConfigProperty(key, subKey)"
-                        :loading="isSaving(key, subKey)"
-                      />
-                      <Tag v-if="!isPropertyEditable(subKey, key)" 
-                           value="Read Only" 
-                           severity="warning" 
-                           class="tool-tag" />
-                      <Tag :value="getValueType(subValue, key, subKey)" 
-                           :severity="getTagSeverity(subValue, getValueType(subValue, key, subKey))" 
-                           class="tool-tag" />
-                    </div>
-                  </div>
-                </div>
-                <div class="tool-content">
-                  <template v-if="typeof subValue === 'object' && subValue !== null">
-                    <div class="nested-object-wrapper">
-                      <NestedObjectEditor
-                        v-if="!Array.isArray(subValue)"
-                        :value="subValue"
-                        :isEditable="isPropertyEditable(subKey, key)"
-                        @update:value="val => updateConfigValue(key, subKey, val)"
-                      />
-                      <div v-else class="array-value">
-                        <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
+    <div v-else class="settings-layout">
+      <div class="settings-categories">
+        <ul class="category-menu">
+          <li v-for="category in categories" 
+              :key="category.key"
+              :class="{ active: activeCategory === category.key }"
+              @click="activeCategory = category.key">
+            <i :class="category.icon"></i>
+            <span>{{ category.label }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="settings-content">
+        <template v-if="activeCategory && config && config[activeCategory]">
+          <section class="mb-4">
+            <h2>{{ formatKey(activeCategory) }}</h2>
+            <div class="grid">
+              <template v-if="typeof config[activeCategory] === 'object' && config[activeCategory] !== null">
+                <!-- Non-Boolean fields (half row) -->
+                <template v-for="(subValue, subKey) in nonBooleanFields" :key="subKey">
+                  <div class="col-12 md:col-12 xl:col-6 mb-3">
+                    <div class="tool-card" :class="{ 'non-editable': !isPropertyEditable(subKey, activeCategory) }">
+                      <div class="tool-header">
+                        <div class="tool-header-left">
+                          <h3>{{ formatKey(subKey) }}</h3>
+                        </div>
+                        <div class="tool-header-right">
+                          <div class="save-button-wrapper">
+                            <Button v-if="hasPropertyChanges(activeCategory, subKey)"
+                              icon="pi pi-save"
+                              class="p-button-text p-button-sm save-button"
+                              @click="saveConfigProperty(activeCategory, subKey)"
+                              :loading="isSaving(activeCategory, subKey)"
+                            />
+                          </div>
+                          <div class="tool-tags">
+                            <template v-if="!isPropertyEditable(subKey, activeCategory)">
+                              <Tag value="Read Only" 
+                                   severity="warning" 
+                                   class="tool-tag" />
+                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
+                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
+                                   class="tool-tag" />
+                            </template>
+                            <template v-else>
+                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
+                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
+                                   class="tool-tag" />
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tool-content">
+                        <template v-if="typeof subValue === 'object' && subValue !== null">
+                          <div class="nested-object-wrapper">
+                            <NestedObjectEditor
+                              v-if="!Array.isArray(subValue)"
+                              :value="subValue"
+                              :isEditable="isPropertyEditable(subKey, activeCategory)"
+                              @update:value="val => updateConfigValue(activeCategory, subKey, val)"
+                            />
+                            <div v-else class="array-value">
+                              <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
+                            </div>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <div class="edit-field">
+                            <template v-if="typeof subValue === 'boolean'">
+                              <InputSwitch
+                                :modelValue="getConfigValue(activeCategory, subKey) as boolean"
+                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val)"
+                                :disabled="!isPropertyEditable(subKey, activeCategory)"
+                                class="settings-switch"
+                              />
+                            </template>
+                            <template v-else-if="typeof subValue === 'number'">
+                              <InputNumber
+                                :modelValue="getConfigValue(activeCategory, subKey) as number"
+                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val ?? null)"
+                                :disabled="!isPropertyEditable(subKey, activeCategory)"
+                                class="w-full"
+                                :showButtons="false"
+                                :useGrouping="false"
+                                @input="event => updateConfigValue(activeCategory, subKey, event.value ?? null)"
+                              />
+                            </template>
+                            <template v-else>
+                              <InputText
+                                :modelValue="String(getConfigValue(activeCategory, subKey) ?? '')"
+                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val || null)"
+                                :disabled="!isPropertyEditable(subKey, activeCategory)"
+                                class="w-full"
+                              />
+                            </template>
+                          </div>
+                        </template>
                       </div>
                     </div>
-                  </template>
-                  <template v-else>
-                    <div class="edit-field">
-                      <template v-if="typeof subValue === 'boolean'">
-                        <InputSwitch
-                          :modelValue="getConfigValue(key, subKey) as boolean"
-                          @update:modelValue="val => updateConfigValue(key, subKey, val)"
-                          :disabled="!isPropertyEditable(subKey, key)"
-                        />
-                      </template>
-                      <template v-else-if="typeof subValue === 'number'">
-                        <InputNumber
-                          :modelValue="getConfigValue(key, subKey) as number"
-                          @update:modelValue="val => updateConfigValue(key, subKey, val ?? null)"
-                          :disabled="!isPropertyEditable(subKey, key)"
-                          class="w-full"
-                          :showButtons="false"
-                          :useGrouping="false"
-                          @input="event => updateConfigValue(key, subKey, event.value ?? null)"
-                        />
-                      </template>
-                      <template v-else>
-                        <InputText
-                          :modelValue="String(getConfigValue(key, subKey) ?? '')"
-                          @update:modelValue="val => updateConfigValue(key, subKey, val || null)"
-                          :disabled="!isPropertyEditable(subKey, key)"
-                          class="w-full"
-                        />
-                      </template>
+                  </div>
+                </template>
+                
+                <!-- Boolean fields (third row) -->
+                <template v-for="(subValue, subKey) in booleanFields" :key="subKey">
+                  <div class="col-12 md:col-4 xl:col-4 mb-3">
+                    <div class="tool-card" :class="{ 'non-editable': !isPropertyEditable(subKey, activeCategory) }">
+                      <div class="tool-header">
+                        <div class="tool-header-left">
+                          <h3>{{ formatKey(subKey) }}</h3>
+                        </div>
+                        <div class="tool-header-right">
+                          <div class="save-button-wrapper">
+                            <Button v-if="hasPropertyChanges(activeCategory, subKey)"
+                              icon="pi pi-save"
+                              class="p-button-text p-button-sm save-button"
+                              @click="saveConfigProperty(activeCategory, subKey)"
+                              :loading="isSaving(activeCategory, subKey)"
+                            />
+                          </div>
+                          <div class="tool-tags">
+                            <template v-if="!isPropertyEditable(subKey, activeCategory)">
+                              <Tag value="Read Only" 
+                                   severity="warning" 
+                                   class="tool-tag" />
+                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
+                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
+                                   class="tool-tag" />
+                            </template>
+                            <template v-else>
+                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
+                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
+                                   class="tool-tag" />
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tool-content">
+                        <template v-if="typeof subValue === 'object' && subValue !== null">
+                          <div class="nested-object-wrapper">
+                            <NestedObjectEditor
+                              v-if="!Array.isArray(subValue)"
+                              :value="subValue"
+                              :isEditable="isPropertyEditable(subKey, activeCategory)"
+                              @update:value="val => updateConfigValue(activeCategory, subKey, val)"
+                            />
+                            <div v-else class="array-value">
+                              <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
+                            </div>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <div class="edit-field">
+                            <template v-if="typeof subValue === 'boolean'">
+                              <InputSwitch
+                                :modelValue="getConfigValue(activeCategory, subKey) as boolean"
+                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val)"
+                                :disabled="!isPropertyEditable(subKey, activeCategory)"
+                                class="settings-switch"
+                              />
+                            </template>
+                            <template v-else-if="typeof subValue === 'number'">
+                              <InputNumber
+                                :modelValue="getConfigValue(activeCategory, subKey) as number"
+                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val ?? null)"
+                                :disabled="!isPropertyEditable(subKey, activeCategory)"
+                                class="w-full"
+                                :showButtons="false"
+                                :useGrouping="false"
+                                @input="event => updateConfigValue(activeCategory, subKey, event.value ?? null)"
+                              />
+                            </template>
+                            <template v-else>
+                              <InputText
+                                :modelValue="String(getConfigValue(activeCategory, subKey) ?? '')"
+                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val || null)"
+                                :disabled="!isPropertyEditable(subKey, activeCategory)"
+                                class="w-full"
+                              />
+                            </template>
+                          </div>
+                        </template>
+                      </div>
                     </div>
-                  </template>
-                </div>
-              </div>
+                  </div>
+                </template>
+              </template>
             </div>
-          </template>
-          <div v-else class="col-12 md:col-6 xl:col-4 mb-3">
-            <div class="tool-card">
-              <div class="tool-header">
-                <h3>Value</h3>
-                <Tag :value="getValueType(value)" :severity="getTagSeverity(value)" class="tool-category" />
-              </div>
-              <div class="tool-content">
-                <div class="edit-field">
-                  <template v-if="typeof value === 'boolean'">
-                    <InputSwitch
-                      :modelValue="getConfigValue(key, null) as boolean"
-                      @update:modelValue="val => updateConfigValue(key, null, val)"
-                    />
-                  </template>
-                  <template v-else-if="typeof value === 'number'">
-                    <InputNumber
-                      :modelValue="getConfigValue(key, null) as number"
-                      @update:modelValue="val => updateConfigValue(key, null, val ?? null)"
-                      class="w-full"
-                      :showButtons="false"
-                      :useGrouping="false"
-                      @input="event => updateConfigValue(key, null, event.value ?? null)"
-                    />
-                  </template>
-                  <template v-else>
-                    <InputText
-                      :modelValue="String(getConfigValue(key, null) ?? '')"
-                      @update:modelValue="val => updateConfigValue(key, null, val || null)"
-                      class="w-full"
-                    />
-                  </template>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -169,7 +240,42 @@ const hasChanges = ref(false);
 const savingProperties = ref(new Set<string>());
 
 const isPropertyEditable = (key: string | number, parentKey?: string | number): boolean => {
-  // All top-level properties from the API are editable
+  // Known read-only fields that should never be editable
+  const READ_ONLY_FIELDS = new Set([
+    'id',
+    'created_at',
+    'updated_at',
+    'version',
+    'type',
+    'status',
+    'last_seen',
+    'seen',
+    'hostname',
+    'uuid',
+    'platform',
+    'osquery_version'
+  ]);
+
+  // Read-only sections that contain only read-only fields
+  const READ_ONLY_SECTIONS = new Set([
+    'license',
+    'host_settings',
+    'server_url',
+    'logging',
+    'metadata'
+  ]);
+
+  // If it's a read-only field, it's never editable
+  if (READ_ONLY_FIELDS.has(String(key))) {
+    return false;
+  }
+
+  // If it's a read-only section, it's never editable
+  if (READ_ONLY_SECTIONS.has(String(key)) || READ_ONLY_SECTIONS.has(String(parentKey))) {
+    return false;
+  }
+
+  // All top-level properties from the API are editable unless in READ_ONLY_SECTIONS
   const EDITABLE_SECTIONS = new Set([
     'org_info',
     'server_settings',
@@ -192,6 +298,7 @@ const isPropertyEditable = (key: string | number, parentKey?: string | number): 
   }
 
   // For nested properties, they are editable if their parent is editable
+  // and they're not in the READ_ONLY_FIELDS list
   return EDITABLE_SECTIONS.has(String(parentKey));
 };
 
@@ -257,11 +364,12 @@ const getConfigValue = (key: string | number, subKey: string | number | null): E
   if (!config.value) return null;
   
   if (subKey === null) {
-    const value = config.value[String(key)];
+    const value = editedConfig.value[String(key)] ?? config.value[String(key)];
     return Array.isArray(value) ? null : value as EditableValue;
   }
   
-  const value = config.value[String(key)][String(subKey)];
+  const parentValue = editedConfig.value[String(key)] ?? config.value[String(key)];
+  const value = (parentValue as Record<string, EditableValue>)?.[String(subKey)] ?? config.value[String(key)][String(subKey)];
   return Array.isArray(value) ? null : value as EditableValue;
 };
 
@@ -278,19 +386,44 @@ const updateConfigValue = (key: string | number, subKey: string | number | null,
 
   // Initialize the edited config structure if it doesn't exist
   if (!editedConfig.value[String(key)]) {
-    editedConfig.value[String(key)] = {} as ConfigValue;
+    editedConfig.value[String(key)] = subKey === null ? {} : { ...config.value[String(key)] };
   }
+
+  // Normalize empty values
+  const normalizedValue = value === '' ? null : value;
 
   // Update the edited config
   if (subKey === null) {
-    editedConfig.value[String(key)] = value as ConfigValue;
+    editedConfig.value[String(key)] = normalizedValue as ConfigValue;
   } else {
-    (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
+    if (typeof editedConfig.value[String(key)] !== 'object') {
+      editedConfig.value[String(key)] = { ...config.value[String(key)] };
+    }
+    (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = normalizedValue;
   }
 
-  // Track the change
-  changedValues.value[path] = value;
-  hasChanges.value = true;
+  // Get original value for comparison
+  const originalValue = subKey === null 
+    ? config.value[String(key)]
+    : config.value[String(key)][String(subKey)];
+
+  // Normalize original value for comparison
+  const normalizedOriginal = originalValue === '' ? null : originalValue;
+
+  // Special handling for empty/null values
+  if (normalizedValue === null && normalizedOriginal === null) {
+    delete changedValues.value[path];
+  } else if (normalizedValue === undefined && normalizedOriginal === null) {
+    delete changedValues.value[path];
+  } else if (normalizedValue === null && normalizedOriginal === undefined) {
+    delete changedValues.value[path];
+  } else if (JSON.stringify(normalizedValue) !== JSON.stringify(normalizedOriginal)) {
+    changedValues.value[path] = normalizedValue;
+  } else {
+    delete changedValues.value[path];
+  }
+
+  hasChanges.value = Object.keys(changedValues.value).length > 0;
 };
 
 const handleSaveConfig = async (retryCount = 0) => {
@@ -398,8 +531,31 @@ const getPropertyKey = (key: string | number, subKey: string | number | null): s
 };
 
 const hasPropertyChanges = (key: string | number, subKey: string | number | null): boolean => {
+  if (!config.value) return false;
+  
   const path = subKey ? `${key}.${subKey}` : String(key);
-  return path in changedValues.value;
+  
+  // Get current value
+  const currentValue = subKey === null 
+    ? editedConfig.value[String(key)]
+    : (editedConfig.value[String(key)] as Record<string, EditableValue>)?.[String(subKey)];
+
+  // Get original value
+  const originalValue = subKey === null 
+    ? config.value[String(key)]
+    : config.value[String(key)][String(subKey)];
+
+  // Normalize values for comparison
+  const normalizedCurrent = currentValue === '' ? null : currentValue;
+  const normalizedOriginal = originalValue === '' ? null : originalValue;
+
+  // Special handling for empty/null values
+  if (normalizedCurrent === null && normalizedOriginal === null) return false;
+  if (normalizedCurrent === undefined && normalizedOriginal === null) return false;
+  if (normalizedCurrent === null && normalizedOriginal === undefined) return false;
+
+  // Compare values
+  return JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedOriginal);
 };
 
 const isSaving = (key: string | number, subKey: string | number | null): boolean => {
@@ -425,19 +581,30 @@ const saveConfigProperty = async (key: string | number, subKey: string | number 
       [String(key)]: subKey === null ? value : { [String(subKey)]: value }
     });
 
-    if (response.status === 200) {
+    if (response) {
       // Update the config with the new value
       if (subKey === null) {
         config.value[String(key)] = value as ConfigValue;
       } else {
+        if (typeof config.value[String(key)] !== 'object') {
+          config.value[String(key)] = {};
+        }
         (config.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
+      }
+
+      // Update editedConfig to match config
+      if (subKey === null) {
+        editedConfig.value[String(key)] = value as ConfigValue;
+      } else {
+        if (typeof editedConfig.value[String(key)] !== 'object') {
+          editedConfig.value[String(key)] = {};
+        }
+        (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
       }
 
       // Remove the change from tracking
       delete changedValues.value[path];
-      if (Object.keys(changedValues.value).length === 0) {
-        hasChanges.value = false;
-      }
+      hasChanges.value = Object.keys(changedValues.value).length > 0;
 
       toast.add({
         severity: 'success',
@@ -459,12 +626,128 @@ const saveConfigProperty = async (key: string | number, subKey: string | number 
   }
 };
 
+const categories = computed(() => {
+  if (!config.value) return [];
+  
+  return Object.keys(config.value)
+    .filter(key => isPropertyEditable(key))
+    .map(key => ({
+      label: formatKey(key),
+      key: key,
+      icon: getCategoryIcon(key)
+    }));
+});
+
+const getCategoryIcon = (category: string): string => {
+  const iconMap: Record<string, string> = {
+    org_info: 'pi pi-building',
+    server_settings: 'pi pi-server',
+    smtp_settings: 'pi pi-envelope',
+    sso_settings: 'pi pi-key',
+    host_expiry_settings: 'pi pi-clock',
+    activity_expiry_settings: 'pi pi-history',
+    agent_options: 'pi pi-cog',
+    fleet_desktop: 'pi pi-desktop',
+    webhook_settings: 'pi pi-link',
+    integrations: 'pi pi-share-alt',
+    mdm: 'pi pi-mobile',
+    features: 'pi pi-star',
+    scripts: 'pi pi-code'
+  };
+  return iconMap[category] || 'pi pi-cog';
+};
+
+const activeCategory = ref<string>('');
+
+const nonBooleanFields = computed(() => {
+  if (!config.value || !activeCategory.value) return {};
+  return Object.entries(config.value[activeCategory.value])
+    .filter(([_, val]) => getValueType(val, activeCategory.value) !== 'Boolean')
+    .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
+});
+
+const booleanFields = computed(() => {
+  if (!config.value || !activeCategory.value) return {};
+  return Object.entries(config.value[activeCategory.value])
+    .filter(([_, val]) => getValueType(val, activeCategory.value) === 'Boolean')
+    .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
+});
+
 onMounted(() => {
-  fetchMDMConfig();
+  fetchMDMConfig().then(() => {
+    // Set initial active category to the first available one
+    if (categories.value.length > 0) {
+      activeCategory.value = categories.value[0].key;
+    }
+  });
 });
 </script>
 
 <style scoped>
+.mdm-settings {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-layout {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  min-height: 0; /* Important for nested flex scrolling */
+  height: 80vh;
+  overflow: hidden;
+}
+
+.settings-categories {
+  flex: 0 0 220px;
+  background: var(--surface-section);
+  border-radius: 8px;
+  padding: 0.5rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.category-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+.category-menu li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  min-height: 3rem;  /* Ensure consistent height */
+}
+
+.category-menu li:hover {
+  background: var(--surface-hover);
+}
+
+.category-menu li.active {
+  background: var(--primary-color);
+  color: var(--primary-color-text);
+}
+
+.category-menu li i {
+  font-size: 1rem;
+}
+
+.settings-content {
+  flex: 1;
+  padding: 0 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
 .mdm-dashboard {
   padding: 2rem;
 }
@@ -486,6 +769,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .tool-header {
@@ -493,6 +777,80 @@ onMounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  min-height: 3rem;
+  gap: 1rem;
+}
+
+.tool-header-left {
+  flex: 1;
+}
+
+.tool-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+  position: relative;
+  min-height: 2.5rem;
+}
+
+.tool-header-right .save-button-wrapper {
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  position: relative;
+}
+
+.save-button:not([disabled]) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.non-editable {
+  opacity: 0.8;
+  background: var(--surface-ground);
+}
+
+.non-editable:hover {
+  transform: none;
+  box-shadow: var(--card-shadow);
+}
+
+.non-editable .tool-content {
+  cursor: not-allowed;
+}
+
+:deep(.p-inputswitch.p-disabled) {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+:deep(.p-inputswitch.p-disabled .p-inputswitch-slider) {
+  background: var(--surface-300);
+}
+
+:deep(.p-inputnumber.p-disabled) input {
+  opacity: 0.8;
+  cursor: not-allowed;
+  background: var(--surface-200);
+}
+
+:deep(.p-inputtext.p-disabled) {
+  opacity: 0.8;
+  cursor: not-allowed;
+  background: var(--surface-200);
 }
 
 .tool-header h3 {
@@ -503,12 +861,22 @@ onMounted(() => {
 
 .tool-tags {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
+  min-height: 2rem;
+  flex: 1;
 }
 
 .tool-tag {
   font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+  white-space: nowrap;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
 }
 
 .tool-content {
@@ -549,6 +917,7 @@ onMounted(() => {
   color: var(--red-700);
   border-radius: 8px;
   margin-bottom: 1rem;
+  width: 100%;
 }
 
 .loading-spinner {
@@ -556,17 +925,120 @@ onMounted(() => {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
+  width: 100%;
+}
+
+:deep(.settings-switch) {
+  .p-inputswitch {
+    width: 3rem;
+    height: 1.5rem;
+  }
+
+  .p-inputswitch .p-inputswitch-slider {
+    background: var(--surface-300);
+  }
+
+  .p-inputswitch:not(.p-disabled):hover .p-inputswitch-slider {
+    background: var(--surface-400);
+  }
+
+  .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
+    background: var(--yellow-500) !important;
+  }
+
+  .p-inputswitch.p-inputswitch-checked:not(.p-disabled):hover .p-inputswitch-slider {
+    background: var(--yellow-600) !important;
+  }
+
+  .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider:before {
+    background: var(--surface-0) !important;
+  }
+
+  .p-inputswitch .p-inputswitch-slider:before {
+    background: var(--surface-0);
+    width: 1.25rem;
+    height: 1.25rem;
+    left: 0.125rem;
+    margin-top: -0.625rem;
+    border-radius: 50%;
+    transition-duration: 0.2s;
+  }
+
+  .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider:before {
+    transform: translateX(1.5rem);
+  }
+
+  .p-inputswitch.p-disabled {
+    opacity: 0.6;
+  }
+
+  .p-inputswitch.p-disabled .p-inputswitch-slider {
+    background: var(--surface-200);
+    cursor: not-allowed;
+  }
 }
 
 .non-editable {
   opacity: 0.8;
+  background: var(--surface-ground);
 }
 
-.save-button {
-  padding: 0.25rem !important;
+.non-editable .tool-content {
+  opacity: 0.6;
 }
 
-.save-button .p-button-icon {
-  font-size: 1rem;
+.non-editable :deep(.p-inputswitch),
+.non-editable :deep(.p-inputtext),
+.non-editable :deep(.p-inputnumber) {
+  pointer-events: none;
+}
+
+.settings-layout {
+  display: flex;
+  gap: 2rem;
+  min-height: calc(100vh - 200px);
+}
+
+.settings-nav {
+  flex: 0 0 250px;
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.settings-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.settings-menu li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+}
+
+.settings-menu li:hover {
+  background: var(--surface-hover);
+}
+
+.settings-menu li.active {
+  background: var(--primary-color);
+  color: var(--primary-color-text);
+}
+
+.settings-menu li i {
+  font-size: 1.2rem;
+}
+
+.settings-content {
+  flex: 1;
+  overflow: auto;
 }
 </style> 

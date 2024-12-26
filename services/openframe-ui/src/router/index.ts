@@ -44,13 +44,17 @@ const router = createRouter({
     {
       path: '/mdm',
       name: 'mdm',
-      component: () => import('../views/mdm/MobileDeviceManagement.vue'),
+      component: () => import('../views/mdm/MDMLayout.vue'),
       meta: {
         requiresAuth: true,
         icon: 'pi pi-mobile',
         title: 'Mobile Device Management'
       },
       children: [
+        {
+          path: '',
+          redirect: '/mdm/devices'
+        },
         {
           path: 'devices',
           name: 'mdm-devices',
@@ -82,10 +86,6 @@ const router = createRouter({
           meta: {
             requiresAuth: true
           }
-        },
-        {
-          path: '',
-          redirect: '/mdm/devices'
         }
       ]
     },

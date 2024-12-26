@@ -26,13 +26,25 @@ defineProps<Props>();
 <style scoped>
 .side-navigation-layout {
   display: flex;
-  height: 100%;
+  /* height: 100%; */
   background: var(--surface-ground);
+  overflow: hidden;
+  position: relative;
 }
 
 .content {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  height: 100%;
+  min-height: 0;
+}
+
+:deep(.side-navigation) {
+  position: sticky;
+  top: 0;
+  /* height: 100vh; */
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 </style> 

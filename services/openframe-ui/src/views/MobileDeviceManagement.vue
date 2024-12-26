@@ -1,11 +1,26 @@
 <template>
-  <div class="mdm-dashboard">
+  <SideNavigationLayout 
+    :title="'Mobile Device Management'"
+    :navigation-items="navigationItems">
     <router-view></router-view>
-  </div>
+  </SideNavigationLayout>
 </template>
 
 <script setup lang="ts">
-// Component logic will go here
+import SideNavigationLayout from '../components/SideNavigationLayout.vue';
+
+const navigationItems = [
+  {
+    label: 'Devices',
+    icon: 'pi pi-mobile',
+    to: '/mdm/devices'
+  },
+  {
+    label: 'Settings',
+    icon: 'pi pi-cog',
+    to: '/mdm/settings'
+  }
+];
 </script>
 
 <style scoped>
