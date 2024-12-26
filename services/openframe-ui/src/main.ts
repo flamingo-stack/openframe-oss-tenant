@@ -11,6 +11,8 @@ import InputText from 'primevue/inputtext'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tooltip from 'primevue/tooltip'
+import InputSwitch from 'primevue/inputswitch'
+import InputNumber from 'primevue/inputnumber'
 import { DefaultApolloClient } from '@vue/apollo-composable'
 import { apolloClient } from './apollo/apolloClient'
 
@@ -46,6 +48,8 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     app.component('InputText', InputText)
     app.component('DataTable', DataTable)
     app.component('Column', Column)
+    app.component('InputSwitch', InputSwitch)
+    app.component('InputNumber', InputNumber)
     app.directive('tooltip', Tooltip)
     app.use(ToastService);
     app.mount('#app')

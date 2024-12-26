@@ -46,17 +46,83 @@
         </div>
       </template>
       <div class="menu">
-        <router-link 
-          v-for="item in menuItems" 
-          :key="item.path"
-          :to="item.path"
-          class="menu-item"
-          :class="{ active: route.path === item.path }"
-          @click="menuVisible = false"
-        >
-          <i :class="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </router-link>
+        <template v-for="item in menuItems" :key="item.path || item.label">
+          <!-- Regular menu item -->
+          <router-link 
+            v-if="!item.children && item.path"
+            :to="item.path"
+            class="menu-item"
+            :class="{ active: route.path === item.path }"
+            @click="menuVisible = false"
+          >
+            <i :class="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </router-link>
+          
+          <!-- Menu item with children -->
+          <div v-else class="submenu">
+            <div 
+              class="menu-item submenu-header" 
+              @click="toggleSubmenu(item)"
+              :class="{ expanded: expandedMenus.includes(item.label) }"
+            >
+              <div class="submenu-header-content">
+                <i :class="item.icon"></i>
+                <span>{{ item.label }}</span>
+              </div>
+              <i class="pi pi-chevron-down submenu-arrow"></i>
+            </div>
+            <div 
+              class="submenu-content" 
+              :class="{ expanded: expandedMenus.includes(item.label) }"
+            >
+              <template v-for="child in item.children" :key="child.path || child.label">
+                <!-- Regular child item -->
+                <router-link 
+                  v-if="!child.children && child.path"
+                  :to="child.path"
+                  class="menu-item submenu-item"
+                  :class="{ active: route.path === child.path }"
+                  @click="menuVisible = false"
+                >
+                  <i :class="child.icon"></i>
+                  <span>{{ child.label }}</span>
+                </router-link>
+                
+                <!-- Nested submenu -->
+                <div v-else class="submenu nested">
+                  <div 
+                    class="menu-item submenu-header" 
+                    @click="toggleSubmenu(child)"
+                    :class="{ expanded: expandedMenus.includes(child.label) }"
+                  >
+                    <div class="submenu-header-content">
+                      <i :class="child.icon"></i>
+                      <span>{{ child.label }}</span>
+                    </div>
+                    <i class="pi pi-chevron-down submenu-arrow"></i>
+                  </div>
+                  <div 
+                    class="submenu-content" 
+                    :class="{ expanded: expandedMenus.includes(child.label) }"
+                  >
+                    <router-link 
+                      v-for="grandChild in child.children"
+                      :key="grandChild.path"
+                      :to="grandChild.path || '/'"
+                      class="menu-item submenu-item nested"
+                      :class="{ active: route.path === grandChild.path }"
+                      @click="menuVisible = false"
+                    >
+                      <i :class="grandChild.icon"></i>
+                      <span>{{ grandChild.label }}</span>
+                    </router-link>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
       </div>
     </Sidebar>
 
@@ -83,22 +149,58 @@ const router = useRouter();
 const menuVisible = ref(false);
 const themeStore = useThemeStore()
 const { isDark } = storeToRefs(themeStore)
+const expandedMenus = ref<string[]>([]);
 
-const menuItems = [
+interface MenuItem {
+  label: string;
+  icon: string;
+  path?: string;
+  children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
   {
-    label: 'Monitoring',
-    icon: 'pi pi-chart-line',
-    path: '/'
-  },
-  {
-    label: 'Tools',
+    label: 'Integrated Tools',
     icon: 'pi pi-wrench',
-    path: '/tools'
-  },
-  {
-    label: 'Mobile Device Management',
-    icon: 'pi pi-mobile',
-    path: '/mdm'
+    children: [
+      {
+        label: 'Monitoring',
+        icon: 'pi pi-chart-line',
+        path: '/'
+      },
+      {
+        label: 'Integrated Tools',
+        icon: 'pi pi-cog',
+        path: '/tools'
+      },
+      {
+        label: 'Mobile Device Management',
+        icon: 'pi pi-mobile',
+        path: '/mdm/devices',
+        children: [
+          {
+            label: 'Devices',
+            icon: 'pi pi-mobile',
+            path: '/mdm/devices'
+          },
+          {
+            label: 'Policies',
+            icon: 'pi pi-shield',
+            path: '/mdm/policies'
+          },
+          {
+            label: 'Profiles',
+            icon: 'pi pi-file',
+            path: '/mdm/profiles'
+          },
+          {
+            label: 'MDM Settings',
+            icon: 'pi pi-cog',
+            path: '/mdm/settings'
+          }
+        ]
+      }
+    ]
   },
   {
     label: 'Settings',
@@ -106,6 +208,15 @@ const menuItems = [
     path: '/settings'
   }
 ];
+
+const toggleSubmenu = (item: MenuItem) => {
+  const index = expandedMenus.value.indexOf(item.label);
+  if (index === -1) {
+    expandedMenus.value.push(item.label);
+  } else {
+    expandedMenus.value.splice(index, 1);
+  }
+};
 
 const toggleMenu = () => {
   menuVisible.value = !menuVisible.value;
@@ -307,5 +418,69 @@ const handleLogout = () => {
   font-size: 0.875rem;
   color: var(--text-color-muted);
   margin-right: 1rem;
+}
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+}
+
+.submenu-header {
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.submenu-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.submenu-arrow {
+  transition: transform 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.submenu-header.expanded .submenu-arrow {
+  transform: rotate(-180deg);
+}
+
+.submenu-content {
+  display: none;
+  padding-left: 1rem;
+}
+
+.submenu-content.expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.submenu-item {
+  padding-left: 2rem;
+}
+
+.submenu.nested {
+  margin-left: -1rem;
+}
+
+.submenu-item.nested {
+  padding-left: 3rem;
+}
+
+.menu-item.submenu-header {
+  margin: 0;
+  padding-right: 1rem;
+}
+
+.menu-item.submenu-header:hover {
+  background: var(--surface-hover);
+  color: var(--text-color);
+}
+
+.menu-item.submenu-header.expanded {
+  background: var(--surface-hover);
+  color: var(--text-color);
 }
 </style> 
