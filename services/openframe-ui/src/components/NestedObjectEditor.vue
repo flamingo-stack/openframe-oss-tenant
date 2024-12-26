@@ -1,13 +1,13 @@
 <template>
   <div class="nested-object">
     <div
-      v-for="(value, key) in value"
+      v-for="(value, key) in (isObjectRecord(props.value) ? props.value : {})"
       :key="key"
       class="nested-field"
     >
       <div class="nested-field-label">{{ formatKey(key) }}</div>
       <div class="nested-field-value">
-        <template v-if="typeof value === 'object' && value !== null">
+        <template v-if="isRecord(value)">
           <NestedObjectEditor
             :value="value"
             :isEditable="isEditable"
@@ -50,8 +50,12 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
 const props = defineProps<{
-  value: Record<string, unknown>;
+  value: Record<string, unknown> | unknown[];
   isEditable?: boolean;
 }>();
 
@@ -74,6 +78,10 @@ const updateValue = (key: string, newValue: unknown) => {
 const updateNestedValue = (key: string, newValue: Record<string, unknown>) => {
   const updatedValue = { ...props.value, [key]: newValue };
   emit('update:value', updatedValue);
+};
+
+const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 </script>
 
