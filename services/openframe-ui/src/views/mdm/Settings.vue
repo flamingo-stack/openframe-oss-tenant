@@ -45,7 +45,7 @@
         :fetchMDMConfig="fetchMDMConfig"
         :editedConfig="editedConfig"
         :changedValues="changedValues"
-        :hasChanges="hasChanges"
+        :hasChanges="Object.keys(changedValues.value || {}).length > 0"
       />
     </div>
   </div>

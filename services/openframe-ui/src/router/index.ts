@@ -6,7 +6,12 @@ import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
 import Dashboard from '../views/Dashboard.vue'
 import MDMLayout from '../views/mdm/MDMLayout.vue'
-import Devices from '../views/mdm/Devices.vue'
+import MDMDashboard from '../views/mdm/Dashboard.vue'
+import MDMDevices from '../views/mdm/Devices.vue'
+import MDMProfiles from '../views/mdm/Profiles.vue'
+import MDMPolicies from '../views/mdm/Policies.vue'
+import MDMQueries from '../views/mdm/Queries.vue'
+import MDMSettings from '../views/mdm/Settings.vue'
 import Settings from '../views/mdm/Settings.vue'
 import Profiles from '../views/mdm/Profiles.vue'
 import SettingsCategory from '../views/mdm/SettingsCategory.vue'
@@ -62,7 +67,6 @@ const router = createRouter({
     },
     {
       path: '/mdm',
-      name: 'mdm',
       component: MDMLayout,
       meta: { requiresAuth: true },
       children: [
@@ -73,27 +77,35 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'mdm-dashboard',
-          component: () => import('../views/mdm/Dashboard.vue')
+          component: MDMDashboard
         },
         {
           path: 'devices',
           name: 'mdm-devices',
-          component: Devices
+          component: MDMDevices
         },
         {
           path: 'profiles',
           name: 'mdm-profiles',
-          component: Profiles
+          component: MDMProfiles
+        },
+        {
+          path: 'policies',
+          name: 'mdm-policies',
+          component: MDMPolicies
+        },
+        {
+          path: 'queries',
+          name: 'mdm-queries',
+          component: MDMQueries
         },
         {
           path: 'settings',
-          name: 'mdm-settings',
           component: Settings,
           children: [
             {
               path: '',
-              name: 'mdm-settings-default',
-              component: SettingsCategory
+              redirect: { name: 'mdm-settings-category', params: { category: 'org_info' } }
             },
             {
               path: ':category',

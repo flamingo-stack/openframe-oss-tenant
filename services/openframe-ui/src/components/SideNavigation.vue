@@ -1,8 +1,10 @@
 <template>
   <div class="side-navigation">
-    <div class="navigation-header">
-      <h2>{{ title }}</h2>
-    </div>
+    <slot name="header">
+      <div class="navigation-header" v-if="title">
+        <h2>{{ title }}</h2>
+      </div>
+    </slot>
     <ul class="navigation-menu">
       <li v-for="item in items" 
           :key="item.path" 
@@ -28,7 +30,7 @@ interface MenuItem {
 
 interface Props {
   items: MenuItem[];
-  title: string;
+  title?: string;
 }
 
 const props = defineProps<Props>();
@@ -44,7 +46,7 @@ const navigate = (path: string) => {
 
 <style scoped>
 .side-navigation {
-  flex: 0 0 250px;
+  width: 100%;
   background: var(--surface-card);
   border-radius: 12px;
   padding: 1rem;

@@ -1,6 +1,12 @@
 <template>
   <div class="side-navigation-layout">
-    <SideNavigation :items="navigationItems" :title="title" />
+    <div class="side-navigation">
+      <div class="navigation-header">
+        <h2>{{ title }}</h2>
+      </div>
+      <slot name="navigation"></slot>
+      <SideNavigation :items="navigationItems" />
+    </div>
     <div class="content">
       <slot></slot>
     </div>
@@ -17,7 +23,7 @@ interface Props {
     path: string;
     icon: string;
   }>;
-  title: string;
+  title?: string;
 }
 
 defineProps<Props>();
@@ -26,10 +32,26 @@ defineProps<Props>();
 <style scoped>
 .side-navigation-layout {
   display: flex;
-  /* height: 100%; */
   background: var(--surface-ground);
   overflow: hidden;
   position: relative;
+}
+
+.side-navigation {
+  @media screen and (min-width: 768px) {
+    width: 30rem !important;
+    flex: 0 0 30rem !important;
+  }
+  
+  @media screen and (max-width: 767px) {
+    width: 100%;
+    flex: 0 0 100%;
+  }
+  background: var(--surface-card);
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .content {
@@ -38,13 +60,5 @@ defineProps<Props>();
   overflow-y: auto;
   height: 100%;
   min-height: 0;
-}
-
-:deep(.side-navigation) {
-  position: sticky;
-  top: 0;
-  /* height: 100vh; */
-  overflow-y: auto;
-  flex-shrink: 0;
 }
 </style> 

@@ -206,7 +206,7 @@ const props = defineProps<{
   fetchMDMConfig: () => Promise<void>;
   editedConfig: { value: Record<string, any> };
   changedValues: { value: Record<string, any> };
-  hasChanges: { value: boolean };
+  hasChanges: boolean;
 }>();
 
 const route = useRoute();
@@ -267,7 +267,7 @@ const handleSave = async (category: string, subKey: string | null) => {
     });
 
     // Then handle the value reversion
-    if (subKey !== null) {
+    if (subKey !== null && props.config[category]) {
       // Get the original value from the config
       const originalValue = props.config[category][subKey];
       

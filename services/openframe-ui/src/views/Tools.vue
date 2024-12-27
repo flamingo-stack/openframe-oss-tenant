@@ -155,6 +155,13 @@ import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import InputSwitch from 'primevue/inputswitch';
 import AuthDebug from '../components/AuthDebug.vue';
+import { getLogoUrl } from '@/services/LogoService';
+import { storeToRefs } from 'pinia';
+import { useThemeStore } from '@/stores/themeStore';
+
+// Get theme store
+const themeStore = useThemeStore();
+const { isDark } = storeToRefs(themeStore);
 
 // Import all logos
 import authentikLogo from '@/assets/authentik-logo.svg'
@@ -333,8 +340,7 @@ watch(result, (newResult) => {
 }, { immediate: true });
 
 const getToolIcon = (tool: IntegratedTool): string => {
-  console.log('Tool ID:', tool.id, 'Logo:', logoMap[tool.id]); // Debug log
-  return logoMap[tool.id] || '';
+  return getLogoUrl(tool.id, isDark.value);
 };
 
 const onImageError = (e: Event) => {
