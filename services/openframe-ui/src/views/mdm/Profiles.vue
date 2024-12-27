@@ -19,7 +19,7 @@
     <div class="profiles-content">
       <div v-if="errorMessage" class="error-message">
         <i class="pi pi-exclamation-triangle" style="font-size: 1.25rem"></i>
-        <span>{{ errorMessage }}</span>
+        <span v-html="errorMessage"></span>
       </div>
 
       <DataTable 
@@ -149,20 +149,31 @@ const getPlatformSeverity = (platform: string) => {
   return severityMap[platform] || 'info';
 };
 
+const extractUrlFromMessage = (message: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const match = message.match(urlRegex);
+  if (match) {
+    const url = match[0];
+    const textWithoutUrl = message.replace(url, '');
+    return { url, text: textWithoutUrl.trim() };
+  }
+  return { text: message };
+};
+
 const fetchProfiles = async () => {
   loading.value = true;
-  errorMessage.value = '';
   try {
     const response = await restClient.get(`${API_URL}/configuration_profiles`);
-    profiles.value = response.data.profiles;
-  } catch (err) {
+    profiles.value = response.data || [];
+  } catch (err: any) {
     console.error('Error fetching profiles:', err);
-    errorMessage.value = err instanceof Error ? err.message : 'Failed to fetch profiles';
+    const errorData = err.response?.data;
+    const message = errorData?.message || err.message || 'Failed to fetch profiles';
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: errorMessage.value,
-      life: 5000
+      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
+      detail: message,
+      life: 3000
     });
   } finally {
     loading.value = false;
@@ -171,9 +182,7 @@ const fetchProfiles = async () => {
 
 const deleteProfile = async (profile: any) => {
   try {
-    await restClient.post(`${API_URL}/profiles/delete`, {
-      ids: [profile.id]
-    });
+    await restClient.delete(`${API_URL}/configuration_profiles/${profile.profile_uuid}`);
     await fetchProfiles();
     toast.add({
       severity: 'success',
@@ -187,7 +196,7 @@ const deleteProfile = async (profile: any) => {
       severity: 'error',
       summary: 'Error',
       detail: 'Failed to delete profile',
-      life: 5000
+      life: 3000
     });
   }
 };
@@ -240,6 +249,14 @@ onMounted(() => {
   color: var(--red-700);
   border-radius: 8px;
   margin-bottom: 1rem;
+
+  :deep(a.error-link) {
+    color: var(--red-700);
+    text-decoration: underline;
+    &:hover {
+      text-decoration: none;
+    }
+  }
 }
 
 .profile-info {
@@ -469,6 +486,16 @@ onMounted(() => {
       font-size: 0.875rem;
       margin-top: 0.5rem;
       opacity: 0.8;
+    }
+  }
+}
+
+:deep(.p-toast-message-error) {
+  a {
+    color: inherit;
+    text-decoration: underline;
+    &:hover {
+      text-decoration: none;
     }
   }
 }

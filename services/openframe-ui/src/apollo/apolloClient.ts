@@ -80,14 +80,27 @@ const getAuthHeaders = (): HeadersInit => {
   };
 };
 
+interface ResponseError extends Error {
+  response?: {
+    status: number;
+    statusText: string;
+    data: any;
+  };
+}
+
 // Add REST methods
 export const restClient = {
   async get(url: string) {
     const response = await fetch(url, {
       headers: getAuthHeaders()
     });
-    if (!response.ok) throw new Error(response.statusText);
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+      const error = new Error(data.message || response.statusText) as ResponseError;
+      error.response = { status: response.status, statusText: response.statusText, data };
+      throw error;
+    }
+    return data;
   },
   
   async post(url: string, data: unknown) {
@@ -96,8 +109,13 @@ export const restClient = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(response.statusText);
-    return response.json();
+    const responseData = await response.json();
+    if (!response.ok) {
+      const error = new Error(responseData.message || response.statusText) as ResponseError;
+      error.response = { status: response.status, statusText: response.statusText, data: responseData };
+      throw error;
+    }
+    return responseData;
   },
   
   async patch(url: string, data: unknown) {
@@ -106,8 +124,13 @@ export const restClient = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(response.statusText);
-    return response.json();
+    const responseData = await response.json();
+    if (!response.ok) {
+      const error = new Error(responseData.message || response.statusText) as ResponseError;
+      error.response = { status: response.status, statusText: response.statusText, data: responseData };
+      throw error;
+    }
+    return responseData;
   },
   
   async delete(url: string) {
@@ -115,7 +138,12 @@ export const restClient = {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
-    if (!response.ok) throw new Error(response.statusText);
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+      const error = new Error(data.message || response.statusText) as ResponseError;
+      error.response = { status: response.status, statusText: response.statusText, data };
+      throw error;
+    }
+    return data;
   }
 }; 

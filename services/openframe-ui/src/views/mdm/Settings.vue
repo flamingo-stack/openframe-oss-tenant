@@ -1,8 +1,8 @@
 <template>
   <div class="mdm-settings">
     <div v-if="error" class="error-message">
-      <i class="pi pi-exclamation-triangle" style="font-size: 2rem"></i>
-      <span>{{ error }}</span>
+      <i class="pi pi-exclamation-triangle" style="font-size: 1.25rem"></i>
+      <span v-html="error"></span>
     </div>
 
     <div v-else-if="loading" class="loading-spinner">
@@ -13,201 +13,50 @@
     <div v-else class="settings-layout">
       <div class="settings-categories">
         <ul class="category-menu">
-          <li v-for="category in categories" 
-              :key="category.key"
-              :class="{ active: activeCategory === category.key }"
-              @click="activeCategory = category.key">
-            <i :class="category.icon"></i>
-            <span>{{ category.label }}</span>
-          </li>
+          <router-link 
+            v-for="category in categories" 
+            :key="category.key"
+            :to="{ name: 'mdm-settings-category', params: { category: category.key }}"
+            custom
+            v-slot="{ isActive, navigate }"
+          >
+            <li 
+              :class="{ active: isActive }"
+              @click="navigate"
+            >
+              <i :class="category.icon"></i>
+              <span>{{ category.label }}</span>
+            </li>
+          </router-link>
         </ul>
       </div>
 
-      <div class="settings-content">
-        <template v-if="activeCategory && config && config[activeCategory]">
-          <section class="mb-4">
-            <h2>{{ formatKey(activeCategory) }}</h2>
-            <div class="grid">
-              <template v-if="typeof config[activeCategory] === 'object' && config[activeCategory] !== null">
-                <!-- Non-Boolean fields (half row) -->
-                <template v-for="(subValue, subKey) in nonBooleanFields" :key="subKey">
-                  <div class="col-12 md:col-12 xl:col-6 mb-3">
-                    <div class="tool-card" :class="{ 'non-editable': !isPropertyEditable(subKey, activeCategory) }">
-                      <div class="tool-header">
-                        <div class="tool-header-left">
-                          <h3>{{ formatKey(subKey) }}</h3>
-                        </div>
-                        <div class="tool-header-right">
-                          <div class="save-button-wrapper">
-                            <Button v-if="hasPropertyChanges(activeCategory, subKey)"
-                              icon="pi pi-save"
-                              class="p-button-text p-button-sm save-button"
-                              @click="saveConfigProperty(activeCategory, subKey)"
-                              :loading="isSaving(activeCategory, subKey)"
-                            />
-                          </div>
-                          <div class="tool-tags">
-                            <template v-if="!isPropertyEditable(subKey, activeCategory)">
-                              <Tag value="Read Only" 
-                                   severity="warning" 
-                                   class="tool-tag" />
-                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
-                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
-                                   class="tool-tag" />
-                            </template>
-                            <template v-else>
-                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
-                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
-                                   class="tool-tag" />
-                            </template>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="tool-content">
-                        <template v-if="typeof subValue === 'object' && subValue !== null">
-                          <div class="nested-object-wrapper">
-                            <NestedObjectEditor
-                              v-if="!Array.isArray(subValue)"
-                              :value="subValue"
-                              :isEditable="isPropertyEditable(subKey, activeCategory)"
-                              @update:value="val => updateConfigValue(activeCategory, subKey, val)"
-                            />
-                            <div v-else class="array-value">
-                              <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
-                            </div>
-                          </div>
-                        </template>
-                        <template v-else>
-                          <div class="edit-field">
-                            <template v-if="typeof subValue === 'boolean'">
-                              <InputSwitch
-                                :modelValue="getConfigValue(activeCategory, subKey) as boolean"
-                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val)"
-                                :disabled="!isPropertyEditable(subKey, activeCategory)"
-                                class="settings-switch"
-                              />
-                            </template>
-                            <template v-else-if="typeof subValue === 'number'">
-                              <InputNumber
-                                :modelValue="getConfigValue(activeCategory, subKey) as number"
-                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val ?? null)"
-                                :disabled="!isPropertyEditable(subKey, activeCategory)"
-                                class="w-full"
-                                :showButtons="false"
-                                :useGrouping="false"
-                                @input="event => updateConfigValue(activeCategory, subKey, event.value ?? null)"
-                              />
-                            </template>
-                            <template v-else>
-                              <InputText
-                                :modelValue="String(getConfigValue(activeCategory, subKey) ?? '')"
-                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val || null)"
-                                :disabled="!isPropertyEditable(subKey, activeCategory)"
-                                class="w-full"
-                              />
-                            </template>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                
-                <!-- Boolean fields (third row) -->
-                <template v-for="(subValue, subKey) in booleanFields" :key="subKey">
-                  <div class="col-12 md:col-4 xl:col-4 mb-3">
-                    <div class="tool-card" :class="{ 'non-editable': !isPropertyEditable(subKey, activeCategory) }">
-                      <div class="tool-header">
-                        <div class="tool-header-left">
-                          <h3>{{ formatKey(subKey) }}</h3>
-                        </div>
-                        <div class="tool-header-right">
-                          <div class="save-button-wrapper">
-                            <Button v-if="hasPropertyChanges(activeCategory, subKey)"
-                              icon="pi pi-save"
-                              class="p-button-text p-button-sm save-button"
-                              @click="saveConfigProperty(activeCategory, subKey)"
-                              :loading="isSaving(activeCategory, subKey)"
-                            />
-                          </div>
-                          <div class="tool-tags">
-                            <template v-if="!isPropertyEditable(subKey, activeCategory)">
-                              <Tag value="Read Only" 
-                                   severity="warning" 
-                                   class="tool-tag" />
-                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
-                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
-                                   class="tool-tag" />
-                            </template>
-                            <template v-else>
-                              <Tag :value="getValueType(subValue, activeCategory, subKey)" 
-                                   :severity="getTagSeverity(subValue, getValueType(subValue, activeCategory, subKey))" 
-                                   class="tool-tag" />
-                            </template>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="tool-content">
-                        <template v-if="typeof subValue === 'object' && subValue !== null">
-                          <div class="nested-object-wrapper">
-                            <NestedObjectEditor
-                              v-if="!Array.isArray(subValue)"
-                              :value="subValue"
-                              :isEditable="isPropertyEditable(subKey, activeCategory)"
-                              @update:value="val => updateConfigValue(activeCategory, subKey, val)"
-                            />
-                            <div v-else class="array-value">
-                              <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
-                            </div>
-                          </div>
-                        </template>
-                        <template v-else>
-                          <div class="edit-field">
-                            <template v-if="typeof subValue === 'boolean'">
-                              <InputSwitch
-                                :modelValue="getConfigValue(activeCategory, subKey) as boolean"
-                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val)"
-                                :disabled="!isPropertyEditable(subKey, activeCategory)"
-                                class="settings-switch"
-                              />
-                            </template>
-                            <template v-else-if="typeof subValue === 'number'">
-                              <InputNumber
-                                :modelValue="getConfigValue(activeCategory, subKey) as number"
-                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val ?? null)"
-                                :disabled="!isPropertyEditable(subKey, activeCategory)"
-                                class="w-full"
-                                :showButtons="false"
-                                :useGrouping="false"
-                                @input="event => updateConfigValue(activeCategory, subKey, event.value ?? null)"
-                              />
-                            </template>
-                            <template v-else>
-                              <InputText
-                                :modelValue="String(getConfigValue(activeCategory, subKey) ?? '')"
-                                @update:modelValue="val => updateConfigValue(activeCategory, subKey, val || null)"
-                                :disabled="!isPropertyEditable(subKey, activeCategory)"
-                                class="w-full"
-                              />
-                            </template>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </template>
-            </div>
-          </section>
-        </template>
-      </div>
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+          <component 
+            :is="Component" 
+            :key="$route.params.category || 'default'"
+            :config="config"
+            :formatKey="formatKey"
+            :isPropertyEditable="isPropertyEditable"
+            :getValueType="getValueType"
+            :getTagSeverity="getTagSeverity"
+            :getConfigValue="getConfigValue"
+            :updateConfigValue="updateConfigValue"
+            :hasPropertyChanges="hasPropertyChanges"
+            :isSaving="isSaving"
+            :saveConfigProperty="saveConfigProperty"
+          />
+        </keep-alive>
+      </router-view>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
+import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
@@ -238,6 +87,9 @@ const editedConfig = ref<Config>({});
 const changedValues = ref<Record<string, EditableValue>>({});
 const hasChanges = ref(false);
 const savingProperties = ref(new Set<string>());
+
+const route = useRoute();
+const router = useRouter();
 
 const isPropertyEditable = (key: string | number, parentKey?: string | number): boolean => {
   // Known read-only fields that should never be editable
@@ -426,6 +278,65 @@ const updateConfigValue = (key: string | number, subKey: string | number | null,
   hasChanges.value = Object.keys(changedValues.value).length > 0;
 };
 
+const extractUrlFromMessage = (message: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const match = message.match(urlRegex);
+  if (match) {
+    const url = match[0];
+    const textWithoutUrl = message.replace(url, '');
+    return { url, text: textWithoutUrl.trim() };
+  }
+  return { text: message };
+};
+
+const fetchMDMConfig = async () => {
+  loading.value = true;
+  error.value = '';
+  try {
+    console.log('Fetching MDM config from:', API_URL);
+    const response = await restClient.get(`${API_URL}/config`);
+    console.log('MDM config response:', response);
+
+    if (!response) {
+      throw new Error('No response from server');
+    }
+
+    // Handle both possible response formats
+    const configData = response.data || response;
+    if (!configData || typeof configData !== 'object') {
+      throw new Error('Invalid response format from server');
+    }
+
+    config.value = configData;
+    editedConfig.value = JSON.parse(JSON.stringify(configData));
+    hasChanges.value = false;
+  } catch (err: any) {
+    console.error('Error fetching MDM config:', err);
+    console.error('Error response:', err.response);
+    
+    // Get the error message from the response data
+    const errorData = err.response?.data;
+    const message = errorData?.message || err.message || 'Failed to fetch configuration';
+    const { url, text } = extractUrlFromMessage(message);
+    
+    // Set error message with clickable link if URL exists
+    const htmlContent = url 
+      ? `${text} <a href="${url}" target="_blank" style="color: var(--red-700); text-decoration: underline;">${url}</a>`
+      : text;
+    
+    error.value = htmlContent;
+    
+    toast.add({
+      severity: 'error',
+      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
+      detail: text + (url ? ` ${url}` : ''),
+      life: 3000
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
 const handleSaveConfig = async (retryCount = 0) => {
   saving.value = true;
   error.value = '';
@@ -459,28 +370,24 @@ const handleSaveConfig = async (retryCount = 0) => {
     } else {
       throw new Error('Invalid response from server');
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Update error:', err);
-    const errorMessage = err instanceof Error ? err.message : 'Failed to update configuration';
+    console.error('Error response:', err.response);
     
-    // Check if it's an Unprocessable Entity error and we haven't exceeded retry attempts
-    if (errorMessage.includes('Unprocessable Entity') && retryCount < 2) {
-      // Wait a short delay before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Fetch fresh config before retrying
-      await fetchMDMConfig();
-      
-      // Retry the save operation
-      return handleSaveConfig(retryCount + 1);
-    }
+    // Get the error message from the response data
+    const errorData = err.response?.data;
+    const message = errorData?.message || err.message || 'Failed to update configuration';
+    const { url, text } = extractUrlFromMessage(message);
     
-    error.value = errorMessage;
+    error.value = url 
+      ? `${text} <a href="${url}" target="_blank" style="color: var(--red-700); text-decoration: underline;">${url}</a>`
+      : text;
+    
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: error.value,
-      life: 5000
+      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
+      detail: text + (url ? ` ${url}` : ''),
+      life: 3000
     });
   } finally {
     saving.value = false;
@@ -489,41 +396,6 @@ const handleSaveConfig = async (retryCount = 0) => {
 
 const saveConfig = () => {
   handleSaveConfig(0);
-};
-
-const fetchMDMConfig = async () => {
-  loading.value = true;
-  error.value = '';
-  try {
-    console.log('Fetching MDM config from:', API_URL);
-    const response = await restClient.get(`${API_URL}/config`);
-    console.log('MDM config response:', response);
-
-    if (!response) {
-      throw new Error('No response from server');
-    }
-
-    // Handle both possible response formats
-    const configData = response.data || response;
-    if (!configData || typeof configData !== 'object') {
-      throw new Error('Invalid response format from server');
-    }
-
-    config.value = configData;
-    editedConfig.value = JSON.parse(JSON.stringify(configData));
-    hasChanges.value = false;
-  } catch (err) {
-    console.error('Error fetching MDM config:', err);
-    error.value = err instanceof Error ? err.message : 'Failed to fetch configuration';
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.value,
-      life: 5000,
-    });
-  } finally {
-    loading.value = false;
-  }
 };
 
 const getPropertyKey = (key: string | number, subKey: string | number | null): string => {
@@ -581,46 +453,39 @@ const saveConfigProperty = async (key: string | number, subKey: string | number 
       [String(key)]: subKey === null ? value : { [String(subKey)]: value }
     });
 
-    if (response) {
-      // Update the config with the new value
-      if (subKey === null) {
-        config.value[String(key)] = value as ConfigValue;
-      } else {
-        if (typeof config.value[String(key)] !== 'object') {
-          config.value[String(key)] = {};
-        }
-        (config.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
+    // Update the config with the new value
+    if (subKey === null) {
+      config.value[String(key)] = value as ConfigValue;
+    } else {
+      if (typeof config.value[String(key)] !== 'object') {
+        config.value[String(key)] = {};
       }
-
-      // Update editedConfig to match config
-      if (subKey === null) {
-        editedConfig.value[String(key)] = value as ConfigValue;
-      } else {
-        if (typeof editedConfig.value[String(key)] !== 'object') {
-          editedConfig.value[String(key)] = {};
-        }
-        (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
-      }
-
-      // Remove the change from tracking
-      delete changedValues.value[path];
-      hasChanges.value = Object.keys(changedValues.value).length > 0;
-
-      toast.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Configuration updated successfully',
-        life: 3000
-      });
+      (config.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
     }
-  } catch (err) {
-    console.error('Error saving config:', err);
+
+    // Update editedConfig to match config
+    if (subKey === null) {
+      editedConfig.value[String(key)] = value as ConfigValue;
+    } else {
+      if (typeof editedConfig.value[String(key)] !== 'object') {
+        editedConfig.value[String(key)] = {};
+      }
+      (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
+    }
+
+    // Remove the change from tracking
+    delete changedValues.value[path];
+    hasChanges.value = Object.keys(changedValues.value).length > 0;
+
     toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to update configuration',
-      life: 5000
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Configuration updated successfully',
+      life: 3000
     });
+  } catch (err: any) {
+    console.error('Error saving config:', err);
+    throw err; // Re-throw to be handled by SettingsCategory
   } finally {
     savingProperties.value.delete(path);
   }
@@ -673,11 +538,38 @@ const booleanFields = computed(() => {
     .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
 });
 
+const isActiveCategory = (key: string): boolean => {
+  return route.params.category === key || (!route.params.category && categories.value[0]?.key === key);
+};
+
+const navigateToCategory = (key: string) => {
+  router.push({ name: 'mdm-settings-category', params: { category: key } });
+};
+
+watch(
+  () => route.params.category,
+  (newCategory) => {
+    if (newCategory) {
+      activeCategory.value = String(newCategory);
+    } else if (categories.value.length > 0) {
+      // If no category in URL, navigate to first available category
+      router.push({ 
+        name: 'mdm-settings-category', 
+        params: { category: categories.value[0].key }
+      });
+    }
+  },
+  { immediate: true }
+);
+
 onMounted(() => {
   fetchMDMConfig().then(() => {
-    // Set initial active category to the first available one
-    if (categories.value.length > 0) {
-      activeCategory.value = categories.value[0].key;
+    // If no category in URL, navigate to first available category
+    if (!route.params.category && categories.value.length > 0) {
+      router.push({ 
+        name: 'mdm-settings-category', 
+        params: { category: categories.value[0].key }
+      });
     }
   });
 });
@@ -688,20 +580,24 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding: 2rem;
 }
 
 .settings-layout {
   display: flex;
   gap: 2rem;
   flex: 1;
-  min-height: 0; /* Important for nested flex scrolling */
-  height: 80vh;
-  overflow: hidden;
+  min-height: 0;
+  height: calc(100vh - 200px);
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
 }
 
 .settings-categories {
   flex: 0 0 220px;
-  background: var(--surface-section);
+  background: var(--surface-ground);
   border-radius: 8px;
   padding: 0.5rem;
   height: 100%;
@@ -712,7 +608,6 @@ onMounted(() => {
   list-style: none;
   padding: 0;
   margin: 0;
-  height: 100%;
 }
 
 .category-menu li {
@@ -725,7 +620,7 @@ onMounted(() => {
   transition: all 0.2s ease;
   margin-bottom: 0.25rem;
   font-size: 0.9rem;
-  min-height: 3rem;  /* Ensure consistent height */
+  color: var(--text-color);
 }
 
 .category-menu li:hover {
@@ -743,9 +638,10 @@ onMounted(() => {
 
 .settings-content {
   flex: 1;
-  padding: 0 1rem;
+  padding: 1rem;
   overflow-y: auto;
-  height: 100%;
+  background: var(--surface-ground);
+  border-radius: 8px;
 }
 
 .mdm-dashboard {
@@ -918,6 +814,24 @@ onMounted(() => {
   border-radius: 8px;
   margin-bottom: 1rem;
   width: 100%;
+
+  :deep(a) {
+    color: var(--red-700);
+    text-decoration: underline;
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}
+
+:deep(.p-toast-message-error) {
+  a {
+    color: inherit;
+    text-decoration: underline;
+    &:hover {
+      text-decoration: none;
+    }
+  }
 }
 
 .loading-spinner {

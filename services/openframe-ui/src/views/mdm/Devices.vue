@@ -19,7 +19,7 @@
     <div class="devices-content">
       <div v-if="error" class="error-message">
         <i class="pi pi-exclamation-triangle" style="font-size: 1.25rem"></i>
-        <span>{{ error }}</span>
+        <span v-html="error"></span>
       </div>
 
       <DataTable 
@@ -168,20 +168,44 @@ const getMDMStatusSeverity = (status: string | null) => {
   return 'info';
 };
 
+const extractUrlFromMessage = (message: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const match = message.match(urlRegex);
+  if (match) {
+    const url = match[0];
+    const textWithoutUrl = message.replace(url, '');
+    return { url, text: textWithoutUrl.trim() };
+  }
+  return { text: message };
+};
+
 const fetchDevices = async () => {
   loading.value = true;
   error.value = '';
   try {
     const response = await restClient.get(`${API_URL}/hosts`);
     devices.value = response.hosts || [];
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error fetching devices:', err);
-    error.value = err instanceof Error ? err.message : 'Failed to fetch devices';
+    console.error('Error response:', err.response);
+    
+    // Get the error message from the response data
+    const errorData = err.response?.data;
+    const message = errorData?.message || err.message || 'Failed to fetch devices';
+    const { url, text } = extractUrlFromMessage(message);
+    
+    // Set error message with clickable link if URL exists
+    const htmlContent = url 
+      ? `${text} <a href="${url}" target="_blank" style="color: var(--red-700); text-decoration: underline;">${url}</a>`
+      : text;
+    
+    error.value = htmlContent;
+    
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: error.value,
-      life: 5000
+      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
+      detail: text + (url ? ` ${url}` : ''),
+      life: 3000
     });
   } finally {
     loading.value = false;
@@ -200,13 +224,20 @@ const lockDevice = async (device: any) => {
       detail: 'Device lock command sent successfully',
       life: 3000
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error locking device:', err);
+    console.error('Error response:', err.response);
+    
+    // Get the error message from the response data
+    const errorData = err.response?.data;
+    const message = errorData?.message || err.message || 'Failed to lock device';
+    const { url, text } = extractUrlFromMessage(message);
+    
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to lock device',
-      life: 5000
+      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
+      detail: text + (url ? ` ${url}` : ''),
+      life: 3000
     });
   }
 };

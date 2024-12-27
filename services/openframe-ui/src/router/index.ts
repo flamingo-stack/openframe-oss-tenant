@@ -9,6 +9,7 @@ import MDMLayout from '../views/mdm/MDMLayout.vue'
 import Devices from '../views/mdm/Devices.vue'
 import Settings from '../views/mdm/Settings.vue'
 import Profiles from '../views/mdm/Profiles.vue'
+import SettingsCategory from '../views/mdm/SettingsCategory.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -87,7 +88,20 @@ const router = createRouter({
         {
           path: 'settings',
           name: 'mdm-settings',
-          component: Settings
+          component: Settings,
+          children: [
+            {
+              path: '',
+              name: 'mdm-settings-default',
+              component: SettingsCategory
+            },
+            {
+              path: ':category',
+              name: 'mdm-settings-category',
+              component: SettingsCategory,
+              props: true
+            }
+          ]
         }
       ]
     },
