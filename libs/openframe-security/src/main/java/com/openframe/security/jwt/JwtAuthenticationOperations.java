@@ -10,12 +10,16 @@ public interface JwtAuthenticationOperations {
 
     JwtService getJwtService();
 
+    String getManagementPath();
+    
+
     default boolean isPermittedPath(String path) {
         return path.startsWith("/health") ||
                path.startsWith("/metrics") ||
                path.startsWith("/actuator") ||
                path.startsWith("/oauth/token") ||
                path.startsWith("/oauth/register") ||
+               path.startsWith(getManagementPath()) ||
                path.equals("/.well-known/openid-configuration");
     }
 

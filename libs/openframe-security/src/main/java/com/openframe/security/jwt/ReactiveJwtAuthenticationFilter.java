@@ -1,5 +1,6 @@
 package com.openframe.security.jwt;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,14 @@ import reactor.core.publisher.Mono;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthenticationOperations {
 
+    @Value("${management.endpoints.web.base-path}")
+    private String managementPath;
+
+    @Override
+    public String getManagementPath() {
+        return managementPath;
+    }
+
     private final JwtService jwtService;
     private final ReactiveUserDetailsService userDetailsService;
 
@@ -37,7 +46,7 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        
+
         // Skip JWT check for OPTIONS requests (CORS preflight)
         if (exchange.getRequest().getMethod().name().equals("OPTIONS")) {
             log.debug("Skipping JWT filter for OPTIONS request");
@@ -51,10 +60,10 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
         }
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        log.info("Processing request: {} {} with auth: {}", 
-            exchange.getRequest().getMethod(), 
-            path,
-            authHeader != null ? "Bearer token present" : "no auth");
+        log.info("Processing request: {} {} with auth: {}",
+                exchange.getRequest().getMethod(),
+                path,
+                authHeader != null ? "Bearer token present" : "no auth");
 
         String jwt = extractJwt(authHeader);
         if (jwt == null) {
@@ -70,23 +79,23 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
         }
 
         return userDetailsService.findByUsername(userEmail)
-            .flatMap(userDetails -> {
-                if (validateToken(jwt, userDetails)) {
-                    var authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                    );
-                    return chain.filter(exchange)
-                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
-                }
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
-            })
-            .onErrorResume(e -> {
-                log.error("Error processing JWT token: {}", e.getMessage(), e);
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
-            });
+                .flatMap(userDetails -> {
+                    if (validateToken(jwt, userDetails)) {
+                        var authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+                        return chain.filter(exchange)
+                                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                    }
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                })
+                .onErrorResume(e -> {
+                    log.error("Error processing JWT token: {}", e.getMessage(), e);
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                });
     }
-} 
+}

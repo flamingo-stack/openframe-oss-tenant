@@ -2,6 +2,7 @@ package com.openframe.security.jwt;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +38,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter implements Jwt
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
+    }
+
+    @Value("${management.endpoints.web.base-path}")
+    private String managementPath;
+
+    @Override
+    public String getManagementPath() {
+        return managementPath;
     }
 
     @Override
