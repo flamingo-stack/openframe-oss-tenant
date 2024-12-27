@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -203,6 +203,10 @@ const props = defineProps<{
   hasPropertyChanges: (key: string, subKey: string | null) => boolean;
   isSaving: (key: string, subKey: string | null) => boolean;
   saveConfigProperty: (key: string, subKey: string | null) => Promise<void>;
+  fetchMDMConfig: () => Promise<void>;
+  editedConfig: { value: Record<string, any> };
+  changedValues: { value: Record<string, any> };
+  hasChanges: { value: boolean };
 }>();
 
 const route = useRoute();
@@ -253,7 +257,7 @@ const handleSave = async (category: string, subKey: string | null) => {
       errorMessage = `${message}\n${validationErrors}`;
     }
     
-    console.log('Showing error toast with message:', errorMessage);
+    // Show the error toast first
     toast.add({
       severity: 'error',
       summary: `HTTP error (${err.response?.status || 'Bad Request'})`,
@@ -261,6 +265,21 @@ const handleSave = async (category: string, subKey: string | null) => {
       life: 3000,
       contentStyleClass: 'whitespace-pre-line'
     });
+
+    // Then handle the value reversion
+    if (subKey !== null) {
+      // Get the original value from the config
+      const originalValue = props.config[category][subKey];
+      
+      // Update the value using the same method as the parent component
+      props.updateConfigValue(category, subKey, originalValue);
+      
+      // Wait for Vue to process the update
+      await nextTick();
+      
+      // Fetch fresh data to ensure everything is in sync
+      await props.fetchMDMConfig();
+    }
   }
 };
 </script>

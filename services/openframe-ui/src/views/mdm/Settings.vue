@@ -31,24 +31,22 @@
         </ul>
       </div>
 
-      <router-view v-slot="{ Component }">
-        <keep-alive>
-          <component 
-            :is="Component" 
-            :key="$route.params.category || 'default'"
-            :config="config"
-            :formatKey="formatKey"
-            :isPropertyEditable="isPropertyEditable"
-            :getValueType="getValueType"
-            :getTagSeverity="getTagSeverity"
-            :getConfigValue="getConfigValue"
-            :updateConfigValue="updateConfigValue"
-            :hasPropertyChanges="hasPropertyChanges"
-            :isSaving="isSaving"
-            :saveConfigProperty="saveConfigProperty"
-          />
-        </keep-alive>
-      </router-view>
+      <router-view
+        :config="config"
+        :formatKey="formatKey"
+        :isPropertyEditable="isPropertyEditable"
+        :getValueType="getValueType"
+        :getTagSeverity="getTagSeverity"
+        :getConfigValue="getConfigValue"
+        :updateConfigValue="updateConfigValue"
+        :hasPropertyChanges="hasPropertyChanges"
+        :isSaving="isSaving"
+        :saveConfigProperty="saveConfigProperty"
+        :fetchMDMConfig="fetchMDMConfig"
+        :editedConfig="editedConfig"
+        :changedValues="changedValues"
+        :hasChanges="hasChanges"
+      />
     </div>
   </div>
 </template>

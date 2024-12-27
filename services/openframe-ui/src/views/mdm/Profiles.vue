@@ -101,6 +101,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
+import { useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -114,6 +115,7 @@ import { config as envConfig } from '../../config/env.config';
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
 const toast = useToast();
+const router = useRouter();
 const loading = ref(true);
 const errorMessage = ref('');
 const profiles = ref([]);
@@ -205,6 +207,12 @@ const editProfile = (profile: any) => {
   // TODO: Implement profile editing
   console.log('Edit profile:', profile);
 };
+
+// Add navigation guard to dismiss toasts
+router.beforeEach((to, from, next) => {
+  toast.removeAllGroups();
+  next();
+});
 
 onMounted(() => {
   fetchProfiles();
