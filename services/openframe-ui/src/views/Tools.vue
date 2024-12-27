@@ -1,7 +1,7 @@
 <template>
   <div class="tools-dashboard">
     <div class="of-mdm-header">
-      <h1 class="of-title">Tools</h1>
+      <h1 class="of-title">Infrastructure</h1>
       <div class="localhost-toggle">
         <InputSwitch v-model="useLocalhost" />
         <span class="toggle-label">Local Deployment</span>

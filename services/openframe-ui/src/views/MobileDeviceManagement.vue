@@ -13,12 +13,12 @@ const navigationItems = [
   {
     label: 'Devices',
     icon: 'pi pi-mobile',
-    to: '/mdm/devices'
+    path: '/mdm/devices'
   },
   {
     label: 'Settings',
     icon: 'pi pi-cog',
-    to: '/mdm/settings'
+    path: '/mdm/settings'
   }
 ];
 </script>

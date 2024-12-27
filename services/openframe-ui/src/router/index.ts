@@ -1,13 +1,17 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
-import MobileDeviceManagement from '../views/MobileDeviceManagement.vue'
+import Dashboard from '../views/Dashboard.vue'
+import MDMLayout from '../views/mdm/MDMLayout.vue'
+import Devices from '../views/mdm/Devices.vue'
+import Settings from '../views/mdm/Settings.vue'
+import Profiles from '../views/mdm/Profiles.vue'
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/login',
@@ -23,6 +27,20 @@ const router = createRouter({
     },
     {
       path: '/',
+      redirect: '/dashboard'
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: Dashboard,
+      meta: { 
+        requiresAuth: true,
+        title: 'Dashboard',
+        icon: 'pi pi-home'
+      }
+    },
+    {
+      path: '/monitoring',
       name: 'monitoring',
       component: Monitoring,
       meta: { 
@@ -44,48 +62,32 @@ const router = createRouter({
     {
       path: '/mdm',
       name: 'mdm',
-      component: () => import('../views/mdm/MDMLayout.vue'),
-      meta: {
-        requiresAuth: true,
-        icon: 'pi pi-mobile',
-        title: 'Mobile Device Management'
-      },
+      component: MDMLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: '',
-          redirect: '/mdm/devices'
+          redirect: '/mdm/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'mdm-dashboard',
+          component: () => import('../views/mdm/Dashboard.vue')
         },
         {
           path: 'devices',
           name: 'mdm-devices',
-          component: () => import('../views/mdm/Devices.vue'),
-          meta: {
-            requiresAuth: true
-          }
-        },
-        {
-          path: 'policies',
-          name: 'mdm-policies',
-          component: () => import('../views/mdm/Policies.vue'),
-          meta: {
-            requiresAuth: true
-          }
+          component: Devices
         },
         {
           path: 'profiles',
           name: 'mdm-profiles',
-          component: () => import('../views/mdm/Profiles.vue'),
-          meta: {
-            requiresAuth: true
-          }
+          component: Profiles
         },
         {
           path: 'settings',
           name: 'mdm-settings',
-          component: () => import('../views/mdm/Settings.vue'),
-          meta: {
-            requiresAuth: true
-          }
+          component: Settings
         }
       ]
     },

@@ -17,24 +17,24 @@ const route = useRoute();
 
 const navigationItems = [
   {
-    label: 'Devices',
-    path: '/mdm/devices',
-    icon: 'pi pi-desktop'
+    label: 'Dashboard',
+    icon: 'pi pi-chart-line',
+    path: '/mdm/dashboard'
   },
   {
-    label: 'Policies',
-    path: '/mdm/policies',
-    icon: 'pi pi-file'
+    label: 'Devices',
+    icon: 'pi pi-mobile',
+    path: '/mdm/devices'
   },
   {
     label: 'Profiles',
-    path: '/mdm/profiles',
-    icon: 'pi pi-id-card'
+    icon: 'pi pi-id-card',
+    path: '/mdm/profiles'
   },
   {
     label: 'Settings',
-    path: '/mdm/settings',
-    icon: 'pi pi-cog'
+    icon: 'pi pi-cog',
+    path: '/mdm/settings'
   }
 ];
 

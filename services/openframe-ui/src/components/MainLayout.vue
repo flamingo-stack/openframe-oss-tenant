@@ -82,7 +82,7 @@
                   v-if="!child.children && child.path"
                   :to="child.path"
                   class="menu-item submenu-item"
-                  :class="{ active: route.path === child.path }"
+                  :class="{ active: route.path.startsWith(child.path) }"
                   @click="menuVisible = false"
                 >
                   <i :class="child.icon"></i>
@@ -149,7 +149,7 @@ const router = useRouter();
 const menuVisible = ref(false);
 const themeStore = useThemeStore()
 const { isDark } = storeToRefs(themeStore)
-const expandedMenus = ref<string[]>([]);
+const expandedMenus = ref<string[]>(['Integrated Tools']);
 
 interface MenuItem {
   label: string;
@@ -160,23 +160,28 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
+    label: 'Dashboard',
+    icon: 'pi pi-home',
+    path: '/dashboard'
+  },
+  {
     label: 'Integrated Tools',
     icon: 'pi pi-wrench',
     children: [
       {
-        label: 'Monitoring',
-        icon: 'pi pi-chart-line',
-        path: '/'
+        label: 'Mobile Device Management',
+        icon: 'pi pi-mobile',
+        path: '/mdm'
       },
       {
-        label: 'Integrated Tools',
+        label: 'Infrastructure',
         icon: 'pi pi-cog',
         path: '/tools'
       },
       {
-        label: 'Mobile Device Management',
-        icon: 'pi pi-mobile',
-        path: '/mdm/devices'
+        label: 'Monitoring',
+        icon: 'pi pi-chart-line',
+        path: '/monitoring'
       }
     ]
   },
