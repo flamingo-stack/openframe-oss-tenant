@@ -2,6 +2,12 @@
   <div class="mdm-policies">
     <div class="of-mdm-header">
       <h1 class="of-title">Policies</h1>
+      <Button 
+        label="Create Policy" 
+        icon="pi pi-plus" 
+        @click="showCreateDialog = true"
+        class="p-button-primary" 
+      />
     </div>
 
     <div class="w-30rem mr-auto">
@@ -34,8 +40,8 @@
           <div class="empty-state">
             <i class="pi pi-shield empty-icon"></i>
             <h3>No Policies Found</h3>
-            <p>There are no MDM policies configured yet.</p>
-            <p class="hint">Add policies to enforce security and compliance across your devices.</p>
+            <p>There are no policies configured yet.</p>
+            <p class="hint">Add policies to manage device settings and configurations.</p>
           </div>
         </template>
 
@@ -58,25 +64,10 @@
           </template>
         </Column>
 
-        <Column field="status" header="Status" sortable style="width: 200px">
+        <Column field="status" header="Status" sortable style="width: 150px">
           <template #body="{ data }">
-            <div class="policy-stats">
-              <div class="stat-item">
-                <i class="pi pi-check-circle text-green-500"></i>
-                <span>{{ data.passing_host_count }}</span>
-              </div>
-              <div class="stat-item">
-                <i class="pi pi-times-circle text-red-500"></i>
-                <span>{{ data.failing_host_count }}</span>
-              </div>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="critical" header="Priority" sortable style="width: 120px">
-          <template #body="{ data }">
-            <Tag :value="data.critical ? 'Critical' : 'Normal'" 
-                 :severity="data.critical ? 'danger' : 'info'" />
+            <Tag :value="data.enabled ? 'Enabled' : 'Disabled'"
+                 :severity="data.enabled ? 'success' : 'danger'" />
           </template>
         </Column>
 
@@ -84,10 +75,10 @@
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
               <Button 
-                icon="pi pi-pencil" 
+                :icon="data.enabled ? 'pi pi-pause' : 'pi pi-play'" 
                 class="p-button-text p-button-sm" 
-                v-tooltip.top="'Edit Policy'"
-                @click="editPolicy(data)" 
+                v-tooltip.top="data.enabled ? 'Disable Policy' : 'Enable Policy'"
+                @click="togglePolicy(data)" 
               />
               <Button 
                 icon="pi pi-trash" 
@@ -100,6 +91,109 @@
         </Column>
       </DataTable>
     </div>
+
+    <!-- Create Policy Dialog -->
+    <Dialog 
+      v-model:visible="showCreateDialog" 
+      header="Create Policy" 
+      :modal="true"
+      :draggable="false"
+      :style="{ width: '60vw', maxWidth: '800px' }"
+      class="p-dialog-custom"
+      :pt="{
+        root: { style: { position: 'relative', margin: '0 auto' } },
+        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+      }"
+    >
+      <div class="grid">
+        <div class="col-12">
+          <div class="field">
+            <label for="name">Name</label>
+            <InputText 
+              id="name" 
+              v-model="newPolicy.name" 
+              required 
+              placeholder="Enter policy name"
+              :class="{ 'p-invalid': submitted && !newPolicy.name }"
+            />
+            <small class="p-error" v-if="submitted && !newPolicy.name">Name is required.</small>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field">
+            <label for="description">Description</label>
+            <Textarea 
+              id="description" 
+              v-model="newPolicy.description" 
+              rows="3" 
+              required
+              placeholder="Enter policy description"
+              :class="{ 'p-invalid': submitted && !newPolicy.description }"
+            />
+            <small class="p-error" v-if="submitted && !newPolicy.description">Description is required.</small>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field">
+            <label for="platform">Platform</label>
+            <MultiSelect
+              id="platform"
+              v-model="newPolicy.platform"
+              :options="platformOptions"
+              optionLabel="name"
+              optionValue="value"
+              placeholder="Select target platforms"
+              display="chip"
+            />
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field">
+            <label for="settings">Settings</label>
+            <Editor 
+              v-model="newPolicy.settings" 
+              editorStyle="height: 250px"
+              required
+              :class="{ 'p-invalid': submitted && !newPolicy.settings }"
+            />
+            <small class="p-error" v-if="submitted && !newPolicy.settings">Settings are required.</small>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field-checkbox">
+            <Checkbox 
+              id="enabled" 
+              v-model="newPolicy.enabled" 
+              :binary="true" 
+              class="mr-2"
+            />
+            <label for="enabled">Enable Policy</label>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-content-end gap-2">
+          <Button 
+            label="Cancel" 
+            icon="pi pi-times" 
+            class="p-button-text" 
+            @click="hideCreateDialog"
+          />
+          <Button 
+            label="Create" 
+            icon="pi pi-check" 
+            class="p-button-primary" 
+            @click="createPolicy"
+            :loading="submitting"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -110,6 +204,11 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Dialog from 'primevue/dialog';
+import Editor from 'primevue/editor';
+import MultiSelect from 'primevue/multiselect';
+import Checkbox from 'primevue/checkbox';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
@@ -122,6 +221,23 @@ const toast = useToast();
 const loading = ref(true);
 const error = ref('');
 const policies = ref([]);
+const showCreateDialog = ref(false);
+const submitted = ref(false);
+const submitting = ref(false);
+
+const newPolicy = ref({
+  name: '',
+  description: '',
+  platform: [],
+  settings: '',
+  enabled: true
+});
+
+const platformOptions = [
+  { name: 'macOS', value: 'darwin' },
+  { name: 'Windows', value: 'windows' },
+  { name: 'Linux', value: 'linux' }
+];
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -170,6 +286,84 @@ const fetchPolicies = async () => {
   }
 };
 
+const hideCreateDialog = () => {
+  showCreateDialog.value = false;
+  submitted.value = false;
+  newPolicy.value = {
+    name: '',
+    description: '',
+    platform: [],
+    settings: '',
+    enabled: true
+  };
+};
+
+const createPolicy = async () => {
+  submitted.value = true;
+
+  if (!newPolicy.value.name || !newPolicy.value.description || !newPolicy.value.settings) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Please fill in all required fields',
+      life: 3000
+    });
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    await restClient.post(`${API_URL}/global/policies`, {
+      name: newPolicy.value.name,
+      description: newPolicy.value.description,
+      platform: newPolicy.value.platform.join(','),
+      settings: newPolicy.value.settings,
+      enabled: newPolicy.value.enabled
+    });
+
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Policy created successfully',
+      life: 3000
+    });
+
+    hideCreateDialog();
+    await fetchPolicies();
+  } catch (err) {
+    console.error('Error creating policy:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to create policy',
+      life: 5000
+    });
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const togglePolicy = async (policy: any) => {
+  try {
+    await restClient.post(`${API_URL}/global/policies/${policy.id}/toggle`, {});
+    await fetchPolicies();
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `Policy ${policy.enabled ? 'disabled' : 'enabled'} successfully`,
+      life: 3000
+    });
+  } catch (err) {
+    console.error('Error toggling policy:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to toggle policy',
+      life: 5000
+    });
+  }
+};
+
 const deletePolicy = async (policy: any) => {
   try {
     await restClient.post(`${API_URL}/global/policies/delete`, {
@@ -193,15 +387,126 @@ const deletePolicy = async (policy: any) => {
   }
 };
 
-const editPolicy = (policy: any) => {
-  // TODO: Implement policy editing
-  console.log('Edit policy:', policy);
-};
+// Add directive registration
+const vTooltip = Tooltip;
 
 onMounted(() => {
   fetchPolicies();
 });
 </script>
+
+<style>
+:deep(.p-dialog-mask) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:deep(.p-dialog) {
+  margin: 0 auto !important;
+}
+
+:deep(.p-dialog-content) {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 120px) !important;
+}
+
+.p-dialog-custom {
+  .p-dialog-header {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .p-dialog-content {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+  }
+
+  .p-dialog-footer {
+    background: var(--surface-section);
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .field {
+    margin-bottom: 1.5rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+    }
+  }
+
+  .field-checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+
+    label {
+      margin: 0;
+      margin-left: 0.5rem;
+    }
+  }
+
+  .p-inputtext,
+  .p-multiselect,
+  .p-editor-container {
+    width: 100%;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: var(--primary-color);
+    }
+
+    &:focus,
+    &.p-focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px var(--primary-color);
+    }
+
+    &.p-invalid {
+      border-color: var(--red-500);
+    }
+  }
+
+  .p-editor-container {
+    .p-editor-toolbar {
+      background: var(--surface-ground);
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .p-editor-content {
+      background: var(--surface-ground);
+      min-height: 250px;
+    }
+  }
+
+  .p-multiselect-token {
+    background: var(--primary-100);
+    color: var(--primary-900);
+    border: 1px solid var(--primary-200);
+  }
+
+  .p-checkbox {
+    .p-checkbox-box {
+      background: var(--surface-ground);
+      border: 1px solid var(--surface-border);
+
+      &.p-highlight {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+    }
+  }
+}
+</style>
 
 <style scoped>
 .mdm-policies {
@@ -210,6 +515,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  background: var(--surface-ground);
 }
 
 .of-mdm-header {
@@ -232,17 +538,6 @@ onMounted(() => {
   padding: 1rem;
 }
 
-.error-message {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--red-100);
-  color: var(--red-700);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
 .policy-info {
   display: flex;
   flex-direction: column;
@@ -254,23 +549,6 @@ onMounted(() => {
 
   .policy-description {
     color: var(--text-color-secondary);
-  }
-}
-
-.policy-stats {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-
-  .stat-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-
-    i {
-      font-size: 1rem;
-    }
   }
 }
 

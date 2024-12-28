@@ -2,6 +2,12 @@
   <div class="mdm-queries">
     <div class="of-mdm-header">
       <h1 class="of-title">Queries</h1>
+      <Button 
+        label="Create Query" 
+        icon="pi pi-plus" 
+        @click="showCreateDialog = true"
+        class="p-button-primary" 
+      />
     </div>
 
     <div class="w-30rem mr-auto">
@@ -93,6 +99,97 @@
         </Column>
       </DataTable>
     </div>
+
+    <!-- Create Query Dialog -->
+    <Dialog 
+      v-model:visible="showCreateDialog" 
+      header="Create Query" 
+      :modal="true"
+      :draggable="false"
+      :style="{ width: '60vw', maxWidth: '800px' }"
+      class="p-dialog-custom"
+      :pt="{
+        root: { style: { position: 'relative', margin: '0 auto' } },
+        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+      }"
+    >
+      <div class="grid">
+        <div class="col-12">
+          <div class="field">
+            <label for="name">Name</label>
+            <InputText 
+              id="name" 
+              v-model="newQuery.name" 
+              required 
+              placeholder="Enter query name"
+              :class="{ 'p-invalid': submitted && !newQuery.name }"
+            />
+            <small class="p-error" v-if="submitted && !newQuery.name">Name is required.</small>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field">
+            <label for="description">Description</label>
+            <Textarea 
+              id="description" 
+              v-model="newQuery.description" 
+              rows="3" 
+              required
+              placeholder="Enter query description"
+              :class="{ 'p-invalid': submitted && !newQuery.description }"
+            />
+            <small class="p-error" v-if="submitted && !newQuery.description">Description is required.</small>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field">
+            <label for="platform">Platform</label>
+            <MultiSelect
+              id="platform"
+              v-model="newQuery.platform"
+              :options="platformOptions"
+              optionLabel="name"
+              optionValue="value"
+              placeholder="Select target platforms"
+              display="chip"
+            />
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="field">
+            <label for="query">Query</label>
+            <Editor 
+              v-model="newQuery.query" 
+              editorStyle="height: 250px"
+              required
+              :class="{ 'p-invalid': submitted && !newQuery.query }"
+            />
+            <small class="p-error" v-if="submitted && !newQuery.query">Query is required.</small>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-content-end gap-2">
+          <Button 
+            label="Cancel" 
+            icon="pi pi-times" 
+            class="p-button-text" 
+            @click="hideCreateDialog"
+          />
+          <Button 
+            label="Create" 
+            icon="pi pi-check" 
+            class="p-button-primary" 
+            @click="createQuery"
+            :loading="submitting"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -103,18 +200,41 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Dialog from 'primevue/dialog';
+import Editor from 'primevue/editor';
+import MultiSelect from 'primevue/multiselect';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 
-const API_URL = `${envConfig.GATEWAY_URL}/api/v1/fleet`;
+const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+
+// Add directive registration
+const vTooltip = Tooltip;
 
 const toast = useToast();
 const loading = ref(true);
 const error = ref('');
 const queries = ref([]);
+const showCreateDialog = ref(false);
+const submitted = ref(false);
+const submitting = ref(false);
+
+const newQuery = ref({
+  name: '',
+  description: '',
+  platform: [],
+  query: ''
+});
+
+const platformOptions = [
+  { name: 'macOS', value: 'darwin' },
+  { name: 'Windows', value: 'windows' },
+  { name: 'Linux', value: 'linux' }
+];
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -208,10 +328,155 @@ const runQuery = async (query: any) => {
   }
 };
 
+const hideCreateDialog = () => {
+  showCreateDialog.value = false;
+  submitted.value = false;
+  newQuery.value = {
+    name: '',
+    description: '',
+    platform: [],
+    query: ''
+  };
+};
+
+const createQuery = async () => {
+  submitted.value = true;
+
+  if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Please fill in all required fields',
+      life: 3000
+    });
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    await restClient.post(`${API_URL}/queries`, {
+      name: newQuery.value.name,
+      description: newQuery.value.description,
+      platform: newQuery.value.platform.join(','),
+      query: newQuery.value.query
+    });
+
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Query created successfully',
+      life: 3000
+    });
+
+    hideCreateDialog();
+    await fetchQueries();
+  } catch (err) {
+    console.error('Error creating query:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to create query',
+      life: 5000
+    });
+  } finally {
+    submitting.value = false;
+  }
+};
+
 onMounted(() => {
   fetchQueries();
 });
 </script>
+
+<style>
+:deep(.p-dialog-mask) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:deep(.p-dialog) {
+  margin: 0 auto !important;
+}
+
+:deep(.p-dialog-content) {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 120px) !important;
+}
+
+.p-dialog-custom {
+  .p-dialog-header {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .p-dialog-content {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+  }
+
+  .p-dialog-footer {
+    background: var(--surface-section);
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .field {
+    margin-bottom: 1.5rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+    }
+  }
+
+  .p-inputtext,
+  .p-multiselect,
+  .p-editor-container {
+    width: 100%;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: var(--primary-color);
+    }
+
+    &:focus,
+    &.p-focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px var(--primary-color);
+    }
+
+    &.p-invalid {
+      border-color: var(--red-500);
+    }
+  }
+
+  .p-editor-container {
+    .p-editor-toolbar {
+      background: var(--surface-ground);
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .p-editor-content {
+      background: var(--surface-ground);
+      min-height: 250px;
+    }
+  }
+
+  .p-multiselect-token {
+    background: var(--primary-100);
+    color: var(--primary-900);
+    border: 1px solid var(--primary-200);
+  }
+}
+</style>
 
 <style scoped>
 .mdm-queries {
@@ -220,6 +485,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  background: var(--surface-ground);
 }
 
 .of-mdm-header {
