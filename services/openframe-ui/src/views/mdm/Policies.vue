@@ -17,11 +17,6 @@
     </div>
 
     <div class="policies-content">
-      <div v-if="error" class="error-message">
-        <i class="pi pi-exclamation-triangle" style="font-size: 1.25rem"></i>
-        <span>{{ error }}</span>
-      </div>
-
       <DataTable 
         :value="policies" 
         :paginator="true" 

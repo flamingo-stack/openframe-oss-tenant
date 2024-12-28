@@ -9,9 +9,6 @@
       <div v-if="loading" class="loading-state">
         Loading profile...
       </div>
-      <div v-else-if="error" class="error-message">
-        {{ error }}
-      </div>
       <div v-else class="profile-content">
         <form @submit.prevent="handleUpdate" class="profile-form">
           <div class="grid">

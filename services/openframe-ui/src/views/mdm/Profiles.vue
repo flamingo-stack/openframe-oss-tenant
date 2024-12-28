@@ -1,7 +1,7 @@
 <template>
   <div class="mdm-profiles">
     <div class="of-mdm-header">
-      <h1 class="of-title">Configuration Profiles</h1>
+      <h1 class="of-title">Profiles</h1>
     </div>
 
     <div class="w-30rem mr-auto">
@@ -17,11 +17,6 @@
     </div>
 
     <div class="profiles-content">
-      <div v-if="errorMessage" class="error-message">
-        <i class="pi pi-exclamation-triangle" style="font-size: 1.25rem"></i>
-        <span v-html="errorMessage"></span>
-      </div>
-
       <DataTable 
         :value="profiles" 
         :paginator="true" 
@@ -246,25 +241,6 @@ onMounted(() => {
   background: var(--surface-ground);
   border-radius: var(--border-radius);
   padding: 1rem;
-}
-
-.error-message {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--red-100);
-  color: var(--red-700);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-
-  :deep(a.error-link) {
-    color: var(--red-700);
-    text-decoration: underline;
-    &:hover {
-      text-decoration: none;
-    }
-  }
 }
 
 .profile-info {
