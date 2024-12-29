@@ -68,6 +68,7 @@ public abstract class BaseSecurityConfig {
                         auth -> auth
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers(
+                                        "/error/**",
                                         "/health/**",
                                         "/metrics/**",
                                         "/oauth/token",

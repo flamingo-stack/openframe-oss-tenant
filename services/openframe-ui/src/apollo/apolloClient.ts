@@ -1,47 +1,141 @@
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink } from '@apollo/client/core';
+import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, fromPromise } from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
 import { config } from '../config/env.config';
 import { onError } from "@apollo/client/link/error";
 import router from '../router';
+import authConfig from '../config/auth.config';
 
 // Create the http link
 const httpLink = createHttpLink({
   uri: `${config.API_URL}/graphql`,
-  credentials: 'include', // Important for CORS
+  credentials: 'include',
 });
+
+let isRefreshing = false;
+let pendingRequests: Function[] = [];
+
+const resolvePendingRequests = () => {
+  pendingRequests.forEach((callback) => callback());
+  pendingRequests = [];
+};
+
+const getNewToken = async () => {
+  console.log('🔄 Attempting to refresh token...');
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) {
+    console.error('❌ No refresh token available');
+    throw new Error('No refresh token available');
+  }
+
+  try {
+    console.log('📤 Making refresh token request...');
+    const formData = new URLSearchParams();
+    formData.append('grant_type', 'refresh_token');
+    formData.append('refresh_token', refreshToken);
+    formData.append('client_id', authConfig.clientId);
+    formData.append('client_secret', authConfig.clientSecret);
+
+    const response = await fetch(`${config.API_URL}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      console.error('❌ Token refresh failed:', response.status, response.statusText);
+      throw new Error('Token refresh failed');
+    }
+
+    const data = await response.json();
+    console.log('✅ Token refresh successful');
+    localStorage.setItem('access_token', data.access_token);
+    if (data.refresh_token) {
+      localStorage.setItem('refresh_token', data.refresh_token);
+    }
+    return data.access_token;
+  } catch (err) {
+    console.error('❌ Token refresh error:', err);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    router.push('/login');
+    throw err;
+  }
+};
 
 // Add the auth header to every request
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem('access_token');
+  console.log('🔑 Adding auth header to request:', token ? 'Token present' : 'No token');
   
-  const updatedHeaders = {
-    ...headers,
-    Authorization: token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json',
-    'Accept': '*/*'
+  return {
+    headers: {
+      ...headers,
+      Authorization: token ? `Bearer ${token}` : '',
+      'Content-Type': 'application/json',
+      'Accept': '*/*'
+    }
   };
-  
-  return { headers: updatedHeaders };
 });
 
-// Add auth error handling
-const errorLink = onError(({ graphQLErrors, networkError }) => {
+// Add auth error handling with token refresh
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
-    // Clear auth tokens
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    // Redirect to login
-    router.push('/login');
-    return;
+    console.log('🚫 Received 401 error, current refresh state:', { isRefreshing });
+    
+    if (!isRefreshing) {
+      console.log('🔄 Starting token refresh flow');
+      isRefreshing = true;
+      
+      return fromPromise(
+        getNewToken()
+          .then((token) => {
+            console.log('🔄 Token refreshed, updating operation context');
+            operation.setContext(({ headers = {} }) => ({
+              headers: {
+                ...headers,
+                Authorization: `Bearer ${token}`,
+              },
+            }));
+            
+            console.log('✅ Resolving pending requests:', pendingRequests.length);
+            resolvePendingRequests();
+            const subscriber = forward(operation).subscribe({});
+            return subscriber;
+          })
+          .catch((error) => {
+            console.error('❌ Token refresh failed:', error);
+            pendingRequests = [];
+            throw error;
+          })
+          .finally(() => {
+            console.log('🏁 Refresh flow complete');
+            isRefreshing = false;
+          })
+      ).flatMap(() => forward(operation));
+    } else {
+      console.log('⏳ Token refresh in progress, queueing request');
+      return fromPromise(
+        new Promise<void>((resolve) => {
+          pendingRequests.push(() => {
+            const subscriber = forward(operation).subscribe({});
+            resolve();
+            return subscriber;
+          });
+        })
+      ).flatMap(() => forward(operation));
+    }
   }
   
-  if (graphQLErrors)
+  if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) =>
       console.error(
-        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+        `❌ [GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
       ),
     );
-  if (networkError) console.error(`[Network error]: ${networkError}`);
+  }
+  if (networkError) console.error(`❌ [Network error]:`, networkError);
 });
 
 // Create the Apollo Client instance
@@ -88,62 +182,119 @@ interface ResponseError extends Error {
   };
 }
 
-// Add REST methods
+// Add REST methods with token refresh
 export const restClient = {
-  async get(url: string) {
-    const response = await fetch(url, {
-      headers: getAuthHeaders()
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      const error = new Error(data.message || response.statusText) as ResponseError;
-      error.response = { status: response.status, statusText: response.statusText, data };
+  async request(url: string, options: RequestInit = {}) {
+    try {
+      console.log('📤 Making REST request to:', url);
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (response.status === 401) {
+        console.log('🚫 REST request received 401, attempting refresh');
+        // Try to refresh the token
+        try {
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
+          const formData = new URLSearchParams();
+          formData.append('grant_type', 'refresh_token');
+          formData.append('refresh_token', refreshToken);
+          formData.append('client_id', authConfig.clientId);
+          formData.append('client_secret', authConfig.clientSecret);
+
+          const refreshResponse = await fetch(`${config.API_URL}/oauth/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+          });
+
+          if (!refreshResponse.ok) {
+            throw new Error('Token refresh failed');
+          }
+
+          const data = await refreshResponse.json();
+          localStorage.setItem('access_token', data.access_token);
+          if (data.refresh_token) {
+            localStorage.setItem('refresh_token', data.refresh_token);
+          }
+
+          console.log('🔄 Token refreshed, retrying original request');
+          // Retry the original request with new token
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers: {
+              ...options.headers,
+              ...getAuthHeaders(),
+            },
+          });
+          
+          if (!retryResponse.ok) {
+            console.error('❌ Retry request failed:', retryResponse.status);
+            const data = await retryResponse.json();
+            const error = new Error(data.message || retryResponse.statusText) as ResponseError;
+            error.response = { status: retryResponse.status, statusText: retryResponse.statusText, data };
+            throw error;
+          }
+          
+          console.log('✅ Retry request successful');
+          return retryResponse.json();
+        } catch (refreshError) {
+          console.error('❌ REST refresh flow failed:', refreshError);
+          // If refresh fails, throw the original 401 error
+          const data = await response.json();
+          const error = new Error(data.message || response.statusText) as ResponseError;
+          error.response = { status: response.status, statusText: response.statusText, data };
+          throw error;
+        }
+      }
+
+      if (!response.ok) {
+        console.error('❌ Request failed:', response.status);
+        const data = await response.json();
+        const error = new Error(data.message || response.statusText) as ResponseError;
+        error.response = { status: response.status, statusText: response.statusText, data };
+        throw error;
+      }
+
+      console.log('✅ Request successful');
+      return response.json();
+    } catch (error) {
+      console.error('❌ Request error:', error);
       throw error;
     }
-    return data;
+  },
+
+  async get(url: string) {
+    return this.request(url);
   },
   
   async post(url: string, data: unknown) {
-    const response = await fetch(url, {
+    return this.request(url, {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const responseData = await response.json();
-    if (!response.ok) {
-      const error = new Error(responseData.message || response.statusText) as ResponseError;
-      error.response = { status: response.status, statusText: response.statusText, data: responseData };
-      throw error;
-    }
-    return responseData;
   },
   
   async patch(url: string, data: unknown) {
-    const response = await fetch(url, {
+    return this.request(url, {
       method: 'PATCH',
-      headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const responseData = await response.json();
-    if (!response.ok) {
-      const error = new Error(responseData.message || response.statusText) as ResponseError;
-      error.response = { status: response.status, statusText: response.statusText, data: responseData };
-      throw error;
-    }
-    return responseData;
   },
   
   async delete(url: string) {
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
+    return this.request(url, {
+      method: 'DELETE'
     });
-    const data = await response.json();
-    if (!response.ok) {
-      const error = new Error(data.message || response.statusText) as ResponseError;
-      error.response = { status: response.status, statusText: response.statusText, data };
-      throw error;
-    }
-    return data;
   }
 }; 

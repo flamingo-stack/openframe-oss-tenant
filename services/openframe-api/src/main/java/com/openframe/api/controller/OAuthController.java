@@ -43,19 +43,13 @@ public class OAuthController {
             .subject(user.getId())
             .claim("email", user.getEmail())
             .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(3600))
+            .expiresAt(Instant.now().plusSeconds(30))
             .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
     private String generateRefreshToken(User user) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-            .subject(user.getId())
-            .claim("token_type", "refresh")
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
-            .build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        return oauthService.generateRefreshToken(user);
     }
 
     @PostMapping("/authorize")

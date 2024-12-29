@@ -458,4 +458,34 @@ h1.of-title,
 /* Text alignment */
 .of-text-center {
   text-align: center;
+}
+
+/* Tooltip Styles */
+.p-tooltip {
+  background: var(--surface-900);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.5rem 0.75rem;
+}
+
+.p-tooltip .p-tooltip-text {
+  color: var(--surface-0);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: none;
+}
+
+.p-tooltip .p-tooltip-arrow {
+  display: none;
+}
+
+/* Remove dark mode overrides since we want consistent tooltip styling */
+[data-theme="dark"] .p-tooltip {
+  background: var(--surface-900);
+}
+
+[data-theme="dark"] .p-tooltip .p-tooltip-text {
+  color: var(--surface-0);
+  background: none;
 } 

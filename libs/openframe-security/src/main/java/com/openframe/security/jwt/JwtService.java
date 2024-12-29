@@ -23,8 +23,11 @@ public class JwtService {
     private final JwtEncoder encoder;
     private final JwtDecoder decoder;
     
-    private Jwt decodeToken(String token) {
-        return decoder.decode(token);
+    public Jwt decodeToken(String token) {
+        log.debug("Decoding token");
+        Jwt jwt = decoder.decode(token);
+        log.debug("Token decoded successfully - Expiration: {}", jwt.getExpiresAt());
+        return jwt;
     }
 
     private <T> T extractClaim(String token, Function<Jwt, T> claimsResolver) {
@@ -42,7 +45,7 @@ public class JwtService {
             .subject(userDetails.getUsername())
             .claim("email", userDetails.getUsername())
             .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .expiresAt(Instant.now().plus(30, ChronoUnit.SECONDS))
             .build();
         
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();

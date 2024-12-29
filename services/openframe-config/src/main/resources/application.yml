@@ -20,7 +20,7 @@ spring:
         git:
           uri: https://github.com/OpenFrame-AI/openframe-backend
           username: ${GITHUB_USERNAME:michaelassraf}
-          password: ${GITHUB_TOKEN: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}
+          password: ${GITHUB_TOKEN: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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}
           clone-on-start: true
           searchPaths:
             - config

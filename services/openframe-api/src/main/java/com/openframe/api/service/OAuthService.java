@@ -63,7 +63,7 @@ public class OAuthService {
         return TokenResponse.builder()
             .accessToken(jwtService.generateToken(userDetails))
             .refreshToken(generateRefreshToken())
-            .expiresIn(3600)
+            .expiresIn(30)
             .build();
     }
 
@@ -88,7 +88,7 @@ public class OAuthService {
             .accessToken(jwtService.generateToken(userDetails))
             .refreshToken(generateRefreshToken())
             .tokenType("Bearer")
-            .expiresIn(3600)
+            .expiresIn(30)
             .build();
     }
 
@@ -103,7 +103,7 @@ public class OAuthService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuer("https://auth.openframe.com")
             .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plus(1, ChronoUnit.HOURS))
+            .expiresAt(Instant.now().plus(30, ChronoUnit.SECONDS))
             .subject(client.getClientId())
             .claim("grant_type", "client_credentials")
             .claim("scopes", client.getScopes())
@@ -112,7 +112,7 @@ public class OAuthService {
         return TokenResponse.builder()
             .accessToken(jwtService.generateToken(claims))
             .tokenType("Bearer")
-            .expiresIn(3600)
+            .expiresIn(30)
             .build();
     }
 
@@ -120,28 +120,44 @@ public class OAuthService {
         // Validate client
         validateClient(clientId, clientSecret);
         
-        // Find token in database
-        var token = tokenRepository.findByRefreshToken(refreshToken)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
-        
-        // Check if refresh token is expired
-        if (token.getRefreshTokenExpiry().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Refresh token expired");
+        try {
+            // Validate refresh token JWT and extract user ID
+            var claims = jwtService.decodeToken(refreshToken);
+            
+            // Verify this is a refresh token
+            String tokenType = claims.getClaimAsString("token_type");
+            if (!"refresh".equals(tokenType)) {
+                throw new IllegalArgumentException("Invalid token type");
+            }
+            
+            // Get user from claims
+            String userId = claims.getSubject();
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+            
+            UserDetails userDetails = new UserSecurity(user);
+            
+            // Generate new tokens
+            return TokenResponse.builder()
+                .accessToken(jwtService.generateToken(userDetails))
+                .refreshToken(generateRefreshToken(user)) // Generate new refresh token
+                .tokenType("Bearer")
+                .expiresIn(30)
+                .build();
+        } catch (Exception e) {
+            log.error("Failed to validate refresh token", e);
+            throw new IllegalArgumentException("Invalid refresh token");
         }
-        
-        // Get user
-        User user = userRepository.findById(token.getUserId())
-            .orElseThrow(() -> new IllegalStateException("User not found"));
-        
-        UserDetails userDetails = new UserSecurity(user);
-        
-        // Generate new tokens
-        return TokenResponse.builder()
-            .accessToken(jwtService.generateToken(userDetails))
-            .refreshToken(generateRefreshToken()) // Generate new refresh token
-            .tokenType("Bearer")
-            .expiresIn(3600)
+    }
+
+    public String generateRefreshToken(User user) {
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+            .subject(user.getId())
+            .claim("token_type", "refresh")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60)) // 7 days
             .build();
+        return jwtService.generateToken(claims);
     }
 
     private OAuthClient validateClient(String clientId, String clientSecret) {

@@ -83,6 +83,12 @@
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
               <Button 
+                icon="pi pi-pencil" 
+                class="p-button-text p-button-sm" 
+                v-tooltip.top="'Edit Query'"
+                @click="editQuery(data)" 
+              />
+              <Button 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Query'"
@@ -103,7 +109,7 @@
     <!-- Create Query Dialog -->
     <Dialog 
       v-model:visible="showCreateDialog" 
-      header="Create Query" 
+      :header="dialogTitle"
       :modal="true"
       :draggable="false"
       :style="{ width: '60vw', maxWidth: '800px' }"
@@ -146,14 +152,19 @@
         <div class="col-12">
           <div class="field">
             <label for="platform">Platform</label>
-            <MultiSelect
+            <Dropdown
               id="platform"
               v-model="newQuery.platform"
               :options="platformOptions"
               optionLabel="name"
               optionValue="value"
-              placeholder="Select target platforms"
-              display="chip"
+              placeholder="Select target platform"
+              class="w-full"
+              :panelClass="'surface-0'"
+              :pt="{
+                panel: { class: 'shadow-2 border-none' },
+                item: { class: 'p-3 text-base hover:surface-hover' }
+              }"
             />
           </div>
         </div>
@@ -161,12 +172,14 @@
         <div class="col-12">
           <div class="field">
             <label for="query">Query</label>
-            <Editor 
+            <textarea 
               v-model="newQuery.query" 
-              editorStyle="height: 250px"
+              class="code-editor"
+              rows="12"
               required
               :class="{ 'p-invalid': submitted && !newQuery.query }"
-            />
+              placeholder="Enter your query script here..."
+            ></textarea>
             <small class="p-error" v-if="submitted && !newQuery.query">Query is required.</small>
           </div>
         </div>
@@ -181,10 +194,10 @@
             @click="hideCreateDialog"
           />
           <Button 
-            label="Create" 
+            :label="isEditMode ? 'Update' : 'Create'" 
             icon="pi pi-check" 
             class="p-button-primary" 
-            @click="createQuery"
+            @click="isEditMode ? updateQuery() : createQuery()"
             :loading="submitting"
           />
         </div>
@@ -194,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -203,7 +216,7 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Dialog from 'primevue/dialog';
 import Editor from 'primevue/editor';
-import MultiSelect from 'primevue/multiselect';
+import Dropdown from 'primevue/dropdown';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
@@ -222,11 +235,14 @@ const queries = ref([]);
 const showCreateDialog = ref(false);
 const submitted = ref(false);
 const submitting = ref(false);
+const isEditMode = ref(false);
+const dialogTitle = computed(() => isEditMode.value ? 'Edit Query' : 'Create Query');
 
 const newQuery = ref({
+  id: null as string | null,
   name: '',
   description: '',
-  platform: [],
+  platform: null as string | null,
   query: ''
 });
 
@@ -331,10 +347,12 @@ const runQuery = async (query: any) => {
 const hideCreateDialog = () => {
   showCreateDialog.value = false;
   submitted.value = false;
+  isEditMode.value = false;
   newQuery.value = {
+    id: null,
     name: '',
     description: '',
-    platform: [],
+    platform: null,
     query: ''
   };
 };
@@ -357,7 +375,7 @@ const createQuery = async () => {
     await restClient.post(`${API_URL}/queries`, {
       name: newQuery.value.name,
       description: newQuery.value.description,
-      platform: newQuery.value.platform.join(','),
+      platform: newQuery.value.platform || '',
       query: newQuery.value.query
     });
 
@@ -376,6 +394,62 @@ const createQuery = async () => {
       severity: 'error',
       summary: 'Error',
       detail: 'Failed to create query',
+      life: 5000
+    });
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const editQuery = (query: any) => {
+  isEditMode.value = true;
+  newQuery.value = {
+    id: query.id,
+    name: query.name,
+    description: query.description,
+    platform: query.platform || null,
+    query: query.query
+  };
+  showCreateDialog.value = true;
+};
+
+const updateQuery = async () => {
+  submitted.value = true;
+
+  if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Please fill in all required fields',
+      life: 3000
+    });
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    await restClient.patch(`${API_URL}/queries/${newQuery.value.id}`, {
+      name: newQuery.value.name,
+      description: newQuery.value.description,
+      platform: newQuery.value.platform || '',
+      query: newQuery.value.query
+    });
+
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Query updated successfully',
+      life: 3000
+    });
+
+    hideCreateDialog();
+    await fetchQueries();
+  } catch (err) {
+    console.error('Error updating query:', err);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update query',
       life: 5000
     });
   } finally {
@@ -459,22 +533,49 @@ onMounted(() => {
   }
 
   .p-editor-container {
-    .p-editor-toolbar {
-      background: var(--surface-ground);
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .p-editor-content {
-      background: var(--surface-ground);
-      min-height: 250px;
-    }
+    display: none;
   }
+}
 
-  .p-multiselect-token {
-    background: var(--primary-100);
-    color: var(--primary-900);
-    border: 1px solid var(--primary-200);
-  }
+:deep(.ql-container) {
+  background: var(--surface-ground) !important;
+}
+
+:deep(.ql-editor) {
+  background: var(--surface-ground) !important;
+}
+
+.code-editor {
+  width: 100%;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 1rem;
+  background: var(--surface-ground);
+  color: var(--text-color);
+  border: none;
+  border-radius: var(--border-radius);
+  resize: vertical;
+  transition: all 0.2s;
+  outline: none !important;
+}
+
+.code-editor:hover {
+  background: var(--surface-hover);
+}
+
+.code-editor:focus {
+  background: var(--surface-hover);
+  box-shadow: var(--focus-ring);
+}
+
+.code-editor::placeholder {
+  color: var(--text-color-secondary);
+  opacity: 0.7;
+}
+
+.code-editor.p-invalid {
+  border-color: var(--red-500);
 }
 </style>
 
@@ -754,5 +855,12 @@ onMounted(() => {
       opacity: 0.8;
     }
   }
+}
+
+/* Remove the tooltip styles */
+:deep(.p-tooltip),
+:deep(.p-tooltip .p-tooltip-arrow),
+:deep(.p-tooltip .p-tooltip-text) {
+  display: none;
 }
 </style> 

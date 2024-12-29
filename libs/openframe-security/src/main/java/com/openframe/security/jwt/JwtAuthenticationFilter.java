@@ -20,30 +20,27 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class JwtAuthenticationFilter extends OncePerRequestFilter implements JwtAuthenticationOperations {
 
+    @Getter
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
 
     @Value("${management.endpoints.web.base-path}")
+    @Getter
     private String managementPath;
 
-    @Override
-    public String getManagementPath() {
-        return managementPath;
-    }
-
-    @Override
-    public JwtService getJwtService() {
-        return jwtService;
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, UserRepository userRepository) {
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -52,15 +49,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter implements Jwt
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        String method = request.getMethod();
+        String path = getPath(request);
+        String method = getMethod(request);
 
         if (isPermittedPath(path, method)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = getAuthHeader(request);
         logAuthAttempt(method, path, authHeader);
 
         String jwt = extractJwt(authHeader);
@@ -78,6 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter implements Jwt
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                
                 if (validateToken(jwt, userDetails)) {
                     var user = userRepository.findByEmail(userEmail)
                         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userEmail));
