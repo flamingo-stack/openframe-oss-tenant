@@ -3,6 +3,7 @@ import axios from 'axios';
 import { config } from '../config/env.config';
 import { apolloClient } from '../apollo/apolloClient';
 import { gql } from '@apollo/client/core';
+import { restClient } from '../apollo/apolloClient';
 
 export interface LoginCredentials {
   email: string;
@@ -178,54 +179,37 @@ export class AuthService {
   }
 
   static async login(credentials: LoginCredentials): Promise<TokenResponse> {
-    const params = new URLSearchParams();
-    params.append('grant_type', 'password');
-    params.append('username', credentials.email);
-    params.append('password', credentials.password);
-    params.append('client_id', authConfig.clientId);
-    params.append('client_secret', authConfig.clientSecret);
+    try {
+      const formData = new URLSearchParams({
+        grant_type: 'password',
+        username: credentials.email,
+        password: credentials.password,
+        client_id: authConfig.clientId,
+        client_secret: authConfig.clientSecret
+      });
 
-    const response = await fetch(`${config.API_URL}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString()
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error_description || 'Login failed');
+      return await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
+    } catch (error: unknown) {
+      throw this.handleError(error);
     }
-
-    const tokenResponse = await response.json();
-    
-    localStorage.setItem('access_token', tokenResponse.access_token);
-    localStorage.setItem('refresh_token', tokenResponse.refresh_token);
-    
-    return tokenResponse;
   }
 
   static async register(credentials: RegisterCredentials): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${config.API_URL}/oauth/register?client_id=${authConfig.clientId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password,
-          firstName: credentials.firstName,
-          lastName: credentials.lastName
-        })
-      });
+      const data = {
+        email: credentials.email,
+        password: credentials.password,
+        firstName: credentials.firstName || '',
+        lastName: credentials.lastName || ''
+      };
 
-      const data = await this.handleResponse<TokenResponse>(response);
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      return data;
+      await restClient.post<void>(`${config.API_URL}/oauth/register?client_id=${authConfig.clientId}`, data);
+      
+      // After successful registration, login the user
+      return this.login({
+        email: credentials.email,
+        password: credentials.password
+      });
     } catch (error: unknown) {
       throw this.handleError(error);
     }
@@ -233,24 +217,14 @@ export class AuthService {
 
   static async refreshToken(refreshToken: string): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${config.API_URL}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-          client_id: authConfig.clientId,
-          client_secret: authConfig.clientSecret
-        })
+      const formData = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: authConfig.clientId,
+        client_secret: authConfig.clientSecret
       });
 
-      const data = await this.handleResponse<TokenResponse>(response);
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      return data;
+      return await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
     } catch (error: unknown) {
       throw this.handleError(error);
     }
@@ -258,27 +232,7 @@ export class AuthService {
 
   static async getUserInfo(): Promise<UserInfo> {
     try {
-      const response = await fetch(`${config.API_URL}/.well-known/userinfo`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new OAuthError(
-            'invalid_token',
-            'Session expired. Please log in again.',
-            undefined,
-            401
-          );
-        }
-        throw new Error('Failed to fetch user info');
-      }
-
-      return response.json();
+      return await restClient.get<UserInfo>(`${config.API_URL}/.well-known/userinfo`);
     } catch (error: unknown) {
       throw this.handleError(error);
     }
@@ -294,12 +248,10 @@ export class AuthService {
         ...(state && { state })
       });
 
-      const response = await fetch(`${config.API_URL}/oauth/authorize?${params}`, {
-        method: 'POST',
-        headers: this.getHeaders(true)
-      });
-
-      const data = await this.handleResponse<{ redirect_url: string }>(response);
+      const data = await restClient.post<{ redirect_url: string }>(
+        `${config.API_URL}/oauth/authorize?${params}`,
+        null
+      );
       return data.redirect_url;
     } catch (error: unknown) {
       throw this.handleError(error);
@@ -308,25 +260,15 @@ export class AuthService {
 
   static async exchangeCode(code: string, redirectUri: string): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${config.API_URL}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: redirectUri,
-          client_id: authConfig.clientId,
-          client_secret: authConfig.clientSecret
-        })
+      const formData = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: authConfig.clientId,
+        client_secret: authConfig.clientSecret
       });
 
-      const data = await this.handleResponse<TokenResponse>(response);
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      return data;
+      return await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
     } catch (error: unknown) {
       throw this.handleError(error);
     }

@@ -1,7 +1,8 @@
 import { ApolloClient, InMemoryCache, createHttpLink, Observable } from '@apollo/client/core';
+import type { FetchResult } from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
-import { OAuthError } from '../errors/OAuthError';
+import { OAuthError } from '@/errors/OAuthError';
 import { useAuthStore } from '../stores/auth';
 import { AuthService } from '../services/AuthService';
 
@@ -11,6 +12,45 @@ let pendingRequests: Function[] = [];
 const resolvePendingRequests = () => {
   pendingRequests.forEach((callback) => callback());
   pendingRequests = [];
+};
+
+const refreshTokenAndRetry = async (retryCallback: () => Promise<any>) => {
+  try {
+    if (!isRefreshing) {
+      console.log('🔄 Starting token refresh flow');
+      isRefreshing = true;
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        console.error('❌ No refresh token available');
+        throw new Error('No refresh token available');
+      }
+
+      console.log('📤 Making refresh token request...');
+      const response = await AuthService.refreshToken(refreshToken);
+      console.log('✅ Token refresh successful');
+      localStorage.setItem('access_token', response.access_token);
+      if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
+
+      console.log('🔄 Resolving pending requests:', pendingRequests.length);
+      resolvePendingRequests();
+      return await retryCallback();
+    } else {
+      console.log('⏳ Token refresh in progress, queueing request');
+      return new Promise((resolve) => {
+        pendingRequests.push(() => resolve(retryCallback()));
+      });
+    }
+  } catch (error) {
+    console.error('❌ Token refresh failed:', error);
+    const authStore = useAuthStore();
+    await authStore.handleAuthError(error);
+    throw error;
+  } finally {
+    console.log('🏁 Refresh flow complete');
+    isRefreshing = false;
+  }
 };
 
 const httpLink = createHttpLink({
@@ -27,53 +67,50 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
+interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+}
+
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
-    if (!isRefreshing) {
-      isRefreshing = true;
-
+  if (networkError) {
+    console.error('❌ [Network error]:', networkError);
+    if ('statusCode' in networkError && networkError.statusCode === 401) {
+      console.log('🚫 GraphQL request received 401, attempting refresh');
       return new Observable(observer => {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          const authStore = useAuthStore();
-          authStore.logout();
-          observer.error(new Error('No refresh token available'));
-          return;
-        }
-
-        AuthService.refreshToken(refreshToken)
-          .then(response => {
-            localStorage.setItem('access_token', response.access_token);
-            if (response.refresh_token) {
-              localStorage.setItem('refresh_token', response.refresh_token);
-            }
-
-            operation.setContext(({ headers = {} }) => ({
-              headers: {
-                ...headers,
-                authorization: `Bearer ${response.access_token}`,
+        refreshTokenAndRetry(() => 
+          new Promise((resolve) => {
+            console.log('🔄 Retrying GraphQL operation after token refresh');
+            forward(operation).subscribe({
+              next: (result) => {
+                console.log('✅ GraphQL retry successful');
+                resolve(result);
               },
-            }));
-
-            resolvePendingRequests();
-            forward(operation).subscribe(observer);
+              error: (error) => {
+                console.error('❌ GraphQL retry failed:', error);
+                observer.error.bind(observer)(error);
+              },
+              complete: () => {}
+            });
           })
-          .catch(error => {
-            const authStore = useAuthStore();
-            authStore.handleAuthError(error);
-            observer.error(error);
-          })
-          .finally(() => {
-            isRefreshing = false;
-          });
-      });
-    } else {
-      return new Observable(observer => {
-        pendingRequests.push(() => {
-          forward(operation).subscribe(observer);
+        )
+        .then(result => {
+          observer.next(result);
+          observer.complete();
+        })
+        .catch(error => {
+          observer.error(error);
         });
       });
     }
+  }
+
+  if (graphQLErrors) {
+    graphQLErrors.forEach(({ message, locations, path }) =>
+      console.error(
+        `❌ [GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+      ),
+    );
   }
 });
 
@@ -82,72 +119,66 @@ export const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),
 });
 
-// Helper function to get auth headers
-const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem('access_token');
-  return {
-    'Authorization': token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json',
-    'Accept': '*/*'
-  };
-};
-
-// REST client with error handling
+// REST client with token refresh
 export const restClient = {
-  async request(url: string, options: RequestInit = {}) {
+  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     try {
+      console.log('📤 Making REST request to:', url);
+      const token = localStorage.getItem('access_token');
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...options.headers,
-          ...getAuthHeaders(),
-        },
+          ...(options.headers as Record<string, string>),
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+          'Accept': '*/*'
+        } as Record<string, string>,
       });
 
       if (response.status === 401) {
-        const authStore = useAuthStore();
-        await authStore.handleAuthError(
-          new OAuthError(
-            'invalid_token',
-            'Session expired. Please log in again.',
-            undefined,
-            401
-          )
-        );
-        throw new Error('Unauthorized');
+        console.log('🚫 REST request received 401, attempting refresh');
+        return refreshTokenAndRetry(() => this.request<T>(url, options));
       }
 
       if (!response.ok) {
+        console.error('❌ Request failed:', response.status);
         throw new Error(response.statusText);
       }
 
+      console.log('✅ Request successful');
       return response.json();
     } catch (error) {
+      console.error('❌ Request error:', error);
       throw error;
     }
   },
 
-  get(url: string) {
-    return this.request(url);
+  get<T>(url: string, options: RequestInit = {}): Promise<T> {
+    return this.request<T>(url, { ...options, method: 'GET' });
   },
   
-  post(url: string, data: unknown) {
-    return this.request(url, {
+  post<T>(url: string, data?: unknown, options: RequestInit = {}): Promise<T> {
+    const headers = options.headers as Record<string, string>;
+    return this.request<T>(url, {
+      ...options,
       method: 'POST',
-      body: JSON.stringify(data)
+      body: data instanceof URLSearchParams ? data : JSON.stringify(data),
+      headers: {
+        ...headers,
+        'Content-Type': data instanceof URLSearchParams ? 'application/x-www-form-urlencoded' : 'application/json'
+      }
     });
   },
   
-  patch(url: string, data: unknown) {
-    return this.request(url, {
+  patch<T>(url: string, data: unknown, options: RequestInit = {}): Promise<T> {
+    return this.request<T>(url, {
+      ...options,
       method: 'PATCH',
       body: JSON.stringify(data)
     });
   },
   
-  delete(url: string) {
-    return this.request(url, {
-      method: 'DELETE'
-    });
+  delete<T>(url: string, options: RequestInit = {}): Promise<T> {
+    return this.request<T>(url, { ...options, method: 'DELETE' });
   }
 }; 
