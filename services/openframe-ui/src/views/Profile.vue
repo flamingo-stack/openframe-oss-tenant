@@ -85,10 +85,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { AuthService } from '../services/AuthService';
+import { useAuthStore } from '../stores/auth';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 
+const router = useRouter();
+const authStore = useAuthStore();
 const profile = ref({
   sub: '',
   email: '',
@@ -109,9 +113,14 @@ const loadProfile = async () => {
     error.value = '';
     const userInfo = await AuthService.getUserInfo();
     profile.value = userInfo;
-  } catch (err) {
+  } catch (err: any) {
     error.value = 'Failed to load profile';
     console.error('Profile load error:', err);
+    
+    // Handle auth errors
+    if (err?.response?.status === 401 || err?.message?.includes('Failed to fetch user info')) {
+      await authStore.handleAuthError(err);
+    }
   } finally {
     loading.value = false;
   }

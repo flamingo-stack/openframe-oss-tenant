@@ -267,6 +267,14 @@ export class AuthService {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new OAuthError(
+            'invalid_token',
+            'Session expired. Please log in again.',
+            undefined,
+            401
+          );
+        }
         throw new Error('Failed to fetch user info');
       }
 
