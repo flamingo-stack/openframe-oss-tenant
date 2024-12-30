@@ -130,7 +130,6 @@ export const restClient = {
         headers: {
           ...(options.headers as Record<string, string>),
           'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
           'Accept': '*/*'
         } as Record<string, string>,
       });
@@ -159,13 +158,14 @@ export const restClient = {
   
   post<T>(url: string, data?: unknown, options: RequestInit = {}): Promise<T> {
     const headers = options.headers as Record<string, string>;
+    const isFormData = data instanceof URLSearchParams;
     return this.request<T>(url, {
       ...options,
       method: 'POST',
-      body: data instanceof URLSearchParams ? data : JSON.stringify(data),
+      body: isFormData ? data.toString() : JSON.stringify(data),
       headers: {
         ...headers,
-        'Content-Type': data instanceof URLSearchParams ? 'application/x-www-form-urlencoded' : 'application/json'
+        'Content-Type': isFormData ? 'application/x-www-form-urlencoded' : 'application/json'
       }
     });
   },

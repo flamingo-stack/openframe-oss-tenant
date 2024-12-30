@@ -21,6 +21,26 @@ check_service() {
     return 0
 }
 
+# Function to load Fleet public queries and checks
+load_fleet_public_content() {
+    echo "Loading Fleet public queries and checks..."
+    
+    # Get the API token
+    local api_token=$(docker exec openframe-fleet cat /etc/fleet/api_token.txt)
+    
+    # Load public queries
+    echo "Loading public queries..."
+    docker exec openframe-fleet fleetctl get queries --public > /tmp/public_queries.yaml
+    docker exec openframe-fleet fleetctl apply -f /tmp/public_queries.yaml --token="$api_token"
+    
+    # Load public packs
+    echo "Loading public packs..."
+    docker exec openframe-fleet fleetctl get packs --public > /tmp/public_packs.yaml
+    docker exec openframe-fleet fleetctl apply -f /tmp/public_packs.yaml --token="$api_token"
+    
+    echo "Public content loaded successfully!"
+}
+
 # Function to wait for Fleet initialization
 wait_for_fleet_init() {
     echo "Waiting for Fleet initialization..."
@@ -101,9 +121,10 @@ fi
 
 # Wait for Fleet initialization to complete
 wait_for_fleet_init
-if [ $? -ne 0 ]; then
-    echo "Failed to initialize Fleet. Exiting..."
-    exit 1
+if [ $? -eq 0 ]; then
+    load_fleet_public_content
+else
+    echo "Skipping public content loading due to Fleet initialization failure"
 fi
 
 # Function to register an integrated tool
