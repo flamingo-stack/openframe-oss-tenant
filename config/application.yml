@@ -77,10 +77,10 @@ security:
         allow-credentials: true
     token:
       access:
-        expiration-seconds: 10  # Access token expiration time in seconds
+        expiration-seconds: 60  # 1 minute
       refresh:
-        expiration-seconds: 30  # Refresh token expiration time in seconds
-        max-refresh-count: 2    # Maximum number of times a token can be refreshed
+        expiration-seconds: 604800  # 1 week (7 * 24 * 60 * 60)
+        max-refresh-count: 10080    # Maximum refreshes in a week (7 * 24 * 60)
 
 logging:
   file:
