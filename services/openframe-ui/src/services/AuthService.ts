@@ -45,6 +45,7 @@ export type OAuthErrorType =
   | 'unauthorized_client'  // The client is not authorized
   | 'unsupported_grant_type' // The authorization grant type is not supported
   | 'invalid_scope'        // The requested scope is invalid
+  | 'invalid_token'        // The token is invalid or expired
   | 'server_error'         // Internal server error
   | 'temporarily_unavailable'; // The server is temporarily unavailable
 
@@ -115,7 +116,7 @@ export class AuthService {
     return data;
   }
 
-  private static handleError(error: unknown): never {
+  static async handleError(error: unknown): Promise<never> {
     if (error instanceof OAuthError) {
       throw error;
     }
@@ -123,15 +124,54 @@ export class AuthService {
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       throw new OAuthError(
         'temporarily_unavailable',
-        'Unable to connect to the server',
+        'Unable to connect to the server. Please check your internet connection.',
         undefined,
         503
       );
     }
 
+    // Handle specific OAuth errors with user-friendly messages
+    if (error instanceof Response || (error as any)?.response?.data) {
+      const data = (error as any)?.response?.data || await (error as Response).json();
+      const errorType = data.error as OAuthErrorType;
+      let errorMessage = data.error_description;
+
+      switch (errorType) {
+        case 'invalid_grant':
+          if (errorMessage.includes('Maximum refresh count reached')) {
+            errorMessage = 'Your session has expired. Please log in again.';
+          } else if (errorMessage.includes('Invalid credentials')) {
+            errorMessage = 'Invalid email or password.';
+          }
+          break;
+        case 'invalid_token':
+          errorMessage = 'Your session has expired. Please log in again.';
+          break;
+        case 'invalid_request':
+          errorMessage = 'Invalid request. Please try again.';
+          break;
+        case 'unauthorized_client':
+          errorMessage = 'Application is not authorized. Please contact support.';
+          break;
+        case 'server_error':
+          errorMessage = 'Server error. Please try again later.';
+          break;
+        case 'temporarily_unavailable':
+          errorMessage = 'Service is temporarily unavailable. Please try again later.';
+          break;
+      }
+
+      throw new OAuthError(
+        errorType,
+        errorMessage,
+        data.state,
+        (error as Response)?.status || (error as any)?.response?.status || 500
+      );
+    }
+
     throw new OAuthError(
       'server_error',
-      error instanceof Error ? error.message : 'Unknown error',
+      error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
       undefined,
       500
     );

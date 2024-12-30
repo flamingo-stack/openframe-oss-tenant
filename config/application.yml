@@ -75,6 +75,12 @@ security:
         allowed-methods: GET,POST,PUT,DELETE,OPTIONS
         allowed-headers: "*"
         allow-credentials: true
+    token:
+      access:
+        expiration-seconds: 10  # Access token expiration time in seconds
+      refresh:
+        expiration-seconds: 30  # Refresh token expiration time in seconds
+        max-refresh-count: 2    # Maximum number of times a token can be refreshed
 
 logging:
   file:

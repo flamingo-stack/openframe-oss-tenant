@@ -38,12 +38,15 @@ public class OAuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
 
+    // Access token expiration (10 seconds)
+    private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 10;
+
     private String generateAccessToken(User user) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .subject(user.getId())
             .claim("email", user.getEmail())
             .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(30))
+            .expiresAt(Instant.now().plusSeconds(ACCESS_TOKEN_EXPIRATION_SECONDS))
             .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
@@ -100,7 +103,7 @@ public class OAuthController {
                             response.put("access_token", accessToken);
                             response.put("refresh_token", refreshToken);
                             response.put("token_type", "Bearer");
-                            response.put("expires_in", 3600);
+                            response.put("expires_in", ACCESS_TOKEN_EXPIRATION_SECONDS);
                             response.put("scope", "openid profile email");
 
                             return ResponseEntity.ok(response);
@@ -116,12 +119,21 @@ public class OAuthController {
                     username, password, client_id, client_secret);
                 return ResponseEntity.ok(response);
             }
+        } catch (IllegalArgumentException e) {
+            log.warn("Token request failed: {}", e.getMessage());
+            return ResponseEntity.status(401)
+                .body(Map.of(
+                    "error", "invalid_token",
+                    "error_description", e.getMessage(),
+                    "error_uri", "/docs/errors/token"
+                ));
         } catch (Exception e) {
-            log.error("Token error", e);
+            log.error("Token error: {}", e.getMessage(), e);
             return ResponseEntity.status(400)
                 .body(Map.of(
                     "error", "invalid_request",
-                    "error_description", e.getMessage()
+                    "error_description", "An error occurred processing the request",
+                    "error_uri", "/docs/errors/server"
                 ));
         }
     }

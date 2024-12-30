@@ -1,9 +1,10 @@
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, fromPromise } from '@apollo/client/core';
+import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, fromPromise, Observable } from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
 import { config } from '../config/env.config';
 import { onError } from "@apollo/client/link/error";
 import router from '../router';
 import authConfig from '../config/auth.config';
+import { useAuthStore } from '../stores/auth';
 
 // Create the http link
 const httpLink = createHttpLink({
@@ -44,8 +45,9 @@ const getNewToken = async () => {
     });
 
     if (!response.ok) {
-      console.error('❌ Token refresh failed:', response.status, response.statusText);
-      throw new Error('Token refresh failed');
+      const errorData = await response.json();
+      console.error('❌ Token refresh failed:', errorData);
+      throw new Error(errorData.error_description || 'Token refresh failed');
     }
 
     const data = await response.json();
@@ -57,9 +59,9 @@ const getNewToken = async () => {
     return data.access_token;
   } catch (err) {
     console.error('❌ Token refresh error:', err);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    router.push('/login');
+    // Clear tokens and redirect to login
+    const authStore = useAuthStore();
+    await authStore.handleLogout();
     throw err;
   }
 };
@@ -88,7 +90,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
       console.log('🔄 Starting token refresh flow');
       isRefreshing = true;
       
-      return fromPromise(
+      return new Observable(observer => {
         getNewToken()
           .then((token) => {
             console.log('🔄 Token refreshed, updating operation context');
@@ -101,33 +103,30 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
             
             console.log('✅ Resolving pending requests:', pendingRequests.length);
             resolvePendingRequests();
-            const subscriber = forward(operation).subscribe({});
-            return subscriber;
+            forward(operation).subscribe(observer);
           })
           .catch((error) => {
             console.error('❌ Token refresh failed:', error);
             pendingRequests = [];
-            throw error;
+            const authStore = useAuthStore();
+            authStore.handleLogout();
+            observer.error(error);
           })
           .finally(() => {
             console.log('🏁 Refresh flow complete');
             isRefreshing = false;
-          })
-      ).flatMap(() => forward(operation));
+          });
+      });
     } else {
       console.log('⏳ Token refresh in progress, queueing request');
-      return fromPromise(
-        new Promise<void>((resolve) => {
-          pendingRequests.push(() => {
-            const subscriber = forward(operation).subscribe({});
-            resolve();
-            return subscriber;
-          });
-        })
-      ).flatMap(() => forward(operation));
+      return new Observable(observer => {
+        pendingRequests.push(() => {
+          forward(operation).subscribe(observer);
+        });
+      });
     }
   }
-  
+
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) =>
       console.error(
@@ -197,7 +196,6 @@ export const restClient = {
 
       if (response.status === 401) {
         console.log('🚫 REST request received 401, attempting refresh');
-        // Try to refresh the token
         try {
           const refreshToken = localStorage.getItem('refresh_token');
           if (!refreshToken) {
@@ -219,7 +217,9 @@ export const restClient = {
           });
 
           if (!refreshResponse.ok) {
-            throw new Error('Token refresh failed');
+            const errorData = await refreshResponse.json();
+            console.error('❌ Token refresh failed:', errorData);
+            throw new Error(errorData.error_description || 'Token refresh failed');
           }
 
           const data = await refreshResponse.json();
@@ -248,13 +248,11 @@ export const restClient = {
           
           console.log('✅ Retry request successful');
           return retryResponse.json();
-        } catch (refreshError) {
+        } catch (refreshError: any) {
           console.error('❌ REST refresh flow failed:', refreshError);
-          // If refresh fails, throw the original 401 error
-          const data = await response.json();
-          const error = new Error(data.message || response.statusText) as ResponseError;
-          error.response = { status: response.status, statusText: response.statusText, data };
-          throw error;
+          const authStore = useAuthStore();
+          await authStore.handleLogout();
+          throw refreshError;
         }
       }
 
