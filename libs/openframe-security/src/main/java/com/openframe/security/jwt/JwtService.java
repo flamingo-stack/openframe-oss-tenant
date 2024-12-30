@@ -1,9 +1,9 @@
 package com.openframe.security.jwt;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -22,6 +22,9 @@ public class JwtService {
     
     private final JwtEncoder encoder;
     private final JwtDecoder decoder;
+
+    @Value("${security.oauth2.token.access.expiration-seconds}")
+    private int accessTokenExpirationSeconds;
     
     public Jwt decodeToken(String token) {
         log.debug("Decoding token");
@@ -45,7 +48,7 @@ public class JwtService {
             .subject(userDetails.getUsername())
             .claim("email", userDetails.getUsername())
             .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plus(30, ChronoUnit.SECONDS))
+            .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
             .build();
         
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
