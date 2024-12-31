@@ -203,9 +203,10 @@ export class AuthService {
         last_name: credentials.lastName || ''
       };
 
+      const authString = btoa(`${authConfig.clientId}:${authConfig.clientSecret}`);
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${authConfig.clientId}:${authConfig.clientSecret}`)}`
+        'Authorization': 'Basic ' + authString
       };
 
       return await restClient.post<TokenResponse>(
