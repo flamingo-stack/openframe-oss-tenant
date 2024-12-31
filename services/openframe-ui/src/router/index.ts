@@ -15,6 +15,7 @@ import MDMSettings from '../views/mdm/Settings.vue'
 import Settings from '../views/mdm/Settings.vue'
 import Profiles from '../views/mdm/Profiles.vue'
 import SettingsCategory from '../views/mdm/SettingsCategory.vue'
+import SystemArchitecture from '../views/SystemArchitecture.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -132,6 +133,15 @@ const router = createRouter({
       name: 'Profile',
       component: () => import('../views/Profile.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/architecture',
+      name: 'architecture',
+      component: SystemArchitecture,
+      meta: {
+        title: 'System Architecture',
+        requiresAuth: false
+      }
     }
   ]
 })
@@ -139,12 +149,16 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
+  console.log('Route navigation:', { to: to.path, from: from.path, token: !!token })
   
   if (to.meta.requiresAuth && !token) {
+    console.log('Redirecting to login: auth required')
     next('/login')
-  } else if (!to.meta.requiresAuth && token) {
+  } else if (to.path === '/login' && token) {
+    console.log('Redirecting to home: already logged in')
     next('/')
   } else {
+    console.log('Proceeding to route:', to.path)
     next()
   }
 })
