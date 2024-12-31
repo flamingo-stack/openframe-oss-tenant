@@ -196,23 +196,23 @@ export class AuthService {
 
   static async register(credentials: RegisterCredentials): Promise<TokenResponse> {
     try {
-      const data = new URLSearchParams({
-        grant_type: 'password',
+      const data = {
         email: credentials.email,
         password: credentials.password,
-        firstName: credentials.firstName || '',
-        lastName: credentials.lastName || '',
-        client_id: authConfig.clientId,
-        client_secret: authConfig.clientSecret
-      });
+        first_name: credentials.firstName || '',
+        last_name: credentials.lastName || ''
+      };
 
-      await restClient.post<void>(`${config.API_URL}/oauth/register`, data);
-      
-      // After successful registration, login the user
-      return this.login({
-        email: credentials.email,
-        password: credentials.password
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${btoa(`${authConfig.clientId}:${authConfig.clientSecret}`)}`
+      };
+
+      return await restClient.post<TokenResponse>(
+        `${config.API_URL}/oauth/register`, 
+        data,
+        { headers }
+      );
     } catch (error: unknown) {
       throw this.handleError(error);
     }

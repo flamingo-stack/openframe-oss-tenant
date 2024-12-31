@@ -121,22 +121,35 @@ export const apolloClient = new ApolloClient({
 
 // REST client with token refresh
 export const restClient = {
-  async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     try {
       console.log('📤 Making REST request to:', url);
       const token = localStorage.getItem('access_token');
+      const defaultHeaders = {
+        'Accept': '*/*',
+        'Authorization': token ? `Bearer ${token}` : ''
+      };
+
+      // Merge headers, giving priority to custom headers from options
+      const headers = {
+        ...defaultHeaders,
+        ...(options.headers || {})
+      };
+
       const response = await fetch(url, {
         ...options,
-        headers: {
-          ...(options.headers as Record<string, string>),
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Accept': '*/*'
-        } as Record<string, string>,
+        headers
       });
 
       if (response.status === 401) {
         console.log('🚫 REST request received 401, attempting refresh');
-        return refreshTokenAndRetry(() => this.request<T>(url, options));
+        try {
+          return await refreshTokenAndRetry(() => this.request<T>(url, options));
+        } catch (error) {
+          const authStore = useAuthStore();
+          await authStore.handleAuthError(error);
+          throw error;
+        }
       }
 
       if (!response.ok) {
@@ -145,7 +158,8 @@ export const restClient = {
       }
 
       console.log('✅ Request successful');
-      return response.json();
+      const data = await response.json();
+      return data as T;
     } catch (error) {
       console.error('❌ Request error:', error);
       throw error;
@@ -157,16 +171,17 @@ export const restClient = {
   },
   
   post<T>(url: string, data?: unknown, options: RequestInit = {}): Promise<T> {
-    const headers = options.headers as Record<string, string>;
     const isFormData = data instanceof URLSearchParams;
+    const headers = {
+      'Content-Type': isFormData ? 'application/x-www-form-urlencoded' : 'application/json',
+      ...(options.headers || {})
+    };
+
     return this.request<T>(url, {
       ...options,
       method: 'POST',
       body: isFormData ? data.toString() : JSON.stringify(data),
-      headers: {
-        ...headers,
-        'Content-Type': isFormData ? 'application/x-www-form-urlencoded' : 'application/json'
-      }
+      headers
     });
   },
   

@@ -117,7 +117,7 @@ const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 const toast = useToast();
 const loading = ref(true);
 const error = ref('');
-const devices = ref([]);
+const devices = ref<any[]>([]);
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -178,7 +178,7 @@ const fetchDevices = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await restClient.get(`${API_URL}/hosts`);
+    const response = await restClient.get<{hosts: any[]}>(`${API_URL}/hosts`);
     devices.value = response.hosts || [];
   } catch (err: any) {
     console.error('Error fetching devices:', err);

@@ -2,17 +2,25 @@ package com.openframe.api.service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
+import com.openframe.api.dto.UserDTO;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.core.model.OAuthClient;
+import com.openframe.core.model.OAuthToken;
 import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
@@ -29,8 +37,9 @@ import lombok.extern.slf4j.Slf4j;
 public class OAuthService {
     private final OAuthClientRepository clientRepository;
     private final OAuthTokenRepository tokenRepository;
-    private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final JwtEncoder jwtEncoder;
+    private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
@@ -41,6 +50,93 @@ public class OAuthService {
 
     @Value("${security.oauth2.token.refresh.max-refresh-count}")
     private int maxRefreshCount;
+
+    private String generateAccessToken(User user) {
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+            .subject(user.getId())
+            .claim("email", user.getEmail())
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
+            .build();
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+    }
+
+    public ResponseEntity<?> handleTokenRequest(String grantType, String code, String refreshToken,
+            String username, String password, String clientId, String clientSecret) {
+        try {
+            TokenResponse response = token(grantType, code, refreshToken, 
+                username, password, clientId, clientSecret);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Token request failed: {}", e.getMessage());
+            return ResponseEntity.status(401)
+                .body(Map.of(
+                    "error", "invalid_token",
+                    "error_description", e.getMessage(),
+                    "error_uri", "/docs/errors/token"
+                ));
+        } catch (Exception e) {
+            log.error("Token error: {}", e.getMessage(), e);
+            return ResponseEntity.status(400)
+                .body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", "An error occurred processing the request",
+                    "error_uri", "/docs/errors/server"
+                ));
+        }
+    }
+
+    public ResponseEntity<?> handleRegistration(UserDTO userDTO, String authHeader) {
+        try {
+            // Extract client credentials from Basic auth
+            if (!authHeader.startsWith("Basic ")) {
+                throw new IllegalArgumentException("Client authentication required");
+            }
+
+            String base64Credentials = authHeader.substring("Basic ".length()).trim();
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+            final String[] values = credentials.split(":", 2);
+            
+            if (values.length != 2) {
+                throw new IllegalArgumentException("Invalid client credentials format");
+            }
+
+            final String clientId = values[0];
+            final String clientSecret = values[1];
+
+            TokenResponse response = register(userDTO, clientId, clientSecret);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401)
+                .body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", e.getMessage()
+                ));
+        } catch (Exception e) {
+            log.error("Registration error: {}", e.getMessage(), e);
+            return ResponseEntity.status(400)
+                .body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", "An error occurred processing the request"
+                ));
+        }
+    }
+
+    public ResponseEntity<?> handleAuthorization(String responseType, String clientId, 
+            String redirectUri, String scope, String state) {
+        try {
+            AuthorizationResponse response = authorize(responseType, clientId, redirectUri, scope, state);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Authorization error", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of(
+                    "error", "invalid_request",
+                    "error_description", e.getMessage(),
+                    "state", state
+                ));
+        }
+    }
 
     public TokenResponse token(String grantType, String code, String refreshToken,
             String username, String password, String clientId, String clientSecret) {
@@ -59,16 +155,27 @@ public class OAuthService {
     }
 
     private TokenResponse handleAuthorizationCode(String code, String clientId, String clientSecret) {
-        var client = validateClient(clientId, clientSecret);
+        validateClient(clientId, clientSecret);
+        
         var token = tokenRepository.findByAccessToken(code)
             .orElseThrow(() -> new IllegalArgumentException("Invalid authorization code"));
+
+        if (token.getAccessTokenExpiry().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Authorization code has expired");
+        }
+
+        if (!token.getClientId().equals(clientId)) {
+            throw new IllegalArgumentException("Invalid client for this authorization code");
+        }
         
+        // Delete the used code
+        tokenRepository.delete(token);
+        
+        // Get user and generate new tokens
         User user = userRepository.findById(token.getUserId())
             .orElseThrow(() -> new IllegalStateException("User not found"));
-        UserDetails userDetails = new UserSecurity(user);
         
-        // Generate tokens with consistent expiration
-        String accessToken = generateAccessToken(userDetails);
+        String accessToken = generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
         
         return TokenResponse.builder()
@@ -93,10 +200,8 @@ public class OAuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
         
-        UserDetails userDetails = new UserSecurity(user);
-        
         // Generate tokens with consistent expiration
-        String accessToken = generateAccessToken(userDetails);
+        String accessToken = generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
         
         return TokenResponse.builder()
@@ -157,7 +262,7 @@ public class OAuthService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
             
             // Generate new access token and increment refresh count
-            UserDetails userDetails = new UserSecurity(user);
+            String accessToken = generateAccessToken(user);
             
             // Create new refresh token with incremented count
             JwtClaimsSet newRefreshClaims = JwtClaimsSet.builder()
@@ -168,7 +273,7 @@ public class OAuthService {
                 .build();
             
             return TokenResponse.builder()
-                .accessToken(generateAccessToken(userDetails))
+                .accessToken(accessToken)
                 .refreshToken(jwtService.generateToken(newRefreshClaims))
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpirationSeconds)
@@ -177,16 +282,6 @@ public class OAuthService {
             log.error("Failed to validate refresh token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid refresh token");
         }
-    }
-
-    private String generateAccessToken(UserDetails userDetails) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-            .subject(userDetails.getUsername())
-            .claim("email", ((UserSecurity) userDetails).getUser().getEmail())
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
-            .build();
-        return jwtService.generateToken(claims);
     }
 
     public String generateRefreshToken(User user) {
@@ -228,10 +323,18 @@ public class OAuthService {
 
     public AuthorizationResponse authorize(String responseType, String clientId, 
             String redirectUri, String scope, String state) {
-        var client = validateClient(clientId, null);
+        validateClient(clientId, null);
         
+        String code = UUID.randomUUID().toString();
+        OAuthToken token = new OAuthToken();
+        token.setAccessToken(code);
+        token.setClientId(clientId);
+        token.setScopes(new String[]{scope});
+        token.setAccessTokenExpiry(Instant.now().plus(10, ChronoUnit.MINUTES));
+        tokenRepository.save(token);
+            
         return AuthorizationResponse.builder()
-            .code(UUID.randomUUID().toString())
+            .code(code)
             .state(state)
             .redirectUri(redirectUri)
             .build();
@@ -289,5 +392,34 @@ public class OAuthService {
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
         userRepository.save(user);
+    }
+
+    public TokenResponse register(UserDTO userDTO, String clientId, String clientSecret) {
+        // Validate client
+        validateClient(clientId, clientSecret);
+        
+        // Check if user exists
+        if (userRepository.existsByEmail(userDTO.getEmail())) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        // Create new user
+        User user = new User();
+        user.setEmail(userDTO.getEmail());
+        user.setFirstName(userDTO.getFirstName());
+        user.setLastName(userDTO.getLastName());
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        userRepository.save(user);
+
+        // Generate tokens
+        String accessToken = generateAccessToken(user);
+        String refreshToken = generateRefreshToken(user);
+
+        return TokenResponse.builder()
+            .accessToken(accessToken)
+            .refreshToken(refreshToken)
+            .tokenType("Bearer")
+            .expiresIn(accessTokenExpirationSeconds)
+            .build();
     }
 } 

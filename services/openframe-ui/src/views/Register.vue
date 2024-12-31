@@ -86,6 +86,7 @@ import { useAuthStore } from '@/stores/auth'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
+import { AuthService } from '@/services/AuthService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -165,7 +166,7 @@ const handleSubmit = async () => {
 
   try {
     loading.value = true
-    await authStore.register({
+    await AuthService.register({
       email: email.value,
       password: password.value,
       confirmPassword: confirmPassword.value,

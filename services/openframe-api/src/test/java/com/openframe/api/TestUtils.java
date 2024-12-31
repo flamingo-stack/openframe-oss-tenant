@@ -1,6 +1,8 @@
 package com.openframe.api;
 
 import java.lang.reflect.Field;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
@@ -46,6 +48,10 @@ public final class TestUtils {
         token.setAccessToken(TestConstants.TEST_ACCESS_TOKEN);
         token.setRefreshToken(TestConstants.TEST_REFRESH_TOKEN);
         token.setClientId(TestConstants.TEST_CLIENT_ID);
+        token.setUserId("test_user_id");
+        token.setAccessTokenExpiry(Instant.now().plus(1, ChronoUnit.HOURS));
+        token.setRefreshTokenExpiry(Instant.now().plus(24, ChronoUnit.HOURS));
+        token.setScopes(new String[]{"read", "write"});
         return token;
     }
 
