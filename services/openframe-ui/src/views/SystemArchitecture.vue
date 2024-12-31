@@ -3,14 +3,31 @@
     <div class="architecture-diagram">
       <VueFlow
         v-model="elements"
-        :default-viewport="{ x: 0, y: 0, zoom: 0.3 }"
-        :min-zoom="0.2"
-        :max-zoom="2"
+        :default-viewport="{ x: 0, y: 0, zoom: 0.75 }"
+        :min-zoom="0.75"
+        :max-zoom="0.75"
         :fit-view-on-init="true"
+        :nodes-draggable="false"
+        :nodes-connectable="false"
+        :elements-selectable="false"
+        :pan-on-drag="false"
+        :zoom-on-scroll="false"
+        :zoom-on-pinch="false"
+        :zoom-on-double-click="false"
         class="diagram"
       >
+        <template #node-default="nodeProps">
+          <div class="node-content">
+            <div class="node-label">{{ nodeProps.data.label }}</div>
+            <img 
+              :src="nodeProps.data.logo" 
+              :alt="nodeProps.data.label"
+              class="node-logo"
+              @error="onLogoError"
+            />
+          </div>
+        </template>
         <Background :gap="20" :color="isDark ? '#555' : '#aaa'" />
-        <Controls />
         <Panel position="top-left" class="legend">
           <div class="legend-content">
             <div class="legend-section">
@@ -45,6 +62,7 @@ import { Controls } from '@vue-flow/controls'
 import type { Edge, Node } from '@vue-flow/core'
 import { useThemeStore } from '@/stores/themeStore'
 import { storeToRefs } from 'pinia'
+import { getLogoUrl } from '@/services/LogoService'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
@@ -66,44 +84,68 @@ const nodeTypes = {
   'Monitoring': 'var(--bluegray-500)'         // Medium Blue-Gray for monitoring
 }
 
+// Add error handler for logo loading
+const onLogoError = (e: Event) => {
+  const target = e.target as HTMLImageElement;
+  target.style.display = 'none';
+};
+
 onMounted(() => {
   // Basic node setup
   const nodes: Node[] = [
     // Interface
-    { id: 'ui', data: { label: 'OpenFrame UI' }, position: { x: 0, y: 150 }, class: 'interface' },
+    { id: 'ui', data: { label: 'OpenFrame UI', logo: getLogoUrl('openframe-ui', isDark.value) }, 
+      position: { x: 50, y: 300 }, class: 'interface' },
     
     // Application
-    { id: 'api', data: { label: 'OpenFrame API' }, position: { x: 300, y: 50 }, class: 'application' },
-    { id: 'gateway', data: { label: 'OpenFrame Gateway' }, position: { x: 300, y: 150 }, class: 'application' },
-    { id: 'stream', data: { label: 'OpenFrame Stream' }, position: { x: 300, y: 250 }, class: 'application' },
-    { id: 'management', data: { label: 'OpenFrame Management' }, position: { x: 300, y: 350 }, class: 'application' },
+    { id: 'api', data: { label: 'OpenFrame API', logo: getLogoUrl('openframe-api', isDark.value) },
+      position: { x: 350, y: 150 }, class: 'application' },
+    { id: 'gateway', data: { label: 'OpenFrame Gateway', logo: getLogoUrl('openframe-gateway', isDark.value) },
+      position: { x: 350, y: 250 }, class: 'application' },
+    { id: 'stream', data: { label: 'OpenFrame Stream', logo: getLogoUrl('openframe-stream', isDark.value) },
+      position: { x: 350, y: 350 }, class: 'application' },
+    { id: 'management', data: { label: 'OpenFrame Management', logo: getLogoUrl('openframe-management', isDark.value) },
+      position: { x: 350, y: 450 }, class: 'application' },
     
     // Config
-    { id: 'config', data: { label: 'OpenFrame Config' }, position: { x: 600, y: 200 }, class: 'config' },
+    { id: 'config', data: { label: 'OpenFrame Config', logo: getLogoUrl('openframe-config', isDark.value) },
+      position: { x: 650, y: 200 }, class: 'config' },
     
     // Streaming
-    { id: 'kafka', data: { label: 'Apache Kafka' }, position: { x: 900, y: 150 }, class: 'streaming' },
-    { id: 'zookeeper', data: { label: 'Apache Zookeeper' }, position: { x: 900, y: 250 }, class: 'streaming' },
+    { id: 'kafka', data: { label: 'Apache Kafka', logo: getLogoUrl('kafka-primary', isDark.value) },
+      position: { x: 950, y: 150 }, class: 'streaming' },
+    { id: 'zookeeper', data: { label: 'Apache Zookeeper', logo: getLogoUrl('zookeeper-primary', isDark.value) },
+      position: { x: 950, y: 250 }, class: 'streaming' },
     
     // Integration
-    { id: 'nifi', data: { label: 'Apache NiFi' }, position: { x: 1200, y: 200 }, class: 'integration' },
+    { id: 'nifi', data: { label: 'Apache NiFi', logo: getLogoUrl('nifi-primary', isDark.value) },
+      position: { x: 1250, y: 200 }, class: 'integration' },
     
     // Databases
-    { id: 'cassandra', data: { label: 'Cassandra' }, position: { x: 1500, y: 50 }, class: 'database' },
-    { id: 'mongodb', data: { label: 'MongoDB' }, position: { x: 1500, y: 150 }, class: 'database' },
-    { id: 'mysql', data: { label: 'MySQL' }, position: { x: 1500, y: 250 }, class: 'database' },
-    { id: 'redis', data: { label: 'Redis' }, position: { x: 1500, y: 350 }, class: 'database' },
-    { id: 'pinot', data: { label: 'Apache Pinot' }, position: { x: 1500, y: 450 }, class: 'database' },
+    { id: 'cassandra', data: { label: 'Cassandra', logo: getLogoUrl('cassandra-primary', isDark.value) },
+      position: { x: 1550, y: 50 }, class: 'database' },
+    { id: 'mongodb', data: { label: 'MongoDB', logo: getLogoUrl('mongodb-primary', isDark.value) },
+      position: { x: 1550, y: 150 }, class: 'database' },
+    { id: 'mysql', data: { label: 'MySQL', logo: getLogoUrl('mysql-primary', isDark.value) },
+      position: { x: 1550, y: 250 }, class: 'database' },
+    { id: 'redis', data: { label: 'Redis', logo: getLogoUrl('redis-primary', isDark.value) },
+      position: { x: 1550, y: 350 }, class: 'database' },
+    { id: 'pinot', data: { label: 'Apache Pinot', logo: getLogoUrl('pinot-controller', isDark.value) },
+      position: { x: 1550, y: 450 }, class: 'database' },
     
     // Tools
-    { id: 'fleet', data: { label: 'Fleet MDM' }, position: { x: 1800, y: 150 }, class: 'tools' },
-    { id: 'teleport', data: { label: 'Teleport ZTNA' }, position: { x: 1800, y: 250 }, class: 'tools' },
-    { id: 'tactical', data: { label: 'Tactical RMM' }, position: { x: 1800, y: 350 }, class: 'tools' },
+    { id: 'fleet', data: { label: 'Fleet MDM', logo: getLogoUrl('fleet', isDark.value) },
+      position: { x: 1850, y: 150 }, class: 'tools' },
+    { id: 'authentik', data: { label: 'Authentik', logo: getLogoUrl('authentik', isDark.value) },
+      position: { x: 1850, y: 250 }, class: 'tools' },
     
     // Monitoring
-    { id: 'grafana', data: { label: 'Grafana' }, position: { x: 600, y: 600 }, class: 'monitoring' },
-    { id: 'loki', data: { label: 'Grafana Loki' }, position: { x: 1200, y: 600 }, class: 'monitoring' },
-    { id: 'prometheus', data: { label: 'Prometheus' }, position: { x: 1800, y: 600 }, class: 'monitoring' }
+    { id: 'grafana', data: { label: 'Grafana', logo: getLogoUrl('grafana-primary', isDark.value) },
+      position: { x: 650, y: 600 }, class: 'monitoring' },
+    { id: 'loki', data: { label: 'Grafana Loki', logo: getLogoUrl('loki-primary', isDark.value) },
+      position: { x: 1250, y: 600 }, class: 'monitoring' },
+    { id: 'prometheus', data: { label: 'Prometheus', logo: getLogoUrl('prometheus-primary', isDark.value) },
+      position: { x: 1850, y: 600 }, class: 'monitoring' }
   ]
 
   // Basic edge setup
@@ -142,80 +184,119 @@ onMounted(() => {
 <style scoped>
 .architecture-container {
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 64px);  /* Subtract header height */
   display: flex;
   flex-direction: column;
   background: var(--surface-ground);
+  overflow: hidden;  /* Prevent scrolling */
+  position: fixed;   /* Fix the container */
+  top: 64px;        /* Account for header */
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .architecture-diagram {
   flex: 1;
   width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;  /* Prevent diagram scrolling */
 }
 
 .diagram {
   width: 100%;
   height: 100%;
+  overflow: hidden;  /* Prevent inner scrolling */
 }
 
 /* Legend styles */
 .legend {
   background: var(--surface-card);
-  padding: 12px;
-  border-radius: 12px;
+  padding: 8px;
+  border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   font-family: var(--font-family);
-  margin: 16px;
-  min-width: 180px;
+  margin: 8px;
+  min-width: 150px;
   border: 1px solid var(--surface-border);
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 5;
 }
 
 .legend-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .legend-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 1px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  margin: 4px 0;
+  margin: 2px 0;
+  padding: 3px 4px;
   color: var(--text-color);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: var(--font-weight-normal);
 }
 
 .legend-separator {
   height: 1px;
   background: var(--surface-border);
-  margin: 10px 0;
+  margin: 4px 0;
   opacity: 0.5;
 }
 
 /* Node styles */
 :deep(.vue-flow__node) {
-  padding: 12px;
+  padding: 12px 20px;
   border-radius: 12px;
-  width: 280px;
+  width: 260px;
   height: 65px;
-  text-align: center;
-  font-size: 18px;
+  font-size: 16px;
   font-family: var(--font-family);
-  font-weight: 500;
+  font-weight: 600;
   color: white;
   border: 2px solid rgba(255,255,255,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1.2;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Node content layout */
+:deep(.node-content) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  gap: 12px;
+}
+
+:deep(.node-label) {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.node-logo) {
+  height: 32px;
+  width: 64px;
+  object-fit: contain;
+  object-position: right;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
 }
 
 :deep(.vue-flow__node.interface) { background-color: var(--yellow-500); }
@@ -236,9 +317,9 @@ onMounted(() => {
 }
 
 .legend-line {
-  width: 30px;
+  width: 20px;
   height: 0;
-  margin-right: 8px;
+  margin-right: 4px;
   position: relative;
 }
 
@@ -308,28 +389,44 @@ onMounted(() => {
 
 /* Legend styles */
 .legend-color {
-  width: 16px;
-  height: 16px;
-  margin-right: 10px;
-  border-radius: 3px;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
   border: 1px solid rgba(255,255,255,0.2);
 }
 
 /* Make legend lines more visible */
 .legend-line {
-  width: 30px;
+  width: 20px;
   height: 0;
-  margin-right: 8px;
+  margin-right: 4px;
   position: relative;
 }
 
 .legend-line.traffic-line {
-  border-top: 3px solid var(--bluegray-400);
+  border-top: 2px solid var(--bluegray-400);
   opacity: 0.6;
 }
 
 .legend-line.data-line {
-  border-top: 3px dashed var(--bluegray-400);
+  border-top: 2px dashed var(--bluegray-400);
   opacity: 0.6;
+}
+
+/* Update node logo styles */
+:deep(.node-logo) {
+  height: 32px;
+  width: 64px;
+  object-fit: contain;
+  object-position: right;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+:deep(.vue-flow__node.tools .node-logo),
+:deep(.vue-flow__node.interface .node-logo) {
+  filter: brightness(0);
+  opacity: 0.9;
 }
 </style> 

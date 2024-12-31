@@ -10,7 +10,7 @@ import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.InputArgument;
 import com.openframe.core.model.ToolFilter;
-import com.openframe.data.model.IntegratedTool;
+import com.openframe.core.model.IntegratedTool;
 
 import lombok.RequiredArgsConstructor;
 

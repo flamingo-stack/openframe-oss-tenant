@@ -1,20 +1,33 @@
+export interface ToolCredentials {
+  username?: string;
+  password?: string;
+  token?: string;
+}
+
 export interface IntegratedTool {
   id: string;
   name: string;
   description?: string;
   icon?: string;
   url?: string;
-  enabled: boolean;
-  type: string;
   port?: string;
+  type?: string;
+  toolType?: string;
   category?: string;
   platformCategory?: string;
-  credentials?: {
-    username?: string;
-    password?: string;
-    token?: string;
-    apiKey?: string;
-    clientId?: string;
-    clientSecret?: string;
-  };
+  enabled: boolean;
+  credentials?: ToolCredentials;
+  
+  // Layer information
+  layer?: string;
+  layerOrder?: number;
+  layerColor?: string;
+  
+  // Monitoring configuration
+  metricsPath?: string;
+  healthCheckEndpoint?: string;
+  healthCheckInterval?: number;
+  connectionTimeout?: number;
+  readTimeout?: number;
+  allowedEndpoints?: string[];
 } 

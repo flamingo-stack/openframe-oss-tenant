@@ -1,60 +1,102 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { AuthService, type LoginCredentials, type RegisterCredentials } from '../services/AuthService'
-import { useRouter } from 'vue-router'
-import { OAuthError } from '@/errors/OAuthError'
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  scope: string;
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
-  const router = useRouter()
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await AuthService.login({ email, password })
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('refresh_token', response.refresh_token)
-      isAuthenticated.value = true
-      return response
-    } catch (error) {
-      await handleAuthError(error)
-      throw error
+  async function login(email: string, password: string): Promise<TokenResponse> {
+    const formData = new URLSearchParams();
+    formData.append('grant_type', 'password');
+    formData.append('username', email);
+    formData.append('password', password);
+    formData.append('client_id', 'openframe_web_dashboard');
+    formData.append('client_secret', 'prod_secret');
+    formData.append('scope', 'openid profile email');
+
+    const response = await fetch('http://localhost:8090/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error_description || 'Login failed');
     }
+
+    await setTokens(data.access_token, data.refresh_token);
+    return data;
   }
 
-  const register = async (credentials: RegisterCredentials) => {
-    try {
-      const response = await AuthService.register(credentials)
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('refresh_token', response.refresh_token)
-      isAuthenticated.value = true
-      return response
-    } catch (error) {
-      await handleAuthError(error)
-      throw error
+  async function refreshToken(refreshToken: string): Promise<TokenResponse> {
+    const formData = new URLSearchParams();
+    formData.append('grant_type', 'refresh_token');
+    formData.append('refresh_token', refreshToken);
+    formData.append('client_id', 'openframe_web_dashboard');
+    formData.append('client_secret', 'prod_secret');
+
+    const response = await fetch('http://localhost:8090/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error_description || 'Token refresh failed');
     }
+
+    await setTokens(data.access_token, data.refresh_token);
+    return data;
   }
 
-  const logout = async () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    isAuthenticated.value = false
-    await router.push('/login')
+  async function setTokens(accessToken: string, refreshToken: string) {
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    isAuthenticated.value = true;
   }
 
-  const handleAuthError = async (error: unknown) => {
-    if (error instanceof OAuthError) {
-      if (error.error === 'invalid_token' || error.error === 'invalid_grant') {
-        await logout()
+  async function logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    isAuthenticated.value = false;
+  }
+
+  async function handleAuthError(error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes('token expired')) {
+        const storedRefreshToken = localStorage.getItem('refresh_token');
+        if (storedRefreshToken) {
+          try {
+            await refreshToken(storedRefreshToken);
+            return true;
+          } catch (refreshError) {
+            await logout();
+            return false;
+          }
+        }
       }
-    } else if (error instanceof Error) {
-      await logout()
     }
+    return false;
   }
 
   return {
     isAuthenticated,
     login,
-    register,
+    refreshToken,
+    setTokens,
     logout,
     handleAuthError
   }

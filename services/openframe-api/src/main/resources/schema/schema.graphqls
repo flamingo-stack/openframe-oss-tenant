@@ -28,21 +28,32 @@ type IntegratedTool {
     description: String
     icon: String
     url: String
-    enabled: Boolean!
-    type: String
     port: String
+    type: String
+    toolType: String
     category: String
     platformCategory: String
+    enabled: Boolean!
     credentials: ToolCredentials
+    
+    # Layer information
+    layer: String
+    layerOrder: Int
+    layerColor: String
+    
+    # Monitoring configuration
+    metricsPath: String
+    healthCheckEndpoint: String
+    healthCheckInterval: Int
+    connectionTimeout: Int
+    readTimeout: Int
+    allowedEndpoints: [String]
 }
 
 type ToolCredentials {
     username: String
     password: String
     token: String
-    apiKey: String
-    clientId: String
-    clientSecret: String
 }
 
 input ToolFilter {

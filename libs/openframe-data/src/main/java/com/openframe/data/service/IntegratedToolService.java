@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import com.openframe.data.model.IntegratedTool;
+import com.openframe.core.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 
 import lombok.RequiredArgsConstructor;

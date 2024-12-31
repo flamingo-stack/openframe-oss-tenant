@@ -18,7 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.openframe.data.model.IntegratedTool;
+import com.openframe.core.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.gateway.config.CurlLoggingHandler;
 import com.openframe.gateway.service.IntegrationService;
@@ -106,7 +106,9 @@ public class IntegrationController {
         String path = request.getPath().toString();
         log.info("Proxying request for tool: {}, path: {}", toolId, path);
 
-        return Mono.justOrEmpty(toolRepository.findById(toolId))
+        return toolRepository.findById(toolId)
+                .map(Mono::just)
+                .orElse(Mono.empty())
                 .flatMap(tool -> {
                     if (!tool.isEnabled()) {
                         return Mono.just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));

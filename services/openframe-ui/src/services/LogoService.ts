@@ -37,7 +37,8 @@ export const logoMap: Record<string, string> = {
   'openframe-config': openframeLogo,
   'openframe-stream': openframeLogo,
   'openframe-ui': openframeLogo,
-  'openframe-gateway': openframeLogo
+  'openframe-gateway': openframeLogo,
+  'openframe-management': openframeLogo
 };
 
 export const getLogoUrl = (id: string, isDark = false): string => {

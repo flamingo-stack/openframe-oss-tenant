@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import com.openframe.data.model.IntegratedTool;
+import com.openframe.core.model.IntegratedTool;
 
 @Repository
 public interface IntegratedToolRepository extends MongoRepository<IntegratedTool, String> {

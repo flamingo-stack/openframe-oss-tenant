@@ -111,27 +111,6 @@
                       <i class="pi pi-copy"></i>
                     </button>
                   </div>
-                  <div v-if="tool.credentials?.apiKey" class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">API Key</span>
-                    <Password v-model="tool.credentials.apiKey" :feedback="false" readonly inputClass="w-full" toggleMask />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.credentials.apiKey)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
-                  <div v-if="tool.credentials?.clientId" class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">Client ID</span>
-                    <input class="p-inputtext p-component" readonly :value="tool.credentials.clientId" />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.credentials.clientId)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
-                  <div v-if="tool.credentials?.clientSecret" class="p-inputgroup">
-                    <span class="p-inputgroup-addon">Secret</span>
-                    <Password v-model="tool.credentials.clientSecret" :feedback="false" readonly inputClass="w-full" toggleMask />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.credentials.clientSecret)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -192,19 +171,26 @@ const INTEGRATED_TOOLS_QUERY = gql`
       description
       icon
       url
-      enabled
+      port
       type
+      toolType
       category
       platformCategory
-      port
+      enabled
       credentials {
         username
         password
         token
-        apiKey
-        clientId
-        clientSecret
       }
+      layer
+      layerOrder
+      layerColor
+      metricsPath
+      healthCheckEndpoint
+      healthCheckInterval
+      connectionTimeout
+      readTimeout
+      allowedEndpoints
     }
   }
 `;

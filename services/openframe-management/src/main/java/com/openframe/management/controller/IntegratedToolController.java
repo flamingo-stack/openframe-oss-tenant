@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.openframe.data.model.IntegratedTool;
+import com.openframe.core.model.IntegratedTool;
 import com.openframe.data.service.IntegratedToolService;
 
 import lombok.Data;
