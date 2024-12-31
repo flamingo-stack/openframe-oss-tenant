@@ -13,11 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 
+import com.openframe.core.model.User;
+import com.openframe.security.UserSecurity;
 import com.openframe.security.jwt.JwtService;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,15 +36,17 @@ class JwtServiceTest {
     @Test
     void generateToken_ShouldCreateValidToken() {
         // Given
-        UserDetails userDetails = org.springframework.security.core.userdetails.User
-            .withUsername("test@example.com")
-            .password("password")
-            .authorities(Collections.emptyList())
-            .build();
+        User user = new User();
+        user.setEmail("test@example.com");
+        user.setFirstName("Test");
+        user.setLastName("User");
+        UserSecurity userDetails = new UserSecurity(user);
         
         Jwt jwt = Jwt.withTokenValue("token")
             .header("alg", "RS256")
             .claim("email", "test@example.com")
+            .claim("given_name", "Test")
+            .claim("family_name", "User")
             .issuedAt(Instant.now())
             .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
             .build();

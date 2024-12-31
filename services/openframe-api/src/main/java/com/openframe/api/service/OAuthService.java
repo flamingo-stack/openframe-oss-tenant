@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet.Builder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class OAuthService {
+
     private final OAuthClientRepository clientRepository;
     private final OAuthTokenRepository tokenRepository;
     private final UserRepository userRepository;
@@ -52,37 +54,43 @@ public class OAuthService {
     private int maxRefreshCount;
 
     private String generateAccessToken(User user) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-            .subject(user.getId())
-            .claim("email", user.getEmail())
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
-            .build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        Builder jwtClaimsSetBuilder = JwtClaimsSet.builder()
+                .subject(user.getId())
+                .claim("email", user.getEmail());
+
+        if (user.getFirstName() != null) {
+            jwtClaimsSetBuilder = jwtClaimsSetBuilder.claim("given_name", user.getFirstName());
+        }
+        if (user.getLastName() != null) {
+            jwtClaimsSetBuilder = jwtClaimsSetBuilder.claim("family_name", user.getLastName());
+        }
+        jwtClaimsSetBuilder = jwtClaimsSetBuilder.issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds));
+        return jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSetBuilder.build())).getTokenValue();
     }
 
     public ResponseEntity<?> handleTokenRequest(String grantType, String code, String refreshToken,
             String username, String password, String clientId, String clientSecret) {
         try {
-            TokenResponse response = token(grantType, code, refreshToken, 
-                username, password, clientId, clientSecret);
+            TokenResponse response = token(grantType, code, refreshToken,
+                    username, password, clientId, clientSecret);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("Token request failed: {}", e.getMessage());
             return ResponseEntity.status(401)
-                .body(Map.of(
-                    "error", "invalid_token",
-                    "error_description", e.getMessage(),
-                    "error_uri", "/docs/errors/token"
-                ));
+                    .body(Map.of(
+                            "error", "invalid_token",
+                            "error_description", e.getMessage(),
+                            "error_uri", "/docs/errors/token"
+                    ));
         } catch (Exception e) {
             log.error("Token error: {}", e.getMessage(), e);
             return ResponseEntity.status(400)
-                .body(Map.of(
-                    "error", "invalid_request",
-                    "error_description", "An error occurred processing the request",
-                    "error_uri", "/docs/errors/server"
-                ));
+                    .body(Map.of(
+                            "error", "invalid_request",
+                            "error_description", "An error occurred processing the request",
+                            "error_uri", "/docs/errors/server"
+                    ));
         }
     }
 
@@ -96,7 +104,7 @@ public class OAuthService {
             String base64Credentials = authHeader.substring("Basic ".length()).trim();
             String credentials = new String(Base64.getDecoder().decode(base64Credentials));
             final String[] values = credentials.split(":", 2);
-            
+
             if (values.length != 2) {
                 throw new IllegalArgumentException("Invalid client credentials format");
             }
@@ -108,21 +116,21 @@ public class OAuthService {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401)
-                .body(Map.of(
-                    "error", "invalid_request",
-                    "error_description", e.getMessage()
-                ));
+                    .body(Map.of(
+                            "error", "invalid_request",
+                            "error_description", e.getMessage()
+                    ));
         } catch (Exception e) {
             log.error("Registration error: {}", e.getMessage(), e);
             return ResponseEntity.status(400)
-                .body(Map.of(
-                    "error", "invalid_request",
-                    "error_description", "An error occurred processing the request"
-                ));
+                    .body(Map.of(
+                            "error", "invalid_request",
+                            "error_description", "An error occurred processing the request"
+                    ));
         }
     }
 
-    public ResponseEntity<?> handleAuthorization(String responseType, String clientId, 
+    public ResponseEntity<?> handleAuthorization(String responseType, String clientId,
             String redirectUri, String scope, String state) {
         try {
             AuthorizationResponse response = authorize(responseType, clientId, redirectUri, scope, state);
@@ -130,11 +138,11 @@ public class OAuthService {
         } catch (Exception e) {
             log.error("Authorization error", e);
             return ResponseEntity.badRequest()
-                .body(Map.of(
-                    "error", "invalid_request",
-                    "error_description", e.getMessage(),
-                    "state", state
-                ));
+                    .body(Map.of(
+                            "error", "invalid_request",
+                            "error_description", e.getMessage(),
+                            "state", state
+                    ));
         }
     }
 
@@ -156,9 +164,9 @@ public class OAuthService {
 
     private TokenResponse handleAuthorizationCode(String code, String clientId, String clientSecret) {
         validateClient(clientId, clientSecret);
-        
+
         var token = tokenRepository.findByAccessToken(code)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid authorization code"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid authorization code"));
 
         if (token.getAccessTokenExpiry().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Authorization code has expired");
@@ -167,49 +175,49 @@ public class OAuthService {
         if (!token.getClientId().equals(clientId)) {
             throw new IllegalArgumentException("Invalid client for this authorization code");
         }
-        
+
         // Delete the used code
         tokenRepository.delete(token);
-        
+
         // Get user and generate new tokens
         User user = userRepository.findById(token.getUserId())
-            .orElseThrow(() -> new IllegalStateException("User not found"));
-        
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+
         String accessToken = generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
-        
+
         return TokenResponse.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .tokenType("Bearer")
-            .expiresIn(accessTokenExpirationSeconds)
-            .build();
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(accessTokenExpirationSeconds)
+                .build();
     }
 
-    private TokenResponse handlePasswordGrant(String username, String password, 
+    private TokenResponse handlePasswordGrant(String username, String password,
             String clientId, String clientSecret) {
         // Validate client
         validateClient(clientId, clientSecret);
-        
+
         // Find and validate user
         User user = userRepository.findByEmail(username)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
         // Verify password
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("Invalid credentials");
         }
-        
+
         // Generate tokens with consistent expiration
         String accessToken = generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
-        
+
         return TokenResponse.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .tokenType("Bearer")
-            .expiresIn(accessTokenExpirationSeconds)
-            .build();
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(accessTokenExpirationSeconds)
+                .build();
     }
 
     private TokenResponse handleClientCredentials(String clientId, String clientSecret) {
@@ -218,30 +226,30 @@ public class OAuthService {
         if (client == null) {
             throw new IllegalArgumentException("Invalid client credentials");
         }
-        
+
         // Generate token with client-specific claims and consistent expiration
         JwtClaimsSet claims = JwtClaimsSet.builder()
-            .issuer("https://auth.openframe.com")
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
-            .subject(client.getClientId())
-            .claim("grant_type", "client_credentials")
-            .claim("scopes", client.getScopes())
-            .build();
-        
+                .issuer("https://auth.openframe.com")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
+                .subject(client.getClientId())
+                .claim("grant_type", "client_credentials")
+                .claim("scopes", client.getScopes())
+                .build();
+
         return TokenResponse.builder()
-            .accessToken(jwtService.generateToken(claims))
-            .tokenType("Bearer")
-            .expiresIn(accessTokenExpirationSeconds)
-            .build();
+                .accessToken(jwtService.generateToken(claims))
+                .tokenType("Bearer")
+                .expiresIn(accessTokenExpirationSeconds)
+                .build();
     }
 
     private TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {
         validateClient(clientId, clientSecret);
-        
+
         try {
             var claims = jwtService.decodeToken(refreshToken);
-            
+
             // Check if token has expired
             Instant expiresAt = claims.getExpiresAt();
             if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
@@ -250,34 +258,36 @@ public class OAuthService {
 
             // Get refresh count
             Long refreshCount = claims.getClaim("refresh_count");
-            if (refreshCount == null) refreshCount = 0L;
-            
+            if (refreshCount == null) {
+                refreshCount = 0L;
+            }
+
             if (refreshCount >= maxRefreshCount) {
                 throw new IllegalArgumentException("Maximum refresh count reached. Please log in again");
             }
-            
+
             // Get user from claims
             String userId = claims.getSubject();
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-            
+                    .orElseThrow(() -> new IllegalStateException("User not found"));
+
             // Generate new access token and increment refresh count
             String accessToken = generateAccessToken(user);
-            
+
             // Create new refresh token with incremented count
             JwtClaimsSet newRefreshClaims = JwtClaimsSet.builder()
-                .subject(userId)
-                .claim("refresh_count", refreshCount + 1)
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
-                .build();
-            
+                    .subject(userId)
+                    .claim("refresh_count", refreshCount + 1)
+                    .issuedAt(Instant.now())
+                    .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
+                    .build();
+
             return TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(jwtService.generateToken(newRefreshClaims))
-                .tokenType("Bearer")
-                .expiresIn(accessTokenExpirationSeconds)
-                .build();
+                    .accessToken(accessToken)
+                    .refreshToken(jwtService.generateToken(newRefreshClaims))
+                    .tokenType("Bearer")
+                    .expiresIn(accessTokenExpirationSeconds)
+                    .build();
         } catch (Exception e) {
             log.error("Failed to validate refresh token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid refresh token");
@@ -286,45 +296,45 @@ public class OAuthService {
 
     public String generateRefreshToken(User user) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
-            .subject(user.getId())
-            .claim("refresh_count", 0L)
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
-            .build();
+                .subject(user.getId())
+                .claim("refresh_count", 0L)
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
+                .build();
         return jwtService.generateToken(claims);
     }
 
     private OAuthClient validateClient(String clientId, String clientSecret) {
         log.debug("Validating client - ID: {}", clientId);
-        
+
         return clientRepository.findByClientId(clientId)
-            .map(client -> {
-                // Only validate secret if one is provided (e.g. not for authorize endpoint)
-                if (clientSecret != null) {
-                    // Log the lengths to help debug without exposing secrets
-                    log.debug("Stored secret length: {}, Provided secret length: {}", 
-                        client.getClientSecret() != null ? client.getClientSecret().length() : 0, 
-                        clientSecret.length());
-                    
-                    if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
-                        log.error("Invalid client secret for client: {}", clientId);
-                        throw new IllegalArgumentException("Invalid client secret");
+                .map(client -> {
+                    // Only validate secret if one is provided (e.g. not for authorize endpoint)
+                    if (clientSecret != null) {
+                        // Log the lengths to help debug without exposing secrets
+                        log.debug("Stored secret length: {}, Provided secret length: {}",
+                                client.getClientSecret() != null ? client.getClientSecret().length() : 0,
+                                clientSecret.length());
+
+                        if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
+                            log.error("Invalid client secret for client: {}", clientId);
+                            throw new IllegalArgumentException("Invalid client secret");
+                        }
                     }
-                }
-                
-                log.debug("Client validation successful for: {}", clientId);
-                return client;
-            })
-            .orElseThrow(() -> {
-                log.error("Client not found: {}", clientId);
-                return new IllegalArgumentException("Client not found");
-            });
+
+                    log.debug("Client validation successful for: {}", clientId);
+                    return client;
+                })
+                .orElseThrow(() -> {
+                    log.error("Client not found: {}", clientId);
+                    return new IllegalArgumentException("Client not found");
+                });
     }
 
-    public AuthorizationResponse authorize(String responseType, String clientId, 
+    public AuthorizationResponse authorize(String responseType, String clientId,
             String redirectUri, String scope, String state) {
         validateClient(clientId, null);
-        
+
         String code = UUID.randomUUID().toString();
         OAuthToken token = new OAuthToken();
         token.setAccessToken(code);
@@ -332,30 +342,30 @@ public class OAuthService {
         token.setScopes(new String[]{scope});
         token.setAccessTokenExpiry(Instant.now().plus(10, ChronoUnit.MINUTES));
         tokenRepository.save(token);
-            
+
         return AuthorizationResponse.builder()
-            .code(code)
-            .state(state)
-            .redirectUri(redirectUri)
-            .build();
+                .code(code)
+                .state(state)
+                .redirectUri(redirectUri)
+                .build();
     }
 
     public User register(String email, String password, String clientId) {
         // Validate client
         validateClient(clientId, null);
-        
+
         // Check if user exists
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already registered");
         }
-        
+
         // Create new user
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        
+
         User savedUser = userRepository.save(user);
-        
+
         // Don't return password in response
         savedUser.setPassword(null);
         return savedUser;
@@ -363,16 +373,16 @@ public class OAuthService {
 
     public void initiatePasswordReset(String email) {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
         // Generate reset token
         String resetToken = UUID.randomUUID().toString();
-        
+
         // Save reset token to user
         user.setResetToken(resetToken);
         user.setResetTokenExpiry(Instant.now().plus(1, ChronoUnit.HOURS));
         userRepository.save(user);
-        
+
         // TODO: Send email with reset token
         // For now, we'll just print it
         System.out.println("Reset token for " + email + ": " + resetToken);
@@ -380,13 +390,13 @@ public class OAuthService {
 
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findByResetToken(token)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid reset token"));
-        
+                .orElseThrow(() -> new IllegalArgumentException("Invalid reset token"));
+
         // Verify token hasn't expired
         if (user.getResetTokenExpiry().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Reset token has expired");
         }
-        
+
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setResetToken(null);
@@ -397,7 +407,7 @@ public class OAuthService {
     public TokenResponse register(UserDTO userDTO, String clientId, String clientSecret) {
         // Validate client
         validateClient(clientId, clientSecret);
-        
+
         // Check if user exists
         if (userRepository.existsByEmail(userDTO.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
@@ -416,10 +426,10 @@ public class OAuthService {
         String refreshToken = generateRefreshToken(user);
 
         return TokenResponse.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .tokenType("Bearer")
-            .expiresIn(accessTokenExpirationSeconds)
-            .build();
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(accessTokenExpirationSeconds)
+                .build();
     }
-} 
+}

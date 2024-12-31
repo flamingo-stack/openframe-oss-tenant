@@ -23,8 +23,8 @@ const refreshTokenAndRetry = async (retryCallback: () => Promise<any>) => {
       if (!refreshToken) {
         console.error('❌ [Auth] No refresh token available');
         const authStore = useAuthStore();
-        authStore.logout();
-        window.location.href = '/login';
+        await authStore.logout();
+        window.location.replace('/login');
         throw new Error('No refresh token available');
       }
 
@@ -40,11 +40,24 @@ const refreshTokenAndRetry = async (retryCallback: () => Promise<any>) => {
         console.log('🔄 [Auth] Resolving pending requests:', pendingRequests.length);
         resolvePendingRequests();
         return await retryCallback();
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         console.error('❌ [Auth] Token refresh failed:', refreshError);
+        // Handle OAuth errors
+        if (refreshError.message.includes('Client not found') || 
+            refreshError.message.includes('invalid_request') ||
+            refreshError.message.includes('invalid_token') ||
+            refreshError.message.includes('invalid_grant') ||
+            refreshError.message.includes('Unauthorized')) {
+          console.log('🚫 [Auth] OAuth error detected, redirecting to login');
+          const authStore = useAuthStore();
+          await authStore.logout();
+          window.location.replace('/login');
+          throw refreshError;
+        }
+        // For any other error, also redirect
         const authStore = useAuthStore();
-        authStore.logout();
-        window.location.href = '/login';
+        await authStore.logout();
+        window.location.replace('/login');
         throw refreshError;
       }
     } else {
@@ -53,14 +66,11 @@ const refreshTokenAndRetry = async (retryCallback: () => Promise<any>) => {
         pendingRequests.push(() => {
           retryCallback()
             .then(resolve)
-            .catch((error) => {
-              if (error?.response?.status === 401 || 
-                  (error instanceof Error && error.message.includes('Unauthorized'))) {
-                console.error('❌ [Auth] Queued request failed with 401');
-                const authStore = useAuthStore();
-                authStore.logout();
-                window.location.href = '/login';
-              }
+            .catch(async (error: any) => {
+              console.error('❌ [Auth] Queued request failed:', error);
+              const authStore = useAuthStore();
+              await authStore.logout();
+              window.location.replace('/login');
               reject(error);
             });
         });
@@ -69,8 +79,8 @@ const refreshTokenAndRetry = async (retryCallback: () => Promise<any>) => {
   } catch (error) {
     console.error('❌ [Auth] Token refresh flow failed:', error);
     const authStore = useAuthStore();
-    authStore.logout();
-    window.location.href = '/login';
+    await authStore.logout();
+    window.location.replace('/login');
     throw error;
   } finally {
     console.log('🏁 [Auth] Refresh flow complete');
@@ -211,45 +221,68 @@ export const restClient = {
         headers
       });
 
-      if (response.status === 401) {
-        console.log('🔑 [Auth] REST request received 401, attempting refresh');
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          console.error('❌ [Auth] No refresh token available for REST request');
-          const authStore = useAuthStore();
-          authStore.logout();
-          window.location.href = '/login';
-          throw new Error('No refresh token available');
-        }
-
-        try {
-          return await refreshTokenAndRetry(() => this.request<T>(url, options));
-        } catch (error) {
-          console.error('❌ [Auth] REST refresh token failed:', error);
-          const authStore = useAuthStore();
-          authStore.logout();
-          window.location.href = '/login';
-          throw error;
-        }
-      }
-
       if (!response.ok) {
-        console.error('❌ [REST] Request failed:', response.status);
-        throw new Error(response.statusText);
+        const data = await response.json().catch(() => ({}));
+        console.error('❌ [REST] Request failed:', {
+          status: response.status,
+          data
+        });
+
+        // Handle all OAuth and auth-related errors
+        if (response.status === 401 || 
+            data.error === 'invalid_request' || 
+            data.error === 'invalid_token' ||
+            data.error === 'invalid_grant' ||
+            data.error_description?.includes('Client not found')) {
+          console.log('🔑 [Auth] Auth error detected, handling...');
+          
+          if (response.status === 401 && !url.includes('/oauth/token')) {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) {
+              console.error('❌ [Auth] No refresh token available');
+              const authStore = useAuthStore();
+              await authStore.logout();
+              window.location.replace('/login');
+              throw new Error('No refresh token available');
+            }
+
+            try {
+              return await refreshTokenAndRetry(() => this.request<T>(url, options));
+            } catch (error) {
+              console.error('❌ [Auth] Refresh failed, redirecting to login');
+              const authStore = useAuthStore();
+              await authStore.logout();
+              window.location.replace('/login');
+              throw error;
+            }
+          } else {
+            console.error('❌ [Auth] Auth error, redirecting to login');
+            const authStore = useAuthStore();
+            await authStore.logout();
+            window.location.replace('/login');
+            throw new Error(data.error_description || 'Authentication failed');
+          }
+        }
+        
+        throw new Error(data.error_description || response.statusText);
       }
 
       console.log('✅ [REST] Request successful');
       const data = await response.json();
       return data as T;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [REST] Request error:', error);
-      if (error instanceof Error && 
-          (error.message.includes('Unauthorized') || 
-           error.message.includes('Not authenticated') || 
-           error.message.includes('Failed to extract email from token'))) {
+      // Handle any auth-related error messages
+      if (error.message?.includes('Client not found') ||
+          error.message?.includes('invalid_request') ||
+          error.message?.includes('invalid_token') ||
+          error.message?.includes('invalid_grant') ||
+          error.message?.includes('Unauthorized') ||
+          error.message?.includes('Not authenticated')) {
+        console.log('🚫 [Auth] Auth error detected in catch block, redirecting to login');
         const authStore = useAuthStore();
-        authStore.logout();
-        window.location.href = '/login';
+        await authStore.logout();
+        window.location.replace('/login');
       }
       throw error;
     }

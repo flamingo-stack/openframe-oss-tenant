@@ -21,11 +21,11 @@ export const useAuthStore = defineStore('auth', () => {
       formData.append('grant_type', 'password');
       formData.append('username', email);
       formData.append('password', password);
-      formData.append('client_id', 'openframe_web_dashboard');
-      formData.append('client_secret', 'prod_secret');
+      formData.append('client_id', import.meta.env.VITE_CLIENT_ID);
+      formData.append('client_secret', import.meta.env.VITE_CLIENT_SECRET);
       formData.append('scope', 'openid profile email');
 
-      const response = await fetch('http://localhost:8090/oauth/token', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -51,10 +51,10 @@ export const useAuthStore = defineStore('auth', () => {
     const formData = new URLSearchParams();
     formData.append('grant_type', 'refresh_token');
     formData.append('refresh_token', refreshToken);
-    formData.append('client_id', 'openframe_web_dashboard');
-    formData.append('client_secret', 'prod_secret');
+    formData.append('client_id', import.meta.env.VITE_CLIENT_ID);
+    formData.append('client_secret', import.meta.env.VITE_CLIENT_SECRET);
 
-    const response = await fetch('http://localhost:8090/oauth/token', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

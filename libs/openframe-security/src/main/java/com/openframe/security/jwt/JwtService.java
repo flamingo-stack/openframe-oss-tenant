@@ -12,6 +12,8 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
+import com.openframe.security.UserSecurity;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +49,8 @@ public class JwtService {
             .issuer("https://auth.openframe.com")
             .subject(userDetails.getUsername())
             .claim("email", userDetails.getUsername())
+            .claim("given_name", userDetails instanceof UserSecurity ? ((UserSecurity) userDetails).getUser().getFirstName() : null)
+            .claim("family_name", userDetails instanceof UserSecurity ? ((UserSecurity) userDetails).getUser().getLastName() : null)
             .issuedAt(Instant.now())
             .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds))
             .build();
