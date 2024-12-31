@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { VueFlow, Panel, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -63,14 +63,43 @@ import type { Edge, Node } from '@vue-flow/core'
 import { useThemeStore } from '@/stores/themeStore'
 import { storeToRefs } from 'pinia'
 import { getLogoUrl } from '@/services/LogoService'
+import { useQuery, provideApolloClient } from '@vue/apollo-composable'
+import { apolloClient } from '../apollo/apolloClient'
+import gql from 'graphql-tag'
+import type { IntegratedTool } from '../types/IntegratedTool'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 
+// Provide Apollo client
+provideApolloClient(apolloClient)
+
 const themeStore = useThemeStore()
 const { isDark } = storeToRefs(themeStore)
 const elements = ref<Array<Node | Edge>>([])
+
+// Reuse the same GraphQL query from Tools.vue
+const INTEGRATED_TOOLS_QUERY = gql`
+  query GetIntegratedTools($filter: ToolFilter) {
+    integratedTools(filter: $filter) {
+      id
+      name
+      description
+      icon
+      url
+      port
+      type
+      toolType
+      category
+      platformCategory
+      enabled
+      layer
+      layerOrder
+      layerColor
+    }
+  }
+`
 
 // Node type colors - using OpenFrame UI theme colors
 const nodeTypes = {
@@ -90,95 +119,157 @@ const onLogoError = (e: Event) => {
   target.style.display = 'none';
 };
 
-onMounted(() => {
-  // Basic node setup
-  const nodes: Node[] = [
-    // Interface
-    { id: 'ui', data: { label: 'OpenFrame UI', logo: getLogoUrl('openframe-ui', isDark.value) }, 
-      position: { x: 50, y: 300 }, class: 'interface' },
-    
-    // Application
-    { id: 'api', data: { label: 'OpenFrame API', logo: getLogoUrl('openframe-api', isDark.value) },
-      position: { x: 350, y: 150 }, class: 'application' },
-    { id: 'gateway', data: { label: 'OpenFrame Gateway', logo: getLogoUrl('openframe-gateway', isDark.value) },
-      position: { x: 350, y: 250 }, class: 'application' },
-    { id: 'stream', data: { label: 'OpenFrame Stream', logo: getLogoUrl('openframe-stream', isDark.value) },
-      position: { x: 350, y: 350 }, class: 'application' },
-    { id: 'management', data: { label: 'OpenFrame Management', logo: getLogoUrl('openframe-management', isDark.value) },
-      position: { x: 350, y: 450 }, class: 'application' },
-    
-    // Config
-    { id: 'config', data: { label: 'OpenFrame Config', logo: getLogoUrl('openframe-config', isDark.value) },
-      position: { x: 650, y: 200 }, class: 'config' },
-    
-    // Streaming
-    { id: 'kafka', data: { label: 'Apache Kafka', logo: getLogoUrl('kafka-primary', isDark.value) },
-      position: { x: 950, y: 150 }, class: 'streaming' },
-    { id: 'zookeeper', data: { label: 'Apache Zookeeper', logo: getLogoUrl('zookeeper-primary', isDark.value) },
-      position: { x: 950, y: 250 }, class: 'streaming' },
-    
-    // Integration
-    { id: 'nifi', data: { label: 'Apache NiFi', logo: getLogoUrl('nifi-primary', isDark.value) },
-      position: { x: 1250, y: 200 }, class: 'integration' },
-    
-    // Databases
-    { id: 'cassandra', data: { label: 'Cassandra', logo: getLogoUrl('cassandra-primary', isDark.value) },
-      position: { x: 1550, y: 50 }, class: 'database' },
-    { id: 'mongodb', data: { label: 'MongoDB', logo: getLogoUrl('mongodb-primary', isDark.value) },
-      position: { x: 1550, y: 150 }, class: 'database' },
-    { id: 'mysql', data: { label: 'MySQL', logo: getLogoUrl('mysql-primary', isDark.value) },
-      position: { x: 1550, y: 250 }, class: 'database' },
-    { id: 'redis', data: { label: 'Redis', logo: getLogoUrl('redis-primary', isDark.value) },
-      position: { x: 1550, y: 350 }, class: 'database' },
-    { id: 'pinot', data: { label: 'Apache Pinot', logo: getLogoUrl('pinot-controller', isDark.value) },
-      position: { x: 1550, y: 450 }, class: 'database' },
-    
-    // Tools
-    { id: 'fleet', data: { label: 'Fleet MDM', logo: getLogoUrl('fleet', isDark.value) },
-      position: { x: 1850, y: 150 }, class: 'tools' },
-    { id: 'authentik', data: { label: 'Authentik', logo: getLogoUrl('authentik', isDark.value) },
-      position: { x: 1850, y: 250 }, class: 'tools' },
-    
-    // Monitoring
-    { id: 'grafana', data: { label: 'Grafana', logo: getLogoUrl('grafana-primary', isDark.value) },
-      position: { x: 650, y: 600 }, class: 'monitoring' },
-    { id: 'loki', data: { label: 'Grafana Loki', logo: getLogoUrl('loki-primary', isDark.value) },
-      position: { x: 1250, y: 600 }, class: 'monitoring' },
-    { id: 'prometheus', data: { label: 'Prometheus', logo: getLogoUrl('prometheus-primary', isDark.value) },
-      position: { x: 1850, y: 600 }, class: 'monitoring' }
-  ]
+// Fetch tools data
+const { result, loading, error } = useQuery(
+  INTEGRATED_TOOLS_QUERY,
+  {
+    filter: {
+      enabled: true
+    }
+  }
+);
 
-  // Basic edge setup
-  const edges: Edge[] = [
+// Watch for tools data and update chart
+watch(result, (newResult) => {
+  if (newResult?.integratedTools) {
+    const tools = newResult.integratedTools.filter((tool: IntegratedTool) => tool.enabled);
+    
+    // Create nodes from tools
+    const nodes: Node[] = tools.map((tool: IntegratedTool) => ({
+      id: tool.id,
+      data: { 
+        label: tool.name, 
+        logo: getLogoUrl(tool.id, isDark.value)
+      },
+      position: { 
+        x: getNodePosition(tool).x, 
+        y: getNodePosition(tool).y 
+      },
+      class: getNodeClass(tool)
+    }));
+
+    // Create edges between nodes based on architecture
+    const edges: Edge[] = createEdges(tools);
+
+    elements.value = [...nodes, ...edges];
+  }
+}, { immediate: true });
+
+// Helper function to determine node position based on layer and order
+const getNodePosition = (tool: IntegratedTool) => {
+  const baseX = 50;
+  const baseY = 150;
+  const xSpacing = 300;
+  const ySpacing = 100;
+  
+  let x = baseX;
+  let y = baseY;
+
+  // Position based on layer
+  switch (tool.layer) {
+    case 'Interface':
+      x = baseX;
+      break;
+    case 'Application':
+      x = baseX + xSpacing;
+      break;
+    case 'Config':
+      x = baseX + (xSpacing * 2);
+      break;
+    case 'Streaming':
+      x = baseX + (xSpacing * 3);
+      break;
+    case 'Integration':
+      x = baseX + (xSpacing * 4);
+      break;
+    case 'Database':
+      x = baseX + (xSpacing * 5);
+      break;
+    case 'Tools':
+      x = baseX + (xSpacing * 6);
+      break;
+    case 'Monitoring':
+      x = baseX + (xSpacing * 2);
+      y = baseY + (ySpacing * 4);
+      break;
+  }
+
+  // Adjust Y position based on layerOrder if provided
+  if (tool.layerOrder !== undefined && tool.layerOrder !== null) {
+    y += tool.layerOrder * ySpacing;
+  }
+
+  return { x, y };
+};
+
+// Helper function to determine node class based on tool category
+const getNodeClass = (tool: IntegratedTool) => {
+  switch (tool.layer) {
+    case 'Interface':
+      return 'interface';
+    case 'Application':
+      return 'application';
+    case 'Config':
+      return 'config';
+    case 'Streaming':
+      return 'streaming';
+    case 'Integration':
+      return 'integration';
+    case 'Database':
+      return 'database';
+    case 'Tools':
+      return 'tools';
+    case 'Monitoring':
+      return 'monitoring';
+    default:
+      return '';
+  }
+};
+
+// Helper function to create edges between nodes
+const createEdges = (tools: IntegratedTool[]): Edge[] => {
+  const edges: Edge[] = [];
+
+  // Define connections based on architecture
+  const connections = [
     // Traffic flows (solid lines)
-    { id: 'ui-api', source: 'ui', target: 'api', class: 'traffic-flow' },
-    { id: 'gateway-fleet', source: 'gateway', target: 'fleet', class: 'traffic-flow' },
-    { id: 'gateway-teleport', source: 'gateway', target: 'teleport', class: 'traffic-flow' },
-    { id: 'gateway-tactical', source: 'gateway', target: 'tactical', class: 'traffic-flow' },
-    { id: 'gateway-grafana', source: 'gateway', target: 'grafana', class: 'traffic-flow' },
+    { from: 'openframe-ui', to: 'openframe-api', type: 'traffic-flow' },
+    { from: 'openframe-gateway', to: 'fleet', type: 'traffic-flow' },
+    { from: 'openframe-gateway', to: 'authentik', type: 'traffic-flow' },
+    { from: 'openframe-gateway', to: 'grafana-primary', type: 'traffic-flow' },
     
     // Data flows (dashed lines)
-    { id: 'api-config', source: 'api', target: 'config', class: 'data-flow' },
-    { id: 'gateway-config', source: 'gateway', target: 'config', class: 'data-flow' },
-    { id: 'stream-config', source: 'stream', target: 'config', class: 'data-flow' },
-    { id: 'management-config', source: 'management', target: 'config', class: 'data-flow' },
-    { id: 'stream-kafka', source: 'stream', target: 'kafka', class: 'data-flow' },
-    { id: 'api-kafka', source: 'api', target: 'kafka', class: 'data-flow' },
-    { id: 'kafka-zookeeper', source: 'kafka', target: 'zookeeper', class: 'data-flow' },
-    { id: 'kafka-nifi', source: 'kafka', target: 'nifi', class: 'data-flow' },
-    { id: 'management-mongo', source: 'management', target: 'mongodb', class: 'data-flow' },
-    { id: 'api-mongo', source: 'api', target: 'mongodb', class: 'data-flow' },
-    { id: 'stream-cassandra', source: 'stream', target: 'cassandra', class: 'data-flow' },
-    { id: 'stream-pinot', source: 'stream', target: 'pinot', class: 'data-flow' },
-    { id: 'teleport-mysql', source: 'teleport', target: 'mysql', class: 'data-flow' },
-    { id: 'tactical-mysql', source: 'tactical', target: 'mysql', class: 'data-flow' },
-    { id: 'fleet-mysql', source: 'fleet', target: 'mysql', class: 'data-flow' },
-    { id: 'prometheus-grafana', source: 'prometheus', target: 'grafana', class: 'data-flow' },
-    { id: 'loki-grafana', source: 'loki', target: 'grafana', class: 'data-flow' }
-  ]
+    { from: 'openframe-api', to: 'openframe-config', type: 'data-flow' },
+    { from: 'openframe-gateway', to: 'openframe-config', type: 'data-flow' },
+    { from: 'openframe-stream', to: 'openframe-config', type: 'data-flow' },
+    { from: 'openframe-management', to: 'openframe-config', type: 'data-flow' },
+    { from: 'openframe-stream', to: 'kafka-primary', type: 'data-flow' },
+    { from: 'openframe-api', to: 'kafka-primary', type: 'data-flow' },
+    { from: 'kafka-primary', to: 'zookeeper-primary', type: 'data-flow' },
+    { from: 'kafka-primary', to: 'nifi-primary', type: 'data-flow' },
+    { from: 'openframe-management', to: 'mongodb-primary', type: 'data-flow' },
+    { from: 'openframe-api', to: 'mongodb-primary', type: 'data-flow' },
+    { from: 'openframe-stream', to: 'cassandra-primary', type: 'data-flow' },
+    { from: 'openframe-stream', to: 'pinot-controller', type: 'data-flow' },
+    { from: 'prometheus-primary', to: 'grafana-primary', type: 'data-flow' },
+    { from: 'loki-primary', to: 'grafana-primary', type: 'data-flow' }
+  ];
 
-  elements.value = [...nodes, ...edges]
-})
+  // Create edges only for existing tools
+  const toolIds = tools.map(t => t.id);
+  connections.forEach(conn => {
+    if (toolIds.includes(conn.from) && toolIds.includes(conn.to)) {
+      edges.push({
+        id: `${conn.from}-${conn.to}`,
+        source: conn.from,
+        target: conn.to,
+        class: conn.type
+      });
+    }
+  });
+
+  return edges;
+};
 </script>
 
 <style scoped>

@@ -13,29 +13,38 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
 
   async function login(email: string, password: string): Promise<TokenResponse> {
-    const formData = new URLSearchParams();
-    formData.append('grant_type', 'password');
-    formData.append('username', email);
-    formData.append('password', password);
-    formData.append('client_id', 'openframe_web_dashboard');
-    formData.append('client_secret', 'prod_secret');
-    formData.append('scope', 'openid profile email');
+    try {
+      // Clear any stale refresh flags
+      localStorage.removeItem('is_refreshing');
 
-    const response = await fetch('http://localhost:8090/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: formData
-    });
+      const formData = new URLSearchParams();
+      formData.append('grant_type', 'password');
+      formData.append('username', email);
+      formData.append('password', password);
+      formData.append('client_id', 'openframe_web_dashboard');
+      formData.append('client_secret', 'prod_secret');
+      formData.append('scope', 'openid profile email');
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error_description || 'Login failed');
+      const response = await fetch('http://localhost:8090/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error_description || 'Login failed');
+      }
+
+      await setTokens(data.access_token, data.refresh_token);
+      return data;
+    } catch (error) {
+      // Also clear refresh flag on error
+      localStorage.removeItem('is_refreshing');
+      throw error;
     }
-
-    await setTokens(data.access_token, data.refresh_token);
-    return data;
   }
 
   async function refreshToken(refreshToken: string): Promise<TokenResponse> {

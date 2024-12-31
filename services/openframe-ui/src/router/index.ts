@@ -16,6 +16,8 @@ import Settings from '../views/mdm/Settings.vue'
 import Profiles from '../views/mdm/Profiles.vue'
 import SettingsCategory from '../views/mdm/SettingsCategory.vue'
 import SystemArchitecture from '../views/SystemArchitecture.vue'
+import { AuthService } from '@/services/AuthService';
+import { useAuthStore } from '@/stores/auth';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -140,27 +142,55 @@ const router = createRouter({
       component: SystemArchitecture,
       meta: {
         title: 'System Architecture',
-        requiresAuth: false
+        requiresAuth: true
       }
     }
   ]
 })
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('access_token')
-  console.log('Route navigation:', { to: to.path, from: from.path, token: !!token })
+router.beforeEach(async (to, from, next) => {
+  const token = localStorage.getItem('access_token');
+  console.log('🚦 [Router] Navigation:', { to: to.path, from: from.path, token: !!token });
   
-  if (to.meta.requiresAuth && !token) {
-    console.log('Redirecting to login: auth required')
-    next('/login')
-  } else if (to.path === '/login' && token) {
-    console.log('Redirecting to home: already logged in')
-    next('/')
-  } else {
-    console.log('Proceeding to route:', to.path)
-    next()
+  // Always allow access to auth pages
+  if (!to.meta.requiresAuth) {
+    if (to.path === '/login' && token) {
+      console.log('↩️ [Router] Already logged in, redirecting to home');
+      next('/');
+    } else {
+      console.log('➡️ [Router] Proceeding to public route:', to.path);
+      next();
+    }
+    return;
   }
-})
+
+  // Handle protected routes
+  if (!token) {
+    console.log('🔒 [Router] No token found, redirecting to login');
+    next('/login');
+    return;
+  }
+
+  // Only validate token if we're not coming from login
+  if (from.path !== '/login') {
+    try {
+      console.log('🔍 [Router] Verifying token validity...');
+      await AuthService.getUserInfo();
+      console.log('✅ [Router] Token is valid, proceeding to route');
+      next();
+    } catch (error) {
+      console.error('❌ [Router] Token validation failed:', error);
+      // Clear tokens and redirect to login
+      const authStore = useAuthStore();
+      authStore.logout();
+      next('/login');
+    }
+  } else {
+    // If coming from login, trust the token is valid
+    console.log('✅ [Router] Coming from login, proceeding to route');
+    next();
+  }
+});
 
 export default router 
