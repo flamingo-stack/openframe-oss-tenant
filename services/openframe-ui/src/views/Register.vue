@@ -153,18 +153,29 @@ const passwordStrength = computed(() => {
 })
 
 const handleSubmit = async () => {
+  if (!email.value || !password.value || !firstName.value || !lastName.value) {
+    toastService.showError('Please fill in all fields')
+    return
+  }
+
   if (password.value !== confirmPassword.value) {
     toastService.showError('Passwords do not match')
     return
   }
 
+  if (passwordStrength.value.percentage < 50) {
+    toastService.showError('Password is too weak. Please use a stronger password.')
+    return
+  }
+
   try {
     loading.value = true
-    await authStore.register(email.value, password.value)
-    toastService.showSuccess('Registration successful! Please log in.')
-    router.push('/login')
-  } catch (error: any) {
-    toastService.showError(error.message || 'Registration failed. Please try again.')
+    await authStore.register(email.value, password.value, firstName.value, lastName.value)
+    toastService.showSuccess('Registration successful!')
+    router.push('/dashboard')
+  } catch (err: any) {
+    const errorMessage = err.message || 'Registration failed. Please try again.'
+    toastService.showError(errorMessage, err.error)
   } finally {
     loading.value = false
   }

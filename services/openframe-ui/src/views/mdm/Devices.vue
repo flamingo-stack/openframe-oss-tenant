@@ -184,7 +184,7 @@ const extractUrlFromMessage = (message: string) => {
 const fetchDevices = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/devices`) as FleetResponse<any[]>;
+    const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse<any[]>;
     devices.value = response.data || [];
   } catch (err: any) {
     toastService.showError(err.message);

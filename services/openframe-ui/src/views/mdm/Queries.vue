@@ -209,7 +209,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -247,7 +246,6 @@ const toastService = ToastService.getInstance();
 // Add directive registration
 const vTooltip = Tooltip;
 
-const toast = useToast();
 const loading = ref(true);
 const error = ref('');
 const queries = ref<Query[]>([]);
@@ -357,12 +355,7 @@ const createQuery = async () => {
   submitted.value = true;
 
   if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Please fill in all required fields',
-      life: 3000
-    });
+    toastService.showError('Please fill in all required fields');
     return;
   }
 
@@ -375,23 +368,12 @@ const createQuery = async () => {
       query: newQuery.value.query
     });
 
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Query created successfully',
-      life: 3000
-    });
-
+    toastService.showSuccess('Query created successfully');
     hideCreateDialog();
     await fetchQueries();
   } catch (err) {
     console.error('Error creating query:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to create query',
-      life: 5000
-    });
+    toastService.showError('Failed to create query');
   } finally {
     submitting.value = false;
   }
@@ -413,12 +395,7 @@ const updateQuery = async () => {
   submitted.value = true;
 
   if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Please fill in all required fields',
-      life: 3000
-    });
+    toastService.showError('Please fill in all required fields');
     return;
   }
 
@@ -431,23 +408,13 @@ const updateQuery = async () => {
       query: newQuery.value.query
     });
 
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Query updated successfully',
-      life: 3000
-    });
+    toastService.showSuccess('Query updated successfully');
 
     hideCreateDialog();
     await fetchQueries();
   } catch (err) {
     console.error('Error updating query:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to update query',
-      life: 5000
-    });
+    toastService.showError('Failed to update query');
   } finally {
     submitting.value = false;
   }

@@ -94,13 +94,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Dialog from 'primevue/dialog';
+import Editor from 'primevue/editor';
+import Dropdown from 'primevue/dropdown';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
@@ -111,12 +114,19 @@ import { ToastService } from '../../services/ToastService';
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
 const router = useRouter();
-const toast = useToast();
 const toastService = ToastService.getInstance();
-toastService.setToastInstance(toast);
+
+// Add directive registration
+const vTooltip = Tooltip;
 
 const loading = ref(true);
-const profiles = ref<Profile[]>([]);
+const error = ref('');
+const profiles = ref<any[]>([]);
+const showCreateDialog = ref(false);
+const submitted = ref(false);
+const submitting = ref(false);
+const isEditMode = ref(false);
+const dialogTitle = computed(() => isEditMode.value ? 'Edit Profile' : 'Create Profile');
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },

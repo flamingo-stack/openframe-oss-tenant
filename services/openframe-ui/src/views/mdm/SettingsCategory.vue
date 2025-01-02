@@ -190,7 +190,7 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
-import { useToast } from 'primevue/usetoast';
+import { ToastService } from '../../services/ToastService';
 
 const props = defineProps<{
   config: Record<string, any>;
@@ -226,16 +226,10 @@ const booleanFields = computed(() => {
     .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
 });
 
-const toast = useToast();
+const toastService = ToastService.getInstance();
 
 const handleNestedError = (error: string) => {
-  toast.add({
-    severity: 'error',
-    summary: 'HTTP error (Bad Request)',
-    detail: error,
-    life: 3000,
-    contentStyleClass: 'whitespace-pre-line'
-  });
+  toastService.showError(error);
 };
 
 // Add error handling for save operations
@@ -257,14 +251,8 @@ const handleSave = async (category: string, subKey: string | null) => {
       errorMessage = `${message}\n${validationErrors}`;
     }
     
-    // Show the error toast first
-    toast.add({
-      severity: 'error',
-      summary: `HTTP error (${err.response?.status || 'Bad Request'})`,
-      detail: errorMessage,
-      life: 3000,
-      contentStyleClass: 'whitespace-pre-line'
-    });
+    // Show the error toast
+    toastService.showError(errorMessage);
 
     // Then handle the value reversion
     if (subKey !== null && props.config[category]) {

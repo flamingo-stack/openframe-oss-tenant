@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { OAuthError } from '@/errors/OAuthError'
 
 export interface TokenResponse {
   access_token: string;
@@ -101,9 +102,48 @@ export const useAuthStore = defineStore('auth', () => {
     return false;
   }
 
+  async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
+    try {
+      const credentials = btoa(`${import.meta.env.VITE_CLIENT_ID}:${import.meta.env.VITE_CLIENT_SECRET}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${credentials}`
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        if (data.error_description) {
+          throw new OAuthError(data.error || 'invalid_request', data.error_description);
+        } else if (data.message) {
+          throw new OAuthError('invalid_request', data.message);
+        } else if (data.error) {
+          throw new OAuthError(data.error, 'Registration failed');
+        } else {
+          throw new OAuthError('server_error', 'Registration failed. Please try again.');
+        }
+      }
+
+      await setTokens(data.access_token, data.refresh_token);
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  }
+
   return {
     isAuthenticated,
     login,
+    register,
     refreshToken,
     setTokens,
     logout,

@@ -53,7 +53,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-import { useToast } from 'primevue/usetoast';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -63,6 +62,7 @@ import InputSwitch from 'primevue/inputswitch';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
+import { ToastService } from '../../services/ToastService';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
@@ -76,7 +76,7 @@ interface Config {
 
 type EditableValue = string | number | boolean | null | Record<string, unknown>;
 
-const toast = useToast();
+const toastService = ToastService.getInstance();
 const loading = ref(true);
 const saving = ref(false);
 const error = ref<string>('');
@@ -324,12 +324,7 @@ const fetchMDMConfig = async () => {
     
     error.value = htmlContent;
     
-    toast.add({
-      severity: 'error',
-      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
-      detail: text + (url ? ` ${url}` : ''),
-      life: 3000
-    });
+    toastService.showError(text + (url ? ` ${url}` : ''));
   } finally {
     loading.value = false;
   }
@@ -356,12 +351,7 @@ const handleSaveConfig = async (retryCount = 0) => {
 
     // If we got any response object, consider it a success and fetch fresh data
     if (response && typeof response === 'object') {
-      toast.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Configuration updated successfully',
-        life: 3000
-      });
+      toastService.showSuccess('Configuration updated successfully');
       
       // Fetch fresh data
       await fetchMDMConfig();
@@ -381,12 +371,7 @@ const handleSaveConfig = async (retryCount = 0) => {
       ? `${text} <a href="${url}" target="_blank" style="color: var(--red-700); text-decoration: underline;">${url}</a>`
       : text;
     
-    toast.add({
-      severity: 'error',
-      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
-      detail: text + (url ? ` ${url}` : ''),
-      life: 3000
-    });
+    toastService.showError(text + (url ? ` ${url}` : ''));
   } finally {
     saving.value = false;
   }
@@ -433,54 +418,15 @@ const isSaving = (key: string | number, subKey: string | number | null): boolean
   return savingProperties.value.has(path);
 };
 
-const saveConfigProperty = async (key: string | number, subKey: string | number | null) => {
-  if (!config.value) return;
-
-  const path = subKey ? `${key}.${subKey}` : String(key);
+const saveConfigProperty = async (category: string, subKey: string | null) => {
+  const path = subKey ? `${category}.${subKey}` : category;
   savingProperties.value.add(path);
 
   try {
-    const value = subKey === null ? editedConfig.value[String(key)] : (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)];
-    
-    // Don't save if the value is an array
-    if (Array.isArray(value)) {
-      throw new Error('Array values cannot be edited');
-    }
+    const value = subKey ? editedConfig.value[category][subKey] : editedConfig.value[category];
+    await restClient.patch(`${API_URL}/config`, { [path]: value });
 
-    const response = await restClient.patch(`${API_URL}/config`, {
-      [String(key)]: subKey === null ? value : { [String(subKey)]: value }
-    });
-
-    // Update the config with the new value
-    if (subKey === null) {
-      config.value[String(key)] = value as ConfigValue;
-    } else {
-      if (typeof config.value[String(key)] !== 'object') {
-        config.value[String(key)] = {};
-      }
-      (config.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
-    }
-
-    // Update editedConfig to match config
-    if (subKey === null) {
-      editedConfig.value[String(key)] = value as ConfigValue;
-    } else {
-      if (typeof editedConfig.value[String(key)] !== 'object') {
-        editedConfig.value[String(key)] = {};
-      }
-      (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = value;
-    }
-
-    // Remove the change from tracking
-    delete changedValues.value[path];
-    hasChanges.value = Object.keys(changedValues.value).length > 0;
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Configuration updated successfully',
-      life: 3000
-    });
+    toastService.showSuccess('Configuration updated successfully');
   } catch (err: any) {
     console.error('Error saving config:', err);
     throw err; // Re-throw to be handled by SettingsCategory

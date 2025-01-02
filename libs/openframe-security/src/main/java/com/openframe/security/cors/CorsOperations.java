@@ -12,7 +12,7 @@ public interface CorsOperations {
         if (response instanceof HttpServletResponse httpResponse) {
             httpResponse.setHeader("Access-Control-Allow-Origin", origin);
             httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
-            httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            httpResponse.setHeader("Access-Control-Allow-Methods", "GET, PATCH, POST, PUT, DELETE, OPTIONS");
             httpResponse.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, x-requested-with");
             httpResponse.setHeader("Access-Control-Max-Age", "3600");
             httpResponse.setHeader("Access-Control-Expose-Headers", "Authorization, Content-Type");
@@ -24,7 +24,7 @@ public interface CorsOperations {
         
         exchange.getResponse().getHeaders().add("Access-Control-Allow-Origin", origin);
         exchange.getResponse().getHeaders().add("Access-Control-Allow-Credentials", "true");
-        exchange.getResponse().getHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        exchange.getResponse().getHeaders().add("Access-Control-Allow-Methods", "GET, PATCH, POST, PUT, DELETE, OPTIONS");
         exchange.getResponse().getHeaders().add("Access-Control-Allow-Headers", "Authorization, Content-Type, x-requested-with");
         exchange.getResponse().getHeaders().add("Access-Control-Max-Age", "3600");
         exchange.getResponse().getHeaders().add("Access-Control-Expose-Headers", "Authorization, Content-Type");

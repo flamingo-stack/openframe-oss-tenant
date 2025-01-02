@@ -25,13 +25,23 @@ export class ToastService {
     return ToastService.instance;
   }
 
-  showError(message: string, duration = 5000) {
+  private getErrorTitle(message: string, error?: string): string {
+    if (error === 'invalid_request') return 'Registration Error';
+    if (error === 'invalid_grant') return 'Authentication Error';
+    if (error === 'invalid_token') return 'Session Error';
+    if (error === 'unauthorized_client') return 'Authorization Error';
+    if (error === 'server_error') return 'Server Error';
+    if (error === 'temporarily_unavailable') return 'Service Unavailable';
+    return 'Error';
+  }
+
+  showError(message: string, error?: string, duration = 5000) {
     if (message.includes('http')) {
       const { url, text } = extractUrlFromMessage(message);
       
       this.toast.add({
         severity: 'error',
-        summary: 'Error',
+        summary: this.getErrorTitle(text, error),
         detail: `${text}`,
         life: duration,
         contentStyleClass: 'error-toast-content clickable-toast'
@@ -54,7 +64,7 @@ export class ToastService {
     } else {
       this.toast.add({
         severity: 'error',
-        summary: 'Error',
+        summary: this.getErrorTitle(message, error),
         detail: message,
         life: duration
       });
