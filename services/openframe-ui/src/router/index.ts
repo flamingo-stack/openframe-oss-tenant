@@ -4,7 +4,6 @@ import Register from '../views/Register.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
-import Dashboard from '../views/Dashboard.vue'
 import MDMLayout from '../views/mdm/MDMLayout.vue'
 import MDMDashboard from '../views/mdm/Dashboard.vue'
 import MDMDevices from '../views/mdm/Devices.vue'
@@ -41,7 +40,7 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: Dashboard,
+      component: SystemArchitecture,
       meta: { 
         requiresAuth: true,
         title: 'Dashboard',
@@ -135,15 +134,6 @@ const router = createRouter({
       name: 'Profile',
       component: () => import('../views/Profile.vue'),
       meta: { requiresAuth: true }
-    },
-    {
-      path: '/architecture',
-      name: 'architecture',
-      component: SystemArchitecture,
-      meta: {
-        title: 'System Architecture',
-        requiresAuth: true
-      }
     }
   ]
 })

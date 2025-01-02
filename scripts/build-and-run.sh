@@ -115,6 +115,9 @@ register_tool() {
     local token=$9
     local category=${10}
     local platform_category=${11}
+    local layer=${12}
+    local layer_order=${13}
+    local layer_color=${14}
 
     echo "Registering $name with OpenFrame API..."
 
@@ -147,6 +150,9 @@ register_tool() {
           \"platformCategory\": \"$platform_category\",
           \"enabled\": true,
           \"credentials\": $credentials_json,
+          \"layer\": \"$layer\",
+          \"layerOrder\": $layer_order,
+          \"layerColor\": \"$layer_color\",
           \"config\": {
             \"apiVersion\": \"1.0\",
             \"basePath\": \"/api\",
@@ -181,319 +187,7 @@ register_tool() {
 # Get Fleet token
 FLEET_TOKEN=$(docker exec openframe-fleet cat /etc/fleet/api_token.txt)
 
-# Register Fleet
-register_tool \
-    "fleet" \
-    "FLEET" \
-    "Fleet MDM" \
-    "Fleet Device Management Platform" \
-    "http://openframe-fleet" \
-    8070 \
-    "admin@openframe.local" \
-    "openframe123!" \
-    "$FLEET_TOKEN" \
-    "Web Application" \
-    "Integrated Tool"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Authentik
-register_tool \
-    "authentik" \
-    "AUTHENTIK" \
-    "Authentik SSO" \
-    "Authentik Identity Provider" \
-    "http://openframe-authentik-server" \
-    5001 \
-    "akadmin@openframe.local" \
-    "openframe123!" \
-    "openframe-api-token-123456789" \
-    "Web Application" \
-    "Integrated Tool"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register MongoDB
-register_tool \
-    "mongodb-primary" \
-    "MONGODB" \
-    "MongoDB Database" \
-    "MongoDB NoSQL Database" \
-    "mongodb://openframe-mongodb" \
-    27017 \
-    "openframe" \
-    "password123456789" \
-    "mongodb-token" \
-    "NoSQL Database" \
-    "OpenFrame Datasource"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Redis
-register_tool \
-    "redis-primary" \
-    "REDIS" \
-    "Redis Cache" \
-    "Redis In-Memory Cache" \
-    "redis://openframe-redis" \
-    6379 \
-    "" \
-    "" \
-    "" \
-    "In-Memory Database" \
-    "OpenFrame Datasource"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Cassandra
-register_tool \
-    "cassandra-primary" \
-    "CASSANDRA" \
-    "Cassandra Database" \
-    "Cassandra Distributed Database" \
-    "cassandra://openframe-cassandra" \
-    9042 \
-    "" \
-    "" \
-    "" \
-    "NoSQL Database" \
-    "OpenFrame Datasource"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Kafka
-register_tool \
-    "kafka-primary" \
-    "KAFKA" \
-    "Kafka Message Broker" \
-    "Apache Kafka Event Streaming Platform" \
-    "http://openframe-kafka-ui" \
-    9092 \
-    "" \
-    "" \
-    "" \
-    "Message Broker" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Kafka UI
-register_tool \
-    "kafka-ui" \
-    "KAFKA" \
-    "Kafka UI" \
-    "Web UI for Apache Kafka" \
-    "http://openframe-kafka-ui" \
-    8080 \
-    "" \
-    "" \
-    "" \
-    "Web Application" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Zookeeper
-register_tool \
-    "zookeeper-primary" \
-    "ZOOKEEPER" \
-    "Zookeeper Coordinator" \
-    "Apache Zookeeper Distributed Coordinator" \
-    "http://openframe-zookeeper" \
-    2181 \
-    "" \
-    "" \
-    "" \
-    "Service Discovery" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register NiFi
-register_tool \
-    "nifi-primary" \
-    "NIFI" \
-    "Apache NiFi" \
-    "NiFi Data Integration Platform" \
-    "https://openframe-nifi" \
-    8443 \
-    "openframe" \
-    "password123456789" \
-    "" \
-    "Data Integration" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Prometheus
-register_tool \
-    "prometheus-primary" \
-    "PROMETHEUS" \
-    "Prometheus Monitoring" \
-    "Prometheus Time Series Database and Monitoring" \
-    "http://openframe-prometheus" \
-    9090 \
-    "" \
-    "" \
-    "" \
-    "Time Series Database" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Grafana
-register_tool \
-    "grafana-primary" \
-    "GRAFANA" \
-    "Grafana Dashboards" \
-    "Grafana Observability Platform" \
-    "http://openframe-grafana" \
-    3000 \
-    "openframe" \
-    "password123456789" \
-    "" \
-    "Web Application" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Loki
-register_tool \
-    "loki-primary" \
-    "LOKI" \
-    "Loki Log Aggregation" \
-    "Grafana Loki Log Aggregation System" \
-    "http://openframe-loki" \
-    3100 \
-    "" \
-    "" \
-    "" \
-    "Log Storage" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Pinot Controller
-register_tool \
-    "pinot-controller" \
-    "PINOT" \
-    "Pinot Controller" \
-    "Apache Pinot Real-time Analytics Database Controller" \
-    "http://openframe-pinot-controller" \
-    9000 \
-    "" \
-    "" \
-    "" \
-    "Analytics Database" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Pinot Broker
-register_tool \
-    "pinot-broker" \
-    "PINOT" \
-    "Pinot Broker" \
-    "Apache Pinot Real-time Analytics Database Broker" \
-    "http://openframe-pinot-broker" \
-    8099 \
-    "" \
-    "" \
-    "" \
-    "Analytics Database" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register Pinot Server
-register_tool \
-    "pinot-server" \
-    "PINOT" \
-    "Pinot Server" \
-    "Apache Pinot Real-time Analytics Database Server" \
-    "http://openframe-pinot-server" \
-    8097 \
-    "" \
-    "" \
-    "" \
-    "Analytics Database" \
-    "OpenFrame Service"
-
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-
-# Register OpenFrame API Service
-register_tool \
-    "openframe-api" \
-    "OPENFRAME" \
-    "OpenFrame API" \
-    "OpenFrame API Gateway Service" \
-    "http://openframe-api" \
-    8095 \
-    "" \
-    "" \
-    "" \
-    "API Gateway" \
-    "OpenFrame Core"
-
-# Register OpenFrame Config Service
-register_tool \
-    "openframe-config" \
-    "OPENFRAME" \
-    "OpenFrame Config" \
-    "OpenFrame Configuration Service" \
-    "http://openframe-config" \
-    8090 \
-    "" \
-    "" \
-    "" \
-    "Configuration" \
-    "OpenFrame Core"
-
-# Register OpenFrame Stream Service
-register_tool \
-    "openframe-stream" \
-    "OPENFRAME" \
-    "OpenFrame Stream" \
-    "OpenFrame Stream Processing Service" \
-    "http://openframe-stream" \
-    8091 \
-    "" \
-    "" \
-    "" \
-    "Stream Processing" \
-    "OpenFrame Core"
-
-# Register OpenFrame UI Service
+# Register OpenFrame UI Service with layer info
 register_tool \
     "openframe-ui" \
     "OPENFRAME" \
@@ -505,9 +199,12 @@ register_tool \
     "" \
     "" \
     "User Interface" \
-    "OpenFrame Core"
+    "OpenFrame Core" \
+    "Interface" \
+    1 \
+    "#FFB300"
 
-# Register OpenFrame Gateway Service
+# Register OpenFrame Gateway Service with layer info
 register_tool \
     "openframe-gateway" \
     "OPENFRAME" \
@@ -519,7 +216,367 @@ register_tool \
     "" \
     "" \
     "Gateway" \
-    "OpenFrame Core"
+    "OpenFrame Core" \
+    "Application" \
+    1 \
+    "#455A64"
+
+# Register OpenFrame API Service with layer info
+register_tool \
+    "openframe-api" \
+    "OPENFRAME" \
+    "OpenFrame API" \
+    "OpenFrame API Gateway Service" \
+    "http://openframe-api" \
+    8095 \
+    "" \
+    "" \
+    "" \
+    "API Gateway" \
+    "OpenFrame Core" \
+    "Application" \
+    2 \
+    "#455A64"
+
+# Register OpenFrame Stream Service with layer info
+register_tool \
+    "openframe-stream" \
+    "OPENFRAME" \
+    "OpenFrame Stream" \
+    "OpenFrame Stream Processing Service" \
+    "http://openframe-stream" \
+    8091 \
+    "" \
+    "" \
+    "" \
+    "Stream Processing" \
+    "OpenFrame Core" \
+    "Application" \
+    3 \
+    "#455A64"
+
+# Register OpenFrame Management Service with layer info
+register_tool \
+    "openframe-management" \
+    "OPENFRAME" \
+    "OpenFrame Management" \
+    "OpenFrame Management Service" \
+    "http://openframe-management" \
+    8096 \
+    "" \
+    "" \
+    "" \
+    "Management" \
+    "OpenFrame Core" \
+    "Application" \
+    4 \
+    "#455A64"
+
+# Register OpenFrame Config Service with layer info
+register_tool \
+    "openframe-config" \
+    "OPENFRAME" \
+    "OpenFrame Config" \
+    "OpenFrame Configuration Service" \
+    "http://openframe-config" \
+    8090 \
+    "" \
+    "" \
+    "" \
+    "Configuration" \
+    "OpenFrame Core" \
+    "Configuration" \
+    1 \
+    "#FFB74D"
+
+# Register Kafka with layer info
+register_tool \
+    "kafka-primary" \
+    "KAFKA" \
+    "Kafka Message Broker" \
+    "Apache Kafka Event Streaming Platform" \
+    "http://openframe-kafka-ui" \
+    9092 \
+    "" \
+    "" \
+    "" \
+    "Message Broker" \
+    "OpenFrame Service" \
+    "Streaming" \
+    1 \
+    "#1E88E5"
+
+# Register Zookeeper with layer info
+register_tool \
+    "zookeeper-primary" \
+    "ZOOKEEPER" \
+    "Zookeeper Coordinator" \
+    "Apache Zookeeper Distributed Coordinator" \
+    "http://openframe-zookeeper" \
+    2181 \
+    "" \
+    "" \
+    "" \
+    "Service Discovery" \
+    "OpenFrame Service" \
+    "Streaming" \
+    2 \
+    "#1E88E5"
+
+# Register NiFi with layer info
+register_tool \
+    "nifi-primary" \
+    "NIFI" \
+    "Apache NiFi" \
+    "NiFi Data Integration Platform" \
+    "https://openframe-nifi" \
+    8443 \
+    "openframe" \
+    "password123456789" \
+    "" \
+    "Data Integration" \
+    "OpenFrame Service" \
+    "Data Integration" \
+    1 \
+    "#0D47A1"
+
+# Register MongoDB with layer info
+register_tool \
+    "mongodb-primary" \
+    "MONGODB" \
+    "MongoDB Database" \
+    "MongoDB NoSQL Database" \
+    "mongodb://openframe-mongodb" \
+    27017 \
+    "openframe" \
+    "password123456789" \
+    "mongodb-token" \
+    "NoSQL Database" \
+    "OpenFrame Datasource" \
+    "Datasource" \
+    1 \
+    "#616161"
+
+# Register Redis with layer info
+register_tool \
+    "redis-primary" \
+    "REDIS" \
+    "Redis Cache" \
+    "Redis In-Memory Cache" \
+    "redis://openframe-redis" \
+    6379 \
+    "" \
+    "" \
+    "" \
+    "In-Memory Database" \
+    "OpenFrame Datasource" \
+    "Datasource" \
+    2 \
+    "#616161"
+
+# Register Cassandra with layer info
+register_tool \
+    "cassandra-primary" \
+    "CASSANDRA" \
+    "Cassandra Database" \
+    "Cassandra Distributed Database" \
+    "cassandra://openframe-cassandra" \
+    9042 \
+    "" \
+    "" \
+    "" \
+    "NoSQL Database" \
+    "OpenFrame Datasource" \
+    "Datasource" \
+    3 \
+    "#616161"
+
+# Register Pinot Controller with layer info
+register_tool \
+    "pinot-controller" \
+    "PINOT" \
+    "Pinot Controller" \
+    "Apache Pinot Real-time Analytics Database Controller" \
+    "http://openframe-pinot-controller" \
+    9000 \
+    "" \
+    "" \
+    "" \
+    "Analytics Database" \
+    "OpenFrame Service" \
+    "Datasource" \
+    4 \
+    "#616161"
+
+# Register Pinot Broker with layer info
+register_tool \
+    "pinot-broker" \
+    "PINOT" \
+    "Pinot Broker" \
+    "Apache Pinot Real-time Analytics Database Broker" \
+    "http://openframe-pinot-broker" \
+    8099 \
+    "" \
+    "" \
+    "" \
+    "Analytics Database" \
+    "OpenFrame Service" \
+    "Datasource" \
+    5 \
+    "#616161"
+
+# Register Pinot Server with layer info
+register_tool \
+    "pinot-server" \
+    "PINOT" \
+    "Pinot Server" \
+    "Apache Pinot Real-time Analytics Database Server" \
+    "http://openframe-pinot-server" \
+    8097 \
+    "" \
+    "" \
+    "" \
+    "Analytics Database" \
+    "OpenFrame Service" \
+    "Datasource" \
+    6 \
+    "#616161"
+
+# Register Integrated Tools MySQL
+register_tool \
+    "integrated-tools-mysql" \
+    "MYSQL" \
+    "Integrated Tools MySQL" \
+    "MySQL Database for Integrated Tools" \
+    "mysql://openframe-integrated-tools-mysql" \
+    3306 \
+    "integrated-tools-user" \
+    "integrated-tools-password-1234" \
+    "" \
+    "SQL Database" \
+    "Integrated Tool" \
+    "Integrated Tools Datasource" \
+    1 \
+    "#9E9E9E"
+
+# Register Integrated Tools PostgreSQL
+register_tool \
+    "integrated-tools-postgresql" \
+    "POSTGRESQL" \
+    "Integrated Tools PostgreSQL" \
+    "PostgreSQL Database for Integrated Tools" \
+    "postgresql://openframe-integrated-tools-postgresql" \
+    5432 \
+    "integrated-tools-user" \
+    "integrated-tools-password-1234" \
+    "" \
+    "SQL Database" \
+    "Integrated Tool" \
+    "Integrated Tools Datasource" \
+    2 \
+    "#9E9E9E"
+
+# Register Integrated Tools Redis
+register_tool \
+    "integrated-tools-redis" \
+    "REDIS" \
+    "Integrated Tools Redis" \
+    "Redis Cache for Integrated Tools" \
+    "redis://openframe-integrated-tools-redis" \
+    6379 \
+    "" \
+    "" \
+    "" \
+    "In-Memory Database" \
+    "Integrated Tool" \
+    "Integrated Tools Datasource" \
+    3 \
+    "#9E9E9E"
+
+# Register Fleet with layer info
+register_tool \
+    "fleet" \
+    "FLEET" \
+    "Fleet MDM" \
+    "Fleet Device Management Platform" \
+    "http://openframe-fleet" \
+    8070 \
+    "admin@openframe.local" \
+    "openframe123!" \
+    "$FLEET_TOKEN" \
+    "Device Management" \
+    "Integrated Tool" \
+    "Integrated Tools" \
+    1 \
+    "#455A64"
+
+# Register Authentik with layer info
+register_tool \
+    "authentik" \
+    "AUTHENTIK" \
+    "Authentik SSO" \
+    "Authentik Identity Provider" \
+    "http://openframe-authentik-server" \
+    5001 \
+    "akadmin@openframe.local" \
+    "openframe123!" \
+    "openframe-api-token-123456789" \
+    "Identity Provider" \
+    "Integrated Tool" \
+    "Integrated Tools" \
+    2 \
+    "#455A64"
+
+# Register Grafana with layer info
+register_tool \
+    "grafana-primary" \
+    "GRAFANA" \
+    "Grafana" \
+    "Grafana Monitoring Dashboard" \
+    "http://openframe-grafana" \
+    3000 \
+    "admin" \
+    "admin" \
+    "" \
+    "Monitoring Dashboard" \
+    "OpenFrame Service" \
+    "Monitoring" \
+    1 \
+    "#78909C"
+
+# Register Prometheus with layer info
+register_tool \
+    "prometheus-primary" \
+    "PROMETHEUS" \
+    "Prometheus" \
+    "Prometheus Metrics Database" \
+    "http://openframe-prometheus" \
+    9090 \
+    "" \
+    "" \
+    "" \
+    "Metrics Database" \
+    "OpenFrame Service" \
+    "Monitoring" \
+    2 \
+    "#78909C"
+
+# Register Loki with layer info
+register_tool \
+    "loki-primary" \
+    "LOKI" \
+    "Loki" \
+    "Loki Log Aggregation System" \
+    "http://openframe-loki" \
+    3100 \
+    "" \
+    "" \
+    "" \
+    "Log Aggregation" \
+    "OpenFrame Service" \
+    "Monitoring" \
+    3 \
+    "#78909C"
 
 echo "Integrated tools initialized successfully!"
 

@@ -165,11 +165,6 @@ const menuItems: MenuItem[] = [
     path: '/dashboard'
   },
   {
-    label: 'System Architecture',
-    icon: 'pi pi-sitemap',
-    path: '/architecture'
-  },
-  {
     label: 'Integrated Tools',
     icon: 'pi pi-wrench',
     children: [

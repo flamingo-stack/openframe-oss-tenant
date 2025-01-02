@@ -14,6 +14,8 @@ import kibanaLogo from '@/assets/kibana-logo.svg'
 import redisLogo from '@/assets/redis-logo.svg'
 import cassandraLogo from '@/assets/cassandra-logo.svg'
 import zookeeperLogo from '@/assets/zookeeper-logo.svg'
+import mysqlLogo from '@/assets/mysql-logo.svg'
+import postgresqlLogo from '@/assets/postgresql-logo.svg'
 
 export const logoMap: Record<string, string> = {
   'grafana-primary': grafanaLogo,
@@ -31,6 +33,7 @@ export const logoMap: Record<string, string> = {
   'pinot-server': pinotLogo,
   'loki-primary': lokiLogo,
   'redis-primary': redisLogo,
+  'integrated-tools-redis': redisLogo,
   'cassandra-primary': cassandraLogo,
   'zookeeper-primary': zookeeperLogo,
   'openframe-api': openframeLogo,
@@ -38,9 +41,26 @@ export const logoMap: Record<string, string> = {
   'openframe-stream': openframeLogo,
   'openframe-ui': openframeLogo,
   'openframe-gateway': openframeLogo,
-  'openframe-management': openframeLogo
+  'openframe-management': openframeLogo,
+  'mysql-primary': mysqlLogo,
+  'integrated-tools-mysql': mysqlLogo,
+  'mysql': mysqlLogo,
+  'openframe-integrated-tools-mysql': mysqlLogo,
+  'postgresql-primary': postgresqlLogo,
+  'integrated-tools-postgresql': postgresqlLogo,
+  'postgresql': postgresqlLogo,
+  'postgres': postgresqlLogo,
+  'openframe-integrated-tools-postgresql': postgresqlLogo
 };
 
 export const getLogoUrl = (id: string, isDark = false): string => {
-  return logoMap[id] || '';
+  console.log(`🔍 [LogoService] Looking for logo with ID: "${id}"`);
+  const logo = logoMap[id];
+  if (logo) {
+    const fileName = logo.split('/').pop();
+    console.log(`✅ [LogoService] Found logo for "${id}": ${fileName}`);
+  } else {
+    console.log(`❌ [LogoService] No logo found for "${id}"`);
+  }
+  return logo || '';
 }; 

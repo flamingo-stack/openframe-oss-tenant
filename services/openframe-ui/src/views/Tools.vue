@@ -26,7 +26,6 @@
           v-model="filter.category"
           :options="categories"
           placeholder="Filter by type"
-          showClear
           class="w-full surface-card"
           :panelClass="'surface-0'"
           :pt="{
@@ -34,7 +33,17 @@
             item: { class: 'p-3 text-base hover:surface-hover' }
           }"
           @change="refetch()"
-        />
+        >
+          <template #value="slotProps">
+            <div class="flex align-items-center justify-content-between w-full">
+              <span>{{ slotProps.value || 'Filter by type' }}</span>
+              <i v-if="filter.category" 
+                 class="pi pi-times cursor-pointer ml-2" 
+                 @click.stop="() => { filter.category = null; refetch(); }"
+              />
+            </div>
+          </template>
+        </Dropdown>
       </div>
     </div>
     
@@ -54,19 +63,16 @@
           <div 
             v-for="tool in sectionTools" 
             :key="tool.id" 
-            :class="[
-              'col-12 mb-3',
-              tool.platformCategory === 'Integrated Tool' ? 'md:col-6' : 'md:col-6 xl:col-4'
-            ]"
+            class="col-12 md:col-6"
           >
             <div class="tool-card">
-              <div :class="['tool-card-inner', { 'integrated-tool': tool.platformCategory === 'Integrated Tool' }]">
+              <div :class="['tool-card-inner', getCategoryClassForTool(tool)]">
                 <div class="tool-header">
-                  <h3>{{ tool.name }}</h3>
-                  <span class="tool-category">{{ tool.category }}</span>
+                  <h3>{{ getDisplayName(tool) }}</h3>
+                  <span class="tool-category" :data-category="tool.category">{{ tool.category }}</span>
                   <img 
                     :src="getToolIcon(tool)" 
-                    :alt="tool.name" 
+                    :alt="getDisplayName(tool)" 
                     class="tool-logo"
                     @error="onImageError"
                   />
@@ -137,6 +143,9 @@ import AuthDebug from '../components/AuthDebug.vue';
 import { getLogoUrl } from '@/services/LogoService';
 import { storeToRefs } from 'pinia';
 import { useThemeStore } from '@/stores/themeStore';
+import { getDisplayName } from '../utils/displayUtils';
+import { useRoute, useRouter } from 'vue-router';
+import { getToolCategory, getCategoryClass, sortToolsByCategory } from '../utils/categoryUtils';
 
 // Get theme store
 const themeStore = useThemeStore();
@@ -195,11 +204,33 @@ const INTEGRATED_TOOLS_QUERY = gql`
   }
 `;
 
-// Add filter state
+// Get route and router instances
+const route = useRoute();
+const router = useRouter();
+
+// Initialize filter with URL query parameters if present
 const filter = ref({
   enabled: true,
-  category: null as string | null,
-  search: '' as string
+  category: route.query.category as string || null,
+  search: route.query.search as string || ''
+});
+
+// Watch search field changes
+watch(() => filter.value.search, (newSearch) => {
+  // Update URL with new search term
+  router.replace({
+    query: { ...route.query, search: newSearch || undefined }
+  });
+  debouncedRefetch();
+});
+
+// Watch category changes
+watch(() => filter.value.category, (newCategory) => {
+  // Update URL with new category
+  router.replace({
+    query: { ...route.query, category: newCategory || undefined }
+  });
+  refetch();
 });
 
 // Update query to use filter
@@ -274,19 +305,11 @@ const categories = computed(() => {
 });
 
 const getToolSection = (tool: IntegratedTool): string => {
-  return tool.platformCategory || 'Other';
+  return getToolCategory(tool);
 };
 
 const groupedTools = computed(() => {
-  const grouped: Record<string, IntegratedTool[]> = {};
-  tools.value.forEach(tool => {
-    const section = getToolSection(tool);
-    if (!grouped[section]) {
-      grouped[section] = [];
-    }
-    grouped[section].push(tool);
-  });
-  return grouped;
+  return sortToolsByCategory(tools.value);
 });
 
 // Add immediate logging when component is mounted
@@ -321,7 +344,7 @@ watch(result, (newResult) => {
   console.log('Result changed:', newResult);
   if (newResult?.integratedTools) {
     console.log('Received tools:', newResult.integratedTools);
-    tools.value = newResult.integratedTools.filter((tool: IntegratedTool) => tool.enabled);
+    tools.value = newResult.integratedTools;
   }
 }, { immediate: true });
 
@@ -402,6 +425,10 @@ const debouncedRefetch = debounce(() => {
 }, 300); // 300ms delay
 
 const isDevelopment = computed(() => import.meta.env.DEV);
+
+const getCategoryClassForTool = (tool: IntegratedTool): string => {
+  return getCategoryClass(getToolCategory(tool));
+};
 </script>
 
 <style scoped>
@@ -652,6 +679,41 @@ const isDevelopment = computed(() => import.meta.env.DEV);
   padding-bottom: 0;
 }
 
+:deep(.p-dropdown .p-dropdown-clear-icon) {
+  position: absolute;
+  right: 2.5rem;
+  top: 50%;
+  margin-top: -0.5rem;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+:deep(.p-dropdown .p-dropdown-clear-icon:hover) {
+  color: var(--text-color);
+}
+
+:deep(.p-dropdown:not(.p-disabled).p-focus) {
+  border-color: var(--of-primary);
+  box-shadow: 0 0 0 1px var(--of-primary);
+}
+
+:deep(.p-dropdown-panel) {
+  background: var(--surface-overlay);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--of-card-radius);
+}
+
+:deep(.p-dropdown-item) {
+  padding: var(--of-spacing-sm) var(--of-spacing-md);
+  color: var(--text-color);
+  transition: background-color 0.2s;
+}
+
+:deep(.p-dropdown-item:hover) {
+  background: var(--surface-hover);
+}
+
 /* Action button styles */
 .tool-action {
   display: inline-flex;
@@ -679,5 +741,94 @@ h2 {
   font-weight: 600;
   color: var(--text-color-secondary);
   margin-bottom: 2rem;
+}
+
+.tool-category[data-category="Interface"] {
+  background: var(--yellow-500);
+  color: var(--yellow-900);
+}
+
+.tool-category[data-category="Application"] {
+  background: var(--bluegray-700);
+  color: white;
+}
+
+.tool-category[data-category="Configuration"] {
+  background: var(--yellow-600);
+  color: white;
+}
+
+.tool-category[data-category="Streaming"] {
+  background: var(--blue-600);
+  color: white;
+}
+
+.tool-category[data-category="Data Integration"] {
+  background: var(--blue-800);
+  color: white;
+}
+
+.tool-category[data-category="Datasource"] {
+  background: var(--gray-700);
+  color: white;
+}
+
+.tool-category[data-category="Integrated Tools"] {
+  background: var(--yellow-400);
+  color: var(--yellow-900);
+}
+
+.tool-category[data-category="Integrated Tools Datasource"] {
+  background: var(--gray-500);
+  color: white;
+}
+
+.tool-category[data-category="Monitoring"] {
+  background: var(--bluegray-500);
+  color: white;
+}
+
+/* Update the card border color based on category */
+.tool-card-inner {
+  height: 100%;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-card);
+}
+
+.tool-card-inner.interface {
+  border-left: 4px solid var(--yellow-500);
+}
+
+.tool-card-inner.application {
+  border-left: 4px solid var(--bluegray-700);
+}
+
+.tool-card-inner.config {
+  border-left: 4px solid var(--yellow-600);
+}
+
+.tool-card-inner.streaming {
+  border-left: 4px solid var(--blue-600);
+}
+
+.tool-card-inner.integration {
+  border-left: 4px solid var(--blue-800);
+}
+
+.tool-card-inner.datasource {
+  border-left: 4px solid var(--gray-700);
+}
+
+.tool-card-inner.integrated-tools {
+  border-left: 4px solid var(--yellow-400);
+}
+
+.tool-card-inner.integrated-tools-datasource {
+  border-left: 4px solid var(--gray-500);
+}
+
+.tool-card-inner.monitoring {
+  border-left: 4px solid var(--bluegray-500);
 }
 </style> 
