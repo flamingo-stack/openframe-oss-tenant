@@ -374,7 +374,7 @@ watch(result, (newResult) => {
   font-family: var(--font-family);
   border: 1px solid var(--surface-border);
   margin: 24px;
-  padding: 16px 20px;
+  padding: 12px 16px;
 }
 
 .legend-content {
@@ -392,8 +392,8 @@ watch(result, (newResult) => {
 .legend-item {
   display: flex;
   align-items: center;
-  margin: 2px 0;
-  padding: 3px 4px;
+  margin: 1px 0;
+  padding: 2px 4px;
   color: var(--text-color);
   font-size: 12px;
   font-weight: var(--font-weight-normal);
