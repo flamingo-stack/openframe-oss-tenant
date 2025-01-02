@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -111,10 +111,17 @@ import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
+import { ToastService } from '../../services/ToastService';
+
+interface FleetResponse<T> {
+  data: T;
+}
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
-const toast = useToast();
+const router = useRouter();
+const toastService = ToastService.getInstance();
+
 const loading = ref(true);
 const error = ref('');
 const devices = ref<any[]>([]);
@@ -176,32 +183,11 @@ const extractUrlFromMessage = (message: string) => {
 
 const fetchDevices = async () => {
   loading.value = true;
-  error.value = '';
   try {
-    const response = await restClient.get<{hosts: any[]}>(`${API_URL}/hosts`);
-    devices.value = response.hosts || [];
+    const response = await restClient.get(`${API_URL}/devices`) as FleetResponse<any[]>;
+    devices.value = response.data || [];
   } catch (err: any) {
-    console.error('Error fetching devices:', err);
-    console.error('Error response:', err.response);
-    
-    // Get the error message from the response data
-    const errorData = err.response?.data;
-    const message = errorData?.message || err.message || 'Failed to fetch devices';
-    const { url, text } = extractUrlFromMessage(message);
-    
-    // Set error message with clickable link if URL exists
-    const htmlContent = url 
-      ? `${text} <a href="${url}" target="_blank" style="color: var(--red-700); text-decoration: underline;">${url}</a>`
-      : text;
-    
-    error.value = htmlContent;
-    
-    toast.add({
-      severity: 'error',
-      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
-      detail: text + (url ? ` ${url}` : ''),
-      life: 3000
-    });
+    toastService.showError(err.message);
   } finally {
     loading.value = false;
   }
@@ -209,31 +195,28 @@ const fetchDevices = async () => {
 
 const lockDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/commands/run`, {
-      host_uuids: [device.uuid],
-      request_type: 'DeviceLock'
-    });
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Device lock command sent successfully',
-      life: 3000
-    });
+    await restClient.post(`${API_URL}/devices/${device.device_uuid}/lock`);
+    toastService.showSuccess('Device locked successfully');
   } catch (err: any) {
-    console.error('Error locking device:', err);
-    console.error('Error response:', err.response);
-    
-    // Get the error message from the response data
-    const errorData = err.response?.data;
-    const message = errorData?.message || err.message || 'Failed to lock device';
-    const { url, text } = extractUrlFromMessage(message);
-    
-    toast.add({
-      severity: 'error',
-      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
-      detail: text + (url ? ` ${url}` : ''),
-      life: 3000
-    });
+    toastService.showError(err.message);
+  }
+};
+
+const unlockDevice = async (device: any) => {
+  try {
+    await restClient.post(`${API_URL}/devices/${device.device_uuid}/unlock`);
+    toastService.showSuccess('Device unlocked successfully');
+  } catch (err: any) {
+    toastService.showError(err.message);
+  }
+};
+
+const eraseDevice = async (device: any) => {
+  try {
+    await restClient.post(`${API_URL}/devices/${device.device_uuid}/erase`);
+    toastService.showSuccess('Device erase command sent successfully');
+  } catch (err: any) {
+    toastService.showError(err.message);
   }
 };
 
@@ -241,20 +224,10 @@ const deleteDevice = async (device: any) => {
   try {
     await restClient.delete(`${API_URL}/hosts/${device.id}`);
     await fetchDevices();
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Device deleted successfully',
-      life: 3000
-    });
+    toastService.showSuccess('Device deleted successfully');
   } catch (err) {
     console.error('Error deleting device:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to delete device',
-      life: 5000
-    });
+    toastService.showError('Failed to delete device');
   }
 };
 

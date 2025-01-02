@@ -256,6 +256,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -270,14 +271,19 @@ import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
+import { ToastService } from '../../services/ToastService';
 import Checkbox from 'primevue/checkbox';
+
+interface FleetResponse<T> {
+  data: T;
+}
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
-const toast = useToast();
-const loading = ref(true);
-const error = ref('');
-const policies = ref<Policy[]>([]);
+const router = useRouter();
+const toastService = ToastService.getInstance();
+const loading = ref(false);
+const policies = ref<any[]>([]);
 const showCreateDialog = ref(false);
 const submitted = ref(false);
 const submitting = ref(false);
@@ -352,19 +358,11 @@ const getPlatformSeverity = (platform: string) => {
 
 const fetchPolicies = async () => {
   loading.value = true;
-  error.value = '';
   try {
-    const response = await restClient.get(`${API_URL}/global/policies`) as { policies: Policy[] };
-    policies.value = response.policies || [];
-  } catch (err) {
-    console.error('Error fetching policies:', err);
-    error.value = err instanceof Error ? err.message : 'Failed to fetch policies';
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.value,
-      life: 5000
-    });
+    const response = await restClient.get(`${API_URL}/global/policies`) as FleetResponse<any[]>;
+    policies.value = response.data || [];
+  } catch (err: any) {
+    toastService.showError(err.message);
   } finally {
     loading.value = false;
   }
@@ -390,12 +388,7 @@ const createPolicy = async () => {
   submitted.value = true;
 
   if (!newPolicy.value.name || !newPolicy.value.description || !newPolicy.value.query) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Please fill in all required fields',
-      life: 3000
-    });
+    toastService.showError('Please fill in all required fields');
     return;
   }
 
@@ -413,23 +406,12 @@ const createPolicy = async () => {
       enabled: newPolicy.value.enabled
     });
 
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Policy created successfully',
-      life: 3000
-    });
+    toastService.showSuccess('Policy created successfully');
 
     hideCreateDialog();
     await fetchPolicies();
-  } catch (err) {
-    console.error('Error creating policy:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to create policy',
-      life: 5000
-    });
+  } catch (err: any) {
+    toastService.showError('Failed to create policy');
   } finally {
     submitting.value = false;
   }
@@ -452,43 +434,19 @@ const togglePolicy = async (policy: Policy) => {
     // Fetch fresh data instead of updating local state directly
     await fetchPolicies();
     
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: `Policy ${isEnabled(policy) ? 'disabled' : 'enabled'} successfully`,
-      life: 3000
-    });
-  } catch (err) {
-    console.error('Error toggling policy:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to toggle policy',
-      life: 5000
-    });
+    toastService.showSuccess(`Policy ${isEnabled(policy) ? 'disabled' : 'enabled'} successfully`);
+  } catch (err: any) {
+    toastService.showError('Failed to toggle policy');
   }
 };
 
 const deletePolicy = async (policy: any) => {
   try {
-    await restClient.post(`${API_URL}/global/policies/delete`, {
-      ids: [policy.id]
-    });
+    await restClient.delete(`${API_URL}/global/policies/${policy.id}`);
+    toastService.showSuccess('Policy deleted successfully');
     await fetchPolicies();
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Policy deleted successfully',
-      life: 3000
-    });
-  } catch (err) {
-    console.error('Error deleting policy:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to delete policy',
-      life: 5000
-    });
+  } catch (err: any) {
+    toastService.showError(err.message);
   }
 };
 
@@ -511,12 +469,7 @@ const updatePolicy = async () => {
   submitted.value = true;
 
   if (!newPolicy.value.name || !newPolicy.value.description || !newPolicy.value.query) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Please fill in all required fields',
-      life: 3000
-    });
+    toastService.showError('Please fill in all required fields');
     return;
   }
 
@@ -530,23 +483,12 @@ const updatePolicy = async () => {
       enabled: newPolicy.value.enabled
     });
 
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Policy updated successfully',
-      life: 3000
-    });
+    toastService.showSuccess('Policy updated successfully');
 
     hideCreateDialog();
     await fetchPolicies();
-  } catch (err) {
-    console.error('Error updating policy:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to update policy',
-      life: 5000
-    });
+  } catch (err: any) {
+    toastService.showError('Failed to update policy');
   } finally {
     submitting.value = false;
   }

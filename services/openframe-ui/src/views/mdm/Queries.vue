@@ -208,6 +208,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -222,8 +223,26 @@ import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
+import { ToastService } from '../../services/ToastService';
+
+interface FleetResponse<T> {
+  data: T;
+}
+
+interface Query {
+  id: string;
+  name: string;
+  description: string;
+  platform: string | null;
+  query: string;
+  success_count?: number;
+  error_count?: number;
+}
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+
+const router = useRouter();
+const toastService = ToastService.getInstance();
 
 // Add directive registration
 const vTooltip = Tooltip;
@@ -231,7 +250,7 @@ const vTooltip = Tooltip;
 const toast = useToast();
 const loading = ref(true);
 const error = ref('');
-const queries = ref([]);
+const queries = ref<Query[]>([]);
 const showCreateDialog = ref(false);
 const submitted = ref(false);
 const submitting = ref(false);
@@ -281,19 +300,11 @@ const getPlatformSeverity = (platform: string) => {
 
 const fetchQueries = async () => {
   loading.value = true;
-  error.value = '';
   try {
-    const response = await restClient.get(`${API_URL}/queries`);
-    queries.value = response.queries || [];
-  } catch (err) {
-    console.error('Error fetching queries:', err);
-    error.value = err instanceof Error ? err.message : 'Failed to fetch queries';
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.value,
-      life: 5000
-    });
+    const response = await restClient.get(`${API_URL}/queries`) as FleetResponse<any[]>;
+    queries.value = response.data || [];
+  } catch (err: any) {
+    toastService.showError(err.message);
   } finally {
     loading.value = false;
   }
@@ -301,46 +312,31 @@ const fetchQueries = async () => {
 
 const deleteQuery = async (query: any) => {
   try {
-    await restClient.post(`${API_URL}/queries/delete`, {
-      ids: [query.id]
-    });
+    await restClient.delete(`${API_URL}/queries/${query.id}`);
+    toastService.showSuccess('Query deleted successfully');
     await fetchQueries();
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Query deleted successfully',
-      life: 3000
-    });
-  } catch (err) {
-    console.error('Error deleting query:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to delete query',
-      life: 5000
-    });
+  } catch (err: any) {
+    toastService.showError(err.message);
   }
 };
 
 const runQuery = async (query: any) => {
   try {
-    await restClient.post(`${API_URL}/queries/${query.id}/run`, {
-      host_ids: [] // TODO: Add host selection
-    });
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Query started successfully',
-      life: 3000
-    });
-  } catch (err) {
-    console.error('Error running query:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to run query',
-      life: 5000
-    });
+    await restClient.post(`${API_URL}/queries/${query.id}/run`);
+    toastService.showSuccess('Query started successfully');
+    await fetchQueries();
+  } catch (err: any) {
+    toastService.showError(err.message);
+  }
+};
+
+const stopQuery = async (query: any) => {
+  try {
+    await restClient.post(`${API_URL}/queries/${query.id}/stop`);
+    toastService.showSuccess('Query stopped successfully');
+    await fetchQueries();
+  } catch (err: any) {
+    toastService.showError(err.message);
   }
 };
 

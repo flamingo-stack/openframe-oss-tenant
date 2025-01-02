@@ -51,13 +51,13 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, reactive, onMounted, watch } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import { defineProps, defineEmits, reactive, onMounted, watch, ref } from 'vue';
+import { ToastService } from '../services/ToastService';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 
-const toast = useToast();
+const toastService = ToastService.getInstance();
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -137,6 +137,14 @@ const updateNestedValue = async (key: string, newValue: Record<string, unknown>)
 
 const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const handleError = (error: any) => {
+  toastService.showError(error.message || 'An error occurred');
+};
+
+const handleSuccess = (message: string) => {
+  toastService.showSuccess(message);
 };
 </script>
 

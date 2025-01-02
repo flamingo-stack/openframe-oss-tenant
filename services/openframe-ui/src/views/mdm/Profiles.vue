@@ -95,8 +95,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useToast } from 'primevue/usetoast';
 import { useRouter } from 'vue-router';
+import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -106,14 +106,17 @@ import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
+import { ToastService } from '../../services/ToastService';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
-const toast = useToast();
 const router = useRouter();
+const toast = useToast();
+const toastService = ToastService.getInstance();
+toastService.setToastInstance(toast);
+
 const loading = ref(true);
-const errorMessage = ref('');
-const profiles = ref([]);
+const profiles = ref<Profile[]>([]);
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -157,21 +160,35 @@ const extractUrlFromMessage = (message: string) => {
   return { text: message };
 };
 
+interface Profile {
+  profile_uuid: string;
+  name: string;
+  identifier: string;
+  platform: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface FleetErrorResponse {
+  message: string;
+  errors?: Array<{
+    name: string;
+    reason: string;
+  }>;
+}
+
+interface FleetResponse<T> {
+  data?: T;
+  error?: FleetErrorResponse;
+}
+
 const fetchProfiles = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/configuration_profiles`);
+    const response = await restClient.get(`${API_URL}/configuration_profiles`) as FleetResponse<any[]>;
     profiles.value = response.data || [];
   } catch (err: any) {
-    console.error('Error fetching profiles:', err);
-    const errorData = err.response?.data;
-    const message = errorData?.message || err.message || 'Failed to fetch profiles';
-    toast.add({
-      severity: 'error',
-      summary: `HTTP error (${err.response?.status || 'Unknown'})`,
-      detail: message,
-      life: 3000
-    });
+    toastService.showError(err.message);
   } finally {
     loading.value = false;
   }
@@ -181,20 +198,9 @@ const deleteProfile = async (profile: any) => {
   try {
     await restClient.delete(`${API_URL}/configuration_profiles/${profile.profile_uuid}`);
     await fetchProfiles();
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Profile deleted successfully',
-      life: 3000
-    });
-  } catch (err) {
-    console.error('Error deleting profile:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to delete profile',
-      life: 3000
-    });
+    toastService.showSuccess('Profile deleted successfully');
+  } catch (err: any) {
+    toastService.showError(err.message);
   }
 };
 
@@ -205,7 +211,7 @@ const editProfile = (profile: any) => {
 
 // Add navigation guard to dismiss toasts
 router.beforeEach((to, from, next) => {
-  toast.removeAllGroups();
+  toastService.clear();
   next();
 });
 
@@ -476,10 +482,27 @@ onMounted(() => {
 
 :deep(.p-toast-message-error) {
   a {
-    color: inherit;
+    color: #ffffff !important;
     text-decoration: underline;
+    cursor: pointer;
+    
     &:hover {
       text-decoration: none;
+      opacity: 0.9;
+    }
+  }
+}
+
+:deep(.error-toast-content) {
+  white-space: pre-line;
+  word-break: break-word;
+  
+  &.clickable-toast {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    
+    &:hover {
+      opacity: 0.9;
     }
   }
 }

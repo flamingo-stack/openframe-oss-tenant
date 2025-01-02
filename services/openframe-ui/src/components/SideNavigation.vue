@@ -76,10 +76,6 @@ const navigate = (path: string) => {
   flex: 1;
 }
 
-.navigation-menu li {
-  /* margin-bottom: 0.25rem; */
-}
-
 .navigation-item {
   display: flex;
   align-items: center;

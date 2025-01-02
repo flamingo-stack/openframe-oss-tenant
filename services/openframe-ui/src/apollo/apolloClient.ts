@@ -264,7 +264,33 @@ export const restClient = {
           }
         }
         
-        throw new Error(data.error_description || response.statusText);
+        // Create a standardized error object
+        const error = new Error() as any;
+        error.status = response.status;
+        error.name = 'ApiError';
+
+        // Parse error data into a consistent format
+        let errorMessage: string;
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error_description) {
+          errorMessage = data.error_description;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.errors && Array.isArray(data.errors)) {
+          errorMessage = data.errors.map((e: any) => e.reason || e.message).join(', ');
+        } else {
+          errorMessage = response.statusText;
+        }
+
+        error.message = errorMessage;
+        error.data = data;
+        error.response = {
+          status: response.status,
+          data: data
+        };
+        
+        throw error;
       }
 
       console.log('✅ [REST] Request successful');

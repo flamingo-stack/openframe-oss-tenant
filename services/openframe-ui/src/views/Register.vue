@@ -85,12 +85,11 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import { useToast } from 'primevue/usetoast'
-import { AuthService } from '@/services/AuthService'
+import { ToastService } from '@/services/ToastService'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const toast = useToast()
+const toastService = ToastService.getInstance()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -155,34 +154,17 @@ const passwordStrength = computed(() => {
 
 const handleSubmit = async () => {
   if (password.value !== confirmPassword.value) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Passwords do not match',
-      life: 3000
-    })
+    toastService.showError('Passwords do not match')
     return
   }
 
   try {
     loading.value = true
-    await AuthService.register({
-      email: email.value,
-      password: password.value,
-      confirmPassword: confirmPassword.value,
-      firstName: firstName.value,
-      lastName: lastName.value
-    })
-    router.push('/')
+    await authStore.register(email.value, password.value)
+    toastService.showSuccess('Registration successful! Please log in.')
+    router.push('/login')
   } catch (error: any) {
-    console.error('Registration failed:', error)
-    const errorMessage = error.message || 'Registration failed. Please try again.'
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: errorMessage,
-      life: 3000
-    })
+    toastService.showError(error.message || 'Registration failed. Please try again.')
   } finally {
     loading.value = false
   }

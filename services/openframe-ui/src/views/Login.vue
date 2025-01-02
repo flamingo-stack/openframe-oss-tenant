@@ -30,15 +30,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '../stores/auth'
+import { ToastService } from '../services/ToastService'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
-import { useToast } from 'primevue/usetoast'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const toast = useToast()
+const toastService = ToastService.getInstance()
 
 const email = ref('')
 const password = ref('')
@@ -47,34 +47,32 @@ const loading = ref(false)
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text)
-    toast.add({
-      severity: 'success',
-      summary: 'Copied',
-      detail: 'Text copied to clipboard',
-      life: 3000
-    })
+    toastService.showSuccess('Text copied to clipboard')
   } catch (err) {
     console.error('Failed to copy text: ', err)
   }
 }
 
 const handleSubmit = async () => {
-  try {
-    loading.value = true
-    await authStore.login(email.value, password.value)
-    router.push('/')
-  } catch (error: any) {
-    console.error('Login failed:', error)
-    const errorMessage = error.message || 'Login failed. Please check your credentials and try again.'
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: errorMessage,
-      life: 3000
-    })
-  } finally {
-    loading.value = false
+  if (!email.value || !password.value) {
+    toastService.showError('Please enter both email and password');
+    return;
   }
+
+  try {
+    loading.value = true;
+    await authStore.login(email.value, password.value);
+    toastService.showSuccess('Login successful!');
+    router.push('/');
+  } catch (error: any) {
+    toastService.showError(error.message || 'Login failed. Please try again.');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleOAuthError = (error: any) => {
+  toastService.showError(error.message || 'Authentication failed')
 }
 </script>
 
