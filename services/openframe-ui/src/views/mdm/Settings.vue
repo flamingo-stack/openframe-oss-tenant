@@ -299,13 +299,13 @@ const fetchMDMConfig = async () => {
       throw new Error('No response from server');
     }
 
-    // Handle both possible response formats
-    const configData = response.data || response;
+    // Handle response with proper type checking
+    const configData = (response as { data?: unknown }).data || response;
     if (!configData || typeof configData !== 'object') {
       throw new Error('Invalid response format from server');
     }
 
-    config.value = configData;
+    config.value = configData as Config;
     editedConfig.value = JSON.parse(JSON.stringify(configData));
     hasChanges.value = false;
   } catch (err: any) {
@@ -578,7 +578,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  overflow: hidden;
 }
 
 .settings-layout {
@@ -586,7 +586,6 @@ onMounted(() => {
   gap: 2rem;
   flex: 1;
   min-height: 0;
-  height: calc(100vh - 200px);
   background: var(--surface-card);
   border-radius: var(--border-radius);
   padding: 1rem;
@@ -598,7 +597,6 @@ onMounted(() => {
   background: var(--surface-ground);
   border-radius: 8px;
   padding: 0.5rem;
-  height: 100%;
   overflow-y: auto;
 }
 
@@ -636,10 +634,11 @@ onMounted(() => {
 
 .settings-content {
   flex: 1;
-  padding: 1rem;
+  min-width: 0;
   overflow-y: auto;
   background: var(--surface-ground);
   border-radius: 8px;
+  padding: 1.5rem;
 }
 
 .mdm-dashboard {
@@ -915,7 +914,7 @@ onMounted(() => {
   flex: 0 0 250px;
   background: var(--surface-card);
   border-radius: 12px;
-  padding: 1rem;
+  /* padding: 1rem; */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -952,5 +951,14 @@ onMounted(() => {
 .settings-content {
   flex: 1;
   overflow: auto;
+}
+
+section {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.grid {
+  margin: 0;
 }
 </style> 

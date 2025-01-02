@@ -16,9 +16,12 @@
 .mdm-dashboard {
   padding: 2rem;
   height: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .coming-soon {
@@ -29,6 +32,7 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   max-width: 600px;
   width: 100%;
+  margin: auto;
 }
 
 .coming-soon i {

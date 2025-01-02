@@ -39,19 +39,19 @@ defineProps<Props>();
 
 .side-navigation {
   @media screen and (min-width: 768px) {
-    width: 30rem !important;
-    flex: 0 0 30rem !important;
+    /* width: 30rem !important; */
+    /* flex: 0 0 30rem !important; */
   }
   
   @media screen and (max-width: 767px) {
-    width: 100%;
-    flex: 0 0 100%;
+    /* width: 100%; */
+    /* flex: 0 0 100%; */
   }
   background: var(--surface-card);
-  position: sticky;
-  top: 0;
-  overflow-y: auto;
-  flex-shrink: 0;
+  /* position: sticky; */
+  /* top: 10; */
+  /* overflow-y: auto; */
+  /* flex-shrink: 0; */
 }
 
 .content {

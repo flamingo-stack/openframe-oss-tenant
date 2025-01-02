@@ -354,7 +354,7 @@ const fetchPolicies = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await restClient.get(`${API_URL}/global/policies`);
+    const response = await restClient.get(`${API_URL}/global/policies`) as { policies: Policy[] };
     policies.value = response.policies || [];
   } catch (err) {
     console.error('Error fetching policies:', err);

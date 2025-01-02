@@ -51,9 +51,9 @@ const navigate = (path: string) => {
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
+  /* display: flex; */
   flex-direction: column;
-  margin: 1rem;
+  /* margin: 1rem; */
 }
 
 .navigation-header {
@@ -77,7 +77,7 @@ const navigate = (path: string) => {
 }
 
 .navigation-menu li {
-  margin-bottom: 0.25rem;
+  /* margin-bottom: 0.25rem; */
 }
 
 .navigation-item {
