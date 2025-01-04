@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -191,6 +191,8 @@ import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
 import { ToastService } from '../../services/ToastService';
+import type { EditableValue } from './Settings.vue';
+import Textarea from 'primevue/textarea';
 
 const props = defineProps<{
   config: Record<string, any>;
@@ -269,6 +271,13 @@ const handleSave = async (category: string, subKey: string | null) => {
       await props.fetchMDMConfig();
     }
   }
+};
+
+const getDisplayValue = (value: EditableValue): string => {
+  if (Array.isArray(value)) {
+    return value.join('\n');
+  }
+  return String(value ?? '');
 };
 </script>
 

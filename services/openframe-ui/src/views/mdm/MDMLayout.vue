@@ -55,11 +55,6 @@ const navigationItems = [
     path: '/mdm/devices'
   },
   {
-    label: 'Profiles',
-    icon: 'pi pi-id-card',
-    path: '/mdm/profiles'
-  },
-  {
     label: 'Policies',
     icon: 'pi pi-shield',
     path: '/mdm/policies'
@@ -68,6 +63,11 @@ const navigationItems = [
     label: 'Queries',
     icon: 'pi pi-database',
     path: '/mdm/queries'
+  },
+  {
+    label: 'Profiles',
+    icon: 'pi pi-id-card',
+    path: '/mdm/profiles'
   },
   {
     label: 'Settings',

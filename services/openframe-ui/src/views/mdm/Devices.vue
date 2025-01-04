@@ -2,6 +2,12 @@
   <div class="mdm-devices">
     <div class="of-mdm-header">
       <h1 class="of-title">Devices</h1>
+      <Button 
+        label="Add Device" 
+        icon="pi pi-plus" 
+        @click="showCreateDialog = true"
+        class="p-button-primary" 
+      />
     </div>
 
     <div class="w-30rem mr-auto">
@@ -125,6 +131,7 @@ const toastService = ToastService.getInstance();
 const loading = ref(true);
 const error = ref('');
 const devices = ref<any[]>([]);
+const showCreateDialog = ref(false);
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },

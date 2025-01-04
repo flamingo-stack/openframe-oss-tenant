@@ -1,150 +1,173 @@
 <template>
   <div class="nested-object">
-    <div
-      v-for="(value, key) in (isObjectRecord(props.value) ? props.value : {})"
-      :key="key"
-      class="nested-field"
-    >
-      <div class="nested-field-label">{{ formatKey(key) }}</div>
-      <div class="nested-field-value">
-        <template v-if="isRecord(value)">
-          <NestedObjectEditor
-            :value="value"
-            :isEditable="isEditable"
-            @update:value="val => updateNestedValue(key, val)"
-          />
-        </template>
-        <template v-else>
-          <template v-if="typeof value === 'boolean'">
+    <template v-if="localValue && typeof localValue === 'object'">
+      <div v-for="(val, key) in localValue" :key="key" class="nested-field">
+        <div class="nested-field-label">{{ formatKey(key) }}</div>
+        <div class="nested-field-value">
+          <template v-if="getValueType(val) === 'Object'">
+            <NestedObjectEditor
+              :value="val"
+              :isPropertyEditable="isPropertyEditable"
+              :parentKey="parentKey"
+              @update:value="newVal => updateValue(key, newVal)"
+              @error="err => emit('error', err)"
+            />
+          </template>
+          <template v-else-if="getValueType(val) === 'Array'">
+            <div class="array-inputs">
+              <div v-for="(item, index) in getArrayItems(val)" :key="'item-' + key + '-' + index" class="array-input-row">
+                <InputText
+                  :modelValue="item"
+                  @update:modelValue="newVal => updateArrayItem(key, index, newVal)"
+                  :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
+                  class="w-full"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  text
+                  rounded
+                  :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
+                  @click="removeArrayItem(key, index)"
+                  v-tooltip.top="'Remove item'"
+                />
+              </div>
+              <div class="add-item-wrapper">
+                <Button
+                  icon="pi pi-plus"
+                  :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
+                  @click="addArrayItem(key)"
+                  class="p-button-text p-button-sm p-button-icon-only"
+                  v-tooltip.top="'Add new item'"
+                />
+              </div>
+            </div>
+          </template>
+          <template v-else-if="getValueType(val) === 'Boolean'">
             <div class="switch-wrapper">
               <InputSwitch
-                v-model="localValue[key]"
-                :disabled="!isEditable"
-                @update:modelValue="val => handleBooleanChange(key, val)"
+                :modelValue="val"
+                @update:modelValue="newVal => updateValue(key, newVal)"
+                :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
                 class="settings-switch"
               />
             </div>
           </template>
-          <template v-else-if="typeof value === 'number'">
+          <template v-else-if="getValueType(val) === 'Number'">
             <InputNumber
-              :modelValue="value"
-              @update:modelValue="val => updateValue(key, val)"
-              :disabled="!isEditable"
+              :modelValue="val"
+              @update:modelValue="newVal => updateValue(key, newVal)"
+              :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
               class="w-full"
-              :showButtons="false"
-              :useGrouping="false"
-              @input="event => updateValue(key, event.value)"
             />
           </template>
           <template v-else>
             <InputText
-              :modelValue="String(value ?? '')"
-              @update:modelValue="val => updateValue(key, val || null)"
-              :disabled="!isEditable"
+              :modelValue="String(val ?? '')"
+              @update:modelValue="newVal => updateValue(key, newVal || null)"
+              :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
               class="w-full"
             />
           </template>
-        </template>
+        </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, reactive, onMounted, watch, ref } from 'vue';
-import { ToastService } from '../services/ToastService';
+import { defineProps, defineEmits, toRaw, computed, ref } from 'vue';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
-
-const toastService = ToastService.getInstance();
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
+import Button from 'primevue/button';
+import NestedObjectEditor from './NestedObjectEditor.vue';
 
 const props = defineProps<{
-  value: Record<string, unknown> | unknown[];
-  isEditable?: boolean;
+  value: Record<string | number, any>;
+  isPropertyEditable?: (key: string | number, parentKey?: string | number) => boolean;
+  parentKey?: string | number;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:value', value: Record<string, unknown>): void;
-  (e: 'error', error: any): void;
-}>();
+const emit = defineEmits(['update:value', 'error']);
 
-const localValue = reactive<Record<string, any>>({});
+const getValueType = (value: any): string => {
+  if (Array.isArray(value)) return 'Array';
+  if (typeof value === 'object' && value !== null) return 'Object';
+  if (typeof value === 'boolean') return 'Boolean';
+  if (typeof value === 'number') return 'Number';
+  return 'String';
+};
 
-// Initialize local values
-onMounted(() => {
-  if (isObjectRecord(props.value)) {
-    Object.entries(props.value).forEach(([key, value]) => {
-      localValue[key] = value;
-    });
-  }
-});
-
-// Keep local values in sync with props
-watch(() => props.value, (newValue) => {
-  if (isObjectRecord(newValue)) {
-    Object.entries(newValue).forEach(([key, value]) => {
-      localValue[key] = value;
-    });
-  }
-}, { deep: true });
-
-const formatKey = (key: string): string => {
-  return key
+const formatKey = (key: string | number): string => {
+  return String(key)
     .split(/[\s_]+/)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 };
 
-const extractUrlFromMessage = (message: string) => {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const match = message.match(urlRegex);
-  if (match) {
-    const url = match[0];
-    const textWithoutUrl = message.replace(url, '');
-    return { url, text: textWithoutUrl.trim() };
-  }
-  return { text: message };
-};
+const localValue = ref<Record<string | number, any>>(toRaw(props.value));
 
-const handleBooleanChange = async (key: string, value: boolean) => {
-  if (!isObjectRecord(props.value) || !props.isEditable) return;
-  const updatedValue = { ...props.value, [key]: value };
-  emit('update:value', updatedValue);
-};
-
-const updateValue = async (key: string, newValue: unknown) => {
-  if (!isObjectRecord(props.value)) return;
+const updateValue = (key: string | number, newValue: any) => {
+  if (typeof localValue.value !== 'object') return;
   
-  // Handle empty strings
-  if (typeof newValue === 'string' && newValue === '') {
-    newValue = null;
-  }
+  console.log('Updating value:', {
+    key,
+    oldValue: localValue.value[String(key)],
+    newValue,
+    isArray: Array.isArray(newValue)
+  });
   
-  const updatedValue = { ...props.value, [key]: newValue };
-  emit('update:value', updatedValue);
+  localValue.value = {
+    ...localValue.value,
+    [String(key)]: Array.isArray(newValue) ? [...newValue] : newValue
+  };
+  
+  emit('update:value', localValue.value);
 };
 
-const updateNestedValue = async (key: string, newValue: Record<string, unknown>) => {
-  if (!isObjectRecord(props.value)) return;
-  const updatedValue = { ...props.value, [key]: newValue };
-  emit('update:value', updatedValue);
+const getArrayItems = (val: any) => {
+  const rawVal = toRaw(val);
+  return Array.isArray(rawVal) ? rawVal : [];
 };
 
-const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+const addArrayItem = (key: string | number) => {
+  const currentValue = getArrayItems(localValue.value[String(key)]);
+  console.log('Current array value:', currentValue);
+  
+  const arrayValue = [...currentValue, ''];
+  console.log('New array value:', arrayValue);
+  updateValue(key, arrayValue);
 };
 
-const handleError = (error: any) => {
-  toastService.showError(error.message || 'An error occurred');
+const removeArrayItem = (key: string | number, index: number) => {
+  const currentValue = getArrayItems(localValue.value[String(key)]);
+  
+  const updatedValue = currentValue.filter((_, i) => i !== index);
+  console.log('After removing item:', {
+    index,
+    oldValue: currentValue,
+    newValue: updatedValue,
+    isArray: true
+  });
+  
+  updateValue(key, updatedValue);
 };
 
-const handleSuccess = (message: string) => {
-  toastService.showSuccess(message);
+const updateArrayItem = (key: string | number, index: number, newValue: string | undefined) => {
+  const currentValue = getArrayItems(localValue.value[String(key)]);
+  
+  const updatedValue = [...currentValue];
+  updatedValue[index] = newValue || '';
+  
+  console.log('Updating array item:', {
+    index,
+    oldValue: currentValue[index],
+    newValue: updatedValue[index],
+    fullArray: updatedValue
+  });
+  
+  updateValue(key, updatedValue);
 };
 </script>
 
@@ -162,19 +185,47 @@ const handleSuccess = (message: string) => {
 }
 
 .nested-field-label {
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-color-secondary);
-  font-size: 0.875rem;
 }
 
 .nested-field-value {
   width: 100%;
 }
 
-.nested-field .nested-object {
-  margin-left: 1rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--surface-border);
+.array-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.array-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.add-item-wrapper {
+  margin-top: 0.5rem;
+}
+
+:deep(.p-button.p-button-icon-only) {
+  width: 2rem;
+  height: 2rem;
+  padding: 0.5rem;
+
+  &:enabled:hover {
+    background: var(--surface-hover);
+  }
+
+  &:enabled:active {
+    background: var(--surface-ground);
+  }
+
+  .p-button-icon {
+    font-size: 1rem;
+  }
 }
 
 .switch-wrapper {
@@ -197,15 +248,11 @@ const handleSuccess = (message: string) => {
   }
 
   .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
-    background: var(--yellow-500) !important;
+    background: var(--yellow-500);
   }
 
   .p-inputswitch.p-inputswitch-checked:not(.p-disabled):hover .p-inputswitch-slider {
-    background: var(--yellow-600) !important;
-  }
-
-  .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider:before {
-    background: var(--surface-0) !important;
+    background: var(--yellow-600);
   }
 
   .p-inputswitch .p-inputswitch-slider:before {
@@ -221,14 +268,20 @@ const handleSuccess = (message: string) => {
   .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider:before {
     transform: translateX(1.5rem);
   }
+}
 
-  .p-inputswitch.p-disabled {
-    opacity: 0.6;
-  }
+.array-item-enter-active,
+.array-item-leave-active {
+  transition: all 0.3s ease;
+}
 
-  .p-inputswitch.p-disabled .p-inputswitch-slider {
-    background: var(--surface-200);
-    cursor: not-allowed;
-  }
+.array-item-enter-from,
+.array-item-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.array-item-move {
+  transition: transform 0.3s ease;
 }
 </style> 

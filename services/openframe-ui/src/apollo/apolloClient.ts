@@ -14,78 +14,127 @@ const resolvePendingRequests = () => {
   pendingRequests = [];
 };
 
-const refreshTokenAndRetry = async (retryCallback: () => Promise<any>) => {
+// Centralized auth error detection
+const isAuthError = (error: any): boolean => {
+  // Check error message
+  const isAuthErrorMessage = error?.message?.includes('Client not found') ||
+    error?.message?.includes('invalid_request') ||
+    error?.message?.includes('invalid_token') ||
+    error?.message?.includes('invalid_grant') ||
+    error?.message?.includes('Unauthorized') ||
+    error?.message?.includes('Not authenticated');
+
+  // Check error response
+  const isAuthErrorResponse = error?.response?.status === 401 ||
+    error?.response?.data?.error === 'invalid_request' ||
+    error?.response?.data?.error === 'invalid_token' ||
+    error?.response?.data?.error === 'invalid_grant' ||
+    error?.response?.data?.error_description?.includes('Client not found');
+
+  return isAuthErrorMessage || isAuthErrorResponse;
+};
+
+// Core token refresh logic
+const refreshAccessToken = async (): Promise<void> => {
   try {
-    if (!isRefreshing) {
-      console.log('🔄 [Auth] Starting token refresh flow');
-      isRefreshing = true;
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) {
-        console.error('❌ [Auth] No refresh token available');
-        const authStore = useAuthStore();
-        await authStore.logout();
-        window.location.replace('/login');
-        throw new Error('No refresh token available');
-      }
+    // If we're already on the login page, don't try to refresh
+    if (window.location.pathname === '/login') {
+      console.log('⏩ [Auth] Already on login page, skipping refresh');
+      throw new Error('Already on login page');
+    }
 
-      try {
-        console.log('📤 [Auth] Making refresh token request...');
-        const response = await AuthService.refreshToken(refreshToken);
-        console.log('✅ [Auth] Token refresh successful');
-        localStorage.setItem('access_token', response.access_token);
-        if (response.refresh_token) {
-          localStorage.setItem('refresh_token', response.refresh_token);
-        }
+    // Get refresh token
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      console.error('❌ [Auth] No refresh token available');
+      throw new Error('No refresh token available');
+    }
 
-        console.log('🔄 [Auth] Resolving pending requests:', pendingRequests.length);
-        resolvePendingRequests();
-        return await retryCallback();
-      } catch (refreshError: any) {
-        console.error('❌ [Auth] Token refresh failed:', refreshError);
-        // Handle OAuth errors
-        if (refreshError.message.includes('Client not found') || 
-            refreshError.message.includes('invalid_request') ||
-            refreshError.message.includes('invalid_token') ||
-            refreshError.message.includes('invalid_grant') ||
-            refreshError.message.includes('Unauthorized')) {
-          console.log('🚫 [Auth] OAuth error detected, redirecting to login');
-          const authStore = useAuthStore();
-          await authStore.logout();
-          window.location.replace('/login');
-          throw refreshError;
-        }
-        // For any other error, also redirect
-        const authStore = useAuthStore();
-        await authStore.logout();
-        window.location.replace('/login');
-        throw refreshError;
-      }
-    } else {
-      console.log('⏳ [Auth] Token refresh in progress, queueing request');
-      return new Promise((resolve, reject) => {
-        pendingRequests.push(() => {
-          retryCallback()
-            .then(resolve)
-            .catch(async (error: any) => {
-              console.error('❌ [Auth] Queued request failed:', error);
-              const authStore = useAuthStore();
-              await authStore.logout();
-              window.location.replace('/login');
-              reject(error);
-            });
-        });
-      });
+    console.log('📤 [Auth] Making refresh token request...');
+    const response = await AuthService.refreshToken(refreshToken);
+    console.log('✅ [Auth] Token refresh successful');
+    
+    localStorage.setItem('access_token', response.access_token);
+    if (response.refresh_token) {
+      localStorage.setItem('refresh_token', response.refresh_token);
     }
   } catch (error) {
-    console.error('❌ [Auth] Token refresh flow failed:', error);
+    console.error('❌ [Auth] Token refresh failed:', error);
     const authStore = useAuthStore();
     await authStore.logout();
     window.location.replace('/login');
     throw error;
-  } finally {
-    console.log('🏁 [Auth] Refresh flow complete');
-    isRefreshing = false;
   }
+};
+
+// Handle auth errors for REST requests
+const handleRestAuthError = async <T>(retryCallback: () => Promise<T>): Promise<T> => {
+  // Handle concurrent refresh requests
+  if (!isRefreshing) {
+    console.log('🔄 [Auth] Starting token refresh flow');
+    isRefreshing = true;
+
+    try {
+      await refreshAccessToken();
+      console.log('🔄 [Auth] Resolving pending requests:', pendingRequests.length);
+      resolvePendingRequests();
+      return await retryCallback();
+    } finally {
+      console.log('🏁 [Auth] Refresh flow complete');
+      isRefreshing = false;
+    }
+  } else {
+    console.log('⏳ [Auth] Token refresh in progress, queueing request');
+    return new Promise((resolve, reject) => {
+      pendingRequests.push(() => {
+        retryCallback().then(resolve).catch(reject);
+      });
+    });
+  }
+};
+
+// Handle auth errors for GraphQL requests
+const handleGraphQLAuthError = (operation: any, forward: any): Observable<FetchResult> => {
+  return new Observable(observer => {
+    const retry = async () => {
+      try {
+        if (!isRefreshing) {
+          console.log('🔄 [Auth] Starting token refresh flow');
+          isRefreshing = true;
+
+          try {
+            await refreshAccessToken();
+            console.log('🔄 [Auth] Resolving pending requests:', pendingRequests.length);
+            resolvePendingRequests();
+          } finally {
+            console.log('🏁 [Auth] Refresh flow complete');
+            isRefreshing = false;
+          }
+        } else {
+          console.log('⏳ [Auth] Token refresh in progress, queueing request');
+          await new Promise(resolve => {
+            pendingRequests.push(resolve);
+          });
+        }
+
+        const result = await new Promise<FetchResult>((resolve, reject) => {
+          forward(operation).subscribe({
+            next: resolve,
+            error: reject,
+            complete: () => {}
+          });
+        });
+
+        observer.next(result);
+        observer.complete();
+      } catch (error) {
+        observer.error(error);
+      }
+    };
+
+    retry();
+    return () => {}; // Cleanup function
+  });
 };
 
 const httpLink = createHttpLink({
@@ -102,95 +151,24 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
-interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
-}
-
+// GraphQL error handling
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
     for (const err of graphQLErrors) {
       console.error('🔴 [GraphQL] Error:', err);
       
-      // Check for unauthorized error
       if (err.extensions?.code === 'UNAUTHENTICATED' || 
           err.message.includes('Unauthorized') ||
           err.message.includes('unauthorized')) {
-        console.log('🔑 [Auth] GraphQL unauthorized error detected');
-        
-        // If we're already on the login page, don't try to refresh
-        if (window.location.pathname === '/login') {
-          console.log('⏩ [Auth] Already on login page, skipping refresh');
-          return;
-        }
-
-        return new Observable<FetchResult>(observer => {
-          refreshTokenAndRetry(async () => {
-            try {
-              const result = await new Promise<FetchResult>((resolve, reject) => {
-                forward(operation).subscribe({
-                  next: resolve,
-                  error: reject,
-                  complete: () => {}
-                });
-              });
-              observer.next(result);
-              observer.complete();
-              return result;
-            } catch (error) {
-              console.error('❌ [Auth] GraphQL retry failed:', error);
-              const authStore = useAuthStore();
-              authStore.logout();
-              window.location.href = '/login';
-              observer.error(error);
-              throw error;
-            }
-          });
-        });
+        return handleGraphQLAuthError(operation, forward);
       }
     }
   }
 
   if (networkError) {
     console.error('🔴 [Network] Error:', networkError);
-    // Check for 401 status in different network error types
-    const isUnauthorized = 
-      ('statusCode' in networkError && networkError.statusCode === 401) ||
-      networkError.message.includes('401') ||
-      networkError.message.includes('Unauthorized');
-
-    if (isUnauthorized) {
-      console.log('🔑 [Auth] Network unauthorized error detected');
-      
-      // If we're already on the login page, don't try to refresh
-      if (window.location.pathname === '/login') {
-        console.log('⏩ [Auth] Already on login page, skipping refresh');
-        return;
-      }
-
-      return new Observable<FetchResult>(observer => {
-        refreshTokenAndRetry(async () => {
-          try {
-            const result = await new Promise<FetchResult>((resolve, reject) => {
-              forward(operation).subscribe({
-                next: resolve,
-                error: reject,
-                complete: () => {}
-              });
-            });
-            observer.next(result);
-            observer.complete();
-            return result;
-          } catch (error) {
-            console.error('❌ [Auth] Network retry failed:', error);
-            const authStore = useAuthStore();
-            authStore.logout();
-            window.location.href = '/login';
-            observer.error(error);
-            throw error;
-          }
-        });
-      });
+    if (isAuthError(networkError)) {
+      return handleGraphQLAuthError(operation, forward);
     }
   }
 });
@@ -200,10 +178,10 @@ export const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),
 });
 
-// REST client with token refresh
+// REST client with centralized error handling
 export const restClient = {
   async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
-    try {
+    const makeRequest = async () => {
       console.log('📤 [REST] Making request to:', url);
       const token = localStorage.getItem('access_token');
       const defaultHeaders = {
@@ -228,46 +206,11 @@ export const restClient = {
           data
         });
 
-        // Handle all OAuth and auth-related errors
-        if (response.status === 401 || 
-            data.error === 'invalid_request' || 
-            data.error === 'invalid_token' ||
-            data.error === 'invalid_grant' ||
-            data.error_description?.includes('Client not found')) {
-          console.log('🔑 [Auth] Auth error detected, handling...');
-          
-          if (response.status === 401 && !url.includes('/oauth/token')) {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (!refreshToken) {
-              console.error('❌ [Auth] No refresh token available');
-              const authStore = useAuthStore();
-              await authStore.logout();
-              window.location.replace('/login');
-              throw new Error('No refresh token available');
-            }
-
-            try {
-              return await refreshTokenAndRetry(() => this.request<T>(url, options));
-            } catch (error) {
-              console.error('❌ [Auth] Refresh failed, redirecting to login');
-              const authStore = useAuthStore();
-              await authStore.logout();
-              window.location.replace('/login');
-              throw error;
-            }
-          } else {
-            console.error('❌ [Auth] Auth error, redirecting to login');
-            const authStore = useAuthStore();
-            await authStore.logout();
-            window.location.replace('/login');
-            throw new Error(data.error_description || 'Authentication failed');
-          }
-        }
-        
         // Create a standardized error object
         const error = new Error() as any;
         error.status = response.status;
         error.name = 'ApiError';
+        error.response = { status: response.status, data };
 
         // Parse error data into a consistent format
         let errorMessage: string;
@@ -284,32 +227,24 @@ export const restClient = {
         }
 
         error.message = errorMessage;
-        error.data = data;
-        error.response = {
-          status: response.status,
-          data: data
-        };
-        
         throw error;
       }
 
       console.log('✅ [REST] Request successful');
       const data = await response.json();
       return data as T;
+    };
+
+    try {
+      return await makeRequest();
     } catch (error: any) {
       console.error('❌ [REST] Request error:', error);
-      // Handle any auth-related error messages
-      if (error.message?.includes('Client not found') ||
-          error.message?.includes('invalid_request') ||
-          error.message?.includes('invalid_token') ||
-          error.message?.includes('invalid_grant') ||
-          error.message?.includes('Unauthorized') ||
-          error.message?.includes('Not authenticated')) {
-        console.log('🚫 [Auth] Auth error detected in catch block, redirecting to login');
-        const authStore = useAuthStore();
-        await authStore.logout();
-        window.location.replace('/login');
+      
+      // Handle auth errors with token refresh
+      if (isAuthError(error)) {
+        return await handleRestAuthError(makeRequest);
       }
+      
       throw error;
     }
   },
@@ -337,7 +272,11 @@ export const restClient = {
     return this.request<T>(url, {
       ...options,
       method: 'PATCH',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
     });
   },
   

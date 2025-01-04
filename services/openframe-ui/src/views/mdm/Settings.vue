@@ -74,7 +74,7 @@ interface Config {
   [key: string]: ConfigValue;
 }
 
-type EditableValue = string | number | boolean | null | Record<string, unknown>;
+export type EditableValue = string | number | boolean | null | Record<string, unknown> | string[];
 
 const toastService = ToastService.getInstance();
 const loading = ref(true);
@@ -215,42 +215,57 @@ const getConfigValue = (key: string | number, subKey: string | number | null): E
   
   if (subKey === null) {
     const value = editedConfig.value[String(key)] ?? config.value[String(key)];
-    return Array.isArray(value) ? null : value as EditableValue;
+    return value as EditableValue;
   }
   
   const parentValue = editedConfig.value[String(key)] ?? config.value[String(key)];
   const value = (parentValue as Record<string, EditableValue>)?.[String(subKey)] ?? config.value[String(key)][String(subKey)];
-  return Array.isArray(value) ? null : value as EditableValue;
+  return value as EditableValue;
 };
 
 const updateConfigValue = (key: string | number, subKey: string | number | null, value: EditableValue) => {
   if (!config.value) return;
-
-  // Don't update if the value is an array
-  if (Array.isArray(value)) {
-    return;
-  }
 
   // Create the path key for tracking changes
   const path = subKey ? `${key}.${subKey}` : String(key);
 
   // Initialize the edited config structure if it doesn't exist
   if (!editedConfig.value[String(key)]) {
-    editedConfig.value[String(key)] = subKey === null ? {} : { ...config.value[String(key)] };
+    editedConfig.value[String(key)] = subKey === null ? {} : JSON.parse(JSON.stringify(config.value[String(key)]));
   }
 
-  // Normalize empty values
-  const normalizedValue = value === '' ? null : value;
+  // Special handling for array values (like decorators.load)
+  const isArrayValue = Array.isArray(value) || 
+    (typeof value === 'string' && path.includes('decorators.load'));
+
+  // Normalize the value
+  let normalizedValue: EditableValue;
+  if (isArrayValue) {
+    // If it's already an array, use it directly
+    normalizedValue = Array.isArray(value) ? JSON.parse(JSON.stringify(value)) : value.split('\n').map(v => v.trim()).filter(v => v);
+  } else {
+    normalizedValue = value;
+  }
+
+  console.log('Updating config value:', {
+    path,
+    oldValue: subKey === null ? editedConfig.value[String(key)] : editedConfig.value[String(key)][String(subKey)],
+    newValue: normalizedValue,
+    isArray: Array.isArray(normalizedValue)
+  });
 
   // Update the edited config
   if (subKey === null) {
     editedConfig.value[String(key)] = normalizedValue as ConfigValue;
   } else {
     if (typeof editedConfig.value[String(key)] !== 'object') {
-      editedConfig.value[String(key)] = { ...config.value[String(key)] };
+      editedConfig.value[String(key)] = JSON.parse(JSON.stringify(config.value[String(key)]));
     }
     (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = normalizedValue;
   }
+
+  // Force Vue to recognize the change by creating a new reference
+  editedConfig.value = JSON.parse(JSON.stringify(editedConfig.value));
 
   // Get original value for comparison
   const originalValue = subKey === null 
@@ -334,6 +349,8 @@ const handleSaveConfig = async (retryCount = 0) => {
   saving.value = true;
   error.value = '';
   try {
+    console.log('🔄 [MDM] Starting config update...');
+    
     // Create config object with the same structure as received
     const fleetConfig: Record<string, unknown> = {};
 
@@ -344,6 +361,7 @@ const handleSaveConfig = async (retryCount = 0) => {
       }
     });
 
+    console.log('📤 [MDM] Sending config update:', fleetConfig);
     const response = await restClient.patch(
       `${API_URL}/config`,
       fleetConfig
@@ -351,6 +369,7 @@ const handleSaveConfig = async (retryCount = 0) => {
 
     // If we got any response object, consider it a success and fetch fresh data
     if (response && typeof response === 'object') {
+      console.log('✅ [MDM] Config update successful');
       toastService.showSuccess('Configuration updated successfully');
       
       // Fetch fresh data
@@ -359,7 +378,7 @@ const handleSaveConfig = async (retryCount = 0) => {
       throw new Error('Invalid response from server');
     }
   } catch (err: any) {
-    console.error('Update error:', err);
+    console.error('❌ [MDM] Update error:', err);
     console.error('Error response:', err.response);
     
     // Get the error message from the response data
@@ -367,10 +386,12 @@ const handleSaveConfig = async (retryCount = 0) => {
     const message = errorData?.message || err.message || 'Failed to update configuration';
     const { url, text } = extractUrlFromMessage(message);
     
+    // Set error message with clickable link if URL exists
     error.value = url 
       ? `${text} <a href="${url}" target="_blank" style="color: var(--red-700); text-decoration: underline;">${url}</a>`
       : text;
     
+    // Show error toast with clickable link if URL exists
     toastService.showError(text + (url ? ` ${url}` : ''));
   } finally {
     saving.value = false;
@@ -423,13 +444,30 @@ const saveConfigProperty = async (category: string, subKey: string | null) => {
   savingProperties.value.add(path);
 
   try {
+    console.log('🔄 [MDM] Saving config property:', path);
     const value = subKey ? editedConfig.value[category][subKey] : editedConfig.value[category];
-    await restClient.patch(`${API_URL}/config`, { [path]: value });
+    
+    // Create the proper nested structure for the PATCH request
+    const patchData = subKey 
+      ? { [category]: { [subKey]: value } }  // Nested update: { org_info: { org_logo_url: "value" } }
+      : { [category]: value };               // Top-level update: { org_info: {...} }
+    
+    console.log('📤 [MDM] Sending PATCH request with data:', patchData);
+    
+    // Make the PATCH request
+    await restClient.patch(`${API_URL}/config`, patchData);
 
+    console.log('✅ [MDM] Config property saved successfully');
     toastService.showSuccess('Configuration updated successfully');
+    
+    // Fetch fresh data to ensure everything is in sync
+    await fetchMDMConfig();
   } catch (err: any) {
-    console.error('Error saving config:', err);
-    throw err; // Re-throw to be handled by SettingsCategory
+    console.error('❌ [MDM] Error saving config:', err);
+    console.error('Error response:', err.response);
+    
+    // Re-throw to be handled by SettingsCategory
+    throw err;
   } finally {
     savingProperties.value.delete(path);
   }
