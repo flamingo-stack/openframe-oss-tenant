@@ -1,0 +1,123 @@
+name: openframe-authentik
+
+services:
+
+  authentik-redis:
+    image: redis:latest
+    container_name: openframe-authentik-redis
+    hostname: openframe-authentik-redis
+    volumes:
+      - authentik-redis-data:/data
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  authentik-postgresql:
+    image: postgres:15
+    container_name: openframe-authentik-postgresql
+    environment:
+      POSTGRES_USER: authentik-user
+      POSTGRES_PASSWORD: authentik-password-1234
+      POSTGRES_MULTIPLE_DATABASES: authentik-database,authentik-database-authentik
+    volumes:
+      - authentik-postgresql-data:/var/lib/postgresql/data
+      - ./infrastructure/postgresql/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authentik-user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2024.10.4
+    container_name: openframe-authentik-server
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_BOOTSTRAP_PASSWORD: "openframe123!"
+      AUTHENTIK_BOOTSTRAP_TOKEN: "openframe-api-token-123456789"
+      AUTHENTIK_BOOTSTRAP_EMAIL: "akadmin@openframe.local"
+      AUTHENTIK_REDIS__HOST: openframe-authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: openframe-authentik-postgresql
+      AUTHENTIK_POSTGRESQL__USER: authentik-user
+      AUTHENTIK_POSTGRESQL__NAME: authentik-database-authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: authentik-password-1234
+      AUTHENTIK_SECRET_KEY: X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA
+      AUTHENTIK_ERROR_REPORTING__ENABLED: false
+      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: true
+      AUTHENTIK_DISABLE_UPDATE_CHECK: true
+      AUTHENTIK_EMAIL__HOST: localhost
+      AUTHENTIK_EMAIL__PORT: 25
+      AUTHENTIK_EMAIL__USERNAME: ""
+      AUTHENTIK_EMAIL__PASSWORD: ""
+      AUTHENTIK_EMAIL__USE_TLS: false
+      AUTHENTIK_EMAIL__USE_SSL: false
+      AUTHENTIK_EMAIL__TIMEOUT: 10
+      AUTHENTIK_EMAIL__FROM: authentik@localhost
+    volumes:
+      - ./volumes/authentik/media:/media
+      - ./volumes/authentik/certs:/certs
+      - ./volumes/authentik/custom-templates:/templates
+    ports:
+      - "5001:9000"
+    networks:
+      - openframe-network
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2024.10.4
+    container_name: openframe-authentik-worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_BOOTSTRAP_PASSWORD: "openframe123!"
+      AUTHENTIK_BOOTSTRAP_TOKEN: "openframe-api-token-123456789"
+      AUTHENTIK_BOOTSTRAP_EMAIL: "akadmin@openframe.local"
+      AUTHENTIK_REDIS__HOST: openframe-authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: openframe-authentik-postgresql
+      AUTHENTIK_POSTGRESQL__USER: authentik-user
+      AUTHENTIK_POSTGRESQL__NAME: authentik-database-authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: authentik-password-1234
+      AUTHENTIK_SECRET_KEY: X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA
+      AUTHENTIK_ERROR_REPORTING__ENABLED: false
+      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: true
+      AUTHENTIK_DISABLE_UPDATE_CHECK: true
+      AUTHENTIK_EMAIL__HOST: localhost
+      AUTHENTIK_EMAIL__PORT: 25
+      AUTHENTIK_EMAIL__USERNAME: ""
+      AUTHENTIK_EMAIL__PASSWORD: ""
+      AUTHENTIK_EMAIL__USE_TLS: false
+      AUTHENTIK_EMAIL__USE_SSL: false
+      AUTHENTIK_EMAIL__TIMEOUT: 10
+      AUTHENTIK_EMAIL__FROM: authentik@localhost
+    volumes:
+      - ./volumes/authentik/media:/media
+      - ./volumes/authentik/certs:/certs
+      - ./volumes/authentik/custom-templates:/templates
+    networks:
+      - openframe-network
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+
+volumes:
+  authentik-redis-data:
+  authentik-postgresql-data:
+
+networks:
+  openframe-network:
+    name: openframe-network
+    driver: bridge

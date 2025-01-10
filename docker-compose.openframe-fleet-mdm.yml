@@ -1,0 +1,96 @@
+name: openframe-fleet-mdm
+
+services:
+
+  fleet-mdm-mysql:
+    image: mysql:8.0.35
+    container_name: openframe-fleet-mdm-mysql
+    hostname: openframe-fleet-mdm-mysql
+    platform: linux/amd64
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --skip-mysqlx
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: fleet-mdm-password
+      MYSQL_DATABASE: fleet-mdm-database
+      MYSQL_USER: fleet-mdm-user
+      MYSQL_PASSWORD: fleet-mdm-password-1234
+      MYSQL_DEFAULT_AUTHENTICATION_PLUGIN: mysql_native_password
+    volumes:
+      - fleet-mdm-mysql-data:/var/lib/mysql
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfleet-mdm-user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fleet-mdm-redis:
+    image: redis:latest
+    container_name: openframe-fleet-mdm-redis
+    hostname: openframe-fleet-mdm-redis
+    volumes:
+      - fleet-mdm-redis-data:/data
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fleet:
+    depends_on:
+      fleet-mdm-mysql:
+        condition: service_healthy
+      fleet-mdm-redis:
+        condition: service_healthy
+    build:
+      context: ./infrastructure/fleetmdm
+      dockerfile: Dockerfile
+    container_name: openframe-fleet
+    restart: always
+    user: root
+    ports:
+      - "8070:8070"
+    environment:
+      FLEET_CONFIG: /etc/fleet/fleet.yml
+      FLEET_SETUP_ADMIN_EMAIL: "admin@openframe.local"
+      FLEET_SETUP_ADMIN_PASSWORD: "openframe123!"
+      FLEET_SETUP_ORG_NAME: "OpenFrame"
+      FLEET_SETUP_AUTO_INIT: "true"
+      FLEET_MYSQL_ADDRESS: openframe-fleet-mdm-mysql:3306
+      FLEET_MYSQL_DATABASE: fleet-mdm-database
+      FLEET_MYSQL_USERNAME: fleet-mdm-user
+      FLEET_MYSQL_PASSWORD: fleet-mdm-password-1234
+      FLEET_REDIS_ADDRESS: openframe-fleet-mdm-redis:6379
+      FLEET_AUTH_JWT_KEY: "fleet-jwt-secret-123"
+      FLEET_ENROLL_SECRET: "fleet-enroll-secret-123"
+      FLEET_API_USER_NAME: "API User"
+      FLEET_API_USER_EMAIL: "api@openframe.local"
+      FLEET_API_USER_PASSWORD: "openframe123!"
+      FLEET_SERVER_PORT: "8070"
+      FLEET_SETUP_ADMIN_NAME: "Admin"
+    volumes:
+      - fleet-mdm-fleet-logs:/var/log/osquery
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8070/setup"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  fleet-mdm-mysql-data:
+  fleet-mdm-redis-data:
+  fleet-mdm-fleet-logs:
+
+networks:
+  openframe-network:
+    name: openframe-network
+    driver: bridge

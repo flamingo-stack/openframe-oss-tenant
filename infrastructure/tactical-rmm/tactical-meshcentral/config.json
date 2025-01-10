@@ -1,0 +1,31 @@
+{
+  "$schema": "http://info.meshcentral.com/downloads/meshcentral-config-schema.json",
+  "settings": {
+    "cert": "mesh.example.com",
+    "_mongoDb": "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/meshcentral",
+    "mongoDbName": "meshcentral",
+    "WANonly": true,
+    "minify": true,
+    "port": 443,
+    "redirPort": 80,
+    "allowLoginToken": true,
+    "allowFraming": true,
+    "_agentPing": 20,
+    "agentPong": 60,
+    "allowHighQualityDesktop": true,
+    "tlsOffload": "127.0.0.1",
+    "agentCoreDump": false,
+    "compression": true,
+    "wsCompression": true,
+    "agentWsCompression": true,
+    "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+  },
+  "domains": {
+    "": {
+      "title": "Tactical RMM",
+      "title2": "Tactical RMM",
+      "newAccounts": false,
+      "certUrl": "https://mesh.example.com:443"
+    }
+  }
+} 

@@ -89,8 +89,16 @@ wait_for_infrastructure
 echo "Finished launching application infra and application services..."
 
 # Start Fleet MDM only after infrastructure is ready
-echo "Starting integrated tools deployment..."
-docker-compose -f docker-compose.openframe-integrated-tools.yml up -d
+echo "Starting Fleet MDM deployment..."
+docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+
+# Start Fleet MDM only after infrastructure is ready
+echo "Starting Authentik deployment..."
+docker-compose -f docker-compose.openframe-authentik.yml up -d
+
+# Start Fleet MDM only after infrastructure is ready
+echo "Starting Tactical RMM deployment..."
+docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070

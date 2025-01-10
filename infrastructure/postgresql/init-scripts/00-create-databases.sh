@@ -26,6 +26,17 @@ create_user_and_database() {
         GRANT ALL PRIVILEGES ON DATABASE "$database" TO "integrated-tools-user";
 EOSQL
     
+    # If database name contains 'authentik' (case insensitive), create schemas
+    if [[ $database =~ [Aa][Uu][Tt][Hh][Ee][Nn][Tt][Ii][Kk] ]]; then
+        echo "Authentik database detected, creating schemas..."
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" <<-EOSQL
+            CREATE SCHEMA IF NOT EXISTS authentik;
+            CREATE SCHEMA IF NOT EXISTS public;
+            SET search_path TO authentik, public;
+EOSQL
+        echo "Authentik schemas created successfully"
+    fi
+    
     echo "Database '$database' created successfully"
 }
 
