@@ -137,6 +137,10 @@ import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
 import { FleetService } from '../../services/FleetService';
+import { restClient } from '../../apollo/apolloClient';
+import { config as envConfig } from '../../config/env.config';
+
+const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
 const fleetService = FleetService.getInstance();
 
@@ -159,6 +163,31 @@ interface ActivityDisplay {
   timestamp: string;
   type: string;
   description: string;
+}
+
+interface FleetResponse {
+  hosts: Device[];
+}
+
+interface Device {
+  status: string;
+  platform: string;
+}
+
+interface FleetActivityResponse {
+  activities: Array<{
+    created_at: string;
+    type: string;
+    details: any;
+    actor_full_name?: string;
+  }>;
+}
+
+interface FleetPolicyResponse {
+  policies: Array<{
+    passing_host_count: number;
+    failing_host_count: number;
+  }>;
 }
 
 const deviceStats = ref<DeviceStats>({
@@ -188,17 +217,18 @@ const formatTimestamp = (timestamp: string) => {
 
 const fetchDeviceStats = async () => {
   try {
-    const devices = await fleetService.getDevices();
+    const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse;
+    const devices = response.hosts || [];
     
     const stats: DeviceStats = {
       total: devices.length,
-      online: devices.filter((d) => d.status === 'online').length,
-      offline: devices.filter((d) => d.status === 'offline' || d.status === 'unknown').length,
+      online: devices.filter((d: Device) => d.status === 'online').length,
+      offline: devices.filter((d: Device) => d.status === 'offline' || d.status === 'unknown').length,
       byPlatform: {},
       onlineRate: 0
     };
 
-    devices.forEach((device) => {
+    devices.forEach((device: Device) => {
       stats.byPlatform[device.platform] = (stats.byPlatform[device.platform] || 0) + 1;
     });
 
@@ -214,7 +244,8 @@ const fetchDeviceStats = async () => {
 
 const fetchPolicyStats = async () => {
   try {
-    const policies = await fleetService.getPolicies();
+    const response = await restClient.get(`${API_URL}/global/policies`) as FleetPolicyResponse;
+    const policies = response.policies || [];
     
     const stats: PolicyStats = {
       total: policies.length,
@@ -238,14 +269,31 @@ const fetchPolicyStats = async () => {
 
 const fetchRecentActivities = async () => {
   try {
-    const activities = await fleetService.getRecentActivities(5);
-    recentActivities.value = activities.map((activity) => ({
+    const response = await restClient.get(`${API_URL}/activities?limit=5`) as FleetActivityResponse;
+    recentActivities.value = response.activities.map(activity => ({
       timestamp: activity.created_at,
       type: activity.type,
-      description: activity.details
+      description: getActivityDescription(activity)
     }));
   } catch (error) {
     console.error('Error fetching recent activities:', error);
+  }
+};
+
+const getActivityDescription = (activity: any): string => {
+  switch (activity.type) {
+    case 'created_user':
+      return `User ${activity.details.user_name} (${activity.details.user_email}) was created`;
+    case 'changed_user_global_role':
+      return `User ${activity.details.user_name} role changed to ${activity.details.role}`;
+    case 'user_logged_in':
+      return `${activity.actor_full_name || 'User'} logged in from ${activity.details.public_ip || 'unknown IP'}`;
+    case 'user_failed_login':
+      return `Failed login attempt for ${activity.details.email}`;
+    case 'fleet_enrolled':
+      return `Device ${activity.details.host_display_name} (${activity.details.host_serial}) was enrolled`;
+    default:
+      return activity.type.replace(/_/g, ' ');
   }
 };
 

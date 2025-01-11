@@ -119,8 +119,8 @@ import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
 
-interface FleetResponse<T> {
-  data: T;
+interface FleetResponse {
+  hosts: any[];
 }
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
@@ -191,8 +191,8 @@ const extractUrlFromMessage = (message: string) => {
 const fetchDevices = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse<any[]>;
-    devices.value = response.data || [];
+    const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse;
+    devices.value = response.hosts || [];
   } catch (err: any) {
     toastService.showError(err.message);
   } finally {

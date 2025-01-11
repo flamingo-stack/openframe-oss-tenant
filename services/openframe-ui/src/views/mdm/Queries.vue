@@ -224,8 +224,8 @@ import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
 
-interface FleetResponse<T> {
-  data: T;
+interface FleetResponse {
+  queries: Query[];
 }
 
 interface Query {
@@ -299,8 +299,8 @@ const getPlatformSeverity = (platform: string) => {
 const fetchQueries = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/queries`) as FleetResponse<any[]>;
-    queries.value = response.data || [];
+    const response = await restClient.get(`${API_URL}/queries`) as FleetResponse;
+    queries.value = response.queries || [];
   } catch (err: any) {
     toastService.showError(err.message);
   } finally {

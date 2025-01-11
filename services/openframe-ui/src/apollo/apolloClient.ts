@@ -5,6 +5,7 @@ import { setContext } from '@apollo/client/link/context';
 import { createHttpLink } from '@apollo/client/link/http';
 import { useAuthStore } from '@/stores/auth';
 import { AuthService } from '@/services/AuthService';
+import router from '@/router';
 
 let isRefreshing = false;
 let pendingRequests: Function[] = [];
@@ -62,7 +63,7 @@ const refreshAccessToken = async (): Promise<void> => {
     console.error('❌ [Auth] Token refresh failed:', error);
     const authStore = useAuthStore();
     await authStore.logout();
-    window.location.replace('/login');
+    router.push('/login');
     throw error;
   }
 };

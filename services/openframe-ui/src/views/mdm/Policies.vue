@@ -273,8 +273,8 @@ import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
 import Checkbox from 'primevue/checkbox';
 
-interface FleetResponse<T> {
-  data: T;
+interface FleetResponse {
+  policies: Policy[];
 }
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
@@ -358,8 +358,8 @@ const getPlatformSeverity = (platform: string) => {
 const fetchPolicies = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/global/policies`) as FleetResponse<any[]>;
-    policies.value = response.data || [];
+    const response = await restClient.get(`${API_URL}/global/policies`) as FleetResponse;
+    policies.value = response.policies || [];
   } catch (err: any) {
     toastService.showError(err.message);
   } finally {
