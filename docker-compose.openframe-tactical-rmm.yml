@@ -1,3 +1,6 @@
+#TODO - keep the naming convention in accrodance with the other compose files
+name: openframe-tactical-rmm
+
 version: "3.7"
 
 # networks

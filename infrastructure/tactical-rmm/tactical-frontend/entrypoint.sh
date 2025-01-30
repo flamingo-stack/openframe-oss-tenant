@@ -4,6 +4,7 @@ set -e
 echo "Initializing environment configuration"
 
 # Create env-config.js with proper configuration
+#TODO - move to external file
 cat << EOF > "${PUBLIC_DIR}/env-config.js"
 window._env_ = {
   PROD_URL: "https://${API_HOST}",
