@@ -1,281 +1,258 @@
+#TODO - keep the naming convention in accrodance with the other compose files
 name: openframe-tactical-rmm
 
-services:
+version: "3.7"
 
-  tactical-rmm-redis:
-    image: redis:latest
-    container_name: openframe-tactical-rmm-redis
-    hostname: openframe-tactical-rmm-redis
+# networks
+networks:
+  proxy:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/24
+  api-db: null
+  redis: null
+  mesh-db: null
+
+# docker managed persistent volumes
+volumes:
+  tactical_data: null
+  postgres_data: null
+  mongo_data: null
+  mesh_data: null
+  redis_data: null
+
+services:
+  tactical-redis:
+    container_name: trmm-redis
+    image: redis:6.0-alpine
+    platform: linux/arm64
+    user: 1000:1000
+    command: redis-server
+    restart: always
     volumes:
-      - tactical-rmm-redis-data:/data
+      - redis_data:/data
     networks:
-      - openframe-network
+      - redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # MongoDB
-  tactical-rmm-mongodb:
-    build:
-      context: infrastructure/mongodb/
-      dockerfile: Dockerfile
-    container_name: openframe-tactical-rmm-mongodb
+  tactical-mongodb:
+    container_name: trmm-mongodb
+    image: mongo:4.4
+    platform: linux/arm64
+    user: root
+    restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: openframe
-      MONGO_INITDB_ROOT_PASSWORD: password123456789
-    volumes:
-      - tactical-rmm-mongodb-data:/data/db
-      - tactical-rmm-mongodb-logs:/var/log/mongodb # Shared volume for logs
-      - ./init/mongodb:/docker-entrypoint-initdb.d
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: meshcentral
     networks:
-      - openframe-network
+      - mesh-db
+    volumes:
+      - mongo_data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--username", "openframe", "--password", "password123456789", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
 
-  tactical-rmm-postgresql:
-    image: postgres:15
-    container_name: openframe-tactical-rmm-postgresql
+  tactical-postgres:
+    container_name: trmm-postgres
+    image: postgres:13-alpine
+    platform: linux/arm64
+    restart: always
     environment:
-      POSTGRES_USER: tactical-rmm-user
-      POSTGRES_PASSWORD: tactical-rmm-password-1234
-      POSTGRES_MULTIPLE_DATABASES: tactical-rmm-database,tactical-rmm-database-tactical-rmm
+      POSTGRES_DB: tacticalrmm
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
-      - tactical-rmm-postgresql-data:/var/lib/postgresql/data
-      - ./infrastructure/postgresql/init-scripts:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - openframe-network
+      - api-db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tactical-rmm-user"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-  
-  tactical-rmm-init:
-    container_name: openframe-tactical-rmm-init
-    build:
-      context: infrastructure/tactical-rmm/tactical
-      dockerfile: Dockerfile
+
+  tactical-init:
+    container_name: trmm-init
+    image: ${IMAGE_REPO}tactical:${VERSION}
+    platform: linux/amd64
     restart: on-failure
     command: ["tactical-init"]
     environment:
-      POSTGRES_USER: tactical-rmm-user
-      POSTGRES_PASS: tactical-rmm-password-1234
-      APP_HOST: tactical-rmm-dashboard.openframe.local
-      API_HOST: tactical-rmm-api.openframe.local
-      MESH_USER: tactical-rmm-user
-      MESH_HOST: meshcentral.openframe.local
-      TRMM_USER: tactical-rmm-user
-      TRMM_PASS: tactical-rmm-password-1234
-      TRMM_DISABLE_WEB_TERMINAL: false
-      TRMM_DISABLE_SERVER_SCRIPTS: false
-      TRMM_DISABLE_SSO: false
-      POSTGRES_HOST: tactical-rmm-postgresql
-      POSTGRES_DB: tactical-rmm-database
-      MESH_SERVICE: tactical-rmm-meshcentral
-      REDIS_HOST: tactical-rmm-redis
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASS: ${POSTGRES_PASS}
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      MESH_USER: ${MESH_USER}
+      MESH_HOST: ${MESH_HOST}
+      TRMM_USER: ${TRMM_USER}
+      TRMM_PASS: ${TRMM_PASS}
+      TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
+      TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
+      TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
+      MESH_SERVICE: trmm-meshcentral
+      MESH_PORT: 4443
     depends_on:
-      tactical-rmm-postgresql:
+      tactical-postgres:
         condition: service_healthy
-      tactical-rmm-meshcentral:
+      tactical-meshcentral:
         condition: service_started
-      tactical-rmm-redis:
+      tactical-redis:
         condition: service_healthy
     networks:
-      - openframe-network
+      - api-db
+      - proxy
+      - redis
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
-      - tactical-rmm-mesh-data:/meshcentral-data
-      - tactical-rmm-mongodb-data:/mongo/data/db
-      - tactical-rmm-redis-data:/redis/data
+      - tactical_data:/opt/tactical
+      - mesh_data:/meshcentral-data
+      - mongo_data:/mongo/data/db
+      - redis_data:/redis/data
 
-  # container for django backend
-  tactical-rmm-backend:
-    container_name: openframe-tactical-rmm-backend
-    build:
-      context: infrastructure/tactical-rmm/tactical
-      dockerfile: Dockerfile
-    user: 1000:1000
+  tactical-backend:
+    container_name: trmm-backend
+    image: ${IMAGE_REPO}tactical:${VERSION}
+    platform: linux/amd64
+    user: root
     command: ["tactical-backend"]
     restart: always
     networks:
-      - openframe-network
+      - proxy
+      - api-db
+      - redis
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
+      - tactical_data:/opt/tactical
     depends_on:
-      tactical-rmm-init:
-        condition: service_completed_successfully
-      tactical-rmm-postgresql:
-        condition: service_healthy
-      tactical-rmm-redis:
-        condition: service_healthy
+      - tactical-postgres
 
-  # nats
-  tactical-rmm-nats:
-    container_name: openframe-tactical-rmm-nats
-    build:
-      context: infrastructure/tactical-rmm/tactical-nats
-      dockerfile: Dockerfile
+  tactical-nats:
+    container_name: trmm-nats
+    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    platform: linux/amd64
     user: 1000:1000
     restart: always
     environment:
-      API_HOST: tactical-rmm-api.openframe.local
+      API_HOST: ${API_HOST}
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
-
-  # meshcentral container
-  tactical-rmm-meshcentral:
-    container_name: openframe-tactical-rmm-meshcentral
-    build:
-      context: infrastructure/tactical-rmm/tactical-meshcentral
-      dockerfile: Dockerfile
-    user: 1000:1000
-    restart: always
-    environment:
-      APP_HOST: tactical-rmm-dashboard.openframe.local
-      MONGO_USER: openframe
-      MONGO_PASSWORD: password123456789
-      MONGO_HOST: tactical-rmm-mongodb
-      MONGO_PORT: 27017
-    expose:
-      - 4443
-      - 8080
-    volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
-      - tactical-rmm-mesh-data:/home/node/app/meshcentral-data
+      - tactical_data:/opt/tactical
     networks:
-      - openframe-network
-    depends_on:
-      - tactical-rmm-mongodb
+      api-db: null
+      proxy:
+        aliases:
+          - ${API_HOST}
 
-  # container that hosts vue frontend
-  tactical-rmm-frontend:
-    container_name: openframe-tactical-rmm-frontend
-    build:
-      context: infrastructure/tactical-rmm/tactical-frontend
-      dockerfile: Dockerfile
+  tactical-meshcentral:
+    container_name: trmm-meshcentral
+    image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+    platform: linux/amd64
+    user: root
+    restart: always
+    environment:
+      MESH_HOST: ${MESH_HOST}
+      MESH_USER: ${MESH_USER}
+      MESH_PASS: ${MESH_PASS}
+      MONGODB_USER: ${MONGODB_USER}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MESH_PERSISTENT_CONFIG: ${MESH_PERSISTENT_CONFIG}
+    networks:
+      proxy:
+        aliases:
+          - ${MESH_HOST}
+      mesh-db: null
+    volumes:
+      - tactical_data:/opt/tactical
+      - mesh_data:/home/node/app/meshcentral-data
+    depends_on:
+      - tactical-mongodb
+
+  tactical-frontend:
+    container_name: trmm-frontend
+    image: ${IMAGE_REPO}tactical-frontend:${VERSION}
+    platform: linux/amd64
     user: 1000:1000
     restart: always
     networks:
-      - openframe-network
+      - proxy
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
+      - tactical_data:/opt/tactical
     environment:
-      API_HOST: tactical-rmm-api.openframe.local
+      API_HOST: ${API_HOST}
 
-  # container for django websockets connections
-  tactical-rmm-websockets:
-    container_name: openframe-tactical-rmm-websockets
-    build:
-      context: infrastructure/tactical-rmm/tactical
-      dockerfile: Dockerfile
+  tactical-websockets:
+    container_name: trmm-websockets
+    image: ${IMAGE_REPO}tactical:${VERSION}
+    platform: linux/amd64
     user: 1000:1000
     command: ["tactical-websockets"]
     restart: always
     networks:
-      - openframe-network
+      - proxy
+      - api-db
+      - redis
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
+      - tactical_data:/opt/tactical
     depends_on:
-      tactical-rmm-init:
-        condition: service_completed_successfully
-      tactical-rmm-postgresql:
-        condition: service_healthy
-      tactical-rmm-redis:
-        condition: service_healthy
+      - tactical-postgres
+      - tactical-backend
 
-  # container for tactical reverse proxy
-  tactical-rmm-nginx:
-    container_name: openframe-tactical-rmm-nginx
-    build:
-      context: infrastructure/tactical-rmm/tactical-nginx
-      dockerfile: Dockerfile
+  tactical-nginx:
+    container_name: trmm-nginx
+    image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+    platform: linux/amd64
     user: 1000:1000
     restart: always
     environment:
-      # Host configurations
-      APP_HOST: tactical-rmm-dashboard.openframe.local
-      API_HOST: tactical-rmm-api.openframe.local
-      MESH_HOST: meshcentral.openframe.local
-      
-      # SSL certificates (optional, will be generated if not provided)
-      CERT_PUB_KEY: ${CERT_PUB_KEY:-}
-      CERT_PRIV_KEY: ${CERT_PRIV_KEY:-}
-      
-      # Nginx configurations
-      WORKER_CONNECTIONS: 4096
-      
-      # Service names (using container names for DNS resolution)
-      BACKEND_SERVICE: openframe-tactical-rmm-backend
-      FRONTEND_SERVICE: openframe-tactical-rmm-frontend
-      MESH_SERVICE: openframe-tactical-rmm-meshcentral
-      WEBSOCKETS_SERVICE: openframe-tactical-rmm-websockets
-      NATS_SERVICE: openframe-tactical-rmm-nats
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      MESH_HOST: ${MESH_HOST}
     networks:
-      - openframe-network
+      proxy:
+        ipv4_address: 172.20.0.20
     ports:
-      - "8085:8080"
-      - "4453:4443"
+      - "${TRMM_HTTP_PORT-80}:8080"
+      - "${TRMM_HTTPS_PORT-443}:4443"
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
+      - tactical_data:/opt/tactical
 
-  # container for celery worker service
-  tactical-rmm-celery:
-    container_name: openframe-tactical-rmm-celery
-    build:
-      context: infrastructure/tactical-rmm/tactical
-      dockerfile: Dockerfile
+  tactical-celery:
+    container_name: trmm-celery
+    image: ${IMAGE_REPO}tactical:${VERSION}
+    platform: linux/amd64
     user: 1000:1000
     command: ["tactical-celery"]
     restart: always
     networks:
-      - openframe-network
+      - redis
+      - proxy
+      - api-db
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
+      - tactical_data:/opt/tactical
     depends_on:
-      tactical-rmm-init:
-        condition: service_completed_successfully
-      tactical-rmm-postgresql:
-        condition: service_healthy
-      tactical-rmm-redis:
-        condition: service_healthy
+      - tactical-postgres
+      - tactical-redis
 
-  # container for celery beat service
-  tactical-rmm-celerybeat:
-    container_name: openframe-tactical-rmm-celerybeat
-    build:
-      context: infrastructure/tactical-rmm/tactical
-      dockerfile: Dockerfile
+  tactical-celerybeat:
+    container_name: trmm-celerybeat
+    image: ${IMAGE_REPO}tactical:${VERSION}
+    platform: linux/amd64
     user: 1000:1000
     command: ["tactical-celerybeat"]
     restart: always
     networks:
-      - openframe-network
+      - proxy
+      - redis
+      - api-db
     volumes:
-      - tactical-rmm-tactical-data:/opt/tactical
+      - tactical_data:/opt/tactical
     depends_on:
-      tactical-rmm-init:
-        condition: service_completed_successfully
-      tactical-rmm-postgresql:
-        condition: service_healthy
-      tactical-rmm-redis:
-        condition: service_healthy
-
-volumes:
-  tactical-rmm-tactical-data:
-  tactical-rmm-postgresql-data:
-  tactical-rmm-mesh-data:
-  tactical-rmm-redis-data:
-  tactical-rmm-mongodb-data:
-  tactical-rmm-mongodb-logs:
-
-networks:
-  openframe-network:
-    name: openframe-network
-    driver: bridge
+      - tactical-postgres
+      - tactical-redis

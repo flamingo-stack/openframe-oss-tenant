@@ -1,5 +1,7 @@
 FROM nats:2.10.7-alpine
 
+USER root
+
 # Create necessary directories
 RUN mkdir -p /opt/tactical/nats \
     && mkdir -p /data/jetstream

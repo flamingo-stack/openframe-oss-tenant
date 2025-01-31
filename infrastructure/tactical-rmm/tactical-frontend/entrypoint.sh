@@ -3,13 +3,20 @@ set -e
 
 echo "Initializing environment configuration"
 
-# Create env-config.js directly
-printf 'window._env_ = {
-  PROD_URL: "%s",
-  DEV_URL: "%s",
-  APP_URL: "%s",
-  MESH_URL: "%s"
-};\n' "${API_HOST}" "${API_HOST}" "${APP_HOST}" "${MESH_HOST}" > "${PUBLIC_DIR}/env-config.js"
+# Create env-config.js with proper configuration
+#TODO - move to external file
+cat << EOF > "${PUBLIC_DIR}/env-config.js"
+window._env_ = {
+  PROD_URL: "https://${API_HOST}",
+  DEV_URL: "https://${API_HOST}",
+  APP_URL: "https://${APP_HOST}",
+  MESH_URL: "https://${MESH_HOST}",
+  API_URL: "https://${API_HOST}",
+  WEBSOCKET_URL: "wss://${API_HOST}/ws",
+  NATS_WS_URL: "wss://${API_HOST}/natsws",
+  DEMO_MODE: false
+};
+EOF
 
-# Start nginx
+echo "Starting nginx"
 exec nginx -g "daemon off;"

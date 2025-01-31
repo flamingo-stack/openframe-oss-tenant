@@ -1,3 +1,5 @@
+#TODO - generate api keys automatically for tactical rmm
+
 #!/bin/bash
 
 # Function to check if a service is healthy
@@ -143,6 +145,8 @@ register_tool() {
     # Remove trailing comma if exists
     credentials_json="${credentials_json%,}"
     credentials_json+="}"
+
+    #TODO - generate api keys automatically for tactical rmm
 
     curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \

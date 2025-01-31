@@ -1,62 +1,73 @@
-FROM python:3.11-slim
+# creates python virtual env
+FROM python:3.11.8-slim AS CREATE_VENV_STAGE
 
-# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# set env variables
+ENV VIRTUAL_ENV /opt/venv
 ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_USER tactical
-ENV TACTICAL_USER_ID 1000
 ENV TACTICAL_TMP_DIR /tmp/tactical
-ENV TACTICAL_READY_FILE /tmp/tactical-ready
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
 
-# Create tactical user
-RUN groupadd -g ${TACTICAL_USER_ID} ${TACTICAL_USER} && \
-    useradd -u ${TACTICAL_USER_ID} -g ${TACTICAL_USER} -m -s /bin/bash ${TACTICAL_USER}
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    git \
-    build-essential \
-    libpq-dev \
-    python3-venv \
-    supervisor \
-    rsync \
-    netcat-traditional \
-    python3-tldextract \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Setup virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Clone TacticalRMM repository and setup
-RUN git clone https://github.com/amidaware/tacticalrmm.git /tmp/tacticalrmm && \
-    cp -r /tmp/tacticalrmm/api/* /app/ && \
-    mkdir -p ${TACTICAL_DIR}/api && \
-    cp -r /tmp/tacticalrmm/api/* ${TACTICAL_DIR}/api/ && \
-    cp /tmp/tacticalrmm/api/tacticalrmm/requirements.txt /app/ && \
-    rm -rf /tmp/tacticalrmm
-
-# Clone community scripts
-RUN git clone https://github.com/amidaware/community-scripts.git ${TACTICAL_DIR}/community-scripts
-
-# Install Python dependencies in virtual environment
-RUN pip install --no-cache-dir -r requirements.txt && \
+    apt-get install -y --no-install-recommends gcc libc6-dev git && \
+    git clone https://github.com/amidaware/tacticalrmm.git /tmp/tacticalrmm && \
+    cp /tmp/tacticalrmm/api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}/api/requirements.txt && \
+    pip install --upgrade pip && \
+    pip install --no-cache-dir setuptools wheel && \
+    pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt && \
     pip install --no-cache-dir supervisor uwsgi uvicorn
 
-# Create necessary directories and set permissions
-RUN mkdir -p \
-    ${TACTICAL_DIR}/tmp \
-    ${TACTICAL_DIR}/api/tacticalrmm/private/exe \
-    ${TACTICAL_DIR}/api/tacticalrmm/private/log \
-    ${TACTICAL_DIR}/reporting \
-    ${TACTICAL_DIR}/reporting/assets \
-    ${TACTICAL_DIR}/certs \
-    ${TACTICAL_TMP_DIR} \
-    /meshcentral-data \
-    /mongo/data/db \
-    /redis/data && \
+# pulls community scripts from git repo
+FROM python:3.11.8-slim AS GET_SCRIPTS_STAGE
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    git clone https://github.com/amidaware/community-scripts.git /community-scripts
+
+# runtime image
+FROM python:3.11.8-slim
+
+# set env variables
+ENV VIRTUAL_ENV /opt/venv
+ENV TACTICAL_DIR /opt/tactical
+ENV TACTICAL_TMP_DIR /tmp/tactical
+ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
+ENV TACTICAL_USER tactical
+ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
+
+# copy files from repo
+RUN git clone https://github.com/amidaware/tacticalrmm.git /tmp/tacticalrmm && \
+    mkdir -p ${TACTICAL_TMP_DIR}/api && \
+    cp -r /tmp/tacticalrmm/api/* ${TACTICAL_TMP_DIR}/api/ && \
+    rm -rf /tmp/tacticalrmm
+
+# copy community scripts and virtual env from build stages
+COPY --from=GET_SCRIPTS_STAGE /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
+COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+
+# install deps
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends rsync weasyprint && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 1000 "${TACTICAL_USER}" && \
+    useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \
+    mkdir -p \
+        ${TACTICAL_DIR}/tmp \
+        ${TACTICAL_DIR}/api/tacticalrmm/private/exe \
+        ${TACTICAL_DIR}/api/tacticalrmm/private/log \
+        ${TACTICAL_DIR}/reporting \
+        ${TACTICAL_DIR}/reporting/assets \
+        ${TACTICAL_DIR}/certs \
+        ${TACTICAL_TMP_DIR} \
+        /meshcentral-data \
+        /mongo/data/db \
+        /redis/data && \
     touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log && \
     touch ${TACTICAL_DIR}/tmp/.initialized && \
     touch ${TACTICAL_DIR}/certs/.initialized && \
@@ -68,23 +79,17 @@ RUN mkdir -p \
         ${TACTICAL_TMP_DIR} \
         /meshcentral-data \
         /mongo \
-        /redis \
-        /app && \
-    chmod -R 755 \
-        ${TACTICAL_DIR} \
-        ${TACTICAL_TMP_DIR} \
-        /meshcentral-data \
-        /mongo \
         /redis
 
-WORKDIR ${TACTICAL_DIR}/api
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-EXPOSE 8080
-
-COPY entrypoint.sh /entrypoint.sh
+# docker init
+COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh && \
     chown ${TACTICAL_USER}:${TACTICAL_USER} /entrypoint.sh
 
-USER ${TACTICAL_USER}
+WORKDIR ${TACTICAL_DIR}/api
+
+EXPOSE 8080 4443 8383
 
 ENTRYPOINT ["/entrypoint.sh"]
