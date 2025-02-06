@@ -2,32 +2,8 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.compile.nullAnalysis.mode": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,
-    "maven.view": "flat",
     "java.maven.downloadSources": true,
     "java.maven.updateSnapshots": true,
-    "maven.terminal.customEnv": [
-        {
-            "environmentVariable": "MAVEN_HOME",
-            "value": "/Users/michaelassraf/apache-maven-3.9.9"  
-        },
-        {
-            "environmentVariable": "M2_HOME",
-            "value": "/Users/michaelassraf/apache-maven-3.9.9"
-        }
-    ],
-    "java.home": "/Library/Java/JavaVirtualMachines/temurin-22.jdk/Contents/Home",
-    "java.configuration.runtimes": [
-        {
-            "name": "JavaSE-22",
-            "path": "/Library/Java/JavaVirtualMachines/temurin-22.jdk/Contents/Home",
-            "default": true
-        }
-    ],
-    "java.debug.settings": {
-        "console": "internalConsole",
-        "hotCodeReplace": "auto",
-        "logLevel": "verbose"
-    },
     "java.import.exclusions": [
         "**/node_modules/**",
         "**/.metadata/**",
@@ -40,5 +16,4 @@
         "org",
         "com"
     ],
-    "maven.pomfile.autoUpdateEffectivePOM": true
 }
