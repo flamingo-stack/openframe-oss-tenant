@@ -54,7 +54,9 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: meshcentral
+      MONGO_APP_DATABASE: ${MONGODB_DATABASE}
+      MONGO_APP_USERNAME: ${MONGODB_USER}
+      MONGO_APP_PASSWORD: ${MONGODB_PASSWORD}
     networks:
       - mesh-db
     volumes:
