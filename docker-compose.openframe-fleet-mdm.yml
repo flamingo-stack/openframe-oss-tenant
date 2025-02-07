@@ -14,7 +14,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: fleet-mdm-password
+      MYSQL_ROOT_PASSWORD: openframe123!
       MYSQL_DATABASE: fleet-mdm-database
       MYSQL_USER: fleet-mdm-user
       MYSQL_PASSWORD: fleet-mdm-password-1234
@@ -24,7 +24,7 @@ services:
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfleet-mdm-user"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,7 +80,7 @@ services:
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8070/setup"]
+      test: ["CMD", "curl", "--fail", "http://localhost:${FLEET_SERVER_PORT}/setup"]
       interval: 10s
       timeout: 5s
       retries: 5

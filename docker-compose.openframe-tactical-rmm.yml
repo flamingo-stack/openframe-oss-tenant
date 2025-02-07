@@ -226,7 +226,7 @@ services:
       - tactical-backend
 
   tactical-nginx:
-    container_name: openframe-tactical-nginx
+    container_name: openframe-tactical-rmm-nginx
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
     platform: linux/amd64
     user: 1000:1000
