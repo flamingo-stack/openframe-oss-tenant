@@ -16,19 +16,14 @@ set +a
 # Set environment variable for PostgreSQL data directory
 export PGDATA=/var/lib/postgresql/data/pgdata
 
-# Create PostgreSQL configuration file
-cat > "$PGDATA/postgresql.conf" <<EOF
-# Connection Settings
-listen_addresses = '*'
-port = ${POSTGRES_PORT}
-max_connections = 100
-EOF
-
 # Initialize PostgreSQL if needed
 if [ ! -f "$PGDATA/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
     
-    # Ensure proper permissions on PGDATA directory
+    # Remove the data directory if it exists but is not initialized
+    rm -rf "$PGDATA"
+    
+    # Create fresh data directory
     mkdir -p "$PGDATA"
     chmod 700 "$PGDATA"
     chown postgres:postgres "$PGDATA"
@@ -40,6 +35,25 @@ if [ ! -f "$PGDATA/PG_VERSION" ]; then
            -D "$PGDATA"
 
     echo "First time initialization..."
+
+    # Create pg_hba.conf with permissive settings
+    cat > "$PGDATA/pg_hba.conf" << EOL
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+# Allow connections from Docker containers
+host    all             all             0.0.0.0/0             trust
+host    all             all             ::/0                  trust
+
+# Allow local connections
+local   all             all                                   trust
+EOL
+
+    # Set proper permissions
+    chmod 600 "$PGDATA/pg_hba.conf"
+    chown postgres:postgres "$PGDATA/pg_hba.conf"
+
+    # Copy PostgreSQL configuration file
+    cp /etc/postgresql/postgresql.conf "$PGDATA/postgresql.conf"
+    chmod 644 "$PGDATA/postgresql.conf"
 
     # Start PostgreSQL temporarily for initialization
     pg_ctl -D "$PGDATA" -w start
@@ -57,7 +71,17 @@ if [ ! -f "$PGDATA/PG_VERSION" ]; then
             db=$(echo "$db" | tr -d '[:space:]')
             
             echo "Creating database: $db"
+            echo "1 create database"
             psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<-EOSQL
+                -- Create tacticalrmm role if it doesn't exist and set password
+                DO \$\$ 
+                BEGIN
+                    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'tacticalrmm') THEN
+                        CREATE ROLE tacticalrmm WITH LOGIN PASSWORD '$POSTGRES_PASSWORD';
+                    END IF;
+                END
+                \$\$;
+
                 -- Drop database if exists
                 DROP DATABASE IF EXISTS "$db";
                 
@@ -66,7 +90,10 @@ if [ ! -f "$PGDATA/PG_VERSION" ]; then
                 
                 -- Grant necessary permissions
                 GRANT ALL PRIVILEGES ON DATABASE "$db" TO "$POSTGRES_USER";
+                GRANT ALL PRIVILEGES ON DATABASE "$db" TO tacticalrmm;
+
 EOSQL
+            echo "2 database created $db"
         done
     }
 

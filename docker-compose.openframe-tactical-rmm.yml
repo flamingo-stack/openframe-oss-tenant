@@ -10,14 +10,22 @@ networks:
         - subnet: 172.20.0.0/24
   api-db:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.1.0/24
   redis:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.2.0/24
   mesh-db:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.20.1.0/24
+        - subnet: 172.20.3.0/24
 
 # docker managed persistent volumes
 volumes:
@@ -76,16 +84,20 @@ services:
     environment:
       POSTGRES_USER: tactical-user
       POSTGRES_PASSWORD: tactical-password-1234
-      POSTGRES_MULTIPLE_DATABASES: tacticalrmm
+      POSTGRES_DB: tacticalrmm
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
     networks:
       - api-db
+      - proxy
+      - redis
+      - mesh-db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tactical-user"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped
 
   tactical-init:

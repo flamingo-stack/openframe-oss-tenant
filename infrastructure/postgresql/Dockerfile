@@ -23,12 +23,14 @@ RUN mkdir -p /var/lib/postgresql/data/pgdata && \
 # Copy initialization scripts and configuration files
 COPY --chown=postgres:postgres init-scripts/tactical-init.sql.template /docker-entrypoint-initdb.d/
 COPY --chown=postgres:postgres docker-entrypoint-wrapper.sh /usr/local/bin/
-COPY --chown=postgres:postgres postgresql.conf /var/lib/postgresql/data/pgdata/
+COPY --chown=postgres:postgres postgresql.conf /etc/postgresql/postgresql.conf
+COPY --chown=postgres:postgres pg_hba.conf /etc/postgresql/pg_hba.conf
 
 # Set proper permissions for the scripts
 RUN chmod 755 /usr/local/bin/docker-entrypoint-wrapper.sh && \
     chmod 644 /docker-entrypoint-initdb.d/tactical-init.sql.template && \
-    chmod 644 /var/lib/postgresql/data/pgdata/postgresql.conf
+    chmod 644 /etc/postgresql/postgresql.conf && \
+    chmod 644 /etc/postgresql/pg_hba.conf
 
 # Set environment variables
 ENV PGDATA=/var/lib/postgresql/data/pgdata
