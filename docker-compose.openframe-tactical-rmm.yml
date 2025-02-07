@@ -34,6 +34,7 @@ volumes:
   mongo_data: null
   mesh_data: null
   redis_data: null
+  tactical_tmp: null
 
 services:
   tactical-redis:
@@ -141,6 +142,7 @@ services:
       - mesh_data:/meshcentral-data
       - mongo_data:/mongo/data/db
       - redis_data:/redis/data
+      - tactical_tmp:/tmp
 
   tactical-backend:
     container_name: openframe-tactical-backend
@@ -151,12 +153,29 @@ services:
     restart: always
     ports:
       - "8086:8086"
+    environment:
+      POSTGRES_HOST: openframe-tactical-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: tactical-user
+      POSTGRES_PASSWORD: tactical-password-1234
+      POSTGRES_DB: tacticalrmm
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      MESH_USER: ${MESH_USER}
+      MESH_HOST: ${MESH_HOST}
+      TRMM_USER: ${TRMM_USER}
+      TRMM_PASS: ${TRMM_PASS}
+      TACTICAL_USER: tactical
+      TACTICAL_DIR: /opt/tactical
+      TACTICAL_TMP_DIR: /tmp/tactical
+      TACTICAL_READY_FILE: /tmp/tactical-ready
     networks:
       - proxy
       - api-db
       - redis
     volumes:
       - tactical_data:/opt/tactical
+      - tactical_tmp:/tmp
     depends_on:
       - tactical-postgres
 

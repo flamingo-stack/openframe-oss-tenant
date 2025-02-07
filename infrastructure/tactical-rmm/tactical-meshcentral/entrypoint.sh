@@ -38,6 +38,12 @@ set -e
 : "${SMTP_USER:=mesh@example.com}"
 : "${SMTP_PASS:=mesh-smtp-pass}"
 : "${SMTP_TLS:=false}"
+: "${TACTICAL_DIR:=/opt/tactical}"
+
+# Create tactical directory structure
+mkdir -p "${TACTICAL_DIR}/tmp"
+chown -R node:node "${TACTICAL_DIR}"
+chmod -R 755 "${TACTICAL_DIR}"
 
 if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
 
@@ -97,17 +103,35 @@ EOF
   echo "${mesh_config}" >/home/node/app/meshcentral-data/config.json
 fi
 
-node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com
-node node_modules/meshcentral --adminaccount ${MESH_USER}
+node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com || true
+node node_modules/meshcentral --adminaccount ${MESH_USER} || true
 
-if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
+# Generate mesh token with retries
+max_retries=5
+retry_count=0
+while [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ] && [ $retry_count -lt $max_retries ]; do
+  echo "Attempt $((retry_count + 1)) to generate mesh token..."
+  
+  # Generate mesh token
   mesh_token=$(node node_modules/meshcentral --logintokenkey)
 
   if [[ ${#mesh_token} -eq 160 ]]; then
-    echo ${mesh_token} >/opt/tactical/tmp/mesh_token
+    echo "Successfully generated mesh token"
+    echo "${mesh_token}" > "${TACTICAL_DIR}/tmp/mesh_token"
+    chown node:node "${TACTICAL_DIR}/tmp/mesh_token"
+    chmod 644 "${TACTICAL_DIR}/tmp/mesh_token"
+    break
   else
-    echo "Failed to generate mesh token. Fix the error and restart the mesh container"
+    echo "Failed to generate mesh token on attempt $((retry_count + 1))"
+    sleep 5
   fi
+  
+  retry_count=$((retry_count + 1))
+done
+
+if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
+  echo "Failed to generate mesh token after $max_retries attempts"
+  exit 1
 fi
 
 # wait for nginx container
