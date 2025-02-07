@@ -16,7 +16,7 @@ wait_for_fleet() {
     max_attempts=30  # 2.5 minutes timeout
     
     while [ $attempts -lt $max_attempts ]; do
-        if curl --output /dev/null --silent --fail http://localhost:8070/setup; then
+        if curl --output /dev/null --silent --fail http://localhost:${FLEET_SERVER_PORT}/setup; then
             echo "Fleet is ready!"
             return 0
         fi
