@@ -6,16 +6,16 @@ set -e
 : "${TRMM_PASS:=tactical}"
 : "${POSTGRES_HOST:=tactical-postgres}"
 : "${POSTGRES_PORT:=5432}"
-: "${POSTGRES_USER:=tactical}"
-: "${POSTGRES_PASS:=tactical}"
+: "${POSTGRES_USER:=postgres}"
+: "${POSTGRES_PASSWORD:=postgrespass}"
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
 : "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
-: "${MESH_HOST:=tactical-meshcentral}"
-: "${API_HOST:=tactical-backend}"
-: "${APP_HOST:=tactical-frontend}"
+: "${MESH_HOST:=mesh.openframe-tactical.io}"
+: "${API_HOST:=api.openframe-tactical.io}"
+: "${APP_HOST:=app.openframe-tactical.io}"
 : "${REDIS_HOST:=tactical-redis}"
 : "${SKIP_UWSGI_CONFIG:=0}"
 : "${TRMM_DISABLE_WEB_TERMINAL:=False}"
@@ -107,7 +107,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': '${POSTGRES_DB}',
         'USER': '${POSTGRES_USER}',
-        'PASSWORD': '${POSTGRES_PASS}',
+        'PASSWORD': '${POSTGRES_PASSWORD}',
         'HOST': '${POSTGRES_HOST}',
         'PORT': '${POSTGRES_PORT}',
     }

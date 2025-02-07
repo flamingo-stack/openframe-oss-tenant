@@ -17,6 +17,4 @@ RUN npm install meshcentral@1.1.15 \
 
 USER node
 
-EXPOSE 443 4443
-
 ENTRYPOINT ["/entrypoint.sh"] 
