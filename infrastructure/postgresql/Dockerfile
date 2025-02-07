@@ -1,32 +1,34 @@
 FROM postgres:15
 
+# Required ARGs for environment variables
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_MULTIPLE_DATABASES
+ARG POSTGRES_DB
+
 # Install required packages
 RUN apt-get update && apt-get install -y \
     gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
-# Create PostgreSQL directories with proper permissions
+# Create all required directories with proper ownership and permissions
 RUN mkdir -p /var/lib/postgresql/data/pgdata && \
+    mkdir -p /var/lib/postgresql/.init-flags && \
+    mkdir -p /docker-entrypoint-initdb.d && \
     chown -R postgres:postgres /var/lib/postgresql && \
-    chmod -R 700 /var/lib/postgresql/data/pgdata
-
-# Create directory for initialization flag
-RUN mkdir -p /var/lib/postgresql/.init-flags && \
-    chown -R postgres:postgres /var/lib/postgresql/.init-flags && \
+    chown -R postgres:postgres /docker-entrypoint-initdb.d && \
+    chmod -R 700 /var/lib/postgresql/data/pgdata && \
     chmod -R 700 /var/lib/postgresql/.init-flags
 
-# Create initialization scripts directory
-RUN mkdir -p /docker-entrypoint-initdb.d
-
-# Copy initialization scripts
-COPY init-scripts/tactical-init.sql.template /docker-entrypoint-initdb.d/
-COPY docker-entrypoint-wrapper.sh /usr/local/bin/
+# Copy initialization scripts and configuration files
+COPY --chown=postgres:postgres init-scripts/tactical-init.sql.template /docker-entrypoint-initdb.d/
+COPY --chown=postgres:postgres docker-entrypoint-wrapper.sh /usr/local/bin/
+COPY --chown=postgres:postgres postgresql.conf /var/lib/postgresql/data/pgdata/
 
 # Set proper permissions for the scripts
 RUN chmod 755 /usr/local/bin/docker-entrypoint-wrapper.sh && \
     chmod 644 /docker-entrypoint-initdb.d/tactical-init.sql.template && \
-    chown -R postgres:postgres /docker-entrypoint-initdb.d/ && \
-    chown postgres:postgres /usr/local/bin/docker-entrypoint-wrapper.sh
+    chmod 644 /var/lib/postgresql/data/pgdata/postgresql.conf
 
 # Set environment variables
 ENV PGDATA=/var/lib/postgresql/data/pgdata

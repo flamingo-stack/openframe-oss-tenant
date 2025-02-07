@@ -73,26 +73,20 @@ services:
       context: ./infrastructure/postgresql
       dockerfile: Dockerfile
     container_name: openframe-tactical-postgres
-    platform: linux/arm64
-    restart: always
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASS}
-      - POSTGRES_DB=tacticalrmm
-      - POSTGRES_HOST=tactical-postgres
-      - POSTGRES_PORT=5432
+      POSTGRES_USER: tactical-user
+      POSTGRES_PASSWORD: tactical-password-1234
+      POSTGRES_MULTIPLE_DATABASES: tacticalrmm
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
     networks:
       - api-db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U tactical-user"]
+      interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 30s
-    ports:
-      - "5432:5432"
+    restart: unless-stopped
 
   tactical-init:
     container_name: openframe-tactical-init
@@ -101,10 +95,10 @@ services:
     restart: on-failure
     command: ["tactical-init"]
     environment:
-      POSTGRES_HOST: tactical-postgres
+      POSTGRES_HOST: openframe-tactical-postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+      POSTGRES_USER: tactical-user
+      POSTGRES_PASSWORD: tactical-password-1234
       POSTGRES_DB: tacticalrmm
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
