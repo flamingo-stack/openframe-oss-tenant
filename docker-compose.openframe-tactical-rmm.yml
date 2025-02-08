@@ -23,11 +23,19 @@ x-environment: &common-vars
   MESH_PERSISTENT_CONFIG: 1
   POSTGRES_USER: tacticalrmm
   POSTGRES_PASS: postgrespass
+  POSTGRES_PASSWORD: postgrespass
   POSTGRES_DB: tacticalrmm
   TRMM_DISABLE_WEB_TERMINAL: "False"
   TRMM_DISABLE_SERVER_SCRIPTS: "False"
   TRMM_DISABLE_SSO: "True"
   DEMO: "False"
+  POSTGRES_HOST: openframe-tactical-postgres
+  POSTGRES_PORT: 5432
+  TACTICAL_USER: tactical
+  TACTICAL_DIR: /opt/tactical
+  TACTICAL_TMP_DIR: /tmp/tactical
+  TACTICAL_READY_FILE: /tmp/tactical-ready
+  PGDATA: /var/lib/postgresql/data/pgdata
 
 # networks
 networks:
@@ -109,12 +117,10 @@ services:
       context: ./infrastructure/postgresql
       dockerfile: Dockerfile
     container_name: openframe-tactical-postgres
+    platform: linux/arm64
+    user: postgres
     environment:
       <<: *common-vars
-      POSTGRES_USER: tacticalrmm
-      POSTGRES_PASSWORD: postgrespass
-      POSTGRES_DB: tacticalrmm
-      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
     networks:
@@ -138,12 +144,6 @@ services:
     command: ["tactical-init"]
     environment:
       <<: *common-vars
-      POSTGRES_HOST: openframe-tactical-postgres
-      POSTGRES_PORT: 5432
-      TACTICAL_USER: tactical
-      TACTICAL_DIR: /opt/tactical
-      TACTICAL_TMP_DIR: /tmp/tactical
-      TACTICAL_READY_FILE: /tmp/tactical-ready
     depends_on:
       tactical-postgres:
         condition: service_healthy
@@ -169,16 +169,10 @@ services:
     user: root
     command: ["tactical-backend"]
     restart: always
-    ports:
-      - "8086:8086"
+    expose:
+      - "8443"
     environment:
       <<: *common-vars
-      POSTGRES_HOST: openframe-tactical-postgres
-      POSTGRES_PORT: 5432
-      TACTICAL_USER: tactical
-      TACTICAL_DIR: /opt/tactical
-      TACTICAL_TMP_DIR: /tmp/tactical
-      TACTICAL_READY_FILE: /tmp/tactical-ready
     networks:
       - proxy
       - api-db
@@ -245,7 +239,7 @@ services:
     environment:
       <<: *common-vars
     expose:
-      - "8085"
+      - "4443"
 
   tactical-websockets:
     container_name: openframe-tactical-websockets
@@ -268,7 +262,9 @@ services:
 
   tactical-nginx:
     container_name: openframe-tactical-rmm-nginx
-    image: tacticalrmm/tactical-nginx:latest
+    build:
+      context: ./infrastructure/tactical-rmm/tactical-nginx
+      dockerfile: Dockerfile
     platform: linux/amd64
     user: 1000:1000
     restart: always
@@ -278,8 +274,8 @@ services:
       proxy:
         ipv4_address: 172.20.0.20
     ports:
-      - "${TRMM_HTTP_PORT}:8080"
-      - "${TRMM_HTTPS_PORT}:4443"
+      - "8080:8080"
+      - "8443:4443"
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
@@ -296,8 +292,6 @@ services:
     restart: always
     environment:
       <<: *common-vars
-      POSTGRES_HOST: openframe-tactical-postgres
-      POSTGRES_PORT: 5432
     networks:
       - redis
       - proxy
@@ -319,8 +313,6 @@ services:
     restart: always
     environment:
       <<: *common-vars
-      POSTGRES_HOST: openframe-tactical-postgres
-      POSTGRES_PORT: 5432
     networks:
       - proxy
       - redis

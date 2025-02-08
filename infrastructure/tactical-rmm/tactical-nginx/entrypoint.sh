@@ -1,40 +1,3 @@
-# #!/bin/bash
-# set -e
-
-# # Function to substitute environment variables in configuration files
-# envsubst_nginx_conf() {
-#     local conf_file=$1
-#     # Create a temporary file
-#     local temp_file=$(mktemp)
-#     # Replace variables in the configuration file
-#     envsubst '${API_HOST} ${APP_HOST} ${MESH_HOST} ${BACKEND_SERVICE} ${FRONTEND_SERVICE} ${MESH_SERVICE} ${WEBSOCKETS_SERVICE} ${NATS_SERVICE}' < "$conf_file" > "$temp_file"
-#     # Move the temporary file back to the original
-#     cat "$temp_file" > "$conf_file"
-#     rm -f "$temp_file"
-# }
-
-# # Generate self-signed certificates if not provided
-# if [ ! -f "/opt/tactical/certs/public.crt" ] || [ ! -f "/opt/tactical/certs/private.key" ]; then
-#     echo "Generating self-signed certificates..."
-#     mkdir -p /opt/tactical/certs
-#     openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-#         -keyout /opt/tactical/certs/private.key \
-#         -out /opt/tactical/certs/public.crt \
-#         -subj "/CN=${APP_HOST}"
-#     chmod 644 /opt/tactical/certs/public.crt
-#     chmod 600 /opt/tactical/certs/private.key
-# fi
-
-# # Process NGINX configuration files
-# echo "Processing NGINX configuration files..."
-# for conf_file in /etc/nginx/conf.d/*.conf; do
-#     envsubst_nginx_conf "$conf_file"
-# done
-
-# # Start NGINX
-# echo "Starting NGINX..."
-# exec nginx -g "daemon off;"
-
 #!/usr/bin/env bash
 
 set -e
@@ -43,11 +6,11 @@ set -e
 : "${APP_PORT:=8080}"
 : "${API_PORT:=8080}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
-: "${BACKEND_SERVICE:=tactical-backend}"
-: "${FRONTEND_SERVICE:=tactical-frontend}"
-: "${MESH_SERVICE:=tactical-meshcentral}"
-: "${WEBSOCKETS_SERVICE:=tactical-websockets}"
-: "${NATS_SERVICE:=tactical-nats}"
+: "${BACKEND_SERVICE:=openframe-tactical-backend}"
+: "${FRONTEND_SERVICE:=openframe-tactical-frontend}"
+: "${MESH_SERVICE:=openframe-tactical-meshcentral}"
+: "${WEBSOCKETS_SERVICE:=openframe-tactical-websockets}"
+: "${NATS_SERVICE:=openframe-tactical-nats}"
 : "${DEV:=0}"
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
@@ -63,8 +26,7 @@ if [ ! -z "$CERT_PRIV_KEY" ] && [ ! -z "$CERT_PUB_KEY" ]; then
 else
     # generate a self signed cert
     if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then
-        rootdomain=$(echo ${API_HOST} | cut -d "." -f2-)
-        openssl req -newkey rsa:4096 -x509 -sha256 -days 730 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
+        openssl req -newkey rsa:4096 -x509 -sha256 -days 730 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=localhost"
     fi
 fi
 
@@ -91,39 +53,55 @@ if [[ $DEV -eq 1 ]]; then
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
 "
-
-    STATIC_ASSETS="
-    location /static/ {
-        root /workspace/api/tacticalrmm;
-        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-    }
-"
 else
     API_NGINX="
         #Using variable to disable start checks
-        set \$api ${BACKEND_SERVICE}:${API_PORT};
+        set \$api http://${BACKEND_SERVICE}:${API_PORT};
+        proxy_pass \$api;
+        proxy_http_version  1.1;
+        proxy_cache_bypass  \$http_upgrade;
 
-        include         uwsgi_params;
-        uwsgi_pass      \$api;
-"
-
-    STATIC_ASSETS="
-    location /static/ {
-        root ${TACTICAL_DIR}/api/;
-        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-    }
+        proxy_set_header Upgrade           \$http_upgrade;
+        proxy_set_header Connection        \"upgrade\";
+        proxy_set_header Host              \$host;
+        proxy_set_header X-Real-IP         \$remote_addr;
+        proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host  \$host;
+        proxy_set_header X-Forwarded-Port  \$server_port;
 "
 fi
 
+STATIC_ASSETS="
+    location /static/ {
+        root ${TACTICAL_DIR}/api/;
+        add_header Access-Control-Allow-Origin "*";
+    }
+"
+
 nginx_config="$(
     cat <<EOF
-# backend config
-server  {
+# main config
+server {
     resolver ${NGINX_RESOLVER} valid=30s;
+    server_name localhost;
 
-    server_name ${API_HOST};
+    listen 8080;
+    listen 4443 ssl;
+    
+    ssl_certificate ${CERT_PUB_PATH};
+    ssl_certificate_key ${CERT_PRIV_PATH};
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
 
-    location / {
+    # API endpoints
+    location /api/ {
         ${API_NGINX}
     }
 
@@ -131,159 +109,73 @@ server  {
 
     location /private/ {
         internal;
-        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+        add_header Access-Control-Allow-Origin "*";
         alias ${TACTICAL_DIR}/api/tacticalrmm/private/;
     }
 
     location ~ ^/ws/ {
-        set \$api http://${WEBSOCKETS_SERVICE}:8383;
-        proxy_pass \$api;
+        set \$ws http://${WEBSOCKETS_SERVICE}:8383;
+        proxy_pass \$ws;
 
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-
-        proxy_redirect     off;
-        proxy_set_header   Host \$host;
-        proxy_set_header   X-Real-IP \$remote_addr;
-        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Host \$server_name;
+        proxy_redirect off;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$server_name;
     }
 
     location /assets/ {
         internal;
-        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-        alias /opt/tactical/reporting/assets/;
+        add_header Access-Control-Allow-Origin "*";
+        alias ${TACTICAL_DIR}/reporting/assets/;
     }
 
     location ~ ^/natsws {
         set \$natswebsocket http://${NATS_SERVICE}:9235;
         proxy_pass \$natswebsocket;
         proxy_http_version 1.1;
-
         proxy_set_header Host \$host;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header X-Forwarded-Host \$host:\$server_port;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Frontend UI
+    location / {
+        set \$frontend http://${FRONTEND_SERVICE}:${APP_PORT};
+        proxy_pass \$frontend;
+        proxy_http_version 1.1;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    # Mesh endpoints
+    location /mesh/ {
+        proxy_pass http://${MESH_SERVICE}:443/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host \$host;
     }
 
     client_max_body_size 300M;
-
-    listen 4443 ssl reuseport;
-    ssl_certificate ${CERT_PUB_PATH};
-    ssl_certificate_key ${CERT_PRIV_PATH};
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
-    ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    add_header X-Content-Type-Options nosniff;
-    
-}
-
-server {
-    listen 8080;
-    server_name ${API_HOST};
-    return 301 https://\$server_name\$request_uri;
-}
-
-# frontend config
-server  {
-    resolver ${NGINX_RESOLVER} valid=30s;
-    
-    server_name ${APP_HOST};
-
-    location / {
-        #Using variable to disable start checks
-        set \$app http://${FRONTEND_SERVICE}:${APP_PORT};
-
-        proxy_pass \$app;
-        proxy_http_version  1.1;
-        proxy_cache_bypass  \$http_upgrade;
-        
-        proxy_set_header Upgrade           \$http_upgrade;
-        proxy_set_header Connection        "upgrade";
-        proxy_set_header Host              \$host;
-        proxy_set_header X-Real-IP         \$remote_addr;
-        proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header X-Forwarded-Host  \$host;
-        proxy_set_header X-Forwarded-Port  \$server_port;
-    }
-
-    listen 4443 ssl;
-    ssl_certificate ${CERT_PUB_PATH};
-    ssl_certificate_key ${CERT_PRIV_PATH};
-    
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
-    ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    add_header X-Content-Type-Options nosniff;
-    
-}
-
-server {
-
-    listen 8080;
-    server_name ${APP_HOST};
-    return 301 https://\$server_name\$request_uri;
-}
-
-# meshcentral config
-server {
-    resolver ${NGINX_RESOLVER} valid=30s;
-
-    listen 4443 ssl;
-    proxy_send_timeout 330s;
-    proxy_read_timeout 330s;
-    server_name ${MESH_HOST};
-    ssl_certificate ${CERT_PUB_PATH};
-    ssl_certificate_key ${CERT_PRIV_PATH};
-    
-    ssl_session_cache shared:WEBSSL:10m;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
-    ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    add_header X-Content-Type-Options nosniff;
-
-    location / {
-        #Using variable to disable start checks
-        set \$meshcentral http://${MESH_SERVICE}:4443;
-
-        proxy_pass \$meshcentral;
-        proxy_http_version 1.1;
-
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-Host \$host:\$server_port;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-
-server {
-    resolver ${NGINX_RESOLVER} valid=30s;
-
-    listen 8080;
-    server_name ${MESH_HOST};
-    return 301 https://\$server_name\$request_uri;
 }
 EOF
 )"
 
-echo "${nginx_config}" >/etc/nginx/conf.d/default.conf
+echo "$nginx_config" > /etc/nginx/conf.d/default.conf
+
+exec nginx -g "daemon off;"
 
