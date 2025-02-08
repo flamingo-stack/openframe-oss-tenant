@@ -236,6 +236,7 @@ services:
       - proxy
     volumes:
       - tactical_data:/opt/tactical
+      - tactical_tmp:/tmp
     environment:
       <<: *common-vars
     expose:
