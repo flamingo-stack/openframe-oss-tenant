@@ -1,5 +1,34 @@
 name: openframe-tactical-rmm
 
+x-environment: &common-vars
+  IMAGE_REPO: tacticalrmm/
+  VERSION: latest
+  TRMM_USER: tactical
+  TRMM_PASS: tactical
+  TRMM_HTTP_PORT: 8080
+  TRMM_HTTPS_PORT: 8443
+  APP_HOST: app.openframe-tactical.io
+  API_HOST: api.openframe-tactical.io
+  MESH_HOST: mesh.openframe-tactical.io
+  MESH_USER: tactical
+  MESH_PASS: tactical
+  MONGODB_USER: mongouser
+  MONGODB_PASSWORD: mongopass
+  MONGODB_DATABASE: meshcentral
+  MONGO_INITDB_ROOT_USERNAME: mongouser
+  MONGO_INITDB_ROOT_PASSWORD: mongopass
+  MONGO_APP_DATABASE: meshcentral
+  MONGO_APP_USERNAME: mongouser
+  MONGO_APP_PASSWORD: mongopass
+  MESH_PERSISTENT_CONFIG: 1
+  POSTGRES_USER: tacticalrmm
+  POSTGRES_PASS: postgrespass
+  POSTGRES_DB: tacticalrmm
+  TRMM_DISABLE_WEB_TERMINAL: "False"
+  TRMM_DISABLE_SERVER_SCRIPTS: "False"
+  TRMM_DISABLE_SSO: "True"
+  DEMO: "False"
+
 # networks
 networks:
   proxy:
@@ -44,6 +73,8 @@ services:
     user: 1000:1000
     command: redis-server
     restart: always
+    environment:
+      <<: *common-vars
     volumes:
       - redis_data:/data
     networks:
@@ -61,11 +92,7 @@ services:
     user: root
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_APP_DATABASE: ${MONGODB_DATABASE}
-      MONGO_APP_USERNAME: ${MONGODB_USER}
-      MONGO_APP_PASSWORD: ${MONGODB_PASSWORD}
+      <<: *common-vars
     networks:
       - mesh-db
     volumes:
@@ -83,9 +110,11 @@ services:
       dockerfile: Dockerfile
     container_name: openframe-tactical-postgres
     environment:
-      POSTGRES_USER: tactical-user
-      POSTGRES_PASSWORD: tactical-password-1234
+      <<: *common-vars
+      POSTGRES_USER: tacticalrmm
+      POSTGRES_PASSWORD: postgrespass
       POSTGRES_DB: tacticalrmm
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
     networks:
@@ -94,7 +123,7 @@ services:
       - redis
       - mesh-db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U tacticalrmm -d tacticalrmm"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -103,25 +132,14 @@ services:
 
   tactical-init:
     container_name: openframe-tactical-init
-    image: ${IMAGE_REPO}tactical:${VERSION}
+    image: tacticalrmm/tactical:latest
     platform: linux/amd64
     restart: on-failure
     command: ["tactical-init"]
     environment:
+      <<: *common-vars
       POSTGRES_HOST: openframe-tactical-postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: tactical-user
-      POSTGRES_PASSWORD: tactical-password-1234
-      POSTGRES_DB: tacticalrmm
-      APP_HOST: ${APP_HOST}
-      API_HOST: ${API_HOST}
-      MESH_USER: ${MESH_USER}
-      MESH_HOST: ${MESH_HOST}
-      TRMM_USER: ${TRMM_USER}
-      TRMM_PASS: ${TRMM_PASS}
-      TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
-      TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
-      TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
       TACTICAL_USER: tactical
       TACTICAL_DIR: /opt/tactical
       TACTICAL_TMP_DIR: /tmp/tactical
@@ -146,7 +164,7 @@ services:
 
   tactical-backend:
     container_name: openframe-tactical-backend
-    image: ${IMAGE_REPO}tactical:${VERSION}
+    image: tacticalrmm/tactical:latest
     platform: linux/amd64
     user: root
     command: ["tactical-backend"]
@@ -154,17 +172,9 @@ services:
     ports:
       - "8086:8086"
     environment:
+      <<: *common-vars
       POSTGRES_HOST: openframe-tactical-postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: tactical-user
-      POSTGRES_PASSWORD: tactical-password-1234
-      POSTGRES_DB: tacticalrmm
-      APP_HOST: ${APP_HOST}
-      API_HOST: ${API_HOST}
-      MESH_USER: ${MESH_USER}
-      MESH_HOST: ${MESH_HOST}
-      TRMM_USER: ${TRMM_USER}
-      TRMM_PASS: ${TRMM_PASS}
       TACTICAL_USER: tactical
       TACTICAL_DIR: /opt/tactical
       TACTICAL_TMP_DIR: /tmp/tactical
@@ -177,16 +187,19 @@ services:
       - tactical_data:/opt/tactical
       - tactical_tmp:/tmp
     depends_on:
-      - tactical-postgres
+      tactical-postgres:
+        condition: service_healthy
+      tactical-redis:
+        condition: service_healthy
 
   tactical-nats:
     container_name: openframe-tactical-nats
-    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    image: tacticalrmm/tactical-nats:latest
     platform: linux/amd64
     user: 1000:1000
     restart: always
     environment:
-      API_HOST: ${API_HOST}
+      <<: *common-vars
     ports:
       - "4222:4222"
     volumes:
@@ -195,28 +208,23 @@ services:
       api-db: null
       proxy:
         aliases:
-          - ${API_HOST}
+          - api.openframe-tactical.io
 
   tactical-meshcentral:
     container_name: openframe-tactical-meshcentral
-    image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+    image: tacticalrmm/tactical-meshcentral:latest
     platform: linux/amd64
     user: root
     restart: always
     environment:
-      MESH_HOST: ${MESH_HOST}
-      MESH_USER: ${MESH_USER}
-      MESH_PASS: ${MESH_PASS}
-      MONGODB_USER: ${MONGODB_USER}
-      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
-      MESH_PERSISTENT_CONFIG: ${MESH_PERSISTENT_CONFIG}
+      <<: *common-vars
     ports:
-    - "8087:8087"
-    - "7443:7443"
+      - "8087:8087"
+      - "7443:7443"
     networks:
       proxy:
         aliases:
-          - ${MESH_HOST}
+          - mesh.openframe-tactical.io
       mesh-db: null
     volumes:
       - tactical_data:/opt/tactical
@@ -226,7 +234,7 @@ services:
 
   tactical-frontend:
     container_name: openframe-tactical-frontend
-    image: ${IMAGE_REPO}tactical-frontend:${VERSION}
+    image: tacticalrmm/tactical-frontend:latest
     platform: linux/amd64
     user: 1000:1000
     restart: always
@@ -235,17 +243,19 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     environment:
-      API_HOST: ${API_HOST}
-    ports:
-      - "8085:8085"
+      <<: *common-vars
+    expose:
+      - "8085"
 
   tactical-websockets:
     container_name: openframe-tactical-websockets
-    image: ${IMAGE_REPO}tactical:${VERSION}
+    image: tacticalrmm/tactical:latest
     platform: linux/amd64
     user: 1000:1000
     command: ["tactical-websockets"]
     restart: always
+    environment:
+      <<: *common-vars
     networks:
       - proxy
       - api-db
@@ -258,14 +268,12 @@ services:
 
   tactical-nginx:
     container_name: openframe-tactical-rmm-nginx
-    image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+    image: tacticalrmm/tactical-nginx:latest
     platform: linux/amd64
     user: 1000:1000
     restart: always
     environment:
-      APP_HOST: ${APP_HOST}
-      API_HOST: ${API_HOST}
-      MESH_HOST: ${MESH_HOST}
+      <<: *common-vars
     networks:
       proxy:
         ipv4_address: 172.20.0.20
@@ -274,14 +282,22 @@ services:
       - "${TRMM_HTTPS_PORT}:4443"
     volumes:
       - tactical_data:/opt/tactical
+    depends_on:
+      - tactical-frontend
+      - tactical-backend
+      - tactical-meshcentral
 
   tactical-celery:
     container_name: openframe-tactical-celery
-    image: ${IMAGE_REPO}tactical:${VERSION}
+    image: tacticalrmm/tactical:latest
     platform: linux/amd64
     user: 1000:1000
     command: ["tactical-celery"]
     restart: always
+    environment:
+      <<: *common-vars
+      POSTGRES_HOST: openframe-tactical-postgres
+      POSTGRES_PORT: 5432
     networks:
       - redis
       - proxy
@@ -289,16 +305,22 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
-      - tactical-redis
+      tactical-postgres:
+        condition: service_healthy
+      tactical-redis:
+        condition: service_healthy
 
   tactical-celerybeat:
     container_name: openframe-tactical-celerybeat
-    image: ${IMAGE_REPO}tactical:${VERSION}
+    image: tacticalrmm/tactical:latest
     platform: linux/amd64
     user: 1000:1000
     command: ["tactical-celerybeat"]
     restart: always
+    environment:
+      <<: *common-vars
+      POSTGRES_HOST: openframe-tactical-postgres
+      POSTGRES_PORT: 5432
     networks:
       - proxy
       - redis
@@ -306,5 +328,7 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
-      - tactical-redis
+      tactical-postgres:
+        condition: service_healthy
+      tactical-redis:
+        condition: service_healthy
