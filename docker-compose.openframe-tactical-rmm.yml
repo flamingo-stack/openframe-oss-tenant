@@ -274,8 +274,12 @@ services:
       proxy:
         ipv4_address: 172.20.0.20
     ports:
-      - "8080:8080"
       - "8443:4443"
+      - "8099:8099"
+      - "9993:9993"
+      - "9994:9994"
+      - "8100:8100"
+      - "9995:9995"
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
