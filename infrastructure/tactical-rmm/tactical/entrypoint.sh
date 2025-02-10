@@ -6,16 +6,16 @@ set -e
 : "${TRMM_PASS:=tactical}"
 : "${POSTGRES_HOST:=tactical-postgres}"
 : "${POSTGRES_PORT:=5432}"
-: "${POSTGRES_USER:=tactical}"
-: "${POSTGRES_PASS:=tactical}"
+: "${POSTGRES_USER:=postgres}"
+: "${POSTGRES_PASSWORD:=postgrespass}"
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
 : "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
-: "${MESH_HOST:=tactical-meshcentral}"
-: "${API_HOST:=tactical-backend}"
-: "${APP_HOST:=tactical-frontend}"
+: "${MESH_HOST:=mesh.openframe-tactical.io}"
+: "${API_HOST:=api.openframe-tactical.io}"
+: "${APP_HOST:=app.openframe-tactical.io}"
 : "${REDIS_HOST:=tactical-redis}"
 : "${SKIP_UWSGI_CONFIG:=0}"
 : "${TRMM_DISABLE_WEB_TERMINAL:=False}"
@@ -26,11 +26,16 @@ set -e
 : "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
 
 function check_tactical_ready {
+  echo "Checking for tactical ready file at: ${TACTICAL_READY_FILE}"
   sleep 15
   until [ -f "${TACTICAL_READY_FILE}" ]; do
-    echo "waiting for init container to finish install or update..."
+    echo "waiting for init container to finish install or update... (looking for ${TACTICAL_READY_FILE})"
+    ls -la $(dirname "${TACTICAL_READY_FILE}") || true
     sleep 10
   done
+  
+  echo "Found tactical ready file"
+  cat "${TACTICAL_READY_FILE}"
 }
 
 # tactical-init
@@ -39,24 +44,24 @@ if [ "$1" = 'tactical-init' ]; then
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # copy container data to volume
-  rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
+  rsync -a --no-perms --no-owner --delete --exclude "tmp/mesh_token" --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
   mkdir -p /meshcentral-data
-  mkdir -p ${TACTICAL_DIR}/tmp
-  mkdir -p ${TACTICAL_DIR}/certs
-  mkdir -p ${TACTICAL_DIR}/reporting
-  mkdir -p ${TACTICAL_DIR}/reporting/assets
+  mkdir -p "${TACTICAL_DIR}/tmp"
+  mkdir -p "${TACTICAL_DIR}/certs"
+  mkdir -p "${TACTICAL_DIR}/reporting"
+  mkdir -p "${TACTICAL_DIR}/reporting/assets"
   mkdir -p /mongo/data/db
   mkdir -p /redis/data
   touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
-  touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
-  touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
+  touch "${TACTICAL_DIR}/tmp/.initialized" && chown -R 1000:1000 "${TACTICAL_DIR}"
+  touch "${TACTICAL_DIR}/certs/.initialized" && chown -R 1000:1000 "${TACTICAL_DIR}/certs"
   touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
   touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
-  touch ${TACTICAL_DIR}/reporting && chown -R 1000:1000 ${TACTICAL_DIR}/reporting
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
-  touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
+  touch "${TACTICAL_DIR}/reporting" && chown -R 1000:1000 "${TACTICAL_DIR}/reporting"
+  mkdir -p "${TACTICAL_DIR}/api/tacticalrmm/private/exe"
+  mkdir -p "${TACTICAL_DIR}/api/tacticalrmm/private/log"
+  touch "${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log"
 
   until (echo >/dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
     echo "waiting for postgresql container to be ready..."
@@ -68,8 +73,25 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
+  # Wait for mesh token
+  echo "Waiting for mesh token..."
+  until [ -f "${TACTICAL_DIR}/tmp/mesh_token" ]; do
+    echo "waiting for mesh token to be created..."
+    sleep 5
+  done
+
   # configure django settings
+  if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
+    echo "Error: Mesh token file not found at ${TACTICAL_DIR}/tmp/mesh_token"
+    exit 1
+  fi
+
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
+  if [ -z "$MESH_TOKEN" ]; then
+    echo "Error: Mesh token is empty"
+    exit 1
+  fi
+
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   BASE_DOMAIN=$(echo "import tldextract; no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=()); extracted = no_fetch_extract('${API_HOST}'); print(f'{extracted.domain}.{extracted.suffix}')" | python)
@@ -107,7 +129,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': '${POSTGRES_DB}',
         'USER': '${POSTGRES_USER}',
-        'PASSWORD': '${POSTGRES_PASS}',
+        'PASSWORD': '${POSTGRES_PASSWORD}',
         'HOST': '${POSTGRES_HOST}',
         'PORT': '${POSTGRES_PORT}',
     }
@@ -158,7 +180,10 @@ EOF
 
   # create install ready file
   echo "Creating install ready file"
-  su -c "echo 'tactical-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
+  mkdir -p $(dirname "${TACTICAL_READY_FILE}")
+  echo 'tactical-init' > "${TACTICAL_READY_FILE}"
+  chown "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_READY_FILE}"
+  chmod 644 "${TACTICAL_READY_FILE}"
 
 fi
 

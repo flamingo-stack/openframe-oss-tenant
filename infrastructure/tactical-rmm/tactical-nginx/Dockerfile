@@ -37,6 +37,4 @@ RUN chmod +x /entrypoint.sh && \
 
 USER ${TACTICAL_USER}
 
-EXPOSE 4443 8080
-
 ENTRYPOINT ["/entrypoint.sh"]

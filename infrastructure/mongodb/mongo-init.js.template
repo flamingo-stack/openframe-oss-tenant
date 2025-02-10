@@ -1,0 +1,62 @@
+print('Starting MongoDB initialization script...');
+
+// Switch to admin database
+db = db.getSiblingDB('admin');
+print('Switched to admin database');
+
+try {
+    // Create admin user
+    db.createUser({
+        user: '${MONGO_INITDB_ROOT_USERNAME}',
+        pwd: '${MONGO_INITDB_ROOT_PASSWORD}',
+        roles: ['root']
+    });
+    print('Admin user created successfully');
+} catch (error) {
+    print('Error creating admin user:', error);
+}
+
+// Switch to application database
+db = db.getSiblingDB('${MONGO_APP_DATABASE}');
+print('Switched to application database');
+
+// Create application user
+db.createUser({
+    user: '${MONGO_APP_USERNAME}',
+    pwd: '${MONGO_APP_PASSWORD}',
+    roles: [
+        {
+            role: 'readWrite',
+            db: '${MONGO_APP_DATABASE}'
+        }
+    ]
+});
+print('Application user created successfully');
+
+// Create events collection
+db.createCollection('events');
+print('Events collection created successfully');
+
+// Insert sample events
+db.events.insertMany([
+    {
+        userId: 'user1',
+        type: 'login',
+        timestamp: new Date(),
+        details: { ip: '192.168.1.1', success: true }
+    },
+    {
+        userId: 'user2',
+        type: 'logout',
+        timestamp: new Date(),
+        details: { ip: '192.168.1.2' }
+    }
+]);
+print('Sample events inserted successfully');
+
+// Create indexes
+db.events.createIndex({ userId: 1, timestamp: -1 });
+db.events.createIndex({ type: 1 });
+print('Indexes created successfully');
+
+print('MongoDB initialization script completed.'); 

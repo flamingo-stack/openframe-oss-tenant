@@ -10,6 +10,9 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: openframe
       MONGO_INITDB_ROOT_PASSWORD: password123456789
+      MONGO_APP_DATABASE: openframe
+      MONGO_APP_USERNAME: openframe
+      MONGO_APP_PASSWORD: password123456789
     ports:
       - "27017:27017"
     volumes:

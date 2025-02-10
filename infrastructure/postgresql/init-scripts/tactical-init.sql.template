@@ -1,0 +1,91 @@
+\c ${POSTGRES_DB}
+
+-- Create extensions if needed
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "hstore";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Create tables
+CREATE TABLE IF NOT EXISTS agents (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hostname VARCHAR(255) NOT NULL,
+    agent_id VARCHAR(255) UNIQUE NOT NULL,
+    client_id uuid,
+    site_id uuid,
+    monitoring_type VARCHAR(30),
+    description TEXT,
+    needs_reboot BOOLEAN DEFAULT FALSE,
+    pending_actions_count INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'offline',
+    last_seen TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS clients (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sites (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id uuid REFERENCES clients(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS checks (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id uuid REFERENCES agents(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    check_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    last_run TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id uuid REFERENCES agents(id) ON DELETE CASCADE,
+    check_id uuid REFERENCES checks(id) ON DELETE CASCADE,
+    severity VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    resolved BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_agents_client_site ON agents(client_id, site_id);
+CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
+CREATE INDEX IF NOT EXISTS idx_sites_client ON sites(client_id);
+CREATE INDEX IF NOT EXISTS idx_checks_agent ON checks(agent_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_agent ON alerts(agent_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_check ON alerts(check_id);
+
+-- Insert sample data
+INSERT INTO clients (id, name) VALUES 
+    (uuid_generate_v4(), 'Sample Client 1'),
+    (uuid_generate_v4(), 'Sample Client 2')
+ON CONFLICT DO NOTHING;
+
+-- Create views
+CREATE OR REPLACE VIEW agent_summary AS
+SELECT 
+    a.id,
+    a.hostname,
+    a.status,
+    c.name as client_name,
+    s.name as site_name,
+    COUNT(DISTINCT chk.id) as total_checks,
+    COUNT(DISTINCT CASE WHEN al.resolved = false THEN al.id END) as active_alerts
+FROM agents a
+LEFT JOIN clients c ON a.client_id = c.id
+LEFT JOIN sites s ON a.site_id = s.id
+LEFT JOIN checks chk ON a.id = chk.agent_id
+LEFT JOIN alerts al ON a.id = al.agent_id
+GROUP BY a.id, a.hostname, a.status, c.name, s.name; 

@@ -1,5 +1,3 @@
-#TODO - generate api keys automatically for tactical rmm
-
 #!/bin/bash
 
 # Function to check if a service is healthy
@@ -21,6 +19,123 @@ check_service() {
     done
     echo "$service is ready!"
     return 0
+}
+
+
+# Function to wait for Tactical RMM initialization
+wait_for_tactical_rmm_init() {
+    echo "Waiting for Tactical RMM initialization..."
+    local max_attempts=60
+    local attempt=1
+    
+    # Add initial delay to allow service to fully start
+    echo "Waiting 30 seconds for initial service startup..."
+    sleep 30
+    
+    while [ $attempt -lt $max_attempts ]; do
+        # Try to access the API endpoint to check if the service is ready
+        local response=$(curl -k -s \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d '{"username":"tactical","password":"tactical"}' \
+            https://api.tactical.local/v2/checkcreds/ \
+            -w "\n%{http_code}")
+            
+        local status=$(echo "$response" | tail -n1)
+        local body=$(echo "$response" | head -n-1)
+        
+        echo "Attempt $attempt: HTTP Status: $status"
+        echo "Response body: $body"
+        
+        if [ "$status" = "200" ] || [ "$status" = "400" ] || [ "$status" = "401" ]; then
+            # We get 200/400/401 when the service is up
+            echo "Tactical RMM initialization completed successfully!"
+            # Extract and save the token immediately if we get it
+            if echo "$body" | grep -q '"token"'; then
+                local token=$(echo "$body" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+                echo "$token" > /tmp/tactical_rmm_token.txt
+                echo "Token saved successfully"
+            fi
+            return 0
+        elif [ "$status" = "000" ]; then
+            echo "Connection refused - service might not be ready yet"
+        else 
+            echo "Unexpected status code: $status"
+        fi
+        
+        # Check if the container is still running (using correct container name)
+        if ! docker ps | grep -q "trmm-backend"; then
+            echo "ERROR: Tactical RMM backend container is not running!"
+            docker ps -a | grep "trmm-"
+            return 1
+        fi
+        
+        echo "Waiting for Tactical RMM initialization... (attempt $attempt/$max_attempts)"
+        attempt=$((attempt + 1))
+        sleep 15
+    done
+    
+    echo "Tactical RMM initialization failed after $max_attempts attempts"
+    echo "Checking container logs..."
+    docker logs $(docker ps -qf "name=trmm-backend") 2>&1 | tail -n 50
+    return 1
+}
+
+# Function to generate Tactical RMM API keys
+generate_tactical_rmm_api_keys() {
+    echo "Generating Tactical RMM API keys..."
+    
+    # Get the authentication token first
+    echo "Attempting to authenticate with Tactical RMM..."
+    local auth_response=$(curl -k -s \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json" \
+        -d '{"username":"tactical","password":"tactical"}' \
+        https://api.tactical.local/v2/checkcreds/)
+    
+    echo "Auth response: $auth_response"
+    
+    # Extract the token using jq if available, fallback to grep if not
+    local auth_token=""
+    if command -v jq >/dev/null 2>&1; then
+        auth_token=$(echo "$auth_response" | jq -r '.token // empty' 2>/dev/null)
+    else
+        auth_token=$(echo "$auth_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+    fi
+    
+    if [ -z "$auth_token" ]; then
+        echo "Failed to get authentication token"
+        echo "Full authentication response:"
+        echo "$auth_response"
+        return 1
+    fi
+    
+    echo "Authentication token obtained successfully"
+    
+    # Use the token to generate a new API key
+    echo "Attempting to generate new API key..."
+    local api_key_response=$(curl -k -s \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Token $auth_token" \
+        -d '{"name": "new-tactical-api-key", "user": 2, "expiration": null, "permissions": ["can_use_api"]}' \
+        https://api.tactical.local/accounts/apikeys/)
+    
+    echo "API key generation response: $api_key_response"
+    
+    # Store the token for later use
+    echo "$auth_token" > /tmp/tactical_rmm_token.txt
+    
+    # Verify the API key was created
+    if echo "$api_key_response" | grep -q '"key":'; then
+        echo "Tactical RMM API keys generated successfully"
+        return 0
+    else
+        echo "Failed to generate API key"
+        return 1
+    fi
 }
 
 # Function to wait for Fleet initialization
@@ -98,9 +213,21 @@ docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
 echo "Starting Authentik deployment..."
 docker-compose -f docker-compose.openframe-authentik.yml up -d
 
-# Start Fleet MDM only after infrastructure is ready
+# Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
 docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+
+echo "Waiting 3 minutes for Tactical RMM startup..."
+sleep 180
+
+# Wait for Tactical RMM initialization to complete
+if wait_for_tactical_rmm_init; then
+    # Generate API keys only after initialization is complete
+    generate_tactical_rmm_api_keys
+else
+    echo "Failed to initialize Tactical RMM"
+    exit 1
+fi
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070

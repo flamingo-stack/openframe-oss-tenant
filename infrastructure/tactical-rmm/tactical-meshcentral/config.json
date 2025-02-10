@@ -6,8 +6,8 @@
     "mongoDbName": "meshcentral",
     "WANonly": true,
     "minify": true,
-    "port": 443,
-    "redirPort": 80,
+    "port": 4443,
+    "redirPort": 8085,
     "allowLoginToken": true,
     "allowFraming": true,
     "_agentPing": 20,
@@ -25,7 +25,7 @@
       "title": "Tactical RMM",
       "title2": "Tactical RMM",
       "newAccounts": false,
-      "certUrl": "https://mesh.example.com:443"
+      "certUrl": "https://mesh.example.com:8445"
     }
   }
 } 
