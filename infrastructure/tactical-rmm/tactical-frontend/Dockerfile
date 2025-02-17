@@ -1,42 +1,63 @@
 # Build stage
-FROM node:18-alpine as builder
+FROM node:20-alpine AS build
+
+# Set build environment variables that will be available during build time
+ARG NODE_ENV=development
+ARG DOCKER_BUILD=false
+ARG TRMM_PROTO=http
+ARG API_HOST=localhost:8000
+ARG WS_PROTO=ws
+
+ENV NODE_ENV=$NODE_ENV
+ENV DOCKER_BUILD=$DOCKER_BUILD
+ENV TRMM_PROTO=$TRMM_PROTO
+ENV API_HOST=$API_HOST
+ENV WS_PROTO=$WS_PROTO
 
 WORKDIR /app
 
-# Clone and build frontend
-RUN apk add --no-cache git && \
-    git clone https://github.com/amidaware/tacticalrmm-web.git . && \
-    npm install && \
-    npm run build
+# Install git and build dependencies
+RUN apk add --no-cache git
+
+# Clone the frontend repository and install dependencies
+RUN git clone https://github.com/amidaware/tacticalrmm-web.git .
+
+# Copy our modified websocket.ts file
+COPY websocket.ts /app/src/websocket/websocket.ts
+
+RUN npm install --cache ~/.npm && \
+  npm i -g @quasar/cli
+
+# Print environment variables and build the application
+RUN set -x && \
+  echo "Build environment:" && \
+  echo "NODE_ENV=$NODE_ENV" && \
+  echo "DOCKER_BUILD=$DOCKER_BUILD" && \
+  echo "TRMM_PROTO=$TRMM_PROTO" && \
+  echo "API_HOST=$API_HOST" && \
+  echo "WS_PROTO=$WS_PROTO" && \
+  env && \
+  quasar build && \
+  echo "Build output:" && \
+  ls -la /app/dist
 
 # Production stage
-FROM nginx:1.25.3-alpine
+FROM nginxinc/nginx-unprivileged:stable-alpine
 
-ENV PUBLIC_DIR /usr/share/nginx/html
+# Install gettext for envsubst
+USER root
+RUN apk add --no-cache gettext
 
-# Install required packages and setup directories
-RUN apk add --no-cache bash && \
-    mkdir -p /var/cache/nginx/client_temp \
-        /var/cache/nginx/proxy_temp \
-        /var/cache/nginx/fastcgi_temp \
-        /var/cache/nginx/uwsgi_temp \
-        /var/cache/nginx/scgi_temp \
-    && chown -R nginx:nginx /var/cache/nginx \
-    && chmod -R 755 /var/cache/nginx \
-    && mkdir -p ${PUBLIC_DIR} \
-    && chown -R nginx:nginx /usr/share/nginx \
-    && chmod -R 755 ${PUBLIC_DIR} \
-    && touch ${PUBLIC_DIR}/env-config.js \
-    && chown nginx:nginx ${PUBLIC_DIR}/env-config.js \
-    && chmod 644 ${PUBLIC_DIR}/env-config.js
-
-# Copy built files from builder stage
-COPY --from=builder /app/dist ${PUBLIC_DIR}
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy the built files from build stage
+COPY --from=build /app/dist /usr/share/nginx/html/
+COPY default.conf /etc/nginx/conf.d/
 COPY entrypoint.sh /
+COPY env-config.js /
 
-RUN chmod +x /entrypoint.sh && \
-    chown nginx:nginx /entrypoint.sh
+RUN chown -R nginx:nginx /usr/share/nginx/html \
+  && chown -R nginx:nginx /etc/nginx/conf.d \
+  && chmod +x /entrypoint.sh \
+  && chown nginx:nginx /entrypoint.sh
 
 USER nginx
 
