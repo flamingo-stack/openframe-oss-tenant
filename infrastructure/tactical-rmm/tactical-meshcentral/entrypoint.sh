@@ -1,21 +1,3 @@
-# #!/bin/sh
-
-# # Create a copy of the original config file
-# cp /opt/meshcentral/config.json /opt/meshcentral/config.json.template
-
-# # Replace environment variables
-# sed -i "s/\${MONGO_USER}/${MONGO_USER}/g" /opt/meshcentral/config.json.template
-# sed -i "s/\${MONGO_PASSWORD}/${MONGO_PASSWORD}/g" /opt/meshcentral/config.json.template
-# sed -i "s/\${MONGO_HOST}/${MONGO_HOST}/g" /opt/meshcentral/config.json.template
-# sed -i "s/\${MONGO_PORT}/${MONGO_PORT}/g" /opt/meshcentral/config.json.template
-
-# # Move the processed template to the final location
-# mv /opt/meshcentral/config.json.template /opt/meshcentral/config.json
-
-# # Start MeshCentral
-# cd /opt/meshcentral
-# exec node node_modules/meshcentral
-
 #!/usr/bin/env bash
 
 set -e
@@ -39,15 +21,18 @@ set -e
 : "${SMTP_PASS:=mesh-smtp-pass}"
 : "${SMTP_TLS:=false}"
 : "${TACTICAL_DIR:=/opt/tactical}"
+: "${TACTICAL_TEMP_DIR:=/tmp/tactical}"
 
-# Create tactical directory structure
-mkdir -p "${TACTICAL_DIR}/tmp"
-chown -R node:node "${TACTICAL_DIR}"
-chmod -R 755 "${TACTICAL_DIR}"
+if [ ! -f "${TACTICAL_DIR}/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
 
-if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
+  echo "Copying files from ${TACTICAL_TEMP_DIR} to ${TACTICAL_DIR}"
+  cp -rf ${TACTICAL_TEMP_DIR}/* ${TACTICAL_DIR}
 
-  encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
+  # Create necessary directories
+  mkdir -p ${TACTICAL_DIR}/app/meshcentral-data
+  chown -R node:node ${TACTICAL_DIR}
+
+  encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@tactical-mongodb:27017')")
 
   mesh_config="$(
     cat <<EOF
@@ -60,6 +45,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "WANonly": true,
     "minify": 1,
     "port": 4443,
+    "allowHTTP": true,
     "agentAliasPort": 443,
     "aliasPort": 443,
     "allowLoginToken": true,
@@ -71,6 +57,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "wsCompression": ${MESH_COMPRESSION_ENABLED},
     "agentWsCompression": ${MESH_COMPRESSION_ENABLED},
     "webRTC": ${MESH_WEBRTC_ENABLED},
+    "selfUpdate": false,
     "maxInvalidLogin": {
       "time": 5,
       "count": 5,
@@ -84,7 +71,6 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
       "newAccounts": false,
       "mstsc": true,
       "geoLocation": true,
-      "certUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   },
@@ -100,45 +86,21 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
 EOF
   )"
 
-  echo "${mesh_config}" >/home/node/app/meshcentral-data/config.json
+  echo "${mesh_config}" >${TACTICAL_DIR}/app/meshcentral-data/config.json
 fi
 
-node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com || true
-node node_modules/meshcentral --adminaccount ${MESH_USER} || true
-
-# Generate mesh token with retries
-max_retries=5
-retry_count=0
-while [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ] && [ $retry_count -lt $max_retries ]; do
-  echo "Attempt $((retry_count + 1)) to generate mesh token..."
-  
-  # Generate mesh token
+if [ ! -f "${TACTICAL_DIR}/mesh_token" ]; then
+  node ${TACTICAL_DIR}/node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email ${SMTP_USER}
+  node ${TACTICAL_DIR}/node_modules/meshcentral --adminaccount ${MESH_USER}
   mesh_token=$(node node_modules/meshcentral --logintokenkey)
 
   if [[ ${#mesh_token} -eq 160 ]]; then
-    echo "Successfully generated mesh token"
-    echo "${mesh_token}" > "${TACTICAL_DIR}/tmp/mesh_token"
-    chown node:node "${TACTICAL_DIR}/tmp/mesh_token"
-    chmod 644 "${TACTICAL_DIR}/tmp/mesh_token"
-    break
+    echo ${mesh_token} >${TACTICAL_DIR}/mesh_token
+    redis-cli -h tactical-redis -p 6379 set mesh_token ${mesh_token}
+    echo "Mesh token ${mesh_token} set in redis under key mesh_token"
   else
-    echo "Failed to generate mesh token on attempt $((retry_count + 1))"
-    sleep 5
+    echo "Failed to generate mesh token. Fix the error and restart the mesh container"
   fi
-  
-  retry_count=$((retry_count + 1))
-done
-
-if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
-  echo "Failed to generate mesh token after $max_retries attempts"
-  exit 1
 fi
 
-# wait for nginx container
-until (echo >/dev/tcp/"${NGINX_HOST_IP}"/${NGINX_HOST_PORT}) &>/dev/null; do
-  echo "waiting for nginx to start..."
-  sleep 5
-done
-
-# start mesh
-node node_modules/meshcentral
+node ${TACTICAL_DIR}/node_modules/meshcentral --configfile ${TACTICAL_DIR}/app/meshcentral-data/config.json
