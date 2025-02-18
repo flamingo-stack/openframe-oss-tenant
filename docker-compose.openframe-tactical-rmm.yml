@@ -12,7 +12,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongopass
       MONGO_INITDB_DATABASE: meshcentral
     networks:
-      - tactical-network
+      - openframe-network
     volumes:
       - tactical_mongo_data:/data/db
     user: root
@@ -40,7 +40,7 @@ services:
     volumes:
       - tactical_postgres_data:/var/lib/postgresql/data
     networks:
-      - tactical-network
+      - openframe-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -55,7 +55,7 @@ services:
     volumes:
       - tactical_redis_data:/data
     networks:
-      - tactical-network
+      - openframe-network
     command: redis-server --save 3600 1 300 100 60 10000
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
@@ -74,7 +74,7 @@ services:
     volumes:
       - tactical_nats_data:/opt/tactical
     networks:
-      - tactical-network
+      - openframe-network
 
   tactical-meshcentral:
     container_name: openframe-tactical-meshcentral
@@ -94,7 +94,7 @@ services:
       WS_MASK_OVERRIDE: 1
       MESH_DISABLE_SSL: 1
     networks:
-      - tactical-network
+      - openframe-network
     volumes:
       - tactical_meshcentral_data:/opt/tactical
     user: root
@@ -121,7 +121,7 @@ services:
         DOCKER_BUILD: "false"
     restart: always
     networks:
-      - tactical-network
+      - openframe-network
     volumes:
       - tactical_frontend_data:/opt/tactical
     environment:
@@ -149,7 +149,7 @@ services:
       DOCKER_BUILD: "false"
       NODE_ENV: "development"
     networks:
-      - tactical-network
+      - openframe-network
     ports:
       - "8081:8080"  # Changed from 8080 to avoid conflict with Kafka UI
       - "8001:8000"  # Changed to maintain consistent port scheme
@@ -188,7 +188,7 @@ services:
       TRMM_DISABLE_SERVER_SCRIPTS: "False"
       TRMM_DISABLE_SSO: "False"
     networks:
-      - tactical-network
+      - openframe-network
     volumes:
       - tactical_backend_data:/opt/tactical
     depends_on:
@@ -232,7 +232,7 @@ services:
       TRMM_DISABLE_SERVER_SCRIPTS: "False"
       TRMM_DISABLE_SSO: "False"
     networks:
-      - tactical-network
+      - openframe-network
     volumes:
       - tactical_websockets_data:/opt/tactical
     depends_on:
@@ -262,7 +262,7 @@ services:
     command: [ "tactical-celery" ]
     restart: always
     networks:
-      - tactical-network
+      - openframe-network
     environment:
       TRMM_DISABLE_2FA: "True"
       DOCKER_BUILD: "false"
@@ -324,7 +324,7 @@ services:
       TRMM_DISABLE_SERVER_SCRIPTS: "False"
       TRMM_DISABLE_SSO: "False"
     networks:
-      - tactical-network
+      - openframe-network
     volumes:
       - tactical_celerybeat_data:/opt/tactical
     depends_on:
@@ -345,8 +345,6 @@ services:
       retries: 5
       start_period: 10s
 networks:
-  tactical-network:
-    driver: bridge
   openframe-network:
     external: true
 
