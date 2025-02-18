@@ -717,6 +717,28 @@ register_tool \
     3 \
     "#78909C"
 
+# Get Tactical RMM API key from Redis
+TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
+
+# Register Tactical RMM with layer info
+register_tool \
+    "tactical-rmm" \
+    "TACTICAL_RMM" \
+    "Tactical RMM" \
+    "Remote Monitoring and Management Platform" \
+    "http://openframe-tactical-backend" \
+    8000 \
+    "tactical" \
+    "tactical" \
+    "$TACTICAL_API_KEY" \
+    "Device Management" \
+    "Integrated Tool" \
+    "Integrated Tools" \
+    3 \
+    "#455A64"
+
+echo "Tactical RMM registered successfully!"
+
 echo "Integrated tools initialized successfully!"
 
 echo "Testing network connectivity..."
