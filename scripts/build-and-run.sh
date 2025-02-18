@@ -717,6 +717,26 @@ register_tool \
     3 \
     "#78909C"
 
+# Register Tactical RMM with layer info
+if [ -f /tmp/tactical_rmm_token.txt ]; then
+    TACTICAL_TOKEN=$(cat /tmp/tactical_rmm_token.txt)
+    register_tool \
+        "tactical-rmm" \
+        "TACTICAL_RMM" \
+        "Tactical RMM" \
+        "Remote Monitoring and Management Platform" \
+        "https://api.tactical.local" \
+        8000 \
+        "tactical" \
+        "tactical" \
+        "$TACTICAL_TOKEN" \
+        "Device Management" \
+        "Integrated Tool" \
+        "Integrated Tools" \
+        3 \
+        "#455A64"
+fi
+
 echo "Integrated tools initialized successfully!"
 
 echo "Testing network connectivity..."
