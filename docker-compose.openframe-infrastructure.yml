@@ -1,4 +1,4 @@
-name: openframe-microservices-infrastructure
+name: openframe-infrastructure
 
 services:
   # MongoDB
@@ -34,7 +34,7 @@ services:
   mongodb-exporter:
     image: bitnami/mongodb-exporter:latest
     container_name: openframe-mongodb-exporter
-    environment: 
+    environment:
       MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
     ports:
       - "9216:9216"
@@ -148,7 +148,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "pinot-events:1:1"
       KAFKA_OPTS: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml -Dzookeeper.connect.timeout.ms=60000 -Dzookeeper.session.timeout.ms=60000"
-    networks: 
+    networks:
       - openframe-network
     depends_on:
       loki:
@@ -171,7 +171,7 @@ services:
     ports:
       - "8443:8443"
       - "9096:9096"
-    environment:  
+    environment:
       NIFI_WEB_HTTPS_PORT: 8443
       NIFI_WEB_HTTP_HOST: 0.0.0.0
       SINGLE_USER_CREDENTIALS_USERNAME: openframe
@@ -205,7 +205,7 @@ services:
       - openframe-network
     depends_on:
       - loki
-    
+
   # Grafana
   grafana:
     image: grafana/grafana:latest
@@ -253,7 +253,7 @@ services:
     image: mongo-express:latest
     container_name: openframe-mongo-express
     ports:
-      - "8081:8081"
+      - "8082:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: openframe
       ME_CONFIG_MONGODB_ADMINPASSWORD: password123456789
@@ -415,6 +415,7 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
+    external: true
 
 volumes:
   loki_data:

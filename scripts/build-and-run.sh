@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Create required networks
+echo "Creating networks if they don't exist..."
+docker network create openframe-network 2>/dev/null || true
+docker network create tactical-network 2>/dev/null || true
+
 # Function to check if a service is healthy
 check_service() {
     local service=$1
@@ -21,129 +26,12 @@ check_service() {
     return 0
 }
 
-
-# Function to wait for Tactical RMM initialization
-wait_for_tactical_rmm_init() {
-    echo "Waiting for Tactical RMM initialization..."
-    local max_attempts=60
-    local attempt=1
-    
-    # Add initial delay to allow service to fully start
-    echo "Waiting 30 seconds for initial service startup..."
-    sleep 30
-    
-    while [ $attempt -lt $max_attempts ]; do
-        # Try to access the API endpoint to check if the service is ready
-        local response=$(curl -k -s \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "Accept: application/json" \
-            -d '{"username":"tactical","password":"tactical"}' \
-            https://api.tactical.local/v2/checkcreds/ \
-            -w "\n%{http_code}")
-            
-        local status=$(echo "$response" | tail -n1)
-        local body=$(echo "$response" | head -n-1)
-        
-        echo "Attempt $attempt: HTTP Status: $status"
-        echo "Response body: $body"
-        
-        if [ "$status" = "200" ] || [ "$status" = "400" ] || [ "$status" = "401" ]; then
-            # We get 200/400/401 when the service is up
-            echo "Tactical RMM initialization completed successfully!"
-            # Extract and save the token immediately if we get it
-            if echo "$body" | grep -q '"token"'; then
-                local token=$(echo "$body" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-                echo "$token" > /tmp/tactical_rmm_token.txt
-                echo "Token saved successfully"
-            fi
-            return 0
-        elif [ "$status" = "000" ]; then
-            echo "Connection refused - service might not be ready yet"
-        else 
-            echo "Unexpected status code: $status"
-        fi
-        
-        # Check if the container is still running (using correct container name)
-        if ! docker ps | grep -q "trmm-backend"; then
-            echo "ERROR: Tactical RMM backend container is not running!"
-            docker ps -a | grep "trmm-"
-            return 1
-        fi
-        
-        echo "Waiting for Tactical RMM initialization... (attempt $attempt/$max_attempts)"
-        attempt=$((attempt + 1))
-        sleep 15
-    done
-    
-    echo "Tactical RMM initialization failed after $max_attempts attempts"
-    echo "Checking container logs..."
-    docker logs $(docker ps -qf "name=trmm-backend") 2>&1 | tail -n 50
-    return 1
-}
-
-# Function to generate Tactical RMM API keys
-generate_tactical_rmm_api_keys() {
-    echo "Generating Tactical RMM API keys..."
-    
-    # Get the authentication token first
-    echo "Attempting to authenticate with Tactical RMM..."
-    local auth_response=$(curl -k -s \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -H "Accept: application/json" \
-        -d '{"username":"tactical","password":"tactical"}' \
-        https://api.tactical.local/v2/checkcreds/)
-    
-    echo "Auth response: $auth_response"
-    
-    # Extract the token using jq if available, fallback to grep if not
-    local auth_token=""
-    if command -v jq >/dev/null 2>&1; then
-        auth_token=$(echo "$auth_response" | jq -r '.token // empty' 2>/dev/null)
-    else
-        auth_token=$(echo "$auth_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-    fi
-    
-    if [ -z "$auth_token" ]; then
-        echo "Failed to get authentication token"
-        echo "Full authentication response:"
-        echo "$auth_response"
-        return 1
-    fi
-    
-    echo "Authentication token obtained successfully"
-    
-    # Use the token to generate a new API key
-    echo "Attempting to generate new API key..."
-    local api_key_response=$(curl -k -s \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Token $auth_token" \
-        -d '{"name": "new-tactical-api-key", "user": 2, "expiration": null, "permissions": ["can_use_api"]}' \
-        https://api.tactical.local/accounts/apikeys/)
-    
-    echo "API key generation response: $api_key_response"
-    
-    # Store the token for later use
-    echo "$auth_token" > /tmp/tactical_rmm_token.txt
-    
-    # Verify the API key was created
-    if echo "$api_key_response" | grep -q '"key":'; then
-        echo "Tactical RMM API keys generated successfully"
-        return 0
-    else
-        echo "Failed to generate API key"
-        return 1
-    fi
-}
-
 # Function to wait for Fleet initialization
 wait_for_fleet_init() {
     echo "Waiting for Fleet initialization..."
     local max_attempts=30
     local attempt=1
-    
+
     while [ $attempt -lt $max_attempts ]; do
         if docker exec openframe-fleet test -f /etc/fleet/api_token.txt; then
             echo "Fleet initialization completed successfully!"
@@ -153,7 +41,7 @@ wait_for_fleet_init() {
         attempt=$((attempt + 1))
         sleep 5
     done
-    
+
     echo "Fleet initialization failed after $max_attempts attempts"
     docker logs openframe-fleet
     return 1
@@ -163,14 +51,14 @@ wait_for_fleet_init() {
 wait_for_infrastructure() {
     echo "Waiting for infrastructure services..."
     local services=("cassandra:9042" "mongodb:27017" "kafka:9092")
-    
+
     for service in "${services[@]}"; do
         IFS=':' read -r name port <<< "$service"
         if ! check_service "$name" "$port"; then
             echo "Failed to start $name. Exiting..."
             exit 1
         fi
-        
+
     done
 }
 
@@ -178,18 +66,13 @@ wait_for_infrastructure() {
 echo "Building JARs..."
 ./scripts/build-jars.sh
 
-# Start infrastructure services
-echo "Starting application infra services..."
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
-
-echo "Finished launching application infra services..."
-
-# Start the infrastructure
+# Start infrastructure services first
+echo "Starting infrastructure services..."
 docker-compose -f docker-compose.openframe-infrastructure.yml up -d
 
 # Wait for Cassandra to be healthy
 echo "Waiting for Cassandra to be healthy..."
-until docker-compose -f docker-compose.openframe-infrastructure.yml ps | grep "cassandra" | grep "(healthy)" > /dev/null; do
+until docker-compose -f docker-docker-compose -f docker-compose.openframe-infrastructure.yml ps | grep "cassandra" | grep "healthy" > /dev/null; do
     echo "Waiting for Cassandra to be ready..."
     sleep 5
 done
@@ -205,32 +88,23 @@ wait_for_infrastructure
 
 echo "Finished launching application infra and application services..."
 
-# Start Fleet MDM only after infrastructure is ready
-echo "Starting Fleet MDM deployment..."
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
-
-# Start Fleet MDM only after infrastructure is ready
-echo "Starting Authentik deployment..."
-docker-compose -f docker-compose.openframe-authentik.yml up -d
-
 # Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
 docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
 
-echo "Waiting 3 minutes for Tactical RMM startup..."
-sleep 180
+# Start OpenFrame services
+docker-compose -f docker-compose.openframe-services.yml up -d
 
-# Wait for Tactical RMM initialization to complete
-if wait_for_tactical_rmm_init; then
-    # Generate API keys only after initialization is complete
-    generate_tactical_rmm_api_keys
-else
-    echo "Failed to initialize Tactical RMM"
-    exit 1
-fi
+# Start Fleet MDM after infrastructure is ready
+echo "Starting Fleet MDM deployment..."
+docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+
+# Start Authentik deployment
+echo "Starting Authentik deployment..."
+docker-compose -f docker-compose.openframe-authentik.yml up -d
 
 # Wait for Fleet to be ready
-check_service "fleet" 8070
+check_service "openframe-fleet" 8070
 if [ $? -ne 0 ]; then
     echo "Failed to start Fleet MDM. Exiting..."
     exit 1
@@ -717,6 +591,13 @@ register_tool \
     3 \
     "#78909C"
 
+# Wait for Fleet to be ready
+check_service "openframe-tactical-backend" 8081
+if [ $? -ne 0 ]; then
+    echo "Failed to start Tactical RMM. Exiting..."
+    exit 1
+fi
+
 # Get Tactical RMM API key from Redis
 TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
 
@@ -762,8 +643,11 @@ fi
 
 echo "OpenFrame is running!"
 echo "Access points:"
+echo "- Tactical RMM: http://localhost:8081"
+echo "- Tactical RMM API: http://localhost:8001"
+echo "- Tactical RMM Websockets: http://localhost:8384"
 echo "- Kafka UI: http://localhost:8080"
-echo "- MongoDB Express: http://localhost:8081"
+echo "- MongoDB Express: http://localhost:8082"
 echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
 echo "- Prometheus: http://localhost:9090"
