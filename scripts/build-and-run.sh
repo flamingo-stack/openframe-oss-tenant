@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Create required networks
+echo "Creating networks if they don't exist..."
+docker network create openframe-network 2>/dev/null || true
+docker network create tactical-network 2>/dev/null || true
+
 # Function to check if a service is healthy
 check_service() {
     local service=$1
@@ -178,13 +183,8 @@ wait_for_infrastructure() {
 echo "Building JARs..."
 ./scripts/build-jars.sh
 
-# Start infrastructure services
-echo "Starting application infra services..."
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
-
-echo "Finished launching application infra services..."
-
-# Start the infrastructure
+# Start infrastructure services first
+echo "Starting infrastructure services..."
 docker-compose -f docker-compose.openframe-infrastructure.yml up -d
 
 # Wait for Cassandra to be healthy
@@ -205,17 +205,17 @@ wait_for_infrastructure
 
 echo "Finished launching application infra and application services..."
 
-# Start Fleet MDM only after infrastructure is ready
-echo "Starting Fleet MDM deployment..."
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
-
-# Start Fleet MDM only after infrastructure is ready
-echo "Starting Authentik deployment..."
-docker-compose -f docker-compose.openframe-authentik.yml up -d
-
 # Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
 docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+
+# Start Fleet MDM after infrastructure is ready
+echo "Starting Fleet MDM deployment..."
+docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+
+# Start Authentik deployment
+echo "Starting Authentik deployment..."
+docker-compose -f docker-compose.openframe-authentik.yml up -d
 
 echo "Waiting 3 minutes for Tactical RMM startup..."
 sleep 180
@@ -762,8 +762,11 @@ fi
 
 echo "OpenFrame is running!"
 echo "Access points:"
+echo "- Tactical RMM: http://localhost:8081"
+echo "- Tactical RMM API: http://localhost:8001"
+echo "- Tactical RMM Websockets: http://localhost:8384"
 echo "- Kafka UI: http://localhost:8080"
-echo "- MongoDB Express: http://localhost:8081"
+echo "- MongoDB Express: http://localhost:8082"
 echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
 echo "- Prometheus: http://localhost:9090"

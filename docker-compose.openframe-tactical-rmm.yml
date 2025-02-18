@@ -70,7 +70,7 @@ services:
     platform: linux/amd64
     restart: always
     environment:
-      API_HOST: tactical-backend:8000
+      API_HOST: tactical-backend:8001  # Updated to match new port
     volumes:
       - tactical_nats_data:/opt/tactical
     networks:
@@ -125,7 +125,7 @@ services:
     volumes:
       - tactical_frontend_data:/opt/tactical
     environment:
-      API_HOST: localhost:8000
+      API_HOST: localhost:8001  # Updated to match new port
       TRMM_PROTO: http
       PUBLIC_DIR: /usr/share/nginx/html
       TACTICAL_READY_FILE: /opt/tactical/tmp/tactical/ready
@@ -143,7 +143,7 @@ services:
     restart: always
     environment:
       APP_HOST: tactical-frontend:8080
-      API_HOST: tactical-backend:8000
+      API_HOST: tactical-backend:8001  # Updated to match new port
       MESH_HOST: tactical-meshcentral:4443
       TRMM_PROTO: http
       DOCKER_BUILD: "false"
@@ -151,13 +151,13 @@ services:
     networks:
       - tactical-network
     ports:
-      - "8080:8080"
-      - "8000:8000"
-      - "8383:8383"
+      - "8081:8080"  # Changed from 8080 to avoid conflict with Kafka UI
+      - "8001:8000"  # Changed to maintain consistent port scheme
+      - "8384:8383"  # Changed to maintain consistent port scheme
     volumes:
       - tactical_nginx_data:/opt/tactical
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://tactical-nginx:8081/nginx_status" ]
+      test: [ "CMD", "curl", "-f", "http://tactical-nginx:8080/nginx_status" ]  # Using internal port for healthcheck
       interval: 10s
       timeout: 5s
       retries: 5
@@ -179,7 +179,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASS: postgrespass
       APP_HOST: tactical-frontend:8080
-      API_HOST: tactical-backend:8000
+      API_HOST: tactical-backend:8001  # Updated to match new port
       MESH_USER: tactical
       MESH_HOST: tactical-meshcentral:4443
       TRMM_USER: tactical
@@ -223,7 +223,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASS: postgrespass
       APP_HOST: tactical-frontend:8080
-      API_HOST: tactical-backend:8000
+      API_HOST: tactical-backend:8001  # Updated to match new port
       MESH_USER: tactical
       MESH_HOST: tactical-meshcentral:4443
       TRMM_USER: tactical
@@ -271,7 +271,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASS: postgrespass
       APP_HOST: tactical-frontend:8080
-      API_HOST: tactical-backend:8000
+      API_HOST: tactical-backend:8001  # Updated to match new port
       MESH_USER: tactical
       MESH_HOST: tactical-meshcentral:4443
       TRMM_USER: tactical
@@ -315,7 +315,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASS: postgrespass
       APP_HOST: tactical-frontend:8080
-      API_HOST: tactical-backend:8000
+      API_HOST: tactical-backend:8001  # Updated to match new port
       MESH_USER: tactical
       MESH_HOST: tactical-meshcentral:4443
       TRMM_USER: tactical
@@ -347,6 +347,8 @@ services:
 networks:
   tactical-network:
     driver: bridge
+  openframe-network:
+    external: true
 
 volumes:
   tactical_websockets_data:
