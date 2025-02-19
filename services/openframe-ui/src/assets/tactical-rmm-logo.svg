@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="800" height="327" viewBox="0 0 800 327" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(236,0) scale(0.4)">
-    <!-- Main shield background -->
-    <path d="M400 0C179.1 0 0 179.1 0 400s179.1 400 400 400 400-179.1 400-400S620.9 0 400 0zm0 50c193.3 0 350 156.7 350 350S593.3 750 400 750 50 593.3 50 400 206.7 50 400 50z" fill="#192147"/>
-    <!-- Green border -->
-    <path d="M400 50c-193.3 0-350 156.7-350 350s156.7 350 350 350 350-156.7 350-350S593.3 50 400 50zm0 50c165.7 0 300 134.3 300 300S565.7 700 400 700 100 565.7 100 400s134.3-300 300-300z" fill="#63C740"/>
-    <!-- "iT" text in white -->
-    <path d="M300 200h100v50h-100zm-50 70h200v50h-200zm50 70h100v200h-100z" fill="white"/>
+  <g transform="translate(200,13.5) scale(1.5)">
+    <!-- Geometric dog head shape -->
+    <path d="M200 50 L240 20 L260 40 L240 60 L220 80 L200 100 L180 80 L160 60 L140 40 L160 20 Z" fill="#192147"/>
   </g>
-  <!-- "RMM" text -->
-  <path d="M500 120h40l60 80-60 80h-40l60-80zm100 0h40l60 80-60 80h-40l60-80zm100 0h40l60 80-60 80h-40l60-80z" fill="#192147"/>
 </svg>
