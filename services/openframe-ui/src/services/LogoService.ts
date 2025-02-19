@@ -1,5 +1,6 @@
 import authentikLogo from '@/assets/authentik-logo.svg'
 import fleetLogo from '@/assets/fleet-logo.svg'
+import tacticalRmmLogo from '@/assets/tactical-rmm-logo.svg'
 import rustdeskLogo from '@/assets/rustdesk-logo.svg'
 import grafanaLogo from '@/assets/grafana-logo.svg'
 import lokiLogo from '@/assets/loki-logo.svg'
@@ -20,6 +21,7 @@ import postgresqlLogo from '@/assets/postgresql-logo.svg'
 export const logoMap: Record<string, string> = {
   'grafana-primary': grafanaLogo,
   'mongodb-primary': mongodbLogo,
+  'tactical-rmm': tacticalRmmLogo,
   'mongo-express': mongoExpressLogo,
   'kafka-primary': kafkaLogo,
   'kafka-ui': kafkaLogo,
@@ -63,4 +65,4 @@ export const getLogoUrl = (id: string, isDark = false): string => {
     console.log(`❌ [LogoService] No logo found for "${id}"`);
   }
   return logo || '';
-}; 
+};  
