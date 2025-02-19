@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="327" viewBox="0 0 800 327" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(200,63.5) scale(2.5)">
+    <!-- Geometric dog head shape with exact angles from original -->
+    <path d="
+      M 120 40
+      L 160 10
+      L 185 40
+      L 165 65
+      L 140 85
+      L 120 100
+      L 100 85
+      L 75 65
+      L 55 40
+      L 80 10
+      Z" 
+    fill="#192147"/>
+  </g>
+</svg>
