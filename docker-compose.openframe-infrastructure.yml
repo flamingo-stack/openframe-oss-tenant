@@ -44,23 +44,6 @@ services:
     networks:
       - openframe-network
 
-  # Redis
-  redis:
-    image: redis:latest
-    container_name: openframe-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - openframe-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
   # Cassandra
   cassandra:
     build:
@@ -237,7 +220,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: openframe-kafka-ui
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=openframe-kafka:9092
@@ -253,7 +236,7 @@ services:
     image: mongo-express:latest
     container_name: openframe-mongo-express
     ports:
-      - "8082:8081"
+      - "8010:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: openframe
       ME_CONFIG_MONGODB_ADMINPASSWORD: password123456789
@@ -303,6 +286,23 @@ services:
         max-size: "10m"
         max-file: "3"
         tag: "{{.Name}}"
+
+  # Redis
+  redis:
+    image: redis:latest
+    container_name: openframe-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # Loki
   loki:
@@ -410,6 +410,122 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  config-server:
+    build:
+      context: ./services/openframe-config
+      dockerfile: Dockerfile
+    container_name: openframe-config-server
+    ports:
+      - "8888:8888"
+      - "8889:8889"
+    networks:
+      - openframe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://openframe-config-server:8888/xml/shared-logback-spring.xml"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api:
+    build:
+      context: ./services/openframe-api
+      dockerfile: Dockerfile
+    container_name: openframe-api
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
+      - OPENFRAME_MANAGEMENT_KEY=${OPENFRAME_MANAGEMENT_KEY:-docker-management-key-123}
+    ports:
+      - "8090:8090"
+      - "8091:8091"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    networks:
+      - openframe-network
+
+  management:
+    build:
+      context: ./services/openframe-management
+      dockerfile: Dockerfile
+    container_name: openframe-management
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
+      - OPENFRAME_MANAGEMENT_KEY=${OPENFRAME_MANAGEMENT_KEY:-docker-management-key-123}
+    ports:
+      - "8095:8095"
+      - "8096:8096"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - openframe-network
+
+  openframe-ui:
+    build:
+      context: ./services/openframe-ui
+      dockerfile: Dockerfile
+    environment:
+      - VITE_CLIENT_ID=openframe_web_dashboard
+      - VITE_CLIENT_SECRET=prod_secret
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - management
+    networks:
+      - openframe-network
+
+  stream:
+    build:
+      context: ./services/openframe-stream
+      dockerfile: Dockerfile
+    container_name: openframe-stream
+    ports:
+      - "8082:8082"
+      - "8083:8083"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - openframe-network
+
+  gateway:
+    build:
+      context: ./services/openframe-gateway
+      dockerfile: Dockerfile
+    container_name: openframe-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
+    ports:
+      - "8100:8100"
+      - "8101:8101"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    networks:
+      - openframe-network
 
 networks:
   openframe-network:

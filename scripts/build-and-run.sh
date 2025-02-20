@@ -2,8 +2,7 @@
 
 # Create required networks
 echo "Creating networks if they don't exist..."
-docker network create openframe-network 2>/dev/null || true
-docker network create tactical-network 2>/dev/null || true
+docker network create openframe-network --label com.docker.compose.network=openframe-network 2>/dev/null || true
 
 # Function to check if a service is healthy
 check_service() {
@@ -13,10 +12,12 @@ check_service() {
     local attempt=1
 
     echo "Waiting for $service to be ready..."
-    while ! docker exec openframe-$service nc -z localhost $port; do
+    # Remove the openframe- prefix if it's already there
+    local container_name=${service#openframe-}
+    while ! docker exec openframe-$container_name nc -z localhost $port; do
         if [ $attempt -eq $max_attempts ]; then
             echo "$service is not available after $max_attempts attempts"
-            docker logs openframe-$service
+            docker logs openframe-$container_name
             return 1
         fi
         attempt=$((attempt + 1))
@@ -70,20 +71,25 @@ echo "Building JARs..."
 echo "Starting infrastructure services..."
 docker-compose -f docker-compose.openframe-infrastructure.yml up -d
 
+docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+
+# Wait for infrastructure to be ready
+wait_for_infrastructure
+
 # Wait for Cassandra to be healthy
-echo "Waiting for Cassandra to be healthy..."
-until docker-compose -f docker-docker-compose -f docker-compose.openframe-infrastructure.yml ps | grep "cassandra" | grep "healthy" > /dev/null; do
-    echo "Waiting for Cassandra to be ready..."
-    sleep 5
-done
+# echo "Waiting for Cassandra to be healthy..."
+# until docker-compose -f docker-compose.openframe-infrastructure.yml ps | grep "cassandra" | grep "healthy" > /dev/null; do
+#     echo "Waiting for Cassandra to be ready..."
+#     sleep 5
+# done
+
 
 # Execute initialization scripts
 echo "Initializing Cassandra..."
+mkdir -p ./cassandra/
 docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
 
-docker-compose -f docker-compose.openframe-infrastructure.yml -f docker-compose.openframe-microservices.yml up -d
-
-# Wait for infrastructure to be ready
+# Wait for all infrastructure services to be ready
 wait_for_infrastructure
 
 echo "Finished launching application infra and application services..."
@@ -91,9 +97,6 @@ echo "Finished launching application infra and application services..."
 # Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
 docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
-
-# Start OpenFrame services
-docker-compose -f docker-compose.openframe-services.yml up -d
 
 # Start Fleet MDM after infrastructure is ready
 echo "Starting Fleet MDM deployment..."
@@ -104,7 +107,7 @@ echo "Starting Authentik deployment..."
 docker-compose -f docker-compose.openframe-authentik.yml up -d
 
 # Wait for Fleet to be ready
-check_service "openframe-fleet" 8070
+check_service "fleet" 8070
 if [ $? -ne 0 ]; then
     echo "Failed to start Fleet MDM. Exiting..."
     exit 1
@@ -309,7 +312,7 @@ register_tool \
     "Kafka Message Broker" \
     "Apache Kafka Event Streaming Platform" \
     "http://openframe-kafka-ui" \
-    9092 \
+    8081 \
     "" \
     "" \
     "" \
@@ -592,7 +595,7 @@ register_tool \
     "#78909C"
 
 # Wait for Fleet to be ready
-check_service "openframe-tactical-backend" 8081
+check_service "tactical-nginx" 8080
 if [ $? -ne 0 ]; then
     echo "Failed to start Tactical RMM. Exiting..."
     exit 1
@@ -608,7 +611,7 @@ register_tool \
     "Tactical RMM" \
     "Remote Monitoring and Management Platform" \
     "http://openframe-tactical-backend" \
-    8000 \
+    8080 \
     "tactical" \
     "tactical" \
     "$TACTICAL_API_KEY" \
@@ -643,10 +646,10 @@ fi
 
 echo "OpenFrame is running!"
 echo "Access points:"
-echo "- Tactical RMM: http://localhost:8081"
-echo "- Tactical RMM API: http://localhost:8001"
+echo "- Tactical RMM: http://localhost:8080"
+echo "- Tactical RMM API: http://localhost:8000"
 echo "- Tactical RMM Websockets: http://localhost:8384"
-echo "- Kafka UI: http://localhost:8080"
+echo "- Kafka UI: http://localhost:8081"
 echo "- MongoDB Express: http://localhost:8082"
 echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
@@ -655,3 +658,4 @@ echo "- Fleet MDM: http://localhost:8070"
 echo "- OpenFrame Config Service: http://localhost:8090"
 echo "- OpenFrame Stream Service: http://localhost:8091"
 echo "- OpenFrame API Service: http://localhost:8092"
+

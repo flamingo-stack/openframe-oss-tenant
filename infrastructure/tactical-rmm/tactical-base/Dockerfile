@@ -43,15 +43,16 @@ ENV TACTICAL_USER tactical
 ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
 ENV CUSTOM_CODE_DIR /tmp/custom_code_dir
 
-RUN mkdir -p ${CUSTOM_CODE_DIR}
-
 # Copy the GitHub files from build stage
 COPY --from=create_venv_stage ${TACTICAL_TMP_DIR}/api/tacticalrmm ${TACTICAL_TMP_DIR}/api
 
+RUN mkdir -p ${CUSTOM_CODE_DIR}
 # copy custom code
 COPY helpers.py ${CUSTOM_CODE_DIR}/helpers.py
 COPY custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
 COPY views.py ${CUSTOM_CODE_DIR}/views.py
+COPY local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
+COPY app.ini ${CUSTOM_CODE_DIR}/app.ini
 
 COPY --from=get_scripts_stage /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
 
@@ -61,7 +62,16 @@ COPY --from=create_venv_stage ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 # install deps
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends rsync weasyprint && \
+    apt-get install -y --no-install-recommends \
+    rsync \
+    weasyprint\
+    gcc \
+    python3-dev \
+    nmap \
+    dnsutils \
+    redis-tools \
+    gettext-base \
+    python3-websockets && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \
