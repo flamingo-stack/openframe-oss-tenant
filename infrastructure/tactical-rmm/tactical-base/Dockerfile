@@ -21,7 +21,7 @@ RUN apt-get update && \
 RUN git clone https://github.com/amidaware/tacticalrmm.git .
 
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir setuptools wheel && \
+    pip install --no-cache-dir setuptools wheel daphne django_extensions django-silk && \
     pip install --no-cache-dir -r api/tacticalrmm/requirements.txt
 
 # pulls community scripts from git repo

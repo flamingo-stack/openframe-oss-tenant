@@ -69,21 +69,44 @@ function tactical-init() {
   if [ "$1" = 'backend' ]; then
     echo "Running migrations and init scripts"
     # run migrations and init scripts
+    echo "Running pre_update_tasks"
     python manage.py pre_update_tasks
+    echo "Running migrate"
     python manage.py migrate --no-input
+    echo "Generating json schemas"
     python manage.py generate_json_schemas
+    echo "Getting web tar url"
     python manage.py get_webtar_url >${TACTICAL_DIR}/tmp/web_tar_url
+    echo "Collecting static files"
     python manage.py collectstatic --no-input
+    echo "Running initial_db_setup"
     python manage.py initial_db_setup
+    echo "Running initial_mesh_setup"
     python manage.py initial_mesh_setup
+    echo "Loading chocos"
     python manage.py load_chocos
+    echo "Loading community scripts"
     python manage.py load_community_scripts
+    echo "Reloading nats"
     python manage.py reload_nats
+    echo "Creating natsapi conf"
     python manage.py create_natsapi_conf
-
+    
+    echo "Creating installer user"
     python manage.py create_installer_user
+    echo "Clearing redis celery locks"
     python manage.py clear_redis_celery_locks
+    echo "Running post_update_tasks"
     python manage.py post_update_tasks
+
+    echo "Creating mesh config"
+    python manage.py build_mesh_config
+
+    echo "Checking mesh config"
+    python manage.py create_de
+
+    echo "Checking mesh"
+    python manage.py check_mesh
 
     # create super user
     echo "Creating dashboard user if it doesn't exist"

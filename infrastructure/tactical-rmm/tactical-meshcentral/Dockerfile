@@ -6,28 +6,24 @@ RUN mkdir -p ${TACTICAL_TEMP_DIR}
 
 WORKDIR ${TACTICAL_TEMP_DIR}
 
-RUN apk add --no-cache bash git redis mongodb-tools curl gnupg
+RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # Clone the repository and install dependencies
 RUN git clone https://github.com/amidaware/tacticalrmm.git ${TACTICAL_TEMP_DIR}/repo
-    
+
+COPY config.json ${TACTICAL_TEMP_DIR}/
+
 RUN MESH_VER=$(grep -o 'MESH_VER = "[^"]*"' ${TACTICAL_TEMP_DIR}/repo/api/tacticalrmm/tacticalrmm/settings.py | cut -d'"' -f 2) && \
     echo "MESH_VER is ${MESH_VER}" && \
-    cat > ${TACTICAL_TEMP_DIR}/package.json <<EOF
-{
-  "dependencies": {
-    "archiver": "7.0.1",
-    "meshcentral": "${MESH_VER}",
-    "mongodb": "4.13.0",
-    "otplib": "10.2.3",
-    "pg": "8.7.1",
-    "pgtools": "0.3.2",
-    "saslprep": "1.0.3"
-  }
-}
-EOF
+    export MESH_VER
+
+COPY package.json.template ${TACTICAL_TEMP_DIR}/
+
+RUN envsubst < ${TACTICAL_TEMP_DIR}/package.json.template > ${TACTICAL_TEMP_DIR}/package.json
+
+RUN rm -rf ${TACTICAL_TEMP_DIR}/package.json.template
 
 RUN npm install
 

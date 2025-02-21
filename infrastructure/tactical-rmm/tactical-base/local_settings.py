@@ -2,7 +2,7 @@ from .custom_settings import *
 
 SECRET_KEY = '${DJANGO_SEKRET}'
 
-DEBUG = False
+DEBUG = True
 
 DOCKER_BUILD = True
 
@@ -17,17 +17,26 @@ ALLOWED_HOSTS = ['*']
 
 ADMIN_URL = '${ADMINURL}/'
 
-CORS_ORIGIN_WHITELIST = ['http://${APP_HOST}', 'http://localhost:8080', 'http://192.168.1.208:8000', 'http://192.168.1.208:8080']
-CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = ['*']
 
-SESSION_COOKIE_DOMAIN = None
-CSRF_COOKIE_DOMAIN = None
-CSRF_TRUSTED_ORIGINS = ['http://${API_HOST}', 'http://${APP_HOST}', 'http://localhost:8080', 'http://localhost:8000', 'http://192.168.1.208:8000', 'http://192.168.1.208:8080']
-CSRF_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SAMESITE = 'Lax'
+# Disable all CSRF protections
 CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = None
+CSRF_COOKIE_DOMAIN = None
+CSRF_TRUSTED_ORIGINS = ['http://*', 'https://*']
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_NAME = None
+CSRF_HEADER_NAME = None
+
+# Disable session security
 SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_DOMAIN = None
 
 HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'http://${APP_HOST}/account/provider/callback'}
 
@@ -36,17 +45,18 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': '${POSTGRES_DB}',
         'USER': '${POSTGRES_USER}',
-        'PASSWORD': '${POSTGRES_PASS}',
+        'PASSWORD': '${POSTGRES_PASSWORD}',
         'HOST': '${POSTGRES_HOST}',
         'PORT': '${POSTGRES_PORT}',
     }
 }
 
 MESH_USERNAME = '${MESH_USER}'
-MESH_SITE = 'http://${MESH_HOST}'
+MESH_SITE = 'http://${MESH_HOST}:${MESH_PORT}'
 MESH_TOKEN_KEY = '${MESH_TOKEN}'
 REDIS_HOST    = '${REDIS_HOST}'
-MESH_WS_URL = '${MESH_WS_URL}'
+MESH_DEVICE_GROUP = '${MESH_DEVICE_GROUP}'
+MESH_WS_URL = 'ws://${MESH_HOST}:${MESH_PORT}'
 ADMIN_ENABLED = False
 TRMM_DISABLE_WEB_TERMINAL = ${TRMM_DISABLE_WEB_TERMINAL}
 TRMM_DISABLE_SERVER_SCRIPTS = ${TRMM_DISABLE_SERVER_SCRIPTS}

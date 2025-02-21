@@ -1,0 +1,11 @@
+{
+    "dependencies": {
+      "archiver": "7.0.1",
+      "meshcentral": "${MESH_VER}",
+      "mongodb": "4.13.0",
+      "otplib": "10.2.3",
+      "pg": "8.7.1",
+      "pgtools": "0.3.2",
+      "saslprep": "1.0.3"
+    }
+  }

@@ -1,18 +1,82 @@
 name: openframe-tactical-rmm
 
-services:
+x-environment: &default-environment
+  # MongoDB Configuration
+  MONGO_INITDB_ROOT_USERNAME: &mongo-user mongouser
+  MONGO_INITDB_ROOT_PASSWORD: &mongo-pass mongopass
+  MONGO_INITDB_DATABASE: &mongo-db meshcentral
+  MONGODB_USER: *mongo-user
+  MONGODB_PASSWORD: *mongo-pass
+  MONGODB_HOST: &mongo-host tactical-mongodb
+  MONGODB_PORT: &mongo-port 27017
 
+  # PostgreSQL Configuration
+  POSTGRES_DB: &postgres-db tacticalrmm
+  POSTGRES_USER: &postgres-user postgres
+  POSTGRES_PASSWORD: &postgres-pass postgrespass
+  POSTGRES_HOST: &postgres-host tactical-postgres
+  POSTGRES_PORT: &postgres-port 5432
+
+  # Redis Configuration
+  REDIS_HOST: &redis-host tactical-redis
+
+  # MeshCentral Configuration
+  MESH_USER: &mesh-user tactical
+  MESH_PASS: &mesh-pass tacticalpass
+  MESH_DEVICE_GROUP: &mesh-device-group TacticalRMM
+  MESH_PORT: &mesh-port 4443
+  MESH_HOST: &mesh-host tactical-meshcentral
+  MESH_SERVICE: *mesh-host
+  MESH_WS_URL: &mesh-ws-url ws://tactical-meshcentral:4443
+  MESH_PERSISTENT_CONFIG: &mesh-persistent 0
+  MESH_DISABLE_SSL: &mesh-ssl 1
+  MESH_COMPRESSION_ENABLED: &mesh-compression true
+  MESH_WEBRTC_ENABLED: &mesh-webrtc false
+
+  # NGINX Configuration
+  NGINX_HOST_IP: &nginx-host tactical-nginx
+  NGINX_HOST_PORT: &nginx-port 8080
+
+  # Tactical RMM Configuration
+  TRMM_USER: &trmm-user tactical
+  TRMM_PASS: &trmm-pass tactical
+  TACTICAL_BACKEND_PORT: &backend-port 8000
+  TRMM_PROTO: &trmm-proto http
+  TRMM_DISABLE_WEB_TERMINAL: &web-terminal "False"
+  TRMM_DISABLE_SERVER_SCRIPTS: &server-scripts "False"
+  TRMM_DISABLE_SSO: &sso "False"
+  TRMM_DISABLE_2FA: &tfa "True"
+
+  # Development Settings
+  NODE_ENV: &node-env "development"
+  DOCKER_BUILD: &docker-build "false"
+
+  # WebSocket Configuration
+  WS_PROTO: &ws-proto "ws"
+  WS_MASK_OVERRIDE: &ws-mask 1
+
+  # Frontend Configuration
+  PUBLIC_DIR: &public-dir /usr/share/nginx/html
+  TACTICAL_READY_FILE: &ready-file /opt/tactical/tmp/tactical/ready
+  TACTICAL_DIR: &tactical-dir /opt/tactical
+
+  # API Configuration
+  API_HOST: &api-host tactical-backend:8000
+  APP_HOST: &app-host tactical-frontend:8080
+
+# Default service configuration that all services will extend
+x-service-defaults: &service-defaults
+  restart: always
+  networks:
+    - openframe-network
+  environment: *default-environment
+
+services:
   tactical-mongodb:
+    <<: *service-defaults
     container_name: openframe-tactical-mongodb
     image: mongo:4.4.18
     platform: linux/arm64
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: mongouser
-      MONGO_INITDB_ROOT_PASSWORD: mongopass
-      MONGO_INITDB_DATABASE: meshcentral
-    networks:
-      - openframe-network
     volumes:
       - tactical_mongo_data:/data/db
     user: root
@@ -29,18 +93,13 @@ services:
       start_period: 10s
 
   tactical-postgres:
+    <<: *service-defaults
     container_name: openframe-tactical-postgres
     image: postgres:13-alpine
     platform: linux/arm64
-    restart: always
-    environment:
-      POSTGRES_DB: tacticalrmm
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespass
+
     volumes:
       - tactical_postgres_data:/var/lib/postgresql/data
-    networks:
-      - openframe-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -49,13 +108,11 @@ services:
       start_period: 10s
 
   tactical-redis:
+    <<: *service-defaults
     container_name: openframe-tactical-redis
     image: redis:6.0-alpine
-    restart: always
     volumes:
       - tactical_redis_data:/data
-    networks:
-      - openframe-network
     command: redis-server --save 3600 1 300 100 60 10000
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
@@ -65,36 +122,21 @@ services:
       start_period: 10s
 
   tactical-nats:
+    <<: *service-defaults
     container_name: openframe-tactical-nats
     image: tacticalrmm/tactical-nats:latest
     platform: linux/amd64
-    restart: always
-    environment:
-      API_HOST: tactical-backend:8000  # Updated to match new port
     volumes:
       - tactical_nats_data:/opt/tactical
-    networks:
-      - openframe-network
 
   tactical-meshcentral:
+    <<: *service-defaults
     container_name: openframe-tactical-meshcentral
     platform: linux/amd64
     build:
       context: ./infrastructure/tactical-rmm/tactical-meshcentral
       dockerfile: Dockerfile
-    environment:
-      MESH_HOST: tactical-meshcentral
-      MESH_USER: tactical
-      MESH_PASS: tactical
-      MONGODB_USER: mongouser
-      MONGODB_PASSWORD: mongopass
-      NGINX_HOST_IP: tactical-nginx
-      NGINX_HOST_PORT: 8080
-      MESH_PERSISTENT_CONFIG: 0
-      WS_MASK_OVERRIDE: 1
-      MESH_DISABLE_SSL: 1
-    networks:
-      - openframe-network
+    
     volumes:
       - tactical_meshcentral_data:/opt/tactical
     user: root
@@ -105,97 +147,49 @@ services:
       tactical-redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral' && curl -s http://localhost:4443/health.ashx" ]
+      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral' && curl -s http://localhost:8383/health.ashx" ]
       interval: 15s
       timeout: 10s
       retries: 5
       start_period: 30s
 
   tactical-frontend:
+    <<: *service-defaults
     container_name: openframe-tactical-frontend
     build:
       context: ./infrastructure/tactical-rmm/tactical-frontend
       dockerfile: Dockerfile
-      args:
-        NODE_ENV: "development"
-        DOCKER_BUILD: "false"
-    restart: always
-    networks:
-      - openframe-network
     volumes:
       - tactical_frontend_data:/opt/tactical
-    environment:
-      API_HOST: localhost:8000  # Updated to match new port
-      TRMM_PROTO: http
-      PUBLIC_DIR: /usr/share/nginx/html
-      TACTICAL_READY_FILE: /opt/tactical/tmp/tactical/ready
-      TACTICAL_DIR: /opt/tactical
-      NODE_ENV: "development"
-      DOCKER_BUILD: "false"
-      WS_PROTO: "ws"
 
   tactical-nginx:
+    <<: *service-defaults
     container_name: openframe-tactical-nginx
     build:
       context: ./infrastructure/tactical-rmm/tactical-nginx
       dockerfile: Dockerfile
     platform: linux/amd64
-    restart: always
-    environment:
-      APP_HOST: tactical-frontend:8080
-      API_HOST: tactical-backend:8000  # Updated to match new port
-      MESH_HOST: tactical-meshcentral:4443
-      TRMM_PROTO: http
-      DOCKER_BUILD: "false"
-      NODE_ENV: "development"
-    networks:
-      - openframe-network
     ports:
       - "8080:8080"  
       - "8000:8000"  
-      - "8383:8383"  
+      - "8383:8383"
     volumes:
       - tactical_nginx_data:/opt/tactical
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://tactical-nginx:8080/nginx_status" ]  # Using internal port for healthcheck
+      test: [ "CMD", "curl", "-f", "http://tactical-nginx:8080/nginx_status" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
   tactical-backend:
+    <<: *service-defaults
     container_name: openframe-tactical-backend
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
     platform: linux/amd64
     command: [ "tactical-backend" ]
-    restart: always
-    environment:
-      TRMM_USER: tactical
-      TRMM_PASS: tactical
-      TACTICAL_BACKEND_PORT: 8000
-      POSTGRES_HOST: tactical-postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASS: postgrespass
-      POSTGRES_DB: tacticalrmm
-      MESH_SERVICE: tactical-meshcentral
-      MESH_WS_URL: ws://tactical-meshcentral:4443
-      MESH_USER: tactical
-      MESH_PASS: meshcentralpass
-      MESH_HOST: tactical-meshcentral:4443
-      API_HOST: tactical-backend:${TACTICAL_BACKEND_PORT}
-      APP_HOST: tactical-frontend:8080
-      REDIS_HOST: tactical-redis
-      TRMM_DISABLE_WEB_TERMINAL: "False"
-      TRMM_DISABLE_SERVER_SCRIPTS: "False"
-      TRMM_DISABLE_SSO: "False"
-      TRMM_DISABLE_2FA: "True"
-      DOCKER_BUILD: "false"
-      NODE_ENV: "development"
-    networks:
-      - openframe-network
     volumes:
       - tactical_backend_data:/opt/tactical
     depends_on:
@@ -215,38 +209,13 @@ services:
       start_period: 30s
 
   tactical-websockets:
+    <<: *service-defaults
     container_name: openframe-tactical-websockets
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
     platform: linux/amd64
     command: [ "tactical-websockets" ]
-    restart: always
-    environment:
-      TRMM_USER: tactical
-      TRMM_PASS: tactical
-      TACTICAL_BACKEND_PORT: 8000
-      POSTGRES_HOST: tactical-postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASS: postgrespass
-      POSTGRES_DB: tacticalrmm
-      MESH_SERVICE: tactical-meshcentral
-      MESH_WS_URL: ws://tactical-meshcentral:4443
-      MESH_USER: tactical
-      MESH_PASS: meshcentralpass
-      MESH_HOST: tactical-meshcentral:4443
-      API_HOST: tactical-backend:${TACTICAL_BACKEND_PORT}
-      APP_HOST: tactical-frontend:8080
-      REDIS_HOST: tactical-redis
-      TRMM_DISABLE_WEB_TERMINAL: "False"
-      TRMM_DISABLE_SERVER_SCRIPTS: "False"
-      TRMM_DISABLE_SSO: "False"
-      TRMM_DISABLE_2FA: "True"
-      DOCKER_BUILD: "false"
-      NODE_ENV: "development"
-    networks:
-      - openframe-network
     volumes:
       - tactical_websockets_data:/opt/tactical
     depends_on:
@@ -268,38 +237,13 @@ services:
       start_period: 10s
 
   tactical-celery:
+    <<: *service-defaults
     container_name: openframe-tactical-celery
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
     platform: linux/amd64
     command: [ "tactical-celery" ]
-    restart: always
-    environment:
-      TRMM_USER: tactical
-      TRMM_PASS: tactical
-      TACTICAL_BACKEND_PORT: 8000
-      POSTGRES_HOST: tactical-postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASS: postgrespass
-      POSTGRES_DB: tacticalrmm
-      MESH_SERVICE: tactical-meshcentral
-      MESH_WS_URL: ws://tactical-meshcentral:4443
-      MESH_USER: tactical
-      MESH_PASS: meshcentralpass
-      MESH_HOST: tactical-meshcentral:4443
-      API_HOST: tactical-backend:${TACTICAL_BACKEND_PORT}
-      APP_HOST: tactical-frontend:8080
-      REDIS_HOST: tactical-redis
-      TRMM_DISABLE_WEB_TERMINAL: "False"
-      TRMM_DISABLE_SERVER_SCRIPTS: "False"
-      TRMM_DISABLE_SSO: "False"
-      TRMM_DISABLE_2FA: "True"
-      DOCKER_BUILD: "false"
-      NODE_ENV: "development"
-    networks:
-      - openframe-network
     volumes:
       - tactical_celery_data:/opt/tactical
     depends_on:
@@ -321,38 +265,13 @@ services:
       start_period: 10s
 
   tactical-celerybeat:
+    <<: *service-defaults
     container_name: openframe-tactical-celerybeat
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
     platform: linux/amd64
     command: [ "tactical-celerybeat" ]
-    restart: always
-    environment:
-      TRMM_USER: tactical
-      TRMM_PASS: tactical
-      TACTICAL_BACKEND_PORT: 8000
-      POSTGRES_HOST: tactical-postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASS: postgrespass
-      POSTGRES_DB: tacticalrmm
-      MESH_SERVICE: tactical-meshcentral
-      MESH_WS_URL: ws://tactical-meshcentral:4443
-      MESH_USER: tactical
-      MESH_PASS: meshcentralpass
-      MESH_HOST: tactical-meshcentral:4443
-      API_HOST: tactical-backend:${TACTICAL_BACKEND_PORT}
-      APP_HOST: tactical-frontend:8080
-      REDIS_HOST: tactical-redis
-      TRMM_DISABLE_WEB_TERMINAL: "False"
-      TRMM_DISABLE_SERVER_SCRIPTS: "False"
-      TRMM_DISABLE_SSO: "False"
-      TRMM_DISABLE_2FA: "True"
-      DOCKER_BUILD: "false"
-      NODE_ENV: "development"
-    networks:
-      - openframe-network
     volumes:
       - tactical_celerybeat_data:/opt/tactical
     depends_on:
@@ -372,6 +291,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
 networks:
   openframe-network:
     external: true
