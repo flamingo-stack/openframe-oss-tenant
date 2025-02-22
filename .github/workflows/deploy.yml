@@ -188,7 +188,7 @@ jobs:
       - name: Deploy Tactical RMM
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-tactical-rmm.yml
+          sed -i 's/^[[:space:]]*build:$/    image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-/g' docker-compose.openframe-tactical-rmm.yml
           
           # Deploy Tactical RMM services
           docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
@@ -200,7 +200,7 @@ jobs:
       - name: Deploy Fleet MDM
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-fleet-mdm.yml
+          sed -i 's/^[[:space:]]*build:$/    image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-/g' docker-compose.openframe-fleet-mdm.yml
           
           # Deploy Fleet MDM services
           docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
@@ -212,7 +212,7 @@ jobs:
       - name: Deploy Authentik
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-authentik.yml
+          sed -i 's/^[[:space:]]*build:$/    image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-/g' docker-compose.openframe-authentik.yml
           
           # Deploy Authentik services
           docker-compose -f docker-compose.openframe-authentik.yml up -d
