@@ -1,4 +1,4 @@
-name: OpenFrame Deployment
+name: OpenFrame CI/CD
 
 permissions:
   contents: write
@@ -6,6 +6,10 @@ permissions:
   actions: write
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       environment:
@@ -23,7 +27,7 @@ env:
   ORGANIZATION: flamingo-cx
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,7 +46,19 @@ jobs:
           
       - name: Build with Maven
         run: mvn -B package --file pom.xml
-        
+
+  deploy:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
