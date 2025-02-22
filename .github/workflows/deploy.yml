@@ -52,3 +52,29 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push infrastructure images
+        run: |
+          # Build and push MongoDB
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }}
+          
+          # Build and push Cassandra
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }}
+          
+          # Build and push NiFi
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }}
+          
+          # Build and push Config Server
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }} ./services/openframe-config/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }}
+          
+          # Build and push API Service
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }} ./services/openframe-api/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }}
+          
+          # Build and push Management Service
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ./services/openframe-management/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }}
