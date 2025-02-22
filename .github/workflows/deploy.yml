@@ -249,3 +249,133 @@ jobs:
                 \"layerColor\": \"#455A64\"
               }
             }"
+            
+          # Register MongoDB
+          curl -X POST "http://localhost:8095/v1/tools/mongodb-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "MONGODB",
+                "name": "MongoDB Database",
+                "description": "MongoDB NoSQL Database",
+                "url": "mongodb://openframe-mongodb",
+                "port": 27017,
+                "category": "NoSQL Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {
+                  "username": "openframe",
+                  "password": "password123456789"
+                },
+                "layer": "Datasource",
+                "layerOrder": 1,
+                "layerColor": "#616161"
+              }
+            }'
+            
+          # Register Cassandra
+          curl -X POST "http://localhost:8095/v1/tools/cassandra-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "CASSANDRA",
+                "name": "Cassandra Database",
+                "description": "Cassandra Distributed Database",
+                "url": "cassandra://openframe-cassandra",
+                "port": 9042,
+                "category": "NoSQL Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Datasource",
+                "layerOrder": 3,
+                "layerColor": "#616161"
+              }
+            }'
+            
+          # Register Kafka
+          curl -X POST "http://localhost:8095/v1/tools/kafka-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "KAFKA",
+                "name": "Kafka Message Broker",
+                "description": "Apache Kafka Event Streaming Platform",
+                "url": "http://openframe-kafka-ui",
+                "port": 8081,
+                "category": "Message Broker",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Streaming",
+                "layerOrder": 1,
+                "layerColor": "#1E88E5"
+              }
+            }'
+            
+          # Register Redis
+          curl -X POST "http://localhost:8095/v1/tools/redis-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "REDIS",
+                "name": "Redis Cache",
+                "description": "Redis In-Memory Cache",
+                "url": "redis://openframe-redis",
+                "port": 6379,
+                "category": "In-Memory Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Datasource",
+                "layerOrder": 2,
+                "layerColor": "#616161"
+              }
+            }'
+            
+          # Register Authentik
+          curl -X POST "http://localhost:8095/v1/tools/authentik" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "AUTHENTIK",
+                "name": "Authentik SSO",
+                "description": "Authentik Identity Provider",
+                "url": "http://openframe-authentik-server",
+                "port": 5001,
+                "category": "Identity Provider",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "akadmin@openframe.local",
+                  "password": "openframe123!",
+                  "token": "openframe-api-token-123456789"
+                },
+                "layer": "Integrated Tools",
+                "layerOrder": 2,
+                "layerColor": "#455A64"
+              }
+            }'
+            
+          # Register NiFi
+          curl -X POST "http://localhost:8095/v1/tools/nifi-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "NIFI",
+                "name": "Apache NiFi",
+                "description": "NiFi Data Integration Platform",
+                "url": "https://openframe-nifi",
+                "port": 8443,
+                "category": "Data Integration",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {
+                  "username": "openframe",
+                  "password": "password123456789"
+                },
+                "layer": "Data Integration",
+                "layerOrder": 1,
+                "layerColor": "#0D47A1"
+              }
+            }'
