@@ -169,3 +169,83 @@ jobs:
           # Wait for Authentik to be ready
           echo "Waiting for Authentik to be ready..."
           timeout 300 bash -c 'until curl -f http://localhost:5001/api/v3/core/applications/ > /dev/null 2>&1; do sleep 2; done'
+
+      - name: Register tools with OpenFrame API
+        run: |
+          # Wait for API to be ready
+          echo "Waiting for OpenFrame API to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8095/health > /dev/null 2>&1; do sleep 2; done'
+          
+          # Get Fleet token
+          FLEET_TOKEN=$(docker exec openframe-fleet cat /etc/fleet/api_token.txt)
+          
+          # Get Tactical RMM API key
+          TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
+          
+          # Register OpenFrame UI
+          curl -X POST "http://localhost:8095/v1/tools/openframe-ui" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "OPENFRAME",
+                "name": "OpenFrame UI",
+                "description": "OpenFrame User Interface Service",
+                "url": "http://openframe-ui",
+                "port": 4000,
+                "category": "User Interface",
+                "platformCategory": "OpenFrame Core",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Interface",
+                "layerOrder": 1,
+                "layerColor": "#FFB300"
+              }
+            }'
+            
+          # Register Fleet MDM
+          curl -X POST "http://localhost:8095/v1/tools/fleet" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"tool\": {
+                \"toolType\": \"FLEET\",
+                \"name\": \"Fleet MDM\",
+                \"description\": \"Fleet Device Management Platform\",
+                \"url\": \"http://openframe-fleet\",
+                \"port\": 8070,
+                \"category\": \"Device Management\",
+                \"platformCategory\": \"Integrated Tool\",
+                \"enabled\": true,
+                \"credentials\": {
+                  \"username\": \"admin@openframe.local\",
+                  \"password\": \"openframe123!\",
+                  \"token\": \"$FLEET_TOKEN\"
+                },
+                \"layer\": \"Integrated Tools\",
+                \"layerOrder\": 1,
+                \"layerColor\": \"#455A64\"
+              }
+            }"
+            
+          # Register Tactical RMM
+          curl -X POST "http://localhost:8095/v1/tools/tactical-rmm" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"tool\": {
+                \"toolType\": \"TACTICAL_RMM\",
+                \"name\": \"Tactical RMM\",
+                \"description\": \"Remote Monitoring and Management Platform\",
+                \"url\": \"http://openframe-tactical-backend\",
+                \"port\": 8080,
+                \"category\": \"Device Management\",
+                \"platformCategory\": \"Integrated Tool\",
+                \"enabled\": true,
+                \"credentials\": {
+                  \"username\": \"tactical\",
+                  \"password\": \"tactical\",
+                  \"token\": \"$TACTICAL_API_KEY\"
+                },
+                \"layer\": \"Integrated Tools\",
+                \"layerOrder\": 3,
+                \"layerColor\": \"#455A64\"
+              }
+            }"
