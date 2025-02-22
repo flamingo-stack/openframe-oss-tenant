@@ -79,10 +79,11 @@ jobs:
         
       - name: Set up Docker Compose
         run: |
-          # Use Docker Compose V2 that comes with the runner
-          docker compose version
+          # Install Docker Compose V2 plugin
+          sudo apt-get update
+          sudo apt-get install -y docker-compose-plugin
           # Create symbolic link for backward compatibility
-          sudo ln -s /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+          sudo ln -s /usr/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
           # Verify both commands work
           docker compose version
           docker-compose --version
