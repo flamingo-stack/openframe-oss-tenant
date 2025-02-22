@@ -459,18 +459,12 @@ jobs:
           # Test network connectivity
           ./scripts/test-network.sh
           
-          # Check service health endpoints
+          # Test all public endpoints
+          ./scripts/test-public-endpoints.sh
+          
+          # Check OpenFrame API health (required for tool registration)
           echo "Checking OpenFrame API health..."
           curl -f http://localhost:8095/health || exit 1
-          
-          echo "Checking Fleet MDM health..."
-          curl -f http://localhost:8070/health || exit 1
-          
-          echo "Checking Tactical RMM health..."
-          curl -f http://localhost:8080/nginx_status || exit 1
-          
-          echo "Checking Authentik health..."
-          curl -f http://localhost:5001/api/v3/core/applications/ || exit 1
           
           echo "All services are healthy"
 
