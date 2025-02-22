@@ -379,3 +379,68 @@ jobs:
                 "layerColor": "#0D47A1"
               }
             }'
+            
+          # Register Grafana
+          curl -X POST "http://localhost:8095/v1/tools/grafana-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "GRAFANA",
+                "name": "Grafana",
+                "description": "Grafana Monitoring Dashboard",
+                "url": "http://openframe-grafana",
+                "port": 3000,
+                "category": "Monitoring Dashboard",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {
+                  "username": "admin",
+                  "password": "admin"
+                },
+                "layer": "Monitoring",
+                "layerOrder": 1,
+                "layerColor": "#78909C"
+              }
+            }'
+            
+          # Register Prometheus
+          curl -X POST "http://localhost:8095/v1/tools/prometheus-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "PROMETHEUS",
+                "name": "Prometheus",
+                "description": "Prometheus Metrics Database",
+                "url": "http://openframe-prometheus",
+                "port": 9090,
+                "category": "Metrics Database",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Monitoring",
+                "layerOrder": 2,
+                "layerColor": "#78909C"
+              }
+            }'
+            
+          # Register Loki
+          curl -X POST "http://localhost:8095/v1/tools/loki-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "LOKI",
+                "name": "Loki",
+                "description": "Loki Log Aggregation System",
+                "url": "http://openframe-loki",
+                "port": 3100,
+                "category": "Log Aggregation",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Monitoring",
+                "layerOrder": 3,
+                "layerColor": "#78909C"
+              }
+            }'
+            
+          echo "All tools registered successfully"
