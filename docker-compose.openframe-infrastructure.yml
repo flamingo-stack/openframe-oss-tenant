@@ -1,11 +1,7 @@
 name: openframe-infrastructure
-
 services:
   # MongoDB
   mongodb:
-    build:
-      context: infrastructure/mongodb/
-      dockerfile: Dockerfile
     container_name: openframe-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: openframe
@@ -29,7 +25,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-
+    image: ghcr.io/flamingo-cx/openframe-mongodb
   # MongoDB Exporter
   mongodb-exporter:
     image: bitnami/mongodb-exporter:latest
@@ -43,12 +39,8 @@ services:
       - loki
     networks:
       - openframe-network
-
   # Cassandra
   cassandra:
-    build:
-      context: infrastructure/cassandra/
-      dockerfile: Dockerfile
     container_name: openframe-cassandra
     ports:
       - "9042:9042"
@@ -83,6 +75,7 @@ services:
       - openframe-network
     depends_on:
       - loki
+    image: ghcr.io/flamingo-cx/openframe-cassandra
   # Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -108,7 +101,6 @@ services:
       start_period: 10s
     depends_on:
       - loki
-
   # Kafka
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -144,13 +136,9 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-
   # Nifi
   nifi:
     container_name: openframe-nifi
-    build:
-      context: infrastructure/nifi/
-      dockerfile: Dockerfile
     ports:
       - "8443:8443"
       - "9096:9096"
@@ -170,7 +158,7 @@ services:
       - openframe-network
     depends_on:
       - loki
-
+    image: ghcr.io/flamingo-cx/openframe-nifi
   # Prometheus
   prometheus:
     image: prom/prometheus:latest
@@ -188,7 +176,6 @@ services:
       - openframe-network
     depends_on:
       - loki
-
   # Grafana
   grafana:
     image: grafana/grafana:latest
@@ -214,7 +201,6 @@ services:
     depends_on:
       - loki
       - prometheus
-
   # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -230,7 +216,6 @@ services:
     depends_on:
       - loki
       - kafka
-
   # Mongo Express
   mongo-express:
     image: mongo-express:latest
@@ -246,7 +231,6 @@ services:
     depends_on:
       - loki
       - mongodb
-
   # Redis Exporter
   redis-exporter:
     image: oliver006/redis_exporter:latest
@@ -260,7 +244,6 @@ services:
     depends_on:
       - redis
       - loki
-
   # Promtail
   promtail:
     image: grafana/promtail:latest
@@ -286,7 +269,6 @@ services:
         max-size: "10m"
         max-file: "3"
         tag: "{{.Name}}"
-
   # Redis
   redis:
     image: redis:latest
@@ -303,7 +285,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-
   # Loki
   loki:
     image: grafana/loki:latest
@@ -328,14 +309,13 @@ services:
       retries: 10
       start_period: 40s
     restart: unless-stopped
-
   pinot-controller:
     image: apachepinot/pinot:latest
     container_name: openframe-pinot-controller
     command: StartController -configFileName /opt/pinot/config/pinot.conf
     ports:
       - "9000:9000"
-      - "9011:9011"  # JMX Exporter metrics
+      - "9011:9011" # JMX Exporter metrics
     volumes:
       - ./infrastructure/pinot/config:/opt/pinot/config
       - pinot_controller_data:/opt/pinot/data
@@ -343,8 +323,8 @@ services:
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
       JAVA_OPTS: >
-        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9011:/opt/jmx_exporter/config.yml
-        -Xmx1G -Xms1G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9011:/opt/jmx_exporter/config.yml -Xmx1G -Xms1G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+
     networks:
       - openframe-network
     depends_on:
@@ -356,14 +336,13 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-
   pinot-broker:
     image: apachepinot/pinot:latest
     container_name: openframe-pinot-broker
     command: StartBroker -clusterName openframe-pinot -zkAddress openframe-zookeeper:2181 -configFileName /opt/pinot/config/pinot.conf
     ports:
       - "8099:8099"
-      - "9012:9012"  # JMX Exporter metrics
+      - "9012:9012" # JMX Exporter metrics
     volumes:
       - ./infrastructure/pinot/config:/opt/pinot/config
       - pinot_broker_data:/opt/pinot/data
@@ -371,8 +350,8 @@ services:
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
       JAVA_OPTS: >
-        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9012:/opt/jmx_exporter/config.yml
-        -Xmx2G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9012:/opt/jmx_exporter/config.yml -Xmx2G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+
     networks:
       - openframe-network
     depends_on:
@@ -383,14 +362,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
   pinot-server:
     image: apachepinot/pinot:latest
     container_name: openframe-pinot-server
     command: StartServer -clusterName openframe-pinot -zkAddress openframe-zookeeper:2181 -configFileName /opt/pinot/config/pinot.conf
     ports:
-      - "8097:8097"  # Admin port
-      - "9013:9013"  # JMX Exporter metrics
+      - "8097:8097" # Admin port
+      - "9013:9013" # JMX Exporter metrics
     volumes:
       - ./infrastructure/pinot/config:/opt/pinot/config
       - pinot_server_data:/opt/pinot/data
@@ -398,8 +376,8 @@ services:
       - ./monitoring/prometheus/jmx_prometheus_javaagent.jar:/opt/jmx_exporter/jmx_prometheus_javaagent.jar
     environment:
       JAVA_OPTS: >
-        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9013:/opt/jmx_exporter/config.yml
-        -Xmx2G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+        -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9013:/opt/jmx_exporter/config.yml -Xmx2G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+
     networks:
       - openframe-network
     depends_on:
@@ -410,11 +388,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
   config-server:
-    build:
-      context: ./services/openframe-config
-      dockerfile: Dockerfile
     container_name: openframe-config-server
     ports:
       - "8888:8888"
@@ -426,11 +400,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
+    image: ghcr.io/flamingo-cx/openframe-config
   api:
-    build:
-      context: ./services/openframe-api
-      dockerfile: Dockerfile
     container_name: openframe-api
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -450,11 +421,8 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-
+    image: ghcr.io/flamingo-cx/openframe-api
   management:
-    build:
-      context: ./services/openframe-management
-      dockerfile: Dockerfile
     container_name: openframe-management
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -470,11 +438,8 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-
+    image: ghcr.io/flamingo-cx/openframe-management
   openframe-ui:
-    build:
-      context: ./services/openframe-ui
-      dockerfile: Dockerfile
     environment:
       - VITE_CLIENT_ID=openframe_web_dashboard
       - VITE_CLIENT_SECRET=prod_secret
@@ -485,11 +450,8 @@ services:
       - management
     networks:
       - openframe-network
-
+    image: ghcr.io/flamingo-cx/openframe-ui
   stream:
-    build:
-      context: ./services/openframe-stream
-      dockerfile: Dockerfile
     container_name: openframe-stream
     ports:
       - "8082:8082"
@@ -505,11 +467,8 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-
+    image: ghcr.io/flamingo-cx/openframe-stream
   gateway:
-    build:
-      context: ./services/openframe-gateway
-      dockerfile: Dockerfile
     container_name: openframe-gateway
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -526,13 +485,12 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-
+    image: ghcr.io/flamingo-cx/openframe-gateway
 networks:
   openframe-network:
     name: openframe-network
     driver: bridge
     external: true
-
 volumes:
   loki_data:
   mongodb_data:
