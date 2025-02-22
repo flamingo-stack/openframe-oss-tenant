@@ -98,45 +98,39 @@ jobs:
           
       - name: Build and push infrastructure images
         run: |
-          # Build and push MongoDB
+          # Infrastructure Services
           docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }}
-          
-          # Build and push Cassandra
           docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }}
-          
-          # Build and push NiFi
           docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-postgresql:${{ github.sha }} ./infrastructure/postgresql/
           
-          # Build and push Config Server
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ./services/openframe-config/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }}
+          # Tactical RMM Components
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-base:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-base/
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-frontend:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-frontend/
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-meshcentral:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-meshcentral/
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-nginx:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-nginx/
           
-          # Build and push API Service
+          # Fleet MDM
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-fleetmdm:${{ github.sha }} ./infrastructure/fleetmdm/
+          
+          # Core Libraries
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-core:${{ github.sha }} ./libs/openframe-core/
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-data:${{ github.sha }} ./libs/openframe-data/
+          
+          # Services
           docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ./services/openframe-api/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }}
-          
-          # Build and push Management Service
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ./services/openframe-config/
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-gateway:${{ github.sha }} ./services/openframe-gateway/
           docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ./services/openframe-management/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-stream:${{ github.sha }} ./services/openframe-stream/
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-ui:${{ github.sha }} ./services/openframe-ui/
           
-          # Tag all images with 'latest' for convenience
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
-          
-          # Push latest tags
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
+          # Push all images with SHA tags
+          for service in mongodb cassandra nifi postgresql tactical-base tactical-frontend tactical-meshcentral tactical-nginx fleetmdm core data api config gateway management stream ui; do
+            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:${{ github.sha }}
+            docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:latest
+            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:latest
+          done
 
 
 
