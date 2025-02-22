@@ -108,7 +108,7 @@ jobs:
           
           # Wait for infrastructure services to be ready
           echo "Waiting for MongoDB to be ready..."
-          timeout 300 bash -c 'until docker exec openframe-mongodb mongosh --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          timeout 300 bash -c 'until docker exec openframe-mongodb mongosh -u "${{ secrets.MONGODB_USERNAME }}" -p "${{ secrets.MONGODB_PASSWORD }}" --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
           
           echo "Waiting for Cassandra to be ready..."
           timeout 300 bash -c 'until docker exec openframe-cassandra cqlsh -e "describe keyspaces" > /dev/null 2>&1; do sleep 2; done'
@@ -118,10 +118,13 @@ jobs:
           
           # Initialize Cassandra
           echo "Initializing Cassandra..."
-          docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
+          docker exec openframe-cassandra cqlsh \
+            -u "${{ secrets.CASSANDRA_USERNAME }}" \
+            -p "${{ secrets.CASSANDRA_PASSWORD }}" \
+            -f /docker-entrypoint-initdb.d/cassandra-init.cql
           
           echo "Waiting for Redis to be ready..."
-          timeout 300 bash -c 'until docker exec openframe-redis redis-cli ping > /dev/null 2>&1; do sleep 2; done'
+          timeout 300 bash -c 'until docker exec openframe-redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" ping > /dev/null 2>&1; do sleep 2; done'
           
           echo "Waiting for Zookeeper to be ready..."
           timeout 300 bash -c 'until docker exec openframe-zookeeper bash -c "echo ruok | nc localhost 2181 | grep imok" > /dev/null 2>&1; do sleep 2; done'
@@ -178,9 +181,15 @@ jobs:
           
           # Get Fleet token
           FLEET_TOKEN=$(docker exec openframe-fleet cat /etc/fleet/api_token.txt)
+          if [ -z "$FLEET_TOKEN" ]; then
+            FLEET_TOKEN="${{ secrets.FLEET_API_TOKEN }}"
+          fi
           
           # Get Tactical RMM API key
-          TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
+          TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" get tactical_api_key | tr -d '"')
+          if [ -z "$TACTICAL_API_KEY" ]; then
+            TACTICAL_API_KEY="${{ secrets.TACTICAL_API_KEY }}"
+          fi
           
           # Register OpenFrame UI
           curl -X POST "http://localhost:8095/v1/tools/openframe-ui" \
@@ -216,8 +225,8 @@ jobs:
                 \"platformCategory\": \"Integrated Tool\",
                 \"enabled\": true,
                 \"credentials\": {
-                  \"username\": \"admin@openframe.local\",
-                  \"password\": \"openframe123!\",
+                  \"username\": \"${{ secrets.FLEET_ADMIN_EMAIL }}\",
+                  \"password\": \"${{ secrets.FLEET_ADMIN_PASSWORD }}\",
                   \"token\": \"$FLEET_TOKEN\"
                 },
                 \"layer\": \"Integrated Tools\",
@@ -240,8 +249,8 @@ jobs:
                 \"platformCategory\": \"Integrated Tool\",
                 \"enabled\": true,
                 \"credentials\": {
-                  \"username\": \"tactical\",
-                  \"password\": \"tactical\",
+                  \"username\": \"${{ secrets.TACTICAL_USERNAME }}\",
+                  \"password\": \"${{ secrets.TACTICAL_PASSWORD }}\",
                   \"token\": \"$TACTICAL_API_KEY\"
                 },
                 \"layer\": \"Integrated Tools\",
@@ -264,8 +273,8 @@ jobs:
                 "platformCategory": "OpenFrame Datasource",
                 "enabled": true,
                 "credentials": {
-                  "username": "openframe",
-                  "password": "password123456789"
+                  "username": "${{ secrets.MONGODB_USERNAME }}",
+                  "password": "${{ secrets.MONGODB_PASSWORD }}"
                 },
                 "layer": "Datasource",
                 "layerOrder": 1,
@@ -347,9 +356,9 @@ jobs:
                 "platformCategory": "Integrated Tool",
                 "enabled": true,
                 "credentials": {
-                  "username": "akadmin@openframe.local",
-                  "password": "openframe123!",
-                  "token": "openframe-api-token-123456789"
+                  "username": "${{ secrets.AUTHENTIK_ADMIN_EMAIL }}",
+                  "password": "${{ secrets.AUTHENTIK_ADMIN_PASSWORD }}",
+                  "token": "${{ secrets.AUTHENTIK_API_TOKEN }}"
                 },
                 "layer": "Integrated Tools",
                 "layerOrder": 2,
@@ -371,8 +380,8 @@ jobs:
                 "platformCategory": "OpenFrame Service",
                 "enabled": true,
                 "credentials": {
-                  "username": "openframe",
-                  "password": "password123456789"
+                  "username": "${{ secrets.NIFI_USERNAME }}",
+                  "password": "${{ secrets.NIFI_PASSWORD }}"
                 },
                 "layer": "Data Integration",
                 "layerOrder": 1,
@@ -394,8 +403,8 @@ jobs:
                 "platformCategory": "OpenFrame Service",
                 "enabled": true,
                 "credentials": {
-                  "username": "admin",
-                  "password": "admin"
+                  "username": "${{ secrets.GRAFANA_USERNAME }}",
+                  "password": "${{ secrets.GRAFANA_PASSWORD }}"
                 },
                 "layer": "Monitoring",
                 "layerOrder": 1,
