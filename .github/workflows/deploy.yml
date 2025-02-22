@@ -157,6 +157,15 @@ jobs:
 
 
       - name: Deploy infrastructure services
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+          MONGO_APP_DATABASE: openframe
+          MONGO_APP_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          MONGO_APP_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          CASSANDRA_USERNAME: ${{ secrets.CASSANDRA_USERNAME }}
+          CASSANDRA_PASSWORD: ${{ secrets.CASSANDRA_PASSWORD }}
         run: |
           # Update image references in docker-compose files
           yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-" + (key | downcase)} - "build")' docker-compose.openframe-infrastructure.yml > /tmp/modified-compose.yml && \
@@ -215,6 +224,13 @@ jobs:
           timeout 300 bash -c 'until curl -f http://localhost:8080/nginx_status > /dev/null 2>&1; do sleep 2; done'
           
       - name: Deploy Fleet MDM
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: fleet
+          MYSQL_PASSWORD: ${{ secrets.FLEET_DB_PASSWORD }}
+          FLEET_SERVER_PORT: "8070"
+          FLEET_SETUP_ADMIN_EMAIL: ${{ secrets.FLEET_ADMIN_EMAIL }}
+          FLEET_SETUP_ADMIN_PASSWORD: ${{ secrets.FLEET_ADMIN_PASSWORD }}
         run: |
           # Update image references in docker-compose files
           yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-fleet-mdm"} - "build")' docker-compose.openframe-fleet-mdm.yml > /tmp/modified-compose.yml && \
