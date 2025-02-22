@@ -79,13 +79,13 @@ jobs:
         
       - name: Set up Docker Compose
         run: |
-          # Install Docker Compose V2 plugin
-          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-          mkdir -p $DOCKER_CONFIG/cli-plugins
-          curl -SL https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
-          # Verify installation
+          # Use Docker Compose V2 that comes with the runner
           docker compose version
+          # Create symbolic link for backward compatibility
+          sudo ln -s /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+          # Verify both commands work
+          docker compose version
+          docker-compose --version
         
       - name: Set up environment
         run: |
