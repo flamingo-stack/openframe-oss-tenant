@@ -156,7 +156,9 @@ jobs:
           
           # Wait for infrastructure services to be ready
           echo "Waiting for MongoDB to be ready..."
-          timeout 300 bash -c 'until docker exec openframe-mongodb mongosh -u "${{ secrets.MONGODB_USERNAME }}" -p "${{ secrets.MONGODB_PASSWORD }}" --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          MONGO_USER="${{ secrets.MONGODB_USERNAME }}"
+          MONGO_PASS="${{ secrets.MONGODB_PASSWORD }}"
+          timeout 300 bash -c "until docker exec openframe-mongodb mongosh -u \"${MONGO_USER}\" -p \"${MONGO_PASS}\" --eval \"db.adminCommand('ping')\" > /dev/null 2>&1; do sleep 2; done"
           
           echo "Waiting for Cassandra to be ready..."
           timeout 300 bash -c 'until docker exec openframe-cassandra cqlsh -e "describe keyspaces" > /dev/null 2>&1; do sleep 2; done'
@@ -166,13 +168,16 @@ jobs:
           
           # Initialize Cassandra
           echo "Initializing Cassandra..."
+          CASS_USER="${{ secrets.CASSANDRA_USERNAME }}"
+          CASS_PASS="${{ secrets.CASSANDRA_PASSWORD }}"
           docker exec openframe-cassandra cqlsh \
-            -u "${{ secrets.CASSANDRA_USERNAME }}" \
-            -p "${{ secrets.CASSANDRA_PASSWORD }}" \
+            -u "${CASS_USER}" \
+            -p "${CASS_PASS}" \
             -f /docker-entrypoint-initdb.d/cassandra-init.cql
           
           echo "Waiting for Redis to be ready..."
-          timeout 300 bash -c 'until docker exec openframe-redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" ping > /dev/null 2>&1; do sleep 2; done'
+          REDIS_PASS="${{ secrets.REDIS_PASSWORD }}"
+          timeout 300 bash -c "until docker exec openframe-redis redis-cli -a \"${REDIS_PASS}\" ping > /dev/null 2>&1; do sleep 2; done"
           
           echo "Waiting for Zookeeper to be ready..."
           timeout 300 bash -c 'until docker exec openframe-zookeeper bash -c "echo ruok | nc localhost 2181 | grep imok" > /dev/null 2>&1; do sleep 2; done'
