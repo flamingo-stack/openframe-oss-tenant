@@ -79,15 +79,10 @@ jobs:
         
       - name: Set up Docker Compose
         run: |
-          # Install Docker Compose binary
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          # Create symlink for Docker Compose V2 plugin
-          sudo mkdir -p /usr/local/lib/docker/cli-plugins
-          sudo ln -sf /usr/local/bin/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
-          # Verify installation
-          docker-compose version
+          # Docker Compose is already installed as a Docker CLI plugin in GitHub Actions runners
           docker compose version
+          # Create Docker network
+          docker network create openframe-network --label com.docker.compose.network=openframe-network || true
         
       - name: Set up environment
         run: |
@@ -143,16 +138,16 @@ jobs:
           docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
           docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
 
-      - name: Create Docker network
-        run: docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+
 
       - name: Deploy infrastructure services
         run: |
           # Update image references in docker-compose files
-          sed -i -e '/^    build:$/,/^    [a-z]/{/^    build:$/c\    image: ghcr.io/flamingo-cx/openframe-mongodb' -e '/^      context:/d' -e '/^      dockerfile:/d'}' docker-compose.openframe-infrastructure.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-" + (key | downcase)} - "build")' docker-compose.openframe-infrastructure.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-infrastructure.yml
           
           # Deploy infrastructure services
-          /usr/local/bin/docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+          docker compose -f docker-compose.openframe-infrastructure.yml up -d
           
           # Wait for infrastructure services to be ready
           echo "Waiting for MongoDB to be ready..."
@@ -193,10 +188,11 @@ jobs:
       - name: Deploy Tactical RMM
         run: |
           # Update image references in docker-compose files
-          sed -i -e '/^    build:$/,/^    [a-z]/{/^    build:$/c\    image: ghcr.io/flamingo-cx/openframe-tactical-rmm' -e '/^      context:/d' -e '/^      dockerfile:/d'}' docker-compose.openframe-tactical-rmm.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-tactical-rmm"} - "build")' docker-compose.openframe-tactical-rmm.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-tactical-rmm.yml
           
           # Deploy Tactical RMM services
-          docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+          docker compose -f docker-compose.openframe-tactical-rmm.yml up -d
           
           # Wait for Tactical RMM to be ready
           echo "Waiting for Tactical RMM to be ready..."
@@ -205,10 +201,11 @@ jobs:
       - name: Deploy Fleet MDM
         run: |
           # Update image references in docker-compose files
-          sed -i -e '/^    build:$/,/^    [a-z]/{/^    build:$/c\    image: ghcr.io/flamingo-cx/openframe-fleet-mdm' -e '/^      context:/d' -e '/^      dockerfile:/d'}' docker-compose.openframe-fleet-mdm.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-fleet-mdm"} - "build")' docker-compose.openframe-fleet-mdm.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-fleet-mdm.yml
           
           # Deploy Fleet MDM services
-          docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+          docker compose -f docker-compose.openframe-fleet-mdm.yml up -d
           
           # Wait for Fleet to be ready
           echo "Waiting for Fleet MDM to be ready..."
@@ -217,10 +214,11 @@ jobs:
       - name: Deploy Authentik
         run: |
           # Update image references in docker-compose files
-          sed -i -e '/^    build:$/,/^    [a-z]/{/^    build:$/c\    image: ghcr.io/flamingo-cx/openframe-authentik' -e '/^      context:/d' -e '/^      dockerfile:/d'}' docker-compose.openframe-authentik.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-authentik"} - "build")' docker-compose.openframe-authentik.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-authentik.yml
           
           # Deploy Authentik services
-          docker-compose -f docker-compose.openframe-authentik.yml up -d
+          docker compose -f docker-compose.openframe-authentik.yml up -d
           
           # Wait for Authentik to be ready
           echo "Waiting for Authentik to be ready..."
@@ -525,8 +523,8 @@ jobs:
         if: failure()
         run: |
           echo "Deployment failed, cleaning up services..."
-          /usr/local/bin/docker-compose -f docker-compose.openframe-infrastructure.yml down
-          /usr/local/bin/docker-compose -f docker-compose.openframe-tactical-rmm.yml down
-          /usr/local/bin/docker-compose -f docker-compose.openframe-fleet-mdm.yml down
-          /usr/local/bin/docker-compose -f docker-compose.openframe-authentik.yml down
+          docker compose -f docker-compose.openframe-infrastructure.yml down
+          docker compose -f docker-compose.openframe-tactical-rmm.yml down
+          docker compose -f docker-compose.openframe-fleet-mdm.yml down
+          docker compose -f docker-compose.openframe-authentik.yml down
           echo "Cleanup completed"
