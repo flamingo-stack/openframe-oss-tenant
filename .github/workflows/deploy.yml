@@ -94,3 +94,28 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
           docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
           docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
+
+      - name: Create Docker network
+        run: docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+
+      - name: Deploy infrastructure services
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-infrastructure.yml
+          
+          # Deploy infrastructure services
+          docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+          
+          # Wait for infrastructure services to be ready
+          echo "Waiting for MongoDB to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-mongodb mongosh --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Cassandra to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-cassandra cqlsh -e "describe keyspaces" > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Kafka to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-kafka kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1; do sleep 2; done'
+          
+          # Initialize Cassandra
+          echo "Initializing Cassandra..."
+          docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
