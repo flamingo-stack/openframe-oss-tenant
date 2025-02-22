@@ -15,7 +15,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  ORGANIZATION: ${{ github.repository_owner }}
+  ORGANIZATION: flamingo-cx
 
 jobs:
   deploy:
@@ -41,6 +41,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
+      - name: Set up Docker Compose
+        uses: docker/compose-action@v2
+        with:
+          version: v2.21.0
+        
       - name: Set up environment
         run: |
           echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
@@ -56,44 +61,44 @@ jobs:
       - name: Build and push infrastructure images
         run: |
           # Build and push MongoDB
-          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }}
           
           # Build and push Cassandra
-          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }}
           
           # Build and push NiFi
-          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }}
           
           # Build and push Config Server
-          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }} ./services/openframe-config/
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ./services/openframe-config/
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }}
           
           # Build and push API Service
-          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }} ./services/openframe-api/
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ./services/openframe-api/
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }}
           
           # Build and push Management Service
-          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ./services/openframe-management/
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ./services/openframe-management/
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }}
           
           # Tag all images with 'latest' for convenience
-          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
+          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:latest
+          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:latest
+          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:latest
+          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:latest
+          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
+          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
           
           # Push latest tags
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:latest
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:latest
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:latest
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
-          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:latest
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:latest
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:latest
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:latest
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
+          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
 
       - name: Create Docker network
         run: docker network create openframe-network --label com.docker.compose.network=openframe-network || true
@@ -101,7 +106,7 @@ jobs:
       - name: Deploy infrastructure services
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-infrastructure.yml
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-infrastructure.yml
           
           # Deploy infrastructure services
           docker-compose -f docker-compose.openframe-infrastructure.yml up -d
@@ -140,7 +145,7 @@ jobs:
       - name: Deploy Tactical RMM
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-tactical-rmm.yml
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-tactical-rmm.yml
           
           # Deploy Tactical RMM services
           docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
@@ -152,7 +157,7 @@ jobs:
       - name: Deploy Fleet MDM
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-fleet-mdm.yml
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-fleet-mdm.yml
           
           # Deploy Fleet MDM services
           docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
@@ -164,7 +169,7 @@ jobs:
       - name: Deploy Authentik
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-authentik.yml
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-authentik.yml
           
           # Deploy Authentik services
           docker-compose -f docker-compose.openframe-authentik.yml up -d
