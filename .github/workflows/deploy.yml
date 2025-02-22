@@ -98,39 +98,45 @@ jobs:
           
       - name: Build and push infrastructure images
         run: |
+          # Function to build and push an image
+          build_and_push() {
+            local service=$1
+            local path=$2
+            echo "Building and pushing $service from $path"
+            docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} $path
+            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }}
+            docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest
+            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest
+            docker rmi ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }}
+            docker rmi ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest
+          }
+
           # Infrastructure Services
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-postgresql:${{ github.sha }} ./infrastructure/postgresql/
+          build_and_push "mongodb" "./infrastructure/mongodb/"
+          build_and_push "cassandra" "./infrastructure/cassandra/"
+          build_and_push "nifi" "./infrastructure/nifi/"
+          build_and_push "postgresql" "./infrastructure/postgresql/"
           
           # Tactical RMM Components
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-base:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-base/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-frontend:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-frontend/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-meshcentral:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-meshcentral/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-tactical-nginx:${{ github.sha }} ./infrastructure/tactical-rmm/tactical-nginx/
+          build_and_push "tactical-base" "./infrastructure/tactical-rmm/tactical-base/"
+          build_and_push "tactical-frontend" "./infrastructure/tactical-rmm/tactical-frontend/"
+          build_and_push "tactical-meshcentral" "./infrastructure/tactical-rmm/tactical-meshcentral/"
+          build_and_push "tactical-nginx" "./infrastructure/tactical-rmm/tactical-nginx/"
           
           # Fleet MDM
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-fleetmdm:${{ github.sha }} ./infrastructure/fleetmdm/
+          build_and_push "fleetmdm" "./infrastructure/fleetmdm/"
           
           # Core Libraries
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-core:${{ github.sha }} ./libs/openframe-core/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-data:${{ github.sha }} ./libs/openframe-data/
+          build_and_push "core" "./libs/openframe-core/"
+          build_and_push "data" "./libs/openframe-data/"
           
           # Services
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ./services/openframe-api/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ./services/openframe-config/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-gateway:${{ github.sha }} ./services/openframe-gateway/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ./services/openframe-management/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-stream:${{ github.sha }} ./services/openframe-stream/
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-ui:${{ github.sha }} ./services/openframe-ui/
-          
-          # Push all images with SHA tags
-          for service in mongodb cassandra nifi postgresql tactical-base tactical-frontend tactical-meshcentral tactical-nginx fleetmdm core data api config gateway management stream ui; do
-            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:${{ github.sha }}
-            docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:latest
-            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-${service}:latest
-          done
+          build_and_push "api" "./services/openframe-api/"
+          build_and_push "config" "./services/openframe-config/"
+          build_and_push "gateway" "./services/openframe-gateway/"
+          build_and_push "management" "./services/openframe-management/"
+          build_and_push "stream" "./services/openframe-stream/"
+          build_and_push "ui" "./services/openframe-ui/"
 
 
 
