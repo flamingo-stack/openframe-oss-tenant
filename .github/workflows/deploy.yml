@@ -444,3 +444,33 @@ jobs:
             }'
             
           echo "All tools registered successfully"
+
+      - name: Verify deployment
+        run: |
+          # Test network connectivity
+          ./scripts/test-network.sh
+          
+          # Check service health endpoints
+          echo "Checking OpenFrame API health..."
+          curl -f http://localhost:8095/health || exit 1
+          
+          echo "Checking Fleet MDM health..."
+          curl -f http://localhost:8070/health || exit 1
+          
+          echo "Checking Tactical RMM health..."
+          curl -f http://localhost:8080/nginx_status || exit 1
+          
+          echo "Checking Authentik health..."
+          curl -f http://localhost:5001/api/v3/core/applications/ || exit 1
+          
+          echo "All services are healthy"
+
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "Deployment failed, cleaning up services..."
+          docker-compose -f docker-compose.openframe-infrastructure.yml down
+          docker-compose -f docker-compose.openframe-tactical-rmm.yml down
+          docker-compose -f docker-compose.openframe-fleet-mdm.yml down
+          docker-compose -f docker-compose.openframe-authentik.yml down
+          echo "Cleanup completed"
