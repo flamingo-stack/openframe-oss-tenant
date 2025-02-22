@@ -133,3 +133,39 @@ jobs:
           timeout 300 bash -c 'until curl -f http://localhost:8888/xml/shared-logback-spring.xml > /dev/null 2>&1; do sleep 2; done'
           
           echo "Infrastructure services deployed and ready"
+
+      - name: Deploy Tactical RMM
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-tactical-rmm.yml
+          
+          # Deploy Tactical RMM services
+          docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+          
+          # Wait for Tactical RMM to be ready
+          echo "Waiting for Tactical RMM to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8080/nginx_status > /dev/null 2>&1; do sleep 2; done'
+          
+      - name: Deploy Fleet MDM
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-fleet-mdm.yml
+          
+          # Deploy Fleet MDM services
+          docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+          
+          # Wait for Fleet to be ready
+          echo "Waiting for Fleet MDM to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8070/setup > /dev/null 2>&1; do sleep 2; done'
+          
+      - name: Deploy Authentik
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-authentik.yml
+          
+          # Deploy Authentik services
+          docker-compose -f docker-compose.openframe-authentik.yml up -d
+          
+          # Wait for Authentik to be ready
+          echo "Waiting for Authentik to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:5001/api/v3/core/applications/ > /dev/null 2>&1; do sleep 2; done'
