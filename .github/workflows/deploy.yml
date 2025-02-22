@@ -79,13 +79,10 @@ jobs:
         
       - name: Set up Docker Compose
         run: |
-          # Install Docker Compose V2 plugin
-          sudo apt-get update
-          sudo apt-get install -y docker-compose-plugin
-          # Create symbolic link for backward compatibility
-          sudo ln -s /usr/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
-          # Verify both commands work
-          docker compose version
+          # Download Docker Compose binary directly to /usr/local/bin
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          # Verify installation
           docker-compose --version
         
       - name: Set up environment
