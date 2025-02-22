@@ -42,9 +42,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
         
       - name: Set up Docker Compose
-        uses: docker/compose-action@v2
-        with:
-          version: v2.21.0
+        run: |
+          sudo apt-get update && sudo apt-get install -y docker-compose-plugin
+          docker compose version
         
       - name: Set up environment
         run: |
