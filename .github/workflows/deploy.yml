@@ -149,7 +149,7 @@ jobs:
       - name: Deploy infrastructure services
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-infrastructure.yml
+          sed -i 's/^[[:space:]]*build:$/    image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-/g' docker-compose.openframe-infrastructure.yml
           
           # Deploy infrastructure services
           /usr/local/bin/docker-compose -f docker-compose.openframe-infrastructure.yml up -d
