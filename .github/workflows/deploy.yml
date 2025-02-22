@@ -79,11 +79,13 @@ jobs:
         
       - name: Set up Docker Compose
         run: |
-          # Use Docker Compose V2 plugin that comes with Docker
+          # Install Docker Compose V2 plugin
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          # Verify installation
           docker compose version
-          # Update all docker-compose commands to use 'docker compose'
-          sed -i 's/docker-compose/docker compose/g' scripts/build-and-run.sh
-          sed -i 's/docker-compose/docker compose/g' .github/workflows/deploy.yml
         
       - name: Set up environment
         run: |
