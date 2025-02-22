@@ -54,6 +54,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+    environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - uses: actions/checkout@v3
         with:
