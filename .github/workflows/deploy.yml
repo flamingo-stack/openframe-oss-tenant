@@ -1,0 +1,479 @@
+name: OpenFrame Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  ORGANIZATION: ${{ github.repository_owner }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Set up environment
+        run: |
+          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+          
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push infrastructure images
+        run: |
+          # Build and push MongoDB
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }}
+          
+          # Build and push Cassandra
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }}
+          
+          # Build and push NiFi
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }}
+          
+          # Build and push Config Server
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }} ./services/openframe-config/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }}
+          
+          # Build and push API Service
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }} ./services/openframe-api/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }}
+          
+          # Build and push Management Service
+          docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ./services/openframe-management/
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }}
+          
+          # Tag all images with 'latest' for convenience
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
+          
+          # Push latest tags
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
+
+      - name: Create Docker network
+        run: docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+
+      - name: Deploy infrastructure services
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-infrastructure.yml
+          
+          # Deploy infrastructure services
+          docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+          
+          # Wait for infrastructure services to be ready
+          echo "Waiting for MongoDB to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-mongodb mongosh -u "${{ secrets.MONGODB_USERNAME }}" -p "${{ secrets.MONGODB_PASSWORD }}" --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Cassandra to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-cassandra cqlsh -e "describe keyspaces" > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Kafka to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-kafka kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1; do sleep 2; done'
+          
+          # Initialize Cassandra
+          echo "Initializing Cassandra..."
+          docker exec openframe-cassandra cqlsh \
+            -u "${{ secrets.CASSANDRA_USERNAME }}" \
+            -p "${{ secrets.CASSANDRA_PASSWORD }}" \
+            -f /docker-entrypoint-initdb.d/cassandra-init.cql
+          
+          echo "Waiting for Redis to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" ping > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Zookeeper to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-zookeeper bash -c "echo ruok | nc localhost 2181 | grep imok" > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for NiFi to be ready..."
+          timeout 300 bash -c 'until curl -sk https://localhost:8443/nifi-api/system-diagnostics > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Config Server to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8888/xml/shared-logback-spring.xml > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Infrastructure services deployed and ready"
+
+      - name: Deploy Tactical RMM
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-tactical-rmm.yml
+          
+          # Deploy Tactical RMM services
+          docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+          
+          # Wait for Tactical RMM to be ready
+          echo "Waiting for Tactical RMM to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8080/nginx_status > /dev/null 2>&1; do sleep 2; done'
+          
+      - name: Deploy Fleet MDM
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-fleet-mdm.yml
+          
+          # Deploy Fleet MDM services
+          docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+          
+          # Wait for Fleet to be ready
+          echo "Waiting for Fleet MDM to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8070/setup > /dev/null 2>&1; do sleep 2; done'
+          
+      - name: Deploy Authentik
+        run: |
+          # Update image references in docker-compose files
+          sed -i "s|build:|image: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-|g" docker-compose.openframe-authentik.yml
+          
+          # Deploy Authentik services
+          docker-compose -f docker-compose.openframe-authentik.yml up -d
+          
+          # Wait for Authentik to be ready
+          echo "Waiting for Authentik to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:5001/api/v3/core/applications/ > /dev/null 2>&1; do sleep 2; done'
+
+      - name: Register tools with OpenFrame API
+        run: |
+          # Wait for API to be ready
+          echo "Waiting for OpenFrame API to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8095/health > /dev/null 2>&1; do sleep 2; done'
+          
+          # Get Fleet token
+          FLEET_TOKEN=$(docker exec openframe-fleet cat /etc/fleet/api_token.txt)
+          if [ -z "$FLEET_TOKEN" ]; then
+            FLEET_TOKEN="${{ secrets.FLEET_API_TOKEN }}"
+          fi
+          
+          # Get Tactical RMM API key
+          TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" get tactical_api_key | tr -d '"')
+          if [ -z "$TACTICAL_API_KEY" ]; then
+            TACTICAL_API_KEY="${{ secrets.TACTICAL_API_KEY }}"
+          fi
+          
+          # Register OpenFrame UI
+          curl -X POST "http://localhost:8095/v1/tools/openframe-ui" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "OPENFRAME",
+                "name": "OpenFrame UI",
+                "description": "OpenFrame User Interface Service",
+                "url": "http://openframe-ui",
+                "port": 4000,
+                "category": "User Interface",
+                "platformCategory": "OpenFrame Core",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Interface",
+                "layerOrder": 1,
+                "layerColor": "#FFB300"
+              }
+            }'
+            
+          # Register Fleet MDM
+          curl -X POST "http://localhost:8095/v1/tools/fleet" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"tool\": {
+                \"toolType\": \"FLEET\",
+                \"name\": \"Fleet MDM\",
+                \"description\": \"Fleet Device Management Platform\",
+                \"url\": \"http://openframe-fleet\",
+                \"port\": 8070,
+                \"category\": \"Device Management\",
+                \"platformCategory\": \"Integrated Tool\",
+                \"enabled\": true,
+                \"credentials\": {
+                  \"username\": \"${{ secrets.FLEET_ADMIN_EMAIL }}\",
+                  \"password\": \"${{ secrets.FLEET_ADMIN_PASSWORD }}\",
+                  \"token\": \"$FLEET_TOKEN\"
+                },
+                \"layer\": \"Integrated Tools\",
+                \"layerOrder\": 1,
+                \"layerColor\": \"#455A64\"
+              }
+            }"
+            
+          # Register Tactical RMM
+          curl -X POST "http://localhost:8095/v1/tools/tactical-rmm" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"tool\": {
+                \"toolType\": \"TACTICAL_RMM\",
+                \"name\": \"Tactical RMM\",
+                \"description\": \"Remote Monitoring and Management Platform\",
+                \"url\": \"http://openframe-tactical-backend\",
+                \"port\": 8080,
+                \"category\": \"Device Management\",
+                \"platformCategory\": \"Integrated Tool\",
+                \"enabled\": true,
+                \"credentials\": {
+                  \"username\": \"${{ secrets.TACTICAL_USERNAME }}\",
+                  \"password\": \"${{ secrets.TACTICAL_PASSWORD }}\",
+                  \"token\": \"$TACTICAL_API_KEY\"
+                },
+                \"layer\": \"Integrated Tools\",
+                \"layerOrder\": 3,
+                \"layerColor\": \"#455A64\"
+              }
+            }"
+            
+          # Register MongoDB
+          curl -X POST "http://localhost:8095/v1/tools/mongodb-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "MONGODB",
+                "name": "MongoDB Database",
+                "description": "MongoDB NoSQL Database",
+                "url": "mongodb://openframe-mongodb",
+                "port": 27017,
+                "category": "NoSQL Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {
+                  "username": "${{ secrets.MONGODB_USERNAME }}",
+                  "password": "${{ secrets.MONGODB_PASSWORD }}"
+                },
+                "layer": "Datasource",
+                "layerOrder": 1,
+                "layerColor": "#616161"
+              }
+            }'
+            
+          # Register Cassandra
+          curl -X POST "http://localhost:8095/v1/tools/cassandra-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "CASSANDRA",
+                "name": "Cassandra Database",
+                "description": "Cassandra Distributed Database",
+                "url": "cassandra://openframe-cassandra",
+                "port": 9042,
+                "category": "NoSQL Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Datasource",
+                "layerOrder": 3,
+                "layerColor": "#616161"
+              }
+            }'
+            
+          # Register Kafka
+          curl -X POST "http://localhost:8095/v1/tools/kafka-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "KAFKA",
+                "name": "Kafka Message Broker",
+                "description": "Apache Kafka Event Streaming Platform",
+                "url": "http://openframe-kafka-ui",
+                "port": 8081,
+                "category": "Message Broker",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Streaming",
+                "layerOrder": 1,
+                "layerColor": "#1E88E5"
+              }
+            }'
+            
+          # Register Redis
+          curl -X POST "http://localhost:8095/v1/tools/redis-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "REDIS",
+                "name": "Redis Cache",
+                "description": "Redis In-Memory Cache",
+                "url": "redis://openframe-redis",
+                "port": 6379,
+                "category": "In-Memory Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Datasource",
+                "layerOrder": 2,
+                "layerColor": "#616161"
+              }
+            }'
+            
+          # Register Authentik
+          curl -X POST "http://localhost:8095/v1/tools/authentik" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "AUTHENTIK",
+                "name": "Authentik SSO",
+                "description": "Authentik Identity Provider",
+                "url": "http://openframe-authentik-server",
+                "port": 5001,
+                "category": "Identity Provider",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "${{ secrets.AUTHENTIK_ADMIN_EMAIL }}",
+                  "password": "${{ secrets.AUTHENTIK_ADMIN_PASSWORD }}",
+                  "token": "${{ secrets.AUTHENTIK_API_TOKEN }}"
+                },
+                "layer": "Integrated Tools",
+                "layerOrder": 2,
+                "layerColor": "#455A64"
+              }
+            }'
+            
+          # Register NiFi
+          curl -X POST "http://localhost:8095/v1/tools/nifi-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "NIFI",
+                "name": "Apache NiFi",
+                "description": "NiFi Data Integration Platform",
+                "url": "https://openframe-nifi",
+                "port": 8443,
+                "category": "Data Integration",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {
+                  "username": "${{ secrets.NIFI_USERNAME }}",
+                  "password": "${{ secrets.NIFI_PASSWORD }}"
+                },
+                "layer": "Data Integration",
+                "layerOrder": 1,
+                "layerColor": "#0D47A1"
+              }
+            }'
+            
+          # Register Grafana
+          curl -X POST "http://localhost:8095/v1/tools/grafana-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "GRAFANA",
+                "name": "Grafana",
+                "description": "Grafana Monitoring Dashboard",
+                "url": "http://openframe-grafana",
+                "port": 3000,
+                "category": "Monitoring Dashboard",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {
+                  "username": "${{ secrets.GRAFANA_USERNAME }}",
+                  "password": "${{ secrets.GRAFANA_PASSWORD }}"
+                },
+                "layer": "Monitoring",
+                "layerOrder": 1,
+                "layerColor": "#78909C"
+              }
+            }'
+            
+          # Register Prometheus
+          curl -X POST "http://localhost:8095/v1/tools/prometheus-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "PROMETHEUS",
+                "name": "Prometheus",
+                "description": "Prometheus Metrics Database",
+                "url": "http://openframe-prometheus",
+                "port": 9090,
+                "category": "Metrics Database",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Monitoring",
+                "layerOrder": 2,
+                "layerColor": "#78909C"
+              }
+            }'
+            
+          # Register Loki
+          curl -X POST "http://localhost:8095/v1/tools/loki-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "toolType": "LOKI",
+                "name": "Loki",
+                "description": "Loki Log Aggregation System",
+                "url": "http://openframe-loki",
+                "port": 3100,
+                "category": "Log Aggregation",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Monitoring",
+                "layerOrder": 3,
+                "layerColor": "#78909C"
+              }
+            }'
+            
+          echo "All tools registered successfully"
+
+      - name: Verify deployment
+        run: |
+          # Test network connectivity
+          ./scripts/test-network.sh
+          
+          # Test all public endpoints
+          ./scripts/test-public-endpoints.sh
+          
+          # Check OpenFrame API health (required for tool registration)
+          echo "Checking OpenFrame API health..."
+          curl -f http://localhost:8095/health || exit 1
+          
+          echo "All services are healthy"
+
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "Deployment failed, cleaning up services..."
+          docker-compose -f docker-compose.openframe-infrastructure.yml down
+          docker-compose -f docker-compose.openframe-tactical-rmm.yml down
+          docker-compose -f docker-compose.openframe-fleet-mdm.yml down
+          docker-compose -f docker-compose.openframe-authentik.yml down
+          echo "Cleanup completed"
