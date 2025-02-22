@@ -119,3 +119,17 @@ jobs:
           # Initialize Cassandra
           echo "Initializing Cassandra..."
           docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-init.cql
+          
+          echo "Waiting for Redis to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-redis redis-cli ping > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Zookeeper to be ready..."
+          timeout 300 bash -c 'until docker exec openframe-zookeeper bash -c "echo ruok | nc localhost 2181 | grep imok" > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for NiFi to be ready..."
+          timeout 300 bash -c 'until curl -sk https://localhost:8443/nifi-api/system-diagnostics > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Waiting for Config Server to be ready..."
+          timeout 300 bash -c 'until curl -f http://localhost:8888/xml/shared-logback-spring.xml > /dev/null 2>&1; do sleep 2; done'
+          
+          echo "Infrastructure services deployed and ready"
