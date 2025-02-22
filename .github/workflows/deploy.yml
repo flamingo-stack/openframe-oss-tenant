@@ -76,6 +76,16 @@ jobs:
           
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
+          
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
         
       - name: Set up Docker Compose
         run: |
@@ -103,12 +113,18 @@ jobs:
             local service=$1
             local path=$2
             echo "Building and pushing $service from $path"
-            docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} $path
-            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }}
-            docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest
-            docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest
-            docker rmi ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }}
-            docker rmi ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest
+            docker buildx build \
+              --cache-from type=local,src=/tmp/.buildx-cache \
+              --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+              --platform linux/amd64 \
+              --push \
+              -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
+              -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
+              $path
+            
+            # Move cache to prevent unbounded cache growth
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
           }
 
           # Infrastructure Services
