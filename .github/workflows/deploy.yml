@@ -78,3 +78,19 @@ jobs:
           # Build and push Management Service
           docker build -t ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ./services/openframe-management/
           docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }}
+          
+          # Tag all images with 'latest' for convenience
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
+          
+          # Push latest tags
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-mongodb:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-cassandra:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-nifi:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-config:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-api:latest
+          docker push ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-management:latest
