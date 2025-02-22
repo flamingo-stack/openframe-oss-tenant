@@ -21,17 +21,25 @@ x-environment: &default-environment
   REDIS_HOST: &redis-host tactical-redis
 
   # MeshCentral Configuration
-  MESH_USER: &mesh-user tactical
-  MESH_PASS: &mesh-pass tacticalpass
+  MESH_USER: &mesh-user tactical@openframe.io
+  MESH_PASS: &mesh-pass tacticalpass@1234
   MESH_DEVICE_GROUP: &mesh-device-group TacticalRMM
-  MESH_PORT: &mesh-port 4443
+  MESH_PORT: &mesh-port 8383
   MESH_HOST: &mesh-host tactical-meshcentral
   MESH_SERVICE: *mesh-host
-  MESH_WS_URL: &mesh-ws-url ws://tactical-meshcentral:4443
+  MESH_WS_URL: &mesh-ws-url ws://tactical-meshcentral:8383
   MESH_PERSISTENT_CONFIG: &mesh-persistent 0
   MESH_DISABLE_SSL: &mesh-ssl 1
   MESH_COMPRESSION_ENABLED: &mesh-compression true
   MESH_WEBRTC_ENABLED: &mesh-webrtc false
+
+  # SMTP Configuration
+  SMTP_HOST: &smtp-host smtp.example.com
+  SMTP_PORT: &smtp-port 587
+  SMTP_FROM: &smtp-from mesh@example.com
+  SMTP_USER: &smtp-user mesh@example.com
+  SMTP_PASS: &smtp-pass mesh-smtp-pass
+  SMTP_TLS: &smtp-tls false
 
   # NGINX Configuration
   NGINX_HOST_IP: &nginx-host tactical-nginx
@@ -62,7 +70,9 @@ x-environment: &default-environment
 
   # API Configuration
   API_HOST: &api-host tactical-backend:8000
+  API_LOCALHOST_HOST: &api-local-host localhost:8000
   APP_HOST: &app-host tactical-frontend:8080
+  APP_LOCALHOST_HOST: &app-local-host localhost:8080
 
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
@@ -97,7 +107,6 @@ services:
     container_name: openframe-tactical-postgres
     image: postgres:13-alpine
     platform: linux/arm64
-
     volumes:
       - tactical_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -136,7 +145,6 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-meshcentral
       dockerfile: Dockerfile
-    
     volumes:
       - tactical_meshcentral_data:/opt/tactical
     user: root
@@ -147,7 +155,7 @@ services:
       tactical-redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral' && curl -s http://localhost:8383/health.ashx" ]
+      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral' && curl -s http://tactical-meshcentral:8383/health.ashx" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -171,12 +179,12 @@ services:
     platform: linux/amd64
     ports:
       - "8080:8080"  
-      - "8000:8000"  
+      - "8000:8000"
       - "8383:8383"
     volumes:
       - tactical_nginx_data:/opt/tactical
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://tactical-nginx:8080/nginx_status" ]
+      test: [ "CMD", "curl", "-f", "http://tactical-nginx:8081/nginx_status" ]
       interval: 10s
       timeout: 5s
       retries: 5

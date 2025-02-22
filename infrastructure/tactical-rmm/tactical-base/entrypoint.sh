@@ -20,14 +20,13 @@ function copy_custom_code {
   rm -rf ${TACTICAL_DIR}/api/app.ini
 
   echo "Processing files with environment variables"
-  envsubst < ${CUSTOM_CODE_DIR}/helpers.py > ${TACTICAL_DIR}/api/tacticalrmm/helpers.py
-  envsubst < ${CUSTOM_CODE_DIR}/views.py > ${TACTICAL_DIR}/api/tacticalrmm/accounts/views.py
-  envsubst < ${CUSTOM_CODE_DIR}/views.py > ${TACTICAL_DIR}/api/accounts/views.py
-  envsubst < ${CUSTOM_CODE_DIR}/local_settings.py > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
-  envsubst < ${CUSTOM_CODE_DIR}/custom_settings.py > ${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
-  envsubst < ${CUSTOM_CODE_DIR}/app.ini > ${TACTICAL_DIR}/api/app.ini
+  envsubst <${CUSTOM_CODE_DIR}/helpers.py >${TACTICAL_DIR}/api/tacticalrmm/helpers.py
+  envsubst <${CUSTOM_CODE_DIR}/views.py >${TACTICAL_DIR}/api/tacticalrmm/accounts/views.py
+  envsubst <${CUSTOM_CODE_DIR}/views.py >${TACTICAL_DIR}/api/accounts/views.py
+  envsubst <${CUSTOM_CODE_DIR}/local_settings.py >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
+  envsubst <${CUSTOM_CODE_DIR}/custom_settings.py >${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
+  envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
 }
-
 
 # Helper function to set ready status
 function set_ready_status() {
@@ -37,6 +36,71 @@ function set_ready_status() {
   redis-cli -h tactical-redis -p 6379 set "tactical_${service_name}_ready" "True"
   echo "echo \"${service_name}\" > ${TACTICAL_READY_FILE}"
   echo "${service_name}" >${TACTICAL_READY_FILE}
+}
+
+function run_migrations() {
+  # run migrations and init scripts
+  echo "Running migrations and init scripts"
+
+  echo "Running pre_update_tasks"
+  python manage.py pre_update_tasks
+
+  echo "Running migrate"
+  python manage.py migrate --no-input
+
+  echo "Generating json schemas"
+  python manage.py generate_json_schemas
+
+  echo "Getting web tar url"
+  python manage.py get_webtar_url >${TACTICAL_DIR}/tmp/web_tar_url
+
+  echo "Collecting static files"
+  python manage.py collectstatic --no-input
+
+  echo "Running initial_db_setup"
+  python manage.py initial_db_setup
+
+  echo "Running initial_mesh_setup"
+  python manage.py initial_mesh_setup
+
+  echo "Loading chocos"
+  python manage.py load_chocos
+
+  echo "Loading community scripts"
+  python manage.py load_community_scripts
+
+  echo "Reloading nats"
+  python manage.py reload_nats
+
+  echo "Creating natsapi conf"
+  python manage.py create_natsapi_conf
+
+  echo "Creating installer user"
+  python manage.py create_installer_user
+
+  echo "Clearing redis celery locks"
+  python manage.py clear_redis_celery_locks
+
+  echo "Running post_update_tasks"
+  python manage.py post_update_tasks
+
+  echo "Checking mesh"
+  python manage.py check_mesh
+}
+
+function create_superuser_and_api_key() {
+  # create super user
+  echo "Creating dashboard user if it doesn't exist"
+  if [ "$TRMM_DISABLE_2FA" = "True" ]; then
+    echo "from accounts.models import User, Role; user = User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else User.objects.get(username='${TRMM_USER}'); user.totp_key = ''; role = Role.objects.create(name='Default Admin', can_manage_api_keys=True) if not Role.objects.filter(name='Default Admin').exists() else Role.objects.get(name='Default Admin'); user.role = role; user.save();" | python manage.py shell
+  else
+    echo "from accounts.models import User, Role; user = User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else User.objects.get(username='${TRMM_USER}'); role = Role.objects.create(name='Default Admin', can_manage_api_keys=True) if not Role.objects.filter(name='Default Admin').exists() else Role.objects.get(name='Default Admin'); user.role = role; user.save();" | python manage.py shell
+  fi
+
+  # create default organization and API key
+  echo "Creating default organization and API key"
+  echo "from accounts.models import User, APIKey; from clients.models import Client, Site; from core.models import CoreSettings; from django.utils.crypto import get_random_string; from django.utils import timezone; user = User.objects.get(username='${TRMM_USER}'); client = Client.objects.create(name='Default Organization', created_by=user) if not Client.objects.exists() else Client.objects.first(); site = Site.objects.create(client=client, name='Default Site', created_by=user) if not Site.objects.filter(client=client).exists() else Site.objects.filter(client=client).first(); api_key = APIKey.objects.create(name='Default', key=get_random_string(length=32).upper(), user=user) if not APIKey.objects.filter(user=user).exists() else APIKey.objects.filter(user=user).first(); print(f'{api_key.key}')" | python manage.py shell >${TACTICAL_DIR}/tmp/api_key.txt
+  redis-cli -h tactical-redis -p 6379 set "tactical_api_key" "$(cat ${TACTICAL_DIR}/tmp/api_key.txt)"
 }
 
 function tactical-init() {
@@ -67,59 +131,11 @@ function tactical-init() {
   copy_custom_code
 
   if [ "$1" = 'backend' ]; then
-    echo "Running migrations and init scripts"
     # run migrations and init scripts
-    echo "Running pre_update_tasks"
-    python manage.py pre_update_tasks
-    echo "Running migrate"
-    python manage.py migrate --no-input
-    echo "Generating json schemas"
-    python manage.py generate_json_schemas
-    echo "Getting web tar url"
-    python manage.py get_webtar_url >${TACTICAL_DIR}/tmp/web_tar_url
-    echo "Collecting static files"
-    python manage.py collectstatic --no-input
-    echo "Running initial_db_setup"
-    python manage.py initial_db_setup
-    echo "Running initial_mesh_setup"
-    python manage.py initial_mesh_setup
-    echo "Loading chocos"
-    python manage.py load_chocos
-    echo "Loading community scripts"
-    python manage.py load_community_scripts
-    echo "Reloading nats"
-    python manage.py reload_nats
-    echo "Creating natsapi conf"
-    python manage.py create_natsapi_conf
-    
-    echo "Creating installer user"
-    python manage.py create_installer_user
-    echo "Clearing redis celery locks"
-    python manage.py clear_redis_celery_locks
-    echo "Running post_update_tasks"
-    python manage.py post_update_tasks
+    run_migrations
 
-    echo "Creating mesh config"
-    python manage.py build_mesh_config
-
-    echo "Checking mesh config"
-    python manage.py create_de
-
-    echo "Checking mesh"
-    python manage.py check_mesh
-
-    # create super user
-    echo "Creating dashboard user if it doesn't exist"
-    if [ "$TRMM_DISABLE_2FA" = "True" ]; then
-      echo "from accounts.models import User, Role; user = User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else User.objects.get(username='${TRMM_USER}'); user.totp_key = ''; role = Role.objects.create(name='Default Admin', can_manage_api_keys=True) if not Role.objects.filter(name='Default Admin').exists() else Role.objects.get(name='Default Admin'); user.role = role; user.save();" | python manage.py shell
-    else
-      echo "from accounts.models import User, Role; user = User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else User.objects.get(username='${TRMM_USER}'); role = Role.objects.create(name='Default Admin', can_manage_api_keys=True) if not Role.objects.filter(name='Default Admin').exists() else Role.objects.get(name='Default Admin'); user.role = role; user.save();" | python manage.py shell
-    fi
-
-    # create default organization and API key
-    echo "Creating default organization and API key"
-    echo "from accounts.models import User, APIKey; from clients.models import Client, Site; from core.models import CoreSettings; from django.utils.crypto import get_random_string; from django.utils import timezone; user = User.objects.get(username='${TRMM_USER}'); client = Client.objects.create(name='Default Organization', created_by=user) if not Client.objects.exists() else Client.objects.first(); site = Site.objects.create(client=client, name='Default Site', created_by=user) if not Site.objects.filter(client=client).exists() else Site.objects.filter(client=client).first(); api_key = APIKey.objects.create(name='Default', key=get_random_string(length=32).upper(), user=user) if not APIKey.objects.filter(user=user).exists() else APIKey.objects.filter(user=user).first(); print(f'{api_key.key}')" | python manage.py shell >${TACTICAL_DIR}/tmp/api_key.txt
-    redis-cli -h tactical-redis -p 6379 set "tactical_api_key" "$(cat ${TACTICAL_DIR}/tmp/api_key.txt)"
+    # create super user and API key
+    create_superuser_and_api_key
   fi
 
   # chown everything to tactical user

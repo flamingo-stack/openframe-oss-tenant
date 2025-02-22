@@ -1,46 +1,57 @@
 {
-    "settings": {
-      "mongodb": "${ENCODED_URI}",
-      "cert": "${MESH_HOST}",
-      "tlsOffload": true,
-      "WANonly": true,
-      "minify": 1,
-      "port": ${MESH_PORT},
-      "aliasPort": ${MESH_PORT},
-      "redirPort": 0,
-      "allowHttpLogin": true,
-      "allowHTTP": true,
-      "allowLoginToken": true,
-      "allowFraming": true,
-      "agentPing": 35,
-      "allowHighQualityDesktop": true,
-      "agentCoreDump": false,
-      "compression": "${MESH_COMPRESSION_ENABLED}",
-      "wsCompression": "${MESH_COMPRESSION_ENABLED}",
-      "agentWsCompression": "${MESH_COMPRESSION_ENABLED}",
-      "webRTC": "${MESH_WEBRTC_ENABLED}",
-      "selfUpdate": false,
-      "ignoreFrameOrigin": true,
-      "trustedProxy": "*",
-      "noIPCheck": true,
-      "logLevel": "DEBUG",
-      "logToFile": true,
-      "logPath": "/opt/tactical/app/meshcentral-data/logs",
-      "maxInvalidLogin": {
-        "time": 5,
-        "count": 5,
-        "coolofftime": 30
-      },
-      "domains": {
-        "": {
-          "title": "TacticalRMM",
-          "userQuota": 1048576,
-          "meshQuota": 1048576,
-          "allowLoginToken": true,
-          "allowFraming": true,
-          "newAccounts": false,
-          "certUrl": "http://${MESH_HOST}:${MESH_PORT}"
-        }
+  "settings": {
+    "datapath": "${TACTICAL_DIR}/data",
+    "mongodb": "${ENCODED_URI}",
+    "cert": "${MESH_HOST}",
+    "tlsOffload": "127.0.0.1",
+    "WANonly": true,
+    "minify": 1,
+    "port": ${MESH_PORT},
+    "aliasPort": ${MESH_PORT},
+    "redirPort": 0,
+    "allowHttpLogin": true,
+    "allowHTTP": true,
+    "allowLoginToken": true,
+    "allowFraming": true,
+    "agentPing": 35,
+    "allowHighQualityDesktop": true,
+    "agentCoreDump": false,
+    "compression": "${MESH_COMPRESSION_ENABLED}",
+    "wsCompression": "${MESH_COMPRESSION_ENABLED}",
+    "agentWsCompression": "${MESH_COMPRESSION_ENABLED}",
+    "webRTC": "${MESH_WEBRTC_ENABLED}",
+    "selfUpdate": false,
+    "ignoreFrameOrigin": true,
+    "trustedProxy": "*",
+    "noIPCheck": true,
+    "logLevel": "DEBUG",
+    "logToFile": true,
+    "logPath": "${TACTICAL_DIR}/logs",
+    "logMaxSize": 1024,
+    "logMaxFiles": 10,
+    "maxInvalidLogin": {
+      "time": 5,
+      "count": 5,
+      "coolofftime": 30
+    },
+    "postgres": {
+      "user": "${POSTGRES_USER}",
+      "password": "${POSTGRES_PASSWORD}",
+      "port": "${POSTGRES_PORT}",
+      "host": "${POSTGRES_HOST}"
+    },
+    "domains": {
+      "": {
+        "title": "Tactical RMM",
+        "title2": "Tactical RMM",
+        "newAccounts": true,
+        "certUrl": "http://${MESH_HOST}:${MESH_PORT}/",
+        "geoLocation": true,
+        "cookieIpCheck": false,
+        "mstsc": true,
+        "_allowNewAccounts": true,
+        "_userQuota": 10000,
+        "_deviceQuota": 10000
       }
     },
     "smtp": {
@@ -51,4 +62,5 @@
       "pass": "${SMTP_PASS}",
       "tls": "${SMTP_TLS}"
     }
+  }
 }
