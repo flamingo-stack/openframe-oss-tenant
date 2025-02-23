@@ -41,17 +41,58 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
           
-      - name: Clean up all artifacts
+      - name: Clean up all artifacts and GHCR packages
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Starting artifact cleanup..."
+          echo "Starting artifact and package cleanup..."
           
           # Function to get total artifact count and size
           get_artifact_stats() {
             local stats=$(gh api "repos/${{ github.repository }}/actions/artifacts" | jq -r '[.total_count, (.artifacts | map(.size_in_bytes) | add // 0)] | @csv')
             echo "Current artifact stats: $(echo $stats | cut -d',' -f1) artifacts, $(echo $stats | cut -d',' -f2 | numfmt --to=iec) total size"
           }
+
+          # Function to clean up GHCR packages
+          cleanup_ghcr_packages() {
+            local package_name=$1
+            local dry_run=${2:-false}
+            echo "Cleaning up old versions of $package_name (dry-run: $dry_run)..."
+            
+            # List all versions
+            local versions=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
+              --paginate)
+            
+            # Get current SHA
+            local current_sha=$(git rev-parse --short HEAD)
+            
+            # Process each version
+            echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
+              if [[ "$dry_run" == "true" ]]; then
+                echo "Would delete version $version_id"
+              else
+                echo "Deleting version $version_id..."
+                gh api \
+                  -X DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
+              fi
+              
+              # Rate limit protection
+              sleep 1
+            done
+          }
+          
+          # Clean up each package
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            for service in mongodb cassandra nifi config api management stream gateway ui; do
+              cleanup_ghcr_packages "openframe-$service"
+            done
+          fi
           
           get_artifact_stats
           
@@ -647,6 +688,61 @@ jobs:
           
           echo "All services are healthy"
 
+      - name: Clean up GHCR packages
+        if: success() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Function to clean up GHCR packages
+          cleanup_ghcr_packages() {
+            local package_name=$1
+            local dry_run=${2:-false}
+            echo "Cleaning up old versions of $package_name (dry-run: $dry_run)..."
+            
+            # List all versions
+            local versions=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
+              --paginate)
+            
+            # Get current SHA
+            local current_sha=$(git rev-parse --short HEAD)
+            
+            # Process each version
+            echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
+              if [[ "$dry_run" == "true" ]]; then
+                echo "Would delete version $version_id"
+              else
+                echo "Deleting version $version_id..."
+                gh api \
+                  -X DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
+              fi
+              
+              # Rate limit protection
+              sleep 1
+            done
+          }
+          
+          # Clean up each package
+          for service in mongodb cassandra nifi config api management stream gateway ui; do
+            cleanup_ghcr_packages "openframe-$service"
+          done
+
+          # Verify remaining package versions
+          echo "Remaining package versions:"
+          for service in mongodb cassandra nifi config api management stream gateway ui; do
+            echo "Package: openframe-$service"
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${ORGANIZATION,,}/packages/container/openframe-$service/versions" \
+              --jq '.[] | select(.metadata.container.tags != null) | .metadata.container.tags[]'
+          done
+
       - name: Cleanup images and artifacts
         if: always()
         run: |
@@ -676,6 +772,8 @@ jobs:
 
       - name: Cleanup on failure
         if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "Deployment failed, cleaning up services..."
           docker compose -f docker-compose.openframe-infrastructure.yml down
@@ -703,4 +801,52 @@ jobs:
           # List remaining images for verification
           echo "Remaining images:"
           docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
+
+          # Clean up GHCR packages if not a PR
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            # Function to clean up GHCR packages
+            cleanup_ghcr_packages() {
+              local package_name=$1
+              echo "Cleaning up old versions of $package_name..."
+              
+              # List all versions
+              local versions=$(gh api \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
+                --paginate)
+              
+              # Get current SHA
+              local current_sha=$(git rev-parse --short HEAD)
+              
+              # Process each version
+              echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
+                echo "Deleting version $version_id..."
+                gh api \
+                  -X DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
+                
+                # Rate limit protection
+                sleep 1
+              done
+            }
+            
+            # Clean up each package
+            for service in mongodb cassandra nifi config api management stream gateway ui; do
+              cleanup_ghcr_packages "openframe-$service"
+            done
+
+            # Verify remaining package versions
+            echo "Remaining package versions:"
+            for service in mongodb cassandra nifi config api management stream gateway ui; do
+              echo "Package: openframe-$service"
+              gh api \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/orgs/${ORGANIZATION,,}/packages/container/openframe-$service/versions" \
+                --jq '.[] | select(.metadata.container.tags != null) | .metadata.container.tags[]'
+            done
+          fi
           echo "Cleanup completed"
