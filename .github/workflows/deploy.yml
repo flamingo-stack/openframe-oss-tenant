@@ -45,36 +45,36 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Cleaning up all artifacts..."
+          echo "Starting artifact cleanup..."
           
-          # Keep track of the most recent artifact
-          latest_artifact=""
-          latest_created=""
+          # Function to get total artifact count and size
+          get_artifact_stats() {
+            local stats=$(gh api "repos/${{ github.repository }}/actions/artifacts" | jq -r '[.total_count, (.artifacts | map(.size_in_bytes) | add // 0)] | @csv')
+            echo "Current artifact stats: $(echo $stats | cut -d',' -f1) artifacts, $(echo $stats | cut -d',' -f2 | numfmt --to=iec) total size"
+          }
           
-          # First pass: Find the most recent artifact
+          get_artifact_stats
+          
+          # First pass: List all artifacts and their details
+          echo "Listing all artifacts..."
+          all_artifacts=()
           page=1
           while true; do
-            artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100" || echo "error")
-            if [ "$artifacts" = "error" ]; then
+            artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100")
+            if [ $? -ne 0 ]; then
               echo "Error fetching artifacts page $page"
-              break
+              exit 1
             fi
             
-            # Check if we have any artifacts
             count=$(echo "$artifacts" | jq '.total_count')
             if [ "$count" -eq 0 ]; then
               break
             fi
             
-            # Find most recent artifact
-            while read -r artifact_id name created_at; do
-              if [ -z "$latest_created" ] || [[ "$created_at" > "$latest_created" ]]; then
-                latest_artifact="$artifact_id"
-                latest_created="$created_at"
-              fi
-            done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id) \(.name) \(.created_at)"')
+            while read -r line; do
+              all_artifacts+=("$line")
+            done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id)|\(.name)|\(.created_at)|\(.size_in_bytes)"')
             
-            # Check if we've processed all pages
             total_pages=$(echo "$artifacts" | jq '.total_count / 100 | ceil')
             if [ "$page" -ge "$total_pages" ]; then
               break
@@ -82,36 +82,62 @@ jobs:
             page=$((page + 1))
           done
           
-          # Second pass: Delete all artifacts except the most recent
-          page=1
-          while true; do
-            artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100" || echo "error")
-            if [ "$artifacts" = "error" ]; then
-              echo "Error fetching artifacts page $page"
-              break
-            fi
+          # Find most recent artifact
+          latest_artifact=""
+          latest_created=""
+          for artifact in "${all_artifacts[@]}"; do
+            id=$(echo "$artifact" | cut -d'|' -f1)
+            name=$(echo "$artifact" | cut -d'|' -f2)
+            created_at=$(echo "$artifact" | cut -d'|' -f3)
+            size=$(echo "$artifact" | cut -d'|' -f4 | numfmt --to=iec)
             
-            count=$(echo "$artifacts" | jq '.total_count')
-            if [ "$count" -eq 0 ]; then
-              break
-            fi
+            echo "Found artifact: $id ($name) from $created_at, size: $size"
             
-            while read -r artifact_id name created_at; do
-              if [ "$artifact_id" != "$latest_artifact" ]; then
-                echo "Deleting artifact $artifact_id ($name) from $created_at"
-                gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id"
-              else
-                echo "Keeping most recent artifact $artifact_id ($name) from $created_at"
-              fi
-            done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id) \(.name) \(.created_at)"')
-            
-            if [ "$page" -ge "$total_pages" ]; then
-              break
+            if [ -z "$latest_created" ] || [[ "$created_at" > "$latest_created" ]]; then
+              latest_artifact="$id"
+              latest_created="$created_at"
+              latest_name="$name"
+              latest_size="$size"
             fi
-            page=$((page + 1))
           done
           
-          echo "Artifact cleanup completed"
+          if [ -n "$latest_artifact" ]; then
+            echo "Most recent artifact: $latest_artifact ($latest_name) from $latest_created, size: $latest_size"
+          else
+            echo "No artifacts found"
+            exit 0
+          fi
+          
+          # Delete all artifacts except the most recent
+          deleted_count=0
+          failed_count=0
+          for artifact in "${all_artifacts[@]}"; do
+            id=$(echo "$artifact" | cut -d'|' -f1)
+            name=$(echo "$artifact" | cut -d'|' -f2)
+            created_at=$(echo "$artifact" | cut -d'|' -f3)
+            size=$(echo "$artifact" | cut -d'|' -f4 | numfmt --to=iec)
+            
+            if [ "$id" != "$latest_artifact" ]; then
+              echo "Attempting to delete artifact $id ($name) from $created_at, size: $size"
+              if gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"; then
+                echo "Successfully deleted artifact $id"
+                deleted_count=$((deleted_count + 1))
+              else
+                echo "Failed to delete artifact $id"
+                failed_count=$((failed_count + 1))
+              fi
+              # Small delay to avoid rate limiting
+              sleep 1
+            fi
+          done
+          
+          echo "Cleanup summary:"
+          echo "- Deleted: $deleted_count artifacts"
+          echo "- Failed: $failed_count artifacts"
+          echo "- Kept: 1 artifact (most recent)"
+          
+          echo "Final artifact stats:"
+          get_artifact_stats
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
