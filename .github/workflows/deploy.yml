@@ -47,10 +47,38 @@ jobs:
       - name: Clean up old artifacts
         run: |
           echo "Cleaning up old artifacts..."
-          # List and delete old artifacts using GitHub CLI
-          for artifact_id in $(gh api repos/${{ github.repository }}/actions/artifacts --paginate | jq '.artifacts[].id'); do
-            echo "Deleting artifact $artifact_id"
-            gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id
+          # Keep only artifacts from the last 24 hours
+          cutoff_date=$(date -d '24 hours ago' --iso-8601=seconds)
+          
+          # List and delete old artifacts using GitHub CLI with proper error handling
+          page=1
+          while true; do
+            artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100" || echo "error")
+            if [ "$artifacts" = "error" ]; then
+              echo "Error fetching artifacts page $page"
+              break
+            fi
+            
+            # Check if we have any artifacts
+            count=$(echo "$artifacts" | jq '.total_count')
+            if [ "$count" -eq 0 ]; then
+              break
+            fi
+            
+            # Process artifacts on this page
+            while read -r artifact_id created_at; do
+              if [[ "$created_at" < "$cutoff_date" ]]; then
+                echo "Deleting old artifact $artifact_id from $created_at"
+                gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id"
+              fi
+            done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id) \(.created_at)"')
+            
+            # Check if we've processed all pages
+            total_pages=$(echo "$artifacts" | jq '.total_count / 100 | ceil')
+            if [ "$page" -ge "$total_pages" ]; then
+              break
+            fi
+            page=$((page + 1))
           done
 
       - name: Build with Maven
