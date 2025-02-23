@@ -242,12 +242,13 @@ jobs:
             local path=$2
             echo "Building and pushing $service from $path"
             
-            # Ensure target directory exists
-            mkdir -p "$path/target"
-            
-            # Copy JAR files to target if they exist
-            if [ -d "$path" ]; then
-              find "$path" -name "*.jar" -exec cp {} "$path/target/" \;
+            # Only create target directory and copy JARs for Java services
+            if [[ "$service" =~ ^(api|config|gateway|management|stream|core|data)$ ]]; then
+              echo "Java service detected, setting up target directory..."
+              mkdir -p "$path/target"
+              if [ -d "$path" ]; then
+                find "$path" -name "*.jar" -exec cp {} "$path/target/" \;
+              fi
             fi
             
             docker buildx build \
