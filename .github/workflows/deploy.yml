@@ -29,9 +29,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v3
         with:
@@ -120,9 +117,6 @@ jobs:
     needs: build
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - uses: actions/checkout@v3
