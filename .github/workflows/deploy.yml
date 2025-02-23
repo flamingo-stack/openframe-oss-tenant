@@ -105,15 +105,14 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml
         
-      # Upload only API service artifacts with maximum compression
-      - name: Upload API artifacts
-        uses: actions/upload-artifact@v4
+      # Cache build artifacts using GitHub cache
+      - name: Cache API artifacts
+        uses: actions/cache@v3
         with:
-          name: api-artifacts
           path: services/openframe-api/target/openframe-api-*.jar
-          compression-level: 9
-          retention-days: 1
-          if-no-files-found: error
+          key: ${{ runner.os }}-api-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-api-
 
   deploy:
     needs: build
