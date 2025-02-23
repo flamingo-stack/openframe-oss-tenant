@@ -146,14 +146,18 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml
         
-      # Cache build artifacts using GitHub cache
-      - name: Cache API artifacts
+      # Cache build artifacts for all Java services
+      - name: Cache Java artifacts
         uses: actions/cache@v3
         with:
-          path: services/openframe-api/target/openframe-api-*.jar
-          key: ${{ runner.os }}-api-${{ github.sha }}
+          path: |
+            **/target/*.jar
+            !**/target/original-*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          key: ${{ runner.os }}-java-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-api-
+            ${{ runner.os }}-java-
 
   deploy:
     needs: build
@@ -198,19 +202,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           
-      # Restore cached API artifacts
-      - name: Restore API artifacts
+      # Restore cached Java artifacts
+      - name: Restore Java artifacts
         uses: actions/cache@v3
         with:
-          path: services/openframe-api/target/openframe-api-*.jar
-          key: ${{ runner.os }}-api-${{ github.sha }}
+          path: |
+            **/target/*.jar
+            !**/target/original-*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          key: ${{ runner.os }}-java-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-api-
+            ${{ runner.os }}-java-
 
-      # Ensure target directory exists
-      - name: Create target directory
+      # Create target directories and copy JAR files
+      - name: Create target directories and copy JAR files
         run: |
-          mkdir -p services/openframe-api/target
+          # Create target directories
+          for dir in $(find . -type f -name "Dockerfile" -exec dirname {} \;); do
+            mkdir -p "$dir/target"
+          done
+
+          # Copy JAR files for Java services
+          for service in api config gateway management stream core data; do
+            echo "Setting up $service..."
+            find . -path "**/target/*.jar" \
+              ! -name "original-*.jar" \
+              ! -name "*-sources.jar" \
+              ! -name "*-javadoc.jar" \
+              -exec cp {} ./**/openframe-$service/target/ \;
+            
+            echo "Contents of $service target directory:"
+            ls -la ./**/openframe-$service/target/
+          done
 
       - name: Build and push infrastructure images
         run: |
@@ -254,6 +278,7 @@ jobs:
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
               --file $path/Dockerfile \
+              -f $path/Dockerfile \
               $path
             
             # Move cache to prevent unbounded cache growth
