@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-COPY target/*.jar app.jar
+COPY --from=app target/*.jar app.jar
 
 # Add debugging tools
 RUN apk add --no-cache iputils bind-tools netcat-openbsd curl
