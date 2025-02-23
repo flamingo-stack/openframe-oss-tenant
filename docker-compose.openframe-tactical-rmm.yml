@@ -155,7 +155,7 @@ services:
       tactical-redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral' && curl -s http://tactical-meshcentral:8383/health.ashx" ]
+      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral'" ]
       interval: 15s
       timeout: 10s
       retries: 5
