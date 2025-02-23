@@ -1,4 +1,4 @@
-name: OpenFrame Deployment
+name: OpenFrame CI/CD
 
 permissions:
   contents: write
@@ -6,6 +6,10 @@ permissions:
   actions: write
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       environment:
@@ -23,7 +27,7 @@ env:
   ORGANIZATION: flamingo-cx
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -43,16 +47,52 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml
         
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            **/target/*.jar
+            infrastructure/*/target/*.jar
+            services/*/target/*.jar
+
+  deploy:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    environment: ${{ github.event.inputs.environment || 'development' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
+          
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
         
       - name: Set up Docker Compose
         run: |
-          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-          mkdir -p $DOCKER_CONFIG/cli-plugins
-          curl -SL https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          # Docker Compose is already installed as a Docker CLI plugin in GitHub Actions runners
           docker compose version
+          # Create Docker network
+          docker network create openframe-network --label com.docker.compose.network=openframe-network || true
         
       - name: Set up environment
         run: |
@@ -68,60 +108,77 @@ jobs:
           
       - name: Build and push infrastructure images
         run: |
-          # Build and push MongoDB
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ./infrastructure/mongodb/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }}
-          
-          # Build and push Cassandra
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ./infrastructure/cassandra/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }}
-          
-          # Build and push NiFi
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ./infrastructure/nifi/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }}
-          
-          # Build and push Config Server
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ./services/openframe-config/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }}
-          
-          # Build and push API Service
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ./services/openframe-api/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }}
-          
-          # Build and push Management Service
-          docker build -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ./services/openframe-management/
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }}
-          
-          # Tag all images with 'latest' for convenience
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
-          docker tag ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:${{ github.sha }} ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
-          
-          # Push latest tags
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-mongodb:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-cassandra:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-nifi:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-config:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-api:latest
-          docker push ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-management:latest
+          # Function to build and push an image
+          build_and_push() {
+            local service=$1
+            local path=$2
+            echo "Building and pushing $service from $path"
+            docker buildx build \
+              --cache-from type=local,src=/tmp/.buildx-cache \
+              --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+              --platform linux/amd64 \
+              --push \
+              -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
+              -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
+              $path
+            
+            # Move cache to prevent unbounded cache growth
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          }
 
-      - name: Create Docker network
-        run: docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+          # Infrastructure Services
+          build_and_push "mongodb" "./infrastructure/mongodb/"
+          build_and_push "cassandra" "./infrastructure/cassandra/"
+          build_and_push "nifi" "./infrastructure/nifi/"
+          build_and_push "postgresql" "./infrastructure/postgresql/"
+          
+          # Tactical RMM Components
+          build_and_push "tactical-base" "./infrastructure/tactical-rmm/tactical-base/"
+          build_and_push "tactical-frontend" "./infrastructure/tactical-rmm/tactical-frontend/"
+          build_and_push "tactical-meshcentral" "./infrastructure/tactical-rmm/tactical-meshcentral/"
+          build_and_push "tactical-nginx" "./infrastructure/tactical-rmm/tactical-nginx/"
+          
+          # Fleet MDM
+          build_and_push "fleetmdm" "./infrastructure/fleetmdm/"
+          
+          # Core Libraries
+          build_and_push "core" "./libs/openframe-core/"
+          build_and_push "data" "./libs/openframe-data/"
+          
+          # Services
+          build_and_push "api" "./services/openframe-api/"
+          build_and_push "config" "./services/openframe-config/"
+          build_and_push "gateway" "./services/openframe-gateway/"
+          build_and_push "management" "./services/openframe-management/"
+          build_and_push "stream" "./services/openframe-stream/"
+          build_and_push "ui" "./services/openframe-ui/"
+
+
 
       - name: Deploy infrastructure services
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+          MONGO_APP_DATABASE: openframe
+          MONGO_APP_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          MONGO_APP_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          CASSANDRA_USERNAME: ${{ secrets.CASSANDRA_USERNAME }}
+          CASSANDRA_PASSWORD: ${{ secrets.CASSANDRA_PASSWORD }}
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-infrastructure.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-" + (key | downcase)} - "build")' docker-compose.openframe-infrastructure.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-infrastructure.yml
           
           # Deploy infrastructure services
-          docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+          docker compose -f docker-compose.openframe-infrastructure.yml up -d
           
           # Wait for infrastructure services to be ready
           echo "Waiting for MongoDB to be ready..."
-          timeout 300 bash -c 'until docker exec openframe-mongodb mongosh -u "${{ secrets.MONGODB_USERNAME }}" -p "${{ secrets.MONGODB_PASSWORD }}" --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          MONGO_USER="${{ secrets.MONGODB_USERNAME }}"
+          MONGO_PASS="${{ secrets.MONGODB_PASSWORD }}"
+          timeout 300 bash -c "until docker exec openframe-mongodb mongosh -u \"${MONGO_USER}\" -p \"${MONGO_PASS}\" --eval \"db.adminCommand('ping')\" > /dev/null 2>&1; do sleep 2; done"
           
           echo "Waiting for Cassandra to be ready..."
           timeout 300 bash -c 'until docker exec openframe-cassandra cqlsh -e "describe keyspaces" > /dev/null 2>&1; do sleep 2; done'
@@ -131,13 +188,16 @@ jobs:
           
           # Initialize Cassandra
           echo "Initializing Cassandra..."
+          CASS_USER="${{ secrets.CASSANDRA_USERNAME }}"
+          CASS_PASS="${{ secrets.CASSANDRA_PASSWORD }}"
           docker exec openframe-cassandra cqlsh \
-            -u "${{ secrets.CASSANDRA_USERNAME }}" \
-            -p "${{ secrets.CASSANDRA_PASSWORD }}" \
+            -u "${CASS_USER}" \
+            -p "${CASS_PASS}" \
             -f /docker-entrypoint-initdb.d/cassandra-init.cql
           
           echo "Waiting for Redis to be ready..."
-          timeout 300 bash -c 'until docker exec openframe-redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" ping > /dev/null 2>&1; do sleep 2; done'
+          REDIS_PASS="${{ secrets.REDIS_PASSWORD }}"
+          timeout 300 bash -c "until docker exec openframe-redis redis-cli -a \"${REDIS_PASS}\" ping > /dev/null 2>&1; do sleep 2; done"
           
           echo "Waiting for Zookeeper to be ready..."
           timeout 300 bash -c 'until docker exec openframe-zookeeper bash -c "echo ruok | nc localhost 2181 | grep imok" > /dev/null 2>&1; do sleep 2; done'
@@ -153,22 +213,31 @@ jobs:
       - name: Deploy Tactical RMM
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-tactical-rmm.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-tactical-rmm"} - "build")' docker-compose.openframe-tactical-rmm.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-tactical-rmm.yml
           
           # Deploy Tactical RMM services
-          docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+          docker compose -f docker-compose.openframe-tactical-rmm.yml up -d
           
           # Wait for Tactical RMM to be ready
           echo "Waiting for Tactical RMM to be ready..."
           timeout 300 bash -c 'until curl -f http://localhost:8080/nginx_status > /dev/null 2>&1; do sleep 2; done'
           
       - name: Deploy Fleet MDM
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: fleet
+          MYSQL_PASSWORD: ${{ secrets.FLEET_DB_PASSWORD }}
+          FLEET_SERVER_PORT: "8070"
+          FLEET_SETUP_ADMIN_EMAIL: ${{ secrets.FLEET_ADMIN_EMAIL }}
+          FLEET_SETUP_ADMIN_PASSWORD: ${{ secrets.FLEET_ADMIN_PASSWORD }}
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-fleet-mdm.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-fleet-mdm"} - "build")' docker-compose.openframe-fleet-mdm.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-fleet-mdm.yml
           
           # Deploy Fleet MDM services
-          docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+          docker compose -f docker-compose.openframe-fleet-mdm.yml up -d
           
           # Wait for Fleet to be ready
           echo "Waiting for Fleet MDM to be ready..."
@@ -177,10 +246,11 @@ jobs:
       - name: Deploy Authentik
         run: |
           # Update image references in docker-compose files
-          sed -i "s|build:|image: ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-|g" docker-compose.openframe-authentik.yml
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-authentik"} - "build")' docker-compose.openframe-authentik.yml > /tmp/modified-compose.yml && \
+          mv /tmp/modified-compose.yml docker-compose.openframe-authentik.yml
           
           # Deploy Authentik services
-          docker-compose -f docker-compose.openframe-authentik.yml up -d
+          docker compose -f docker-compose.openframe-authentik.yml up -d
           
           # Wait for Authentik to be ready
           echo "Waiting for Authentik to be ready..."
@@ -485,8 +555,8 @@ jobs:
         if: failure()
         run: |
           echo "Deployment failed, cleaning up services..."
-          docker-compose -f docker-compose.openframe-infrastructure.yml down
-          docker-compose -f docker-compose.openframe-tactical-rmm.yml down
-          docker-compose -f docker-compose.openframe-fleet-mdm.yml down
-          docker-compose -f docker-compose.openframe-authentik.yml down
+          docker compose -f docker-compose.openframe-infrastructure.yml down
+          docker compose -f docker-compose.openframe-tactical-rmm.yml down
+          docker compose -f docker-compose.openframe-fleet-mdm.yml down
+          docker compose -f docker-compose.openframe-authentik.yml down
           echo "Cleanup completed"
