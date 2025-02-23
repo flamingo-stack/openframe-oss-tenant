@@ -108,6 +108,17 @@ jobs:
           
       - name: Build and push infrastructure images
         run: |
+          # Function to clean up old images
+          cleanup_images() {
+            echo "Cleaning up old images..."
+            for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
+              if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
+                echo "Removing old image: $img"
+                docker rmi $img || true
+              fi
+            done
+          }
+
           # Function to build and push an image
           build_and_push() {
             local service=$1
@@ -153,6 +164,15 @@ jobs:
           build_and_push "management" "./services/openframe-management/"
           build_and_push "stream" "./services/openframe-stream/"
           build_and_push "ui" "./services/openframe-ui/"
+
+          # Clean up old images after all builds
+          echo "Cleaning up old images..."
+          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
+            if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
+              echo "Removing old image: $img"
+              docker rmi $img || true
+            fi
+          done
 
 
 
@@ -551,6 +571,21 @@ jobs:
           
           echo "All services are healthy"
 
+      - name: Cleanup images and artifacts
+        if: always()
+        run: |
+          echo "Cleaning up Docker images..."
+          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
+            if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
+              echo "Removing old image: $img"
+              docker rmi $img || true
+            fi
+          done
+
+          echo "Cleaning up build artifacts..."
+          find . -type f -name "*.jar" -delete
+          find . -type d -name "target" -exec rm -rf {} +
+
       - name: Cleanup on failure
         if: failure()
         run: |
@@ -559,4 +594,13 @@ jobs:
           docker compose -f docker-compose.openframe-tactical-rmm.yml down
           docker compose -f docker-compose.openframe-fleet-mdm.yml down
           docker compose -f docker-compose.openframe-authentik.yml down
+
+          # Clean up any remaining images
+          echo "Cleaning up remaining Docker images..."
+          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
+            if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
+              echo "Removing old image: $img"
+              docker rmi $img || true
+            fi
+          done
           echo "Cleanup completed"
