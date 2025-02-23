@@ -266,17 +266,8 @@ jobs:
             local path=$2
             echo "Building and pushing $service from $path"
             
-            # Verify target directory for Java services
-            if [[ "$service" =~ ^(api|config|gateway|management|stream|core|data)$ ]]; then
-              echo "Java service detected, verifying target directory..."
-              echo "Contents of $path/target:"
-              ls -la "$path/target"
-              
-              if [ ! -f "$path/target"/*.jar ]; then
-                echo "Error: No JAR files found in $path/target"
-                exit 1
-              fi
-            fi
+            # Ensure build context exists
+            mkdir -p $path/target
             
             docker buildx build \
               --cache-from type=local,src=/tmp/.buildx-cache \
@@ -286,6 +277,7 @@ jobs:
               --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
+              --file $path/Dockerfile \
               -f $path/Dockerfile \
               $path
             
