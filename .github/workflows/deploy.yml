@@ -166,6 +166,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-api-
 
+      # Ensure target directory exists
+      - name: Create target directory
+        run: |
+          mkdir -p services/openframe-api/target
+
       - name: Build and push infrastructure images
         run: |
           # Function to clean up old images
