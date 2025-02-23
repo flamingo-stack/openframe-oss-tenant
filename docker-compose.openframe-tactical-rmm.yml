@@ -86,7 +86,7 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-mongodb
     image: mongo:4.4.18
-    platform: linux/arm64
+    platform: linux/amd64
     volumes:
       - tactical_mongo_data:/data/db
     user: root
