@@ -45,18 +45,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Cleaning up all artifacts except latest per type..."
+          echo "Cleaning up all artifacts..."
           
-          # Function to get artifact type from name
-          get_artifact_type() {
-            local name=$1
-            echo "$name" | sed -E 's/.*openframe-([^-]+).*/\1/'
-          }
-          
-          # Map to store latest artifact per type
-          declare -A latest_artifacts
-          
-          # List and process all artifacts
+          # Delete all artifacts older than 24 hours
           page=1
           while true; do
             artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100" || echo "error")
@@ -71,23 +62,21 @@ jobs:
               break
             fi
             
-            # First pass: Find latest artifact per type
-            while read -r artifact_id name created_at; do
-              type=$(get_artifact_type "$name")
-              if [ -z "${latest_artifacts[$type]}" ] || [[ "${latest_artifacts[$type]#* }" < "$created_at" ]]; then
-                latest_artifacts[$type]="$artifact_id $created_at"
-              fi
-            done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id) \(.name) \(.created_at)"')
+            # Get current time in ISO format
+            current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
             
-            # Second pass: Delete all except latest per type
+            # Delete artifacts older than 24 hours
             while read -r artifact_id name created_at; do
-              type=$(get_artifact_type "$name")
-              latest_id=${latest_artifacts[$type]%% *}
-              if [ "$artifact_id" != "$latest_id" ]; then
+              # Convert times to seconds since epoch
+              created_seconds=$(date -d "$created_at" +%s)
+              current_seconds=$(date -d "$current_time" +%s)
+              age_hours=$(( (current_seconds - created_seconds) / 3600 ))
+              
+              if [ "$age_hours" -gt 24 ]; then
                 echo "Deleting old artifact $artifact_id ($name) from $created_at"
                 gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id"
               else
-                echo "Keeping latest artifact $artifact_id ($name) from $created_at"
+                echo "Keeping recent artifact $artifact_id ($name) from $created_at"
               fi
             done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id) \(.name) \(.created_at)"')
             
