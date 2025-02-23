@@ -176,12 +176,20 @@ jobs:
           # Function to clean up old images
           cleanup_images() {
             echo "Cleaning up old images..."
-            for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
-              if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
-                echo "Removing old image: $img"
-                docker rmi $img || true
+            # List all images and their IDs
+            docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
+              # Check if it's our registry and not the current build
+              if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+                 [[ $img != *":${{ github.sha }}" ]] && \
+                 [[ $img != *":latest" ]]; then
+                echo "Removing old image: $img (ID: $id)"
+                docker rmi --force $id || true
               fi
             done
+            
+            # Also remove any dangling images
+            echo "Cleaning up dangling images..."
+            docker image prune --force
           }
 
           # Clean up old images before building
