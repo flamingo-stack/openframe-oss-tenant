@@ -241,13 +241,24 @@ jobs:
             local service=$1
             local path=$2
             echo "Building and pushing $service from $path"
+            
+            # Ensure target directory exists
+            mkdir -p "$path/target"
+            
+            # Copy JAR files to target if they exist
+            if [ -d "$path" ]; then
+              find "$path" -name "*.jar" -exec cp {} "$path/target/" \;
+            fi
+            
             docker buildx build \
               --cache-from type=local,src=/tmp/.buildx-cache \
               --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
               --platform linux/amd64 \
               --push \
+              --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
+              --file $path/Dockerfile \
               $path
             
             # Move cache to prevent unbounded cache growth
