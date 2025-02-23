@@ -184,6 +184,9 @@ jobs:
             done
           }
 
+          # Clean up old images before building
+          cleanup_images
+
           # Function to build and push an image
           build_and_push() {
             local service=$1
