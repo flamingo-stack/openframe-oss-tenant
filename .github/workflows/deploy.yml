@@ -4,8 +4,6 @@ permissions:
   contents: write
   packages: write
   actions: write
-  packages-delete: write  # Add explicit permission for package deletion
-  packages-read: write    # Add explicit permission for package reading
 
 on:
   push:
