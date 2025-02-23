@@ -260,8 +260,7 @@ jobs:
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
               --file $path/Dockerfile \
-              --context $path \
-              .
+              $path
             
             # Move cache to prevent unbounded cache growth
             rm -rf /tmp/.buildx-cache
