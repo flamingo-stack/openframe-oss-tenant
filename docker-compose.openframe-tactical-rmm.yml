@@ -106,7 +106,7 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-postgres
     image: postgres:13-alpine
-    platform: linux/arm64
+    platform: linux/amd64
     volumes:
       - tactical_postgres_data:/var/lib/postgresql/data
     healthcheck:
