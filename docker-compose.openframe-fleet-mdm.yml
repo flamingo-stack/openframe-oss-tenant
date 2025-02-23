@@ -80,7 +80,7 @@ services:
     networks:
       - openframe-network
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:${FLEET_SERVER_PORT}/setup"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8070/setup"]
       interval: 10s
       timeout: 5s
       retries: 5
