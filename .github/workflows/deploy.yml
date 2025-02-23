@@ -29,9 +29,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v3
         with:
@@ -44,36 +41,135 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
           
+      - name: Clean up all artifacts and GHCR packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Starting artifact and package cleanup..."
+          
+          # Function to get total artifact count and size
+          get_artifact_stats() {
+            local stats=$(gh api "repos/${{ github.repository }}/actions/artifacts" | jq -r '[.total_count, (.artifacts | map(.size_in_bytes) | add // 0)] | @csv')
+            echo "Current artifact stats: $(echo $stats | cut -d',' -f1) artifacts, $(echo $stats | cut -d',' -f2 | numfmt --to=iec) total size"
+          }
+
+          # Function to clean up GHCR packages
+          cleanup_ghcr_packages() {
+            local package_name=$1
+            local dry_run=${2:-false}
+            echo "Cleaning up old versions of $package_name (dry-run: $dry_run)..."
+            
+            # List all versions
+            local versions=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
+              --paginate)
+            
+            # Get current SHA
+            local current_sha=$(git rev-parse --short HEAD)
+            
+            # Process each version
+            echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
+              if [[ "$dry_run" == "true" ]]; then
+                echo "Would delete version $version_id"
+              else
+                echo "Deleting version $version_id..."
+                gh api \
+                  -X DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
+              fi
+              
+              # Rate limit protection
+              sleep 1
+            done
+          }
+          
+          # Clean up each package
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            for service in mongodb cassandra nifi config api management stream gateway ui; do
+              cleanup_ghcr_packages "openframe-$service"
+            done
+          fi
+          
+          get_artifact_stats
+          
+          # Delete all artifacts
+          echo "Deleting all artifacts..."
+          page=1
+          deleted_count=0
+          failed_count=0
+          
+          while true; do
+            artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100")
+            if [ $? -ne 0 ]; then
+              echo "Error fetching artifacts page $page"
+              exit 1
+            fi
+            
+            count=$(echo "$artifacts" | jq '.total_count')
+            if [ "$count" -eq 0 ]; then
+              break
+            fi
+            
+            while read -r artifact_id name created_at size; do
+              size_human=$(echo "$size" | numfmt --to=iec)
+              echo "Attempting to delete artifact $artifact_id ($name) from $created_at, size: $size_human"
+              if gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$artifact_id"; then
+                echo "Successfully deleted artifact $artifact_id"
+                deleted_count=$((deleted_count + 1))
+              else
+                echo "Failed to delete artifact $artifact_id"
+                failed_count=$((failed_count + 1))
+              fi
+              # Small delay to avoid rate limiting
+              sleep 1
+            done < <(echo "$artifacts" | jq -r '.artifacts[] | "\(.id) \(.name) \(.created_at) \(.size_in_bytes)"')
+            
+            # Check if we've processed all pages
+            total_pages=$(echo "$artifacts" | jq '.total_count / 100 | ceil')
+            if [ "$page" -ge "$total_pages" ]; then
+              break
+            fi
+            page=$((page + 1))
+          done
+          
+          echo "Cleanup summary:"
+          echo "- Deleted: $deleted_count artifacts"
+          echo "- Failed: $failed_count artifacts"
+          
+          echo "Final artifact stats:"
+          get_artifact_stats
+
       - name: Build with Maven
         run: mvn -B package --file pom.xml
         
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      # Cache build artifacts for all Java services
+      - name: Cache Java artifacts
+        uses: actions/cache@v3
         with:
-          name: build-artifacts
           path: |
             **/target/*.jar
-            infrastructure/*/target/*.jar
-            services/*/target/*.jar
+            !**/target/original-*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          key: ${{ runner.os }}-java-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-java-
 
   deploy:
     needs: build
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     environment: ${{ github.event.inputs.environment || 'development' }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -106,20 +202,91 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           
+      # Restore cached Java artifacts
+      - name: Restore Java artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/target/*.jar
+            !**/target/original-*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          key: ${{ runner.os }}-java-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-java-
+
+      # Create target directories and copy JAR files
+      - name: Create target directories and copy JAR files
+        run: |
+          # Create target directories
+          for dir in $(find . -type f -name "Dockerfile" -exec dirname {} \;); do
+            mkdir -p "$dir/target"
+          done
+
+          # Copy JAR files for Java services
+          for service in api config gateway management stream core data; do
+            echo "Setting up $service..."
+            find . -path "**/target/*.jar" \
+              ! -name "original-*.jar" \
+              ! -name "*-sources.jar" \
+              ! -name "*-javadoc.jar" \
+              -exec cp {} ./**/openframe-$service/target/ \;
+            
+            echo "Contents of $service target directory:"
+            ls -la ./**/openframe-$service/target/
+          done
+
       - name: Build and push infrastructure images
         run: |
+          # Function to clean up old images
+          cleanup_images() {
+            echo "Cleaning up old images..."
+            # List all images and their IDs
+            docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
+              # Check if it's our registry and not the current build
+              if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+                 [[ $img != *":${{ github.sha }}" ]] && \
+                 [[ $img != *":latest" ]]; then
+                echo "Removing old image: $img (ID: $id)"
+                docker rmi --force $id || true
+              fi
+            done
+            
+            # Also remove any dangling images
+            echo "Cleaning up dangling images..."
+            docker image prune --force
+          }
+
+          # Clean up old images before building
+          cleanup_images
+
           # Function to build and push an image
           build_and_push() {
             local service=$1
             local path=$2
             echo "Building and pushing $service from $path"
+            
+            # Verify target directory for Java services
+            if [[ "$service" =~ ^(api|config|gateway|management|stream|core|data)$ ]]; then
+              echo "Java service detected, verifying target directory..."
+              echo "Contents of $path/target:"
+              ls -la "$path/target"
+              
+              if [ ! -f "$path/target"/*.jar ]; then
+                echo "Error: No JAR files found in $path/target"
+                exit 1
+              fi
+            fi
+            
             docker buildx build \
               --cache-from type=local,src=/tmp/.buildx-cache \
               --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
               --platform linux/amd64 \
               --push \
+              --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
               -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
+              -f $path/Dockerfile \
               $path
             
             # Move cache to prevent unbounded cache growth
@@ -153,6 +320,15 @@ jobs:
           build_and_push "management" "./services/openframe-management/"
           build_and_push "stream" "./services/openframe-stream/"
           build_and_push "ui" "./services/openframe-ui/"
+
+          # Clean up old images after all builds
+          echo "Cleaning up old images..."
+          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
+            if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
+              echo "Removing old image: $img"
+              docker rmi $img || true
+            fi
+          done
 
 
 
@@ -551,12 +727,165 @@ jobs:
           
           echo "All services are healthy"
 
+      - name: Clean up GHCR packages
+        if: success() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Function to clean up GHCR packages
+          cleanup_ghcr_packages() {
+            local package_name=$1
+            local dry_run=${2:-false}
+            echo "Cleaning up old versions of $package_name (dry-run: $dry_run)..."
+            
+            # List all versions
+            local versions=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
+              --paginate)
+            
+            # Get current SHA
+            local current_sha=$(git rev-parse --short HEAD)
+            
+            # Process each version
+            echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
+              if [[ "$dry_run" == "true" ]]; then
+                echo "Would delete version $version_id"
+              else
+                echo "Deleting version $version_id..."
+                gh api \
+                  -X DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
+              fi
+              
+              # Rate limit protection
+              sleep 1
+            done
+          }
+          
+          # Clean up each package
+          for service in mongodb cassandra nifi config api management stream gateway ui; do
+            cleanup_ghcr_packages "openframe-$service"
+          done
+
+          # Verify remaining package versions
+          echo "Remaining package versions:"
+          for service in mongodb cassandra nifi config api management stream gateway ui; do
+            echo "Package: openframe-$service"
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${ORGANIZATION,,}/packages/container/openframe-$service/versions" \
+              --jq '.[] | select(.metadata.container.tags != null) | .metadata.container.tags[]'
+          done
+
+      - name: Cleanup images and artifacts
+        if: always()
+        run: |
+          echo "Cleaning up Docker images..."
+          # List all images and their IDs
+          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
+            # Check if it's our registry and not the current build
+            if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+               [[ $img != *":${{ github.sha }}" ]] && \
+               [[ $img != *":latest" ]]; then
+              echo "Removing old image: $img (ID: $id)"
+              docker rmi --force $id || true
+            fi
+          done
+          
+          # Also remove any dangling images
+          echo "Cleaning up dangling images..."
+          docker image prune --force
+          
+          # List remaining images for verification
+          echo "Remaining images:"
+          docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
+
+          echo "Cleaning up build artifacts..."
+          find . -type f -name "*.jar" -delete
+          find . -type d -name "target" -exec rm -rf {} +
+
       - name: Cleanup on failure
         if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "Deployment failed, cleaning up services..."
           docker compose -f docker-compose.openframe-infrastructure.yml down
           docker compose -f docker-compose.openframe-tactical-rmm.yml down
           docker compose -f docker-compose.openframe-fleet-mdm.yml down
           docker compose -f docker-compose.openframe-authentik.yml down
+
+          # Clean up any remaining images
+          echo "Cleaning up remaining Docker images..."
+          # List all images and their IDs
+          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
+            # Check if it's our registry and not the current build
+            if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+               [[ $img != *":${{ github.sha }}" ]] && \
+               [[ $img != *":latest" ]]; then
+              echo "Removing old image: $img (ID: $id)"
+              docker rmi --force $id || true
+            fi
+          done
+          
+          # Also remove any dangling images
+          echo "Cleaning up dangling images..."
+          docker image prune --force
+          
+          # List remaining images for verification
+          echo "Remaining images:"
+          docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
+
+          # Clean up GHCR packages if not a PR
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            # Function to clean up GHCR packages
+            cleanup_ghcr_packages() {
+              local package_name=$1
+              echo "Cleaning up old versions of $package_name..."
+              
+              # List all versions
+              local versions=$(gh api \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
+                --paginate)
+              
+              # Get current SHA
+              local current_sha=$(git rev-parse --short HEAD)
+              
+              # Process each version
+              echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
+                echo "Deleting version $version_id..."
+                gh api \
+                  -X DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
+                
+                # Rate limit protection
+                sleep 1
+              done
+            }
+            
+            # Clean up each package
+            for service in mongodb cassandra nifi config api management stream gateway ui; do
+              cleanup_ghcr_packages "openframe-$service"
+            done
+
+            # Verify remaining package versions
+            echo "Remaining package versions:"
+            for service in mongodb cassandra nifi config api management stream gateway ui; do
+              echo "Package: openframe-$service"
+              gh api \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/orgs/${ORGANIZATION,,}/packages/container/openframe-$service/versions" \
+                --jq '.[] | select(.metadata.container.tags != null) | .metadata.container.tags[]'
+            done
+          fi
           echo "Cleanup completed"
