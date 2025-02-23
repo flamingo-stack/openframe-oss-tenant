@@ -651,12 +651,24 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up Docker images..."
-          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
-            if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
-              echo "Removing old image: $img"
-              docker rmi $img || true
+          # List all images and their IDs
+          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
+            # Check if it's our registry and not the current build
+            if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+               [[ $img != *":${{ github.sha }}" ]] && \
+               [[ $img != *":latest" ]]; then
+              echo "Removing old image: $img (ID: $id)"
+              docker rmi --force $id || true
             fi
           done
+          
+          # Also remove any dangling images
+          echo "Cleaning up dangling images..."
+          docker image prune --force
+          
+          # List remaining images for verification
+          echo "Remaining images:"
+          docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
 
           echo "Cleaning up build artifacts..."
           find . -type f -name "*.jar" -delete
@@ -673,10 +685,22 @@ jobs:
 
           # Clean up any remaining images
           echo "Cleaning up remaining Docker images..."
-          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
-            if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
-              echo "Removing old image: $img"
-              docker rmi $img || true
+          # List all images and their IDs
+          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
+            # Check if it's our registry and not the current build
+            if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+               [[ $img != *":${{ github.sha }}" ]] && \
+               [[ $img != *":latest" ]]; then
+              echo "Removing old image: $img (ID: $id)"
+              docker rmi --force $id || true
             fi
           done
+          
+          # Also remove any dangling images
+          echo "Cleaning up dangling images..."
+          docker image prune --force
+          
+          # List remaining images for verification
+          echo "Remaining images:"
+          docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
           echo "Cleanup completed"
