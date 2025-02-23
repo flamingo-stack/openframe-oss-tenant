@@ -45,6 +45,8 @@ jobs:
           cache: 'maven'
           
       - name: Clean up old artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "Cleaning up all artifacts except latest per type..."
           
