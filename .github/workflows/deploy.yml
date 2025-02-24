@@ -67,19 +67,15 @@ jobs:
           docker buildx create --use
           docker buildx inspect --bootstrap
 
-      - name: Copy JAR files
-        run: |
-          # For PRs, use the built JARs directly from the build step
-          # For main branch, download artifacts
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "Downloading artifacts for main branch..."
-            # Download artifacts using actions/download-artifact
-            uses: actions/download-artifact@v4
-            with:
-              name: java-artifacts
-          fi
+      - name: Download artifacts
+        if: github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
 
-          # Create target directories and copy JARs
+      - name: Create target directories and copy JAR files
+        run: |
+          # Create target directories
           for dir in $(find . -name "pom.xml" -exec dirname {} \;); do
             mkdir -p "$dir/target"
           done
