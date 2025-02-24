@@ -45,8 +45,11 @@ jobs:
             !**/target/original-*.jar
             !**/target/*-sources.jar
             !**/target/*-javadoc.jar
+            !**/target/test-classes/
+            !**/target/classes/
           compression-level: 9
           retention-days: 1
+          if-no-files-found: error
 
   deploy:
     needs: build
@@ -73,7 +76,16 @@ jobs:
         with:
           name: java-artifacts
           path: downloaded-artifacts
+          if-no-files-found: error
         continue-on-error: false
+
+      - name: Debug artifacts
+        run: |
+          echo "Listing downloaded artifacts:"
+          ls -R downloaded-artifacts/ || echo "No artifacts found"
+          
+          echo "Listing target directories:"
+          find . -type d -name "target" -ls
 
       - name: Create target directories and copy JAR files
         run: |
