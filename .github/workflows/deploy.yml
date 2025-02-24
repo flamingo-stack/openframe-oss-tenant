@@ -18,7 +18,31 @@ permissions:
   pull-requests: write
 
 jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            for (const artifact of response.data.artifacts) {
+              if (artifact.name === 'java-artifacts') {
+                console.log('Deleting artifact:', artifact.name);
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                });
+              }
+            }
+
   build:
+    needs: cleanup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,13 +59,6 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -51,6 +68,8 @@ jobs:
             !**/target/original-*.jar
             !**/target/*-sources.jar
             !**/target/*-javadoc.jar
+          compression-level: 9
+          retention-days: 1
 
   deploy:
     needs: build
