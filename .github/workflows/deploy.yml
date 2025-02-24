@@ -227,12 +227,19 @@ jobs:
             # Ensure build context exists
             mkdir -p $path/target
             
+            # Set build context based on service
+            local build_context="$path"
+            if [[ "$service" == "tactical-base" ]]; then
+              # For tactical-base, use parent directory as build context
+              build_context="./infrastructure/tactical-rmm"
+            fi
+            
             # Build and tag for local registry
             docker build \
               -t localhost:5000/openframe-$service:${{ github.sha }} \
               -t localhost:5000/openframe-$service:latest \
               -f $path/Dockerfile \
-              $path
+              $build_context
             
             # Push to local registry
             docker push localhost:5000/openframe-$service:${{ github.sha }}
