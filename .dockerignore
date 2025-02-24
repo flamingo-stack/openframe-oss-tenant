@@ -1,0 +1,21 @@
+# Maven
+target/
+!target/*.jar
+**/target/
+!**/target/*.jar
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.temp
