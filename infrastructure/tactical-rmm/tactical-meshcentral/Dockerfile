@@ -13,13 +13,13 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 # Clone the repository and install dependencies
 RUN git clone https://github.com/amidaware/tacticalrmm.git ${TACTICAL_TEMP_DIR}/repo
 
-COPY config.json ${TACTICAL_TEMP_DIR}/
+COPY tactical-meshcentral/config.json ${TACTICAL_TEMP_DIR}/
 
 RUN MESH_VER=$(grep -o 'MESH_VER = "[^"]*"' ${TACTICAL_TEMP_DIR}/repo/api/tacticalrmm/tacticalrmm/settings.py | cut -d'"' -f 2) && \
     echo "MESH_VER is ${MESH_VER}" && \
     export MESH_VER
 
-COPY package.json.template ${TACTICAL_TEMP_DIR}/
+COPY tactical-meshcentral/package.json.template ${TACTICAL_TEMP_DIR}/
 
 RUN envsubst < ${TACTICAL_TEMP_DIR}/package.json.template > ${TACTICAL_TEMP_DIR}/package.json
 
@@ -29,8 +29,11 @@ RUN npm install
 
 RUN chown -R node:node ${TACTICAL_TEMP_DIR}
 
-COPY entrypoint.sh /
+COPY tactical-meshcentral/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
+
+COPY shared/common-functions.sh /
+RUN chmod +x /common-functions.sh
 
 USER node
 

@@ -48,11 +48,11 @@ COPY --from=create_venv_stage ${TACTICAL_TMP_DIR}/api/tacticalrmm ${TACTICAL_TMP
 
 RUN mkdir -p ${CUSTOM_CODE_DIR}
 # copy custom code
-COPY helpers.py ${CUSTOM_CODE_DIR}/helpers.py
-COPY custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
-COPY views.py ${CUSTOM_CODE_DIR}/views.py
-COPY local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
-COPY app.ini ${CUSTOM_CODE_DIR}/app.ini
+COPY tactical-base/helpers.py ${CUSTOM_CODE_DIR}/helpers.py
+COPY tactical-base/custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
+COPY tactical-base/views.py ${CUSTOM_CODE_DIR}/views.py
+COPY tactical-base/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
+COPY tactical-base/app.ini ${CUSTOM_CODE_DIR}/app.ini
 
 COPY --from=get_scripts_stage /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
 
@@ -84,9 +84,12 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends redis-tools && \
     rm -rf /var/lib/apt/lists/*
 
-# docker init
-COPY entrypoint.sh /
+COPY tactical-base/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
+
+COPY shared/common-functions.sh /
+RUN chmod +x /common-functions.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 WORKDIR ${TACTICAL_DIR}/api

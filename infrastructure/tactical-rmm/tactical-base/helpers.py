@@ -57,6 +57,11 @@ def get_nats_hosts() -> tuple[str, str, str]:
             "127.0.0.1",
         )
 
+    if "NATS_CONNECT_HOST" in os.environ:
+        connect_host = os.getenv("NATS_CONNECT_HOST")
+    elif hasattr(settings, "NATS_CONNECT_HOST"):
+        connect_host = settings.NATS_CONNECT_HOST
+
     # allow customizing all nats hosts
     if "NATS_STD_BIND_HOST" in os.environ:
         std_bind_host = os.getenv("NATS_STD_BIND_HOST")
