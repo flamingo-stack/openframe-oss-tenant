@@ -134,9 +134,7 @@ jobs:
           
           # Docker Compose is already installed as a Docker CLI plugin
           docker compose version
-        run: |
-          # Docker Compose is already installed as a Docker CLI plugin in GitHub Actions runners
-          docker compose version
+          
           # Create Docker network
           docker network create openframe-network --label com.docker.compose.network=openframe-network || true
         
