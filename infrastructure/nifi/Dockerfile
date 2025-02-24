@@ -1,7 +1,9 @@
 FROM apache/nifi:latest
 
-# Add JMX Exporter
-COPY jmx_prometheus_javaagent.jar /opt/nifi/jmx_exporter/jmx_prometheus_javaagent.jar
+# Install wget and download JMX Exporter
+RUN mkdir -p /opt/nifi/jmx_exporter && \
+    apk add --no-cache wget && \
+    wget -O /opt/nifi/jmx_exporter/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.20.0/jmx_prometheus_javaagent-0.20.0.jar
 
 # Create config directory and add config file
 COPY config.yml /opt/nifi/jmx_exporter/config.yml
