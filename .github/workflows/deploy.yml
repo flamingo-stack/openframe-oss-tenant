@@ -216,15 +216,10 @@ jobs:
             mkdir -p $path/target
             
             docker build \
-              --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 \
               -t openframe-$service:${{ github.sha }} \
               -t openframe-$service:latest \
               -f $path/Dockerfile \
               $path
-            
-            # Move cache to prevent unbounded cache growth
-            rm -rf /tmp/.buildx-cache
-            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
           }
 
           # Infrastructure Services
