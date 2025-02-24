@@ -77,24 +77,31 @@ jobs:
 
       - name: Create target directories and copy JAR files
         run: |
-          # Create target directories
+          # Debug: List all JAR files
+          echo "Found JAR files:"
+          find . -name "*.jar" -ls
+
+          # Create target directories and copy JARs
           for dir in $(find . -name "pom.xml" -exec dirname {} \;); do
             mkdir -p "$dir/target"
+            echo "Created target directory for $dir"
+            
+            # Find JARs for this module
+            module_name=$(basename "$dir")
+            echo "Looking for JARs for module $module_name"
+            
+            # Try to find and copy the corresponding JAR
+            for jar in $(find . -name "${module_name}*.jar"); do
+              if [ -f "$jar" ]; then
+                echo "Copying $jar to $dir/target/"
+                cp "$jar" "$dir/target/"
+              fi
+            done
           done
 
-          # Copy JAR files to their respective target directories
-          find . -name "*.jar" -exec sh -c '
-            for jar in "$1"; do
-              dir=$(dirname "$jar")
-              base=$(basename "$jar")
-              if [[ $dir == ./* ]]; then
-                dir="${dir#./}"
-              fi
-              target_dir=$(dirname "$dir")
-              mkdir -p "$target_dir/target"
-              mv "$jar" "$target_dir/target/$base"
-            done
-          ' sh {} \;
+          # Verify JAR placement
+          echo "Final JAR locations:"
+          find . -name "*.jar" -ls
 
       - name: Build infrastructure images
         run: |
@@ -125,9 +132,15 @@ jobs:
             # If this is a Java service, ensure target directory exists and copy JARs
             if [ -f "$service_dir/pom.xml" ]; then
               mkdir -p "$temp_context/target"
+              module_name=$(basename "$service_dir")
+              echo "Looking for JARs for module $module_name in $service_dir/target/"
               if [ -d "$service_dir/target" ]; then
+                echo "Contents of $service_dir/target/:"
+                ls -la "$service_dir/target/"
                 cp "$service_dir"/target/*.jar "$temp_context/target/" || true
               fi
+              echo "Contents of temp context target directory:"
+              ls -la "$temp_context/target/" || true
             fi
             
             # List files in build context for debugging
