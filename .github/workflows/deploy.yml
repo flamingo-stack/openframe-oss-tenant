@@ -238,6 +238,9 @@ jobs:
             elif [[ "$service" == "fleetmdm" ]]; then
               # For Fleet MDM, use parent directory as build context
               build_context="./infrastructure/fleetmdm"
+            elif [[ "$service" == "nifi" ]]; then
+              # For NiFi, use its directory as build context to include config files
+              build_context="./infrastructure/nifi"
             fi
             
             # Build and tag for local registry
