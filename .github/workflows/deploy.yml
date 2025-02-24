@@ -235,6 +235,9 @@ jobs:
                   "$service" == "tactical-nginx" ]]; then
               # For tactical services, use parent directory as build context
               build_context="./infrastructure/tactical-rmm"
+            elif [[ "$service" == "fleetmdm" ]]; then
+              # For Fleet MDM, use parent directory as build context
+              build_context="./infrastructure/fleetmdm"
             fi
             
             # Build and tag for local registry
