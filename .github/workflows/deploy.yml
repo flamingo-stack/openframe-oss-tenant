@@ -141,15 +141,27 @@ jobs:
           # Create Docker network
           docker network create openframe-network --label com.docker.compose.network=openframe-network || true
           
-          # Start local registry
+          # Start local registry with increased timeouts
           docker run -d \
             --name local-registry \
             --network openframe-network \
             -p 5000:5000 \
+            -e REGISTRY_HTTP_HEADERS_RESPONSE_ACCESS_CONTROL_ALLOW_ORIGIN="[\"*\"]" \
+            -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+            -e REGISTRY_HTTP_HEADERS_RESPONSE_ACCESS_CONTROL_ALLOW_METHODS="[\"HEAD\", \"GET\", \"OPTIONS\", \"DELETE\"]" \
+            -e REGISTRY_HTTP_HEADERS_RESPONSE_ACCESS_CONTROL_ALLOW_HEADERS="[\"Authorization\", \"Accept\", \"Cache-Control\"]" \
+            -e REGISTRY_HTTP_HEADERS_RESPONSE_ACCESS_CONTROL_EXPOSE_HEADERS="[\"Docker-Content-Digest\"]" \
             registry:2
           
-          # Wait for registry to be ready
-          timeout 30 bash -c 'until curl -f http://localhost:5000/v2/ > /dev/null 2>&1; do sleep 1; done'
+          # Wait for registry to be ready with increased timeout
+          timeout 60 bash -c 'until curl -f http://localhost:5000/v2/ > /dev/null 2>&1; do echo "Waiting for registry..."; sleep 2; done'
+          
+          # Verify registry is working
+          if ! curl -f http://localhost:5000/v2/_catalog > /dev/null 2>&1; then
+            echo "Error: Local registry is not responding properly"
+            docker logs local-registry
+            exit 1
+          fi
           
           echo "Local registry is running at localhost:5000"
         
@@ -243,16 +255,34 @@ jobs:
               build_context="./infrastructure/nifi"
             fi
             
-            # Build and tag for local registry
-            docker build \
+            # Build and tag for local registry with proper error handling
+            echo "Building $service image..."
+            if ! docker build \
               -t localhost:5000/openframe-$service:${{ github.sha }} \
               -t localhost:5000/openframe-$service:latest \
               -f $path/Dockerfile \
-              $build_context
+              $build_context; then
+              echo "Error: Failed to build $service image"
+              exit 1
+            fi
             
-            # Push to local registry
-            docker push localhost:5000/openframe-$service:${{ github.sha }}
-            docker push localhost:5000/openframe-$service:latest
+            # Push to local registry with retries
+            echo "Pushing $service image to local registry..."
+            max_retries=3
+            retry=0
+            while [ $retry -lt $max_retries ]; do
+              if docker push localhost:5000/openframe-$service:${{ github.sha }} && \
+                 docker push localhost:5000/openframe-$service:latest; then
+                break
+              fi
+              retry=$((retry + 1))
+              if [ $retry -eq $max_retries ]; then
+                echo "Error: Failed to push $service image after $max_retries attempts"
+                exit 1
+              fi
+              echo "Retrying push for $service (attempt $retry of $max_retries)..."
+              sleep 5
+            done
             
             # Create local tags for compose
             docker tag localhost:5000/openframe-$service:latest openframe-$service:latest
