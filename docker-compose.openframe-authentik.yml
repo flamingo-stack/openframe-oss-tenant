@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
   authentik-server:
-    image: ghcr.io/goauthentik/server:2024.10.4
+    image: openframe-authentik:latest
     container_name: openframe-authentik-server
     restart: unless-stopped
     command: server
@@ -77,7 +77,7 @@ services:
         condition: service_healthy
 
   authentik-worker:
-    image: ghcr.io/goauthentik/server:2024.10.4
+    image: openframe-authentik:latest
     container_name: openframe-authentik-worker
     restart: unless-stopped
     command: worker
