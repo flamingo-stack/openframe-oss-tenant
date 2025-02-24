@@ -65,13 +65,29 @@ wait_for_infrastructure() {
 
 # Build the JARs
 echo "Building JARs..."
+echo "Building OpenFrame JARs..."
 ./scripts/build-jars.sh
+
+echo "Building Docker images..."
+# Build infrastructure images
+docker build -t openframe-mongodb:latest ./infrastructure/mongodb
+docker build -t openframe-cassandra:latest ./infrastructure/cassandra
+docker build -t openframe-nifi:latest ./infrastructure/nifi
+docker build -t openframe-config:latest ./services/openframe-config
+docker build -t openframe-api:latest ./services/openframe-api
+docker build -t openframe-management:latest ./services/openframe-management
+docker build -t openframe-ui:latest ./services/openframe-ui
+docker build -t openframe-stream:latest ./services/openframe-stream
+docker build -t openframe-gateway:latest ./services/openframe-gateway
+
+# Build tool images
+docker build -t openframe-tactical-base:latest ./infrastructure/tactical-rmm/tactical-base
+docker build -t openframe-fleetmdm:latest ./infrastructure/fleetmdm
+docker build -t openframe-authentik:latest ./infrastructure/authentik
 
 # Start infrastructure services first
 echo "Starting infrastructure services..."
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
-
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+docker compose -f docker-compose.openframe-infrastructure.yml up -d
 
 # Wait for infrastructure to be ready
 wait_for_infrastructure
@@ -96,15 +112,15 @@ echo "Finished launching application infra and application services..."
 
 # Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
-docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+docker compose -f docker-compose.openframe-tactical-rmm.yml up -d
 
 # Start Fleet MDM after infrastructure is ready
 echo "Starting Fleet MDM deployment..."
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+docker compose -f docker-compose.openframe-fleet-mdm.yml up -d
 
 # Start Authentik deployment
 echo "Starting Authentik deployment..."
-docker-compose -f docker-compose.openframe-authentik.yml up -d
+docker compose -f docker-compose.openframe-authentik.yml up -d
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070

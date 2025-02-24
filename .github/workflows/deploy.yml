@@ -4,12 +4,14 @@ permissions:
   contents: write
   packages: write
   actions: write
+  pull-requests: write
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       environment:
@@ -23,7 +25,6 @@ on:
           - production
 
 env:
-  REGISTRY: ghcr.io
   ORGANIZATION: flamingo-cx
 
 jobs:
@@ -41,58 +42,17 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
           
-      - name: Clean up all artifacts and GHCR packages
+      - name: Clean up artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Starting artifact and package cleanup..."
+          echo "Starting artifact cleanup..."
           
           # Function to get total artifact count and size
           get_artifact_stats() {
             local stats=$(gh api "repos/${{ github.repository }}/actions/artifacts" | jq -r '[.total_count, (.artifacts | map(.size_in_bytes) | add // 0)] | @csv')
             echo "Current artifact stats: $(echo $stats | cut -d',' -f1) artifacts, $(echo $stats | cut -d',' -f2 | numfmt --to=iec) total size"
           }
-
-          # Function to clean up GHCR packages
-          cleanup_ghcr_packages() {
-            local package_name=$1
-            local dry_run=${2:-false}
-            echo "Cleaning up old versions of $package_name (dry-run: $dry_run)..."
-            
-            # List all versions
-            local versions=$(gh api \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
-              --paginate)
-            
-            # Get current SHA
-            local current_sha=$(git rev-parse --short HEAD)
-            
-            # Process each version
-            echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
-              if [[ "$dry_run" == "true" ]]; then
-                echo "Would delete version $version_id"
-              else
-                echo "Deleting version $version_id..."
-                gh api \
-                  -X DELETE \
-                  -H "Accept: application/vnd.github+json" \
-                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
-              fi
-              
-              # Rate limit protection
-              sleep 1
-            done
-          }
-          
-          # Clean up each package
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            for service in mongodb cassandra nifi config api management stream gateway ui; do
-              cleanup_ghcr_packages "openframe-$service"
-            done
-          fi
           
           get_artifact_stats
           
@@ -170,37 +130,35 @@ jobs:
           fetch-depth: 0
           
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          buildkitd-flags: --debug
-          
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-        
-      - name: Set up Docker Compose
+      - name: Set up Docker environment
         run: |
-          # Docker Compose is already installed as a Docker CLI plugin in GitHub Actions runners
+          # Docker is already set up in GitHub Actions runners
+          docker version
+          
+          # Docker Compose is already installed as a Docker CLI plugin
           docker compose version
+          
           # Create Docker network
           docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+          
+          # Start local registry
+          docker run -d \
+            --name local-registry \
+            --network openframe-network \
+            -p 5000:5000 \
+            registry:2
+          
+          # Wait for registry to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:5000/v2/ > /dev/null 2>&1; do sleep 1; done'
+          
+          echo "Local registry is running at localhost:5000"
         
       - name: Set up environment
         run: |
           echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
           
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      # No registry login needed when using local images
           
       # Restore cached Java artifacts
       - name: Restore Java artifacts
@@ -236,15 +194,15 @@ jobs:
             ls -la ./**/openframe-$service/target/
           done
 
-      - name: Build and push infrastructure images
+      - name: Build infrastructure images
         run: |
           # Function to clean up old images
           cleanup_images() {
             echo "Cleaning up old images..."
             # List all images and their IDs
             docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
-              # Check if it's our registry and not the current build
-              if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
+              # Check if it's our image and not the current build
+              if [[ $img == "openframe-"* ]] && \
                  [[ $img != *":${{ github.sha }}" ]] && \
                  [[ $img != *":latest" ]]; then
                 echo "Removing old image: $img (ID: $id)"
@@ -260,62 +218,76 @@ jobs:
           # Clean up old images before building
           cleanup_images
 
-          # Function to build and push an image
-          build_and_push() {
+          # Function to build an image
+          build_image() {
             local service=$1
             local path=$2
-            echo "Building and pushing $service from $path"
+            echo "Building $service from $path"
             
             # Ensure build context exists
             mkdir -p $path/target
             
-            docker buildx build \
-              --cache-from type=local,src=/tmp/.buildx-cache \
-              --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-              --platform linux/amd64 \
-              --push \
-              --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 \
-              -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:${{ github.sha }} \
-              -t ${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-$service:latest \
-              --file $path/Dockerfile \
-              -f $path/Dockerfile \
-              $path
+            # Set build context based on service
+            local build_context="$path"
+            if [[ "$service" == "tactical-base" || \
+                  "$service" == "tactical-frontend" || \
+                  "$service" == "tactical-meshcentral" || \
+                  "$service" == "tactical-nginx" ]]; then
+              # For tactical services, use parent directory as build context
+              build_context="./infrastructure/tactical-rmm"
+            elif [[ "$service" == "fleetmdm" ]]; then
+              # For Fleet MDM, use parent directory as build context
+              build_context="./infrastructure/fleetmdm"
+            elif [[ "$service" == "nifi" ]]; then
+              # For NiFi, use its directory as build context to include config files
+              build_context="./infrastructure/nifi"
+            fi
             
-            # Move cache to prevent unbounded cache growth
-            rm -rf /tmp/.buildx-cache
-            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+            # Build and tag for local registry
+            docker build \
+              -t localhost:5000/openframe-$service:${{ github.sha }} \
+              -t localhost:5000/openframe-$service:latest \
+              -f $path/Dockerfile \
+              $build_context
+            
+            # Push to local registry
+            docker push localhost:5000/openframe-$service:${{ github.sha }}
+            docker push localhost:5000/openframe-$service:latest
+            
+            # Create local tags for compose
+            docker tag localhost:5000/openframe-$service:latest openframe-$service:latest
           }
 
           # Infrastructure Services
-          build_and_push "mongodb" "./infrastructure/mongodb/"
-          build_and_push "cassandra" "./infrastructure/cassandra/"
-          build_and_push "nifi" "./infrastructure/nifi/"
-          build_and_push "postgresql" "./infrastructure/postgresql/"
+          build_image "mongodb" "./infrastructure/mongodb/"
+          build_image "cassandra" "./infrastructure/cassandra/"
+          build_image "nifi" "./infrastructure/nifi/"
+          build_image "postgresql" "./infrastructure/postgresql/"
           
           # Tactical RMM Components
-          build_and_push "tactical-base" "./infrastructure/tactical-rmm/tactical-base/"
-          build_and_push "tactical-frontend" "./infrastructure/tactical-rmm/tactical-frontend/"
-          build_and_push "tactical-meshcentral" "./infrastructure/tactical-rmm/tactical-meshcentral/"
-          build_and_push "tactical-nginx" "./infrastructure/tactical-rmm/tactical-nginx/"
+          build_image "tactical-base" "./infrastructure/tactical-rmm/tactical-base/"
+          build_image "tactical-frontend" "./infrastructure/tactical-rmm/tactical-frontend/"
+          build_image "tactical-meshcentral" "./infrastructure/tactical-rmm/tactical-meshcentral/"
+          build_image "tactical-nginx" "./infrastructure/tactical-rmm/tactical-nginx/"
           
           # Fleet MDM
-          build_and_push "fleetmdm" "./infrastructure/fleetmdm/"
+          build_image "fleetmdm" "./infrastructure/fleetmdm/"
           
           # Core Libraries
-          build_and_push "core" "./libs/openframe-core/"
-          build_and_push "data" "./libs/openframe-data/"
+          build_image "core" "./libs/openframe-core/"
+          build_image "data" "./libs/openframe-data/"
           
           # Services
-          build_and_push "api" "./services/openframe-api/"
-          build_and_push "config" "./services/openframe-config/"
-          build_and_push "gateway" "./services/openframe-gateway/"
-          build_and_push "management" "./services/openframe-management/"
-          build_and_push "stream" "./services/openframe-stream/"
-          build_and_push "ui" "./services/openframe-ui/"
+          build_image "api" "./services/openframe-api/"
+          build_image "config" "./services/openframe-config/"
+          build_image "gateway" "./services/openframe-gateway/"
+          build_image "management" "./services/openframe-management/"
+          build_image "stream" "./services/openframe-stream/"
+          build_image "ui" "./services/openframe-ui/"
 
           # Clean up old images after all builds
           echo "Cleaning up old images..."
-          for img in $(docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
+          for img in $(docker images --filter "reference=openframe-*" --format "{{.Repository}}:{{.Tag}}"); do
             if [[ $img != *":${{ github.sha }}" && $img != *":latest" ]]; then
               echo "Removing old image: $img"
               docker rmi $img || true
@@ -336,7 +308,7 @@ jobs:
           CASSANDRA_PASSWORD: ${{ secrets.CASSANDRA_PASSWORD }}
         run: |
           # Update image references in docker-compose files
-          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-" + (key | downcase)} - "build")' docker-compose.openframe-infrastructure.yml > /tmp/modified-compose.yml && \
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "openframe-" + (key | downcase)} - "build")' docker-compose.openframe-infrastructure.yml > /tmp/modified-compose.yml && \
           mv /tmp/modified-compose.yml docker-compose.openframe-infrastructure.yml
           
           # Deploy infrastructure services
@@ -381,7 +353,7 @@ jobs:
       - name: Deploy Tactical RMM
         run: |
           # Update image references in docker-compose files
-          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-tactical-rmm"} - "build")' docker-compose.openframe-tactical-rmm.yml > /tmp/modified-compose.yml && \
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "openframe-tactical-" + (key | downcase)} - "build")' docker-compose.openframe-tactical-rmm.yml > /tmp/modified-compose.yml && \
           mv /tmp/modified-compose.yml docker-compose.openframe-tactical-rmm.yml
           
           # Deploy Tactical RMM services
@@ -401,7 +373,7 @@ jobs:
           FLEET_SETUP_ADMIN_PASSWORD: ${{ secrets.FLEET_ADMIN_PASSWORD }}
         run: |
           # Update image references in docker-compose files
-          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-fleet-mdm"} - "build")' docker-compose.openframe-fleet-mdm.yml > /tmp/modified-compose.yml && \
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "openframe-fleetmdm"} - "build")' docker-compose.openframe-fleet-mdm.yml > /tmp/modified-compose.yml && \
           mv /tmp/modified-compose.yml docker-compose.openframe-fleet-mdm.yml
           
           # Deploy Fleet MDM services
@@ -414,7 +386,7 @@ jobs:
       - name: Deploy Authentik
         run: |
           # Update image references in docker-compose files
-          yq eval '.services.* |= with(select(has("build")); . + {"image": "ghcr.io/flamingo-cx/openframe-authentik"} - "build")' docker-compose.openframe-authentik.yml > /tmp/modified-compose.yml && \
+          yq eval '.services.* |= with(select(has("build")); . + {"image": "openframe-authentik"} - "build")' docker-compose.openframe-authentik.yml > /tmp/modified-compose.yml && \
           mv /tmp/modified-compose.yml docker-compose.openframe-authentik.yml
           
           # Deploy Authentik services
@@ -719,72 +691,22 @@ jobs:
           
           echo "All services are healthy"
 
-      - name: Clean up GHCR packages
-        if: success() && github.event_name != 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Function to clean up GHCR packages
-          cleanup_ghcr_packages() {
-            local package_name=$1
-            local dry_run=${2:-false}
-            echo "Cleaning up old versions of $package_name (dry-run: $dry_run)..."
-            
-            # List all versions
-            local versions=$(gh api \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
-              --paginate)
-            
-            # Get current SHA
-            local current_sha=$(git rev-parse --short HEAD)
-            
-            # Process each version
-            echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
-              if [[ "$dry_run" == "true" ]]; then
-                echo "Would delete version $version_id"
-              else
-                echo "Deleting version $version_id..."
-                gh api \
-                  -X DELETE \
-                  -H "Accept: application/vnd.github+json" \
-                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
-              fi
-              
-              # Rate limit protection
-              sleep 1
-            done
-          }
-          
-          # Clean up each package
-          for service in mongodb cassandra nifi config api management stream gateway ui; do
-            cleanup_ghcr_packages "openframe-$service"
-          done
-
-          # Verify remaining package versions
-          echo "Remaining package versions:"
-          for service in mongodb cassandra nifi config api management stream gateway ui; do
-            echo "Package: openframe-$service"
-            gh api \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/orgs/${ORGANIZATION,,}/packages/container/openframe-$service/versions" \
-              --jq '.[] | select(.metadata.container.tags != null) | .metadata.container.tags[]'
-          done
+      # No GHCR package cleanup needed when using local images
 
       - name: Cleanup images and artifacts
         if: always()
         run: |
           echo "Cleaning up Docker images..."
+          # Stop and remove local registry
+          echo "Stopping local registry..."
+          docker stop local-registry || true
+          docker rm local-registry || true
+          
           # List all images and their IDs
           docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
-            # Check if it's our registry and not the current build
-            if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
-               [[ $img != *":${{ github.sha }}" ]] && \
-               [[ $img != *":latest" ]]; then
-              echo "Removing old image: $img (ID: $id)"
+            # Check if it's our image (both local and registry)
+            if [[ $img == "openframe-"* ]] || [[ $img == "localhost:5000/openframe-"* ]]; then
+              echo "Removing image: $img (ID: $id)"
               docker rmi --force $id || true
             fi
           done
@@ -795,7 +717,8 @@ jobs:
           
           # List remaining images for verification
           echo "Remaining images:"
-          docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
+          docker images --filter "reference=openframe-*"
+          docker images --filter "reference=localhost:5000/openframe-*"
 
           echo "Cleaning up build artifacts..."
           find . -type f -name "*.jar" -delete
@@ -812,15 +735,18 @@ jobs:
           docker compose -f docker-compose.openframe-fleet-mdm.yml down
           docker compose -f docker-compose.openframe-authentik.yml down
 
+          # Stop and remove local registry
+          echo "Stopping local registry..."
+          docker stop local-registry || true
+          docker rm local-registry || true
+
           # Clean up any remaining images
           echo "Cleaning up remaining Docker images..."
           # List all images and their IDs
           docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
-            # Check if it's our registry and not the current build
-            if [[ $img == "${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-"* ]] && \
-               [[ $img != *":${{ github.sha }}" ]] && \
-               [[ $img != *":latest" ]]; then
-              echo "Removing old image: $img (ID: $id)"
+            # Check if it's our image (both local and registry)
+            if [[ $img == "openframe-"* ]] || [[ $img == "localhost:5000/openframe-"* ]]; then
+              echo "Removing image: $img (ID: $id)"
               docker rmi --force $id || true
             fi
           done
@@ -831,53 +757,7 @@ jobs:
           
           # List remaining images for verification
           echo "Remaining images:"
-          docker images --filter "reference=${{ env.REGISTRY }}/${ORGANIZATION,,}/openframe-*"
+          docker images --filter "reference=openframe-*"
+          docker images --filter "reference=localhost:5000/openframe-*"
 
-          # Clean up GHCR packages if not a PR
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            # Function to clean up GHCR packages
-            cleanup_ghcr_packages() {
-              local package_name=$1
-              echo "Cleaning up old versions of $package_name..."
-              
-              # List all versions
-              local versions=$(gh api \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions" \
-                --paginate)
-              
-              # Get current SHA
-              local current_sha=$(git rev-parse --short HEAD)
-              
-              # Process each version
-              echo "$versions" | jq -r '.[] | select(.metadata.container.tags[] | . != "latest" and . != "'$current_sha'") | .id' | while read -r version_id; do
-                echo "Deleting version $version_id..."
-                gh api \
-                  -X DELETE \
-                  -H "Accept: application/vnd.github+json" \
-                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                  "/orgs/${ORGANIZATION,,}/packages/container/$package_name/versions/$version_id" || true
-                
-                # Rate limit protection
-                sleep 1
-              done
-            }
-            
-            # Clean up each package
-            for service in mongodb cassandra nifi config api management stream gateway ui; do
-              cleanup_ghcr_packages "openframe-$service"
-            done
-
-            # Verify remaining package versions
-            echo "Remaining package versions:"
-            for service in mongodb cassandra nifi config api management stream gateway ui; do
-              echo "Package: openframe-$service"
-              gh api \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/orgs/${ORGANIZATION,,}/packages/container/openframe-$service/versions" \
-                --jq '.[] | select(.metadata.container.tags != null) | .metadata.container.tags[]'
-            done
-          fi
           echo "Cleanup completed"

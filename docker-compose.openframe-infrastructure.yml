@@ -25,7 +25,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    image: ghcr.io/flamingo-cx/openframe-mongodb
+    image: openframe-mongodb:latest
   # MongoDB Exporter
   mongodb-exporter:
     image: bitnami/mongodb-exporter:latest
@@ -75,7 +75,7 @@ services:
       - openframe-network
     depends_on:
       - loki
-    image: ghcr.io/flamingo-cx/openframe-cassandra
+    image: openframe-cassandra:latest
   # Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -158,7 +158,7 @@ services:
       - openframe-network
     depends_on:
       - loki
-    image: ghcr.io/flamingo-cx/openframe-nifi
+    image: openframe-nifi:latest
   # Prometheus
   prometheus:
     image: prom/prometheus:latest
@@ -400,7 +400,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    image: ghcr.io/flamingo-cx/openframe-config
+    image: openframe-config:latest
   api:
     container_name: openframe-api
     environment:
@@ -421,7 +421,7 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: ghcr.io/flamingo-cx/openframe-api
+    image: openframe-api:latest
   management:
     container_name: openframe-management
     environment:
@@ -438,7 +438,7 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: ghcr.io/flamingo-cx/openframe-management
+    image: openframe-management:latest
   openframe-ui:
     environment:
       - VITE_CLIENT_ID=openframe_web_dashboard
@@ -450,7 +450,7 @@ services:
       - management
     networks:
       - openframe-network
-    image: ghcr.io/flamingo-cx/openframe-ui
+    image: openframe-ui:latest
   stream:
     container_name: openframe-stream
     ports:
@@ -467,7 +467,7 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: ghcr.io/flamingo-cx/openframe-stream
+    image: openframe-stream:latest
   gateway:
     container_name: openframe-gateway
     environment:
@@ -485,7 +485,7 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: ghcr.io/flamingo-cx/openframe-gateway
+    image: openframe-gateway:latest
 networks:
   openframe-network:
     name: openframe-network

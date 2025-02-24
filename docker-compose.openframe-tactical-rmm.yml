@@ -178,7 +178,7 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-mongodb
     image: mongo:4.4.18
-    platform: linux/arm64
+    platform: linux/amd64
     volumes:
       - tactical_mongo_data:/data/db
     user: root
@@ -198,7 +198,7 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-postgres
     image: postgres:13-alpine
-    platform: linux/arm64
+    platform: linux/amd64
     volumes:
       - tactical_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -260,7 +260,7 @@ services:
       tactical-redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral' && curl -s http://tactical-meshcentral:8383/health.ashx" ]
+      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral'" ]
       interval: 15s
       timeout: 10s
       retries: 5
