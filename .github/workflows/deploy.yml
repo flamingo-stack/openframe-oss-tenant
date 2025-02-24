@@ -102,19 +102,21 @@ jobs:
           # Build infrastructure images with buildx
           for service in mongodb cassandra nifi config api management ui stream gateway; do
             if [ -d "infrastructure/$service" ]; then
-              build_context="./infrastructure/$service"
+              build_context="infrastructure/$service"
+              dockerfile="$build_context/Dockerfile"
             elif [ -d "services/openframe-$service" ]; then
-              build_context="./services/openframe-$service"
+              build_context="services/openframe-$service"
+              dockerfile="$build_context/Dockerfile"
             fi
             
             echo "Building $service image..."
             if ! DOCKER_BUILDKIT=1 docker buildx build \
               --load \
               -t "openframe-$service:latest" \
-              -f "$build_context/Dockerfile" \
+              -f "$dockerfile" \
               --cache-from "type=local,src=/tmp/.buildx-cache" \
               --cache-to "type=local,dest=/tmp/.buildx-cache" \
-              $build_context; then
+              "$build_context"; then
               echo "Error: Failed to build $service image"
               exit 1
             fi
