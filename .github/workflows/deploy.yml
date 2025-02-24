@@ -70,38 +70,37 @@ jobs:
           docker buildx inspect --bootstrap
 
       - name: Download artifacts
-        if: github.ref == 'refs/heads/main'
         uses: actions/download-artifact@v4
         with:
           name: java-artifacts
+          path: downloaded-artifacts
 
       - name: Create target directories and copy JAR files
         run: |
-          # Debug: List all JAR files
-          echo "Found JAR files:"
-          find . -name "*.jar" -ls
-
+          echo "Setting up target directories and copying JARs..."
+          
+          # Debug: Show downloaded artifacts
+          echo "Contents of downloaded-artifacts directory:"
+          ls -R downloaded-artifacts/
+          
           # Create target directories and copy JARs
           for dir in $(find . -name "pom.xml" -exec dirname {} \;); do
             mkdir -p "$dir/target"
-            echo "Created target directory for $dir"
-            
-            # Find JARs for this module
             module_name=$(basename "$dir")
-            echo "Looking for JARs for module $module_name"
+            echo "Processing module: $module_name"
             
-            # Try to find and copy the corresponding JAR
-            for jar in $(find . -name "${module_name}*.jar"); do
-              if [ -f "$jar" ]; then
-                echo "Copying $jar to $dir/target/"
-                cp "$jar" "$dir/target/"
-              fi
-            done
+            # Find matching JARs in downloaded artifacts
+            if [ -d "downloaded-artifacts/$dir/target" ]; then
+              echo "Found artifacts for $module_name"
+              cp -v downloaded-artifacts/$dir/target/*.jar "$dir/target/" || true
+            else
+              echo "No artifacts found for $module_name in downloaded-artifacts/$dir/target"
+            fi
           done
-
-          # Verify JAR placement
+          
+          # Verify final JAR placement
           echo "Final JAR locations:"
-          find . -name "*.jar" -ls
+          find . -name "*.jar" -type f -ls
 
       - name: Build infrastructure images
         run: |
