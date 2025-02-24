@@ -229,7 +229,10 @@ jobs:
             
             # Set build context based on service
             local build_context="$path"
-            if [[ "$service" == "tactical-base" || "$service" == "tactical-frontend" ]]; then
+            if [[ "$service" == "tactical-base" || \
+                  "$service" == "tactical-frontend" || \
+                  "$service" == "tactical-meshcentral" || \
+                  "$service" == "tactical-nginx" ]]; then
               # For tactical services, use parent directory as build context
               build_context="./infrastructure/tactical-rmm"
             fi
