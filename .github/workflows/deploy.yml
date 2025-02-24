@@ -130,7 +130,7 @@ jobs:
           fetch-depth: 0
           
 
-      - name: Set up Docker and Docker Compose
+      - name: Set up Docker environment
         run: |
           # Docker is already set up in GitHub Actions runners
           docker version
@@ -140,6 +140,18 @@ jobs:
           
           # Create Docker network
           docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+          
+          # Start local registry
+          docker run -d \
+            --name local-registry \
+            --network openframe-network \
+            -p 5000:5000 \
+            registry:2
+          
+          # Wait for registry to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:5000/v2/ > /dev/null 2>&1; do sleep 1; done'
+          
+          echo "Local registry is running at localhost:5000"
         
       - name: Set up environment
         run: |
@@ -215,11 +227,19 @@ jobs:
             # Ensure build context exists
             mkdir -p $path/target
             
+            # Build and tag for local registry
             docker build \
-              -t openframe-$service:${{ github.sha }} \
-              -t openframe-$service:latest \
+              -t localhost:5000/openframe-$service:${{ github.sha }} \
+              -t localhost:5000/openframe-$service:latest \
               -f $path/Dockerfile \
               $path
+            
+            # Push to local registry
+            docker push localhost:5000/openframe-$service:${{ github.sha }}
+            docker push localhost:5000/openframe-$service:latest
+            
+            # Create local tags for compose
+            docker tag localhost:5000/openframe-$service:latest openframe-$service:latest
           }
 
           # Infrastructure Services
@@ -661,13 +681,16 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up Docker images..."
+          # Stop and remove local registry
+          echo "Stopping local registry..."
+          docker stop local-registry || true
+          docker rm local-registry || true
+          
           # List all images and their IDs
           docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
-            # Check if it's our image and not the current build
-            if [[ $img == "openframe-"* ]] && \
-               [[ $img != *":${{ github.sha }}" ]] && \
-               [[ $img != *":latest" ]]; then
-              echo "Removing old image: $img (ID: $id)"
+            # Check if it's our image (both local and registry)
+            if [[ $img == "openframe-"* ]] || [[ $img == "localhost:5000/openframe-"* ]]; then
+              echo "Removing image: $img (ID: $id)"
               docker rmi --force $id || true
             fi
           done
@@ -679,6 +702,7 @@ jobs:
           # List remaining images for verification
           echo "Remaining images:"
           docker images --filter "reference=openframe-*"
+          docker images --filter "reference=localhost:5000/openframe-*"
 
           echo "Cleaning up build artifacts..."
           find . -type f -name "*.jar" -delete
@@ -695,15 +719,18 @@ jobs:
           docker compose -f docker-compose.openframe-fleet-mdm.yml down
           docker compose -f docker-compose.openframe-authentik.yml down
 
+          # Stop and remove local registry
+          echo "Stopping local registry..."
+          docker stop local-registry || true
+          docker rm local-registry || true
+
           # Clean up any remaining images
           echo "Cleaning up remaining Docker images..."
           # List all images and their IDs
           docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read img id; do
-            # Check if it's our image and not the current build
-            if [[ $img == "openframe-"* ]] && \
-               [[ $img != *":${{ github.sha }}" ]] && \
-               [[ $img != *":latest" ]]; then
-              echo "Removing old image: $img (ID: $id)"
+            # Check if it's our image (both local and registry)
+            if [[ $img == "openframe-"* ]] || [[ $img == "localhost:5000/openframe-"* ]]; then
+              echo "Removing image: $img (ID: $id)"
               docker rmi --force $id || true
             fi
           done
@@ -715,5 +742,6 @@ jobs:
           # List remaining images for verification
           echo "Remaining images:"
           docker images --filter "reference=openframe-*"
+          docker images --filter "reference=localhost:5000/openframe-*"
 
           echo "Cleanup completed"
