@@ -104,18 +104,27 @@ jobs:
             if [ -d "infrastructure/$service" ]; then
               build_context="infrastructure/$service"
               dockerfile="$build_context/Dockerfile"
+              echo "Building infrastructure service $service..."
             elif [ -d "services/openframe-$service" ]; then
               build_context="services/openframe-$service"
               dockerfile="$build_context/Dockerfile"
+              echo "Building OpenFrame service $service..."
+            else
+              echo "Error: Could not find build context for service $service"
+              exit 1
             fi
             
-            echo "Building $service image..."
+            # List files in build context for debugging
+            echo "Contents of build context $build_context:"
+            ls -la "$build_context"
+            
             if ! DOCKER_BUILDKIT=1 docker buildx build \
               --load \
               -t "openframe-$service:latest" \
               -f "$dockerfile" \
               --cache-from "type=local,src=/tmp/.buildx-cache" \
               --cache-to "type=local,dest=/tmp/.buildx-cache" \
+              --no-cache \
               "$build_context"; then
               echo "Error: Failed to build $service image"
               exit 1
