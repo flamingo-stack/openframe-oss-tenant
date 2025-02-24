@@ -37,7 +37,6 @@ jobs:
         run: mvn -B package --file pom.xml
 
       - name: Upload artifacts
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: java-artifacts
@@ -74,6 +73,7 @@ jobs:
         with:
           name: java-artifacts
           path: downloaded-artifacts
+        continue-on-error: false
 
       - name: Create target directories and copy JAR files
         run: |
