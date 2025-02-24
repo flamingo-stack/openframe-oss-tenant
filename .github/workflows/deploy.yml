@@ -152,7 +152,7 @@ jobs:
           echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
           
-      # No need to log in to registry when using local images
+      # No registry login needed when using local images
           
       # Restore cached Java artifacts
       - name: Restore Java artifacts
