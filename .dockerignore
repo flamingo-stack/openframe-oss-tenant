@@ -19,3 +19,6 @@ target/
 # Temp files
 *.tmp
 *.temp
+
+# Allow infrastructure JAR files
+!infrastructure/**/*.jar
