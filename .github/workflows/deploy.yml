@@ -43,6 +43,8 @@ jobs:
           cache: 'maven'
           
       - name: Clean up artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo "Starting artifact cleanup..."
           
