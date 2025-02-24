@@ -1,18 +1,7 @@
 # Build stage
 FROM node:20-alpine AS build
 
-# Set build environment variables that will be available during build time
-ARG NODE_ENV=development
-ARG DOCKER_BUILD=false
-ARG TRMM_PROTO=http
-ARG API_HOST=localhost:8000
-ARG WS_PROTO=ws
-
-ENV NODE_ENV=$NODE_ENV
-ENV DOCKER_BUILD=$DOCKER_BUILD
-ENV TRMM_PROTO=$TRMM_PROTO
-ENV API_HOST=$API_HOST
-ENV WS_PROTO=$WS_PROTO
+USER root
 
 WORKDIR /app
 
@@ -23,7 +12,8 @@ RUN apk add --no-cache git
 RUN git clone https://github.com/amidaware/tacticalrmm-web.git .
 
 # Copy our modified websocket.ts file
-COPY websocket.ts /app/src/websocket/websocket.ts
+COPY tactical-frontend/websocket.ts /app/src/websocket/websocket.ts
+COPY tactical-frontend/env-config.js /env-config.js
 
 RUN npm install --cache ~/.npm && \
   npm i -g @quasar/cli
@@ -44,21 +34,22 @@ RUN set -x && \
 # Production stage
 FROM nginxinc/nginx-unprivileged:stable-alpine
 
-# Install gettext for envsubst
 USER root
+
+# Install gettext for envsubst
 RUN apk add --no-cache gettext
 
 # Copy the built files from build stage
 COPY --from=build /app/dist /usr/share/nginx/html/
-COPY default.conf /etc/nginx/conf.d/
-COPY entrypoint.sh /
-COPY env-config.js /
+COPY tactical-frontend/default.conf /etc/nginx/conf.d/
 
-RUN chown -R nginx:nginx /usr/share/nginx/html \
-  && chown -R nginx:nginx /etc/nginx/conf.d \
-  && chmod +x /entrypoint.sh \
-  && chown nginx:nginx /entrypoint.sh
+COPY tactical-frontend/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
 
-USER nginx
+COPY shared/common-functions.sh /
+RUN chmod +x /common-functions.sh
+
+COPY tactical-frontend/websocket.ts /app/src/websocket/websocket.ts
+COPY tactical-frontend/env-config.js /env-config.js
 
 ENTRYPOINT ["/entrypoint.sh"]

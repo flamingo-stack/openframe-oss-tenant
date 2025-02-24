@@ -20,10 +20,13 @@ RUN git clone https://github.com/amidaware/tacticalrmm.git ${TACTICAL_TMP_DIR}/t
 
 RUN cp -rf ${TACTICAL_TMP_DIR}/tacticalrmm/natsapi/bin/nats-api ${TACTICAL_TMP_DIR}/
 
-COPY config_watcher.sh ${TACTICAL_TMP_DIR}/
-COPY supervisor.conf ${TACTICAL_TMP_DIR}
+COPY tactical-nats/config_watcher.sh ${TACTICAL_TMP_DIR}/
+COPY tactical-nats/supervisor.conf ${TACTICAL_TMP_DIR}
 
-COPY entrypoint.sh /
+COPY tactical-nats/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
+
+COPY shared/common-functions.sh /
+RUN chmod +x /common-functions.sh
 
 ENTRYPOINT [ "/entrypoint.sh" ]

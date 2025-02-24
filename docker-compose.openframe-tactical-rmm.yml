@@ -75,6 +75,14 @@ x-environment: &default-environment
   APP_HOST: &app-host tactical-frontend:8080
   APP_LOCALHOST_HOST: &app-local-host localhost:8080
 
+  #NATS args
+  NATS_CONFIG_CHECK_INTERVAL: &nats-config-check-interval 5
+  NATS_STD_BIND_HOST: &nats-std-bind-host tactical-nats
+  NATS_WS_BIND_HOST: &nats-ws-bind-host tactical-nats
+  NATS_CONNECT_HOST: &nats-connect-host tactical-nats
+  NATS_STANDARD_PORT: &nats-http-port 9235
+  NATS_WEBSOCKET_PORT: &nats-ws-port 4222
+
 x-args: &default-args
   # MongoDB args
   MONGO_INITDB_ROOT_USERNAME: *mongo-user
@@ -150,6 +158,14 @@ x-args: &default-args
   APP_HOST: *app-host
   APP_LOCALHOST_HOST: *app-local-host
 
+  #NATS args
+  NATS_CONFIG_CHECK_INTERVAL: *nats-config-check-interval
+  NATS_STD_BIND_HOST: *nats-std-bind-host
+  NATS_WS_BIND_HOST: *nats-ws-bind-host
+  NATS_CONNECT_HOST: *nats-connect-host
+  NATS_STANDARD_PORT: *nats-http-port
+  NATS_WEBSOCKET_PORT: *nats-ws-port
+
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
   restart: always
@@ -211,8 +227,8 @@ services:
     container_name: openframe-tactical-nats
     platform: linux/amd64
     build:
-      context: ./infrastructure/tactical-rmm/tactical-nats
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-nats/Dockerfile
       args: *default-args
     depends_on:
       tactical-backend:
@@ -231,8 +247,8 @@ services:
     container_name: openframe-tactical-meshcentral
     platform: linux/amd64
     build:
-      context: ./infrastructure/tactical-rmm/tactical-meshcentral
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-meshcentral/Dockerfile
       args: *default-args
     volumes:
       - tactical_meshcentral_data:/opt/tactical
@@ -254,8 +270,8 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-frontend
     build:
-      context: ./infrastructure/tactical-rmm/tactical-frontend
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-frontend/Dockerfile
       args: *default-args
     volumes:
       - tactical_frontend_data:/opt/tactical
@@ -264,8 +280,8 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-nginx
     build:
-      context: ./infrastructure/tactical-rmm/tactical-nginx
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-nginx/Dockerfile
       args: *default-args
     platform: linux/amd64
     ports:
@@ -285,8 +301,8 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-backend
     build:
-      context: ./infrastructure/tactical-rmm/tactical-base
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-base/Dockerfile
       args: *default-args
     platform: linux/amd64
     command: [ "tactical-backend" ]
@@ -312,8 +328,8 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-websockets
     build:
-      context: ./infrastructure/tactical-rmm/tactical-base
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-base/Dockerfile
       args: *default-args
     platform: linux/amd64
     command: [ "tactical-websockets" ]
@@ -341,8 +357,8 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-celery
     build:
-      context: ./infrastructure/tactical-rmm/tactical-base
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-base/Dockerfile
       args: *default-args
     platform: linux/amd64
     command: [ "tactical-celery" ]
@@ -370,8 +386,8 @@ services:
     <<: *service-defaults
     container_name: openframe-tactical-celerybeat
     build:
-      context: ./infrastructure/tactical-rmm/tactical-base
-      dockerfile: Dockerfile
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-base/Dockerfile
       args: *default-args
     platform: linux/amd64
     command: [ "tactical-celerybeat" ]
