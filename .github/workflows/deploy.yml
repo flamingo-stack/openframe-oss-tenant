@@ -127,15 +127,13 @@ jobs:
           fetch-depth: 0
           
 
-      - name: Set up Docker
+      - name: Set up Docker and Docker Compose
         run: |
-          # Enable BuildKit
-          echo '{"features":{"buildkit":true}}' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
+          # Docker is already set up in GitHub Actions runners
+          docker version
           
-      # Docker layer caching is handled by the Docker daemon
-        
-      - name: Set up Docker Compose
+          # Docker Compose is already installed as a Docker CLI plugin
+          docker compose version
         run: |
           # Docker Compose is already installed as a Docker CLI plugin in GitHub Actions runners
           docker compose version
