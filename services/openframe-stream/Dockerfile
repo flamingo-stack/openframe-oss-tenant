@@ -11,5 +11,5 @@ COPY --from=builder /build/app.jar app.jar
 # Add debugging tools
 RUN apk add --no-cache iputils bind-tools netcat-openbsd curl
 
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 8082
+ENTRYPOINT ["/bin/sh", "-c", "export CONTAINER_IP=$(hostname -i) && java -jar app.jar --spring.profiles.active=docker"]
