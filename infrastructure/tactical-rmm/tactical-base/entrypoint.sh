@@ -145,10 +145,17 @@ function tactical-init() {
   set_ready_status "init"
 }
 
+function pushNATSFilesToRedis() {
+  echo "Pushing NATS files to Redis"
+  redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "`cat ${TACTICAL_DIR}/api/nats-rmm.conf`"
+  redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "`cat ${TACTICAL_DIR}/api/nats-api.conf`"
+}
+
 # backend container
 if [ "$1" = 'tactical-backend' ]; then
   tactical-init "backend"
   set_ready_status "backend"
+  pushNATSFilesToRedis
   uwsgi ${TACTICAL_DIR}/api/app.ini
 fi
 

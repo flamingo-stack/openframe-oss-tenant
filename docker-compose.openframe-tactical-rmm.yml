@@ -67,12 +67,88 @@ x-environment: &default-environment
   PUBLIC_DIR: &public-dir /usr/share/nginx/html
   TACTICAL_READY_FILE: &ready-file /opt/tactical/tmp/tactical/ready
   TACTICAL_DIR: &tactical-dir /opt/tactical
+  TACTICAL_TMP_DIR: &tactical-tmp-dir /tmp/tactical
 
   # API Configuration
   API_HOST: &api-host tactical-backend:8000
   API_LOCALHOST_HOST: &api-local-host localhost:8000
   APP_HOST: &app-host tactical-frontend:8080
   APP_LOCALHOST_HOST: &app-local-host localhost:8080
+
+x-args: &default-args
+  # MongoDB args
+  MONGO_INITDB_ROOT_USERNAME: *mongo-user
+  MONGO_INITDB_ROOT_PASSWORD: *mongo-pass
+  MONGO_INITDB_DATABASE: *mongo-db
+  MONGODB_USER: *mongo-user
+  MONGODB_PASSWORD: *mongo-pass
+  MONGODB_HOST: *mongo-host
+  MONGODB_PORT: *mongo-port
+
+  # PostgreSQL args
+  POSTGRES_DB: *postgres-db
+  POSTGRES_USER: *postgres-user
+  POSTGRES_PASSWORD: *postgres-pass
+  POSTGRES_HOST: *postgres-host
+  POSTGRES_PORT: *postgres-port
+
+  # Redis args
+  REDIS_HOST: *redis-host
+
+  # MeshCentral args
+  MESH_USER: *mesh-user
+  MESH_PASS: *mesh-pass
+  MESH_DEVICE_GROUP: *mesh-device-group
+  MESH_PORT: *mesh-port
+  MESH_HOST: *mesh-host
+  MESH_SERVICE: *mesh-host
+  MESH_WS_URL: *mesh-ws-url
+  MESH_PERSISTENT_CONFIG: *mesh-persistent
+  MESH_DISABLE_SSL: *mesh-ssl
+  MESH_COMPRESSION_ENABLED: *mesh-compression
+  MESH_WEBRTC_ENABLED: *mesh-webrtc
+
+  # SMTP args
+  SMTP_HOST: *smtp-host
+  SMTP_PORT: *smtp-port
+  SMTP_FROM: *smtp-from
+  SMTP_USER: *smtp-user
+  SMTP_PASS: *smtp-pass
+  SMTP_TLS: *smtp-tls
+
+  # NGINX args
+  NGINX_HOST_IP: *nginx-host
+  NGINX_HOST_PORT: *nginx-port
+
+  # Tactical RMM args
+  TRMM_USER: *trmm-user
+  TRMM_PASS: *trmm-pass
+  TACTICAL_BACKEND_PORT: *backend-port
+  TRMM_PROTO: *trmm-proto
+  TRMM_DISABLE_WEB_TERMINAL: *web-terminal
+  TRMM_DISABLE_SERVER_SCRIPTS: *server-scripts
+  TRMM_DISABLE_SSO: *sso
+  TRMM_DISABLE_2FA: *tfa
+
+  # Development args
+  NODE_ENV: *node-env
+  DOCKER_BUILD: *docker-build
+
+  # WebSocket args
+  WS_PROTO: *ws-proto
+  WS_MASK_OVERRIDE: *ws-mask
+
+  # Frontend args
+  PUBLIC_DIR: *public-dir
+  TACTICAL_READY_FILE: *ready-file
+  TACTICAL_DIR: *tactical-dir
+  TACTICAL_TMP_DIR: *tactical-tmp-dir
+
+  # API args
+  API_HOST: *api-host
+  API_LOCALHOST_HOST: *api-local-host
+  APP_HOST: *app-host
+  APP_LOCALHOST_HOST: *app-local-host
 
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
@@ -133,10 +209,22 @@ services:
   tactical-nats:
     <<: *service-defaults
     container_name: openframe-tactical-nats
-    image: tacticalrmm/tactical-nats:latest
     platform: linux/amd64
+    build:
+      context: ./infrastructure/tactical-rmm/tactical-nats
+      dockerfile: Dockerfile
+      args: *default-args
+    depends_on:
+      tactical-backend:
+        condition: service_healthy
     volumes:
       - tactical_nats_data:/opt/tactical
+    healthcheck:
+      test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   tactical-meshcentral:
     <<: *service-defaults
@@ -145,6 +233,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-meshcentral
       dockerfile: Dockerfile
+      args: *default-args
     volumes:
       - tactical_meshcentral_data:/opt/tactical
     user: root
@@ -167,6 +256,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-frontend
       dockerfile: Dockerfile
+      args: *default-args
     volumes:
       - tactical_frontend_data:/opt/tactical
 
@@ -176,6 +266,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-nginx
       dockerfile: Dockerfile
+      args: *default-args
     platform: linux/amd64
     ports:
       - "8080:8080"  
@@ -196,6 +287,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
+      args: *default-args
     platform: linux/amd64
     command: [ "tactical-backend" ]
     volumes:
@@ -222,6 +314,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
+      args: *default-args
     platform: linux/amd64
     command: [ "tactical-websockets" ]
     volumes:
@@ -250,6 +343,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
+      args: *default-args
     platform: linux/amd64
     command: [ "tactical-celery" ]
     volumes:
@@ -278,6 +372,7 @@ services:
     build:
       context: ./infrastructure/tactical-rmm/tactical-base
       dockerfile: Dockerfile
+      args: *default-args
     platform: linux/amd64
     command: [ "tactical-celerybeat" ]
     volumes:
