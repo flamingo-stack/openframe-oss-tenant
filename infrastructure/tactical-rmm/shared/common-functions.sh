@@ -149,9 +149,9 @@ function tactical_init() {
     # configure django settings
     MESH_TOKEN=$(redis-cli -h tactical-redis -p 6379 get mesh_token)
     export MESH_TOKEN
-    ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
+    ADMINURL="admin"
     export ADMINURL
-    DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+    DJANGO_SEKRET="tacticalrmm"
     export DJANGO_SEKRET
 
     copy_custom_code
