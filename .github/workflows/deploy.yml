@@ -18,31 +18,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete old artifacts
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const response = await github.rest.actions.listArtifactsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            
-            for (const artifact of response.data.artifacts) {
-              if (artifact.name === 'java-artifacts') {
-                console.log('Deleting artifact:', artifact.name);
-                await github.rest.actions.deleteArtifact({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  artifact_id: artifact.id,
-                });
-              }
-            }
-
   build:
-    needs: cleanup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,6 +36,7 @@ jobs:
         run: mvn -B package --file pom.xml
 
       - name: Upload artifacts
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: java-artifacts
@@ -90,14 +67,19 @@ jobs:
           docker buildx create --use
           docker buildx inspect --bootstrap
 
-      - name: Restore Java artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: java-artifacts
-
-      - name: Create target directories and copy JAR files
+      - name: Copy JAR files
         run: |
-          # Create target directories
+          # For PRs, use the built JARs directly from the build step
+          # For main branch, download artifacts
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "Downloading artifacts for main branch..."
+            # Download artifacts using actions/download-artifact
+            uses: actions/download-artifact@v4
+            with:
+              name: java-artifacts
+          fi
+
+          # Create target directories and copy JARs
           for dir in $(find . -name "pom.xml" -exec dirname {} \;); do
             mkdir -p "$dir/target"
           done
