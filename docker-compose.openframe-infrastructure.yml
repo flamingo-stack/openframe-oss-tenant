@@ -122,7 +122,15 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "pinot-events:1:1"
+      KAFKA_MESSAGE_MAX_BYTES: 104857600
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 104857600
+      KAFKA_MAX_REQUEST_SIZE: 104857600
       KAFKA_OPTS: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml -Dzookeeper.connect.timeout.ms=60000 -Dzookeeper.session.timeout.ms=60000"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CLEANUP_POLICY: "delete"
+      KAFKA_LOG_CLEANUP_POLICY: "delete"
+      KAFKA_LOG_RETENTION_HOURS: "24"
     networks:
       - openframe-network
     depends_on:
@@ -131,11 +139,11 @@ services:
       zookeeper:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl localhost:9092 | grep Empty || exit 0"]
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
   # Nifi
   nifi:
     container_name: openframe-nifi
