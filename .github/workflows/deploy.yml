@@ -48,6 +48,18 @@ jobs:
           find . -type d -name "target" -exec chmod 755 {} \;
           find . -type f -name "*.jar" -exec chmod 644 {} \;
 
+      - name: Clean up old artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Cleaning up old artifacts..."
+          gh api repos/${{ github.repository }}/actions/artifacts \
+            --paginate -q '.artifacts[] | select(.name=="java-artifacts") | .id' | \
+          while read artifact_id; do
+            echo "Deleting artifact $artifact_id"
+            gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id
+          done
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
