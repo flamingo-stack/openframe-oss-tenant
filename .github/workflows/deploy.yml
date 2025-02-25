@@ -338,10 +338,10 @@ jobs:
                 sleep 10
               else
                 echo "Docker build failed for $service after $max_attempts attempts"
-              echo "Error: Failed to build $service image"
-              rm -rf "$temp_context"
-              exit 1
-            fi
+                rm -rf "$temp_context"
+                exit 1
+              fi
+            done
             
             # Verify image was built successfully
             if ! docker image inspect "$image_name" > /dev/null 2>&1; then
