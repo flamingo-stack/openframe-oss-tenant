@@ -212,11 +212,30 @@ jobs:
           docker run -d -p 5000:5000 --restart=always --name registry \
             -v /tmp/registry:/var/lib/registry \
             -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+            -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 \
             -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Origin='*' \
             -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Methods='HEAD,GET,OPTIONS,DELETE' \
             -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Headers='Authorization,Accept,Cache-Control' \
             -e REGISTRY_HTTP_HEADERS_Access_Control_Expose_Headers='Docker-Content-Digest' \
+            --network=host \
             registry:2
+
+          # Wait for registry to be ready with proper health check
+          echo "Waiting for registry to be ready..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:5000/v2/_catalog > /dev/null; then
+              echo "Registry is ready"
+              break
+            fi
+            echo "Waiting for registry... attempt $i"
+            sleep 2
+          done
+
+          # Verify registry is accessible
+          if ! curl -s http://localhost:5000/v2/_catalog > /dev/null; then
+            echo "Error: Registry is not accessible after waiting"
+            exit 1
+          fi
           
           # Wait for registry to be ready with increased timeout and better health check
           echo "Waiting for registry to be ready..."
