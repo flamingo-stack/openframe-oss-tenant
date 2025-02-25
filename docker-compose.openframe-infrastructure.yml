@@ -9,6 +9,7 @@ services:
       MONGO_APP_DATABASE: openframe
       MONGO_APP_USERNAME: openframe
       MONGO_APP_PASSWORD: password123456789
+      MONGO_INITDB_DATABASE: openframe
     ports:
       - "27017:27017"
     volumes:
@@ -26,9 +27,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-    user: "1001"
+    platform: linux/amd64
     restart: unless-stopped
-    image: openframe-mongodb:latest
+    image: mongo:latest
   # MongoDB Exporter
   mongodb-exporter:
     image: bitnami/mongodb-exporter:latest
