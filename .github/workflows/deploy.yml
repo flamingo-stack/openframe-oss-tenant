@@ -269,12 +269,47 @@ jobs:
           docker system df
           df -h
 
-      - name: Build and push infrastructure images
+      - name: Build infrastructure images
         run: |
           echo "Building infrastructure images..."
           
-          # Build infrastructure images
+          # Function to build image with retries
+          build_image() {
+            local service=$1
+            local dockerfile=$2
+            local context=$3
+            local image_name="openframe-$service:latest"
+            local max_attempts=3
+            local attempt=1
+            local build_success=0
+            
+            echo "Building $service image (attempt $attempt/$max_attempts)"
+            while [ $attempt -le $max_attempts ]; do
+              if DOCKER_BUILDKIT=1 docker build \
+                -t "$image_name" \
+                -f "$dockerfile" \
+                --progress=plain \
+                "$context"; then
+                build_success=1
+                echo "Successfully built $image_name"
+                break
+              fi
+              attempt=$((attempt + 1))
+              if [ $attempt -le $max_attempts ]; then
+                echo "Build failed for $service, retrying in 10 seconds..."
+                sleep 10
+              else
+                echo "Build failed for $service after $max_attempts attempts"
+                return 1
+              fi
+            done
+            return 0
+          }
+          
+          # Process each service
+          echo "Starting infrastructure builds..."
           for service in mongodb cassandra nifi config api management ui stream gateway; do
+            echo "Processing service: $service"
             if [ -d "infrastructure/$service" ]; then
               service_dir="infrastructure/$service"
               dockerfile="$service_dir/Dockerfile"
@@ -288,8 +323,9 @@ jobs:
               exit 1
             fi
             
-            # Create temporary build context
+            # Create temporary build context with proper permissions
             temp_context=$(mktemp -d)
+            chmod 755 "$temp_context"
             
             # Copy service files to build context
             cp -r "$service_dir"/* "$temp_context/"
@@ -318,33 +354,9 @@ jobs:
               ls -la "$temp_context/target"
             fi
             
-            # Build the image locally with retries
-            image_name="openframe-$service:latest"
-            max_attempts=3
-            attempt=1
-            build_success=0
-            
-            while [ $attempt -le $max_attempts ]; do
-              echo "Docker build attempt $attempt of $max_attempts for $service"
-              if DOCKER_BUILDKIT=1 docker build \
-                -t "$image_name" \
-                -f "$dockerfile" \
-                --progress=plain \
-                "$temp_context"; then
-                echo "Docker build successful for $service"
-                build_success=1
-                break
-              fi
-              attempt=$((attempt + 1))
-              if [ $attempt -le $max_attempts ]; then
-                echo "Docker build failed for $service, retrying in 10 seconds..."
-                sleep 10
-              else
-                echo "Docker build failed for $service after $max_attempts attempts"
-              fi
-            done
-            
-            if [ $build_success -eq 0 ]; then
+            # Build the image
+            if ! build_image "$service" "$dockerfile" "$temp_context"; then
+              echo "Failed to build $service image"
               rm -rf "$temp_context"
               exit 1
             fi
