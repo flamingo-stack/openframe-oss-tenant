@@ -217,9 +217,9 @@ jobs:
           # Create Docker network
           docker network create openframe-network --label com.docker.compose.network=openframe-network || true
 
-      - name: Build infrastructure images
+      - name: Build and push infrastructure images
         run: |
-          echo "Building infrastructure images..."
+          echo "Building and pushing infrastructure images..."
           
           # Build infrastructure images with buildx
           for service in mongodb cassandra nifi config api management ui stream gateway; do
@@ -266,10 +266,11 @@ jobs:
               ls -la "$temp_context/target"
             fi
             
-            # Build the image
+            # Build and push the image to local registry
+            image_name="localhost:5000/openframe-$service:latest"
             if ! DOCKER_BUILDKIT=1 docker buildx build \
-              --load \
-              -t "openframe-$service:latest" \
+              --push \
+              -t "$image_name" \
               -f "$dockerfile" \
               --cache-from "type=local,src=/tmp/.buildx-cache" \
               --cache-to "type=local,dest=/tmp/.buildx-cache" \
@@ -280,8 +281,18 @@ jobs:
               exit 1
             fi
             
+            # Verify image was pushed successfully
+            if ! curl -s "http://localhost:5000/v2/openframe-$service/tags/list" | grep -q "latest"; then
+              echo "Error: Failed to verify image push for $service"
+              exit 1
+            fi
+            
             rm -rf "$temp_context"
           done
+          
+          # List all images in registry
+          echo "Images in local registry:"
+          curl -s http://localhost:5000/v2/_catalog
 
       - name: Deploy infrastructure services
         run: |
