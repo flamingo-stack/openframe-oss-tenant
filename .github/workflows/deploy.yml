@@ -372,24 +372,38 @@ jobs:
               ls -la "$temp_context/target"
             fi
 
-            # Build with retries
+            # Build with retries and enhanced verification
             max_attempts=3
             attempt=1
             while [ $attempt -le $max_attempts ]; do
               echo "Building $image_name (attempt $attempt/$max_attempts)"
               if docker build -t "$image_name" "$temp_context"; then
-                # Verify image exists and is valid
+                # Enhanced verification with detailed checks
+                echo "Verifying image $image_name..."
                 if docker image inspect "$image_name" >/dev/null 2>&1; then
-                  docker image inspect "$image_name" | grep -q "\"Id\":" && {
-                    echo "Successfully built and verified $image_name"
-                    break
-                  }
+                  # Get image ID and verify it exists
+                  image_id=$(docker image inspect "$image_name" --format '{{.Id}}')
+                  if [ -n "$image_id" ]; then
+                    # Verify image layers
+                    if docker image history "$image_name" >/dev/null 2>&1; then
+                      echo "Successfully built and verified $image_name (ID: $image_id)"
+                      break
+                    else
+                      echo "Image layer verification failed for $image_name"
+                    fi
+                  else
+                    echo "Image ID verification failed for $image_name"
+                  fi
+                else
+                  echo "Image inspection failed for $image_name"
                 fi
               fi
               echo "Build attempt $attempt failed"
               attempt=$((attempt + 1))
               if [ $attempt -gt $max_attempts ]; then
                 echo "Error: Failed to build image for $service after $max_attempts attempts"
+                docker image inspect "$image_name" || true
+                docker image history "$image_name" || true
                 rm -rf "$temp_context"
                 continue 2
               fi
