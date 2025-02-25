@@ -232,20 +232,25 @@ jobs:
           sudo systemctl restart docker || sudo service docker restart
           sleep 10
           
-          # Wait for Docker daemon to be ready
-          timeout 60s bash -c 'until docker info > /dev/null 2>&1; do sleep 1; done'
+          # Wait for Docker daemon to be ready with better logging
+          echo "Waiting for Docker daemon to be ready..."
+          timeout 120s bash -c 'until docker info > /dev/null 2>&1; do echo "Docker daemon not ready yet..."; sleep 5; done'
+          echo "Docker daemon is ready"
+          docker info
           
           # Create Docker network
+          echo "Creating Docker network..."
           docker network create openframe-network --label com.docker.compose.network=openframe-network || true
-
-
           
           # Set up buildx for better caching
+          echo "Setting up Docker buildx..."
           docker buildx create --use
           docker buildx inspect --bootstrap
           
-          # Create Docker network
-          docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+          # Show Docker system info
+          echo "Docker system information:"
+          docker system df
+          df -h
 
       - name: Build and push infrastructure images
         run: |
