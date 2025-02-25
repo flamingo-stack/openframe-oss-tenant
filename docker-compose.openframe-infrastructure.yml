@@ -7,6 +7,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: openframe
       MONGO_INITDB_ROOT_PASSWORD: password123456789
       MONGO_INITDB_DATABASE: openframe
+      MONGODB_AUTH_DATABASE: admin
     ports:
       - "27017:27017"
     volumes:
@@ -19,7 +20,7 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: ["CMD", "mongosh", "--username", "openframe", "--password", "password123456789", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
       interval: 30s
       timeout: 10s
       retries: 5

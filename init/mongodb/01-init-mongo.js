@@ -1,4 +1,3 @@
-// Create openframe database and user
 db = db.getSiblingDB('openframe');
 
 // Create collections
