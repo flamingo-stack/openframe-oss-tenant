@@ -52,8 +52,19 @@ jobs:
           mkdir -p /tmp/jars
           for dir in services/openframe-* libs/openframe-*; do
             if [ -d "$dir/target" ]; then
-              echo "Copying JARs from $dir/target/"
-              cp "$dir"/target/*.jar /tmp/jars/ || true
+              module_name=$(basename "$dir")
+              echo "Processing module $module_name"
+              if [ -f "$dir/target/$module_name.jar" ]; then
+                echo "Found JAR for $module_name"
+                cp "$dir/target/$module_name.jar" "/tmp/jars/$module_name.jar"
+              elif [ -f "$dir/target/$module_name-1.0.0.jar" ]; then
+                echo "Found versioned JAR for $module_name"
+                cp "$dir/target/$module_name-1.0.0.jar" "/tmp/jars/$module_name.jar"
+              else
+                echo "Error: No JAR found for $module_name in $dir/target/"
+                ls -la "$dir/target/"
+                exit 1
+              fi
             fi
           done
           
