@@ -372,30 +372,18 @@ jobs:
               ls -la "$temp_context/target"
             fi
 
-            # Build with retries and enhanced verification
+            # Build with retries and verification
             max_attempts=3
             attempt=1
             while [ $attempt -le $max_attempts ]; do
               echo "Building $image_name (attempt $attempt/$max_attempts)"
               if docker build -t "$image_name" "$temp_context"; then
-                # Enhanced verification with detailed checks
-                echo "Verifying image $image_name..."
-                if docker image inspect "$image_name" >/dev/null 2>&1; then
-                  # Get image ID and verify it exists
+                # Verify image exists and layers are valid
+                if docker image inspect "$image_name" >/dev/null 2>&1 && \
+                   docker image history "$image_name" >/dev/null 2>&1; then
                   image_id=$(docker image inspect "$image_name" --format '{{.Id}}')
-                  if [ -n "$image_id" ]; then
-                    # Verify image layers
-                    if docker image history "$image_name" >/dev/null 2>&1; then
-                      echo "Successfully built and verified $image_name (ID: $image_id)"
-                      break
-                    else
-                      echo "Image layer verification failed for $image_name"
-                    fi
-                  else
-                    echo "Image ID verification failed for $image_name"
-                  fi
-                else
-                  echo "Image inspection failed for $image_name"
+                  echo "Successfully built and verified $image_name (ID: $image_id)"
+                  break
                 fi
               fi
               echo "Build attempt $attempt failed"
@@ -405,43 +393,12 @@ jobs:
                 docker image inspect "$image_name" || true
                 docker image history "$image_name" || true
                 rm -rf "$temp_context"
-                continue 2
+                exit 1
               fi
               sleep 5
             done
-
-            # List files in build context for debugging
-            echo "Contents of build context:"
-            ls -la "$temp_context"
-            if [ -d "$temp_context/target" ]; then
-              echo "Contents of target directory:"
-              ls -la "$temp_context/target"
-            fi
-            
-            # Cleanup
-            rm -rf "$temp_context"
-            
-            # Build the image
-            if ! build_image "$service" "$dockerfile" "$temp_context"; then
-              echo "Failed to build $service image"
-              exit 1
-            fi
             
             # Clean up build context
-            rm -rf "$temp_context"
-            
-            # Verify image exists
-            if ! docker image inspect "openframe-$service:latest" >/dev/null 2>&1; then
-              echo "Error: Image openframe-$service:latest not found after build"
-              exit 1
-            fi
-            
-            # Verify image was built successfully
-            if ! docker image inspect "$image_name" > /dev/null 2>&1; then
-              echo "Error: Failed to verify image build for $service"
-              exit 1
-            fi
-            
             rm -rf "$temp_context"
           done
           
