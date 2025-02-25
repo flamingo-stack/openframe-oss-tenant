@@ -36,13 +36,17 @@ jobs:
       - name: Build with Maven
         run: |
           echo "Building with Maven..."
-          mvn -B package --file pom.xml
+          mvn -B clean package --file pom.xml
           
           echo "Verifying JAR files..."
           find . -name "*.jar" -type f -ls
           
           echo "Contents of target directories:"
-          find . -type d -name "target" -exec ls -la {} \;
+          find . -type d -name "target" -exec sh -c 'echo "=== $1 ==="; ls -la "$1"' _ {} \;
+          
+          # Ensure target directories have correct permissions
+          find . -type d -name "target" -exec chmod 755 {} \;
+          find . -type f -name "*.jar" -exec chmod 644 {} \;
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
