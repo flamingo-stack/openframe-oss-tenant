@@ -412,37 +412,6 @@ jobs:
 
             # Cleanup
             rm -rf "$temp_context"
-            elif [ -d "services/openframe-$service" ]; then
-              service_dir="services/openframe-$service"
-              dockerfile="$service_dir/Dockerfile"
-              echo "Building OpenFrame service $service..."
-            else
-              echo "Error: Could not find build context for service $service"
-              exit 1
-            fi
-            
-            # Create temporary build context with proper permissions
-            temp_context=$(mktemp -d)
-            chmod 755 "$temp_context"
-            
-            # Copy service files to build context
-            cp -r "$service_dir"/* "$temp_context/"
-            
-            # If this is a Java service, copy the appropriate JAR file
-            if [ -f "$service_dir/pom.xml" ]; then
-              mkdir -p "$temp_context/target"
-              module_name=$(basename "$service_dir")
-              echo "Looking for JAR for module $module_name"
-              if [ -f "/tmp/workspace/jars/${module_name}.jar" ]; then
-                echo "Found JAR for $module_name"
-                cp "/tmp/workspace/jars/${module_name}.jar" "$temp_context/target/app.jar"
-              else
-                echo "Error: Could not find JAR for $module_name"
-                exit 1
-              fi
-              echo "Contents of target directory:"
-              ls -la "$temp_context/target/"
-            fi
             
             # List files in build context for debugging
             echo "Contents of build context:"
