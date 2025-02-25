@@ -95,11 +95,33 @@ jobs:
             fi
           done
 
+      - name: Clean up old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            for (const artifact of artifacts.data.artifacts) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+            }
+
+      - name: Compress JAR files
+        run: |
+          cd /tmp/jars
+          tar czf ../artifacts.tar.gz *.jar
+          ls -lh ../artifacts.tar.gz
+
       - name: Upload JAR files
         uses: actions/upload-artifact@v4
         with:
           name: jar-files
-          path: /tmp/jars/
+          path: /tmp/artifacts.tar.gz
           retention-days: 1
           if-no-files-found: error
 
@@ -127,7 +149,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jar-files
-          path: /tmp/jars/
+          path: /tmp
+
+      - name: Extract JAR files
+        run: |
+          mkdir -p /tmp/jars
+          cd /tmp
+          tar xzf artifacts.tar.gz -C /tmp/jars/
+          ls -la /tmp/jars/
 
       - name: Verify JAR files
         run: |
