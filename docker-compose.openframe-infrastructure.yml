@@ -14,17 +14,20 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./init/mongodb:/docker-entrypoint-initdb.d
-      - mongodb_logs:/var/log/mongodb # Shared volume for logs
+      - mongodb_logs:/var/log/mongodb
     networks:
       - openframe-network
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "mongosh", "--username", "openframe", "--password", "password123456789", "--eval", "db.adminCommand('ping').ok", "--quiet"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    user: "1001"
+    restart: unless-stopped
     image: openframe-mongodb:latest
   # MongoDB Exporter
   mongodb-exporter:
