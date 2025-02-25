@@ -49,47 +49,18 @@ jobs:
           find . -type f -name "*.jar" -exec chmod 644 {} \;
 
       - name: Clean up old artifacts
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Cleaning up old artifacts..."
-          # Get total artifact count
-          total_count=$(gh api repos/${{ github.repository }}/actions/artifacts -q '.total_count')
-          echo "Found $total_count total artifacts"
-          
-          # Delete artifacts in batches with proper error handling
-          page=1
-          deleted=0
-          while true; do
-            artifacts=$(gh api "repos/${{ github.repository }}/actions/artifacts?page=$page&per_page=100" -q '.artifacts[] | select(.name=="java-artifacts") | .id')
-            if [ -z "$artifacts" ]; then
-              break
-            fi
-            
-            echo "Processing page $page..."
-            for id in $artifacts; do
-              echo "Deleting artifact $id..."
-              if gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"; then
-                ((deleted++))
-                echo "Successfully deleted artifact $id"
-              else
-                echo "Failed to delete artifact $id"
-              fi
-            done
-            
-            ((page++))
-          done
-          
-          echo "Deleted $deleted artifacts"
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: java-artifacts
+          failOnError: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: java-artifacts
           path: |
-            services/openframe-*/target/*.jar
-            libs/openframe-*/target/*.jar
-            !**/target/original-*.jar
+            services/openframe-*/target/*[!-original].jar
+            libs/openframe-*/target/*[!-original].jar
             !**/target/*-sources.jar
             !**/target/*-javadoc.jar
             !**/target/test-classes/
