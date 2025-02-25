@@ -204,6 +204,28 @@ jobs:
           docker system prune -af
           df -h
           
+          # Configure Docker daemon for better performance
+          echo '{
+            "builder": {
+              "gc": {
+                "enabled": true,
+                "defaultKeepStorage": "20GB"
+              }
+            },
+            "experimental": true,
+            "features": {
+              "buildkit": true
+            },
+            "insecure-registries": ["localhost:5000"]
+          }' | sudo tee /etc/docker/daemon.json
+          
+          # Restart Docker daemon to apply changes
+          sudo systemctl restart docker || sudo service docker restart
+          sleep 10
+          
+          # Wait for Docker daemon to be ready
+          timeout 60s bash -c 'until docker info > /dev/null 2>&1; do sleep 1; done'
+          
           # Create registry data directory with proper permissions
           sudo mkdir -p /tmp/registry
           sudo chmod 777 /tmp/registry
@@ -218,14 +240,15 @@ jobs:
             -v /tmp/registry:/var/lib/registry \
             -e REGISTRY_STORAGE_DELETE_ENABLED=true \
             -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 \
-            -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Origin='*' \
-            -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Methods='HEAD,GET,OPTIONS,DELETE' \
-            -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Headers='Authorization,Accept,Cache-Control' \
-            -e REGISTRY_HTTP_HEADERS_Access_Control_Expose_Headers='Docker-Content-Digest' \
+            -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Origin='["*"]' \
+            -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Methods='["HEAD","GET","OPTIONS","DELETE"]' \
+            -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Headers='["Authorization","Accept","Cache-Control"]' \
+            -e REGISTRY_HTTP_HEADERS_Access_Control_Expose_Headers='["Docker-Content-Digest"]' \
             -e REGISTRY_HTTP_NET_MAXPROCS=100 \
             -e REGISTRY_HTTP_NET_READTIMEOUT=600s \
             -e REGISTRY_HTTP_NET_WRITETIMEOUT=600s \
             -e REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=inmemory \
+            -e REGISTRY_STORAGE_DELETE_ENABLED=true \
             registry:2
 
           # Configure Docker to use insecure registry
@@ -298,6 +321,28 @@ jobs:
 
       - name: Build and push infrastructure images
         run: |
+          # Configure Docker daemon for better performance
+          echo '{
+            "builder": {
+              "gc": {
+                "enabled": true,
+                "defaultKeepStorage": "20GB"
+              }
+            },
+            "experimental": true,
+            "features": {
+              "buildkit": true
+            }
+          }' | sudo tee /etc/docker/daemon.json
+
+          # Restart Docker daemon to apply changes
+          sudo systemctl restart docker
+          sleep 10
+
+          # Wait for Docker daemon to be ready
+          timeout 60s bash -c 'until docker info > /dev/null 2>&1; do sleep 1; done'
+
+
           echo "Building and pushing infrastructure images..."
           
           # Build infrastructure images with buildx
