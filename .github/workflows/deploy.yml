@@ -312,7 +312,15 @@ jobs:
 
       - name: Deploy infrastructure services
         run: |
+          echo "Starting infrastructure services..."
           docker compose -f docker-compose.openframe-infrastructure.yml up -d
+          
+          # Wait for services to be ready
+          timeout 300s bash -c 'until docker compose -f docker-compose.openframe-infrastructure.yml ps | grep -q "Up"; do echo "Waiting for services to start..."; sleep 5; done'
+          
+          # Show service status
+          docker compose -f docker-compose.openframe-infrastructure.yml ps
+          docker compose -f docker-compose.openframe-infrastructure.yml logs --tail=100
 
       - name: Deploy Tactical RMM
         run: |
