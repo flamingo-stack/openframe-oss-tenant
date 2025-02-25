@@ -323,11 +323,30 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up Docker images..."
+          
+          # Stop and remove registry container
+          docker stop registry || true
+          docker rm -v registry || true
+          
+          # Clean up registry data
+          rm -rf /tmp/registry
+          
+          # Clean up all Docker resources
           docker system prune -af
           
           echo "Cleaning up build artifacts..."
           find . -type f -name "*.jar" -delete
           find . -type d -name "target" -exec rm -rf {} +
+          
+          echo "Verifying cleanup..."
+          if docker ps -a | grep -q registry; then
+            echo "Error: Registry container still exists"
+            exit 1
+          fi
+          if [ -d "/tmp/registry" ]; then
+            echo "Error: Registry data directory still exists"
+            exit 1
+          fi
 
       - name: Cleanup on failure
         if: failure()
