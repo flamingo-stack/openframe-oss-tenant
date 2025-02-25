@@ -48,37 +48,15 @@ jobs:
           find . -type d -name "target" -exec chmod 755 {} \;
           find . -type f -name "*.jar" -exec chmod 644 {} \;
 
-      - name: Clean up old artifacts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify JAR files
         run: |
-          echo "Cleaning up old artifacts..."
-          # Get all workflow runs
-          runs=$(gh api repos/${{ github.repository }}/actions/runs --paginate -q '.workflow_runs[].id')
-          for run_id in $runs; do
-            echo "Cleaning up artifacts from run $run_id"
-            gh api repos/${{ github.repository }}/actions/runs/$run_id/artifacts \
-              -q '.artifacts[] | select(.name=="java-artifacts") | .id' | \
-            while read artifact_id; do
-              echo "Deleting artifact $artifact_id from run $run_id"
-              gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id || true
-            done
+          echo "Verifying JAR files..."
+          for dir in services/openframe-* libs/openframe-*; do
+            if [ -d "$dir/target" ]; then
+              echo "=== Contents of $dir/target ==="
+              ls -la "$dir/target/"*.jar || true
+            fi
           done
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: java-artifacts
-          path: |
-            services/openframe-*/target/openframe-*.jar
-            libs/openframe-*/target/openframe-*.jar
-            !**/target/*-original.jar
-            !**/target/*-sources.jar
-            !**/target/*-javadoc.jar
-          compression-level: 9
-          retention-days: 1
-          if-no-files-found: error
-          overwrite: true
 
   deploy:
     needs: build
@@ -92,6 +70,7 @@ jobs:
 
       - name: Set up Docker environment
         run: |
+          echo "Setting up Docker environment..."
           # Clean up disk space
           docker system prune -af
           df -h
@@ -99,54 +78,13 @@ jobs:
           # Set up buildx for better caching
           docker buildx create --use
           docker buildx inspect --bootstrap
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: java-artifacts
-          path: downloaded-artifacts
-          if-no-files-found: error
-        continue-on-error: false
-
-      - name: Debug artifacts
-        run: |
-          echo "Listing downloaded artifacts:"
-          ls -R downloaded-artifacts/ || echo "No artifacts found"
           
-          echo "Listing target directories:"
-          find . -type d -name "target" -ls
-
-      - name: Create target directories and copy JAR files
-        run: |
-          echo "Setting up target directories and copying JARs..."
-          
-          # Debug: Show downloaded artifacts
-          echo "Contents of downloaded-artifacts directory:"
-          ls -R downloaded-artifacts/
-          
-          # Create target directories and copy JARs
-          for dir in $(find . -name "pom.xml" -exec dirname {} \;); do
-            mkdir -p "$dir/target"
-            module_name=$(basename "$dir")
-            echo "Processing module: $module_name"
-            
-            # Find matching JARs in downloaded artifacts
-            if [ -d "downloaded-artifacts/$dir/target" ]; then
-              echo "Found artifacts for $module_name"
-              cp -v downloaded-artifacts/$dir/target/*.jar "$dir/target/" || true
-            else
-              echo "No artifacts found for $module_name in downloaded-artifacts/$dir/target"
-            fi
-          done
-          
-          # Verify final JAR placement
-          echo "Final JAR locations:"
-          find . -name "*.jar" -type f -ls
+          # Create Docker network
+          docker network create openframe-network --label com.docker.compose.network=openframe-network || true
 
       - name: Build infrastructure images
         run: |
-          # Create Docker network
-          docker network create openframe-network --label com.docker.compose.network=openframe-network || true
+          echo "Building infrastructure images..."
           
           # Build infrastructure images with buildx
           for service in mongodb cassandra nifi config api management ui stream gateway; do
