@@ -409,10 +409,22 @@ jobs:
       - name: Deploy infrastructure services
         run: |
           echo "Starting infrastructure services..."
-          docker compose -f docker-compose.openframe-infrastructure.yml up -d
           
-          # Wait for services to be ready
-          timeout 300s bash -c 'until docker compose -f docker-compose.openframe-infrastructure.yml ps | grep -q "Up"; do echo "Waiting for services to start..."; sleep 5; done'
+          # Create required directories and set permissions
+          sudo mkdir -p /data/mongodb
+          sudo chown 1001:1001 /data/mongodb
+          
+          # Start services with better error handling
+          if ! docker compose -f docker-compose.openframe-infrastructure.yml up -d; then
+            echo "Failed to start infrastructure services"
+            docker compose -f docker-compose.openframe-infrastructure.yml ps
+            docker compose -f docker-compose.openframe-infrastructure.yml logs
+            exit 1
+          fi
+          
+          # Wait for MongoDB to be ready
+          echo "Waiting for MongoDB to be ready..."
+          timeout 300s bash -c 'until docker exec openframe-mongodb mongosh --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do echo "Waiting for MongoDB..."; sleep 5; done'
           
           # Show service status
           docker compose -f docker-compose.openframe-infrastructure.yml ps
