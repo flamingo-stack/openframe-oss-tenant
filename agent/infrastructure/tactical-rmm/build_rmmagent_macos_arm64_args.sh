@@ -266,14 +266,24 @@ function patch_agent_plists_with_log() {
   local TACTICAL_PLIST="/Library/LaunchDaemons/tacticalagent.plist"
   local MESH_PLIST="/Library/LaunchDaemons/meshagent.plist"
 
-  # 1) TacticalAgent - add: -log /path
+  # 1) TacticalAgent - add: -log /path and verbosity flags
   if [ -f "$TACTICAL_PLIST" ]; then
-    echo "Patching tacticalagent.plist with '-log' argument..."
+    echo "Patching tacticalagent.plist with '-log' argument and verbosity flags..."
     /usr/libexec/PlistBuddy -c "Add :ProgramArguments:3 string '-log'" \
-                            -c "Add :ProgramArguments:4 string '$AGENT_LOG_PATH'" "$TACTICAL_PLIST" 2>/dev/null || {
+                            -c "Add :ProgramArguments:4 string '$AGENT_LOG_PATH'" \
+                            -c "Add :ProgramArguments:5 string '-debug'" \
+                            -c "Add :ProgramArguments:6 string '-v'" \
+                            -c "Add :ProgramArguments:7 string '-vv'" \
+                            -c "Add :ProgramArguments:8 string '-trace'" \
+                            "$TACTICAL_PLIST" 2>/dev/null || {
       # If 'Add' fails because the items already exist, try 'Set'
       /usr/libexec/PlistBuddy -c "Set :ProgramArguments:3 '-log'" \
-                              -c "Set :ProgramArguments:4 '$AGENT_LOG_PATH'" "$TACTICAL_PLIST" 2>/dev/null || true
+                              -c "Set :ProgramArguments:4 '$AGENT_LOG_PATH'" \
+                              -c "Set :ProgramArguments:5 '-debug'" \
+                              -c "Set :ProgramArguments:6 '-v'" \
+                              -c "Set :ProgramArguments:7 '-vv'" \
+                              -c "Set :ProgramArguments:8 '-trace'" \
+                              "$TACTICAL_PLIST" 2>/dev/null || true
     }
 
     echo "Reloading LaunchDaemon for tacticalagent..."
@@ -287,10 +297,14 @@ function patch_agent_plists_with_log() {
   if [ -f "$MESH_PLIST" ]; then
     echo "Patching meshagent.plist with '--logfile' argument..."
     /usr/libexec/PlistBuddy -c "Add :ProgramArguments:3 string '--logfile'" \
-                            -c "Add :ProgramArguments:4 string '$AGENT_LOG_PATH'" "$MESH_PLIST" 2>/dev/null || {
+                            -c "Add :ProgramArguments:4 string '$AGENT_LOG_PATH'" \
+                            -c "Add :ProgramArguments:5 string '--debug'" \
+                            "$MESH_PLIST" 2>/dev/null || {
       # If 'Add' fails because items exist, try 'Set'
       /usr/libexec/PlistBuddy -c "Set :ProgramArguments:3 '--logfile'" \
-                              -c "Set :ProgramArguments:4 '$AGENT_LOG_PATH'" "$MESH_PLIST" 2>/dev/null || true
+                              -c "Set :ProgramArguments:4 '$AGENT_LOG_PATH'" \
+                              -c "Set :ProgramArguments:5 '--debug'" \
+                              "$MESH_PLIST" 2>/dev/null || true
     }
 
     echo "Reloading LaunchDaemon for meshagent..."
@@ -314,7 +328,9 @@ function prompt_run_agent() {
   echo "     -auth \"$AGENT_AUTH_KEY\" \\"
   echo "     -client-id <ID> -site-id <ID> -agent-type <server|workstation>"
   if [ -n "$AGENT_LOG_PATH" ]; then
-    echo "     -log \"$AGENT_LOG_PATH\""
+    echo "     -log \"$AGENT_LOG_PATH\" -debug -v -vv -trace"
+  else
+    echo "     -log \"/tmp/rmmagent_verbose.log\" -debug -v -vv -trace"
   fi
   echo ""
 
@@ -331,13 +347,23 @@ function prompt_run_agent() {
     read -rp "Agent type (server/workstation) [server]: " AGENT_TYPE
     AGENT_TYPE=${AGENT_TYPE:-server}
 
-    local CMD="./$OUTPUT_BINARY -m install -api \"$RMM_SERVER_URL\" -auth \"$AGENT_AUTH_KEY\" -client-id \"$CLIENT_ID\" -site-id \"$SITE_ID\" -agent-type \"$AGENT_TYPE\""
-    if [ -n "$AGENT_LOG_PATH" ]; then
-      CMD="$CMD -log \"$AGENT_LOG_PATH\""
+    # If no log path was specified, create a default one with timestamp
+    if [ -z "$AGENT_LOG_PATH" ]; then
+      TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+      AGENT_LOG_PATH="/tmp/rmmagent_verbose_${TIMESTAMP}.log"
+      echo "Using default log path: $AGENT_LOG_PATH"
     fi
+
+    local CMD="./$OUTPUT_BINARY -m install -api \"$RMM_SERVER_URL\" -auth \"$AGENT_AUTH_KEY\" -client-id \"$CLIENT_ID\" -site-id \"$SITE_ID\" -agent-type \"$AGENT_TYPE\""
+    # Always include the log path and maximum verbosity flags
+    CMD="$CMD -log \"$AGENT_LOG_PATH\" -debug -v -vv -trace"
 
     echo "Running: $CMD"
     eval "$CMD"
+
+    echo ""
+    echo "Agent started with maximum verbosity! Logs will be written to: $AGENT_LOG_PATH"
+    echo "To monitor the log in real-time, run: tail -f $AGENT_LOG_PATH"
 
     # After successful install, patch plists with the custom log path
     # (Requires sudo if not running script with root privileges.)
