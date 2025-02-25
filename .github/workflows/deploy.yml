@@ -197,6 +197,19 @@ jobs:
           docker system prune -af
           df -h
           
+          # Set up local registry
+          docker run -d -p 5000:5000 --restart=always --name registry \
+            -v /tmp/registry:/var/lib/registry \
+            -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+            -e REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin="[*]" \
+            -e REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods="[HEAD,GET,OPTIONS,DELETE]" \
+            -e REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers="[Authorization,Accept,Cache-Control]" \
+            -e REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers="[Docker-Content-Digest]" \
+            registry:2
+          
+          # Wait for registry to be ready
+          timeout 60s bash -c 'until curl -s http://localhost:5000/v2/_catalog; do sleep 1; done'
+          
           # Set up buildx for better caching
           docker buildx create --use
           docker buildx inspect --bootstrap
