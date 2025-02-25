@@ -20,7 +20,7 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "mongosh", "--username", "openframe", "--password", "password123456789", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
+      test: ["CMD", "mongosh", "admin", "--username", "openframe", "--password", "password123456789", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
       interval: 30s
       timeout: 10s
       retries: 5
