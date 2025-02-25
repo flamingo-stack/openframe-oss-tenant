@@ -275,13 +275,12 @@ jobs:
           
           # Function to build image with retries
           build_image() {
-            local service=$1
-            local dockerfile=$2
-            local context=$3
+            local service="$1"
+            local dockerfile="$2"
+            local context="$3"
             local image_name="openframe-$service:latest"
             local max_attempts=3
             local attempt=1
-            local build_success=0
             
             echo "Building $service image (attempt $attempt/$max_attempts)"
             while [ $attempt -le $max_attempts ]; do
@@ -290,9 +289,8 @@ jobs:
                 -f "$dockerfile" \
                 --progress=plain \
                 "$context"; then
-                build_success=1
                 echo "Successfully built $image_name"
-                break
+                return 0
               fi
               attempt=$((attempt + 1))
               if [ $attempt -le $max_attempts ]; then
@@ -303,13 +301,18 @@ jobs:
                 return 1
               fi
             done
-            return 0
           }
           
           # Process each service
           echo "Starting infrastructure builds..."
           for service in mongodb cassandra nifi config api management ui stream gateway; do
             echo "Processing service: $service"
+            
+            # Ensure service directory exists
+            if [ ! -d "infrastructure/$service" ] && [ ! -d "services/openframe-$service" ]; then
+              echo "Error: Could not find directory for service $service"
+              continue
+            fi
             if [ -d "infrastructure/$service" ]; then
               service_dir="infrastructure/$service"
               dockerfile="$service_dir/Dockerfile"
@@ -358,6 +361,15 @@ jobs:
             if ! build_image "$service" "$dockerfile" "$temp_context"; then
               echo "Failed to build $service image"
               rm -rf "$temp_context"
+              exit 1
+            fi
+            
+            # Clean up build context
+            rm -rf "$temp_context"
+            
+            # Verify image exists
+            if ! docker image inspect "openframe-$service:latest" >/dev/null 2>&1; then
+              echo "Error: Image openframe-$service:latest not found after build"
               exit 1
             fi
             
