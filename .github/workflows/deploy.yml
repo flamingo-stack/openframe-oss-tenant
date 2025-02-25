@@ -330,10 +330,57 @@ jobs:
               echo "Error: Dockerfile not found at $dockerfile"
               continue
             fi
-            if [ -d "infrastructure/$service" ]; then
-              service_dir="infrastructure/$service"
-              dockerfile="$service_dir/Dockerfile"
-              echo "Building infrastructure service $service..."
+
+            # Create temporary build context
+            temp_context=$(mktemp -d)
+            chmod 755 "$temp_context"
+
+            # Copy service files to build context
+            cp -r "$service_dir"/* "$temp_context/" || {
+              echo "Error: Failed to copy files to build context for $service"
+              rm -rf "$temp_context"
+              continue
+            }
+
+            # Copy JAR files if needed
+            if [ -f "/tmp/workspace/jars/openframe-${service}.jar" ]; then
+              cp "/tmp/workspace/jars/openframe-${service}.jar" "$temp_context/target/"
+              echo "Copied JAR file for $service"
+            fi
+
+            # Build the Docker image
+            echo "Building Docker image for $service..."
+            image_name="openframe-${service}:latest"
+            
+            # Create target directory if needed
+            if [ ! -d "$temp_context/target" ]; then
+              mkdir -p "$temp_context/target"
+            fi
+
+            # Build with retries
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              echo "Building $image_name (attempt $attempt/$max_attempts)"
+              if docker build -t "$image_name" "$temp_context"; then
+                # Verify image exists
+                if docker image inspect "$image_name" >/dev/null 2>&1; then
+                  echo "Successfully built and verified $image_name"
+                  break
+                fi
+              fi
+              echo "Build attempt $attempt failed"
+              attempt=$((attempt + 1))
+              if [ $attempt -gt $max_attempts ]; then
+                echo "Error: Failed to build image for $service after $max_attempts attempts"
+                rm -rf "$temp_context"
+                continue 2
+              fi
+              sleep 5
+            done
+
+            # Cleanup
+            rm -rf "$temp_context"
             elif [ -d "services/openframe-$service" ]; then
               service_dir="services/openframe-$service"
               dockerfile="$service_dir/Dockerfile"
