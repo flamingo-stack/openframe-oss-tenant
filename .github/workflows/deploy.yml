@@ -424,7 +424,6 @@ jobs:
             # Build the image
             if ! build_image "$service" "$dockerfile" "$temp_context"; then
               echo "Failed to build $service image"
-              rm -rf "$temp_context"
               exit 1
             fi
             
