@@ -33,12 +33,14 @@ services:
     image: bitnami/mongodb-exporter:latest
     container_name: openframe-mongodb-exporter
     environment:
-      MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe
+      MONGODB_URI: mongodb://openframe:password123456789@mongodb:27017/openframe?authSource=admin
     ports:
       - "9216:9216"
     depends_on:
-      - mongodb
-      - loki
+      mongodb:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
     networks:
       - openframe-network
   # Cassandra
@@ -239,12 +241,14 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: openframe
       ME_CONFIG_MONGODB_ADMINPASSWORD: password123456789
-      ME_CONFIG_MONGODB_URL: mongodb://openframe:password123456789@mongodb:27017/
+      ME_CONFIG_MONGODB_URL: mongodb://openframe:password123456789@mongodb:27017/?authSource=admin
     networks:
       - openframe-network
     depends_on:
-      - loki
-      - mongodb
+      mongodb:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
   # Redis Exporter
   redis-exporter:
     image: oliver006/redis_exporter:latest
