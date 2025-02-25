@@ -241,7 +241,7 @@ jobs:
         run: |
           echo "Building infrastructure images..."
           
-          # Build infrastructure images with buildx
+          # Build infrastructure images
           for service in mongodb cassandra nifi config api management ui stream gateway; do
             if [ -d "infrastructure/$service" ]; then
               service_dir="infrastructure/$service"
@@ -267,9 +267,9 @@ jobs:
               mkdir -p "$temp_context/target"
               module_name=$(basename "$service_dir")
               echo "Looking for JAR for module $module_name"
-              if [ -f "/tmp/jars/${module_name}.jar" ]; then
+              if [ -f "/tmp/workspace/jars/${module_name}.jar" ]; then
                 echo "Found JAR for $module_name"
-                cp "/tmp/jars/${module_name}.jar" "$temp_context/target/app.jar"
+                cp "/tmp/workspace/jars/${module_name}.jar" "$temp_context/target/app.jar"
               else
                 echo "Error: Could not find JAR for $module_name"
                 exit 1
@@ -286,33 +286,31 @@ jobs:
               ls -la "$temp_context/target"
             fi
             
-            # Build and push the image to local registry
-            image_name="localhost:5000/openframe-$service:latest"
-            if ! DOCKER_BUILDKIT=1 docker buildx build \
-              --push \
+            # Build the image locally
+            image_name="openframe-$service:latest"
+            if ! DOCKER_BUILDKIT=1 docker build \
               -t "$image_name" \
               -f "$dockerfile" \
               --cache-from "type=local,src=/tmp/.buildx-cache" \
               --cache-to "type=local,dest=/tmp/.buildx-cache" \
-              --no-cache \
               "$temp_context"; then
               echo "Error: Failed to build $service image"
               rm -rf "$temp_context"
               exit 1
             fi
             
-            # Verify image was pushed successfully
-            if ! curl -s "http://localhost:5000/v2/openframe-$service/tags/list" | grep -q "latest"; then
-              echo "Error: Failed to verify image push for $service"
+            # Verify image was built successfully
+            if ! docker image inspect "$image_name" > /dev/null 2>&1; then
+              echo "Error: Failed to verify image build for $service"
               exit 1
             fi
             
             rm -rf "$temp_context"
           done
           
-          # List all images in registry
-          echo "Images in local registry:"
-          curl -s http://localhost:5000/v2/_catalog
+          # List all local images
+          echo "Local Docker images:"
+          docker images | grep openframe
 
       - name: Deploy infrastructure services
         run: |
