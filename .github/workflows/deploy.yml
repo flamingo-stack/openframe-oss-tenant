@@ -49,22 +49,32 @@ jobs:
           find . -type f -name "*.jar" -exec chmod 644 {} \;
 
       - name: Clean up old artifacts
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: java-artifacts
-          failOnError: false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Cleaning up old artifacts..."
+          # Get all workflow runs
+          runs=$(gh api repos/${{ github.repository }}/actions/runs --paginate -q '.workflow_runs[].id')
+          for run_id in $runs; do
+            echo "Cleaning up artifacts from run $run_id"
+            gh api repos/${{ github.repository }}/actions/runs/$run_id/artifacts \
+              -q '.artifacts[] | select(.name=="java-artifacts") | .id' | \
+            while read artifact_id; do
+              echo "Deleting artifact $artifact_id from run $run_id"
+              gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id || true
+            done
+          done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: java-artifacts
           path: |
-            services/openframe-*/target/*[!-original].jar
-            libs/openframe-*/target/*[!-original].jar
+            services/openframe-*/target/openframe-*.jar
+            libs/openframe-*/target/openframe-*.jar
+            !**/target/*-original.jar
             !**/target/*-sources.jar
             !**/target/*-javadoc.jar
-            !**/target/test-classes/
-            !**/target/classes/
           compression-level: 9
           retention-days: 1
           if-no-files-found: error
