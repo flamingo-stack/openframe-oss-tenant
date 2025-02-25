@@ -420,9 +420,6 @@ jobs:
             
             # Cleanup
             rm -rf "$temp_context"
-              echo "Contents of target directory:"
-              ls -la "$temp_context/target"
-            fi
             
             # Build the image
             if ! build_image "$service" "$dockerfile" "$temp_context"; then
