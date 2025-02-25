@@ -322,6 +322,8 @@ jobs:
             image_name="openframe-$service:latest"
             max_attempts=3
             attempt=1
+            build_success=0
+            
             while [ $attempt -le $max_attempts ]; do
               echo "Docker build attempt $attempt of $max_attempts for $service"
               if DOCKER_BUILDKIT=1 docker build \
@@ -330,6 +332,7 @@ jobs:
                 --progress=plain \
                 "$temp_context"; then
                 echo "Docker build successful for $service"
+                build_success=1
                 break
               fi
               attempt=$((attempt + 1))
@@ -338,10 +341,13 @@ jobs:
                 sleep 10
               else
                 echo "Docker build failed for $service after $max_attempts attempts"
-                rm -rf "$temp_context"
-                exit 1
               fi
             done
+            
+            if [ $build_success -eq 0 ]; then
+              rm -rf "$temp_context"
+              exit 1
+            fi
             
             # Verify image was built successfully
             if ! docker image inspect "$image_name" > /dev/null 2>&1; then
