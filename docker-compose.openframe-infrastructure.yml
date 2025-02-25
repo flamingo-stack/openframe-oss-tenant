@@ -68,15 +68,19 @@ services:
       LOCAL_JMX: "no"
       JMX_PORT: 7199
     healthcheck:
-      test: ["CMD-SHELL", "(nodetool -u cassandra -pw cassandra status && cqlsh -u cassandra -p cassandra -e 'SELECT now() FROM system.local') || exit 1"]
+      test: ["CMD-SHELL", "nodetool status | grep UN"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 120s
     networks:
       - openframe-network
     depends_on:
-      - loki
-    image: openframe-cassandra:latest
+      loki:
+        condition: service_healthy
+    platform: linux/amd64
+    restart: unless-stopped
+    image: cassandra:4.1
   # Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
