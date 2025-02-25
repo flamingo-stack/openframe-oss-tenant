@@ -204,6 +204,10 @@ jobs:
           docker system prune -af
           df -h
           
+          # Create registry data directory with proper permissions
+          sudo mkdir -p /tmp/registry
+          sudo chmod 777 /tmp/registry
+          
           # Set up local registry
           docker run -d -p 5000:5000 --restart=always --name registry \
             -v /tmp/registry:/var/lib/registry \
@@ -214,8 +218,20 @@ jobs:
             -e REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers="[Docker-Content-Digest]" \
             registry:2
           
-          # Wait for registry to be ready
-          timeout 60s bash -c 'until curl -s http://localhost:5000/v2/_catalog; do sleep 1; done'
+          # Wait for registry to be ready with increased timeout and better health check
+          echo "Waiting for registry to be ready..."
+          for i in $(seq 1 120); do
+            if curl -s -f http://localhost:5000/v2/_catalog > /dev/null; then
+              echo "Registry is ready"
+              break
+            fi
+            if [ $i -eq 120 ]; then
+              echo "Error: Registry failed to start after 120 seconds"
+              docker logs registry
+              exit 1
+            fi
+            sleep 1
+          done
           
           # Set up buildx for better caching
           docker buildx create --use
