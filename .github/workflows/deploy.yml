@@ -143,47 +143,52 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # JAR files are already in /tmp/jars from the build job
-      - name: Verify JAR files
+      - name: Build and prepare JARs
         run: |
-          echo "Verifying JAR files in /tmp/jars..."
-          ls -la /tmp/jars/
+          echo "Building with Maven..."
+          mvn -B clean package --file pom.xml
           
-          # Verify required JARs exist
-          missing_jars=0
-          for module in api config gateway management stream core data; do
-            if [ ! -f "/tmp/jars/openframe-${module}.jar" ]; then
-              echo "Error: Missing JAR for openframe-${module}"
-              missing_jars=1
-            else
-              echo "Found JAR for openframe-${module}:"
-              ls -l "/tmp/jars/openframe-${module}.jar"
+          echo "Setting up JAR files..."
+          mkdir -p /tmp/workspace/jars
+          
+          # Copy JAR files to workspace
+          for dir in services/openframe-* libs/openframe-*; do
+            if [ -d "$dir/target" ]; then
+              module_name=$(basename "$dir")
+              jar_file=$(find "$dir/target" -maxdepth 1 -name "*.jar" \
+                ! -name "original-*.jar" \
+                ! -name "*-sources.jar" \
+                ! -name "*-javadoc.jar" \
+                -type f | head -n 1)
+              if [ -n "$jar_file" ]; then
+                cp "$jar_file" "/tmp/workspace/jars/${module_name}.jar"
+                chmod 644 "/tmp/workspace/jars/${module_name}.jar"
+                echo "Copied $jar_file to /tmp/workspace/jars/${module_name}.jar"
+              else
+                echo "Error: No suitable JAR found for $module_name"
+                exit 1
+              fi
             fi
           done
           
-          if [ $missing_jars -eq 1 ]; then
-            echo "Error: Some required JARs are missing"
-            exit 1
-          fi
+          echo "JAR files prepared in workspace:"
+          ls -la /tmp/workspace/jars/
 
-      - name: Verify JAR files
+      - name: Verify workspace JARs
         run: |
-          echo "Creating /tmp/jars directory..."
-          mkdir -p /tmp/jars
-          
-          echo "Contents of /tmp/jars after download:"
-          ls -la /tmp/jars/
+          echo "Verifying JAR files in workspace..."
+          ls -la /tmp/workspace/jars/
           
           # Verify required JARs exist
           missing_jars=0
           for module in api config gateway management stream core data; do
-            if [ ! -f "/tmp/jars/openframe-${module}.jar" ]; then
+            if [ ! -f "/tmp/workspace/jars/openframe-${module}.jar" ]; then
               echo "Error: Missing JAR for openframe-${module}"
               missing_jars=1
             else
               echo "Found JAR for openframe-${module}:"
-              ls -l "/tmp/jars/openframe-${module}.jar"
-              file "/tmp/jars/openframe-${module}.jar"
+              ls -l "/tmp/workspace/jars/openframe-${module}.jar"
+              file "/tmp/workspace/jars/openframe-${module}.jar"
             fi
           done
           
@@ -191,12 +196,6 @@ jobs:
             echo "Error: Some required JARs are missing"
             exit 1
           fi
-          
-          # Ensure correct permissions
-          chmod 644 /tmp/jars/*.jar
-          
-          echo "JAR file details:"
-          file /tmp/jars/*.jar || true
 
       - name: Set up Docker environment
         run: |
