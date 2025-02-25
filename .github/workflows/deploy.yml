@@ -155,17 +155,27 @@ jobs:
           for dir in services/openframe-* libs/openframe-*; do
             if [ -d "$dir/target" ]; then
               module_name=$(basename "$dir")
+              echo "Processing module $module_name..."
+              
+              # List target directory contents
+              echo "Contents of $dir/target:"
+              ls -la "$dir/target/"
+              
               jar_file=$(find "$dir/target" -maxdepth 1 -name "*.jar" \
                 ! -name "original-*.jar" \
                 ! -name "*-sources.jar" \
                 ! -name "*-javadoc.jar" \
                 -type f | head -n 1)
               if [ -n "$jar_file" ]; then
+                echo "Found JAR: $jar_file"
                 cp "$jar_file" "/tmp/workspace/jars/${module_name}.jar"
                 chmod 644 "/tmp/workspace/jars/${module_name}.jar"
-                echo "Copied $jar_file to /tmp/workspace/jars/${module_name}.jar"
+                echo "Copied to /tmp/workspace/jars/${module_name}.jar"
+                ls -l "/tmp/workspace/jars/${module_name}.jar"
               else
                 echo "Error: No suitable JAR found for $module_name"
+                echo "Contents of target directory:"
+                ls -la "$dir/target/"
                 exit 1
               fi
             fi
