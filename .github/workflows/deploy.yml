@@ -410,13 +410,16 @@ jobs:
               sleep 5
             done
 
-            # Cleanup
-            rm -rf "$temp_context"
-            
             # List files in build context for debugging
             echo "Contents of build context:"
             ls -la "$temp_context"
             if [ -d "$temp_context/target" ]; then
+              echo "Contents of target directory:"
+              ls -la "$temp_context/target"
+            fi
+            
+            # Cleanup
+            rm -rf "$temp_context"
               echo "Contents of target directory:"
               ls -la "$temp_context/target"
             fi
