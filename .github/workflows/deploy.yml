@@ -38,38 +38,49 @@ jobs:
           echo "Building with Maven..."
           mvn -B clean package --file pom.xml
           
-          echo "Verifying JAR files..."
-          find . -name "*.jar" -type f -ls
-          
-          echo "Contents of target directories:"
-          find . -type d -name "target" -exec sh -c 'echo "=== $1 ==="; ls -la "$1"' _ {} \;
-          
-          # Ensure target directories have correct permissions
-          find . -type d -name "target" -exec chmod 755 {} \;
-          find . -type f -name "*.jar" -exec chmod 644 {} \;
-          
-          # Copy JAR files to a central location for Docker builds
+          echo "Setting up JAR files..."
           mkdir -p /tmp/jars
+          
+          # Function to find and copy JAR files
+          copy_jar() {
+            local dir=$1
+            local module_name=$(basename "$dir")
+            echo "Processing module $module_name"
+            
+            # Find the JAR file (excluding original, sources, and javadoc JARs)
+            local jar_file=$(find "$dir/target" -maxdepth 1 -name "*.jar" \
+              ! -name "original-*.jar" \
+              ! -name "*-sources.jar" \
+              ! -name "*-javadoc.jar" \
+              -type f | head -n 1)
+            
+            if [ -n "$jar_file" ]; then
+              echo "Found JAR: $jar_file"
+              cp "$jar_file" "/tmp/jars/${module_name}.jar"
+              chmod 644 "/tmp/jars/${module_name}.jar"
+              echo "Copied to /tmp/jars/${module_name}.jar"
+              ls -l "/tmp/jars/${module_name}.jar"
+            else
+              echo "Error: No suitable JAR found for $module_name"
+              echo "Contents of $dir/target:"
+              ls -la "$dir/target/"
+              return 1
+            fi
+          }
+          
+          # Process all modules
+          echo "Processing all modules..."
           for dir in services/openframe-* libs/openframe-*; do
             if [ -d "$dir/target" ]; then
-              module_name=$(basename "$dir")
-              echo "Processing module $module_name"
-              if [ -f "$dir/target/$module_name.jar" ]; then
-                echo "Found JAR for $module_name"
-                cp "$dir/target/$module_name.jar" "/tmp/jars/$module_name.jar"
-              elif [ -f "$dir/target/$module_name-1.0.0-SNAPSHOT.jar" ]; then
-                echo "Found SNAPSHOT JAR for $module_name"
-                cp "$dir/target/$module_name-1.0.0-SNAPSHOT.jar" "/tmp/jars/$module_name.jar"
-              elif [ -f "$dir/target/$module_name-1.0.0.jar" ]; then
-                echo "Found versioned JAR for $module_name"
-                cp "$dir/target/$module_name-1.0.0.jar" "/tmp/jars/$module_name.jar"
-              else
-                echo "Error: No JAR found for $module_name in $dir/target/"
-                ls -la "$dir/target/"
+              if ! copy_jar "$dir"; then
+                echo "Failed to process $dir"
                 exit 1
               fi
             fi
           done
+          
+          echo "Final contents of /tmp/jars:"
+          ls -la /tmp/jars/
           
           echo "Contents of centralized JAR directory:"
           ls -la /tmp/jars/
@@ -118,30 +129,34 @@ jobs:
           name: jar-files
           path: /tmp/jars/
 
-      - name: Prepare JAR files
+      - name: Verify JAR files
         run: |
           echo "Creating /tmp/jars directory..."
           mkdir -p /tmp/jars
           
-          echo "Contents before download:"
-          ls -la /tmp/jars/ || true
+          echo "Contents of /tmp/jars after download:"
+          ls -la /tmp/jars/
           
-          echo "Downloading artifacts..."
-          for dir in services/openframe-* libs/openframe-*; do
-            if [ -d "$dir" ]; then
-              module_name=$(basename "$dir")
-              echo "Looking for $module_name JAR..."
-              if [ -f "/tmp/jars/${module_name}.jar" ]; then
-                echo "Found JAR for $module_name"
-                chmod 644 "/tmp/jars/${module_name}.jar"
-              else
-                echo "Warning: Missing JAR for $module_name"
-              fi
+          # Verify required JARs exist
+          missing_jars=0
+          for module in api config gateway management stream core data; do
+            if [ ! -f "/tmp/jars/openframe-${module}.jar" ]; then
+              echo "Error: Missing JAR for openframe-${module}"
+              missing_jars=1
+            else
+              echo "Found JAR for openframe-${module}:"
+              ls -l "/tmp/jars/openframe-${module}.jar"
+              file "/tmp/jars/openframe-${module}.jar"
             fi
           done
           
-          echo "Final contents of /tmp/jars:"
-          ls -la /tmp/jars/
+          if [ $missing_jars -eq 1 ]; then
+            echo "Error: Some required JARs are missing"
+            exit 1
+          fi
+          
+          # Ensure correct permissions
+          chmod 644 /tmp/jars/*.jar
           
           echo "JAR file details:"
           file /tmp/jars/*.jar || true
