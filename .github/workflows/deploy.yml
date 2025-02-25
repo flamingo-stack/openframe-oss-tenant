@@ -324,6 +324,12 @@ jobs:
               echo "Error: Could not find directory for service $service"
               continue
             fi
+
+            # Verify dockerfile exists
+            if [ ! -f "$dockerfile" ]; then
+              echo "Error: Dockerfile not found at $dockerfile"
+              continue
+            fi
             if [ -d "infrastructure/$service" ]; then
               service_dir="infrastructure/$service"
               dockerfile="$service_dir/Dockerfile"
