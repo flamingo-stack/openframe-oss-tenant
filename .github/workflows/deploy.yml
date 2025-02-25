@@ -57,6 +57,9 @@ jobs:
               if [ -f "$dir/target/$module_name.jar" ]; then
                 echo "Found JAR for $module_name"
                 cp "$dir/target/$module_name.jar" "/tmp/jars/$module_name.jar"
+              elif [ -f "$dir/target/$module_name-1.0.0-SNAPSHOT.jar" ]; then
+                echo "Found SNAPSHOT JAR for $module_name"
+                cp "$dir/target/$module_name-1.0.0-SNAPSHOT.jar" "/tmp/jars/$module_name.jar"
               elif [ -f "$dir/target/$module_name-1.0.0.jar" ]; then
                 echo "Found versioned JAR for $module_name"
                 cp "$dir/target/$module_name-1.0.0.jar" "/tmp/jars/$module_name.jar"
