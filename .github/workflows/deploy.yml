@@ -351,8 +351,8 @@ jobs:
           docker stop registry || true
           docker rm -v registry || true
           
-          # Clean up registry data with sudo
-          sudo rm -rf /tmp/registry || true
+          # Clean up registry data with proper permissions
+          sudo rm -rf /tmp/registry || echo "Warning: Failed to remove registry directory" || true
           
           # Clean up all Docker resources
           docker system prune -af
