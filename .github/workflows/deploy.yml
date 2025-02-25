@@ -211,10 +211,10 @@ jobs:
           # Create Docker network for registry
           docker network create registry-net || true
 
-          # Set up local registry with proper configuration
+          # Set up local registry with proper configuration and increased timeouts
           docker run -d --name registry \
             --network registry-net \
-            -p 127.0.0.1:5000:5000 \
+            -p 5000:5000 \
             -v /tmp/registry:/var/lib/registry \
             -e REGISTRY_STORAGE_DELETE_ENABLED=true \
             -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 \
@@ -222,6 +222,10 @@ jobs:
             -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Methods='HEAD,GET,OPTIONS,DELETE' \
             -e REGISTRY_HTTP_HEADERS_Access_Control_Allow_Headers='Authorization,Accept,Cache-Control' \
             -e REGISTRY_HTTP_HEADERS_Access_Control_Expose_Headers='Docker-Content-Digest' \
+            -e REGISTRY_HTTP_NET_MAXPROCS=100 \
+            -e REGISTRY_HTTP_NET_READTIMEOUT=600s \
+            -e REGISTRY_HTTP_NET_WRITETIMEOUT=600s \
+            -e REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=inmemory \
             registry:2
 
           # Configure Docker to use insecure registry
@@ -235,16 +239,26 @@ jobs:
           # Start registry container again after Docker restart
           docker start registry
 
-          # Wait for registry to be ready with proper health check
+          # Wait for registry to be ready with increased timeout and better health check
           echo "Waiting for registry to be ready..."
-          for i in $(seq 1 30); do
-            if curl -s http://localhost:5000/v2/_catalog > /dev/null; then
+          max_attempts=90
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -s -f http://localhost:5000/v2/_catalog > /dev/null; then
               echo "Registry is ready"
               break
             fi
-            echo "Waiting for registry... attempt $i"
+            echo "Waiting for registry... attempt $attempt/$max_attempts"
             sleep 2
+            attempt=$((attempt + 1))
           done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "Error: Registry failed to start after $max_attempts attempts"
+            docker logs registry
+            docker ps -a
+            exit 1
+          fi
 
           # Verify registry is accessible
           if ! curl -s http://localhost:5000/v2/_catalog > /dev/null; then
@@ -253,16 +267,26 @@ jobs:
             exit 1
           fi
 
-          # Wait for registry to be ready with proper health check
+          # Wait for registry to be ready with increased timeout and better health check
           echo "Waiting for registry to be ready..."
-          for i in $(seq 1 30); do
-            if curl -s http://localhost:5000/v2/_catalog > /dev/null; then
+          max_attempts=90
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -s -f http://localhost:5000/v2/_catalog > /dev/null; then
               echo "Registry is ready"
               break
             fi
-            echo "Waiting for registry... attempt $i"
+            echo "Waiting for registry... attempt $attempt/$max_attempts"
             sleep 2
+            attempt=$((attempt + 1))
           done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "Error: Registry failed to start after $max_attempts attempts"
+            docker logs registry
+            docker ps -a
+            exit 1
+          fi
 
           # Verify registry is accessible
           if ! curl -s http://localhost:5000/v2/_catalog > /dev/null; then
