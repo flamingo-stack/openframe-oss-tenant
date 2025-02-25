@@ -34,7 +34,15 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -B package --file pom.xml
+        run: |
+          echo "Building with Maven..."
+          mvn -B package --file pom.xml
+          
+          echo "Verifying JAR files..."
+          find . -name "*.jar" -type f -ls
+          
+          echo "Contents of target directories:"
+          find . -type d -name "target" -exec ls -la {} \;
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
