@@ -12,8 +12,9 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./init/mongodb:/docker-entrypoint-initdb.d
+      - ./init/mongodb:/docker-entrypoint-initdb.d:ro
       - mongodb_logs:/var/log/mongodb
+    user: mongodb
     networks:
       - openframe-network
     depends_on:
