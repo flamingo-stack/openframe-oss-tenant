@@ -308,8 +308,19 @@ jobs:
           for service in mongodb cassandra nifi config api management ui stream gateway; do
             echo "Processing service: $service"
             
-            # Ensure service directory exists
-            if [ ! -d "infrastructure/$service" ] && [ ! -d "services/openframe-$service" ]; then
+            # Determine service directory and dockerfile location
+            service_dir=""
+            dockerfile=""
+            
+            if [ -d "infrastructure/$service" ]; then
+              service_dir="infrastructure/$service"
+              dockerfile="$service_dir/Dockerfile"
+              echo "Building infrastructure service $service..."
+            elif [ -d "services/openframe-$service" ]; then
+              service_dir="services/openframe-$service"
+              dockerfile="$service_dir/Dockerfile"
+              echo "Building OpenFrame service $service..."
+            else
               echo "Error: Could not find directory for service $service"
               continue
             fi
