@@ -105,19 +105,43 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
       - name: Download JAR files
         uses: actions/download-artifact@v4
         with:
           name: jar-files
           path: /tmp/jars/
 
-      - name: List downloaded artifacts
+      - name: Prepare JAR files
         run: |
-          echo "Contents of /tmp/jars:"
-          ls -la /tmp/jars/
+          echo "Creating /tmp/jars directory..."
+          mkdir -p /tmp/jars
           
-          # Ensure correct permissions
-          chmod 644 /tmp/jars/*.jar || true
+          echo "Contents before download:"
+          ls -la /tmp/jars/ || true
+          
+          echo "Downloading artifacts..."
+          for dir in services/openframe-* libs/openframe-*; do
+            if [ -d "$dir" ]; then
+              module_name=$(basename "$dir")
+              echo "Looking for $module_name JAR..."
+              if [ -f "/tmp/jars/${module_name}.jar" ]; then
+                echo "Found JAR for $module_name"
+                chmod 644 "/tmp/jars/${module_name}.jar"
+              else
+                echo "Warning: Missing JAR for $module_name"
+              fi
+            fi
+          done
+          
+          echo "Final contents of /tmp/jars:"
+          ls -la /tmp/jars/
           
           echo "JAR file details:"
           file /tmp/jars/*.jar || true
