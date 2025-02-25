@@ -264,26 +264,6 @@ jobs:
           if ! curl -s http://localhost:5000/v2/_catalog > /dev/null; then
             echo "Error: Registry is not accessible after waiting"
             docker logs registry
-            exit 1
-          fi
-
-          # Wait for registry to be ready with increased timeout and better health check
-          echo "Waiting for registry to be ready..."
-          max_attempts=90
-          attempt=1
-          while [ $attempt -le $max_attempts ]; do
-            if curl -s -f http://localhost:5000/v2/_catalog > /dev/null; then
-              echo "Registry is ready"
-              break
-            fi
-            echo "Waiting for registry... attempt $attempt/$max_attempts"
-            sleep 2
-            attempt=$((attempt + 1))
-          done
-          
-          if [ $attempt -gt $max_attempts ]; then
-            echo "Error: Registry failed to start after $max_attempts attempts"
-            docker logs registry
             docker ps -a
             exit 1
           fi
