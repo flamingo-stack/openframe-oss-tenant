@@ -291,8 +291,6 @@ jobs:
             if ! DOCKER_BUILDKIT=1 docker build \
               -t "$image_name" \
               -f "$dockerfile" \
-              --cache-from "type=local,src=/tmp/.buildx-cache" \
-              --cache-to "type=local,dest=/tmp/.buildx-cache" \
               "$temp_context"; then
               echo "Error: Failed to build $service image"
               rm -rf "$temp_context"
