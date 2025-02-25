@@ -11,7 +11,7 @@ RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # Clone the repository and install dependencies
-RUN git clone https://github.com/amidaware/tacticalrmm.git ${TACTICAL_TEMP_DIR}/repo
+RUN git clone https://github.com/Flamingo-CX/tacticalrmm.git ${TACTICAL_TEMP_DIR}/repo
 
 COPY tactical-meshcentral/config.json ${TACTICAL_TEMP_DIR}/
 

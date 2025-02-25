@@ -16,7 +16,7 @@ RUN apk update && \
 
 RUN mkdir -p ${TACTICAL_TMP_DIR}/tacticalrmm
 
-RUN git clone https://github.com/amidaware/tacticalrmm.git ${TACTICAL_TMP_DIR}/tacticalrmm
+RUN git clone https://github.com/Flamingo-CX/tacticalrmm.git ${TACTICAL_TMP_DIR}/tacticalrmm
 
 RUN cp -rf ${TACTICAL_TMP_DIR}/tacticalrmm/natsapi/bin/nats-api ${TACTICAL_TMP_DIR}/
 
