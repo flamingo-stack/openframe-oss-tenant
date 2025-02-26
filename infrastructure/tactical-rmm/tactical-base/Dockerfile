@@ -29,7 +29,7 @@ FROM python:3.11.8-slim AS get_scripts_stage
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
-    git clone https://github.com/Flamingo-CX/community-scripts.git /community-scripts
+    git clone https://github.com/amidaware/community-scripts.git /community-scripts
 
 # runtime image
 FROM python:3.11.8-slim
@@ -48,9 +48,7 @@ COPY --from=create_venv_stage ${TACTICAL_TMP_DIR}/api/tacticalrmm ${TACTICAL_TMP
 
 RUN mkdir -p ${CUSTOM_CODE_DIR}
 # copy custom code
-COPY tactical-base/helpers.py ${CUSTOM_CODE_DIR}/helpers.py
 COPY tactical-base/custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
-COPY tactical-base/views.py ${CUSTOM_CODE_DIR}/views.py
 COPY tactical-base/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
 COPY tactical-base/app.ini ${CUSTOM_CODE_DIR}/app.ini
 

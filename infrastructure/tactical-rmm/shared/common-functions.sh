@@ -38,17 +38,11 @@ function copy_custom_code {
     mkdir -p ${TACTICAL_DIR}/api/accounts/
 
     echo "Removing files"
-    rm -rf ${TACTICAL_DIR}/api/tacticalrmm/helpers.py
-    rm -rf ${TACTICAL_DIR}/api/tacticalrmm/accounts/views.py
-    rm -rf ${TACTICAL_DIR}/api/accounts/views.py
     rm -rf ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
     rm -rf ${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
     rm -rf ${TACTICAL_DIR}/api/app.ini
 
     echo "Processing files with environment variables"
-    envsubst <${CUSTOM_CODE_DIR}/helpers.py >${TACTICAL_DIR}/api/tacticalrmm/helpers.py
-    envsubst <${CUSTOM_CODE_DIR}/views.py >${TACTICAL_DIR}/api/tacticalrmm/accounts/views.py
-    envsubst <${CUSTOM_CODE_DIR}/views.py >${TACTICAL_DIR}/api/accounts/views.py
     envsubst <${CUSTOM_CODE_DIR}/local_settings.py >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
     envsubst <${CUSTOM_CODE_DIR}/custom_settings.py >${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
     envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
