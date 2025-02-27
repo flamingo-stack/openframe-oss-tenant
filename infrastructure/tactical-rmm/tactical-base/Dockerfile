@@ -51,6 +51,10 @@ RUN mkdir -p ${CUSTOM_CODE_DIR}
 COPY tactical-base/custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
 COPY tactical-base/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
 COPY tactical-base/app.ini ${CUSTOM_CODE_DIR}/app.ini
+COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
+COPY tactical-base/config_watcher.sh ${CUSTOM_CODE_DIR}/config_watcher.sh
+
+RUN chmod +x ${CUSTOM_CODE_DIR}/config_watcher.sh
 
 COPY --from=get_scripts_stage /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
 
@@ -69,6 +73,7 @@ RUN apt-get update && \
     dnsutils \
     redis-tools \
     gettext-base \
+    wget \
     python3-websockets && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
@@ -87,11 +92,6 @@ RUN chmod +x /entrypoint.sh
 
 COPY shared/common-functions.sh /
 RUN chmod +x /common-functions.sh
-
-COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
-
-COPY tactical-base/config_watcher.sh ${CUSTOM_CODE_DIR}/config_watcher.sh
-RUN chmod +x ${CUSTOM_CODE_DIR}/config_watcher.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 

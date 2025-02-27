@@ -222,25 +222,26 @@ services:
       retries: 5
       start_period: 10s
 
-  tactical-nats:
-    <<: *service-defaults
-    container_name: openframe-tactical-nats
-    platform: linux/amd64
-    build:
-      context: ./infrastructure/tactical-rmm
-      dockerfile: tactical-nats/Dockerfile
-      args: *default-args
-    depends_on:
-      tactical-backend:
-        condition: service_healthy
-    volumes:
-      - tactical_nats_data:/opt/tactical
-    healthcheck:
-      test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  # tactical-nats:
+  #   <<: *service-defaults
+  #   container_name: openframe-tactical-nats
+  #   platform: linux/amd64
+  #   build:
+  #     context: ./infrastructure/tactical-rmm
+  #     dockerfile: tactical-nats/Dockerfile
+  #     args: *default-args
+  #   depends_on:
+  #     tactical-backend:
+  #       condition: service_healthy
+  #   volumes:
+  #     - tactical_nats_data:/opt/tactical
+  #   healthcheck:
+  #     test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  
 
   tactical-meshcentral:
     <<: *service-defaults
@@ -316,6 +317,27 @@ services:
       tactical-redis:
         condition: service_healthy
       tactical-nginx:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  tactical-nats:
+    <<: *service-defaults
+    container_name: openframe-tactical-nats
+    build:
+      context: ./infrastructure/tactical-rmm
+      dockerfile: tactical-base/Dockerfile
+      args: *default-args
+    platform: linux/amd64
+    command: [ "tactical-nats" ]
+    volumes:
+      - tactical_nats_data:/opt/tactical
+    depends_on:
+      tactical-backend:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
@@ -413,7 +435,7 @@ services:
 
 networks:
   openframe-network:
-    external: true
+    # driver: bridge
 
 volumes:
   tactical_websockets_data:

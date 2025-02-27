@@ -39,9 +39,8 @@ if [ "$1" = 'tactical-websockets' ]; then
 fi
 
 # nats server
-if [ "$1" = 'nats' ]; then
+if [ "$1" = 'tactical-nats' ]; then
   tactical_init "nats"
-  getNATSFilesFromRedis
   set_ready_status "nats"
-  /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisor.conf 
+  /usr/bin/supervisord -c ${TACTICAL_DIR}/supervisor/supervisor.conf 
 fi

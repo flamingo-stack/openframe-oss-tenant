@@ -35,10 +35,16 @@ function copy_custom_code() {
     echo "Starting to copy custom code"
 
     echo "Creating necessary directories"
-    mkdir -p ${TACTICAL_DIR}/api/tacticalrmm
-    mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/accounts
-    mkdir -p ${TACTICAL_DIR}/tmp/tactical/
-    mkdir -p ${TACTICAL_DIR}/api/accounts/
+    mkdir -p ${TACTICAL_DIR}/supervisor
+    mkdir -p ${TACTICAL_DIR}/supervisor/conf.d
+    mkdir -p ${TACTICAL_DIR}/supervisor/logs
+    mkdir -p ${TACTICAL_DIR}/supervisor/run
+    mkdir -p ${TACTICAL_DIR}/supervisor/pid
+    mkdir -p ${TACTICAL_DIR}/supervisor/log
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor/
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor/
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor/
 
     echo "Removing files"
     rm -rf ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
