@@ -25,10 +25,13 @@ function create_directories() {
     mkdir -p ${TACTICAL_DIR}/tmp/tactical/
     mkdir -p ${TACTICAL_DIR}/api/accounts/
     mkdir -p ${TACTICAL_TMP_DIR}
+    mkdir -p ${TACTICAL_DIR}/supervisor
+    mkdir -p ${TACTICAL_DIR}/logs
+    mkdir -p ${TACTICAL_DIR}/temp
 }
 
 # Copy and process custom code
-function copy_custom_code {
+function copy_custom_code() {
     echo "Starting to copy custom code"
 
     echo "Creating necessary directories"
@@ -46,6 +49,8 @@ function copy_custom_code {
     envsubst <${CUSTOM_CODE_DIR}/local_settings.py >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
     envsubst <${CUSTOM_CODE_DIR}/custom_settings.py >${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
     envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
+    envsubst <${CUSTOM_CODE_DIR}/supervisor.conf >${TACTICAL_DIR}/supervisor/supervisor.conf
+    envsubst <${CUSTOM_CODE_DIR}/config_watcher.sh >${TACTICAL_DIR}/supervisor/config_watcher.sh
 }
 
 # Helper function to set ready status
@@ -158,11 +163,48 @@ function tactical_init() {
         create_superuser_and_api_key
     fi
 
+    if [ "$1" = 'nats' ]; then
+        installNATs
+    fi
+
     # chown everything to tactical user
     chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
 
     # create install ready file
     set_ready_status "init"
+}
+
+function installNATs() {
+    echo "Installing NATS Server v2.10.22 specifically"
+    
+    # Create directories if they don't exist
+    mkdir -p /usr/local/bin
+    
+    # Clean up any existing NATS installation
+    rm -f /usr/local/bin/nats-server
+    
+    # Download specific NATS version 2.10.22
+    wget https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz
+    
+    # Extract the NATS binary
+    tar -xzf /tmp/nats.tar.gz -C /tmp
+    mv /tmp/nats-server-v2.10.22-linux-amd64/nats-server /usr/local/bin/
+    
+    # Make the binary executable
+    chmod +x /usr/local/bin/nats-server
+    
+    # Clean up downloaded files
+    rm -rf /tmp/nats.tar.gz /tmp/nats-server-v2.10.22-linux-amd64
+    
+    # Verify installation
+    echo "NATS Server version installed:"
+    /usr/local/bin/nats-server --version
+
+    # Install NATS API
+    cp -rf ${TACTICAL_TMP_DIR}/natsapi/bin/nats-api /usr/local/bin/
+    chmod +x /usr/local/bin/nats-api
+
+    getNATSFilesFromRedis
 }
 
 function pushNATSFilesToRedis() {

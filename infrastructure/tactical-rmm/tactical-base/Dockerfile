@@ -88,6 +88,11 @@ RUN chmod +x /entrypoint.sh
 COPY shared/common-functions.sh /
 RUN chmod +x /common-functions.sh
 
+COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
+
+COPY tactical-base/config_watcher.sh ${CUSTOM_CODE_DIR}/config_watcher.sh
+RUN chmod +x ${CUSTOM_CODE_DIR}/config_watcher.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 WORKDIR ${TACTICAL_DIR}/api
