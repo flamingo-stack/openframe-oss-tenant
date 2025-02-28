@@ -9,9 +9,9 @@ TACTICAL_READY_FILE=${TACTICAL_READY_FILE:-/opt/tactical/tmp/tactical/ready}
 export TACTICAL_READY_FILE
 CUSTOM_CODE_DIR=${CUSTOM_CODE_DIR:-/opt/tactical/custom}
 export CUSTOM_CODE_DIR
-NATS_CONFIG="${TACTICAL_DIR}/nats-rmm.conf"
+NATS_CONFIG=${NATS_CONFIG:-"${TACTICAL_DIR}/nats-rmm.conf"}
 export NATS_CONFIG
-NATS_API_CONFIG="${TACTICAL_DIR}/nats-api.conf"
+NATS_API_CONFIG=${NATS_API_CONFIG:-"${TACTICAL_DIR}/nats-api.conf"}
 export NATS_API_CONFIG
 PUBLIC_DIR=/usr/share/nginx/html
 export PUBLIC_DIR
@@ -25,17 +25,26 @@ function create_directories() {
     mkdir -p ${TACTICAL_DIR}/tmp/tactical/
     mkdir -p ${TACTICAL_DIR}/api/accounts/
     mkdir -p ${TACTICAL_TMP_DIR}
+    mkdir -p ${TACTICAL_DIR}/supervisor
+    mkdir -p ${TACTICAL_DIR}/logs
+    mkdir -p ${TACTICAL_DIR}/temp
 }
 
 # Copy and process custom code
-function copy_custom_code {
+function copy_custom_code() {
     echo "Starting to copy custom code"
 
     echo "Creating necessary directories"
-    mkdir -p ${TACTICAL_DIR}/api/tacticalrmm
-    mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/accounts
-    mkdir -p ${TACTICAL_DIR}/tmp/tactical/
-    mkdir -p ${TACTICAL_DIR}/api/accounts/
+    mkdir -p ${TACTICAL_DIR}/supervisor
+    mkdir -p ${TACTICAL_DIR}/supervisor/conf.d
+    mkdir -p ${TACTICAL_DIR}/supervisor/logs
+    mkdir -p ${TACTICAL_DIR}/supervisor/run
+    mkdir -p ${TACTICAL_DIR}/supervisor/pid
+    mkdir -p ${TACTICAL_DIR}/supervisor/log
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor/
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor/
+    mkdir -p ${TACTICAL_DIR}/supervisor/log/supervisor/
 
     echo "Removing files"
     rm -rf ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
@@ -46,6 +55,8 @@ function copy_custom_code {
     envsubst <${CUSTOM_CODE_DIR}/local_settings.py >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
     envsubst <${CUSTOM_CODE_DIR}/custom_settings.py >${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
     envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
+    envsubst <${CUSTOM_CODE_DIR}/supervisor.conf >${TACTICAL_DIR}/supervisor/supervisor.conf
+    envsubst <${CUSTOM_CODE_DIR}/agent_listener.sh >${TACTICAL_DIR}/supervisor/agent_listener.sh
 }
 
 # Helper function to set ready status
@@ -158,11 +169,56 @@ function tactical_init() {
         create_superuser_and_api_key
     fi
 
+    if [ "$1" = 'nats' ]; then
+        installNATs
+    fi
+
     # chown everything to tactical user
     chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
 
     # create install ready file
     set_ready_status "init"
+}
+
+function installNATs() {
+    echo "Installing NATS Server v2.10.22 specifically"
+    
+    # Create directories if they don't exist
+    mkdir -p /usr/local/bin
+    
+    # Clean up any existing NATS installation
+    rm -f /usr/local/bin/nats-server
+    
+    # Download specific NATS version 2.10.22
+    wget https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz
+    
+    # Extract the NATS binary
+    tar -xzf /tmp/nats.tar.gz -C /tmp
+    mv /tmp/nats-server-v2.10.22-linux-amd64/nats-server /usr/local/bin/
+    
+    # Make the binary executable
+    chmod +x /usr/local/bin/nats-server
+    
+    # Clean up downloaded files
+    rm -rf /tmp/nats.tar.gz /tmp/nats-server-v2.10.22-linux-amd64
+    
+    # Verify installation
+    echo "NATS Server version installed:"
+    /usr/local/bin/nats-server --version
+
+    # Download specific NATS API version 2.10.22
+    wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api
+
+    wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64
+
+    # Install NATS API
+    cp -rf ${TACTICAL_TMP_DIR}/nats-api /usr/local/bin/
+    chmod +x /usr/local/bin/nats-api
+
+    cp -rf ${TACTICAL_TMP_DIR}/nats-api-arm64 /usr/local/bin/
+    chmod +x /usr/local/bin/nats-api-arm64
+
+    getNATSFilesFromRedis
 }
 
 function pushNATSFilesToRedis() {

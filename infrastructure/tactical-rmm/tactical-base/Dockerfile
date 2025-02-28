@@ -69,6 +69,13 @@ RUN apt-get update && \
     dnsutils \
     redis-tools \
     gettext-base \
+    wget \
+    git \
+    libc-dev \
+    gettext \
+    redis \
+    supervisor \
+    procps \
     python3-websockets && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
@@ -87,6 +94,11 @@ RUN chmod +x /entrypoint.sh
 
 COPY shared/common-functions.sh /
 RUN chmod +x /common-functions.sh
+
+COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
+COPY tactical-base/agent_listener.sh ${CUSTOM_CODE_DIR}/agent_listener.sh
+RUN chmod +x ${CUSTOM_CODE_DIR}/agent_listener.sh
+
 
 ENTRYPOINT ["/entrypoint.sh"]
 

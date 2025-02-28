@@ -37,3 +37,10 @@ if [ "$1" = 'tactical-websockets' ]; then
   set_ready_status "websockets"
   uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
 fi
+
+# nats server
+if [ "$1" = 'tactical-nats' ]; then
+  tactical_init "nats"
+  set_ready_status "nats"
+  /usr/bin/supervisord -c ${TACTICAL_DIR}/supervisor/supervisor.conf 
+fi
