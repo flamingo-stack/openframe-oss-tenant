@@ -49,3 +49,7 @@ openframe/.DS_Store
 openframe/.DS_Store
 .DS_Store
 /tacticalrmm
+**/rmmagent_build/**
+**/rmmagent_build
+**/tactical-rmm/rmmagent_build/**
+**/tactical-rmm/rmmagent_build
