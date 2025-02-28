@@ -76,6 +76,8 @@ x-environment: &default-environment
   APP_LOCALHOST_HOST: &app-local-host localhost:8080
 
   #NATS args
+  NATS_CONFIG: &nats-config "/opt/tactical/nats-rmm.conf"
+  NATS_API_CONFIG: &nats-api-config "/opt/tactical/nats-api.conf"
   NATS_CONFIG_CHECK_INTERVAL: &nats-config-check-interval 5
   NATS_STD_BIND_HOST: &nats-std-bind-host tactical-nats
   NATS_WS_BIND_HOST: &nats-ws-bind-host tactical-nats
@@ -165,6 +167,8 @@ x-args: &default-args
   NATS_CONNECT_HOST: *nats-connect-host
   NATS_STANDARD_PORT: *nats-http-port
   NATS_WEBSOCKET_PORT: *nats-ws-port
+  NATS_CONFIG: *nats-config
+  NATS_API_CONFIG: *nats-api-config
 
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
@@ -221,27 +225,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  # tactical-nats:
-  #   <<: *service-defaults
-  #   container_name: openframe-tactical-nats
-  #   platform: linux/amd64
-  #   build:
-  #     context: ./infrastructure/tactical-rmm
-  #     dockerfile: tactical-nats/Dockerfile
-  #     args: *default-args
-  #   depends_on:
-  #     tactical-backend:
-  #       condition: service_healthy
-  #   volumes:
-  #     - tactical_nats_data:/opt/tactical
-  #   healthcheck:
-  #     test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
-  
 
   tactical-meshcentral:
     <<: *service-defaults

@@ -9,9 +9,9 @@ TACTICAL_READY_FILE=${TACTICAL_READY_FILE:-/opt/tactical/tmp/tactical/ready}
 export TACTICAL_READY_FILE
 CUSTOM_CODE_DIR=${CUSTOM_CODE_DIR:-/opt/tactical/custom}
 export CUSTOM_CODE_DIR
-NATS_CONFIG="${TACTICAL_DIR}/nats-rmm.conf"
+NATS_CONFIG=${NATS_CONFIG:-"${TACTICAL_DIR}/nats-rmm.conf"}
 export NATS_CONFIG
-NATS_API_CONFIG="${TACTICAL_DIR}/nats-api.conf"
+NATS_API_CONFIG=${NATS_API_CONFIG:-"${TACTICAL_DIR}/nats-api.conf"}
 export NATS_API_CONFIG
 PUBLIC_DIR=/usr/share/nginx/html
 export PUBLIC_DIR
