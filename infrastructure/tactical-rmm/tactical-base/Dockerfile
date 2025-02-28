@@ -52,6 +52,7 @@ COPY tactical-base/custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
 COPY tactical-base/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
 COPY tactical-base/app.ini ${CUSTOM_CODE_DIR}/app.ini
 
+COPY tactical-nats/config_watcher.sh ${CUSTOM_CODE_DIR}/config_watcher.sh
 RUN chmod +x ${CUSTOM_CODE_DIR}/config_watcher.sh
 
 COPY --from=get_scripts_stage /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
@@ -97,8 +98,8 @@ COPY shared/common-functions.sh /
 RUN chmod +x /common-functions.sh
 
 COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
-COPY tactical-base/agent-listener.sh ${CUSTOM_CODE_DIR}/agent-listener.sh
-RUN chmod +x ${CUSTOM_CODE_DIR}/agent-listener.sh
+COPY tactical-base/agent_listener.sh ${CUSTOM_CODE_DIR}/agent_listener.sh
+RUN chmod +x ${CUSTOM_CODE_DIR}/agent_listener.sh
 
 
 ENTRYPOINT ["/entrypoint.sh"]

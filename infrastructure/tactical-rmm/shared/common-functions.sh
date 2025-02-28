@@ -56,7 +56,7 @@ function copy_custom_code() {
     envsubst <${CUSTOM_CODE_DIR}/custom_settings.py >${TACTICAL_DIR}/api/tacticalrmm/custom_settings.py
     envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
     envsubst <${CUSTOM_CODE_DIR}/supervisor.conf >${TACTICAL_DIR}/supervisor/supervisor.conf
-    envsubst <${CUSTOM_CODE_DIR}/agent-listener.sh >${TACTICAL_DIR}/supervisor/agent-listener.sh
+    envsubst <${CUSTOM_CODE_DIR}/agent_listener.sh >${TACTICAL_DIR}/supervisor/agent_listener.sh
 }
 
 # Helper function to set ready status
