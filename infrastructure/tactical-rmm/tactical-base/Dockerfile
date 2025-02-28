@@ -74,6 +74,11 @@ RUN apt-get update && \
     redis-tools \
     gettext-base \
     wget \
+    git \
+    libc-dev \
+    gettext \
+    redis \
+    supervisor \
     python3-websockets && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \

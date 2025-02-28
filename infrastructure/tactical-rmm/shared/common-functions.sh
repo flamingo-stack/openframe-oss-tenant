@@ -206,9 +206,17 @@ function installNATs() {
     echo "NATS Server version installed:"
     /usr/local/bin/nats-server --version
 
+    # Download specific NATS API version 2.10.22
+    wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api
+
+    wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64
+
     # Install NATS API
-    cp -rf ${TACTICAL_TMP_DIR}/natsapi/bin/nats-api /usr/local/bin/
+    cp -rf ${TACTICAL_TMP_DIR}/nats-api /usr/local/bin/
     chmod +x /usr/local/bin/nats-api
+
+    cp -rf ${TACTICAL_TMP_DIR}/nats-api-arm64 /usr/local/bin/
+    chmod +x /usr/local/bin/nats-api-arm64
 
     getNATSFilesFromRedis
 }
