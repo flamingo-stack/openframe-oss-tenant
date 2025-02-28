@@ -51,8 +51,6 @@ RUN mkdir -p ${CUSTOM_CODE_DIR}
 COPY tactical-base/custom_settings.py ${CUSTOM_CODE_DIR}/custom_settings.py
 COPY tactical-base/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
 COPY tactical-base/app.ini ${CUSTOM_CODE_DIR}/app.ini
-COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
-COPY tactical-base/config_watcher.sh ${CUSTOM_CODE_DIR}/config_watcher.sh
 
 RUN chmod +x ${CUSTOM_CODE_DIR}/config_watcher.sh
 
@@ -97,6 +95,11 @@ RUN chmod +x /entrypoint.sh
 
 COPY shared/common-functions.sh /
 RUN chmod +x /common-functions.sh
+
+COPY tactical-base/supervisor.conf ${CUSTOM_CODE_DIR}/supervisor.conf
+COPY tactical-base/agent-listener.sh ${CUSTOM_CODE_DIR}/agent-listener.sh
+RUN chmod +x ${CUSTOM_CODE_DIR}/agent-listener.sh
+
 
 ENTRYPOINT ["/entrypoint.sh"]
 
