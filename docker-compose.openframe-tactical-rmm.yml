@@ -237,8 +237,6 @@ services:
     volumes:
       - tactical_meshcentral_data:/opt/tactical
     user: root
-    ports:
-      - "8383:8383"
     entrypoint: [ "/entrypoint.sh" ]
     depends_on:
       tactical-mongodb:
@@ -273,6 +271,7 @@ services:
     ports:
       - "8080:8080"  
       - "8000:8000"
+      - "8383:8383"
     volumes:
       - tactical_nginx_data:/opt/tactical
     healthcheck:
