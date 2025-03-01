@@ -237,6 +237,8 @@ services:
     volumes:
       - tactical_meshcentral_data:/opt/tactical
     user: root
+    ports:
+      - "8383:8383"
     entrypoint: [ "/entrypoint.sh" ]
     depends_on:
       tactical-mongodb:
@@ -244,7 +246,7 @@ services:
       tactical-redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "pgrep -f 'node.*meshcentral'" ]
+      test: [ "CMD-SHELL", "curl -f http://localhost:8383/health.ashx" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -271,7 +273,6 @@ services:
     ports:
       - "8080:8080"  
       - "8000:8000"
-      - "8383:8383"
     volumes:
       - tactical_nginx_data:/opt/tactical
     healthcheck:

@@ -3,8 +3,8 @@
     "datapath": "${TACTICAL_DIR}/data",
     "mongodb": "${ENCODED_URI}",
     "cert": "${MESH_HOST}",
-    "tlsOffload": "127.0.0.1",
-    "WANonly": true,
+    "tlsOffload": true,
+    "WANonly": false,
     "minify": 1,
     "port": ${MESH_PORT},
     "aliasPort": ${MESH_PORT},
@@ -22,22 +22,42 @@
     "webRTC": "${MESH_WEBRTC_ENABLED}",
     "selfUpdate": false,
     "ignoreFrameOrigin": true,
+    "allowAllOrigins": true,
+    "allowedRedirectURLs": ["*"],
     "trustedProxy": "*",
     "noIPCheck": true,
+    "disableFrameCheck": true,
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    },
     "logLevel": "DEBUG",
     "logToFile": true,
     "logPath": "${TACTICAL_DIR}/logs",
     "logMaxSize": 1024,
     "logMaxFiles": 10,
+    "certUrl": "http://${MESH_HOST}:${MESH_PORT}/",
+    "https": false,
+    "cleanNonHttpTraffic": true,
+    "lanOnly": true,
+    "redirAliasPort": 0,
+    "noredirect": true,
+    "redirects": false,
     "maxInvalidLogin": {
       "time": 5,
       "count": 5,
       "coolofftime": 30
     },
+    "meshAgentBinaries": {
+      "darwin-arm64": {
+        "compile": true,
+        "force": true
+      }
+    },
     "postgres": {
       "user": "${POSTGRES_USER}",
       "password": "${POSTGRES_PASSWORD}",
-      "port": "${POSTGRES_PORT}",
+      "port": ${POSTGRES_PORT},
       "host": "${POSTGRES_HOST}"
     },
     "domains": {
@@ -56,7 +76,7 @@
     },
     "smtp": {
       "host": "${SMTP_HOST}",
-      "port": "${SMTP_PORT}",
+      "port": ${SMTP_PORT},
       "from": "${SMTP_FROM}",
       "user": "${SMTP_USER}",
       "pass": "${SMTP_PASS}",

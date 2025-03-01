@@ -6,7 +6,7 @@ RUN mkdir -p ${TACTICAL_TEMP_DIR}
 
 WORKDIR ${TACTICAL_TEMP_DIR}
 
-RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext
+RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext postgresql-client
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
@@ -31,6 +31,9 @@ RUN chown -R node:node ${TACTICAL_TEMP_DIR}
 
 COPY tactical-meshcentral/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
+
+COPY tactical-meshcentral/disable-origin-check.patch /
+RUN chmod +x /disable-origin-check.patch
 
 COPY shared/common-functions.sh /
 RUN chmod +x /common-functions.sh

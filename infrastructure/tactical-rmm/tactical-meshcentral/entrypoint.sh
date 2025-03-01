@@ -25,6 +25,9 @@ if [ ! -f "${TACTICAL_DIR}/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 
   echo "Substituting environment variables in config.json"
   envsubst <${TACTICAL_TEMP_DIR}/config.json >${TACTICAL_DIR}/config.json
 
+  echo "Content of config.json after substitution:"
+  cat ${TACTICAL_DIR}/config.json
+
   echo "Making all folders readable by node"
   chmod -R 755 ${TACTICAL_DIR}
 
@@ -71,6 +74,10 @@ if [ ! -f "${TACTICAL_DIR}/mesh_token" ]; then
   wait_for_meshcentral_to_stop
 
 fi
+
+# Apply the origin check patch
+echo "Applying origin check patch..."
+bash /disable-origin-check.patch
 
 # Start MeshCentral in the foreground
 start_meshcentral
