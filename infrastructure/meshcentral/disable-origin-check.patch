@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Find all JS files that might have origin checks
-find /opt/tactical/node_modules/meshcentral -type f -name "*.js" -exec grep -l "origin" {} \; > /tmp/files-to-patch.txt
+find ${MESH_DIR}/node_modules/meshcentral -type f -name "*.js" -exec grep -l "origin" {} \; > ${MESH_TEMP_DIR}/files-to-patch.txt
 
 # For each file found, replace any origin check with a simple "return true"
 while read file; do
@@ -14,10 +14,10 @@ while read file; do
   
   # Log the patched file
   echo "Patched: $file"
-done < /tmp/files-to-patch.txt
+done < ${MESH_TEMP_DIR}/files-to-patch.txt
 
 # Add our custom code to always allow origins
-cat > /tmp/always-allow-origins.js << 'EOL'
+cat > ${MESH_TEMP_DIR}/always-allow-origins.js << 'EOL'
 // This is a monkey patch to disable origin checks in MeshCentral
 const http = require('http');
 const originalCreateServer = http.createServer;
@@ -41,15 +41,15 @@ console.log('Origin check bypass installed');
 EOL
 
 # Find and patch the server.js file which is the main entry point
-SERVER_JS_FILES=$(find /opt/tactical/node_modules/meshcentral -name "server.js")
+SERVER_JS_FILES=$(find ${MESH_DIR}/node_modules/meshcentral -name "server.js")
 if [ -n "$SERVER_JS_FILES" ]; then
   for file in $SERVER_JS_FILES; do
     # Back up the original file
     cp "$file" "${file}.bak"
     
     # Add our code at the beginning of the file
-    cat /tmp/always-allow-origins.js "$file" > /tmp/patched-file.js
-    mv /tmp/patched-file.js "$file"
+    cat ${MESH_TEMP_DIR}/always-allow-origins.js "$file" > ${MESH_TEMP_DIR}/patched-file.js
+    mv ${MESH_TEMP_DIR}/patched-file.js "$file"
     
     echo "Patched server file: $file"
   done
@@ -58,15 +58,15 @@ else
 fi
 
 # Also patch webserver.js which handles web connections
-WEB_SERVER_FILES=$(find /opt/tactical/node_modules/meshcentral -name "webserver.js")
+WEB_SERVER_FILES=$(find ${MESH_DIR}/node_modules/meshcentral -name "webserver.js")
 if [ -n "$WEB_SERVER_FILES" ]; then
   for file in $WEB_SERVER_FILES; do
     # Back up the original file
     cp "$file" "${file}.bak"
     
     # Add our code at the beginning of the file
-    cat /tmp/always-allow-origins.js "$file" > /tmp/patched-file.js
-    mv /tmp/patched-file.js "$file"
+    cat ${MESH_TEMP_DIR}/always-allow-origins.js "$file" > ${MESH_TEMP_DIR}/patched-file.js
+    mv ${MESH_TEMP_DIR}/patched-file.js "$file"
     
     echo "Patched webserver file: $file"
   done

@@ -52,12 +52,12 @@ DATABASES = {
     }
 }
 
-MESH_USERNAME = '${MESH_USER}'
-MESH_SITE = 'http://${MESH_HOST}:${MESH_PORT}'
-MESH_TOKEN_KEY = '${MESH_TOKEN}'
-REDIS_HOST    = '${REDIS_HOST}'
-MESH_DEVICE_GROUP = '${MESH_DEVICE_GROUP}'
-MESH_WS_URL = 'ws://${MESH_HOST}:${MESH_PORT}'
+# Disable MeshCentral
+MESH_USERNAME = 'disabled'
+MESH_SITE = 'disabled'
+MESH_TOKEN_KEY = 'disabled'
+MESH_DEVICE_GROUP = 'disabled'
+MESH_WS_URL = 'disabled'
 ADMIN_ENABLED = False
 TRMM_DISABLE_WEB_TERMINAL = ${TRMM_DISABLE_WEB_TERMINAL}
 TRMM_DISABLE_SERVER_SCRIPTS = ${TRMM_DISABLE_SERVER_SCRIPTS}
@@ -73,3 +73,19 @@ NATS_WS_PROTOCOL = 'ws'
 # Certificate paths for NATS
 CERT_FILE = '${CERT_PUB_PATH}'
 KEY_FILE = '${CERT_PRIV_PATH}'
+
+# Redis configuration
+REDIS_HOST = '${REDIS_HOST}'
+REDIS_PORT = 6379
+REDIS_DB = 0
+
+# Cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}

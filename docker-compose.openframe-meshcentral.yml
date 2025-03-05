@@ -1,0 +1,126 @@
+name: openframe-meshcentral
+
+x-environment: &default-environment
+  # MongoDB Configuration
+  MONGO_INITDB_ROOT_USERNAME: &mongo-user mongouser
+  MONGO_INITDB_ROOT_PASSWORD: &mongo-pass mongopass
+  MONGO_INITDB_DATABASE: &mongo-db meshcentral
+  MONGODB_USER: *mongo-user
+  MONGODB_PASSWORD: *mongo-pass
+  MONGODB_HOST: &mongo-host openframe-meshcentral-mongodb
+  MONGODB_PORT: &mongo-port 27017
+
+  # MeshCentral Configuration
+  MESH_USER: &mesh-user mesh@openframe.io
+  MESH_PASS: &mesh-pass meshpass@1234
+  MESH_DEVICE_GROUP: &mesh-device-group OpenFrame
+  MESH_PORT: &mesh-port 8383
+  MESH_HOST: &mesh-host openframe-meshcentral
+  MESH_PERSISTENT_CONFIG: &mesh-persistent 0
+  MESH_DISABLE_SSL: &mesh-ssl 1
+  MESH_COMPRESSION_ENABLED: &mesh-compression true
+  MESH_WEBRTC_ENABLED: &mesh-webrtc false
+  MESH_TEMP_DIR: &mesh-temp-dir /tmp/mesh
+  MESH_DIR: &mesh-dir /opt/mesh
+  WS_PROTO: &ws-proto ws
+
+  # SMTP Configuration
+  SMTP_HOST: &smtp-host smtp.example.com
+  SMTP_PORT: &smtp-port 587
+  SMTP_FROM: &smtp-from mesh@example.com
+  SMTP_USER: &smtp-user mesh@example.com
+  SMTP_PASS: &smtp-pass mesh-smtp-pass
+  SMTP_TLS: &smtp-tls false
+
+x-args: &default-args
+  # MongoDB args
+  MONGO_INITDB_ROOT_USERNAME: *mongo-user
+  MONGO_INITDB_ROOT_PASSWORD: *mongo-pass
+  MONGO_INITDB_DATABASE: *mongo-db
+  MONGODB_USER: *mongo-user
+  MONGODB_PASSWORD: *mongo-pass
+  MONGODB_HOST: *mongo-host
+  MONGODB_PORT: *mongo-port
+
+  # MeshCentral args
+  MESH_USER: *mesh-user
+  MESH_PASS: *mesh-pass
+  MESH_DEVICE_GROUP: *mesh-device-group
+  MESH_PORT: *mesh-port
+  MESH_HOST: *mesh-host
+  WS_PROTO: *ws-proto
+  MESH_PERSISTENT_CONFIG: *mesh-persistent
+  MESH_DISABLE_SSL: *mesh-ssl
+  MESH_COMPRESSION_ENABLED: *mesh-compression
+  MESH_WEBRTC_ENABLED: *mesh-webrtc
+  MESH_TEMP_DIR: *mesh-temp-dir
+  MESH_DIR: *mesh-dir
+
+  # SMTP args
+  SMTP_HOST: *smtp-host
+  SMTP_PORT: *smtp-port
+  SMTP_FROM: *smtp-from
+  SMTP_USER: *smtp-user
+  SMTP_PASS: *smtp-pass
+  SMTP_TLS: *smtp-tls
+
+# Default service configuration that all services will extend
+x-service-defaults: &service-defaults
+  restart: always
+  networks:
+    - openframe-network
+  environment: *default-environment
+
+services:
+  meshcentral-mongodb:
+    <<: *service-defaults
+    container_name: openframe-meshcentral-mongodb
+    image: mongo:4.4.18
+    platform: linux/amd64
+    volumes:
+      - meshcentral_mongo_data:/data/db
+    user: root
+    command: >
+      bash -c "
+        chown -R mongodb:mongodb /data/db &&
+        chmod -R 0700 /data/db &&
+        exec docker-entrypoint.sh mongod --auth"
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  meshcentral:
+    <<: *service-defaults
+    container_name: openframe-meshcentral
+    platform: linux/amd64
+    build:
+      context: ./infrastructure/meshcentral
+      dockerfile: Dockerfile
+      args: *default-args
+    volumes:
+      - meshcentral_data:/opt/meshcentral
+    user: root
+    ports:
+      - "8383:8383"
+    entrypoint: [ "/entrypoint.sh" ]
+    depends_on:
+      meshcentral-mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8383/health.ashx" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  openframe-network:
+    name: openframe-network
+    driver: bridge
+
+volumes:
+  meshcentral_data:
+  meshcentral_mongo_data: 
