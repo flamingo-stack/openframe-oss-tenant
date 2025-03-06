@@ -1,0 +1,22 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = US
+ST = State
+L = City
+O = Organization
+OU = Unit
+CN = localhost
+
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = ${MESH_NGINX_NAT_HOST}
+IP.1 = 127.0.0.1 

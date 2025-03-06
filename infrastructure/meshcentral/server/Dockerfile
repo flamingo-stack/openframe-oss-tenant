@@ -16,9 +16,6 @@ RUN chmod +x /entrypoint.sh
 COPY meshcentral-functions.sh /
 RUN chmod +x /meshcentral-functions.sh
 
-COPY disable-origin-check.patch ${MESH_TEMP_DIR}
-RUN chmod +x ${MESH_TEMP_DIR}/disable-origin-check.patch
-
 COPY config.json ${MESH_TEMP_DIR}
 
 RUN chown -R node:node ${MESH_TEMP_DIR}
