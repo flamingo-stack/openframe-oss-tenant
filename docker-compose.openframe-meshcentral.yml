@@ -24,14 +24,6 @@ x-environment: &default-environment
   MESH_DIR: &mesh-dir /opt/mesh
   WS_PROTO: &ws-proto ws
 
-  # SMTP Configuration
-  SMTP_HOST: &smtp-host smtp.example.com
-  SMTP_PORT: &smtp-port 587
-  SMTP_FROM: &smtp-from mesh@example.com
-  SMTP_USER: &smtp-user mesh@example.com
-  SMTP_PASS: &smtp-pass mesh-smtp-pass
-  SMTP_TLS: &smtp-tls false
-
 x-args: &default-args
   # MongoDB args
   MONGO_INITDB_ROOT_USERNAME: *mongo-user
@@ -56,13 +48,6 @@ x-args: &default-args
   MESH_TEMP_DIR: *mesh-temp-dir
   MESH_DIR: *mesh-dir
 
-  # SMTP args
-  SMTP_HOST: *smtp-host
-  SMTP_PORT: *smtp-port
-  SMTP_FROM: *smtp-from
-  SMTP_USER: *smtp-user
-  SMTP_PASS: *smtp-pass
-  SMTP_TLS: *smtp-tls
 
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
