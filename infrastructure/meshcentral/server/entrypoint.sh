@@ -11,8 +11,8 @@ if [ ! -f "${MESH_DIR}/mesh_token" ]; then
   echo "Creating log file"
   mkdir -p ${MESH_DIR}/logs
 
-  echo "Substituting environment variables in config.json"
-  envsubst <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
+  echo "Substituting environment variables in config.json (excluding \$schema)"
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
 
   echo "Making all folders readable by node"
   chmod -R 755 ${MESH_DIR}
@@ -63,6 +63,9 @@ if [ ! -f "${MESH_DIR}/mesh_token" ]; then
   # Wait for MeshCentral to stop
   wait_for_meshcentral_to_stop
 fi
+
+# Start Nginx
+configure_and_start_nginx
 
 # Start MeshCentral in the foreground
 start_meshcentral

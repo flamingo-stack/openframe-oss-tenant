@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# tactical_rmm_mac_arm64.sh
+# mac_arm64.sh
 #
 # Purpose:
 #   - Install dependencies (Xcode CLT, Homebrew, Git, Go) on Apple Silicon macOS
@@ -12,11 +12,11 @@
 #
 # Usage Examples:
 #   1) Interactive mode:
-#        ./tactical_rmm_mac_arm64.sh
+#        ./mac_arm64.sh
 #   2) Provide some or all args:
-#        ./tactical_rmm_mac_arm64.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
+#        ./mac_arm64.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
 #   3) Non-interactive (all args):
-#        ./tactical_rmm_mac_arm64.sh --org-name "MyOrg" ... --skip-run
+#        ./mac_arm64.sh --org-name "MyOrg" ... --skip-run
 #
 # Requirements:
 #   - Apple Silicon macOS

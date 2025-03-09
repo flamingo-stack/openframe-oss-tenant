@@ -1,7 +1,7 @@
 FROM nginx:latest
 
 # Install required packages
-RUN apt-get update && apt-get install -y openssl curl gettext-base && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl curl gettext && rm -rf /var/lib/apt/lists/*
 
 # Create SSL directory
 RUN mkdir -p /etc/nginx/ssl

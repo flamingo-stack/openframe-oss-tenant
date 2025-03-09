@@ -5,8 +5,6 @@ x-environment: &default-environment
   MONGO_INITDB_ROOT_USERNAME: &mongo-user mongouser
   MONGO_INITDB_ROOT_PASSWORD: &mongo-pass mongopass
   MONGO_INITDB_DATABASE: &mongo-db meshcentral
-  MONGODB_USER: *mongo-user
-  MONGODB_PASSWORD: *mongo-pass
   MONGODB_HOST: &mongo-host openframe-meshcentral-mongodb
   MONGODB_PORT: &mongo-port 27017
 
@@ -27,15 +25,13 @@ x-environment: &default-environment
   MESH_WEBRTC_ENABLED: &mesh-webrtc false
   MESH_TEMP_DIR: &mesh-temp-dir /tmp/mesh
   MESH_DIR: &mesh-dir /opt/mesh
-  WS_PROTO: &ws-proto wss
+  MESH_PROTOCOL: &mesh-protocol wss
 
 x-args: &default-args
   # MongoDB args
   MONGO_INITDB_ROOT_USERNAME: *mongo-user
   MONGO_INITDB_ROOT_PASSWORD: *mongo-pass
   MONGO_INITDB_DATABASE: *mongo-db
-  MONGODB_USER: *mongo-user
-  MONGODB_PASSWORD: *mongo-pass
   MONGODB_HOST: *mongo-host
   MONGODB_PORT: *mongo-port
 
@@ -50,7 +46,7 @@ x-args: &default-args
   MESH_NGINX_HOST: *mesh-nginx-host
   MESH_NGINX_NAT_HOST: *mesh-nginx-nat-host
   MESH_NGINX_PORT: *mesh-nginx-port
-  WS_PROTO: *ws-proto
+  MESH_PROTOCOL: *mesh-protocol
   MESH_PERSISTENT_CONFIG: *mesh-persistent
   MESH_DISABLE_SSL: *mesh-ssl
   MESH_COMPRESSION_ENABLED: *mesh-compression
@@ -100,6 +96,8 @@ services:
     depends_on:
       meshcentral-mongodb:
         condition: service_healthy
+      meshcentral-nginx:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8383/health.ashx" ]
       interval: 15s
@@ -118,9 +116,6 @@ services:
       - "8383:8383"
     volumes:
       - meshcentral_nginx_data:/etc/nginx/conf.d
-    depends_on:
-      meshcentral:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/nginx-health"]
       interval: 15s

@@ -4,16 +4,30 @@
     "plugins": {
       "enabled": false
     },
-    "mongodb": "mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}/${MONGODB_DB}",
-    "certUrl": ["${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}", "${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}"],
+    "mongodb": "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}/${MONGO_INITDB_DATABASE}?authSource=admin",
+    "certUrl": [
+      "${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}",
+      "${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}"
+    ],
     "port": ${MESH_PORT},
     "aliasPort": ${MESH_EXTERNAL_PORT},
-    "alias": ["${MESH_NGINX_HOST}", "${MESH_NGINX_NAT_HOST}", "${MESH_EXTERNAL_HOST}:${MESH_EXTERNAL_PORT}"],
+    "alias": [
+      "${MESH_NGINX_HOST}",
+      "${MESH_NGINX_NAT_HOST}",
+      "${MESH_EXTERNAL_HOST}:${MESH_EXTERNAL_PORT}"
+    ],
+    "agentAliasUrl": "${MESH_PROTOCOL}://${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}/agent.ashx",
+    "agentAliasDns": [
+      "${MESH_NGINX_NAT_HOST}",
+      "${MESH_NGINX_HOST}",
+      "${MESH_EXTERNAL_HOST}"
+    ],
     "tlsOffload": true,
     "redirPort": 0,
     "AgentPong": 300,
     "SelfUpdate": false,
     "AllowFraming": true,
+    "AllowLoginToken": true,
     "WebRTC": false,
     "IgnoreAgentHashCheck": true,
     "production": false,
@@ -35,7 +49,11 @@
       "minify": true,
       "NewAccounts": false,
       "localSessionRecording": true,
-      "allowedOrigin": ["${MESH_NGINX_HOST}", "${MESH_NGINX_NAT_HOST}", "${MESH_EXTERNAL_HOST}"]
+      "allowedOrigin": [
+        "${MESH_NGINX_HOST}",
+        "${MESH_NGINX_NAT_HOST}",
+        "${MESH_EXTERNAL_HOST}"
+      ]
     }
   }
 }
