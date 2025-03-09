@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 #
-# build_rmmagent_macos_arm64_args_fixed.sh
+# mac_arm64.sh
 #
 # Purpose:
 #   - Install dependencies (Xcode CLT, Homebrew, Git, Go) on Apple Silicon macOS
 #   - Accept script args or prompt for org name, email, RMM URL, agent key, code-sign identity, log path, build folder
 #   - Clone, patch, compile rmmagent for macOS ARM64, optionally sign
 #   - Prompt to run agent or skip
-#   - **After install, automatically patch the LaunchDaemons plists** so that both
-#     the Tactical Agent and Mesh Agent use the custom log path (if provided).
+#   - **After install, automatically patch the LaunchDaemons plists** so that the
+#     Tactical Agent uses the custom log path (if provided).
 #
 # Usage Examples:
 #   1) Interactive mode:
-#        ./build_rmmagent_macos_arm64_args_fixed.sh
+#        ./mac_arm64.sh
 #   2) Provide some or all args:
-#        ./build_rmmagent_macos_arm64_args_fixed.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
+#        ./mac_arm64.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
 #   3) Non-interactive (all args):
-#        ./build_rmmagent_macos_arm64_args_fixed.sh --org-name "MyOrg" ... --skip-run
+#        ./mac_arm64.sh --org-name "MyOrg" ... --skip-run
 #
 # Requirements:
 #   - Apple Silicon macOS
@@ -43,6 +43,9 @@ CODESIGN_IDENTITY=""
 AGENT_LOG_PATH=""
 BUILD_FOLDER="rmmagent"  # default
 SKIP_RUN="false"
+CLIENT_ID=""
+SITE_ID=""
+AGENT_TYPE="workstation"  # default
 
 ############################
 # Parse Script Arguments
@@ -64,6 +67,18 @@ while [[ $# -gt 0 ]]; do
       ;;
     --auth-key)
       AGENT_AUTH_KEY="$2"
+      shift 2
+      ;;
+    --client-id)
+      CLIENT_ID="$2"
+      shift 2
+      ;;
+    --site-id)
+      SITE_ID="$2"
+      shift 2
+      ;;
+    --agent-type)
+      AGENT_TYPE="$2"
       shift 2
       ;;
     --codesign-identity)
@@ -89,6 +104,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --email <EMAIL>              Contact email placeholder"
       echo "  --rmm-url <URL>              RMM server URL"
       echo "  --auth-key <KEY>             Agent auth key"
+      echo "  --client-id <ID>             Client ID"
+      echo "  --site-id <ID>               Site ID"
+      echo "  --agent-type <TYPE>          Agent type (server/workstation) [default: server]"
       echo "  --codesign-identity <IDENT>  Apple Developer ID for signing"
       echo "  --log-path <PATH>            Agent log file path"
       echo "  --build-folder <FOLDER>      Where to clone and compile (default: rmmagent)"
@@ -153,21 +171,6 @@ function install_go_if_needed() {
   fi
 }
 
-function install_zenity_if_needed() {
-  echo "Checking Zenity (needed for mesh agent GUI)..."
-  if ! command -v zenity &>/dev/null; then
-    echo "Installing Zenity via Homebrew..."
-    brew install zenity
-    if ! command -v zenity &>/dev/null; then
-      # If zenity installation failed, set environment variable to disable GUI
-      echo "WARNING: Zenity installation failed or not found - will configure mesh agent to use text mode only"
-      export MESH_AGENT_DISABLE_GUI=1
-    fi
-  else
-    echo "Zenity found."
-  fi
-}
-
 ############################
 # Patching NATS WebSocket URL to use ws:// for local development
 ############################
@@ -214,40 +217,29 @@ function patch_nats_websocket_url() {
 function aggressive_uninstall() {
   echo ""
   echo "=== Performing Aggressive Uninstallation ==="
-  echo "This will remove all components of the Tactical RMM agent and Mesh agent..."
+  echo "This will remove all components of the Tactical RMM agent..."
   
   # 1. Stop and unload all services
   echo "Stopping and unloading services..."
   sudo launchctl unload /Library/LaunchDaemons/tacticalagent.plist 2>/dev/null || true
-  sudo launchctl unload /Library/LaunchDaemons/meshagent.plist 2>/dev/null || true
   
   # 2. Remove LaunchDaemons
   echo "Removing LaunchDaemons..."
   sudo rm -f /Library/LaunchDaemons/tacticalagent.plist
   sudo rm -f /Library/LaunchDaemons/tacticalagent.plist.bak
-  sudo rm -f /Library/LaunchDaemons/meshagent.plist
-  sudo rm -f /Library/LaunchDaemons/meshagent.plist.bak
   
   # 3. Remove Tactical Agent files and directories
   echo "Removing Tactical Agent files..."
   sudo rm -rf /opt/tacticalagent/
   
-  # 4. Remove Mesh Agent files and directories
-  echo "Removing Mesh Agent files..."
-  sudo rm -rf /opt/tacticalmesh/
-  sudo rm -rf /usr/local/mesh_services/
-  
-  # 5. Clean up any logs
+  # 4. Clean up any logs
   echo "Cleaning up logs..."
   sudo rm -f /var/log/tacticalagent.log
-  sudo rm -f /var/log/tacticalagent_mesh.log
   
-  # 6. Additional cleanup for any other remnants
+  # 5. Additional cleanup for any other remnants
   echo "Performing additional cleanup..."
-  # Search for and remove any other files containing 'tactical' or 'mesh' in common locations
+  # Search for and remove any other files containing 'tactical' in common locations
   sudo find /opt -name "*tactical*" -exec rm -rf {} \; 2>/dev/null || true
-  sudo find /opt -name "*mesh*" -exec rm -rf {} \; 2>/dev/null || true
-  sudo find /usr/local -name "*mesh*" -exec rm -rf {} \; 2>/dev/null || true
   
   echo "Aggressive uninstallation completed. System is ready for fresh installation."
   echo ""
@@ -349,106 +341,6 @@ function sign_binary_if_requested() {
   fi
 }
 
-# Force text mode for mesh agent regardless of Zenity status
-function force_mesh_agent_text_mode() {
-  # Always set this environment variable to ensure text mode
-  export MESH_AGENT_DISABLE_GUI=1
-  
-  # Export this in the user's shell profile to make it persistent across sessions
-  for PROFILE_FILE in ~/.bash_profile ~/.zshrc ~/.profile; do
-    if [ -f "$PROFILE_FILE" ]; then
-      if ! grep -q "MESH_AGENT_DISABLE_GUI" "$PROFILE_FILE"; then
-        echo "# Added by Tactical RMM installer to force MeshAgent text mode" >> "$PROFILE_FILE"
-        echo "export MESH_AGENT_DISABLE_GUI=1" >> "$PROFILE_FILE"
-        echo "Added environment variable to $PROFILE_FILE for persistent setting"
-      fi
-    fi
-  done
-}
-
-function handle_mesh_agent_install() {
-  # This function is dedicated to managing the mesh agent installation
-  # and ensuring it uses text mode
-
-  local MESH_BIN="/opt/tacticalmesh/meshagent"
-  local MESH_ALT_BIN="/usr/local/mesh_services/meshagent/meshagent"
-  local INSTALL_OUTPUT=""
-  
-  echo "Setting up mesh agent in text-only mode..."
-  # Force text mode regardless of Zenity status
-  force_mesh_agent_text_mode
-  
-  # Check both possible locations for the mesh agent
-  if [ -f "$MESH_BIN" ] || [ -f "$MESH_ALT_BIN" ]; then
-    echo "Found existing mesh agent, attempting to update..."
-    
-    # Determine which binary to use
-    local ACTIVE_BIN="$MESH_BIN"
-    if [ ! -f "$MESH_BIN" ] && [ -f "$MESH_ALT_BIN" ]; then
-      ACTIVE_BIN="$MESH_ALT_BIN"
-    fi
-    
-    # Try running the text-based installer explicitly
-    echo "Running mesh agent update with text-mode forced..."
-    INSTALL_OUTPUT=$(MESH_AGENT_DISABLE_GUI=1 sudo "$ACTIVE_BIN" -update -text 2>&1) || true
-    
-    # Check for the specific error about graphical installer
-    if echo "$INSTALL_OUTPUT" | grep -q "graphical version of this installer cannot run"; then
-      echo "ERROR: Mesh agent still trying to use graphical installer despite environment variable."
-      echo "Creating wrapper script to ensure text mode is always used..."
-      
-      # Create a wrapper script to replace the agent binary that forces text mode
-      sudo mv "$ACTIVE_BIN" "${ACTIVE_BIN}.original"
-      echo '#!/bin/bash
-# Wrapper script created by Tactical RMM installer to force text mode
-export MESH_AGENT_DISABLE_GUI=1
-"${0}.original" "$@" -text' | sudo tee "$ACTIVE_BIN" > /dev/null
-      sudo chmod +x "$ACTIVE_BIN"
-      
-      echo "Restarting mesh agent service to apply changes..."
-      sudo launchctl unload "/Library/LaunchDaemons/meshagent.plist" 2>/dev/null || true
-      sudo launchctl load "/Library/LaunchDaemons/meshagent.plist" 2>/dev/null || true
-    else
-      echo "Mesh agent update completed successfully in text mode."
-    fi
-  else
-    echo "Mesh agent not found at $MESH_BIN or $MESH_ALT_BIN"
-    echo "Attempting to explicitly install mesh agent..."
-    
-    # Use the tactical agent to install mesh agent
-    echo "Using tacticalagent to install the mesh component..."
-    if [ -f "/opt/tacticalagent/tacticalagent" ]; then
-      # Set environment variable to force text mode
-      export MESH_AGENT_DISABLE_GUI=1
-      
-      # Attempt install using the agent's installmesh command
-      echo "Running installmesh command with text mode..."
-      sudo MESH_AGENT_DISABLE_GUI=1 /opt/tacticalagent/tacticalagent -m installmesh -text
-      
-      # Check if mesh agent was installed
-      if [ -f "$MESH_BIN" ] || [ -f "$MESH_ALT_BIN" ]; then
-        echo "Mesh agent successfully installed!"
-      else
-        echo "ERROR: Mesh agent installation failed. Check logs for details."
-        echo "You may need to manually install the mesh agent using:"
-        echo "sudo /opt/tacticalagent/tacticalagent -m installmesh -text"
-      fi
-    else
-      echo "ERROR: Tactical agent not found at /opt/tacticalagent/tacticalagent"
-      echo "Cannot install mesh agent without tactical agent."
-    fi
-  fi
-  
-  # Final verification
-  echo "Verifying mesh agent installation..."
-  if [ -f "$MESH_BIN" ] || [ -f "$MESH_ALT_BIN" ] || [ -f "/Library/LaunchDaemons/meshagent.plist" ]; then
-    echo "✅ Mesh agent appears to be installed."
-  else
-    echo "⚠️ WARNING: Mesh agent does not appear to be properly installed."
-    echo "This will affect the 'take control' and 'send command' features."
-  fi
-}
-
 ############################
 # Patching the plists to include -log
 ############################
@@ -459,7 +351,6 @@ function patch_agent_plists_with_log() {
   echo "This requires sudo privileges."
 
   local TACTICAL_PLIST="/Library/LaunchDaemons/tacticalagent.plist"
-  local MESH_PLIST="/Library/LaunchDaemons/meshagent.plist"
   
   # Default to a standard log path if none provided
   if [ -z "$AGENT_LOG_PATH" ]; then
@@ -467,7 +358,7 @@ function patch_agent_plists_with_log() {
     echo "No custom log path specified, using default: $AGENT_LOG_PATH"
   fi
 
-  # 1) TacticalAgent plist modifications
+  # TacticalAgent plist modifications
   if [ -f "$TACTICAL_PLIST" ]; then
     echo "Backing up and patching tacticalagent.plist with enhanced logging..."
     # Create backup
@@ -496,43 +387,6 @@ function patch_agent_plists_with_log() {
   else
     echo "Warning: $TACTICAL_PLIST not found. TacticalAgent may not be installed yet."
   fi
-
-  # 2) MeshAgent plist modifications
-  if [ -f "$MESH_PLIST" ]; then
-    local MESH_LOG_PATH="${AGENT_LOG_PATH%.log}_mesh.log"
-    echo "Backing up and patching meshagent.plist with enhanced logging and text-mode..."
-    # Create backup
-    sudo cp "$MESH_PLIST" "${MESH_PLIST}.bak"
-    
-    # Check if ProgramArguments already has debug logging entries
-    if sudo /usr/libexec/PlistBuddy -c "Print :ProgramArguments" "$MESH_PLIST" | grep -q -- "--logfile"; then
-      echo "Logging parameters already exist, updating values..."
-      # Clean existing debug args 
-      sudo /usr/libexec/PlistBuddy -c "Delete :ProgramArguments:3" "$MESH_PLIST" 2>/dev/null || true
-      sudo /usr/libexec/PlistBuddy -c "Delete :ProgramArguments:3" "$MESH_PLIST" 2>/dev/null || true
-      sudo /usr/libexec/PlistBuddy -c "Delete :ProgramArguments:3" "$MESH_PLIST" 2>/dev/null || true
-    fi
-    
-    # Always add environment variables to disable GUI regardless of Zenity status
-    echo "Adding MESH_AGENT_DISABLE_GUI environment variable to MeshAgent plist..."
-    sudo /usr/libexec/PlistBuddy -c "Delete :EnvironmentVariables" "$MESH_PLIST" 2>/dev/null || true
-    sudo /usr/libexec/PlistBuddy -c "Add :EnvironmentVariables dict" "$MESH_PLIST" 2>/dev/null || true
-    sudo /usr/libexec/PlistBuddy -c "Add :EnvironmentVariables:MESH_AGENT_DISABLE_GUI string 1" "$MESH_PLIST" 2>/dev/null || true
-    
-    # Add logging parameters
-    sudo /usr/libexec/PlistBuddy -c "Add :ProgramArguments:3 string '--logfile'" "$MESH_PLIST" 2>/dev/null || true
-    sudo /usr/libexec/PlistBuddy -c "Add :ProgramArguments:4 string '$MESH_LOG_PATH'" "$MESH_PLIST" 2>/dev/null || true
-    sudo /usr/libexec/PlistBuddy -c "Add :ProgramArguments:5 string '--debug'" "$MESH_PLIST" 2>/dev/null || true
-    # Explicitly force text-mode installer
-    sudo /usr/libexec/PlistBuddy -c "Add :ProgramArguments:6 string '--text-installer'" "$MESH_PLIST" 2>/dev/null || true
-
-    echo "Reloading LaunchDaemon for meshagent..."
-    sudo launchctl unload "$MESH_PLIST" 2>/dev/null || true
-    sudo launchctl load "$MESH_PLIST" 2>/dev/null || true
-    echo "MeshAgent logging configured to use: $MESH_LOG_PATH"
-  else
-    echo "Warning: $MESH_PLIST not found. MeshAgent may not be installed yet."
-  fi
 }
 
 ############################
@@ -546,12 +400,8 @@ function prompt_run_agent() {
   echo "  ./$OUTPUT_BINARY -m install \\"
   echo "     -api \"$RMM_SERVER_URL\" \\"
   echo "     -auth \"$AGENT_AUTH_KEY\" \\"
-  echo "     -client-id <ID> -site-id <ID> -agent-type <server|workstation>"
-  if [ -n "$AGENT_LOG_PATH" ]; then
-    echo "     -log \"DEBUG\" -logto \"$AGENT_LOG_PATH\""
-  else
-    echo "     -log \"DEBUG\" -logto \"/tmp/rmmagent_verbose.log\""
-  fi
+  echo "     -client-id <ID> -site-id <ID> -agent-type <server|workstation> \\"
+  echo "     -log \"DEBUG\" -logto \"$AGENT_LOG_PATH\""
   echo ""
 
   if [ "$SKIP_RUN" == "true" ]; then
@@ -559,31 +409,34 @@ function prompt_run_agent() {
     return
   fi
 
-  read -rp "Do you want to run the agent install command now? (y/N): " RUN_NOW
-  if [[ "$RUN_NOW" =~ ^[Yy] ]]; then
-    echo ""
+  # If all required parameters are provided, run automatically
+  if [ -n "$RMM_SERVER_URL" ] && [ -n "$AGENT_AUTH_KEY" ] && [ -n "$CLIENT_ID" ] && [ -n "$SITE_ID" ]; then
+    echo "All required parameters provided, proceeding with installation..."
+    RUN_NOW="y"
+  else
+    read -rp "Do you want to run the agent install command now? (y/N): " RUN_NOW
+  fi
 
-    read -rp "Enter client-id: " CLIENT_ID
-    read -rp "Enter site-id: " SITE_ID
-    read -rp "Agent type (server/workstation) [server]: " AGENT_TYPE
-    AGENT_TYPE=${AGENT_TYPE:-server}
+  if [[ "$RUN_NOW" =~ ^[Yy] ]]; then
+    # Only prompt for values if they weren't provided as arguments
+    if [ -z "$CLIENT_ID" ]; then
+      read -rp "Enter client-id: " CLIENT_ID
+    fi
+    if [ -z "$SITE_ID" ]; then
+      read -rp "Enter site-id: " SITE_ID
+    fi
+    if [ -z "$AGENT_TYPE" ]; then
+      read -rp "Agent type (server/workstation) [server]: " AGENT_TYPE
+      AGENT_TYPE=${AGENT_TYPE:-server}
+    fi
 
     # If no log path was specified, create a default one with timestamp
     if [ -z "$AGENT_LOG_PATH" ]; then
       AGENT_LOG_PATH="/var/log/tacticalagent.log"
       echo "Using default log path: $AGENT_LOG_PATH"
     fi
-    
-    # Always force text mode for mesh agent regardless of Zenity status
-    force_mesh_agent_text_mode
-    echo "Configured system to force text-mode for mesh agent"
 
-    local CMD="sudo ./$OUTPUT_BINARY -m install -api \"$RMM_SERVER_URL\" -auth \"$AGENT_AUTH_KEY\" -client-id \"$CLIENT_ID\" -site-id \"$SITE_ID\" -agent-type \"$AGENT_TYPE\""
-    # Always include maximum verbosity for logging
-    CMD="$CMD -log \"DEBUG\" -logto \"$AGENT_LOG_PATH\""
-    
-    # IMPORTANT: Make sure we never include -nomesh flag and explicitly state we're installing with Mesh
-    echo "Will install agent WITH mesh component (no -nomesh flag)"
+    local CMD="sudo ./$OUTPUT_BINARY -m install -api \"$RMM_SERVER_URL\" -auth \"$AGENT_AUTH_KEY\" -client-id \"$CLIENT_ID\" -site-id \"$SITE_ID\" -agent-type \"$AGENT_TYPE\" -log \"DEBUG\" -logto \"$AGENT_LOG_PATH\" -nomesh"
     
     echo "Running: $CMD"
     eval "$CMD"
@@ -591,18 +444,13 @@ function prompt_run_agent() {
     echo ""
     echo "Agent started with maximum verbosity! Logs will be written to: $AGENT_LOG_PATH"
     echo "To monitor the log in real-time, run: sudo tail -f $AGENT_LOG_PATH"
-
-    # Handle mesh agent installation with dedicated function
-    handle_mesh_agent_install
-
+    
     # After successful install, patch plists with the custom log path
     patch_agent_plists_with_log
     
     echo ""
-    echo "You can monitor both agent logs with these commands:"
+    echo "You can monitor the agent logs with this command:"
     echo "  sudo tail -f $AGENT_LOG_PATH              # For tactical agent"
-    local MESH_LOG_PATH="${AGENT_LOG_PATH%.log}_mesh.log"
-    echo "  sudo tail -f $MESH_LOG_PATH               # For mesh agent"
   fi
 
   echo ""
@@ -621,10 +469,6 @@ install_command_line_tools
 install_homebrew_if_needed
 install_git_if_needed
 install_go_if_needed
-install_zenity_if_needed
-
-# Always force text mode for mesh agent to prevent GUI issues
-force_mesh_agent_text_mode
 
 # Perform aggressive uninstallation before proceeding
 aggressive_uninstall
@@ -634,30 +478,45 @@ echo ""
 echo "=== Checking user inputs ==="
 
 function prompt_all_inputs() {
-  prompt_if_empty "ORG_NAME"       "Organization Name (e.g. MyOrg)"
-  prompt_if_empty "CONTACT_EMAIL"  "Contact Email (e.g. support@myorg.com)"
   prompt_if_empty "RMM_SERVER_URL" "RMM Server URL (e.g. https://rmm.myorg.com)"
   prompt_if_empty "AGENT_AUTH_KEY" "Agent Auth Key (string from your RMM)"
-  prompt_if_empty "AGENT_LOG_PATH" "Optional agent log path? (Press Enter to skip)" ""
-  prompt_if_empty "CODESIGN_IDENTITY" "Code-sign Identity (Developer ID ...) (Press Enter to skip)" ""
+  prompt_if_empty "CLIENT_ID" "Client ID"
+  prompt_if_empty "SITE_ID" "Site ID"
+  prompt_if_empty "AGENT_TYPE" "Agent type (server/workstation) [server]" "server"
+  # Only prompt for log path if explicitly requested
+  if [ -n "$AGENT_LOG_PATH" ]; then
+    prompt_if_empty "AGENT_LOG_PATH" "Agent log path"
+  fi
+  # Only prompt for codesign if explicitly requested
+  if [ -n "$CODESIGN_IDENTITY" ]; then
+    prompt_if_empty "CODESIGN_IDENTITY" "Code-sign Identity (Developer ID ...)"
+  fi
   prompt_if_empty "BUILD_FOLDER" "Destination build folder" "rmmagent"
 }
 
 prompt_all_inputs
 
-echo ""
-echo "== Final values =="
-echo " Org Name        : $ORG_NAME"
-echo " Email           : $CONTACT_EMAIL"
-echo " RMM URL         : $RMM_SERVER_URL"
-echo " Auth Key        : $AGENT_AUTH_KEY"
-echo " Log Path        : $AGENT_LOG_PATH"
-echo " CodeSign ID     : $CODESIGN_IDENTITY"
-echo " Build Folder    : $BUILD_FOLDER"
-echo " skip-run        : $SKIP_RUN"
-echo ""
+# Only show final values and proceed prompt if we're missing required parameters
+if [ -z "$RMM_SERVER_URL" ] || [ -z "$AGENT_AUTH_KEY" ] || [ -z "$CLIENT_ID" ] || [ -z "$SITE_ID" ]; then
+  echo ""
+  echo "== Final values =="
+  # Only display values that are actually set
+  [ -n "$RMM_SERVER_URL" ] && echo " RMM URL         : $RMM_SERVER_URL"
+  [ -n "$AGENT_AUTH_KEY" ] && echo " Auth Key        : $AGENT_AUTH_KEY"
+  [ -n "$CLIENT_ID" ] && echo " Client ID       : $CLIENT_ID"
+  [ -n "$SITE_ID" ] && echo " Site ID         : $SITE_ID"
+  [ -n "$AGENT_TYPE" ] && echo " Agent Type      : $AGENT_TYPE"
+  [ -n "$AGENT_LOG_PATH" ] && echo " Log Path        : $AGENT_LOG_PATH"
+  [ -n "$CODESIGN_IDENTITY" ] && echo " CodeSign ID     : $CODESIGN_IDENTITY"
+  [ -n "$BUILD_FOLDER" ] && echo " Build Folder    : $BUILD_FOLDER"
+  [ -n "$SKIP_RUN" ] && echo " skip-run        : $SKIP_RUN"
+  echo ""
 
-read -rp "Press Enter to proceed, or Ctrl+C to cancel..."
+  # Only show the proceed prompt if we're not in skip-run mode
+  if [ "$SKIP_RUN" != "true" ]; then
+    read -rp "Press Enter to proceed, or Ctrl+C to cancel..."
+  fi
+fi
 
 # 3) Clone & patch & build
 handle_existing_folder

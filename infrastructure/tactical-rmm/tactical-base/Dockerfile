@@ -76,6 +76,7 @@ RUN apt-get update && \
     redis \
     supervisor \
     procps \
+    curl \
     python3-websockets && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \

@@ -91,9 +91,6 @@ function run_migrations() {
     echo "Running initial_db_setup"
     python manage.py initial_db_setup
 
-    echo "Running initial_mesh_setup"
-    python manage.py initial_mesh_setup
-
     echo "Loading chocos"
     python manage.py load_chocos
 
@@ -114,9 +111,6 @@ function run_migrations() {
 
     echo "Running post_update_tasks"
     python manage.py post_update_tasks
-
-    echo "Checking mesh"
-    python manage.py check_mesh
 }
 
 function create_superuser_and_api_key() {
@@ -223,8 +217,8 @@ function installNATs() {
 
 function pushNATSFilesToRedis() {
     echo "Pushing NATS files to Redis"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${TACTICAL_DIR}/api/nats-rmm.conf)"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${TACTICAL_DIR}/api/nats-api.conf)"
+    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
+    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
 }
 
 function getNATSFilesFromRedis() {
@@ -238,138 +232,6 @@ function getNATSFilesFromRedis() {
     echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
     echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
 
-    echo "${NATS_CONFIG_CONTENT}" >"${TACTICAL_DIR}/api/nats-rmm.conf"
-    echo "${NATS_API_CONFIG_CONTENT}" >"${TACTICAL_DIR}/api/nats-api.conf"
-}
-
-function setup_mesh_token() {
-  echo "Checking for existing mesh token..."
-  
-  # First check if token exists in filesystem
-  if [[ -f "${TACTICAL_DIR}/mesh_token" ]]; then
-    local_token=$(cat "${TACTICAL_DIR}/mesh_token")
-    if [[ -n "$local_token" && ${#local_token} -eq 160 ]]; then
-      echo "Mesh token found in filesystem, using existing token"
-      # Make sure the token is also in Redis
-      redis-cli -h tactical-redis -p 6379 set mesh_token ${local_token}
-      return 0
-    fi
-  fi
-  
-  # If not in filesystem, check Redis
-  existing_token=$(redis-cli -h tactical-redis -p 6379 get mesh_token)
-  if [[ -n "$existing_token" && ${#existing_token} -eq 160 ]]; then
-    echo "Mesh token found in Redis, saving to filesystem"
-    echo ${existing_token} > ${TACTICAL_DIR}/mesh_token
-    return 0
-  fi
-  
-  # If we get here, we need to generate a new token
-  echo "Generating new mesh token..."
-  mesh_token=$(node ${TACTICAL_DIR}/node_modules/meshcentral \
-    --user ${MESH_USER} \
-    --pass ${MESH_PASS} \
-    --configfile ${TACTICAL_DIR}/config.json \
-    --logintokenkey)
-
-  if [[ ${#mesh_token} -eq 160 ]]; then
-    echo ${mesh_token} > ${TACTICAL_DIR}/mesh_token
-    redis-cli -h tactical-redis -p 6379 set mesh_token ${mesh_token}
-    echo "Mesh token ${mesh_token} set in redis under key mesh_token"
-  else
-    echo "Failed to generate mesh token. Fix the error and restart the mesh container"
-    exit 1
-  fi
-}
-
-function setup_mesh_user() {
-  echo "Checking if MeshCentral user already exists..."
-  
-  # Check if user exists by trying to login
-  user_check=$(node ${TACTICAL_DIR}/node_modules/meshcentral \
-    --user ${MESH_USER} \
-    --pass ${MESH_PASS} \
-    --configfile ${TACTICAL_DIR}/config.json \
-    --logincheck 2>&1)
-  
-  if [[ "$user_check" == *"Login successful"* ]]; then
-    echo "MeshCentral user ${MESH_USER} already exists, skipping creation"
-  else
-    echo "Setting up MeshCentral user..."
-
-    node ${TACTICAL_DIR}/node_modules/meshcentral \
-      --user ${MESH_USER} \
-      --pass ${MESH_PASS} \
-      --configfile ${TACTICAL_DIR}/config.json \
-      --createaccount ${MESH_USER} \
-      --email ${MESH_USER} \
-    sleep 1
-
-    node ${TACTICAL_DIR}/node_modules/meshcentral \
-      --user ${MESH_USER} \
-      --pass ${MESH_PASS} \
-      --configfile ${TACTICAL_DIR}/config.json \
-      --adminaccount ${MESH_USER} \
-    sleep 1
-  fi
-}
-
-function setup_mesh_device_group() {
-
-  echo "Setting up MeshCentral device group..."
-
-  # First check if the device group already exists
-  GROUP_CHECK=$(node ${TACTICAL_DIR}/node_modules/meshcentral/meshctrl.js \
-    --url ${WS_PROTO}://${MESH_SERVICE}:${MESH_PORT} \
-    --loginuser ${MESH_USER} \
-    --loginpass ${MESH_PASS} \
-    ListDeviceGroups 2>&1 | grep -c "${MESH_DEVICE_GROUP}" || true)
-
-  if [ "$GROUP_CHECK" -gt 0 ]; then
-    echo "MeshCentral device group ${MESH_DEVICE_GROUP} already exists, skipping creation"
-  else
-    node ${TACTICAL_DIR}/node_modules/meshcentral/meshctrl.js \
-      --url ${WS_PROTO}://${MESH_SERVICE}:${MESH_PORT} \
-      --loginuser ${MESH_USER} \
-      --loginpass ${MESH_PASS} \
-      AddDeviceGroup \
-      --name ${MESH_DEVICE_GROUP}
-
-    echo "MeshCentral device group ${MESH_DEVICE_GROUP} created"
-  fi
-
-  sleep 1
-}
-
-function start_meshcentral() {
-  echo "Starting MeshCentral"
-  node ${TACTICAL_DIR}/node_modules/meshcentral \
-    --user ${MESH_USER} \
-    --pass ${MESH_PASS} \
-    --configfile ${TACTICAL_DIR}/config.json \
-    --lanonly \
-    --port ${MESH_PORT} \
-    --redirport 0 \
-    --exactports
-}
-
-function stop_meshcentral() {
-  echo "Stopping MeshCentral"
-  pkill -f "node.*meshcentral"
-}
-
-function  wait_for_meshcentral_to_start() {
-  echo "Waiting for MeshCentral to be ready..."
-  while ! curl -s http://localhost:${MESH_PORT}/health.ashx >/dev/null; do
-    sleep 2
-  done
-  echo "MeshCentral is up!"
-}
-
-function wait_for_meshcentral_to_stop() {
-  echo "Waiting for MeshCentral to stop..."
-  while pgrep -f "node.*meshcentral" >/dev/null; do
-    sleep 2
-  done
-  echo "MeshCentral has stopped"
+    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
+    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
 }

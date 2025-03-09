@@ -1,14 +1,6 @@
 name: openframe-tactical-rmm
 
 x-environment: &default-environment
-  # MongoDB Configuration
-  MONGO_INITDB_ROOT_USERNAME: &mongo-user mongouser
-  MONGO_INITDB_ROOT_PASSWORD: &mongo-pass mongopass
-  MONGO_INITDB_DATABASE: &mongo-db meshcentral
-  MONGODB_USER: *mongo-user
-  MONGODB_PASSWORD: *mongo-pass
-  MONGODB_HOST: &mongo-host tactical-mongodb
-  MONGODB_PORT: &mongo-port 27017
 
   # PostgreSQL Configuration
   POSTGRES_DB: &postgres-db tacticalrmm
@@ -19,19 +11,6 @@ x-environment: &default-environment
 
   # Redis Configuration
   REDIS_HOST: &redis-host tactical-redis
-
-  # MeshCentral Configuration
-  MESH_USER: &mesh-user tactical@openframe.io
-  MESH_PASS: &mesh-pass tacticalpass@1234
-  MESH_DEVICE_GROUP: &mesh-device-group TacticalRMM
-  MESH_PORT: &mesh-port 8383
-  MESH_HOST: &mesh-host tactical-meshcentral
-  MESH_SERVICE: *mesh-host
-  MESH_WS_URL: &mesh-ws-url ws://tactical-meshcentral:8383
-  MESH_PERSISTENT_CONFIG: &mesh-persistent 0
-  MESH_DISABLE_SSL: &mesh-ssl 1
-  MESH_COMPRESSION_ENABLED: &mesh-compression true
-  MESH_WEBRTC_ENABLED: &mesh-webrtc false
 
   # SMTP Configuration
   SMTP_HOST: &smtp-host smtp.example.com
@@ -86,15 +65,6 @@ x-environment: &default-environment
   NATS_WEBSOCKET_PORT: &nats-ws-port 4222
 
 x-args: &default-args
-  # MongoDB args
-  MONGO_INITDB_ROOT_USERNAME: *mongo-user
-  MONGO_INITDB_ROOT_PASSWORD: *mongo-pass
-  MONGO_INITDB_DATABASE: *mongo-db
-  MONGODB_USER: *mongo-user
-  MONGODB_PASSWORD: *mongo-pass
-  MONGODB_HOST: *mongo-host
-  MONGODB_PORT: *mongo-port
-
   # PostgreSQL args
   POSTGRES_DB: *postgres-db
   POSTGRES_USER: *postgres-user
@@ -104,19 +74,6 @@ x-args: &default-args
 
   # Redis args
   REDIS_HOST: *redis-host
-
-  # MeshCentral args
-  MESH_USER: *mesh-user
-  MESH_PASS: *mesh-pass
-  MESH_DEVICE_GROUP: *mesh-device-group
-  MESH_PORT: *mesh-port
-  MESH_HOST: *mesh-host
-  MESH_SERVICE: *mesh-host
-  MESH_WS_URL: *mesh-ws-url
-  MESH_PERSISTENT_CONFIG: *mesh-persistent
-  MESH_DISABLE_SSL: *mesh-ssl
-  MESH_COMPRESSION_ENABLED: *mesh-compression
-  MESH_WEBRTC_ENABLED: *mesh-webrtc
 
   # SMTP args
   SMTP_HOST: *smtp-host
@@ -178,25 +135,6 @@ x-service-defaults: &service-defaults
   environment: *default-environment
 
 services:
-  tactical-mongodb:
-    <<: *service-defaults
-    container_name: openframe-tactical-mongodb
-    image: mongo:4.4.18
-    platform: linux/amd64
-    volumes:
-      - tactical_mongo_data:/data/db
-    user: root
-    command: >
-      bash -c "
-        chown -R mongodb:mongodb /data/db &&
-        chmod -R 0700 /data/db &&
-        exec docker-entrypoint.sh mongod --auth"
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   tactical-postgres:
     <<: *service-defaults
@@ -225,32 +163,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  tactical-meshcentral:
-    <<: *service-defaults
-    container_name: openframe-tactical-meshcentral
-    platform: linux/amd64
-    build:
-      context: ./infrastructure/tactical-rmm
-      dockerfile: tactical-meshcentral/Dockerfile
-      args: *default-args
-    volumes:
-      - tactical_meshcentral_data:/opt/tactical
-    user: root
-    ports:
-      - "8383:8383"
-    entrypoint: [ "/entrypoint.sh" ]
-    depends_on:
-      tactical-mongodb:
-        condition: service_healthy
-      tactical-redis:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8383/health.ashx" ]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   tactical-frontend:
     <<: *service-defaults
@@ -296,14 +208,14 @@ services:
     depends_on:
       tactical-postgres:
         condition: service_healthy
-      tactical-meshcentral:
-        condition: service_healthy
+      # tactical-meshcentral:
+      #   condition: service_healthy
       tactical-redis:
         condition: service_healthy
       tactical-nginx:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "cat", "/opt/tactical/tmp/tactical/ready" ]
+      test: [ "CMD", "curl", "http://localhost:8000/core/health/" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -344,8 +256,6 @@ services:
     depends_on:
       tactical-postgres:
         condition: service_healthy
-      tactical-meshcentral:
-        condition: service_healthy
       tactical-redis:
         condition: service_healthy
       tactical-nginx:
@@ -372,8 +282,6 @@ services:
       - tactical_celery_data:/opt/tactical
     depends_on:
       tactical-postgres:
-        condition: service_healthy
-      tactical-meshcentral:
         condition: service_healthy
       tactical-redis:
         condition: service_healthy
@@ -402,8 +310,6 @@ services:
     depends_on:
       tactical-postgres:
         condition: service_healthy
-      tactical-meshcentral:
-        condition: service_healthy
       tactical-redis:
         condition: service_healthy
       tactical-nginx:
@@ -419,13 +325,13 @@ services:
 
 networks:
   openframe-network:
-    # driver: bridge
+    name: openframe-network
+    driver: bridge
 
 volumes:
   tactical_websockets_data:
   tactical_nats_data:
   tactical_celerybeat_data:
-  tactical_meshcentral_data:
   tactical_init_data:
   tactical_frontend_data:
   tactical_backend_data:
@@ -433,6 +339,5 @@ volumes:
   tactical_celery_data:
   tactical_redis_data:
   tactical_postgres_data:
-  tactical_mongo_data:
 
 
