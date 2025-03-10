@@ -64,7 +64,6 @@ wait_for_infrastructure() {
 
 # Build the JARs
 echo "Building JARs..."
-echo "Building OpenFrame JARs..."
 ./scripts/build-jars.sh
 
 echo "Starting services..."
@@ -92,6 +91,10 @@ docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
 # Start Authentik deployment
 echo "Starting Authentik deployment..."
 docker-compose -f docker-compose.openframe-authentik.yml up -d
+
+# Start MeshCentral deployment
+echo "Starting MeshCentral deployment..."
+docker-compose -f docker-compose.openframe-meshcentral.yml up -d
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070
@@ -513,6 +516,23 @@ register_tool \
     1 \
     "#455A64"
 
+# Register MeshCentral with layer info
+register_tool \
+    "meshcentral" \
+    "MESHCENTRAL" \
+    "MeshCentral" \
+    "MeshCentral Remote Management Platform" \
+    "http://openframe-meshcentral-nginx" \
+    8383 \
+    "mesh@openframe.io" \
+    "meshpass@1234" \
+    "" \
+    "Device Management" \
+    "Integrated Tool" \
+    "Integrated Tools" \
+    2 \
+    "#455A64"
+
 # Register Authentik with layer info
 register_tool \
     "authentik" \
@@ -527,7 +547,7 @@ register_tool \
     "Identity Provider" \
     "Integrated Tool" \
     "Integrated Tools" \
-    2 \
+    4 \
     "#455A64"
 
 # Register Grafana with layer info
@@ -642,6 +662,7 @@ echo "- NiFi: https://localhost:8443"
 echo "- Grafana: http://localhost:3000"
 echo "- Prometheus: http://localhost:9090"
 echo "- Fleet MDM: http://localhost:8070"
+echo "- MeshCentral: http://localhost:8383"
 echo "- OpenFrame Config Service: http://localhost:8090"
 echo "- OpenFrame Stream Service: http://localhost:8091"
 echo "- OpenFrame API Service: http://localhost:8092"

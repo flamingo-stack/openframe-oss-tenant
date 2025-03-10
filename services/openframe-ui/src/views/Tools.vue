@@ -168,6 +168,10 @@ import kibanaLogo from '@/assets/kibana-logo.svg'
 import redisLogo from '@/assets/redis-logo.svg'
 import cassandraLogo from '@/assets/cassandra-logo.svg'
 import zookeeperLogo from '@/assets/zookeeper-logo.svg'
+import meshcentralLogo from '@/assets/meshcentral-logo.svg'
+import tacticalRmmLogo from '@/assets/tactical-rmm-logo.svg'
+import mysqlLogo from '@/assets/mysql-logo.svg'
+import postgresqlLogo from '@/assets/postgresql-logo.svg'
 
 // Provide Apollo client at component level
 provideApolloClient(apolloClient);
@@ -273,6 +277,7 @@ const retryFetch = async (attempts = 3, delay = 1000) => {
 const logoMap: Record<string, string> = {
   'grafana-primary': grafanaLogo,
   'mongodb-primary': mongodbLogo,
+  'tactical-rmm': tacticalRmmLogo,
   'mongo-express': mongoExpressLogo,
   'kafka-primary': kafkaLogo,
   'kafka-ui': kafkaLogo,
@@ -286,13 +291,25 @@ const logoMap: Record<string, string> = {
   'pinot-server': pinotLogo,
   'loki-primary': lokiLogo,
   'redis-primary': redisLogo,
+  'integrated-tools-redis': redisLogo,
   'cassandra-primary': cassandraLogo,
   'zookeeper-primary': zookeeperLogo,
   'openframe-api': openframeLogo,
   'openframe-config': openframeLogo,
   'openframe-stream': openframeLogo,
   'openframe-ui': openframeLogo,
-  'openframe-gateway': openframeLogo
+  'openframe-gateway': openframeLogo,
+  'openframe-management': openframeLogo,
+  'mysql-primary': mysqlLogo,
+  'integrated-tools-mysql': mysqlLogo,
+  'mysql': mysqlLogo,
+  'openframe-integrated-tools-mysql': mysqlLogo,
+  'postgresql-primary': postgresqlLogo,
+  'integrated-tools-postgresql': postgresqlLogo,
+  'postgresql': postgresqlLogo,
+  'postgres': postgresqlLogo,
+  'openframe-integrated-tools-postgresql': postgresqlLogo,
+  'meshcentral': meshcentralLogo
 };
 
 // Compute unique categories from tools data
@@ -349,7 +366,51 @@ watch(result, (newResult) => {
 }, { immediate: true });
 
 const getToolIcon = (tool: IntegratedTool): string => {
-  return getLogoUrl(tool.id, isDark.value);
+  // First try to get logo by tool ID
+  const logoByToolId = logoMap[tool.id];
+  if (logoByToolId) {
+    return logoByToolId;
+  }
+
+  // If no logo found by ID, try by toolType
+  switch (tool.toolType) {
+    case 'AUTHENTIK':
+      return authentikLogo;
+    case 'FLEET':
+      return fleetLogo;
+    case 'RUSTDESK':
+      return rustdeskLogo;
+    case 'GRAFANA':
+      return grafanaLogo;
+    case 'LOKI':
+      return lokiLogo;
+    case 'PROMETHEUS':
+      return prometheusLogo;
+    case 'KAFKA':
+      return kafkaLogo;
+    case 'MONGO_EXPRESS':
+      return mongoExpressLogo;
+    case 'MONGODB':
+      return mongodbLogo;
+    case 'NIFI':
+      return nifiLogo;
+    case 'PINOT':
+      return pinotLogo;
+    case 'KIBANA':
+      return kibanaLogo;
+    case 'REDIS':
+      return redisLogo;
+    case 'CASSANDRA':
+      return cassandraLogo;
+    case 'ZOOKEEPER':
+      return zookeeperLogo;
+    case 'MESHCENTRAL':
+      return meshcentralLogo;
+    case 'TACTICAL_RMM':
+      return tacticalRmmLogo;
+    default:
+      return openframeLogo;
+  }
 };
 
 const onImageError = (e: Event) => {

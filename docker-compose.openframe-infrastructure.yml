@@ -470,6 +470,9 @@ services:
     image: openframe-ui:latest
   stream:
     container_name: openframe-stream
+    build:
+      context: ./services/openframe-stream
+      dockerfile: Dockerfile
     ports:
       - "8082:8082"
       - "8083:8083"
@@ -484,9 +487,11 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: openframe-stream:latest
   gateway:
     container_name: openframe-gateway
+    build:
+      context: ./services/openframe-gateway
+      dockerfile: Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
@@ -502,7 +507,6 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: openframe-gateway:latest
 networks:
   openframe-network:
     name: openframe-network
