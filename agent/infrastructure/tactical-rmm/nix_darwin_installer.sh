@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# nix_installer.sh
+# nix_darwin_installer.sh
 #
 # Purpose:
 #   - Install dependencies (Git, Go) on Nix-based systems
@@ -12,11 +12,11 @@
 #
 # Usage Examples:
 #   1) Interactive mode:
-#        ./nix_installer.sh
+#        ./nix_darwin_installer.sh
 #   2) Provide some or all args:
-#        ./nix_installer.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
+#        ./nix_darwin_installer.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
 #   3) Non-interactive (all args):
-#        ./nix_installer.sh --org-name "MyOrg" ... --skip-run
+#        ./nix_darwin_installer.sh --org-name "MyOrg" ... --skip-run
 #
 # Requirements:
 #   - Nix package manager installed
@@ -49,8 +49,8 @@ CODESIGN_IDENTITY=""
 AGENT_LOG_PATH=""
 BUILD_FOLDER="rmmagent"  # default
 SKIP_RUN="false"
-CLIENT_ID=""
-SITE_ID=""
+CLIENT_ID="1"
+SITE_ID="1"
 AGENT_TYPE="workstation"  # default
 
 ############################
