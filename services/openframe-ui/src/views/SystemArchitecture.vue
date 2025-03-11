@@ -77,11 +77,28 @@ import { getLogoUrl } from '@/services/LogoService'
 import { useQuery, provideApolloClient } from '@vue/apollo-composable'
 import { apolloClient } from '../apollo/apolloClient'
 import gql from 'graphql-tag'
-import type { IntegratedTool } from '../types/IntegratedTool'
+import type { IntegratedTool } from '../types/graphql'
 import { getDisplayName } from '../utils/displayUtils'
 import { useRouter } from 'vue-router'
 import openframeLogoWhite from '@/assets/openframe-logo-white.svg'
 import openframeLogoBlack from '@/assets/openframe-logo-black.svg'
+import authentikLogo from '@/assets/authentik-logo.svg'
+import fleetLogo from '@/assets/fleet-logo.svg'
+import rustdeskLogo from '@/assets/rustdesk-logo.svg'
+import grafanaLogo from '@/assets/grafana-logo.svg'
+import lokiLogo from '@/assets/loki-logo.svg'
+import prometheusLogo from '@/assets/prometheus-logo.svg'
+import kafkaLogo from '@/assets/kafka-logo.svg'
+import mongoExpressLogo from '@/assets/mongo-express-logo.svg'
+import mongodbLogo from '@/assets/mongodb-logo.svg'
+import nifiLogo from '@/assets/nifi-logo.svg'
+import pinotLogo from '@/assets/pinot-logo.svg'
+import kibanaLogo from '@/assets/kibana-logo.svg'
+import redisLogo from '@/assets/redis-logo.svg'
+import cassandraLogo from '@/assets/cassandra-logo.svg'
+import zookeeperLogo from '@/assets/zookeeper-logo.svg'
+import meshcentralLogo from '@/assets/meshcentral-logo.svg'
+import tacticalRmmLogo from '@/assets/tactical-rmm-logo.svg'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
@@ -220,7 +237,7 @@ const createEdges = (tools: IntegratedTool[]): Edge[] => {
     { from: 'openframe-management', to: 'mongodb-primary', type: 'data-flow' },
     { from: 'openframe-api', to: 'mongodb-primary', type: 'data-flow' },
     { from: 'openframe-stream', to: 'cassandra-primary', type: 'data-flow' },
-    { from: 'openframe-stream', to: 'pinot-controller', type: 'data-flow' },
+    { from: 'openframe-stream', to: 'pinot-primary', type: 'data-flow' },
     { from: 'openframe-api', to: 'prometheus-primary', type: 'data-flow' },
     { from: 'openframe-management', to: 'prometheus-primary', type: 'data-flow' },
     { from: 'openframe-stream', to: 'prometheus-primary', type: 'data-flow' },
@@ -253,6 +270,87 @@ const createEdges = (tools: IntegratedTool[]): Edge[] => {
   return edges;
 };
 
+// Helper function to get logo URL based on tool ID and type
+const getLogoForTool = (tool: IntegratedTool): string => {
+  // First try to match by ID
+  switch (tool.id) {
+    case 'grafana-primary':
+      return grafanaLogo;
+    case 'mongodb-primary':
+      return mongodbLogo;
+    case 'tactical-rmm':
+      return tacticalRmmLogo;
+    case 'mongo-express':
+      return mongoExpressLogo;
+    case 'kafka-primary':
+      return kafkaLogo;
+    case 'kibana':
+      return kibanaLogo;
+    case 'fleet':
+      return fleetLogo;
+    case 'authentik':
+      return authentikLogo;
+    case 'prometheus-primary':
+      return prometheusLogo;
+    case 'nifi-primary':
+      return nifiLogo;
+    case 'pinot-primary':
+      return pinotLogo;
+    case 'loki-primary':
+      return lokiLogo;
+    case 'redis-primary':
+    case 'integrated-tools-redis':
+      return redisLogo;
+    case 'cassandra-primary':
+      return cassandraLogo;
+    case 'zookeeper-primary':
+      return zookeeperLogo;
+    case 'meshcentral':
+      return meshcentralLogo;
+  }
+
+  // Then try by tool type
+  switch (tool.toolType) {
+    case 'AUTHENTIK':
+      return authentikLogo;
+    case 'FLEET':
+      return fleetLogo;
+    case 'RUSTDESK':
+      return rustdeskLogo;
+    case 'GRAFANA':
+      return grafanaLogo;
+    case 'LOKI':
+      return lokiLogo;
+    case 'PROMETHEUS':
+      return prometheusLogo;
+    case 'KAFKA':
+      return kafkaLogo;
+    case 'MONGO_EXPRESS':
+      return mongoExpressLogo;
+    case 'MONGODB':
+      return mongodbLogo;
+    case 'NIFI':
+      return nifiLogo;
+    case 'PINOT':
+      return pinotLogo;
+    case 'KIBANA':
+      return kibanaLogo;
+    case 'REDIS':
+      return redisLogo;
+    case 'CASSANDRA':
+      return cassandraLogo;
+    case 'ZOOKEEPER':
+      return zookeeperLogo;
+    case 'MESHCENTRAL':
+      return meshcentralLogo;
+    case 'TACTICAL_RMM':
+      return tacticalRmmLogo;
+  }
+
+  // Default to OpenFrame logo
+  return isDark.value ? openframeLogoWhite : openframeLogoBlack;
+};
+
 // Add error handler for logo loading
 const onLogoError = (e: Event) => {
   const target = e.target as HTMLImageElement;
@@ -267,8 +365,11 @@ const INTEGRATED_TOOLS_QUERY = gql`
       name
       description
       icon
-      url
-      port
+      toolUrls {
+        url
+        port
+        type
+      }
       type
       toolType
       category
@@ -322,7 +423,7 @@ watch(result, (newResult) => {
         id: tool.id,
         data: { 
           label: getDisplayName(tool), 
-          logo: getLogoUrl(tool.id, isDark.value)
+          logo: getLogoForTool(tool)
         },
         position,
         class: getNodeClass(tool),

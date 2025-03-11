@@ -6,6 +6,7 @@ import { createHttpLink } from '@apollo/client/link/http';
 import { useAuthStore } from '@/stores/auth';
 import { AuthService } from '@/services/AuthService';
 import router from '@/router';
+import type { IntegratedTool, ToolUrlType, APIKeyType } from '@/types/graphql';
 
 let isRefreshing = false;
 let pendingRequests: Function[] = [];
@@ -174,10 +175,39 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   }
 });
 
+// Create Apollo Client
 export const apolloClient = new ApolloClient({
-  link: errorLink.concat(authLink.concat(httpLink)),
-  cache: new InMemoryCache(),
+  link: from([errorLink, authLink, httpLink]),
+  cache: new InMemoryCache({
+    typePolicies: {
+      IntegratedTool: {
+        keyFields: ['id'],
+        fields: {
+          toolUrls: {
+            merge: false
+          },
+          credentials: {
+            merge: true
+          }
+        }
+      }
+    }
+  }),
+  defaultOptions: {
+    watchQuery: {
+      fetchPolicy: 'network-only',
+      nextFetchPolicy: 'network-only',
+    },
+    query: {
+      fetchPolicy: 'network-only',
+    },
+  },
 });
+
+// Clear cache on startup
+apolloClient.clearStore();
+
+export default apolloClient;
 
 // REST client with centralized error handling
 export const restClient = {

@@ -112,74 +112,76 @@ register_tool() {
     local tool_type=$2
     local name=$3
     local description=$4
-    local url=$5
-    local port=$6
-    local username=$7
-    local password=$8
-    local token=$9
-    local category=${10}
-    local platform_category=${11}
-    local layer=${12}
-    local layer_order=${13}
-    local layer_color=${14}
+    local urls_json=$5
+    local username=$6
+    local password=$7
+    local token=$8
+    local category=$9
+    local platform_category=${10}
+    local layer=${11}
+    local layer_order=${12}
+    local layer_color=${13}
+    local api_key_type=${14:-"BEARER_TOKEN"}
+    local api_key_name=${15:-""}
 
     echo "Registering $name with OpenFrame API..."
 
     # Build credentials object based on what's provided
-    local credentials_json="{"
+    local credentials_parts=()
     if [ ! -z "$username" ]; then
-        credentials_json+="\"username\": \"$username\","
+        credentials_parts+=("\"username\": \"$username\"")
     fi
     if [ ! -z "$password" ]; then
-        credentials_json+="\"password\": \"$password\","
+        credentials_parts+=("\"password\": \"$password\"")
     fi
     if [ ! -z "$token" ]; then
-        credentials_json+="\"token\": \"$token\","
+        local api_key_json="{\"key\": \"$token\", \"type\": \"$api_key_type\""
+        if [ "$api_key_type" != "BEARER_TOKEN" ] && [ ! -z "$api_key_name" ]; then
+            api_key_json="$api_key_json, \"keyName\": \"$api_key_name\""
+        fi
+        api_key_json="$api_key_json}"
+        credentials_parts+=("\"apiKey\": $api_key_json")
     fi
-    # Remove trailing comma if exists
-    credentials_json="${credentials_json%,}"
-    credentials_json+="}"
 
-    #TODO - generate api keys automatically for tactical rmm
+    local credentials_json="{$(IFS=,; echo "${credentials_parts[*]}")}"
 
-    curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
-      -H "Content-Type: application/json" \
-      -d "{
+    # Prepare the full JSON payload
+    local json_payload="{
         \"tool\": {
-          \"toolType\": \"$tool_type\",
-          \"name\": \"$name\",
-          \"description\": \"$description\",
-          \"url\": \"$url\",
-          \"port\": $port,
-          \"type\": \"$tool_type\",
-          \"category\": \"$category\",
-          \"platformCategory\": \"$platform_category\",
-          \"enabled\": true,
-          \"credentials\": $credentials_json,
-          \"layer\": \"$layer\",
-          \"layerOrder\": $layer_order,
-          \"layerColor\": \"$layer_color\",
-          \"config\": {
-            \"apiVersion\": \"1.0\",
-            \"basePath\": \"/api\",
+            \"id\": \"$tool_id\",
+            \"toolType\": \"$tool_type\",
+            \"name\": \"$name\",
+            \"description\": \"$description\",
+            \"toolUrls\": $urls_json,
+            \"type\": \"$tool_type\",
+            \"category\": \"$category\",
+            \"platformCategory\": \"$platform_category\",
+            \"enabled\": true,
+            \"credentials\": $credentials_json,
+            \"layer\": \"$layer\",
+            \"layerOrder\": $layer_order,
+            \"layerColor\": \"$layer_color\",
+            \"metricsPath\": \"/metrics\",
             \"healthCheckEndpoint\": \"/health\",
             \"healthCheckInterval\": 30,
             \"connectionTimeout\": 5000,
             \"readTimeout\": 5000,
-            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
-            \"requiredScopes\": [\"read\", \"write\"],
-            \"tokenConfig\": {
-              \"token\": \"$token\",
-              \"active\": true,
-              \"createdAt\": \"2024-01-01T00:00:00Z\",
-              \"expiresAt\": \"2025-01-01T00:00:00Z\"
-            }
-          }
+            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"]
         }
-      }" \
+    }"
+
+    # Print the JSON payload for debugging
+    echo "JSON Payload:"
+    echo "$json_payload" | jq '.'
+
+    # Send the request
+    curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
+      -H "Content-Type: application/json" \
+      -d "$json_payload" \
       --retry 5 \
       --retry-delay 2 \
-      --retry-all-errors
+      --retry-all-errors \
+      -v
 
     if [ $? -ne 0 ]; then
         echo "Failed to register $name. Exiting..."
@@ -199,8 +201,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame UI" \
     "OpenFrame User Interface Service" \
-    "http://openframe-ui" \
-    4000 \
+    '[{"url": "http://openframe-ui", "port": "4000", "type": "DASHBOARD"}]' \
     "" \
     "" \
     "" \
@@ -216,8 +217,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Gateway" \
     "OpenFrame Gateway Service" \
-    "http://openframe-gateway" \
-    8100 \
+    '[{"url": "http://openframe-gateway", "port": "8100", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -233,8 +233,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame API" \
     "OpenFrame API Gateway Service" \
-    "http://openframe-api" \
-    8095 \
+    '[{"url": "http://openframe-api", "port": "8095", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -250,8 +249,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Stream" \
     "OpenFrame Stream Processing Service" \
-    "http://openframe-stream" \
-    8091 \
+    '[{"url": "http://openframe-stream", "port": "8091", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -267,8 +265,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Management" \
     "OpenFrame Management Service" \
-    "http://openframe-management" \
-    8096 \
+    '[{"url": "http://openframe-management", "port": "8096", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -284,8 +281,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Config" \
     "OpenFrame Configuration Service" \
-    "http://openframe-config" \
-    8090 \
+    '[{"url": "http://openframe-config", "port": "8090", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -301,8 +297,7 @@ register_tool \
     "KAFKA" \
     "Kafka Message Broker" \
     "Apache Kafka Event Streaming Platform" \
-    "http://openframe-kafka-ui" \
-    8081 \
+    '[{"url": "http://openframe-kafka-ui", "port": "8081", "type": "DASHBOARD"}, {"url": "http://openframe-kafka", "port": "9092", "type": "BROKER"}, {"url": "http://openframe-kafka", "port": "29092", "type": "INTERNAL"}]' \
     "" \
     "" \
     "" \
@@ -318,8 +313,7 @@ register_tool \
     "ZOOKEEPER" \
     "Zookeeper Coordinator" \
     "Apache Zookeeper Distributed Coordinator" \
-    "http://openframe-zookeeper" \
-    2181 \
+    '[{"url": "http://openframe-zookeeper", "port": "2181", "type": "COORDINATOR"}]' \
     "" \
     "" \
     "" \
@@ -335,8 +329,7 @@ register_tool \
     "NIFI" \
     "Apache NiFi" \
     "NiFi Data Integration Platform" \
-    "https://openframe-nifi" \
-    8443 \
+    '[{"url": "https://openframe-nifi", "port": "8443", "type": "DASHBOARD"}, {"url": "https://openframe-nifi", "port": "9096", "type": "API"}]' \
     "openframe" \
     "password123456789" \
     "" \
@@ -352,11 +345,10 @@ register_tool \
     "MONGODB" \
     "MongoDB Database" \
     "MongoDB NoSQL Database" \
-    "mongodb://openframe-mongodb" \
-    27017 \
+    '[{"url": "mongodb://openframe-mongodb", "port": "27017", "type": "DATABASE"}, {"url": "http://openframe-mongo-express", "port": "8010", "type": "DASHBOARD"}]' \
     "openframe" \
     "password123456789" \
-    "mongodb-token" \
+    "" \
     "NoSQL Database" \
     "OpenFrame Datasource" \
     "Datasource" \
@@ -369,8 +361,7 @@ register_tool \
     "REDIS" \
     "Redis Cache" \
     "Redis In-Memory Cache" \
-    "redis://openframe-redis" \
-    6379 \
+    '[{"url": "redis://openframe-redis", "port": "6379", "type": "DATABASE"}]' \
     "" \
     "" \
     "" \
@@ -386,8 +377,7 @@ register_tool \
     "CASSANDRA" \
     "Cassandra Database" \
     "Cassandra Distributed Database" \
-    "cassandra://openframe-cassandra" \
-    9042 \
+    '[{"url": "cassandra://openframe-cassandra", "port": "9042", "type": "DATABASE"}]' \
     "" \
     "" \
     "" \
@@ -397,14 +387,13 @@ register_tool \
     3 \
     "#616161"
 
-# Register Pinot Controller with layer info
+# Register Pinot with layer info
 register_tool \
-    "pinot-controller" \
+    "pinot-primary" \
     "PINOT" \
-    "Pinot Controller" \
-    "Apache Pinot Real-time Analytics Database Controller" \
-    "http://openframe-pinot-controller" \
-    9000 \
+    "Apache Pinot" \
+    "Apache Pinot Real-time Analytics Database" \
+    '[{"url": "http://openframe-pinot-controller", "port": "9000", "type": "CONTROLLER"},{"url": "http://openframe-pinot-broker", "port": "8099", "type": "BROKER"},{"url": "http://openframe-pinot-server", "port": "8097", "type": "SERVER"}]' \
     "" \
     "" \
     "" \
@@ -414,48 +403,13 @@ register_tool \
     4 \
     "#616161"
 
-# Register Pinot Broker with layer info
-register_tool \
-    "pinot-broker" \
-    "PINOT" \
-    "Pinot Broker" \
-    "Apache Pinot Real-time Analytics Database Broker" \
-    "http://openframe-pinot-broker" \
-    8099 \
-    "" \
-    "" \
-    "" \
-    "Analytics Database" \
-    "OpenFrame Service" \
-    "Datasource" \
-    5 \
-    "#616161"
-
-# Register Pinot Server with layer info
-register_tool \
-    "pinot-server" \
-    "PINOT" \
-    "Pinot Server" \
-    "Apache Pinot Real-time Analytics Database Server" \
-    "http://openframe-pinot-server" \
-    8097 \
-    "" \
-    "" \
-    "" \
-    "Analytics Database" \
-    "OpenFrame Service" \
-    "Datasource" \
-    6 \
-    "#616161"
-
 # Register Integrated Tools MySQL
 register_tool \
     "integrated-tools-mysql" \
     "MYSQL" \
     "Integrated Tools MySQL" \
     "MySQL Database for Integrated Tools" \
-    "mysql://openframe-integrated-tools-mysql" \
-    3306 \
+    '[{"url": "mysql://openframe-integrated-tools-mysql", "port": "3306", "type": "DATABASE"}]' \
     "integrated-tools-user" \
     "integrated-tools-password-1234" \
     "" \
@@ -471,8 +425,7 @@ register_tool \
     "POSTGRESQL" \
     "Integrated Tools PostgreSQL" \
     "PostgreSQL Database for Integrated Tools" \
-    "postgresql://openframe-integrated-tools-postgresql" \
-    5432 \
+    '[{"url": "postgresql://openframe-integrated-tools-postgresql", "port": "5432", "type": "DATABASE"}]' \
     "integrated-tools-user" \
     "integrated-tools-password-1234" \
     "" \
@@ -488,8 +441,7 @@ register_tool \
     "REDIS" \
     "Integrated Tools Redis" \
     "Redis Cache for Integrated Tools" \
-    "redis://openframe-integrated-tools-redis" \
-    6379 \
+    '[{"url": "redis://openframe-integrated-tools-redis", "port": "6379", "type": "DATABASE"}]' \
     "" \
     "" \
     "" \
@@ -505,8 +457,7 @@ register_tool \
     "FLEET" \
     "Fleet MDM" \
     "Fleet Device Management Platform" \
-    "http://openframe-fleet" \
-    8070 \
+    '[{"url": "http://openframe-fleet", "port": "8070", "type": "API"}, {"url": "http://openframe-fleet", "port": "8070", "type": "DASHBOARD"}]' \
     "admin@openframe.local" \
     "openframe123!" \
     "$FLEET_TOKEN" \
@@ -514,7 +465,8 @@ register_tool \
     "Integrated Tool" \
     "Integrated Tools" \
     1 \
-    "#455A64"
+    "#455A64" \
+    "BEARER_TOKEN"
 
 # Register MeshCentral with layer info
 register_tool \
@@ -522,8 +474,7 @@ register_tool \
     "MESHCENTRAL" \
     "MeshCentral" \
     "MeshCentral Remote Management Platform" \
-    "https://openframe-meshcentral-nginx" \
-    8383 \
+    '[{"url": "https://openframe-meshcentral-nginx", "port": "8383", "type": "DASHBOARD"}, {"url": "https://openframe-meshcentral", "port": "8383", "type": "API"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
     "" \
@@ -539,8 +490,7 @@ register_tool \
     "AUTHENTIK" \
     "Authentik SSO" \
     "Authentik Identity Provider" \
-    "http://openframe-authentik-server" \
-    5001 \
+    '[{"url": "http://openframe-authentik-server", "port": "9000", "type": "API"}, {"url": "http://openframe-authentik-server", "port": "9000", "type": "DASHBOARD"}]' \
     "akadmin@openframe.local" \
     "openframe123!" \
     "openframe-api-token-123456789" \
@@ -548,7 +498,9 @@ register_tool \
     "Integrated Tool" \
     "Integrated Tools" \
     4 \
-    "#455A64"
+    "#455A64" \
+    "HEADER" \
+    "Authorization"
 
 # Register Grafana with layer info
 register_tool \
@@ -556,10 +508,9 @@ register_tool \
     "GRAFANA" \
     "Grafana" \
     "Grafana Monitoring Dashboard" \
-    "http://openframe-grafana" \
-    3000 \
-    "admin" \
-    "admin" \
+    '[{"url": "http://openframe-grafana", "port": "3000", "type": "DASHBOARD"}, {"url": "http://openframe-grafana", "port": "3000", "type": "API"}]' \
+    "openframe" \
+    "password123456789" \
     "" \
     "Monitoring Dashboard" \
     "OpenFrame Service" \
@@ -573,8 +524,7 @@ register_tool \
     "PROMETHEUS" \
     "Prometheus" \
     "Prometheus Metrics Database" \
-    "http://openframe-prometheus" \
-    9090 \
+    '[{"url": "http://openframe-prometheus", "port": "9090", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -590,8 +540,7 @@ register_tool \
     "LOKI" \
     "Loki" \
     "Loki Log Aggregation System" \
-    "http://openframe-loki" \
-    3100 \
+    '[{"url": "http://openframe-loki", "port": "3100", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -601,15 +550,10 @@ register_tool \
     3 \
     "#78909C"
 
-# Wait for Fleet to be ready
-check_service "tactical-nginx" 8080
-if [ $? -ne 0 ]; then
-    echo "Failed to start Tactical RMM. Exiting..."
-    exit 1
-fi
-
-# Get Tactical RMM API key from Redis
+# Get Tactical RMM API key
+echo "Getting Tactical RMM API key..."
 TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
+echo "Tactical RMM API key: $TACTICAL_API_KEY"
 
 # Register Tactical RMM with layer info
 register_tool \
@@ -617,8 +561,7 @@ register_tool \
     "TACTICAL_RMM" \
     "Tactical RMM" \
     "Remote Monitoring and Management Platform" \
-    "http://openframe-tactical-backend" \
-    8080 \
+    '[{"url": "http://openframe-tactical-backend", "port": "8000", "type": "API"}, {"url": "http://openframe-tactical-frontend", "port": "8080", "type": "DASHBOARD"}]' \
     "tactical" \
     "tactical" \
     "$TACTICAL_API_KEY" \
@@ -626,7 +569,9 @@ register_tool \
     "Integrated Tool" \
     "Integrated Tools" \
     3 \
-    "#455A64"
+    "#455A64" \
+    "HEADER" \
+    "X-API-KEY"
 
 echo "Tactical RMM registered successfully!"
 

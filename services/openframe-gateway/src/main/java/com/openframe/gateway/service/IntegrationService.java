@@ -1,6 +1,7 @@
 package com.openframe.gateway.service;
 
 import java.net.URI;
+import java.util.Optional;
 
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -9,8 +10,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.openframe.core.model.IntegratedTool;
+import com.openframe.core.model.ToolUrl;
+import com.openframe.core.model.ToolUrlType;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.IntegratedToolService;
+import com.openframe.data.service.ToolUrlService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +26,9 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class IntegrationService {
     
-    private final IntegratedToolRepository toolRepository;
-    private final IntegratedToolService toolService;
+    private final IntegratedToolService integratedToolService;
+    private final ToolUrlService toolUrlService;
+    private final IntegratedToolRepository integratedToolRepository;
     private final WebClient.Builder webClientBuilder;
     private final Environment environment;
 
@@ -57,15 +63,21 @@ public class IntegrationService {
     }
 
     public Mono<String> testIntegrationConnection(String toolId) {
-        return Mono.justOrEmpty(toolRepository.findById(toolId))
+        return Mono.justOrEmpty(integratedToolRepository.findById(toolId))
             .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found: " + toolId)))
             .flatMap(tool -> {
                 if (!tool.isEnabled()) {
                     return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Integration " + tool.getName() + " is not enabled"));
                 }
 
-                String targetUrl = adjustUrl(tool.getUrl());
-                log.debug("Testing connection to: {} (original URL: {})", targetUrl, tool.getUrl());
+                Optional<ToolUrl> toolUrl = toolUrlService.getUrlByToolType(tool, ToolUrlType.API);
+
+                if (!toolUrl.isPresent()) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Tool URL not found for tool: " + toolId));
+                }
+
+                String targetUrl = adjustUrl(toolUrl.get().getUrl());
+                log.debug("Testing connection to: {} (original URL: {})", targetUrl, toolUrl.get().getUrl());
 
                 return webClientBuilder.build()
                     .get()
@@ -78,6 +90,12 @@ public class IntegrationService {
     }
 
     public String getActiveToken(String toolType) {
-        return toolService.getActiveToken(toolType);
+        return integratedToolService.getActiveToken(toolType);
+    }
+
+    public String getToolUrl(String toolId) {
+        Optional<IntegratedTool> integratedTool = integratedToolRepository.findById(toolId);
+        Optional<ToolUrl> toolUrl = toolUrlService.getUrlByToolType(integratedTool.get(), ToolUrlType.API);
+        return toolUrl.map(ToolUrl::getUrl).orElse(null);
     }
 } 

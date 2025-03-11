@@ -22,13 +22,49 @@ input CreateEventInput {
     data: String
 }
 
+enum ToolUrlType {
+    DASHBOARD
+    API
+    DATABASE
+    CACHE
+    BROKER
+    COORDINATOR
+    CONTROLLER
+    SERVER
+    METRICS
+    LOGS
+    INTERNAL
+}
+
+enum APIKeyType {
+    HEADER
+    BEARER_TOKEN
+}
+
+type APIKey {
+    key: String!
+    type: APIKeyType!
+    keyName: String
+}
+
+type ToolUrl {
+    url: String!
+    port: String
+    type: ToolUrlType!
+}
+
+type ToolCredentials {
+    username: String
+    password: String
+    apiKey: APIKey
+}
+
 type IntegratedTool {
     id: ID!
     name: String!
     description: String
     icon: String
-    url: String
-    port: String
+    toolUrls: [ToolUrl!]!
     type: String
     toolType: String
     category: String
@@ -48,12 +84,6 @@ type IntegratedTool {
     connectionTimeout: Int
     readTimeout: Int
     allowedEndpoints: [String]
-}
-
-type ToolCredentials {
-    username: String
-    password: String
-    token: String
 }
 
 input ToolFilter {

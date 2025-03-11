@@ -31,9 +31,9 @@ public class IntegratedToolService {
 
     public String getActiveToken(String toolType) {
         Optional<IntegratedTool> tool = getTool(toolType);
-        if (tool.isPresent() && tool.get().isEnabled() && tool.get().getCredentials() != null) {
-            return tool.get().getCredentials().getToken();
+        if (!tool.isPresent() || !tool.get().isEnabled() || tool.get().getCredentials() == null) {
+            return null;
         }
-        return null;
+        return tool.get().getCredentials().getApiKey().getKey();
     }
-} 
+}
