@@ -17,6 +17,7 @@ import cassandraLogo from '@/assets/cassandra-logo.svg'
 import zookeeperLogo from '@/assets/zookeeper-logo.svg'
 import mysqlLogo from '@/assets/mysql-logo.svg'
 import postgresqlLogo from '@/assets/postgresql-logo.svg'
+import meshcentralLogo from '@/assets/meshcentral-logo.svg'
 
 export const logoMap: Record<string, string> = {
   'grafana-primary': grafanaLogo,
@@ -52,7 +53,8 @@ export const logoMap: Record<string, string> = {
   'integrated-tools-postgresql': postgresqlLogo,
   'postgresql': postgresqlLogo,
   'postgres': postgresqlLogo,
-  'openframe-integrated-tools-postgresql': postgresqlLogo
+  'openframe-integrated-tools-postgresql': postgresqlLogo,
+  'meshcentral': meshcentralLogo
 };
 
 export const getLogoUrl = (id: string, isDark = false): string => {

@@ -2,9 +2,11 @@
   <div class="tools-dashboard">
     <div class="of-mdm-header">
       <h1 class="of-title">Infrastructure</h1>
-      <div class="localhost-toggle">
-        <InputSwitch v-model="useLocalhost" />
-        <span class="toggle-label">Local Deployment</span>
+      <div class="header-actions">
+        <div class="localhost-toggle">
+          <InputSwitch v-model="useLocalhost" />
+          <span class="toggle-label">Local Deployment</span>
+        </div>
       </div>
     </div>
     
@@ -79,44 +81,55 @@
                 </div>
                 <p class="tool-description">{{ tool.description }}</p>
                 <div class="credentials">
-                  <div class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">URL</span>
-                    <input class="p-inputtext p-component" readonly :value="getToolUrl(tool.url, tool.port)" />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.url, tool.port)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                    <button class="p-button p-component p-button-icon-only" @click.stop="openInNewTab(tool.url, tool.port)">
-                      <i class="pi pi-external-link"></i>
-                    </button>
-                  </div>
-                  <div v-if="tool.port" class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">Port</span>
-                    <input class="p-inputtext p-component" readonly :value="tool.port" />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.port)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
-                  <div v-if="tool?.credentials?.username" class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">User</span>
-                    <input class="p-inputtext p-component" readonly :value="tool.credentials.username" />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.credentials.username)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
-                  <div v-if="tool.credentials?.password" class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">Pass</span>
-                    <Password v-model="tool.credentials.password" :feedback="false" readonly inputClass="w-full" toggleMask />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.credentials.password)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
-                  <div v-if="tool.credentials?.token" class="p-inputgroup mb-2">
-                    <span class="p-inputgroup-addon">Token</span>
-                    <Password v-model="tool.credentials.token" :feedback="false" readonly inputClass="w-full" toggleMask />
-                    <button class="p-button p-component p-button-icon-only" @click.stop="copyToClipboard(tool.credentials.token)">
-                      <i class="pi pi-copy"></i>
-                    </button>
-                  </div>
+                  <template v-for="(toolUrl, index) in tool.toolUrls" :key="index">
+                    <div class="p-inputgroup mb-2">
+                      <span class="p-inputgroup-addon" :title="toolUrl.type">{{ formatUrlType(toolUrl.type) }}</span>
+                      <input class="p-inputtext p-component" readonly :value="getUrlWithPort(toolUrl)" />
+                      <button class="p-button p-component p-button-icon-only" @click.stop="() => copyToolUrl(toolUrl)">
+                        <i class="pi pi-copy"></i>
+                      </button>
+                      <button class="p-button p-component p-button-icon-only" @click.stop="() => openToolUrl(toolUrl)">
+                        <i class="pi pi-external-link"></i>
+                      </button>
+                    </div>
+                    <!-- Show API key for API URLs -->
+                    <div v-if="toolUrl.type.includes('API') && tool?.credentials?.apiKey" class="p-inputgroup mb-2 credential-group">
+                      <span class="p-inputgroup-addon">{{ tool.credentials.apiKey.keyName || 'API Key' }}</span>
+                      <Password 
+                        :model-value="tool.credentials.apiKey.key" 
+                        :feedback="false" 
+                        readonly 
+                        input-class="w-full" 
+                        toggle-mask 
+                      />
+                      <button class="p-button p-component p-button-icon-only" @click.stop="() => copyText(tool.credentials?.apiKey?.key)">
+                        <i class="pi pi-copy"></i>
+                      </button>
+                    </div>
+                    <!-- Show username/password for DASHBOARD URLs -->
+                    <template v-if="toolUrl.type === 'DASHBOARD'">
+                      <div v-if="tool?.credentials?.username" class="p-inputgroup mb-2 credential-group">
+                        <span class="p-inputgroup-addon">User</span>
+                        <input class="p-inputtext p-component" readonly :value="tool.credentials?.username" />
+                        <button class="p-button p-component p-button-icon-only" @click.stop="() => copyText(tool.credentials?.username)">
+                          <i class="pi pi-copy"></i>
+                        </button>
+                      </div>
+                      <div v-if="tool.credentials?.password" class="p-inputgroup mb-2 credential-group">
+                        <span class="p-inputgroup-addon">Pass</span>
+                        <Password 
+                          :model-value="tool.credentials.password" 
+                          :feedback="false" 
+                          readonly 
+                          input-class="w-full" 
+                          toggle-mask 
+                        />
+                        <button class="p-button p-component p-button-icon-only" @click.stop="() => copyText(tool.credentials?.password)">
+                          <i class="pi pi-copy"></i>
+                        </button>
+                      </div>
+                    </template>
+                  </template>
                 </div>
               </div>
             </div>
@@ -133,7 +146,7 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { useQuery, provideApolloClient } from '@vue/apollo-composable';
 import { apolloClient } from '../apollo/apolloClient';
 import gql from 'graphql-tag';
-import type { IntegratedTool } from '../types/IntegratedTool';
+import type { IntegratedTool, ToolCredentials, ToolUrlType } from '../types/graphql';
 import Password from 'primevue/password'
 import { ApolloError } from '@apollo/client/errors';
 import Dropdown from 'primevue/dropdown';
@@ -146,6 +159,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { getDisplayName } from '../utils/displayUtils';
 import { useRoute, useRouter } from 'vue-router';
 import { getToolCategory, getCategoryClass, sortToolsByCategory } from '../utils/categoryUtils';
+import Button from 'primevue/button';
 
 // Get theme store
 const themeStore = useThemeStore();
@@ -168,6 +182,10 @@ import kibanaLogo from '@/assets/kibana-logo.svg'
 import redisLogo from '@/assets/redis-logo.svg'
 import cassandraLogo from '@/assets/cassandra-logo.svg'
 import zookeeperLogo from '@/assets/zookeeper-logo.svg'
+import meshcentralLogo from '@/assets/meshcentral-logo.svg'
+import tacticalRmmLogo from '@/assets/tactical-rmm-logo.svg'
+import mysqlLogo from '@/assets/mysql-logo.svg'
+import postgresqlLogo from '@/assets/postgresql-logo.svg'
 
 // Provide Apollo client at component level
 provideApolloClient(apolloClient);
@@ -179,8 +197,11 @@ const INTEGRATED_TOOLS_QUERY = gql`
       name
       description
       icon
-      url
-      port
+      toolUrls {
+        url
+        port
+        type
+      }
       type
       toolType
       category
@@ -189,7 +210,11 @@ const INTEGRATED_TOOLS_QUERY = gql`
       credentials {
         username
         password
-        token
+        apiKey {
+          key
+          type
+          keyName
+        }
       }
       layer
       layerOrder
@@ -273,6 +298,7 @@ const retryFetch = async (attempts = 3, delay = 1000) => {
 const logoMap: Record<string, string> = {
   'grafana-primary': grafanaLogo,
   'mongodb-primary': mongodbLogo,
+  'tactical-rmm': tacticalRmmLogo,
   'mongo-express': mongoExpressLogo,
   'kafka-primary': kafkaLogo,
   'kafka-ui': kafkaLogo,
@@ -281,18 +307,28 @@ const logoMap: Record<string, string> = {
   'authentik': authentikLogo,
   'prometheus-primary': prometheusLogo,
   'nifi-primary': nifiLogo,
-  'pinot-controller': pinotLogo,
-  'pinot-broker': pinotLogo,
-  'pinot-server': pinotLogo,
+  'pinot-primary': pinotLogo,
   'loki-primary': lokiLogo,
   'redis-primary': redisLogo,
+  'integrated-tools-redis': redisLogo,
   'cassandra-primary': cassandraLogo,
   'zookeeper-primary': zookeeperLogo,
   'openframe-api': openframeLogo,
   'openframe-config': openframeLogo,
   'openframe-stream': openframeLogo,
   'openframe-ui': openframeLogo,
-  'openframe-gateway': openframeLogo
+  'openframe-gateway': openframeLogo,
+  'openframe-management': openframeLogo,
+  'mysql-primary': mysqlLogo,
+  'integrated-tools-mysql': mysqlLogo,
+  'mysql': mysqlLogo,
+  'openframe-integrated-tools-mysql': mysqlLogo,
+  'postgresql-primary': postgresqlLogo,
+  'integrated-tools-postgresql': postgresqlLogo,
+  'postgresql': postgresqlLogo,
+  'postgres': postgresqlLogo,
+  'openframe-integrated-tools-postgresql': postgresqlLogo,
+  'meshcentral': meshcentralLogo
 };
 
 // Compute unique categories from tools data
@@ -349,7 +385,51 @@ watch(result, (newResult) => {
 }, { immediate: true });
 
 const getToolIcon = (tool: IntegratedTool): string => {
-  return getLogoUrl(tool.id, isDark.value);
+  // First try to get logo by tool ID
+  const logoByToolId = logoMap[tool.id];
+  if (logoByToolId) {
+    return logoByToolId;
+  }
+
+  // If no logo found by ID, try by toolType
+  switch (tool.toolType) {
+    case 'AUTHENTIK':
+      return authentikLogo;
+    case 'FLEET':
+      return fleetLogo;
+    case 'RUSTDESK':
+      return rustdeskLogo;
+    case 'GRAFANA':
+      return grafanaLogo;
+    case 'LOKI':
+      return lokiLogo;
+    case 'PROMETHEUS':
+      return prometheusLogo;
+    case 'KAFKA':
+      return kafkaLogo;
+    case 'MONGO_EXPRESS':
+      return mongoExpressLogo;
+    case 'MONGODB':
+      return mongodbLogo;
+    case 'NIFI':
+      return nifiLogo;
+    case 'PINOT':
+      return pinotLogo;
+    case 'KIBANA':
+      return kibanaLogo;
+    case 'REDIS':
+      return redisLogo;
+    case 'CASSANDRA':
+      return cassandraLogo;
+    case 'ZOOKEEPER':
+      return zookeeperLogo;
+    case 'MESHCENTRAL':
+      return meshcentralLogo;
+    case 'TACTICAL_RMM':
+      return tacticalRmmLogo;
+    default:
+      return openframeLogo;
+  }
 };
 
 const onImageError = (e: Event) => {
@@ -360,53 +440,36 @@ const onImageError = (e: Event) => {
   target.classList.add('fallback-icon');
 };
 
-const useLocalhost = ref(false);
+const useLocalhost = ref(true);
 
-const getToolUrl = (url: string | undefined, port: string | undefined): string => {
-  if (!url || !useLocalhost.value) return url || '';
+const getUrlWithPort = (toolUrl: any): string => {
+  if (!toolUrl?.url) return '';
+
   try {
-    const urlObj = new URL(url);
-    if (!urlObj.port && port) {
-      urlObj.port = port;
+    const urlObj = new URL(toolUrl.url);
+    if (!urlObj.port && toolUrl.port) {
+      urlObj.port = toolUrl.port;
     }
-    urlObj.hostname = 'localhost';
-    return urlObj.toString();
-  } catch {
-    return url;
-  }
-};
-
-const ensureUrlHasPort = (url: string | undefined, port: string | undefined): string => {
-  if (!url) return '';
-  try {
-    const urlObj = new URL(url);
-    if (!urlObj.port && port) {
-      urlObj.port = port;
+    if (useLocalhost.value) {
+      urlObj.hostname = 'localhost';
     }
     return urlObj.toString();
   } catch {
-    return url;
+    return toolUrl.url;
   }
 };
 
-const openTool = (tool: IntegratedTool) => {
-  const url = useLocalhost.value ? getToolUrl(tool.url, tool.port) : ensureUrlHasPort(tool.url, tool.port);
+const copyToolUrl = (toolUrl: any) => {
+  const url = getUrlWithPort(toolUrl);
+  if (url) {
+    navigator.clipboard.writeText(url);
+  }
+};
+
+const openToolUrl = (toolUrl: any) => {
+  const url = getUrlWithPort(toolUrl);
   if (url) {
     window.open(url, '_blank');
-  }
-};
-
-const copyToClipboard = (text: string | undefined, port?: string) => {
-  const value = text && useLocalhost.value ? getToolUrl(text, port) : ensureUrlHasPort(text, port);
-  if (value) {
-    navigator.clipboard.writeText(value);
-  }
-};
-
-const openInNewTab = (url: string | undefined, port?: string) => {
-  const value = url && useLocalhost.value ? getToolUrl(url, port) : ensureUrlHasPort(url, port);
-  if (value) {
-    window.open(value, '_blank')
   }
 };
 
@@ -428,6 +491,25 @@ const isDevelopment = computed(() => import.meta.env.DEV);
 
 const getCategoryClassForTool = (tool: IntegratedTool): string => {
   return getCategoryClass(getToolCategory(tool));
+};
+
+const copyText = (text: string | undefined) => {
+  if (text) {
+    navigator.clipboard.writeText(text);
+  }
+};
+
+const formatUrlType = (type: string): string => {
+  if (type === 'DASHBOARD') return 'Dashboard';
+  if (type.includes('API')) return type.replace('Api', 'API');
+  return type.toLowerCase()
+    .split('_')
+    .map((word, index) => 
+      index === 0 
+        ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(' ');
 };
 </script>
 
@@ -535,12 +617,17 @@ const getCategoryClassForTool = (tool: IntegratedTool): string => {
   padding: 0.5rem 1rem;
   background: var(--surface-section);
   border: 1px solid var(--surface-border);
-  width: 5rem;
+  width: 6rem;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   color: var(--text-color);
+  font-size: 0.75rem;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .p-inputgroup input {
@@ -830,5 +917,11 @@ h2 {
 
 .tool-card-inner.monitoring {
   border-left: 4px solid var(--bluegray-500);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 </style> 

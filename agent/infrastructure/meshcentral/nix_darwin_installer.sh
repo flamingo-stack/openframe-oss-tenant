@@ -122,7 +122,7 @@ cleanup() {
 
 # Help function
 show_help() {
-  echo -e "${BLUE}${INFO} MeshCentral Agent Installer for *nix Systems${RESET}"
+  echo -e "${BLUE}${INFO} MeshCentral Agent Installer for *nix darwin Systems${RESET}"
   echo ""
   echo "Usage: $0 [options]"
   echo ""

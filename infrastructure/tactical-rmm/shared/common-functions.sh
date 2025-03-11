@@ -125,7 +125,9 @@ function create_superuser_and_api_key() {
     # create default organization and API key
     echo "Creating default organization and API key"
     echo "from accounts.models import User, APIKey; from clients.models import Client, Site; from core.models import CoreSettings; from django.utils.crypto import get_random_string; from django.utils import timezone; user = User.objects.get(username='${TRMM_USER}'); client = Client.objects.create(name='Default Organization', created_by=user) if not Client.objects.exists() else Client.objects.first(); site = Site.objects.create(client=client, name='Default Site', created_by=user) if not Site.objects.filter(client=client).exists() else Site.objects.filter(client=client).first(); api_key = APIKey.objects.create(name='Default', key=get_random_string(length=32).upper(), user=user) if not APIKey.objects.filter(user=user).exists() else APIKey.objects.filter(user=user).first(); print(f'{api_key.key}')" | python manage.py shell >${TACTICAL_DIR}/tmp/api_key.txt
-    redis-cli -h tactical-redis -p 6379 set "tactical_api_key" "$(cat ${TACTICAL_DIR}/tmp/api_key.txt)"
+    API_KEY=$(cat ${TACTICAL_DIR}/tmp/api_key.txt)
+    echo "Setting Tactical RMM API key ${API_KEY} in Redis"
+    redis-cli -h tactical-redis -p 6379 set "tactical_api_key" "${API_KEY}"
 }
 
 function tactical_init() {

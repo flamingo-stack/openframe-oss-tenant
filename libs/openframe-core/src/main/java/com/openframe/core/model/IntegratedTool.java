@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.util.List;
 
 @Data
 @Builder
@@ -14,8 +15,7 @@ public class IntegratedTool {
     private String name;
     private String description;
     private String icon;
-    private String url;
-    private String port;
+    private List<ToolUrl> toolUrls;
     private String type;
     private String toolType;
     private String category;
