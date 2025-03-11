@@ -1,3 +1,4 @@
+kind-cluster/compose/_data
 target/
 pom.xml.tag
 pom.xml.releaseBackup
