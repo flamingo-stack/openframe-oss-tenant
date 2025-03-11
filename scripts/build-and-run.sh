@@ -70,7 +70,7 @@ echo "Starting services..."
 
 # Start infrastructure services first
 echo "Starting infrastructure services..."
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+docker compose -f docker-compose.openframe-infrastructure.yml up -d
 
 # Wait for infrastructure to be ready
 wait_for_infrastructure
@@ -82,19 +82,19 @@ docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-i
 
 # Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
-docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+docker compose -f docker-compose.openframe-tactical-rmm.yml up -d
 
 # Start Fleet MDM after infrastructure is ready
 echo "Starting Fleet MDM deployment..."
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+docker compose -f docker-compose.openframe-fleet-mdm.yml up -d
 
 # Start Authentik deployment
 echo "Starting Authentik deployment..."
-docker-compose -f docker-compose.openframe-authentik.yml up -d
+docker compose -f docker-compose.openframe-authentik.yml up -d
 
 # Start MeshCentral deployment
 echo "Starting MeshCentral deployment..."
-docker-compose -f docker-compose.openframe-meshcentral.yml up -d
+docker compose -f docker-compose.openframe-meshcentral.yml up -d
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070

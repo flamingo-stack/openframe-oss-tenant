@@ -1,0 +1,30 @@
+esConfig:
+  elasticsearch.yml: |
+    cluster.routing.allocation.disk.threshold_enabled: false
+
+secret:
+  enabled: false
+
+extraEnvs:
+  - name: ELASTIC_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: elasticsearch-master-credentials
+        key: password
+
+# optimization for kind k8s
+antiAffinity: "soft"
+esJavaOpts: "-Xmx128m -Xms128m"
+
+volumeClaimTemplate:
+  resources:
+    requests:
+      storage: 100M
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "512M"
+  limits:
+    cpu: "1000m"
+    memory: "1024M"
