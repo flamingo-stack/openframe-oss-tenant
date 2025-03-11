@@ -522,7 +522,7 @@ register_tool \
     "MESHCENTRAL" \
     "MeshCentral" \
     "MeshCentral Remote Management Platform" \
-    "http://openframe-meshcentral-nginx" \
+    "https://openframe-meshcentral-nginx" \
     8383 \
     "mesh@openframe.io" \
     "meshpass@1234" \
