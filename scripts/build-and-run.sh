@@ -468,6 +468,12 @@ register_tool \
     "#455A64" \
     "BEARER_TOKEN"
 
+    # Get MeshCentral API key
+echo "Getting MeshCentral API key..."
+MESHCENTRAL_API_KEY=$(docker exec openframe-meshcentral-server cat /opt/mesh/mesh_token)
+echo "MeshCentral API key: $MESHCENTRAL_API_KEY"
+
+
 # Register MeshCentral with layer info
 register_tool \
     "meshcentral" \
@@ -477,12 +483,13 @@ register_tool \
     '[{"url": "https://openframe-meshcentral-nginx", "port": "8383", "type": "DASHBOARD"}, {"url": "https://openframe-meshcentral", "port": "8383", "type": "API"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
-    "" \
+    "$MESHCENTRAL_API_KEY" \
     "Device Management" \
     "Integrated Tool" \
     "Integrated Tools" \
     2 \
-    "#455A64"
+    "#455A64",
+    "BEARER_TOKEN"
 
 # Register Authentik with layer info
 register_tool \
@@ -490,7 +497,7 @@ register_tool \
     "AUTHENTIK" \
     "Authentik SSO" \
     "Authentik Identity Provider" \
-    '[{"url": "http://openframe-authentik-server", "port": "9000", "type": "API"}, {"url": "http://openframe-authentik-server", "port": "9000", "type": "DASHBOARD"}]' \
+    '[{"url": "http://openframe-authentik-server", "port": "5001", "type": "API"}, {"url": "http://openframe-authentik-server", "port": "5001", "type": "DASHBOARD"}]' \
     "akadmin@openframe.local" \
     "openframe123!" \
     "openframe-api-token-123456789" \
@@ -499,8 +506,7 @@ register_tool \
     "Integrated Tools" \
     4 \
     "#455A64" \
-    "HEADER" \
-    "Authorization"
+    "BEARER_TOKEN"
 
 # Register Grafana with layer info
 register_tool \
@@ -552,7 +558,7 @@ register_tool \
 
 # Get Tactical RMM API key
 echo "Getting Tactical RMM API key..."
-TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
+TACTICAL_API_KEY=$(docker exec openframe-tactical-backend cat /opt/tactical/api_key.txt)
 echo "Tactical RMM API key: $TACTICAL_API_KEY"
 
 # Register Tactical RMM with layer info

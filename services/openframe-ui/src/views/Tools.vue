@@ -93,7 +93,7 @@
                       </button>
                     </div>
                     <!-- Show API key for API URLs -->
-                    <div v-if="toolUrl.type.includes('API') && tool?.credentials?.apiKey" class="p-inputgroup mb-2 credential-group">
+                    <div v-if="toolUrl.type === 'API' && tool?.credentials?.apiKey" class="p-inputgroup mb-2 credential-group">
                       <span class="p-inputgroup-addon">{{ tool.credentials.apiKey.keyName || 'API Key' }}</span>
                       <Password 
                         :model-value="tool.credentials.apiKey.key" 
@@ -380,6 +380,19 @@ watch(result, (newResult) => {
   console.log('Result changed:', newResult);
   if (newResult?.integratedTools) {
     console.log('Received tools:', newResult.integratedTools);
+    // Add detailed logging for debugging credentials
+    newResult.integratedTools.forEach((tool: IntegratedTool) => {
+      if (tool.credentials?.apiKey) {
+        console.log(`Tool ${tool.name} has API Key:`, {
+          key: tool.credentials.apiKey.key,
+          type: tool.credentials.apiKey.type,
+          keyName: tool.credentials.apiKey.keyName
+        });
+      }
+      if (tool.toolUrls) {
+        console.log(`Tool ${tool.name} URLs:`, tool.toolUrls);
+      }
+    });
     tools.value = newResult.integratedTools;
   }
 }, { immediate: true });
