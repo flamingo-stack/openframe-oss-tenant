@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-gateway
+  template:
+    metadata:
+      labels:
+        app: openframe-gateway
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+        - name: gateway
+          image: ghcr.io/flamingo-cx/openframe-gateway:110325
+          ports:
+            - containerPort: 8100
+              name: http
+            - containerPort: 8101
+              name: management
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:configserver:http://openframe-config-server:8888"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: management
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-gateway
+spec:
+  selector:
+    app: openframe-gateway
+  ports:
+    - port: 8100
+      targetPort: 8100
+      name: http
+    - port: 8101
+      targetPort: 8101
+      name: management
+  type: ClusterIP

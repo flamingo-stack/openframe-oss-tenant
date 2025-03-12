@@ -1,0 +1,172 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nifi-content
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nifi-database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nifi-flowfile
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nifi-provenance
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nifi-state
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nifi-logs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nifi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nifi
+  template:
+    metadata:
+      labels:
+        app: nifi
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+        - name: nifi
+          image: ghcr.io/flamingo-cx/openframe-nifi:110325
+          ports:
+            - containerPort: 8443
+              name: https
+            - containerPort: 9096
+              name: metrics
+          env:
+            - name: NIFI_WEB_HTTPS_PORT
+              value: "8443"
+            - name: NIFI_WEB_HTTP_HOST
+              value: "0.0.0.0"
+            - name: SINGLE_USER_CREDENTIALS_USERNAME
+              value: "openframe"
+            - name: SINGLE_USER_CREDENTIALS_PASSWORD
+              value: "password123456789"
+          volumeMounts:
+            - name: nifi-content
+              mountPath: /opt/nifi/nifi-current/content_repository
+            - name: nifi-database
+              mountPath: /opt/nifi/nifi-current/database_repository
+            - name: nifi-flowfile
+              mountPath: /opt/nifi/nifi-current/flowfile_repository
+            - name: nifi-provenance
+              mountPath: /opt/nifi/nifi-current/provenance_repository
+            - name: nifi-state
+              mountPath: /opt/nifi/nifi-current/state
+            - name: nifi-logs
+              mountPath: /opt/nifi/nifi-current/logs
+          livenessProbe:
+            httpGet:
+              path: /nifi
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /nifi
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 10
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+      volumes:
+        - name: nifi-content
+          persistentVolumeClaim:
+            claimName: nifi-content
+        - name: nifi-database
+          persistentVolumeClaim:
+            claimName: nifi-database
+        - name: nifi-flowfile
+          persistentVolumeClaim:
+            claimName: nifi-flowfile
+        - name: nifi-provenance
+          persistentVolumeClaim:
+            claimName: nifi-provenance
+        - name: nifi-state
+          persistentVolumeClaim:
+            claimName: nifi-state
+        - name: nifi-logs
+          persistentVolumeClaim:
+            claimName: nifi-logs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nifi
+spec:
+  selector:
+    app: nifi
+  ports:
+    - port: 8443
+      targetPort: 8443
+      name: https
+    - port: 9096
+      targetPort: 9096
+      name: metrics
+  type: ClusterIP
