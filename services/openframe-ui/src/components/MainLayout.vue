@@ -169,6 +169,11 @@ const menuItems: MenuItem[] = [
     icon: 'pi pi-wrench',
     children: [
       {
+        label: 'Remote Monitoring & Management',
+        icon: 'pi pi-desktop',
+        path: '/rmm'
+      },
+      {
         label: 'Mobile Device Management',
         icon: 'pi pi-mobile',
         path: '/mdm'

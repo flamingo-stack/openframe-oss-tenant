@@ -1,34 +1,15 @@
 <template>
-  <div class="mdm-layout">
-    <div class="side-nav-container">
-      <div class="navigation-header">
-        <h2>Mobile Device Management</h2>
-        <div class="integration-credit">
-          <span class="credit-text">Powered by</span>
-          <img :src="getLogoUrl('fleet')" alt="Fleet" class="integration-logo tool-logo" :class="{ 'invert': isDark }" />
-        </div>
-      </div>
-      <ul class="navigation-menu">
-        <router-link
-          v-for="item in navigationItems"
-          :key="item.path"
-          :to="item.path"
-          custom
-          v-slot="{ isActive, navigate }"
-        >
-          <li :class="{ active: isActive }" @click="navigate">
-            <div class="navigation-item">
-              <i :class="item.icon"></i>
-              <span>{{ item.label }}</span>
-            </div>
-          </li>
-        </router-link>
-      </ul>
-    </div>
-    <div class="content-container">
-      <router-view></router-view>
-    </div>
-  </div>
+  <ModuleLayout>
+    <template #sidebar>
+      <ModuleNavigation
+        title="Mobile Device Management"
+        :navigationItems="navigationItems"
+        poweredBy="fleet"
+      />
+    </template>
+
+    <router-view></router-view>
+  </ModuleLayout>
 </template>
 
 <script setup lang="ts">
@@ -37,6 +18,8 @@ import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLogoUrl } from '@/services/LogoService';
+import ModuleLayout from '../../components/shared/ModuleLayout.vue';
+import ModuleNavigation from '../../components/shared/ModuleNavigation.vue';
 
 const themeStore = useThemeStore();
 const { isDark } = storeToRefs(themeStore);

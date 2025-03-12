@@ -15,6 +15,13 @@ import Settings from '../views/mdm/Settings.vue'
 import Profiles from '../views/mdm/Profiles.vue'
 import SettingsCategory from '../views/mdm/SettingsCategory.vue'
 import SystemArchitecture from '../views/SystemArchitecture.vue'
+import RMMLayout from '../views/rmm/RMMLayout.vue'
+import RMMDashboard from '../views/rmm/Dashboard.vue'
+import RMMDevices from '../views/rmm/Devices.vue'
+import RMMMonitoring from '../views/rmm/Monitoring.vue'
+import RMMScripts from '../views/rmm/Scripts.vue'
+import RMMAutomation from '../views/rmm/Automation.vue'
+import RMMSettings from '../views/rmm/Settings.vue'
 import { AuthService } from '@/services/AuthService';
 import { useAuthStore } from '@/stores/auth';
 
@@ -116,6 +123,53 @@ const router = createRouter({
               props: true
             }
           ]
+        }
+      ]
+    },
+    {
+      path: '/rmm',
+      component: RMMLayout,
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          redirect: '/rmm/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'rmm-dashboard',
+          component: RMMDashboard,
+          meta: { title: 'RMM Dashboard' }
+        },
+        {
+          path: 'devices',
+          name: 'rmm-devices',
+          component: RMMDevices,
+          meta: { title: 'RMM Devices' }
+        },
+        {
+          path: 'monitoring',
+          name: 'rmm-monitoring',
+          component: RMMMonitoring,
+          meta: { title: 'RMM Monitoring' }
+        },
+        {
+          path: 'scripts',
+          name: 'rmm-scripts',
+          component: RMMScripts,
+          meta: { title: 'RMM Scripts' }
+        },
+        {
+          path: 'automation',
+          name: 'rmm-automation',
+          component: RMMAutomation,
+          meta: { title: 'RMM Automation' }
+        },
+        {
+          path: 'settings',
+          name: 'rmm-settings',
+          component: RMMSettings,
+          meta: { title: 'RMM Settings' }
         }
       ]
     },
