@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-mdm-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleet-mdm-mysql
+  template:
+    metadata:
+      labels:
+        app: fleet-mdm-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0.35
+        args:
+          - --default-authentication-plugin=mysql_native_password
+          - --skip-mysqlx
+          - --character-set-server=utf8mb4
+          - --collation-server=utf8mb4_unicode_ci
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "openframe123!"
+        - name: MYSQL_DATABASE
+          value: "fleet-mdm-database"
+        - name: MYSQL_USER
+          value: "fleet-mdm-user"
+        - name: MYSQL_PASSWORD
+          value: "fleet-mdm-password-1234"
+        - name: MYSQL_DEFAULT_AUTHENTICATION_PLUGIN
+          value: "mysql_native_password"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p${MYSQL_ROOT_PASSWORD}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: fleet-mdm-mysql-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-mdm-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleet-mdm-redis
+  template:
+    metadata:
+      labels:
+        app: fleet-mdm-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: fleet-mdm-redis-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleet
+  template:
+    metadata:
+      labels:
+        app: fleet
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: fleet
+        image: ghcr.io/flamingo-cx/openframe-fleet-mdm-fleet:110325
+        ports:
+        - containerPort: 8070
+        env:
+        - name: FLEET_CONFIG
+          value: "/etc/fleet/fleet.yml"
+        - name: FLEET_SETUP_ADMIN_EMAIL
+          value: "admin@openframe.local"
+        - name: FLEET_SETUP_ADMIN_PASSWORD
+          value: "openframe123!"
+        - name: FLEET_SETUP_ORG_NAME
+          value: "OpenFrame"
+        - name: FLEET_SETUP_AUTO_INIT
+          value: "true"
+        - name: FLEET_MYSQL_ADDRESS
+          value: "fleet-mdm-mysql:3306"
+        - name: FLEET_MYSQL_DATABASE
+          value: "fleet-mdm-database"
+        - name: FLEET_MYSQL_USERNAME
+          value: "fleet-mdm-user"
+        - name: FLEET_MYSQL_PASSWORD
+          value: "fleet-mdm-password-1234"
+        - name: FLEET_REDIS_ADDRESS
+          value: "fleet-mdm-redis:6379"
+        - name: FLEET_AUTH_JWT_KEY
+          value: "fleet-jwt-secret-123"
+        - name: FLEET_ENROLL_SECRET
+          value: "fleet-enroll-secret-123"
+        - name: FLEET_API_USER_NAME
+          value: "API User"
+        - name: FLEET_API_USER_EMAIL
+          value: "api@openframe.local"
+        - name: FLEET_API_USER_PASSWORD
+          value: "openframe123!"
+        - name: FLEET_SERVER_PORT
+          value: "8070"
+        - name: FLEET_SETUP_ADMIN_NAME
+          value: "Admin"
+        volumeMounts:
+        - name: fleet-logs
+          mountPath: /var/log/osquery
+        livenessProbe:
+          httpGet:
+            path: /setup
+            port: 8070
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: fleet-logs
+        persistentVolumeClaim:
+          claimName: fleet-mdm-fleet-logs

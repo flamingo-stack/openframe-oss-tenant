@@ -70,7 +70,7 @@ echo "Starting services..."
 
 # Start infrastructure services first
 echo "Starting infrastructure services..."
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
+docker compose -f docker-compose.openframe-infrastructure.yml up -d
 
 # Wait for infrastructure to be ready
 wait_for_infrastructure
@@ -82,19 +82,19 @@ docker exec openframe-cassandra cqlsh -f /docker-entrypoint-initdb.d/cassandra-i
 
 # Start Tactical RMM deployment
 echo "Starting Tactical RMM deployment..."
-docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
+docker compose -f docker-compose.openframe-tactical-rmm.yml up -d
 
 # Start Fleet MDM after infrastructure is ready
 echo "Starting Fleet MDM deployment..."
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+docker compose -f docker-compose.openframe-fleet-mdm.yml up -d
 
 # Start Authentik deployment
 echo "Starting Authentik deployment..."
-docker-compose -f docker-compose.openframe-authentik.yml up -d
+docker compose -f docker-compose.openframe-authentik.yml up -d
 
 # Start MeshCentral deployment
 echo "Starting MeshCentral deployment..."
-docker-compose -f docker-compose.openframe-meshcentral.yml up -d
+docker compose -f docker-compose.openframe-meshcentral.yml up -d
 
 # Wait for Fleet to be ready
 check_service "fleet" 8070
@@ -468,12 +468,6 @@ register_tool \
     "#455A64" \
     "BEARER_TOKEN"
 
-    # Get MeshCentral API key
-echo "Getting MeshCentral API key..."
-MESHCENTRAL_API_KEY=$(docker exec openframe-meshcentral-server cat /opt/mesh/mesh_token)
-echo "MeshCentral API key: $MESHCENTRAL_API_KEY"
-
-
 # Register MeshCentral with layer info
 register_tool \
     "meshcentral" \
@@ -483,13 +477,12 @@ register_tool \
     '[{"url": "https://openframe-meshcentral-nginx", "port": "8383", "type": "DASHBOARD"}, {"url": "https://openframe-meshcentral", "port": "8383", "type": "API"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
-    "$MESHCENTRAL_API_KEY" \
+    "" \
     "Device Management" \
     "Integrated Tool" \
     "Integrated Tools" \
     2 \
-    "#455A64",
-    "BEARER_TOKEN"
+    "#455A64"
 
 # Register Authentik with layer info
 register_tool \
@@ -497,7 +490,7 @@ register_tool \
     "AUTHENTIK" \
     "Authentik SSO" \
     "Authentik Identity Provider" \
-    '[{"url": "http://openframe-authentik-server", "port": "5001", "type": "API"}, {"url": "http://openframe-authentik-server", "port": "5001", "type": "DASHBOARD"}]' \
+    '[{"url": "http://openframe-authentik-server", "port": "9000", "type": "API"}, {"url": "http://openframe-authentik-server", "port": "9000", "type": "DASHBOARD"}]' \
     "akadmin@openframe.local" \
     "openframe123!" \
     "openframe-api-token-123456789" \
@@ -506,7 +499,8 @@ register_tool \
     "Integrated Tools" \
     4 \
     "#455A64" \
-    "BEARER_TOKEN"
+    "HEADER" \
+    "Authorization"
 
 # Register Grafana with layer info
 register_tool \
@@ -558,7 +552,7 @@ register_tool \
 
 # Get Tactical RMM API key
 echo "Getting Tactical RMM API key..."
-TACTICAL_API_KEY=$(docker exec openframe-tactical-backend cat /opt/tactical/api_key.txt)
+TACTICAL_API_KEY=$(docker exec openframe-tactical-redis redis-cli get tactical_api_key | tr -d '"')
 echo "Tactical RMM API key: $TACTICAL_API_KEY"
 
 # Register Tactical RMM with layer info

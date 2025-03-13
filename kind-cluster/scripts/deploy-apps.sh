@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Pull secrets
+kubectl create secret docker-registry github-pat-secret \
+  --docker-server=ghcr.io \
+  --docker-username=vusal-fl \
+  --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
+  --docker-email=vusal@flamingo.cx
+
+# ------------- INFRASTRUCTURE -------------
 # Deploy ingress-nginx
 helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace \
@@ -79,11 +87,6 @@ kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/nam
 #   -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
 
 # MONGO
-kubectl create secret docker-registry github-pat-secret \
-  --docker-server=ghcr.io \
-  --docker-username=vusal-fl \
-  --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
-  --docker-email=vusal@flamingo.cx
 
 # kubectl apply -f ./kind-cluster/apps/infrastructure/mongodb/mongodb.yaml
 
@@ -110,19 +113,34 @@ kubectl create secret docker-registry github-pat-secret \
 
 # Deploy the services
 # management-key: docker-management-key-123
-kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
 
-kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
-kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
 
-# ZK
-helm upgrade -i zookeeper bitnami/zookeeper \
-  --version 13.7.4 \
-  -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
-kubectl apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml
+# ------------- ZOOKEEPER -------------
+# helm upgrade -i zookeeper bitnami/zookeeper \
+#   --version 13.7.4 \
+#   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
+# kubectl apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml
 
-# pinot servers
-kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
+# # pinot servers
+# kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
+
+# ------------- AUTHENTIK -------------
+# kubectl apply -f ./kind-cluster/apps/authentik
+
+# ------------- FLEET -------------
+# kubectl apply -f ./kind-cluster/apps/fleet
+
+# ------------- MESH CENTRAL -------------
+# kubectl apply -f ./kind-cluster/apps/meshcentral
+
+# ------------- RMM -------------
+# kubectl apply -f ./kind-cluster/apps/tactical-rmm
+
+# ------------- REGISTER TOOLS -------------
+# kubectl apply -f ./kind-cluster/apps/jobs/register-tools.yaml

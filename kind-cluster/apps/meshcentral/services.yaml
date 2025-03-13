@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshcentral-mongodb
+spec:
+  selector:
+    app: meshcentral-mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshcentral
+spec:
+  selector:
+    app: meshcentral
+  ports:
+  - port: 8383
+    targetPort: 8383
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshcentral-nginx
+spec:
+  selector:
+    app: meshcentral-nginx
+  ports:
+  - port: 8383
+    targetPort: 8383
