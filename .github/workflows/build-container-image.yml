@@ -13,8 +13,6 @@ on:
     workflows: ["OpenFrame Build Java Artifacts"]
     types:
       - completed
-    # branches:
-    #   - main
 
 env:
   ORGANIZATION: flamingo-cx
