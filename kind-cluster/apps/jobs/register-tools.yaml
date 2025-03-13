@@ -1,0 +1,399 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tool-registrations
+data:
+  register-tools.sh: |
+    #!/bin/bash
+
+    # Function to check job status
+    check_job_status() {
+      local job_name=$1
+      local max_attempts=30
+      local attempt=1
+      local wait_time=10
+
+      echo "Checking status of job: $job_name"
+      while [ $attempt -le $max_attempts ]; do
+        local status=$(kubectl get job $job_name -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+        if [ "$status" = "True" ]; then
+          echo "Job $job_name completed successfully"
+          return 0
+        fi
+
+        local failed=$(kubectl get job $job_name -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+        if [ "$failed" = "True" ]; then
+          echo "Job $job_name failed"
+          kubectl logs job/$job_name
+          return 1
+        fi
+
+        echo "Waiting for job $job_name to complete... (attempt $attempt/$max_attempts)"
+        attempt=$((attempt + 1))
+        sleep $wait_time
+      done
+
+      echo "Job $job_name did not complete within the expected time"
+      return 1
+    }
+
+    # Function to register an integrated tool
+    register_tool() {
+      local tool_id=$1
+      local tool_type=$2
+      local name=$3
+      local description=$4
+      local urls_json=$5
+      local username=$6
+      local password=$7
+      local token=$8
+      local category=$9
+      local platform_category=${10}
+      local layer=${11}
+      local layer_order=${12}
+      local layer_color=${13}
+      local api_key_type=${14:-"BEARER_TOKEN"}
+      local api_key_name=${15:-""}
+
+      echo "Registering $name with OpenFrame API..."
+
+      # Build credentials object based on what's provided
+      local credentials_parts=()
+      if [ ! -z "$username" ]; then
+        credentials_parts+=("\"username\": \"$username\"")
+      fi
+      if [ ! -z "$password" ]; then
+        credentials_parts+=("\"password\": \"$password\"")
+      fi
+      if [ ! -z "$token" ]; then
+        local api_key_json="{\"key\": \"$token\", \"type\": \"$api_key_type\""
+        if [ "$api_key_type" != "BEARER_TOKEN" ] && [ ! -z "$api_key_name" ]; then
+          api_key_json="$api_key_json, \"keyName\": \"$api_key_name\""
+        fi
+        api_key_json="$api_key_json}"
+        credentials_parts+=("\"apiKey\": $api_key_json")
+      fi
+
+      local credentials_json="{$(IFS=,; echo "${credentials_parts[*]}")}"
+
+      # Prepare the full JSON payload
+      local json_payload="{
+        \"tool\": {
+          \"id\": \"$tool_id\",
+          \"toolType\": \"$tool_type\",
+          \"name\": \"$name\",
+          \"description\": \"$description\",
+          \"toolUrls\": $urls_json,
+          \"type\": \"$tool_type\",
+          \"category\": \"$category\",
+          \"platformCategory\": \"$platform_category\",
+          \"enabled\": true,
+          \"credentials\": $credentials_json,
+          \"layer\": \"$layer\",
+          \"layerOrder\": $layer_order,
+          \"layerColor\": \"$layer_color\",
+          \"metricsPath\": \"/metrics\",
+          \"healthCheckEndpoint\": \"/health\",
+          \"healthCheckInterval\": 30,
+          \"connectionTimeout\": 5000,
+          \"readTimeout\": 5000,
+          \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"]
+        }
+      }"
+
+      # Send the request
+      curl -X POST "http://openframe-management:8095/v1/tools/$tool_id" \
+        -H "Content-Type: application/json" \
+        -d "$json_payload" \
+        --retry 5 \
+        --retry-delay 2 \
+        --retry-all-errors
+
+      if [ $? -ne 0 ]; then
+        echo "Failed to register $name"
+        return 1
+      fi
+
+      echo "$name registered successfully!"
+      return 0
+    }
+
+    # Register OpenFrame UI Service
+    register_tool \
+      "openframe-ui" \
+      "OPENFRAME" \
+      "OpenFrame UI" \
+      "OpenFrame User Interface Service" \
+      '[{"url": "http://openframe-ui", "port": "4000", "type": "DASHBOARD"}]' \
+      "" \
+      "" \
+      "" \
+      "User Interface" \
+      "OpenFrame Core" \
+      "Interface" \
+      1 \
+      "#FFB300"
+
+    # Register OpenFrame Gateway Service
+    register_tool \
+      "openframe-gateway" \
+      "OPENFRAME" \
+      "OpenFrame Gateway" \
+      "OpenFrame Gateway Service" \
+      '[{"url": "http://openframe-gateway", "port": "8100", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "Gateway" \
+      "OpenFrame Core" \
+      "Application" \
+      1 \
+      "#455A64"
+
+    # Register OpenFrame API Service
+    register_tool \
+      "openframe-api" \
+      "OPENFRAME" \
+      "OpenFrame API" \
+      "OpenFrame API Gateway Service" \
+      '[{"url": "http://openframe-api", "port": "8095", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "API Gateway" \
+      "OpenFrame Core" \
+      "Application" \
+      2 \
+      "#455A64"
+
+    # Register OpenFrame Stream Service
+    register_tool \
+      "openframe-stream" \
+      "OPENFRAME" \
+      "OpenFrame Stream" \
+      "OpenFrame Stream Processing Service" \
+      '[{"url": "http://openframe-stream", "port": "8091", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "Stream Processing" \
+      "OpenFrame Core" \
+      "Application" \
+      3 \
+      "#455A64"
+
+    # Register OpenFrame Management Service
+    register_tool \
+      "openframe-management" \
+      "OPENFRAME" \
+      "OpenFrame Management" \
+      "OpenFrame Management Service" \
+      '[{"url": "http://openframe-management", "port": "8096", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "Management" \
+      "OpenFrame Core" \
+      "Application" \
+      4 \
+      "#455A64"
+
+    # Register OpenFrame Config Service
+    register_tool \
+      "openframe-config" \
+      "OPENFRAME" \
+      "OpenFrame Config" \
+      "OpenFrame Configuration Service" \
+      '[{"url": "http://openframe-config", "port": "8090", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "Configuration" \
+      "OpenFrame Core" \
+      "Configuration" \
+      1 \
+      "#FFB74D"
+
+    # Register Kafka
+    register_tool \
+      "kafka-primary" \
+      "KAFKA" \
+      "Kafka Message Broker" \
+      "Apache Kafka Event Streaming Platform" \
+      '[{"url": "http://openframe-kafka-ui", "port": "8081", "type": "DASHBOARD"}, {"url": "http://openframe-kafka", "port": "9092", "type": "BROKER"}, {"url": "http://openframe-kafka", "port": "29092", "type": "INTERNAL"}]' \
+      "" \
+      "" \
+      "" \
+      "Message Broker" \
+      "OpenFrame Service" \
+      "Streaming" \
+      1 \
+      "#1E88E5"
+
+    # Register Zookeeper
+    register_tool \
+      "zookeeper-primary" \
+      "ZOOKEEPER" \
+      "Zookeeper Coordinator" \
+      "Apache Zookeeper Distributed Coordinator" \
+      '[{"url": "http://openframe-zookeeper", "port": "2181", "type": "COORDINATOR"}]' \
+      "" \
+      "" \
+      "" \
+      "Service Discovery" \
+      "OpenFrame Service" \
+      "Streaming" \
+      2 \
+      "#1E88E5"
+
+    # Register NiFi
+    register_tool \
+      "nifi-primary" \
+      "NIFI" \
+      "Apache NiFi" \
+      "NiFi Data Integration Platform" \
+      '[{"url": "https://openframe-nifi", "port": "8443", "type": "DASHBOARD"}, {"url": "https://openframe-nifi", "port": "9096", "type": "API"}]' \
+      "openframe" \
+      "password123456789" \
+      "" \
+      "Data Integration" \
+      "OpenFrame Service" \
+      "Data Integration" \
+      1 \
+      "#0D47A1"
+
+    # Register MongoDB
+    register_tool \
+      "mongodb-primary" \
+      "MONGODB" \
+      "MongoDB Database" \
+      "MongoDB NoSQL Database" \
+      '[{"url": "mongodb://openframe-mongodb", "port": "27017", "type": "DATABASE"}, {"url": "http://openframe-mongo-express", "port": "8010", "type": "DASHBOARD"}]' \
+      "openframe" \
+      "password123456789" \
+      "" \
+      "NoSQL Database" \
+      "OpenFrame Datasource" \
+      "Datasource" \
+      1 \
+      "#616161"
+
+    # Register Redis
+    register_tool \
+      "redis-primary" \
+      "REDIS" \
+      "Redis Cache" \
+      "Redis In-Memory Cache" \
+      '[{"url": "redis://openframe-redis", "port": "6379", "type": "DATABASE"}]' \
+      "" \
+      "" \
+      "" \
+      "In-Memory Database" \
+      "OpenFrame Datasource" \
+      "Datasource" \
+      2 \
+      "#616161"
+
+    # Register Cassandra
+    register_tool \
+      "cassandra-primary" \
+      "CASSANDRA" \
+      "Cassandra Database" \
+      "Cassandra Distributed Database" \
+      '[{"url": "cassandra://openframe-cassandra", "port": "9042", "type": "DATABASE"}]' \
+      "" \
+      "" \
+      "" \
+      "NoSQL Database" \
+      "OpenFrame Datasource" \
+      "Datasource" \
+      3 \
+      "#616161"
+
+    # Register Pinot
+    register_tool \
+      "pinot-primary" \
+      "PINOT" \
+      "Apache Pinot" \
+      "Apache Pinot Real-time Analytics Database" \
+      '[{"url": "http://openframe-pinot-controller", "port": "9000", "type": "CONTROLLER"},{"url": "http://openframe-pinot-broker", "port": "8099", "type": "BROKER"},{"url": "http://openframe-pinot-server", "port": "8097", "type": "SERVER"}]' \
+      "" \
+      "" \
+      "" \
+      "Analytics Database" \
+      "OpenFrame Service" \
+      "Datasource" \
+      4 \
+      "#616161"
+
+    # Register Grafana
+    register_tool \
+      "grafana-primary" \
+      "GRAFANA" \
+      "Grafana" \
+      "Grafana Monitoring Dashboard" \
+      '[{"url": "http://openframe-grafana", "port": "3000", "type": "DASHBOARD"}, {"url": "http://openframe-grafana", "port": "3000", "type": "API"}]' \
+      "openframe" \
+      "password123456789" \
+      "" \
+      "Monitoring Dashboard" \
+      "OpenFrame Service" \
+      "Monitoring" \
+      1 \
+      "#78909C"
+
+    # Register Prometheus
+    register_tool \
+      "prometheus-primary" \
+      "PROMETHEUS" \
+      "Prometheus" \
+      "Prometheus Metrics Database" \
+      '[{"url": "http://openframe-prometheus", "port": "9090", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "Metrics Database" \
+      "OpenFrame Service" \
+      "Monitoring" \
+      2 \
+      "#78909C"
+
+    # Register Loki
+    register_tool \
+      "loki-primary" \
+      "LOKI" \
+      "Loki" \
+      "Loki Log Aggregation System" \
+      '[{"url": "http://openframe-loki", "port": "3100", "type": "API"}]' \
+      "" \
+      "" \
+      "" \
+      "Log Aggregation" \
+      "OpenFrame Service" \
+      "Monitoring" \
+      3 \
+      "#78909C"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: register-tools
+spec:
+  template:
+    spec:
+      containers:
+      - name: register-tools
+        image: curlimages/curl:latest
+        command: ["/bin/bash", "/scripts/register-tools.sh"]
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/bash", "-c", "check_job_status register-tools"]
+      volumes:
+      - name: scripts
+        configMap:
+          name: tool-registrations
+      restartPolicy: Never

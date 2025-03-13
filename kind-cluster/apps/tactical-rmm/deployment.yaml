@@ -1,0 +1,507 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-postgres
+  template:
+    metadata:
+      labels:
+        app: tactical-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "tacticalrmm"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgrespass"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: tactical-postgres-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-redis
+  template:
+    metadata:
+      labels:
+        app: tactical-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:6.0-alpine
+        command: ["redis-server", "--save", "3600", "1", "300", "100", "60", "10000"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: tactical-redis-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-frontend
+  template:
+    metadata:
+      labels:
+        app: tactical-frontend
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: frontend
+        image: ghcr.io/flamingo-cx/openframe-tactical-frontend:110325
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "development"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        - name: PUBLIC_DIR
+          value: "/usr/share/nginx/html"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        volumeMounts:
+        - name: frontend-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: frontend-data
+        persistentVolumeClaim:
+          claimName: tactical-frontend-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-nginx
+  template:
+    metadata:
+      labels:
+        app: tactical-nginx
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: nginx
+        image: ghcr.io/flamingo-cx/openframe-tactical-nginx:110325
+        ports:
+        - containerPort: 8080
+        - containerPort: 8000
+        env:
+        - name: NGINX_HOST_IP
+          value: "tactical-nginx"
+        - name: NGINX_HOST_PORT
+          value: "8080"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          httpGet:
+            path: /nginx_status
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: nginx-data
+        persistentVolumeClaim:
+          claimName: tactical-nginx-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-backend
+  template:
+    metadata:
+      labels:
+        app: tactical-backend
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: backend
+        image: ghcr.io/flamingo-cx/openframe-tactical-backend:110325
+        args: ["tactical-backend"]
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_DB
+          value: "tacticalrmm"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgrespass"
+        - name: POSTGRES_HOST
+          value: "tactical-postgres"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: REDIS_HOST
+          value: "tactical-redis"
+        - name: SMTP_HOST
+          value: "smtp.example.com"
+        - name: SMTP_PORT
+          value: "587"
+        - name: SMTP_FROM
+          value: "mesh@example.com"
+        - name: SMTP_USER
+          value: "mesh@example.com"
+        - name: SMTP_PASS
+          value: "mesh-smtp-pass"
+        - name: SMTP_TLS
+          value: "false"
+        - name: TRMM_USER
+          value: "tactical"
+        - name: TRMM_PASS
+          value: "tactical"
+        - name: TACTICAL_BACKEND_PORT
+          value: "8000"
+        - name: TRMM_PROTO
+          value: "http"
+        - name: TRMM_DISABLE_WEB_TERMINAL
+          value: "False"
+        - name: TRMM_DISABLE_SERVER_SCRIPTS
+          value: "False"
+        - name: TRMM_DISABLE_SSO
+          value: "False"
+        - name: TRMM_DISABLE_2FA
+          value: "True"
+        - name: NODE_ENV
+          value: "development"
+        - name: WS_PROTO
+          value: "ws"
+        - name: WS_MASK_OVERRIDE
+          value: "1"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        - name: NATS_CONFIG
+          value: "/opt/tactical/nats-rmm.conf"
+        - name: NATS_API_CONFIG
+          value: "/opt/tactical/nats-api.conf"
+        - name: NATS_CONFIG_CHECK_INTERVAL
+          value: "5"
+        - name: NATS_STD_BIND_HOST
+          value: "tactical-nats"
+        - name: NATS_WS_BIND_HOST
+          value: "tactical-nats"
+        - name: NATS_CONNECT_HOST
+          value: "tactical-nats"
+        - name: NATS_STANDARD_PORT
+          value: "9235"
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
+        volumeMounts:
+        - name: backend-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          httpGet:
+            path: /core/health/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+      volumes:
+      - name: backend-data
+        persistentVolumeClaim:
+          claimName: tactical-backend-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-nats
+  template:
+    metadata:
+      labels:
+        app: tactical-nats
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: nats
+        image: ghcr.io/flamingo-cx/openframe-tactical-nats:110325
+        args: ["tactical-nats"]
+        ports:
+        - containerPort: 9235
+        - containerPort: 4222
+        env:
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        - name: NATS_CONFIG
+          value: "/opt/tactical/nats-rmm.conf"
+        - name: NATS_API_CONFIG
+          value: "/opt/tactical/nats-api.conf"
+        - name: NATS_CONFIG_CHECK_INTERVAL
+          value: "5"
+        - name: NATS_STD_BIND_HOST
+          value: "tactical-nats"
+        - name: NATS_WS_BIND_HOST
+          value: "tactical-nats"
+        - name: NATS_CONNECT_HOST
+          value: "tactical-nats"
+        - name: NATS_STANDARD_PORT
+          value: "9235"
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
+        volumeMounts:
+        - name: nats-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 15
+      volumes:
+      - name: nats-data
+        persistentVolumeClaim:
+          claimName: tactical-nats-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-websockets
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-websockets
+  template:
+    metadata:
+      labels:
+        app: tactical-websockets
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: websockets
+        image: ghcr.io/flamingo-cx/openframe-tactical-websockets:110325
+        args: ["tactical-websockets"]
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_DB
+          value: "tacticalrmm"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgrespass"
+        - name: POSTGRES_HOST
+          value: "tactical-postgres"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: REDIS_HOST
+          value: "tactical-redis"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        - name: WS_PROTO
+          value: "ws"
+        - name: WS_MASK_OVERRIDE
+          value: "1"
+        volumeMounts:
+        - name: websockets-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: websockets-data
+        persistentVolumeClaim:
+          claimName: tactical-websockets-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-celery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-celery
+  template:
+    metadata:
+      labels:
+        app: tactical-celery
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: celery
+        image: ghcr.io/flamingo-cx/openframe-tactical-celery:110325
+        args: ["tactical-celery"]
+        env:
+        - name: POSTGRES_DB
+          value: "tacticalrmm"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgrespass"
+        - name: POSTGRES_HOST
+          value: "tactical-postgres"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: REDIS_HOST
+          value: "tactical-redis"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        volumeMounts:
+        - name: celery-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: celery-data
+        persistentVolumeClaim:
+          claimName: tactical-celery-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-celerybeat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-celerybeat
+  template:
+    metadata:
+      labels:
+        app: tactical-celerybeat
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: celerybeat
+        image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:110325
+        args: ["tactical-celerybeat"]
+        env:
+        - name: POSTGRES_DB
+          value: "tacticalrmm"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgrespass"
+        - name: POSTGRES_HOST
+          value: "tactical-postgres"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: REDIS_HOST
+          value: "tactical-redis"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        volumeMounts:
+        - name: celerybeat-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: celerybeat-data
+        persistentVolumeClaim:
+          claimName: tactical-celerybeat-data
