@@ -1,9 +1,5 @@
 <template>
   <div class="rmm-dashboard">
-    <div class="of-mdm-header">
-      <h1 class="of-title">Dashboard</h1>
-    </div>
-
     <div class="dashboard-grid">
       <!-- Device Statistics -->
       <div class="dashboard-card device-stats">
@@ -197,37 +193,71 @@ interface AutomationStats {
 }
 
 interface Alert {
-  timestamp: string;
+  id?: number;
+  timestamp?: string;
+  created?: string;
+  alert_time?: string;
+  alert_type?: string;
   severity: string;
-  message: string;
+  message: string | null;
+  snoozed?: boolean;
+  resolved?: boolean;
+}
+
+interface Agent {
+  id: string;
+  status: string;
+}
+
+interface Check {
+  id: string;
+  status: string;
+}
+
+interface Task {
+  id: string;
+  status: string;
+  completed: boolean;
+}
+
+interface ApiResponse<T> {
+  data: T;
 }
 
 interface DeviceStatsResponse {
-  data: {
-    total: number;
-    online: number;
-    offline: number;
-  };
+  id: string;
+  status: string;
+  // Add other fields as needed
 }
 
 interface MonitoringStatsResponse {
-  data: {
-    total: number;
-    healthy: number;
-    failing: number;
-  };
+  id: string;
+  status: string;
+  // Add other fields as needed
 }
 
 interface AutomationStatsResponse {
-  data: {
-    total: number;
-    completed: number;
-    pending: number;
-  };
+  id: string;
+  status: string;
+  // Add other fields as needed
 }
 
-interface AlertsResponse {
-  data: Alert[];
+interface AlertResponse {
+  alerts_count: number;
+  alerts: Alert[];
+}
+
+interface DashboardInfo {
+  agents_online: number;
+  agents_offline: number;
+  agents_total: number;
+  checks_failing: number;
+  checks_passing: number;
+  checks_total: number;
+  tasks_completed: number;
+  tasks_pending: number;
+  tasks_total: number;
+  alerts: AlertResponse[];
 }
 
 const deviceStats = ref<DeviceStats>({
@@ -257,26 +287,35 @@ const formatTimestamp = (timestamp: string) => {
 };
 
 const getAlertSeverity = (severity: string): string => {
-  const severityMap: Record<string, string> = {
-    critical: 'danger',
-    warning: 'warning',
-    info: 'info'
-  };
-  return severityMap[severity.toLowerCase()] || 'info';
+  switch (severity.toLowerCase()) {
+    case 'critical':
+      return 'danger';
+    case 'warning':
+      return 'warning';
+    case 'info':
+      return 'info';
+    default:
+      return 'info';
+  }
 };
 
 const fetchDeviceStats = async () => {
   try {
-    const response = await restClient.get<DeviceStatsResponse>(`${API_URL}/agents/stats/`);
-    const devices = response.data || { total: 0, online: 0, offline: 0 };
-    
-    deviceStats.value = {
-      ...devices,
-      onlineRate: devices.total > 0 
-        ? Math.round((devices.online / devices.total) * 100) 
-        : 0
-    };
-  } catch (error: any) {
+    const response = await restClient.get<Agent[]>(`${API_URL}/agents/`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (Array.isArray(response)) {
+      const total = response.length;
+      const online = response.filter(agent => agent.status === 'online').length;
+      deviceStats.value = {
+        total,
+        online,
+        offline: total - online,
+        onlineRate: total > 0 ? Math.round((online / total) * 100) : 0
+      };
+    }
+  } catch (error) {
     console.error('Error fetching device stats:', error);
     toastService.showError('Failed to fetch device statistics');
   }
@@ -284,16 +323,21 @@ const fetchDeviceStats = async () => {
 
 const fetchMonitoringStats = async () => {
   try {
-    const response = await restClient.get<MonitoringStatsResponse>(`${API_URL}/checks/stats/`);
-    const monitors = response.data || { total: 0, healthy: 0, failing: 0 };
-    
-    monitoringStats.value = {
-      ...monitors,
-      healthRate: monitors.total > 0 
-        ? Math.round((monitors.healthy / monitors.total) * 100) 
-        : 0
-    };
-  } catch (error: any) {
+    const response = await restClient.get<Check[]>(`${API_URL}/checks/`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (Array.isArray(response)) {
+      const total = response.length;
+      const healthy = response.filter(check => check.status === 'passing').length;
+      monitoringStats.value = {
+        total,
+        healthy,
+        failing: total - healthy,
+        healthRate: total > 0 ? Math.round((healthy / total) * 100) : 0
+      };
+    }
+  } catch (error) {
     console.error('Error fetching monitoring stats:', error);
     toastService.showError('Failed to fetch monitoring statistics');
   }
@@ -301,9 +345,20 @@ const fetchMonitoringStats = async () => {
 
 const fetchAutomationStats = async () => {
   try {
-    const response = await restClient.get<AutomationStatsResponse>(`${API_URL}/tasks/stats/`);
-    automationStats.value = response.data || { total: 0, completed: 0, pending: 0 };
-  } catch (error: any) {
+    const response = await restClient.get<Task[]>(`${API_URL}/tasks/`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (Array.isArray(response)) {
+      const total = response.length;
+      const completed = response.filter(task => task.completed).length;
+      automationStats.value = {
+        total,
+        completed,
+        pending: total - completed
+      };
+    }
+  } catch (error) {
     console.error('Error fetching automation stats:', error);
     toastService.showError('Failed to fetch automation statistics');
   }
@@ -311,9 +366,26 @@ const fetchAutomationStats = async () => {
 
 const fetchRecentAlerts = async () => {
   try {
-    const response = await restClient.get<AlertsResponse>(`${API_URL}/alerts/recent/`);
-    recentAlerts.value = response.data || [];
-  } catch (error: any) {
+    const response = await restClient.patch<AlertResponse>(`${API_URL}/alerts/`, {
+      top: 10
+    }, {
+      headers: { 
+        'Accept': 'application/json, text/plain, */*',
+        'Content-Type': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br'  // Allow standard encodings
+      },
+      credentials: 'include'  // This enables sending cookies with the request
+    });
+
+    if (response?.alerts) {
+      recentAlerts.value = response.alerts.slice(0, 5).map((alert: Alert) => ({
+        timestamp: alert.timestamp || alert.created || alert.alert_time || '',
+        severity: alert.severity,
+        message: alert.message || alert.alert_type || null
+      } as Alert));
+    }
+  } catch (error) {
     console.error('Error fetching recent alerts:', error);
     toastService.showError('Failed to fetch recent alerts');
   }
@@ -333,36 +405,20 @@ onMounted(async () => {
 .rmm-dashboard {
   padding: 2rem;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.of-mdm-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.of-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
+  overflow-y: auto;
 }
 
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .dashboard-card {
   background: var(--surface-card);
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   min-height: 300px;
   display: flex;
   flex-direction: column;
@@ -427,30 +483,31 @@ onMounted(async () => {
 }
 
 .compliance-wrapper {
-  padding: 0 1rem;
+  padding: 0.5rem 0;
 }
 
 .compliance-progress {
-  margin-top: 1rem;
+  margin: 1rem 0;
 }
 
 .progress-track {
-  background: var(--surface-ground);
-  border-radius: 999px;
-  height: 24px;
-  position: relative;
+  background: var(--surface-hover);
+  border-radius: 1rem;
+  height: 2.5rem;
   overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin: 1rem 0;
 }
 
 .progress-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
   height: 100%;
-  transition: width 0.3s ease;
+  position: relative;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 0 1rem;
 }
 
 .progress-fill.high {
@@ -466,10 +523,86 @@ onMounted(async () => {
 }
 
 .compliance-label {
-  color: white;
-  font-size: 0.875rem;
+  color: var(--surface-0);
   font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+:deep(.p-datatable) {
+  .p-datatable-wrapper {
+    border-radius: var(--border-radius);
+    background: var(--surface-card);
+  }
+
+  .p-datatable-header {
+    background: var(--surface-card);
+    padding: 1.5rem;
+    border: none;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .p-datatable-thead > tr > th {
+    background: var(--surface-card);
+    color: var(--text-color-secondary);
+    padding: 1rem 1.5rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    border-bottom: 2px solid var(--surface-border);
+  }
+
+  .p-datatable-tbody > tr {
+    background: var(--surface-card);
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--surface-border);
+
+    &:hover {
+      background: var(--surface-hover);
+    }
+
+    > td {
+      padding: 1.25rem 1.5rem;
+      border: none;
+      color: var(--text-color);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+}
+
+:deep(.p-tag) {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  &.p-tag-success {
+    background: var(--green-100);
+    color: var(--green-900);
+  }
+
+  &.p-tag-danger {
+    background: var(--red-100);
+    color: var(--red-900);
+  }
+
+  &.p-tag-warning {
+    background: var(--yellow-100);
+    color: var(--yellow-900);
+  }
+
+  &.p-tag-info {
+    background: var(--blue-100);
+    color: var(--blue-900);
+  }
 }
 
 .empty-state {
@@ -477,35 +610,44 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 2rem;
   text-align: center;
-  height: 100%;
-  color: var(--text-color-secondary);
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+
+    &.success {
+      color: var(--green-500);
+      opacity: 1;
+    }
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    color: var(--text-color-secondary);
+    margin: 0;
+    line-height: 1.5;
+
+    &.hint {
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      opacity: 0.8;
+    }
+  }
 }
 
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.empty-icon.success {
-  color: var(--green-500);
-}
-
-.empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.empty-state .hint {
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  opacity: 0.8;
+@media screen and (max-width: 960px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style> 

@@ -1,10 +1,10 @@
 <template>
   <ModuleLayout>
-    <template #navigation>
+    <template #sidebar>
       <ModuleNavigation
         title="Remote Monitoring & Management"
         :navigationItems="navigationItems"
-        poweredBy="tactical"
+        poweredBy="tactical-rmm"
       />
     </template>
     <router-view></router-view>
@@ -14,8 +14,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLogoUrl } from '@/services/LogoService';
 import ModuleLayout from '../../components/shared/ModuleLayout.vue';
 import ModuleNavigation from '../../components/shared/ModuleNavigation.vue';
+
+const themeStore = useThemeStore();
+const { isDark } = storeToRefs(themeStore);
 
 const route = useRoute();
 

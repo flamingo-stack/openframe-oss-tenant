@@ -17,8 +17,8 @@
       >
         <li :class="{ active: isActive }" @click="navigate">
           <div class="navigation-item">
-            <i :class="item.icon"></i>
-            <span>{{ item.label }}</span>
+            <i :class="[item.icon, 'nav-icon']"></i>
+            <span class="nav-label">{{ item.label }}</span>
           </div>
         </li>
       </router-link>
@@ -117,12 +117,13 @@ const { isDark } = storeToRefs(themeStore);
   background: var(--surface-hover);
 }
 
-.navigation-item i {
+.nav-icon {
   font-size: 1.25rem;
   color: var(--text-color-secondary);
+  line-height: 1;
 }
 
-.navigation-item span {
+.nav-label {
   font-size: 0.875rem;
 }
 
@@ -131,7 +132,11 @@ li.active .navigation-item {
   color: var(--primary-color-text);
 }
 
-li.active .navigation-item i {
+li.active .nav-icon {
+  color: var(--primary-color-text);
+}
+
+li.active .nav-label {
   color: var(--primary-color-text);
 }
 </style> 
