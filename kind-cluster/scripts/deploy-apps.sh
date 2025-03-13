@@ -93,11 +93,20 @@ kubectl wait --for=condition=Ready pod -l app=cassandra --timeout 20m
 # management-key: docker-management-key-123
 kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
 
-# kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
+kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
 
 # ------------- ZOOKEEPER -------------
 # TODO: add zookeeper for
@@ -106,20 +115,33 @@ kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
 #   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
 # kubectl apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml
 
-# # pinot servers
-# kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
+# pinot servers
+kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
+kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 
 # ------------- AUTHENTIK -------------
-# kubectl apply -f ./kind-cluster/apps/authentik
+kubectl apply -f ./kind-cluster/apps/authentik
+kubectl wait --for=condition=Ready pod -l app=authentik-server --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=authentik-worker --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=authentik-postgresql --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=authentik-redis --timeout 20m
 
 # ------------- FLEET -------------
-# kubectl apply -f ./kind-cluster/apps/fleet
+kubectl apply -f ./kind-cluster/apps/fleet
+kubectl wait --for=condition=Ready pod -l app=fleet --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=fleet-mdm-mysql --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=fleet-mdm-redis --timeout 20m
 
 # ------------- MESH CENTRAL -------------
-# kubectl apply -f ./kind-cluster/apps/meshcentral
+kubectl apply -f ./kind-cluster/apps/meshcentral
+kubectl wait --for=condition=Ready pod -l app=meshcentral --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=meshcentral-nginx --timeout 20m
 
 # ------------- RMM -------------
-# kubectl apply -f ./kind-cluster/apps/tactical-rmm
+kubectl apply -f ./kind-cluster/apps/tactical-rmm
+kubectl wait --for=condition=Ready pod -l app=tactical-rmm --timeout 20m
 
 # ------------- REGISTER TOOLS -------------
-# kubectl apply -f ./kind-cluster/apps/jobs/register-tools.yaml
+kubectl apply -f ./kind-cluster/apps/jobs/register-tools.yaml
+kubectl wait --for=condition=Ready pod -l app=register-tools --timeout 20m

@@ -21,6 +21,10 @@ spec:
             - containerPort: 80
               name: http
           env:
+            - name: VITE_API_URL
+              value: "http://openframe-api:8090"
+            - name: VITE_GATEWAY_URL
+              value: "http://openframe-gateway:8100"
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
