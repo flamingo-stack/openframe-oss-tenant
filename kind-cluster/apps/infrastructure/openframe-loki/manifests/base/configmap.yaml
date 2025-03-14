@@ -12,6 +12,10 @@ data:
 
     common:
       path_prefix: /loki
+      ring:
+        kvstore:
+          store: inmemory
+        heartbeat_timeout: 1m
 
     ingester:
       lifecycler:
