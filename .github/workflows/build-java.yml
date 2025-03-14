@@ -14,7 +14,7 @@ on:
         value: ${{ jobs.build-java-artifacts.outputs.status }}
   pull_request:
     branches: [ main ]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
 env:
