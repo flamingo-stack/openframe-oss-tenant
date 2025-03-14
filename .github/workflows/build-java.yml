@@ -7,6 +7,11 @@ permissions:
   pull-requests: write
 
 on:
+  workflow_call:
+    outputs:
+      status:
+        description: "The status of the build"
+        value: ${{ jobs.build-java-artifacts.outputs.status }}
   push:
   pull_request:
     branches: [ main ]
@@ -19,6 +24,8 @@ env:
 jobs:
   build-java-artifacts:
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ job.status }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
