@@ -12,7 +12,6 @@ on:
       status:
         description: "The status of the build"
         value: ${{ jobs.build-java-artifacts.outputs.status }}
-  push:
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened]
