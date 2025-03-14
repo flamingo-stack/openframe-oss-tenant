@@ -105,20 +105,6 @@ jobs:
               build_context="./infrastructure/nifi"
             fi
 
-            # Extract metadata for the image
-            # echo "Extracting metadata for $service..."
-            # cat > metadata.json << EOF
-            # {
-            #   "labels": {
-            #     "org.opencontainers.image.source": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
-            #     "org.opencontainers.image.revision": "$GITHUB_SHA",
-            #     "org.opencontainers.image.created": "$TIMESTAMP",
-            #     "org.opencontainers.image.description": "OpenFrame $service container image",
-            #     "org.opencontainers.image.version": "$COMMIT_SHA"
-            #   }
-            # }
-            # EOF
-
             # Build and push the image
             echo "Building and pushing $service image..."
             docker buildx build \
@@ -132,6 +118,7 @@ jobs:
               --cache-to "type=gha,mode=max" \
               --provenance=true \
               "$build_context"
+          }
 
           # Infrastructure Services
           build_and_push_image "mongodb" "./infrastructure/mongodb/"
