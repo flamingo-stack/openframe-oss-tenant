@@ -21,7 +21,7 @@ helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack
   -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml
 kubectl wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
 
-kubectl apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests/dashboards
+kubectl apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
 
 # LOGGING
 kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests
@@ -47,6 +47,15 @@ helm upgrade -i kibana elastic/kibana \
   --version 8.5.1 \
   -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml
 kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
+
+# LOKI
+kubectl apply -f ./kind-cluster/apps/infrastructure/loki
+kubectl wait --for=condition=Ready pod -l app=loki --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/promtail
+kubectl wait --for=condition=Ready pod -l app=promtail --timeout 20m
+# or
+helm upgrade --install loki grafana/loki-stack -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
 
 # REDIS + EXPORTER
 helm upgrade -i redis bitnami/redis \
