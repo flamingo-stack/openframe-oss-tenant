@@ -107,24 +107,8 @@ delete_old_versions() {
     done
 }
 
-# Function to delete a package completely
-delete_package_completely() {
-    local package_name=$1
-    echo "Deleting package completely: $package_name"
-
-    # First delete all versions
-    delete_old_versions "$package_name"
-
-    # Then delete the package itself
-    delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
-        "$API_URL/orgs/$ORG/packages/container/$package_name")
-    check_api_response "$delete_response"
-    echo "  Package $package_name deleted completely"
-}
-
 # Function to delete all packages
 delete_packages() {
-    local delete_completely=$1
     echo "Fetching package list from GitHub..."
 
     # Get raw response for debugging
@@ -146,11 +130,7 @@ delete_packages() {
         echo "Running in non-interactive mode, proceeding with deletion..."
     else
         # Interactive mode, ask for confirmation
-        local action="delete all versions"
-        if [ "$delete_completely" = true ]; then
-            action="delete all packages completely"
-        fi
-        read -p "Are you sure you want to $action? (yes/no): " confirm
+        read -p "Are you sure you want to delete ALL packages? (yes/no): " confirm
         if [[ "$confirm" != "yes" ]]; then
             echo "Deletion aborted."
             exit 1
@@ -158,14 +138,10 @@ delete_packages() {
     fi
 
     for package in $packages; do
-        if [ "$delete_completely" = true ]; then
-            delete_package_completely "$package"
-        else
-            delete_old_versions "$package"
-        fi
+        delete_old_versions "$package"
     done
 
-    echo "All packages processed successfully!"
+    echo "All packages deleted successfully!"
 }
 
 # Main script logic
@@ -174,10 +150,7 @@ case "$1" in
         list_packages
         ;;
     -d|--delete)
-        delete_packages false
-        ;;
-    --delete-completely)
-        delete_packages true
+        delete_packages
         ;;
     --delete-old)
         if [ -z "$2" ]; then
@@ -188,10 +161,9 @@ case "$1" in
         delete_old_versions "$2" "${@:3}"
         ;;
     *)
-        echo "Usage: $0 {-l|--list | -d|--delete | --delete-completely | --delete-old <package-name> <tags...>}"
+        echo "Usage: $0 {-l|--list | -d|--delete | --delete-old <package-name> <tags...>}"
         echo "  -l, --list              List all GitHub Packages (Docker images) and their versions."
-        echo "  -d, --delete            Delete all versions of all GitHub Packages (Docker images) after confirmation."
-        echo "  --delete-completely     Delete all GitHub Packages completely (including package metadata) after confirmation."
+        echo "  -d, --delete            Delete all GitHub Packages (Docker images) after confirmation."
         echo "  --delete-old <name> <tags...> Delete old versions of a package except specified tags."
         exit 1
         ;;

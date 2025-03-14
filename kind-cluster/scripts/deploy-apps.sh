@@ -23,18 +23,37 @@ kubectl wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeou
 
 kubectl apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
 
+# LOKI
+kubectl apply -f ./kind-cluster/apps/infrastructure/loki
+kubectl wait --for=condition=Ready pod -l app=loki --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/promtail
+kubectl wait --for=condition=Ready pod -l app=promtail --timeout 20m
+# or
+# helm upgrade --install loki grafana/loki-stack \
+#   --version 2.10.2 \
+#   -f ./kind-cluster/apps/infrastructure/loki/helm/loki-stack.yaml
+
+helm upgrade --install loki grafana/loki \
+  --version 6.28.0 \
+  -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
+
+helm upgrade --install promtail grafana/promtail \
+  --version 6.16.6 \
+  -f ./kind-cluster/apps/infrastructure/promtail/helm/promtail.yaml
+
 # LOGGING
-kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests
+# kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests
 
-helm upgrade -i es elastic/elasticsearch \
-  --version 8.5.1 \
-  -f ./kind-cluster/apps/infrastructure/logging/helm/es.yaml
-kubectl wait --for=condition=Ready pod -l release=es --timeout 20m
+# helm upgrade -i es elastic/elasticsearch \
+#   --version 8.5.1 \
+#   -f ./kind-cluster/apps/infrastructure/logging/helm/es.yaml
+# kubectl wait --for=condition=Ready pod -l release=es --timeout 20m
 
-helm upgrade -i fluent-bit fluent/fluent-bit \
-  --version 0.48.8 \
-  -f ./kind-cluster/apps/infrastructure/logging/helm/fluent-bit.yaml
-kubectl wait --for=condition=Ready pod -l relapp.kubernetes.io/name=fluent-bit --timeout 20m
+# helm upgrade -i fluent-bit fluent/fluent-bit \
+#   --version 0.48.8 \
+#   -f ./kind-cluster/apps/infrastructure/logging/helm/fluent-bit.yaml
+# kubectl wait --for=condition=Ready pod -l relapp.kubernetes.io/name=fluent-bit --timeout 20m
 
 # kubectl delete secrets kibana-kibana-es-token
 # kubectl delete configmap kibana-kibana-helm-scripts -n elastic
@@ -43,19 +62,10 @@ kubectl wait --for=condition=Ready pod -l relapp.kubernetes.io/name=fluent-bit -
 # kubectl delete rolebindings pre-install-kibana-kibana -n elastic
 # kubectl delete job pre-install-kibana-kibana -n elastic
 
-helm upgrade -i kibana elastic/kibana \
-  --version 8.5.1 \
-  -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml
-kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
-
-# LOKI
-kubectl apply -f ./kind-cluster/apps/infrastructure/loki
-kubectl wait --for=condition=Ready pod -l app=loki --timeout 20m
-
-kubectl apply -f ./kind-cluster/apps/infrastructure/promtail
-kubectl wait --for=condition=Ready pod -l app=promtail --timeout 20m
-# or
-helm upgrade --install loki grafana/loki-stack -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
+# helm upgrade -i kibana elastic/kibana \
+#   --version 8.5.1 \
+#   -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml
+# kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
 
 # REDIS + EXPORTER
 helm upgrade -i redis bitnami/redis \

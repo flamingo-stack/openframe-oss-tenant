@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-ARG MESH_TEMP_DIR
+ARG MESH_TEMP_DIR=/tmp/meshcentral
 
 RUN mkdir -p ${MESH_TEMP_DIR}
 
@@ -24,4 +24,4 @@ RUN chown -R node:node ${MESH_TEMP_DIR}
 
 USER node
 
-ENTRYPOINT [ "/entrypoint.sh" ] 
+ENTRYPOINT [ "/entrypoint.sh" ]

@@ -31,8 +31,6 @@ jobs:
           { name: 'postgresql', path: './infrastructure/postgresql/' },
           { name: 'tactical-base', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend/', context: './infrastructure/tactical-rmm' },
-          # below app is empty, so we don't need to build it
-          # { name: 'tactical-meshcentral', path: './infrastructure/tactical-rmm/tactical-meshcentral/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
@@ -107,6 +105,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push image
+        id: docker_build
         run: |
           # Set build context
           BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
@@ -123,3 +122,15 @@ jobs:
             --cache-to "type=gha,mode=max" \
             --provenance=true \
             "$BUILD_CONTEXT"
+
+      # Clean up old versions after successful push
+      - name: Clean up old versions
+        if: success() && steps.docker_build.outcome == 'success'
+        run: |
+          chmod +x ./kind-cluster/scripts/gh-packages.sh
+          # Keep latest, commit SHA, and timestamp tags
+          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.service.name }}" \
+            "latest" \
+            "${{ env.COMMIT_SHA }}" \
+            "${{ env.TIMESTAMP_TAG }}"
+        continue-on-error: true
