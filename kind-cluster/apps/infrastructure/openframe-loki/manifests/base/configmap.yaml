@@ -12,10 +12,14 @@ data:
 
     common:
       path_prefix: /loki
+      ring:
+        kvstore:
+          store: inmemory
+        heartbeat_timeout: 1m
 
     ingester:
       lifecycler:
-        address: 127.0.0.1
+        address: 0.0.0.0
         ring:
           kvstore:
             store: inmemory
@@ -42,12 +46,16 @@ data:
           index:
             prefix: index_
             period: 24h
+            tags:
+              period: 24h
+          row_shards: 16
 
     storage_config:
       boltdb_shipper:
         active_index_directory: /loki/index
         cache_location: /loki/boltdb-cache
         cache_ttl: 24h
+        shared_store: filesystem
       filesystem:
         directory: /loki/chunks
 
@@ -57,6 +65,7 @@ data:
       retention_enabled: true
       retention_delete_delay: 2h
       delete_request_store: filesystem
+      delete_request_cancel_period: 24h
 
     limits_config:
       ingestion_rate_mb: 32

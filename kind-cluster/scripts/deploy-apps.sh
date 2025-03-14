@@ -26,10 +26,10 @@ kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-
 kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
 
 # LOKI
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/loki/manifests
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests
 kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-loki --timeout 20m
 
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/promtail/manifests
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests
 kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m
 # or
 # helm upgrade --install loki grafana/loki-stack \

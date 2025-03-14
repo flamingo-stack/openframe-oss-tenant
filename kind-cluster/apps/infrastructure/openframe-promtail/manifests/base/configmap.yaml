@@ -1,0 +1,375 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openframe-promtail-config
+data:
+  config.yml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+      sync_period: 10s
+      ignore_invalid_yaml: true
+
+    clients:
+      - url: http://openframe-loki:3100/loki/api/v1/push
+        external_labels:
+          host: ${HOSTNAME}
+        batchwait: 1s
+        batchsize: 102400
+        backoff_config:
+          min_period: 1s
+          max_period: 5s
+        timeout: 10s
+        tenant_id: "default"
+
+    scrape_configs:
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          # Extract all original k8s labels
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          # Keep standard k8s metadata
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_name
+            target_label: pod
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_namespace
+            target_label: namespace
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_container_name
+            target_label: container
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_node_name
+            target_label: node_name
+          # Initial workload type label
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+            target_label: workload_kind
+          # Extract parent workload for ReplicaSets
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+              - __meta_kubernetes_pod_controller_name
+            regex: "ReplicaSet;(.*)-[^-]+"
+            target_label: workload_name
+            replacement: $1
+          # Set workload name for direct controllers
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+              - __meta_kubernetes_pod_controller_name
+            regex: "(Deployment|DaemonSet|StatefulSet|Job|CronJob);(.*)"
+            target_label: workload_name
+            replacement: $2
+          # Handle ReplicaSet workload_kind
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+              - __meta_kubernetes_pod_controller_name
+            regex: "ReplicaSet;(.*)-[^-]+"
+            target_label: workload_kind
+            replacement: "Deployment"
+          # Handle DaemonSet workload_kind
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+            regex: "DaemonSet"
+            target_label: workload_kind
+            replacement: "DaemonSet"
+          # Handle StatefulSet workload_kind
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+            regex: "StatefulSet"
+            target_label: workload_kind
+            replacement: "StatefulSet"
+          # Handle Job/CronJob workload_kind
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+            regex: "(CronJob|Job)"
+            target_label: workload_kind
+            replacement: "Job"
+          # Deployment specific labels
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_pod_template_hash
+            target_label: pod_template_hash
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_version
+            target_label: version
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_version
+            target_label: app_version
+          # StatefulSet specific labels
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_controller_revision_hash
+            target_label: controller_revision_hash
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_statefulset_kubernetes_io_pod_name
+            target_label: statefulset_ordinal
+          # Pod metadata
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_ip
+            target_label: pod_ip
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_host_ip
+            target_label: host_ip
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_phase
+            target_label: phase
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_ready
+            target_label: ready
+          # Handle app.kubernetes.io labels
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
+            target_label: component
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_instance
+            target_label: instance
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            target_label: app
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_part_of
+            target_label: part_of
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_managed_by
+            target_label: managed_by
+          # Handle other common labels
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_k8s_app
+            target_label: k8s_app
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_tier
+            target_label: tier
+          # Set category
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
+            regex: (.+)
+            target_label: category
+            replacement: $1
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
+            regex: ""
+            target_label: category
+            replacement: other
+          # Clean up temporary labels but keep important metadata
+          - action: labeldrop
+            regex: __meta_kubernetes_pod_label_(.+)
+          - action: labelkeep
+            regex: (namespace|pod|container|node_name|kind|workload_kind|workload_name|pod_template_hash|version|app_version|controller_revision_hash|statefulset_ordinal|pod_ip|host_ip|phase|ready|component|instance|app|part_of|managed_by|k8s_app|tier|category|stream|job|env)
+          # Add __path__ for log collection
+          - action: replace
+            replacement: /var/log/pods/*$1/*.log
+            separator: /
+            source_labels:
+              - __meta_kubernetes_pod_uid
+            target_label: __path__
+        pipeline_stages:
+          - docker: {}
+          - json:
+              expressions:
+                log: log
+                stream: stream
+                time: time
+          - timestamp:
+              source: time
+              format: RFC3339Nano
+              action_on_failure: fudge
+              location: UTC
+          - static_labels:
+              job: kubernetes-pods
+              env: dev
+          # Add a stage to ensure workload_kind is preserved
+          - template:
+              source: workload_kind
+              template: '{{ if .Value }}{{ .Value }}{{ end }}'
+              target: kind
+          - labels:
+              pod:
+              namespace:
+              container:
+              node_name:
+              kind:
+              workload_kind:
+              workload_name:
+              pod_template_hash:
+              version:
+              app_version:
+              controller_revision_hash:
+              statefulset_ordinal:
+              pod_ip:
+              host_ip:
+              phase:
+              ready:
+              component:
+              instance:
+              app:
+              part_of:
+              managed_by:
+              k8s_app:
+              tier:
+              category:
+              stream:
+          - labeldrop:
+              - filename
+              - __address__
+          - output:
+              source: log
+
+      - job_name: kubernetes-pods-static
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: kubernetes-pods-static
+              __path__: /var/log/pods/*/*.log
+        pipeline_stages:
+          - docker: {}
+          - json:
+              expressions:
+                log: log
+                stream: stream
+                time: time
+          - timestamp:
+              source: time
+              format: RFC3339Nano
+              action_on_failure: fudge
+              location: UTC
+          - regex:
+              expression: ^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>[^_]+)_(?P<uid>[a-f0-9-]+)/(?P<container>[^/]+)/[^/]+$
+              source: filename
+          - regex:
+              expression: ^(?P<workload_prefix>[^-]+)-(?P<workload_name>[^-]+).*$
+              source: pod
+          - template:
+              source: workload_prefix
+              template: '{{ if eq .Value "ds" }}DaemonSet{{ else if eq .Value "sts" }}StatefulSet{{ else if eq .Value "job" }}Job{{ else }}Deployment{{ end }}'
+              target: workload_kind
+          - template:
+              source: workload_name
+              template: '{{ .Value }}'
+              target: workload_name
+          - template:
+              source: workload_kind
+              template: '{{ if .Value }}{{ .Value }}{{ end }}'
+              target: kind
+          - labels:
+              namespace:
+              pod:
+              container:
+              kind:
+              workload_kind:
+              workload_name:
+              stream:
+          - static_labels:
+              job: kubernetes-pods-static
+              env: dev
+          - output:
+              source: log
+
+      - job_name: kubernetes-containers-static
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: kubernetes-containers-static
+              __path__: /var/log/containers/*.log
+        pipeline_stages:
+          - docker: {}
+          - json:
+              expressions:
+                log: log
+                stream: stream
+                time: time
+          - timestamp:
+              source: time
+              format: RFC3339Nano
+              action_on_failure: fudge
+              location: UTC
+          - regex:
+              expression: ^/var/log/containers/(?P<pod>[^_]+)_(?P<namespace>[^_]+)_(?P<container>[^-]+)-[^/]+\.log$
+              source: filename
+          - regex:
+              expression: ^(?P<workload_prefix>[^-]+)-(?P<workload_name>[^-]+).*$
+              source: pod
+          - template:
+              source: workload_prefix
+              template: '{{ if eq .Value "ds" }}DaemonSet{{ else if eq .Value "sts" }}StatefulSet{{ else if eq .Value "job" }}Job{{ else }}Deployment{{ end }}'
+              target: workload_kind
+          - template:
+              source: workload_name
+              template: '{{ .Value }}'
+              target: workload_name
+          - template:
+              source: workload_kind
+              template: '{{ if .Value }}{{ .Value }}{{ end }}'
+              target: kind
+          - labels:
+              namespace:
+              pod:
+              container:
+              kind:
+              workload_kind:
+              workload_name:
+              stream:
+          - static_labels:
+              job: kubernetes-containers-static
+              env: dev
+          - output:
+              source: log
+
+      - job_name: system
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: varlogs
+              __path__: /var/log/*.log
+              category: system
+        pipeline_stages:
+          - match:
+              selector: '{job="varlogs"}'
+              stages:
+                - regex:
+                    expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+                - timestamp:
+                    source: timestamp
+                    format: '2006-01-02 15:04:05'
+                    action_on_failure: fudge
+                    location: UTC
+                - static_labels:
+                    host: ${HOSTNAME}
+                    job: varlogs
+                    source: system
+                    env: dev
+                    category: system
