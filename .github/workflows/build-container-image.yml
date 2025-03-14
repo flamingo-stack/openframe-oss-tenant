@@ -13,6 +13,8 @@ on:
     workflows: ["OpenFrame Build Java Artifacts"]
     types:
       - completed
+    branches:
+      - main
 
 env:
   ORGANIZATION: flamingo-cx
@@ -21,6 +23,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     strategy:
       fail-fast: false  # Disable fail-fast behavior
       matrix:
