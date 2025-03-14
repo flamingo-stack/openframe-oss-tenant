@@ -1,8 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: promtail
-  namespace: default
+  name: openframe-promtail
+  labels:
+    app: openframe-promtail
 spec:
   ports:
     - name: http-metrics
@@ -10,4 +11,4 @@ spec:
       targetPort: 9080
       protocol: TCP
   selector:
-    app: promtail
+    app: openframe-promtail

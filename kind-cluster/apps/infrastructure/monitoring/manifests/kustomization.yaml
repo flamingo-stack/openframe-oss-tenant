@@ -1,5 +1,5 @@
 resources:
-  - grafana-provisioning.yaml
+  # - grafana-provisioning.yaml
   - dashboards/home-dashboard.yaml
   - dashboards/cassandra-dashboard.yaml
   - dashboards/kafka-dashboard.yaml

@@ -19,8 +19,8 @@ grafana:
       allow_embedding: true
       cookie_samesite: disabled  # 'none' Prevents login
       allow_embedding_from_anywhere: true
-    paths:
-      provisioning: /etc/grafana/provisioning
+    # paths:
+    #   provisioning: /etc/grafana/provisioning
     dashboards:
       default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
   # env:
@@ -42,15 +42,15 @@ grafana:
         editable: true
         options:
           path: /tmp/dashboards
-      - name: 'Library Panels'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        updateIntervalSeconds: 10
-        allowUiUpdates: true
-        options:
-          path: /etc/grafana/library-panels
+      # - name: 'Library Panels'
+      #   orgId: 1
+      #   folder: ''
+      #   type: file
+      #   disableDeletion: false
+      #   updateIntervalSeconds: 10
+      #   allowUiUpdates: true
+      #   options:
+      #     path: /etc/grafana/library-panels
 
   ingress:
     enabled: true
@@ -82,7 +82,7 @@ grafana:
     - name: loki
       type: loki
       access: proxy
-      url: http://loki:3100
+      url: http://openframe-loki:3100
       isDefault: false
       editable: false
       uid: loki
@@ -120,6 +120,12 @@ prometheus:
     enabled: true
     hosts: ["prometheus.192.168.100.100.nip.io"]
   prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false  # select all ServiceMonitor, don't select based on helm chart label
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    externalPrefixNilUsesHelmValues: false
     scrapeInterval: 15s
     evaluationInterval: 15s
     storageSpec:
@@ -155,14 +161,6 @@ prometheus:
         static_configs:
           - targets: ['openframe-gateway:8101']
 
-      - job_name: 'prometheus'
-        static_configs:
-          - targets: ['localhost:9090']
-
-      - job_name: 'loki'
-        static_configs:
-          - targets: ['openframe-loki:3100']
-
       - job_name: 'redis'
         static_configs:
           - targets: ['openframe-redis-exporter:9121']
@@ -194,10 +192,3 @@ prometheus:
       - job_name: 'pinot'
         static_configs:
           - targets: ['openframe-pinot-controller:9011', 'openframe-pinot-broker:9012', 'openframe-pinot-server:9013']
-
-    # ruleSelector:
-    #   matchLabels:
-    #     release: kube-prometheus-stack
-    # ruleNamespaceSelector:
-    #   matchLabels:
-    #     release: kube-prometheus-stack
