@@ -107,16 +107,17 @@ jobs:
 
             # Extract metadata for the image
             echo "Extracting metadata for $service..."
-            docker run --rm \
-              -v $PWD:/workspace \
-              -w /workspace \
-              docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7 \
-              --images "$image_prefix/openframe-$service" \
-              --tags "type=raw,value=latest" \
-              --tags "type=raw,value=$COMMIT_SHA" \
-              --labels "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-              --labels "org.opencontainers.image.revision=$GITHUB_SHA" \
-              --labels "org.opencontainers.image.created=$TIMESTAMP" > metadata.json
+            cat > metadata.json << EOF
+            {
+              "labels": {
+                "org.opencontainers.image.source": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
+                "org.opencontainers.image.revision": "$GITHUB_SHA",
+                "org.opencontainers.image.created": "$TIMESTAMP",
+                "org.opencontainers.image.description": "OpenFrame $service container image",
+                "org.opencontainers.image.version": "$COMMIT_SHA"
+              }
+            }
+            EOF
 
             # Build and push the image
             echo "Building and pushing $service image..."
@@ -132,19 +133,6 @@ jobs:
               --cache-from "type=gha" \
               --cache-to "type=gha,mode=max" \
               --provenance=true
-
-            # Generate artifact attestation
-            echo "Generating attestation for $service..."
-            docker run --rm \
-              -v $PWD:/workspace \
-              -w /workspace \
-              actions/attest-build-provenance@v2 \
-              --subject-name "$image_prefix/openframe-$service" \
-              --subject-digest "$(docker inspect $image_prefix/openframe-$service:latest --format='{{.RepoDigests}}')" \
-              --push-to-registry
-
-            echo "Successfully built and pushed $service image"
-          }
 
           # Infrastructure Services
           build_and_push_image "mongodb" "./infrastructure/mongodb/"
