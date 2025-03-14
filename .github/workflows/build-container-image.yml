@@ -13,6 +13,9 @@ on:
     workflows: ["OpenFrame Build Java Artifacts"]
     types:
       - completed
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
 
 env:
   ORGANIZATION: flamingo-cx
@@ -20,7 +23,7 @@ env:
 
 jobs:
   build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_run' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
