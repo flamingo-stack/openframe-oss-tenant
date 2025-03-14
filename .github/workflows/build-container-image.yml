@@ -106,18 +106,18 @@ jobs:
             fi
 
             # Extract metadata for the image
-            echo "Extracting metadata for $service..."
-            cat > metadata.json << EOF
-            {
-              "labels": {
-                "org.opencontainers.image.source": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
-                "org.opencontainers.image.revision": "$GITHUB_SHA",
-                "org.opencontainers.image.created": "$TIMESTAMP",
-                "org.opencontainers.image.description": "OpenFrame $service container image",
-                "org.opencontainers.image.version": "$COMMIT_SHA"
-              }
-            }
-            EOF
+            # echo "Extracting metadata for $service..."
+            # cat > metadata.json << EOF
+            # {
+            #   "labels": {
+            #     "org.opencontainers.image.source": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
+            #     "org.opencontainers.image.revision": "$GITHUB_SHA",
+            #     "org.opencontainers.image.created": "$TIMESTAMP",
+            #     "org.opencontainers.image.description": "OpenFrame $service container image",
+            #     "org.opencontainers.image.version": "$COMMIT_SHA"
+            #   }
+            # }
+            # EOF
 
             # Build and push the image
             echo "Building and pushing $service image..."
@@ -125,14 +125,13 @@ jobs:
               --platform linux/amd64 \
               --push \
               --file "$path/Dockerfile" \
-              --context "$build_context" \
-              --tags "$image_prefix/openframe-$service:latest" \
-              --tags "$image_prefix/openframe-$service:$COMMIT_SHA" \
-              --tags "$image_prefix/openframe-$service:$TIMESTAMP_TAG" \
-              --labels-from-file metadata.json \
+              --tag "$image_prefix/openframe-$service:latest" \
+              --tag "$image_prefix/openframe-$service:$COMMIT_SHA" \
+              --tag "$image_prefix/openframe-$service:$TIMESTAMP_TAG" \
               --cache-from "type=gha" \
               --cache-to "type=gha,mode=max" \
-              --provenance=true
+              --provenance=true \
+              "$build_context"
 
           # Infrastructure Services
           build_and_push_image "mongodb" "./infrastructure/mongodb/"
