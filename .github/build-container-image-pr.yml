@@ -34,8 +34,6 @@ jobs:
           { name: 'postgresql', path: './infrastructure/postgresql/' },
           { name: 'tactical-base', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend/', context: './infrastructure/tactical-rmm' },
-          # below app is empty, so we don't need to build it
-          # { name: 'tactical-meshcentral', path: './infrastructure/tactical-rmm/tactical-meshcentral/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
           { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
