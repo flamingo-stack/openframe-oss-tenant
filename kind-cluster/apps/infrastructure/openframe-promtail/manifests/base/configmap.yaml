@@ -30,32 +30,94 @@ data:
         kubernetes_sd_configs:
           - role: pod
         relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_node_name]
-            target_label: node_name
-          - source_labels: [__meta_kubernetes_namespace]
-            target_label: namespace
-          - source_labels: [__meta_kubernetes_pod_name]
+          # Extract all original k8s labels
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          # Keep standard k8s metadata
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_name
             target_label: pod
-          - source_labels: [__meta_kubernetes_container_name]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_namespace
+            target_label: namespace
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_container_name
             target_label: container
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_node_name
+            target_label: node_name
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_kind
+            target_label: controller_kind
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_controller_name
+            target_label: controller_name
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_ip
+            target_label: pod_ip
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_host_ip
+            target_label: host_ip
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_phase
+            target_label: phase
+          # Handle app.kubernetes.io labels
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
             target_label: component
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_instance
             target_label: instance
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
             target_label: app
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_part_of]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_part_of
             target_label: part_of
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_managed_by]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_managed_by
             target_label: managed_by
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
-            regex: (.*)
+          # Handle other common labels
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_k8s_app
+            target_label: k8s_app
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_tier
+            target_label: tier
+          # Set category
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
+            regex: (.+)
             target_label: category
             replacement: $1
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+          - action: replace
+            source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
             regex: ""
             target_label: category
             replacement: other
+          # Clean up temporary labels
+          - action: labeldrop
+            regex: __meta_kubernetes_pod_label_(.+)
+          - action: labeldrop
+            regex: __meta_kubernetes_(.+)
         pipeline_stages:
           - docker: {}
           - json:
@@ -72,17 +134,93 @@ data:
               job: kubernetes-pods
               env: dev
           - labels:
-              stream:
-              container:
               pod:
               namespace:
+              container:
               node_name:
+              controller_kind:
+              controller_name:
+              pod_ip:
+              host_ip:
+              phase:
               component:
               instance:
               app:
               part_of:
               managed_by:
+              k8s_app:
+              tier:
               category:
+              stream:
+          - labeldrop:
+              - filename
+              - __address__
+          - output:
+              source: log
+
+      - job_name: kubernetes-pods-static
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: kubernetes-pods-static
+              __path__: /var/log/pods/*/*.log
+        pipeline_stages:
+          - docker: {}
+          - json:
+              expressions:
+                log: log
+                stream: stream
+                time: time
+          - timestamp:
+              source: time
+              format: RFC3339Nano
+              action_on_failure: fudge
+              location: UTC
+          - regex:
+              expression: ^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>[^_]+)_(?P<uid>[a-f0-9-]+)/(?P<container>[^/]+)/
+              source: filename
+          - labels:
+              namespace:
+              pod:
+              container:
+              stream:
+          - static_labels:
+              job: kubernetes-pods-static
+              env: dev
+          - output:
+              source: log
+
+      - job_name: kubernetes-containers-static
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: kubernetes-containers-static
+              __path__: /var/log/containers/*.log
+        pipeline_stages:
+          - docker: {}
+          - json:
+              expressions:
+                log: log
+                stream: stream
+                time: time
+          - timestamp:
+              source: time
+              format: RFC3339Nano
+              action_on_failure: fudge
+              location: UTC
+          - regex:
+              expression: ^/var/log/containers/(?P<pod>[^_]+)_(?P<namespace>[^_]+)_(?P<container>[^-]+)
+              source: filename
+          - labels:
+              namespace:
+              pod:
+              container:
+              stream:
+          - static_labels:
+              job: kubernetes-containers-static
+              env: dev
           - output:
               source: log
 

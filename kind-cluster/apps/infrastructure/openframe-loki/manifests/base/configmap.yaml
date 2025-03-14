@@ -46,12 +46,16 @@ data:
           index:
             prefix: index_
             period: 24h
+            tags:
+              period: 24h
+          row_shards: 16
 
     storage_config:
       boltdb_shipper:
         active_index_directory: /loki/index
         cache_location: /loki/boltdb-cache
         cache_ttl: 24h
+        shared_store: filesystem
       filesystem:
         directory: /loki/chunks
 
