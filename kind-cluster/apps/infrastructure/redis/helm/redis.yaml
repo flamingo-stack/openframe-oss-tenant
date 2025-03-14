@@ -1,0 +1,10 @@
+---
+auth:
+  enabled: false
+  password: ""
+  # existingSecret: ""
+#   password: "admin"
+#   existingSecret: "redis-secret"
+#   existingSecretPasswordKey: "redis-password"
+replica:
+  replicaCount: 1

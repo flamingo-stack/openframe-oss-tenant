@@ -1,0 +1,42 @@
+config:
+  outputs: |
+    [OUTPUT]
+        Name es
+        Match kube.*
+        Host elasticsearch-master
+        HTTP_User ${username}
+        HTTP_Passwd ${password}
+        tls On
+        tls.ca_file /opt/certs/ca.crt
+        Logstash_Format On
+        Retry_Limit False
+        Suppress_Type_Name On
+        Replace_Dots On
+
+    [OUTPUT]
+        Name es
+        Match host.*
+        Host elasticsearch-master
+        HTTP_User ${username}
+        HTTP_Passwd ${password}
+        tls On
+        tls.ca_file /opt/certs/ca.crt
+        Logstash_Format On
+        Logstash_Prefix node
+        Retry_Limit False
+        Suppress_Type_Name On
+        Replace_Dots On
+
+envFrom:
+  - secretRef:
+      name: elasticsearch-master-credentials
+
+extraVolumes:
+  - name: elasticsearch-master-certs
+    secret:
+      secretName: elasticsearch-master-certs
+
+extraVolumeMounts:
+  - name: elasticsearch-master-certs
+    readOnly: true
+    mountPath: /opt/certs
