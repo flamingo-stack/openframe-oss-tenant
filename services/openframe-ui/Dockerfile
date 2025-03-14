@@ -27,4 +27,4 @@ RUN ls -la /usr/share/nginx/html/assets
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]

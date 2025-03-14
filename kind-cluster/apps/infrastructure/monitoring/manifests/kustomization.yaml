@@ -1,0 +1,18 @@
+resources:
+  - grafana-provisioning.yaml
+  - dashboards/home-dashboard.yaml
+  - dashboards/cassandra-dashboard.yaml
+  - dashboards/kafka-dashboard.yaml
+  - dashboards/loki-dashboard.yaml
+  - dashboards/mongodb-dashboard.yaml
+  - dashboards/nifi-dashboard.yaml
+  - dashboards/openframe-api-dashboard.yaml
+  - dashboards/openframe-config-server-dashboard.yaml
+  - dashboards/openframe-gateway-dashboard.yaml
+  - dashboards/openframe-management-dashboard.yaml
+  - dashboards/openframe-stream-dashboard.yaml
+  - dashboards/pinot-broker-dashboard.yaml
+  - dashboards/pinot-controller-dashboard.yaml
+  - dashboards/pinot-server-dashboard.yaml
+  - dashboards/redis-dashboard.yaml
+  - dashboards/zookeeper-dashboard.yaml

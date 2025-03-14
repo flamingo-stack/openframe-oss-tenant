@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pull secrets
+# PULL SECRETS
 kubectl create secret docker-registry github-pat-secret \
   --docker-server=ghcr.io \
   --docker-username=vusal-fl \
@@ -8,139 +8,149 @@ kubectl create secret docker-registry github-pat-secret \
   --docker-email=vusal@flamingo.cx
 
 # ------------- INFRASTRUCTURE -------------
-# Deploy ingress-nginx
+# INGRESS-NGINX
 helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace \
   --version 4.12.0 \
   -f ./kind-cluster/apps/infrastructure/ingress-nginx/helm/ingress-nginx.yaml
+kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/name=ingress-nginx --timeout 20m
 
-kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/name=ingress-nginx
+# MONITORING
+helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --version 69.8.2 \
+  -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml
+kubectl wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
 
-# Monitoring
-# GRAFANA_FQDN="grafana.$DOMAIN"
-# GRAFANA_ENTRY="${IP} ${GRAFANA_FQDN}"
-# if ! grep -qF "$GRAFANA_ENTRY" "$HOSTS_FILE"; then
-#     echo "$GRAFANA_ENTRY" | sudo tee -a "$HOSTS_FILE"
-# fi
+kubectl apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
 
-# PROMETHEUS_FQDN="prometheus.$DOMAIN"
-# PROMETHEUS_ENTRY="${IP} ${PROMETHEUS_FQDN}"
-# if ! grep -qF "$PROMETHEUS_ENTRY" "$HOSTS_FILE"; then
-#     echo "$PROMETHEUS_ENTRY" | sudo tee -a "$HOSTS_FILE"
-# fi
+# LOGGING
+kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests
 
-# ALERTMANAGER_FQDN="alertmanager.$DOMAIN"
-# ALERTMANAGER_ENTRY="${IP} ${ALERTMANAGER_FQDN}"
-# if ! grep -qF "$ALERTMANAGER_ENTRY" "$HOSTS_FILE"; then
-#     echo "$ALERTMANAGER_ENTRY" | sudo tee -a "$HOSTS_FILE"
-# fi
+helm upgrade -i es elastic/elasticsearch \
+  --version 8.5.1 \
+  -f ./kind-cluster/apps/infrastructure/logging/helm/es.yaml
+kubectl wait --for=condition=Ready pod -l release=es --timeout 20m
 
-# helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-#   -n monitoring --create-namespace \
-#   --version 69.8.2 \
-#   -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml
+helm upgrade -i fluent-bit fluent/fluent-bit \
+  --version 0.48.8 \
+  -f ./kind-cluster/apps/infrastructure/logging/helm/fluent-bit.yaml
+kubectl wait --for=condition=Ready pod -l relapp.kubernetes.io/name=fluent-bit --timeout 20m
 
-# kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack
+# kubectl delete secrets kibana-kibana-es-token
+# kubectl delete configmap kibana-kibana-helm-scripts -n elastic
+# kubectl delete serviceaccount pre-install-kibana-kibana -n elastic
+# kubectl delete roles pre-install-kibana-kibana -n elastic
+# kubectl delete rolebindings pre-install-kibana-kibana -n elastic
+# kubectl delete job pre-install-kibana-kibana -n elastic
 
-# kubectl apply -n monitoring -k ./kind-cluster/apps/monitoring/manifests/dashboards
+helm upgrade -i kibana elastic/kibana \
+  --version 8.5.1 \
+  -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml
+kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
 
-# Logging
-# KIBANA_FQDN="kibana.$DOMAIN"
-# KIBANA_ENTRY="${IP} ${KIBANA_FQDN}"
-# if ! grep -qF "$KIBANA_ENTRY" "$HOSTS_FILE"; then
-#     echo "$KIBANA_ENTRY" | sudo tee -a "$HOSTS_FILE"
-# fi
-# kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests
+# LOKI
+kubectl apply -f ./kind-cluster/apps/infrastructure/loki
+kubectl wait --for=condition=Ready pod -l app=loki --timeout 20m
 
-# helm upgrade -i es elastic/elasticsearch \
-#   -n logging --create-namespace \
-#   --version 8.5.1 \
-#   -f ./kind-cluster/apps/infrastructure/logging/helm/es.yaml
+kubectl apply -f ./kind-cluster/apps/infrastructure/promtail
+kubectl wait --for=condition=Ready pod -l app=promtail --timeout 20m
+# or
+helm upgrade --install loki grafana/loki-stack -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
 
-# sudo sysctl fs.inotify.max_user_instances=1024
-# sudo sysctl -p
-
-# helm upgrade -i fluent-bit fluent/fluent-bit \
-#   -n logging --create-namespace \
-#   --version 0.48.8 \
-#   -f ./kind-cluster/apps/infrastructure/logging/helm/fluent-bit.yaml
-
-# kubectl -n logging delete secrets kibana-kibana-es-token
-# kubectl -n logging delete configmap kibana-kibana-helm-scripts -n elastic
-# kubectl -n logging delete serviceaccount pre-install-kibana-kibana -n elastic
-# kubectl -n logging delete roles pre-install-kibana-kibana -n elastic
-# kubectl -n logging delete rolebindings pre-install-kibana-kibana -n elastic
-# kubectl -n logging delete job pre-install-kibana-kibana -n elastic
-
-# helm upgrade -i kibana elastic/kibana \
-#   -n logging --create-namespace \
-#   --version 8.5.1 \
-#   -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml --no-hooks
-
-# helm upgrade -i redis bitnami/redis \
-#   --version 20.11.3 \
-#   -f ./kind-cluster/apps/infrastructure/redis/helm/redis.yaml
+# REDIS + EXPORTER
+helm upgrade -i redis bitnami/redis \
+  --version 20.11.3 \
+  -f ./kind-cluster/apps/infrastructure/redis/helm/redis.yaml
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m
 
 # TODO: install it to monitoring ns
-# helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
-#   --version 6.9.0 \
-#   -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
+helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
+  --version 6.9.0 \
+  -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
 
-# MONGO
+# MONGO + EXPORTER + UI
+kubectl apply -f ./kind-cluster/apps/infrastructure/mongodb/mongodb.yaml
+kubectl wait --for=condition=Ready pod -l app=mongodb --timeout 20m
 
-# kubectl apply -f ./kind-cluster/apps/infrastructure/mongodb/mongodb.yaml
+helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
+  --version 3.11.1 \
+  -f ./kind-cluster/apps/infrastructure/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-mongodb-exporter --timeout 20m
 
-# helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
-#   --version 3.11.1 \
-#   -f ./kind-cluster/apps/infrastructure/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml
-
-# kubectl apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
+kubectl apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
+kubectl wait --for=condition=Ready pod -l app=mongo-express --timeout 20m
 
 # KAFKA + UI
+helm upgrade -i kafka bitnami/kafka \
+  --version 31.5.0 \
+  -f ./kind-cluster/apps/infrastructure/kafka/helm/kafka.yaml
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka --timeout 20m
 
-# helm upgrade -i kafka bitnami/kafka \
-#   --version 31.5.0 \
-#   -f ./kind-cluster/apps/infrastructure/kafka/helm/kafka.yaml
-
-# helm repo add kafbat-ui https://kafbat.github.io/helm-charts
-# helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
-#   --version 1.4.11 \
-#   -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
+helm repo add kafbat-ui https://kafbat.github.io/helm-charts
+helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
+  --version 1.4.11 \
+  -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m
 
 # CASSANDRA
 # fix: add export to image during build
-# kubectl apply -f ./kind-cluster/apps/infrastructure/cassandra/cassandra.yaml
+kubectl apply -f ./kind-cluster/apps/infrastructure/cassandra/cassandra.yaml
+kubectl wait --for=condition=Ready pod -l app=cassandra --timeout 20m
 
 # Deploy the services
 # management-key: docker-management-key-123
-# kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
+kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
 
-# kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
+kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
+
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
+kubectl wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
 
 # ------------- ZOOKEEPER -------------
+# TODO: add zookeeper for
 # helm upgrade -i zookeeper bitnami/zookeeper \
 #   --version 13.7.4 \
 #   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
 # kubectl apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml
 
-# # pinot servers
-# kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
+# pinot servers
+kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
+kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 
 # ------------- AUTHENTIK -------------
-# kubectl apply -f ./kind-cluster/apps/authentik
+kubectl apply -f ./kind-cluster/apps/authentik
+kubectl wait --for=condition=Ready pod -l app=authentik-server --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=authentik-worker --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=authentik-postgresql --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=authentik-redis --timeout 20m
 
 # ------------- FLEET -------------
-# kubectl apply -f ./kind-cluster/apps/fleet
+kubectl apply -f ./kind-cluster/apps/fleet
+kubectl wait --for=condition=Ready pod -l app=fleet --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=fleet-mdm-mysql --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=fleet-mdm-redis --timeout 20m
 
 # ------------- MESH CENTRAL -------------
-# kubectl apply -f ./kind-cluster/apps/meshcentral
+kubectl apply -f ./kind-cluster/apps/meshcentral
+kubectl wait --for=condition=Ready pod -l app=meshcentral --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=meshcentral-nginx --timeout 20m
 
 # ------------- RMM -------------
-# kubectl apply -f ./kind-cluster/apps/tactical-rmm
+kubectl apply -f ./kind-cluster/apps/tactical-rmm
+kubectl wait --for=condition=Ready pod -l app=tactical-rmm --timeout 20m
 
 # ------------- REGISTER TOOLS -------------
-# kubectl apply -f ./kind-cluster/apps/jobs/register-tools.yaml
+kubectl apply -f ./kind-cluster/apps/jobs/register-tools.yaml
+kubectl wait --for=condition=Ready pod -l app=register-tools --timeout 20m
