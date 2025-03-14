@@ -13,8 +13,9 @@ on:
     workflows: ["OpenFrame Build Java Artifacts"]
     types:
       - completed
-  push:
+  pull_request:
     branches: [ main ]
+    types: [opened, synchronize, reopened]
 
 env:
   ORGANIZATION: flamingo-cx
@@ -22,9 +23,9 @@ env:
 
 jobs:
   build:
+    if: ${{ github.event_name == 'workflow_run' }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false  # Disable fail-fast behavior
       matrix:
         service: [
           { name: 'mongodb', path: './infrastructure/mongodb/' },
