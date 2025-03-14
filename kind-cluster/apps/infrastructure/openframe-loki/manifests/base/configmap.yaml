@@ -15,7 +15,7 @@ data:
 
     ingester:
       lifecycler:
-        address: 127.0.0.1
+        address: 0.0.0.0
         ring:
           kvstore:
             store: inmemory
@@ -57,6 +57,7 @@ data:
       retention_enabled: true
       retention_delete_delay: 2h
       delete_request_store: filesystem
+      delete_request_cancel_period: 24h
 
     limits_config:
       ingestion_rate_mb: 32
