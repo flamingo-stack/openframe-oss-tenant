@@ -31,9 +31,17 @@ grafana:
   #   GF_AUTH_ANONYMOUS_ENABLED: true
   #   GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
   dashboardProviders:
-    dashboardproviders.yaml:  # /etc/grafana/provisioning/dashboards/dashboardproviders.yaml
+    dashboardproviders.yaml:
       apiVersion: 1
       providers:
+      - name: 'Default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /tmp/dashboards
       - name: 'Library Panels'
         orgId: 1
         folder: ''
@@ -55,29 +63,50 @@ grafana:
     size: 1Gi
     finalizers:
       - kubernetes.io/pvc-protection
-  extraConfigmapMounts: []
-  additionalDataSources: []
-  # - name: prometheus-sample
-  #   access: proxy
-  #   basicAuth: true
-  #   secureJsonData:
-  #       basicAuthPassword: pass
-  #   basicAuthUser: daco
-  #   editable: false
-  #   jsonData:
-  #       tlsSkipVerify: true
-  #   orgId: 1
-  #   type: prometheus
-  #   url: https://{{ printf "%s-prometheus.svc" .Release.Name }}:9090
-  #   version: 1
-
-  # - name: Loki
-  #   type: loki
-  #   access: proxy
-  #   url: http://openframe-loki:3100
-  #   isDefault: false
-  #   editable: false
-  #   uid: loki
+  # extraConfigmapMounts:
+  #   - name: provisioning
+  #     configMap: grafana-provisioning
+  #     mountPath: /etc/grafana/provisioning
+  #     readOnly: true
+  #     items:
+  #       - key: library-panels.yaml
+  #         path: library-panels/provider.yaml
+  additionalDataSources:
+    # - name: prometheus
+    #   access: proxy
+    #   url: http://prometheus:9090
+    #   isDefault: true
+    #   editable: false
+    #   uid: prometheus
+    #   type: prometheus
+    - name: loki
+      type: loki
+      access: proxy
+      url: http://loki:3100
+      isDefault: false
+      editable: false
+      uid: loki
+      # jsonData:
+      #   maxLines: 1000
+      #   derivedFields:
+      #     - datasourceUid: prometheus
+      #       matcherRegex: "trace_id=(\\w+)"
+      #       name: TraceID
+      #       url: "$${__value.raw}"
+      #   searchContext: "1h"
+      #   serviceMap:
+      #     datasourceUid: prometheus
+      #   spanBar:
+      #     tag: "duration"
+      #   spanStartTimeShift: "1h"
+      #   spanEndTimeShift: "1h"
+      #   lokiQueryType: "Range"
+      #   cacheLevel: "None"
+      #   incrementalQueryOverlapWindow: "10m"
+      #   queryTimeout: "30s"
+      #   exemplarTraceIdDestinations:
+      #     - name: trace_id
+      #       datasourceUid: prometheus
 
   prune: true
 
@@ -165,3 +194,10 @@ prometheus:
       - job_name: 'pinot'
         static_configs:
           - targets: ['openframe-pinot-controller:9011', 'openframe-pinot-broker:9012', 'openframe-pinot-server:9013']
+
+    # ruleSelector:
+    #   matchLabels:
+    #     release: kube-prometheus-stack
+    # ruleNamespaceSelector:
+    #   matchLabels:
+    #     release: kube-prometheus-stack
