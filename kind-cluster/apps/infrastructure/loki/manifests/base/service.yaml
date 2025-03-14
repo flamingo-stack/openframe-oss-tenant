@@ -1,7 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: loki
+  name: openframe-loki
+  labels:
+    app: openframe-loki
 spec:
   ports:
     - name: http-metrics
@@ -9,4 +11,4 @@ spec:
       targetPort: 3100
       protocol: TCP
   selector:
-    app: loki
+    app: openframe-loki

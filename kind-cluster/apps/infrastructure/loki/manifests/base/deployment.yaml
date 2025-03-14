@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: loki
+  name: openframe-loki
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: loki
+      app: openframe-loki
   template:
     metadata:
       labels:
-        app: loki
+        app: openframe-loki
     spec:
       containers:
         - name: loki
@@ -49,7 +49,7 @@ spec:
       volumes:
         - name: loki-config
           configMap:
-            name: loki-config
+            name: openframe-loki-config
         - name: loki-data
           persistentVolumeClaim:
-            claimName: loki-data
+            claimName: openframe-loki-data

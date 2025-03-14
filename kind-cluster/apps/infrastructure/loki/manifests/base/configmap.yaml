@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: loki-config
+  name: openframe-loki-config
 data:
   local-config.yaml: |
     auth_enabled: false

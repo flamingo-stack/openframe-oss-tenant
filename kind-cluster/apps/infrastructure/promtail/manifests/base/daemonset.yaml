@@ -1,18 +1,26 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: promtail
-  namespace: default
+  name: openframe-promtail
 spec:
   selector:
     matchLabels:
-      app: promtail
+      app: openframe-promtail
   template:
     metadata:
       labels:
-        app: promtail
+        app: openframe-promtail
     spec:
-      serviceAccountName: promtail
+      serviceAccountName: openframe-promtail
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
       containers:
         - name: promtail
           image: grafana/promtail:latest
@@ -22,6 +30,11 @@ spec:
           args:
             - "-config.file=/etc/promtail/config.yml"
             - "-config.expand-env=true"
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           volumeMounts:
             - name: promtail-config
               mountPath: /etc/promtail
@@ -40,22 +53,29 @@ spec:
             httpGet:
               path: /ready
               port: http-metrics
-            initialDelaySeconds: 10
-            timeoutSeconds: 4
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+            periodSeconds: 15
             failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /ready
               port: http-metrics
-            initialDelaySeconds: 10
-            timeoutSeconds: 4
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+            periodSeconds: 15
             failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
       volumes:
         - name: promtail-config
           configMap:
-            name: promtail-config
+            name: openframe-promtail-config
         - name: run
           hostPath:
             path: /run/promtail

@@ -17,30 +17,32 @@ kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/nam
 
 # MONITORING
 helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
   --version 69.8.2 \
   -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml
-kubectl wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
+kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
 
-kubectl apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
+# Dashboards
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
 
 # LOKI
-kubectl apply -f ./kind-cluster/apps/infrastructure/loki
-kubectl wait --for=condition=Ready pod -l app=loki --timeout 20m
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/loki/manifests
+kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-loki --timeout 20m
 
-kubectl apply -f ./kind-cluster/apps/infrastructure/promtail
-kubectl wait --for=condition=Ready pod -l app=promtail --timeout 20m
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/promtail/manifests
+kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m
 # or
 # helm upgrade --install loki grafana/loki-stack \
 #   --version 2.10.2 \
 #   -f ./kind-cluster/apps/infrastructure/loki/helm/loki-stack.yaml
 
-helm upgrade --install loki grafana/loki \
-  --version 6.28.0 \
-  -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
+# helm upgrade --install loki grafana/loki \
+#   --version 6.28.0 \
+#   -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
 
-helm upgrade --install promtail grafana/promtail \
-  --version 6.16.6 \
-  -f ./kind-cluster/apps/infrastructure/promtail/helm/promtail.yaml
+# helm upgrade --install promtail grafana/promtail \
+#   --version 6.16.6 \
+#   -f ./kind-cluster/apps/infrastructure/promtail/helm/promtail.yaml
 
 # LOGGING
 # kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests

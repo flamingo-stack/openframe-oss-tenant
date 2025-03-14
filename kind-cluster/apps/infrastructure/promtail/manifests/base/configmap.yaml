@@ -1,8 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: promtail-config
-  namespace: default
+  name: openframe-promtail-config
 data:
   config.yml: |
     server:
@@ -15,7 +14,7 @@ data:
       ignore_invalid_yaml: true
 
     clients:
-      - url: http://loki:3100/loki/api/v1/push
+      - url: http://openframe-loki:3100/loki/api/v1/push
         external_labels:
           host: ${HOSTNAME}
         batchwait: 1s

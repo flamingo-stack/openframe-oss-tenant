@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sudo sysctl fs.inotify.max_user_instances=1500
+sudo sysctl -p
+
 # Below ip will be used for ingress
 export IP="${IP:-192.168.100.100}"
 

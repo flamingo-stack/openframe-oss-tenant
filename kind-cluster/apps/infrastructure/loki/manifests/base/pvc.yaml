@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: loki-data
+  name: openframe-loki-data
 spec:
   accessModes:
     - ReadWriteOnce

@@ -1,0 +1,7 @@
+resources:
+  - base/configmap.yaml
+  # - base/configmap-test.yaml
+  - base/deployment.yaml
+  - base/pvc.yaml
+  - base/service.yaml
+  - base/servicemonitor.yaml

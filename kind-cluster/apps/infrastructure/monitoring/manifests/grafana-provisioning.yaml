@@ -15,7 +15,7 @@ data:
   #       disableDeletion: false
   #       editable: true
   #       options:
-  #         path: /etc/grafana/dashboards
+  #         path: /tmp/dashboards # /etc/grafana/dashboards
   library-panels.yaml: |
     apiVersion: 1
     providers:
