@@ -25,7 +25,7 @@ jobs:
     # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
     if: |
       github.event.workflow_run.conclusion == 'success' &&
-      contains(github.event.workflow_run.head_commit.message, 'Merge pull request')
+      github.event.workflow_run.head_branch == 'main'
     # if: |
     #   github.event.workflow_run.conclusion == 'success' &&
     #   github.event.workflow_run.event == 'pull_request' &&
