@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cassandra-jmx-config
+  name: openframe-cassandra-jmx-config
 data:
   config.yml: |
     lowercaseOutputName: true
@@ -21,7 +21,7 @@ data:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: cassandra-data
+  name: openframe-cassandra-data
 spec:
   accessModes:
     - ReadWriteOnce
@@ -32,7 +32,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: cassandra-logs
+  name: openframe-cassandra-logs
 spec:
   accessModes:
     - ReadWriteOnce
@@ -43,16 +43,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cassandra
+  name: openframe-cassandra
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cassandra
+      app: openframe-cassandra
   template:
     metadata:
       labels:
-        app: cassandra
+        app: openframe-cassandra
     spec:
       imagePullSecrets:
         - name: github-pat-secret
@@ -67,22 +67,22 @@ spec:
         - name: jmx-exporter
           mountPath: /opt/jmx_exporter
       containers:
-        - name: cassandra
-          image: ghcr.io/flamingo-cx/openframe-cassandra:110325
+        - name: openframe-cassandra
+          image: ghcr.io/flamingo-cx/openframe-cassandra:latest
           ports:
             - containerPort: 9042
             - containerPort: 7199
             - containerPort: 9404
           volumeMounts:
-            - name: cassandra-data
+            - name: openframe-cassandra-data
               mountPath: /var/lib/cassandra
-            - name: cassandra-logs
+            - name: openframe-cassandra-logs
               mountPath: /var/log/cassandra
-            - name: cassandra-init
+            - name: openframe-cassandra-init
               mountPath: /docker-entrypoint-initdb.d
             - name: jmx-exporter
               mountPath: /opt/jmx_exporter
-            - name: cassandra-jmx-config
+            - name: openframe-cassandra-jmx-config
               mountPath: /opt/jmx_exporter/config.yml
               subPath: config.yml
           env:
@@ -133,20 +133,20 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 5
       volumes:
-        - name: cassandra-data
+        - name: openframe-cassandra-data
           persistentVolumeClaim:
-            claimName: cassandra-data
-        - name: cassandra-logs
+            claimName: openframe-cassandra-data
+        - name: openframe-cassandra-logs
           persistentVolumeClaim:
-            claimName: cassandra-logs
-        - name: cassandra-init
+            claimName: openframe-cassandra-logs
+        - name: openframe-cassandra-init
           configMap:
-            name: cassandra-init
+            name: openframe-cassandra-init
         - name: jmx-exporter
           emptyDir: {}
-        - name: cassandra-jmx-config
+        - name: openframe-cassandra-jmx-config
           configMap:
-            name: cassandra-jmx-config
+            name: openframe-cassandra-jmx-config
             items:
               - key: config.yml
                 path: config.yml
@@ -157,7 +157,7 @@ metadata:
   name: openframe-cassandra
 spec:
   selector:
-    app: cassandra
+    app: openframe-cassandra
   ports:
     - port: 9042
       targetPort: 9042
@@ -173,7 +173,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cassandra-init
+  name: openframe-cassandra-init
 data:
   cassandra-init.sql: |
     CREATE KEYSPACE IF NOT EXISTS openframe_events

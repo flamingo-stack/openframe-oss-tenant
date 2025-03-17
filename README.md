@@ -1,5 +1,9 @@
 # ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
 
+[![OpenFrame Build Java Artifacts](https://github.com/Flamingo-CX/openframe/actions/workflows/build-java.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build-java.yml)
+
+[![OpenFrame Build Container Images](https://github.com/Flamingo-CX/openframe/actions/workflows/build-container-image.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build-container-image.yml)
+
 OpenFrame is a distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. It simplifies IT and security operations through a single, cohesive platform.
 
 ## Features
@@ -47,18 +51,18 @@ OpenFrame uses a modern microservices architecture with these key layers:
 flowchart TB
     Client --> LB[Load Balancer]
     LB --> Gateway[API Gateway]
-    
+
     subgraph Gateway_Layer
         Gateway --> GraphQL[GraphQL Engine]
         Gateway --> Auth[Auth Service]
     end
-    
+
     subgraph Processing_Layer
         NiFi --> |Anomaly Detection|Kafka
         Kafka --> |Events|CS[Cassandra]
         Kafka --> |Analytics|PT[Pinot]
     end
-    
+
     subgraph Data_Layer
         GraphQL --> MongoDB
         GraphQL --> CS
@@ -71,17 +75,17 @@ flowchart TB
 ```mermaid
 flowchart LR
     Sources[Data Sources] --> NiFi
-    
+
     subgraph NiFi[NiFi Processing]
         direction TB
         VP[Validate Payload] --> ED[Enrich Data]
         ED --> AD[Anomaly Detection]
         AD --> RT[Route Traffic]
     end
-    
+
     NiFi --> |Events|Kafka
     NiFi --> |Alerts|Alert[Alert Service]
-    
+
     Kafka --> |Raw Events|Cassandra
     Kafka --> |Metrics|Pinot
 ```

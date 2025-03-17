@@ -163,13 +163,9 @@ prometheus:
         static_configs:
           - targets: ['openframe-gateway:8101']
 
-      - job_name: 'redis'
+      - job_name: 'kafka-jmx'
         static_configs:
-          - targets: ['openframe-redis-exporter:9121']
-
-      - job_name: 'kafka'
-        static_configs:
-          - targets: ['openframe-kafka:9308']
+          - targets: ['openframe-kafka-jmx-metrics.infrastructure.svc:5556']
 
       - job_name: 'zookeeper'
         static_configs:
@@ -179,17 +175,13 @@ prometheus:
             target_label: service
             replacement: 'zookeeper'
 
-      - job_name: 'mongodb'
-        static_configs:
-          - targets: ['openframe-mongodb-exporter:9216']
-
       - job_name: 'cassandra'
         static_configs:
-          - targets: ['openframe-cassandra:9404']
+          - targets: ['openframe-cassandra.infrastructure.svc:9404']
 
       - job_name: 'nifi'
         static_configs:
-          - targets: ['openframe-nifi:9096']
+          - targets: ['openframe-nifi.infrastructure.svc:9096']
 
       - job_name: 'pinot'
         static_configs:

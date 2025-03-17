@@ -1,8 +1,7 @@
 #!/bin/bash
 
 ORG="flamingo-cx"
-# Use native GitHub token if available, otherwise fallback to GITHUB_TOKEN_CLASSIC
-TOKEN=${GITHUB_TOKEN:-$GITHUB_TOKEN_CLASSIC}
+TOKEN=$GITHUB_TOKEN_CLASSIC
 
 # GitHub API base URL
 API_URL="https://api.github.com"

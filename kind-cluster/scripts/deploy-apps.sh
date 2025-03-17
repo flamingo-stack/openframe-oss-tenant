@@ -1,35 +1,49 @@
 #!/bin/bash
 
 # PULL SECRETS
-kubectl create secret docker-registry github-pat-secret \
+kubectl -n infrastructure create secret docker-registry github-pat-secret \
   --docker-server=ghcr.io \
   --docker-username=vusal-fl \
   --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
   --docker-email=vusal@flamingo.cx
 
 # ------------- INFRASTRUCTURE -------------
+
+# + Loki (no dependencies)
+# + Prometheus (depends on Loki)
+# + Grafana (depends on Prometheus, Loki)
+# + Redis (no dependencies)
+# + Redis Exporter (depends on Redis, Loki)
+# + Kafka (depends on Zookeeper, Loki)
+# + Kafka UI (depends on Kafka, Loki)
+# + MongoDB (depends on Loki)
+# + MongoDB Exporter (depends on MongoDB, Loki)
+# + Mongo Express (depends on MongoDB, Loki)
+# + Cassandra (depends on Loki)
+# + Nifi (depends on Loki)
+# Zookeeper (depends on Loki)
+# Pinot Controller (depends on Zookeeper)
+# Pinot Broker (depends on Pinot Controller)
+# Pinot Server (depends on Pinot Controller)
+# Config Server (no dependencies)
+# API (depends on Config Server, MongoDB, Kafka, Cassandra)
+# Management (depends on Config Server, MongoDB)
+# Openframe UI (depends on API, Management)
+# Stream (depends on Kafka, Config Server, Cassandra, MongoDB)
+# Gateway (depends on Config Server, MongoDB, Cassandra)
+
 # INGRESS-NGINX
 helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace \
   --version 4.12.0 \
-  -f ./kind-cluster/apps/infrastructure/ingress-nginx/helm/ingress-nginx.yaml
+  -f ./kind-cluster/apps/infrastructure/ingress-nginx/helm/ingress-nginx.yaml && \
 kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/name=ingress-nginx --timeout 20m
 
-# MONITORING
-helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-  -n monitoring --create-namespace \
-  --version 69.8.2 \
-  -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml
-kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
-
-# Dashboards
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
-
 # LOKI
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests && \
 kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-loki --timeout 20m
 
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests && \
 kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m
 # or
 # helm upgrade --install loki grafana/loki-stack \
@@ -69,67 +83,90 @@ kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail -
 #   -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml
 # kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
 
-# REDIS + EXPORTER
-helm upgrade -i redis bitnami/redis \
+# GRAFANA + PROMETHEUS
+helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
+  --version 69.8.2 \
+  -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml && \
+kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
+
+# Dashboards
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
+
+# REDIS
+helm upgrade -i openframe-redis bitnami/redis \
+  -n infrastructure --create-namespace \
   --version 20.11.3 \
-  -f ./kind-cluster/apps/infrastructure/redis/helm/redis.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m
+  -f ./kind-cluster/apps/infrastructure/openframe-redis/helm/redis.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m
 
-# TODO: install it to monitoring ns
-helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
-  --version 6.9.0 \
-  -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
+# REDIS EXPORTER
+# TODO: service montor enabled in redis chart directly, no need to istall this one
+# helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
+#   --version 6.9.0 \
+#   -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
+# kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
 
-# MONGO + EXPORTER + UI
-kubectl apply -f ./kind-cluster/apps/infrastructure/mongodb/mongodb.yaml
-kubectl wait --for=condition=Ready pod -l app=mongodb --timeout 20m
-
-helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
-  --version 3.11.1 \
-  -f ./kind-cluster/apps/infrastructure/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-mongodb-exporter --timeout 20m
-
-kubectl apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
-kubectl wait --for=condition=Ready pod -l app=mongo-express --timeout 20m
-
-# KAFKA + UI
-helm upgrade -i kafka bitnami/kafka \
+# KAFKA
+# TODO: increase memory limit for kafka-controller
+helm upgrade -i openframe-kafka bitnami/kafka \
+  -n infrastructure --create-namespace \
   --version 31.5.0 \
-  -f ./kind-cluster/apps/infrastructure/kafka/helm/kafka.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka --timeout 20m
+  -f ./kind-cluster/apps/infrastructure/openframe-kafka/helm/kafka.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka --timeout 20m
 
-helm repo add kafbat-ui https://kafbat.github.io/helm-charts
+# KAFKA UI
+# helm repo add kafbat-ui https://kafbat.github.io/helm-charts
 helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
+  -n infrastructure --create-namespace \
   --version 1.4.11 \
-  -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m
+  -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m
+
+# MONGO DB
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-mongodb --timeout 20m
+
+# MONGO EXPORTER
+helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
+  -n infrastructure --create-namespace \
+  --version 3.11.1 \
+  -f ./kind-cluster/apps/infrastructure/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-mongodb-exporter --timeout 20m
+
+# MONGO EXPRESS
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=mongo-express --timeout 20m
 
 # CASSANDRA
-# fix: add export to image during build
-kubectl apply -f ./kind-cluster/apps/infrastructure/cassandra/cassandra.yaml
-kubectl wait --for=condition=Ready pod -l app=cassandra --timeout 20m
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
 
-# Deploy the services
-# management-key: docker-management-key-123
-kubectl apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
+# NIFI
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-nifi/nifi.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m
 
+# GATEWAY
 kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
 
+# STREAM
 kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
-kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=openframe-stream --timeout 20m
 
+# OPENFRAME-UI
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
 
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
+# API
+# management-key: docker-management-key-123  ???
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml && \
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
 kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
 
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
 
-# ------------- ZOOKEEPER -------------
 # TODO: add zookeeper for
 # helm upgrade -i zookeeper bitnami/zookeeper \
 #   --version 13.7.4 \

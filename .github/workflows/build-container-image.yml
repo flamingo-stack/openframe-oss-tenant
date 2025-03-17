@@ -13,6 +13,7 @@ on:
     workflows: ["OpenFrame Build Java Artifacts"]
     types:
       - completed
+    branches: [main]
 
 env:
   ORGANIZATION: flamingo-cx
@@ -21,7 +22,14 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
+    # if: |
+    #   github.event.workflow_run.conclusion == 'success' &&
+    #   contains(github.event.workflow_run.head_commit.message, 'Merge pull request')
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      contains(fromJson(github.event.workflow_run.pull_requests[0].base.ref), 'main')
     strategy:
       fail-fast: false  # Disable fail-fast behavior
       matrix:
@@ -127,6 +135,8 @@ jobs:
       # Clean up old versions after successful push
       - name: Clean up old versions
         if: success() && steps.docker_build.outcome == 'success'
+        env:
+          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x ./kind-cluster/scripts/gh-packages.sh
           # Keep latest, commit SHA, and timestamp tags

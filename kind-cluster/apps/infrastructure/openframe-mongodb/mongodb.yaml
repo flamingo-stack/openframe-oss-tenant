@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mongodb-pvc
+  name: openframe-mongodb-pvc
 spec:
   accessModes:
     - ReadWriteOnce
@@ -13,7 +13,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mongodb-config
+  name: openframe-mongodb-config
 data:
   MONGO_APP_DATABASE: "openframe"
   MONGO_APP_USERNAME: "openframe"
@@ -22,14 +22,14 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mongodb-init
+  name: openframe-mongodb-init
 data: {}
 
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: mongodb-secret
+  name: openframe-mongodb-secret
 type: Opaque
 data:
   MONGO_INITDB_ROOT_USERNAME: b3BlbmZyYW1l  # base64(openframe)
@@ -40,10 +40,10 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongodb
+  name: openframe-mongodb
 spec:
   selector:
-    app: mongodb
+    app: openframe-mongodb
   ports:
     - name: mongodb
       protocol: TCP
@@ -55,32 +55,32 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mongodb
+  name: openframe-mongodb
 spec:
-  serviceName: "mongodb"
+  serviceName: "openframe-mongodb"
   replicas: 1
   selector:
     matchLabels:
-      app: mongodb
+      app: openframe-mongodb
   template:
     metadata:
       labels:
-        app: mongodb
+        app: openframe-mongodb
     spec:
       imagePullSecrets:
         - name: github-pat-secret
       containers:
-        - name: mongodb
-          image: ghcr.io/flamingo-cx/openframe-mongodb:110325
+        - name: openframe-mongodb
+          image: ghcr.io/flamingo-cx/openframe-mongodb:latest
           ports:
             - containerPort: 27017
           envFrom:
             - configMapRef:
-                name: mongodb-config
+                name: openframe-mongodb-config
             - secretRef:
-                name: mongodb-secret
+                name: openframe-mongodb-secret
           volumeMounts:
-            - name: mongodb-storage
+            - name: openframe-mongodb-storage
               mountPath: /data/db
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
@@ -96,13 +96,13 @@ spec:
       volumes:
         - name: init-script
           configMap:
-            name: mongodb-init
+            name: openframe-mongodb-init
         - name: logs
           emptyDir: {}
 
   volumeClaimTemplates:
     - metadata:
-        name: mongodb-storage
+        name: openframe-mongodb-storage
       spec:
         accessModes: ["ReadWriteOnce"]
         resources:

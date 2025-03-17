@@ -8,3 +8,10 @@ auth:
 #   existingSecretPasswordKey: "redis-password"
 replica:
   replicaCount: 1
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+  # podMonitor:
+  #   enabled: true
