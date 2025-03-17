@@ -48,7 +48,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pinot-config
+  name: pinot-controller-config
 data:
   controller.conf: |
     controller.host=pinot-controller
@@ -64,7 +64,12 @@ data:
     controller.local.temp.dir=/tmp/pinot-tmp-data/controller
     controller.task.scheduler.enabled=false
     pinot.set.instance.id.to.hostname=false
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pinot-broker-config
+data:
   broker.conf: |
     pinot.broker.client.queryPort=8099
     pinot.broker.timeoutMs=60000
@@ -77,7 +82,12 @@ data:
     pinot.broker.metrics.registry.registration.listeners.class=org.apache.pinot.broker.metrics.BrokerMetricsRegistryRegistrationListener
     pinot.broker.helix.cluster.name=openframe-pinot
     pinot.broker.helix.zk.str=zookeeper:2181
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pinot-server-config
+data:
   server.conf: |
     pinot.server.netty.port=8098
     pinot.server.instance.dataDir=/opt/pinot/data/server
@@ -155,7 +165,7 @@ spec:
           name: pinot-jmx-config
       - name: pinot-config
         configMap:
-          name: pinot-config
+          name: pinot-controller-config
       - name: controller-data
         emptyDir: {}
 ---
@@ -218,7 +228,7 @@ spec:
           name: pinot-jmx-config
       - name: pinot-config
         configMap:
-          name: pinot-config
+          name: pinot-broker-config
 ---
 # Server Deployment
 apiVersion: apps/v1
@@ -281,7 +291,7 @@ spec:
           name: pinot-jmx-config
       - name: pinot-config
         configMap:
-          name: pinot-config
+          name: pinot-server-config
       - name: server-data
         emptyDir: {}
 ---

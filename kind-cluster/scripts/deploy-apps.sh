@@ -160,6 +160,11 @@ kubectl -n infrastructure wait --for=condition=Ready pod -l app=zookeeper --time
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml && \
 kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 
+# helm repo add pinot https://raw.githubusercontent.com/apache/pinot/master/helm
+helm upgrade -i pinot pinot/pinot \
+    -n infrastructure --create-namespace \
+    --version 0.3.1
+
 # GATEWAY
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
