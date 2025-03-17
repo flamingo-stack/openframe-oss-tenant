@@ -161,7 +161,7 @@ prometheus:
       - job_name: 'openframe-gateway'
         metrics_path: '/management/v1/prometheus'
         static_configs:
-          - targets: ['openframe-gateway:8101']
+          - targets: ['openframe-gateway.infrastructure.svc:8101']
 
       - job_name: 'kafka-jmx'
         static_configs:
