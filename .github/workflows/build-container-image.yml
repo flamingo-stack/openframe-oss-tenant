@@ -9,10 +9,8 @@ permissions:
   id-token: write
 
 on:
-  workflow_run:
-    workflows: ["OpenFrame Build Java Artifacts"]
-    types:
-      - completed
+  pull_request:
+    types: [closed]
     branches: [main]
 
 env:
@@ -20,16 +18,34 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  build:
+  wait-for-java:
     runs-on: ubuntu-latest
-    # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
-    if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main'
-    # if: |
-    #   github.event.workflow_run.conclusion == 'success' &&
-    #   github.event.workflow_run.event == 'pull_request' &&
-    #   contains(fromJson(github.event.workflow_run.pull_requests[0].base.ref), 'main')
+    steps:
+      - name: Wait for Java build
+        run: |
+          while true; do
+            # Check if Java workflow is running
+            RUNNING=$(gh api repos/${{ github.repository }}/actions/workflows/build-java.yml/runs --jq '.workflow_runs[0].status')
+
+            if [ "$RUNNING" = "completed" ]; then
+              # Check if it was successful
+              CONCLUSION=$(gh api repos/${{ github.repository }}/actions/workflows/build-java.yml/runs --jq '.workflow_runs[0].conclusion')
+              if [ "$CONCLUSION" = "success" ]; then
+                echo "Java build completed successfully"
+                exit 0
+              else
+                echo "Java build failed"
+                exit 1
+              fi
+            fi
+
+            echo "Waiting for Java build to complete..."
+            sleep 30
+          done
+
+  build:
+    needs: wait-for-java
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false  # Disable fail-fast behavior
       matrix:
@@ -69,38 +85,17 @@ jobs:
           echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
-      # Restore cached Java artifacts from build job
-      - name: Restore Java artifacts
-        uses: actions/cache@v3
-        with:
-          path: |
-            **/target/*.jar
-            !**/target/original-*.jar
-            !**/target/*-sources.jar
-            !**/target/*-javadoc.jar
-          key: ${{ runner.os }}-java-${{ github.event.workflow_run.head_commit.id }}
-          restore-keys: |
-            ${{ runner.os }}-java-
-
-      # Create target directories and copy JAR files
-      - name: Create target directories and copy JAR files
+      # Get the latest successful Java build artifacts
+      - name: Download Java artifacts
         run: |
-          # Create target directories
-          for dir in $(find . -type f -name "Dockerfile" -exec dirname {} \;); do
-            mkdir -p "$dir/target"
-          done
+          # Get the latest successful run ID
+          RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-java.yml/runs --jq '.workflow_runs[0].id')
 
-          # Copy JAR files for Java services
-          for service in api config gateway management stream core data; do
-            echo "Setting up $service..."
-            find . -path "**/target/*.jar" \
-              ! -name "original-*.jar" \
-              ! -name "*-sources.jar" \
-              ! -name "*-javadoc.jar" \
-              -exec cp {} ./**/openframe-$service/target/ \;
-
-            echo "Contents of $service target directory:"
-            ls -la ./**/openframe-$service/target/
+          # Download artifacts from that run
+          gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts --jq '.artifacts[].id' | while read -r artifact_id; do
+            gh api repos/${{ github.repository }}/actions/artifacts/$artifact_id/zip -H "Accept: application/vnd.github.v3+json" --output artifact.zip
+            unzip artifact.zip
+            rm artifact.zip
           done
 
       - name: Log in to GitHub Container Registry
