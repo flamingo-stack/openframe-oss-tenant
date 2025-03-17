@@ -19,7 +19,7 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
 # + MongoDB (depends on Loki)
 # + MongoDB Exporter (depends on MongoDB, Loki)
 # + Mongo Express (depends on MongoDB, Loki)
-# Cassandra (depends on Loki)
+# + Cassandra (depends on Loki)
 # Nifi (depends on Loki)
 # Zookeeper (depends on Loki)
 # Pinot Controller (depends on Zookeeper)
