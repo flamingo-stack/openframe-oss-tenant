@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# sudo sysctl fs.inotify.max_user_instances=1024
-# sudo sysctl -p
-
 # Check if the IP is already assigned to the loopback interface
 if ip addr show dev lo | grep -q "inet $IP/24"; then
     echo "IP $IP is already added to the loopback interface."

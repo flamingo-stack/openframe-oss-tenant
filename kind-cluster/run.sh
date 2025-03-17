@@ -7,7 +7,7 @@ sudo sysctl -p
 export IP="${IP:-192.168.100.100}"
 
 export DOMAIN="${DOMAIN:-${IP}.nip.io}"
-export HOSTS_FILE="/etc/hosts"
+# export HOSTS_FILE="/etc/hosts"
 
 case "$1" in
 u|up)
