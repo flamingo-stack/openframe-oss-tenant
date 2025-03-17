@@ -169,7 +169,7 @@ prometheus:
 
       - job_name: 'zookeeper'
         static_configs:
-          - targets: ['openframe-zookeeper.infrastructure.svc:7070']
+          - targets: ['zookeeper.infrastructure.svc:7070']
         relabel_configs:
           - source_labels: [__address__]
             target_label: service

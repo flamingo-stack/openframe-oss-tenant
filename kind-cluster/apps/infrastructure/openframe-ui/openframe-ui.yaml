@@ -16,7 +16,7 @@ spec:
         - name: github-pat-secret
       containers:
         - name: ui
-          image: ghcr.io/flamingo-cx/openframe-ui:110325
+          image: ghcr.io/flamingo-cx/openframe-ui:latest
           ports:
             - containerPort: 80
               name: http
