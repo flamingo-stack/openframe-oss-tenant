@@ -175,10 +175,6 @@ prometheus:
             target_label: service
             replacement: 'zookeeper'
 
-      - job_name: 'mongodb'
-        static_configs:
-          - targets: ['openframe-mongodb-exporter:9216']
-
       - job_name: 'cassandra'
         static_configs:
           - targets: ['openframe-cassandra:9404']
