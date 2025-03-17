@@ -144,7 +144,7 @@ kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassan
 
 # NIFI
 # TODO: liveness probe fails, need to check
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-nifi/nifi.yaml && \
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-nifi && \
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m
 
 # ZOOKEEPER (for PINOTs)
