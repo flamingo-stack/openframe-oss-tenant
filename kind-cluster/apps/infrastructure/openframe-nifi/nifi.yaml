@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nifi-content
+  name: openframe-nifi-content
 spec:
   accessModes:
     - ReadWriteOnce
@@ -12,7 +12,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nifi-database
+  name: openframe-nifi-database
 spec:
   accessModes:
     - ReadWriteOnce
@@ -23,7 +23,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nifi-flowfile
+  name: openframe-nifi-flowfile
 spec:
   accessModes:
     - ReadWriteOnce
@@ -34,7 +34,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nifi-provenance
+  name: openframe-nifi-provenance
 spec:
   accessModes:
     - ReadWriteOnce
@@ -45,7 +45,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nifi-state
+  name: openframe-nifi-state
 spec:
   accessModes:
     - ReadWriteOnce
@@ -56,7 +56,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nifi-logs
+  name: openframe-nifi-logs
 spec:
   accessModes:
     - ReadWriteOnce
@@ -67,22 +67,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nifi
+  name: openframe-nifi
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nifi
+      app: openframe-nifi
   template:
     metadata:
       labels:
-        app: nifi
+        app: openframe-nifi
     spec:
       imagePullSecrets:
         - name: github-pat-secret
       containers:
-        - name: nifi
-          image: ghcr.io/flamingo-cx/openframe-nifi:110325
+        - name: openframe-nifi
+          image: ghcr.io/flamingo-cx/openframe-nifi:latest
           ports:
             - containerPort: 8443
               name: https
@@ -98,17 +98,17 @@ spec:
             - name: SINGLE_USER_CREDENTIALS_PASSWORD
               value: "password123456789"
           volumeMounts:
-            - name: nifi-content
+            - name: openframe-nifi-content
               mountPath: /opt/nifi/nifi-current/content_repository
-            - name: nifi-database
+            - name: openframe-nifi-database
               mountPath: /opt/nifi/nifi-current/database_repository
-            - name: nifi-flowfile
+            - name: openframe-nifi-flowfile
               mountPath: /opt/nifi/nifi-current/flowfile_repository
-            - name: nifi-provenance
+            - name: openframe-nifi-provenance
               mountPath: /opt/nifi/nifi-current/provenance_repository
-            - name: nifi-state
+            - name: openframe-nifi-state
               mountPath: /opt/nifi/nifi-current/state
-            - name: nifi-logs
+            - name: openframe-nifi-logs
               mountPath: /opt/nifi/nifi-current/logs
           livenessProbe:
             httpGet:
@@ -136,32 +136,32 @@ spec:
               memory: "4Gi"
               cpu: "2"
       volumes:
-        - name: nifi-content
+        - name: openframe-nifi-content
           persistentVolumeClaim:
-            claimName: nifi-content
-        - name: nifi-database
+            claimName: openframe-nifi-content
+        - name: openframe-nifi-database
           persistentVolumeClaim:
-            claimName: nifi-database
-        - name: nifi-flowfile
+            claimName: openframe-nifi-database
+        - name: openframe-nifi-flowfile
           persistentVolumeClaim:
-            claimName: nifi-flowfile
-        - name: nifi-provenance
+            claimName: openframe-nifi-flowfile
+        - name: openframe-nifi-provenance
           persistentVolumeClaim:
-            claimName: nifi-provenance
-        - name: nifi-state
+            claimName: openframe-nifi-provenance
+        - name: openframe-nifi-state
           persistentVolumeClaim:
-            claimName: nifi-state
-        - name: nifi-logs
+            claimName: openframe-nifi-state
+        - name: openframe-nifi-logs
           persistentVolumeClaim:
-            claimName: nifi-logs
+            claimName: openframe-nifi-logs
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nifi
+  name: openframe-nifi
 spec:
   selector:
-    app: nifi
+    app: openframe-nifi
   ports:
     - port: 8443
       targetPort: 8443

@@ -20,7 +20,7 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
 # + MongoDB Exporter (depends on MongoDB, Loki)
 # + Mongo Express (depends on MongoDB, Loki)
 # + Cassandra (depends on Loki)
-# Nifi (depends on Loki)
+# + Nifi (depends on Loki)
 # Zookeeper (depends on Loki)
 # Pinot Controller (depends on Zookeeper)
 # Pinot Broker (depends on Pinot Controller)
@@ -108,6 +108,7 @@ kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/na
 # kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
 
 # KAFKA
+# TODO: increase memory limit for kafka-controller
 helm upgrade -i openframe-kafka bitnami/kafka \
   -n infrastructure --create-namespace \
   --version 31.5.0 \
@@ -138,24 +139,29 @@ kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/mongo-expr
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=mongo-express --timeout 20m
 
 # CASSANDRA
-# fix: add export to image during build
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml && \
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
 
-# Deploy the services
-# management-key: docker-management-key-123
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml
+# NIFI
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-nifi/nifi.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m
 
+# GATEWAY
 kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
 
+# STREAM
 kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
-kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+kubectl wait --for=condition=Ready pod -l app=openframe-stream --timeout 20m
 
+# OPENFRAME-UI
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
 
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml
+# API
+# management-key: docker-management-key-123  ???
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml && \
+kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
 kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
 
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml

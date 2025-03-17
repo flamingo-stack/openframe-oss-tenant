@@ -181,7 +181,7 @@ prometheus:
 
       - job_name: 'nifi'
         static_configs:
-          - targets: ['openframe-nifi:9096']
+          - targets: ['openframe-nifi.infrastructure.svc:9096']
 
       - job_name: 'pinot'
         static_configs:
