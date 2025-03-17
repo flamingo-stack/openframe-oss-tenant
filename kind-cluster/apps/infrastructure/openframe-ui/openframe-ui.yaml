@@ -16,11 +16,15 @@ spec:
         - name: github-pat-secret
       containers:
         - name: ui
-          image: ghcr.io/flamingo-cx/openframe-ui:110325
+          image: ghcr.io/flamingo-cx/openframe-ui:latest
           ports:
             - containerPort: 80
               name: http
           env:
+            - name: VITE_API_URL
+              value: "http://openframe-api.192.168.100.100.nip.io"
+            - name: VITE_GATEWAY_URL
+              value: "http://openframe-gateway.192.168.100.100.nip.io"
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
@@ -61,7 +65,6 @@ spec:
       targetPort: 80
       name: http
   type: ClusterIP
----
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

@@ -16,7 +16,8 @@ spec:
         - name: github-pat-secret
       containers:
         - name: api
-          image: ghcr.io/flamingo-cx/openframe-api:110325
+          image: ghcr.io/flamingo-cx/openframe-api:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8090
               name: http
@@ -34,7 +35,7 @@ spec:
                   key: management-key
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
+              path: /management/v1/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -42,7 +43,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /management/v1/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -71,3 +72,21 @@ spec:
       targetPort: 8091
       name: management
   type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-api
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: openframe-api.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-api
+                port:
+                  name: http

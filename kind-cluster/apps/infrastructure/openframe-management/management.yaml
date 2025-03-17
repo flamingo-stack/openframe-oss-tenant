@@ -16,7 +16,8 @@ spec:
         - name: github-pat-secret
       containers:
         - name: management
-          image: ghcr.io/flamingo-cx/openframe-management:110325
+          image: ghcr.io/flamingo-cx/openframe-management:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8095
               name: http

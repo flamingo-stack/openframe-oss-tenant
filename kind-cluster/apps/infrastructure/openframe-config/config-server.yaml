@@ -16,27 +16,28 @@ spec:
         - name: github-pat-secret
       containers:
         - name: config-server
-          image: ghcr.io/flamingo-cx/openframe-config:110325
+          image: ghcr.io/flamingo-cx/openframe-config:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8888
               name: http
-            - containerPort: 8889
-              name: management
+            # - containerPort: 8889
+            #   name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "docker"
+              value: "k8s"
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
-              port: management
+              path: /xml/shared-logback-spring.xml
+              port: http
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
-              port: management
+              path: /xml/shared-logback-spring.xml
+              port: http
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10

@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openframe-mongodb-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openframe-mongodb-config
+data:
+  MONGO_APP_DATABASE: "openframe"
+  MONGO_APP_USERNAME: "openframe"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openframe-mongodb-init
+data: {}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openframe-mongodb-secret
+type: Opaque
+data:
+  MONGO_INITDB_ROOT_USERNAME: b3BlbmZyYW1l  # base64(openframe)
+  MONGO_INITDB_ROOT_PASSWORD: cGFzc3dvcmQxMjM0NTY3ODk=  # base64(password123456789)
+  MONGO_APP_PASSWORD: cGFzc3dvcmQxMjM0NTY3ODk=  # base64(password123456789)
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-mongodb
+spec:
+  selector:
+    app: openframe-mongodb
+  ports:
+    - name: mongodb
+      protocol: TCP
+      port: 27017
+      targetPort: 27017
+  clusterIP: None  # Headless service for StatefulSet
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openframe-mongodb
+spec:
+  serviceName: "openframe-mongodb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-mongodb
+  template:
+    metadata:
+      labels:
+        app: openframe-mongodb
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+        - name: openframe-mongodb
+          image: ghcr.io/flamingo-cx/openframe-mongodb:latest
+          ports:
+            - containerPort: 27017
+          envFrom:
+            - configMapRef:
+                name: openframe-mongodb-config
+            - secretRef:
+                name: openframe-mongodb-secret
+          volumeMounts:
+            - name: openframe-mongodb-storage
+              mountPath: /data/db
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+            - name: logs
+              mountPath: /var/log/mongodb
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--username", "openframe", "--password", "password123456789", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: init-script
+          configMap:
+            name: openframe-mongodb-init
+        - name: logs
+          emptyDir: {}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: openframe-mongodb-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi

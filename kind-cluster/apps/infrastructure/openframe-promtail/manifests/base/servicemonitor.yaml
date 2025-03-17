@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openframe-promtail
+  labels:
+    app: openframe-promtail
+spec:
+  selector:
+    matchLabels:
+      app: openframe-promtail
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    # any: true
+    matchNames:
+      - monitoring

@@ -1,0 +1,126 @@
+name: OpenFrame Build Container Images
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+  pull-requests: write
+  attestations: write
+  id-token: write
+
+on:
+  workflow_run:
+    workflows: ["OpenFrame Build Java Artifacts"]
+    types:
+      - completed
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+env:
+  ORGANIZATION: flamingo-cx
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    if: ${{ github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [
+          { name: 'mongodb', path: './infrastructure/mongodb/' },
+          { name: 'cassandra', path: './infrastructure/cassandra/' },
+          { name: 'nifi', path: './infrastructure/nifi/' },
+          { name: 'postgresql', path: './infrastructure/postgresql/' },
+          { name: 'tactical-base', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-websockets', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-celery', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-celerybeat', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'fleetmdm', path: './infrastructure/fleetmdm/', context: './infrastructure/fleetmdm' },
+          { name: 'core', path: './libs/openframe-core/' },
+          { name: 'data', path: './libs/openframe-data/' },
+          { name: 'api', path: './services/openframe-api/' },
+          { name: 'config', path: './services/openframe-config/' },
+          { name: 'gateway', path: './services/openframe-gateway/' },
+          { name: 'management', path: './services/openframe-management/' },
+          { name: 'stream', path: './services/openframe-stream/' },
+          { name: 'ui', path: './services/openframe-ui/' },
+          { name: 'meshcentral', path: './infrastructure/meshcentral/server/' },
+          { name: 'meshcentral-nginx', path: './infrastructure/meshcentral/nginx/' }
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        run: |
+          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+          echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
+          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+      # Restore cached Java artifacts from build job
+      - name: Restore Java artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/target/*.jar
+            !**/target/original-*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          key: ${{ runner.os }}-java-${{ github.event.workflow_run.head_commit.id }}
+          restore-keys: |
+            ${{ runner.os }}-java-
+
+      # Create target directories and copy JAR files
+      - name: Create target directories and copy JAR files
+        run: |
+          # Create target directories
+          for dir in $(find . -type f -name "Dockerfile" -exec dirname {} \;); do
+            mkdir -p "$dir/target"
+          done
+
+          # Copy JAR files for Java services
+          for service in api config gateway management stream core data; do
+            echo "Setting up $service..."
+            find . -path "**/target/*.jar" \
+              ! -name "original-*.jar" \
+              ! -name "*-sources.jar" \
+              ! -name "*-javadoc.jar" \
+              -exec cp {} ./**/openframe-$service/target/ \;
+
+            echo "Contents of $service target directory:"
+            ls -la ./**/openframe-$service/target/
+          done
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        run: |
+          # Set build context
+          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
+
+          # Build and push the image
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --file "${{ matrix.service.path }}Dockerfile" \
+            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:latest" \
+            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }}" \
+            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.TIMESTAMP_TAG }}" \
+            --cache-from "type=gha" \
+            --cache-to "type=gha,mode=max" \
+            --provenance=true \
+            "$BUILD_CONTEXT"

@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openframe-config-server
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: openframe-config-server
+  endpoints:
+    - port: management
+      path: /xml/shared-logback-spring.xml
+      interval: 30s
