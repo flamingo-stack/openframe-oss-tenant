@@ -139,8 +139,8 @@ kubectl -n infrastructure wait --for=condition=Ready pod -l app=mongo-express --
 
 # CASSANDRA
 # fix: add export to image during build
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/cassandra/cassandra.yaml && \
-kubectl -n infrastructure wait --for=condition=Ready pod -l app=cassandra --timeout 20m
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
 
 # Deploy the services
 # management-key: docker-management-key-123
@@ -161,7 +161,6 @@ kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
 
-# ------------- ZOOKEEPER -------------
 # TODO: add zookeeper for
 # helm upgrade -i zookeeper bitnami/zookeeper \
 #   --version 13.7.4 \

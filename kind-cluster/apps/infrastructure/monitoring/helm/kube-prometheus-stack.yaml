@@ -177,7 +177,7 @@ prometheus:
 
       - job_name: 'cassandra'
         static_configs:
-          - targets: ['openframe-cassandra:9404']
+          - targets: ['openframe-cassandra.infrastructure.svc:9404']
 
       - job_name: 'nifi'
         static_configs:
