@@ -35,8 +35,8 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: 'build-java.yml',
-                branch: 'main',
-                per_page: 1
+                branch: context.payload.pull_request.base.ref,
+                per_page: 10
               });
 
               if (runs.data.workflow_runs.length === 0) {
@@ -44,19 +44,30 @@ jobs:
                 process.exit(1);
               }
 
-              const run = runs.data.workflow_runs[0];
-              console.log(`Status: ${run.status}`);
-              console.log(`Conclusion: ${run.conclusion}`);
-              console.log(`Head Branch: ${run.head_branch}`);
+              // Find the most recent run that was triggered by the same PR
+              const currentPR = context.payload.pull_request.number;
+              const relevantRun = runs.data.workflow_runs.find(run =>
+                run.pull_requests &&
+                run.pull_requests.some(pr => pr.number === currentPR)
+              );
 
-              if (run.status === 'completed') {
-                if (run.conclusion === 'success' && run.head_branch === 'main') {
-                  console.log('Java build completed successfully on main branch');
+              if (!relevantRun) {
+                console.log('No workflow run found for this PR');
+                process.exit(1);
+              }
+
+              console.log(`Status: ${relevantRun.status}`);
+              console.log(`Conclusion: ${relevantRun.conclusion}`);
+              console.log(`Head Branch: ${relevantRun.head_branch}`);
+
+              if (relevantRun.status === 'completed') {
+                if (relevantRun.conclusion === 'success') {
+                  console.log('Java build completed successfully');
                   process.exit(0);
-                } else if (run.conclusion === 'failure') {
+                } else if (relevantRun.conclusion === 'failure') {
                   console.log('Java build failed');
                   process.exit(1);
-                } else if (run.conclusion === 'cancelled') {
+                } else if (relevantRun.conclusion === 'cancelled') {
                   console.log('Java build was cancelled');
                   process.exit(1);
                 }
