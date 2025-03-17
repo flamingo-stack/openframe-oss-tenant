@@ -16,7 +16,7 @@ spec:
         - name: github-pat-secret
       containers:
         - name: gateway
-          image: ghcr.io/flamingo-cx/openframe-gateway:110325
+          image: ghcr.io/flamingo-cx/openframe-gateway:latest
           ports:
             - containerPort: 8100
               name: http
@@ -66,3 +66,18 @@ spec:
       targetPort: 8101
       name: management
   type: ClusterIP
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openframe-gateway
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: openframe-gateway
+  endpoints:
+    - port: management
+      path: /actuator/prometheus
+      interval: 30s

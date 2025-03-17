@@ -170,49 +170,59 @@ kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-config && \
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config-server --timeout 20m
 
+# API
+# Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+# management-key: docker-management-key-123  ???
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml && \
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
+
+# OPENFRAME-UI
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
+
+# MANAGEMENT
+# Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-management/management.yaml
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-management --timeout 20m
+
+# STREAM
+# Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-stream/stream.yaml
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-stream --timeout 20m
+
 # GATEWAY
+# Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
 
-# STREAM
-kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
-kubectl wait --for=condition=Ready pod -l app=openframe-stream --timeout 20m
-
-# OPENFRAME-UI
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
-kubectl wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
-
-# API
-# management-key: docker-management-key-123  ???
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml && \
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
-kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
-
-
-
 # ------------- AUTHENTIK -------------
-kubectl apply -f ./kind-cluster/apps/authentik
-kubectl wait --for=condition=Ready pod -l app=authentik-server --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=authentik-worker --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=authentik-postgresql --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=authentik-redis --timeout 20m
+kubectl -n authentik create namespace --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n authentik apply -f ./kind-cluster/apps/authentik
+kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-server --timeout 20m
+kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-worker --timeout 20m
+kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-postgresql --timeout 20m
+kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-redis --timeout 20m
 
 # ------------- FLEET -------------
-kubectl apply -f ./kind-cluster/apps/fleet
-kubectl wait --for=condition=Ready pod -l app=fleet --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=fleet-mdm-mysql --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=fleet-mdm-redis --timeout 20m
+kubectl -n fleet create namespace --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n fleet apply -f ./kind-cluster/apps/fleet
+kubectl -n fleet wait --for=condition=Ready pod -l app=fleet --timeout 20m
+kubectl -n fleet wait --for=condition=Ready pod -l app=fleet-mdm-mysql --timeout 20m
+kubectl -n fleet wait --for=condition=Ready pod -l app=fleet-mdm-redis --timeout 20m
 
 # ------------- MESH CENTRAL -------------
-kubectl apply -f ./kind-cluster/apps/meshcentral
-kubectl wait --for=condition=Ready pod -l app=meshcentral --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m
-kubectl wait --for=condition=Ready pod -l app=meshcentral-nginx --timeout 20m
+kubectl -n meshcentral create namespace --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n meshcentral apply -f ./kind-cluster/apps/meshcentral
+kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral --timeout 20m
+kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m
+kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-nginx --timeout 20m
 
 # ------------- RMM -------------
-kubectl apply -f ./kind-cluster/apps/tactical-rmm
-kubectl wait --for=condition=Ready pod -l app=tactical-rmm --timeout 20m
+kubectl -n tactical-rmm create namespace --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n tactical-rmm apply -f ./kind-cluster/apps/tactical-rmm
+kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-rmm --timeout 20m
 
 # ------------- REGISTER TOOLS -------------
-kubectl apply -f ./kind-cluster/apps/jobs/register-tools.yaml
-kubectl wait --for=condition=Ready pod -l app=register-tools --timeout 20m
+kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
