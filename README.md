@@ -1,5 +1,7 @@
 # ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
 
+[![OpenFrame Build Java Artifacts](https://github.com/Flamingo-CX/openframe/actions/workflows/build-java.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build-java.yml)
+
 [![OpenFrame Build Container Images](https://github.com/Flamingo-CX/openframe/actions/workflows/build-container-image.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build-container-image.yml)
 
 OpenFrame is a distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. It simplifies IT and security operations through a single, cohesive platform.
