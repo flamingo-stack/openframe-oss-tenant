@@ -1,0 +1,14 @@
+loki:
+  url: http://openframe-loki:3100/loki/api/v1/push
+spring:
+  config:
+    url: http://openframe-config-server:8888
+
+security:
+  oauth2:
+    resourceserver:
+      jwt:
+        issuer-uri: http://openframe-api:8090
+    authorization:
+      cors:
+        allowed-origins: http://openframe-config-server

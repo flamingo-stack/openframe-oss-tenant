@@ -63,4 +63,4 @@
         <appender-ref ref="JsonRollingFileAppender" />
         <appender-ref ref="LokiRemoteAppender" />
     </root>
-</included> 
+</included>
