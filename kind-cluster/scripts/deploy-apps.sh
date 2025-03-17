@@ -1,7 +1,30 @@
 #!/bin/bash
 
+# + Loki (no dependencies)
+# + Prometheus (depends on Loki)
+# + Grafana (depends on Prometheus, Loki)
+# + Redis (no dependencies)
+# + Redis Exporter (depends on Redis, Loki)
+# + Kafka (depends on Zookeeper, Loki)
+# + Kafka UI (depends on Kafka, Loki)
+# MongoDB (depends on Loki)
+# Zookeeper (depends on Loki)
+# Cassandra (depends on Loki)
+# Nifi (depends on Loki)
+# Pinot Controller (depends on Zookeeper)
+# Pinot Broker (depends on Pinot Controller)
+# Pinot Server (depends on Pinot Controller)
+# Config Server (no dependencies)
+# MongoDB Exporter (depends on MongoDB, Loki)
+# Mongo Express (depends on MongoDB, Loki)
+# API (depends on Config Server, MongoDB, Kafka, Cassandra)
+# Management (depends on Config Server, MongoDB)
+# Openframe UI (depends on API, Management)
+# Stream (depends on Kafka, Config Server, Cassandra, MongoDB)
+# Gateway (depends on Config Server, MongoDB, Cassandra)
+
 # PULL SECRETS
-kubectl create secret docker-registry github-pat-secret \
+kubectl -n monitoring create secret docker-registry github-pat-secret \
   --docker-server=ghcr.io \
   --docker-username=vusal-fl \
   --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
@@ -83,29 +106,35 @@ kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/na
 #   -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
 # kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
 
-# MONGO + EXPORTER + UI
-kubectl apply -f ./kind-cluster/apps/infrastructure/mongodb/mongodb.yaml
-kubectl wait --for=condition=Ready pod -l app=mongodb --timeout 20m
+# KAFKA
+helm upgrade -i openframe-kafka bitnami/kafka \
+  -n infrastructure --create-namespace \
+  --version 31.5.0 \
+  -f ./kind-cluster/apps/infrastructure/openframe-kafka/helm/kafka.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka --timeout 20m
 
+# KAFKA UI
+# helm repo add kafbat-ui https://kafbat.github.io/helm-charts
+helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
+  -n infrastructure --create-namespace \
+  --version 1.4.11 \
+  -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m
+
+# MONGO DB
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-mongodb --timeout 20m
+
+# MONGO EXPORTER
 helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
   --version 3.11.1 \
   -f ./kind-cluster/apps/infrastructure/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml
 kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-mongodb-exporter --timeout 20m
 
+# MONGO EXPRESS
 kubectl apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
 kubectl wait --for=condition=Ready pod -l app=mongo-express --timeout 20m
 
-# KAFKA + UI
-helm upgrade -i kafka bitnami/kafka \
-  --version 31.5.0 \
-  -f ./kind-cluster/apps/infrastructure/kafka/helm/kafka.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka --timeout 20m
-
-helm repo add kafbat-ui https://kafbat.github.io/helm-charts
-helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
-  --version 1.4.11 \
-  -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m
 
 # CASSANDRA
 # fix: add export to image during build

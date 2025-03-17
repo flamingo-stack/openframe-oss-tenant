@@ -163,9 +163,9 @@ prometheus:
         static_configs:
           - targets: ['openframe-gateway:8101']
 
-      - job_name: 'kafka'
+      - job_name: 'kafka-jmx'
         static_configs:
-          - targets: ['openframe-kafka:9308']
+          - targets: ['openframe-kafka-jmx-metrics.infrastructure.svc:5556']
 
       - job_name: 'zookeeper'
         static_configs:
