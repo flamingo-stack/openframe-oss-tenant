@@ -161,7 +161,7 @@ prometheus:
       - job_name: 'openframe-gateway'
         metrics_path: '/management/v1/prometheus'
         static_configs:
-          - targets: ['openframe-gateway:8101']
+          - targets: ['openframe-gateway.infrastructure.svc:8101']
 
       - job_name: 'kafka-jmx'
         static_configs:
@@ -169,7 +169,7 @@ prometheus:
 
       - job_name: 'zookeeper'
         static_configs:
-          - targets: ['openframe-zookeeper:7070']
+          - targets: ['openframe-zookeeper.infrastructure.svc:7070']
         relabel_configs:
           - source_labels: [__address__]
             target_label: service
@@ -185,4 +185,4 @@ prometheus:
 
       - job_name: 'pinot'
         static_configs:
-          - targets: ['openframe-pinot-controller:9011', 'openframe-pinot-broker:9012', 'openframe-pinot-server:9013']
+          - targets: ['openframe-pinot-controller.infrastructure.svc:9011', 'openframe-pinot-broker.infrastructure.svc:9012', 'openframe-pinot-server.infrastructure.svc:9013']

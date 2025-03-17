@@ -86,11 +86,15 @@ spec:
           ports:
             - containerPort: 8443
               name: https
+            - containerPort: 8080
+              name: http
             - containerPort: 9096
               name: metrics
           env:
             - name: NIFI_WEB_HTTPS_PORT
               value: "8443"
+            - name: NIFI_WEB_HTTP_PORT
+              value: "8080"
             - name: NIFI_WEB_HTTP_HOST
               value: "0.0.0.0"
             - name: SINGLE_USER_CREDENTIALS_USERNAME
@@ -111,19 +115,17 @@ spec:
             - name: openframe-nifi-logs
               mountPath: /opt/nifi/nifi-current/logs
           livenessProbe:
-            httpGet:
-              path: /nifi
-              port: https
-              scheme: HTTPS
+            exec:
+              command:
+                - pgrep
+                - java
             initialDelaySeconds: 180
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 10
           readinessProbe:
-            httpGet:
-              path: /nifi
+            tcpSocket:
               port: https
-              scheme: HTTPS
             initialDelaySeconds: 180
             periodSeconds: 30
             timeoutSeconds: 10
@@ -166,6 +168,9 @@ spec:
     - port: 8443
       targetPort: 8443
       name: https
+    - port: 8080
+      targetPort: 8080
+      name: http
     - port: 9096
       targetPort: 9096
       name: metrics

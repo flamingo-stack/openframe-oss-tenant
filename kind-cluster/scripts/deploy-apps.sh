@@ -21,10 +21,10 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
 # + Mongo Express (depends on MongoDB, Loki)
 # + Cassandra (depends on Loki)
 # + Nifi (depends on Loki)
-# Zookeeper (depends on Loki)
-# Pinot Controller (depends on Zookeeper)
-# Pinot Broker (depends on Pinot Controller)
-# Pinot Server (depends on Pinot Controller)
+# + Zookeeper (depends on Loki)
+# + Pinot Controller (depends on Zookeeper)
+# + Pinot Broker (depends on Pinot Controller)
+# + Pinot Server (depends on Pinot Controller)
 # Config Server (no dependencies)
 # API (depends on Config Server, MongoDB, Kafka, Cassandra)
 # Management (depends on Config Server, MongoDB)
@@ -143,12 +143,31 @@ kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
 
 # NIFI
+# TODO: liveness probe fails, need to check
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-nifi/nifi.yaml && \
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m
 
+# ZOOKEEPER (for PINOTs)
+# https://alex.dzyoba.com/blog/jmx-exporter/
+# TODO: replace with bitnami/zookeeper and exporter with chart metrics
+# helm upgrade -i zookeeper bitnami/zookeeper \
+#   --version 13.7.4 \
+#   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=zookeeper --timeout 20m
+
+# PINOT
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/pinot/manifests && \
+kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
+
+# helm repo add pinot https://raw.githubusercontent.com/apache/pinot/master/helm
+# helm upgrade -i pinot pinot/pinot \
+#     -n infrastructure --create-namespace \
+#     --version 0.3.1
+
 # GATEWAY
-kubectl apply -f ./kind-cluster/apps/infrastructure/gateway/gateway.yaml
-kubectl wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
 
 # STREAM
 kubectl apply -f ./kind-cluster/apps/infrastructure/stream/stream.yaml
@@ -166,16 +185,6 @@ kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
 
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
 kubectl wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
-
-# TODO: add zookeeper for
-# helm upgrade -i zookeeper bitnami/zookeeper \
-#   --version 13.7.4 \
-#   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
-# kubectl apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml
-
-# pinot servers
-kubectl apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml
-kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 
 # ------------- AUTHENTIK -------------
 kubectl apply -f ./kind-cluster/apps/authentik

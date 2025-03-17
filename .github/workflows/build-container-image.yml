@@ -23,13 +23,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows
-    # if: |
-    #   github.event.workflow_run.conclusion == 'success' &&
-    #   contains(github.event.workflow_run.head_commit.message, 'Merge pull request')
     if: |
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      contains(fromJson(github.event.workflow_run.pull_requests[0].base.ref), 'main')
+      contains(github.event.workflow_run.head_commit.message, 'Merge pull request')
+    # if: |
+    #   github.event.workflow_run.conclusion == 'success' &&
+    #   github.event.workflow_run.event == 'pull_request' &&
+    #   contains(fromJson(github.event.workflow_run.pull_requests[0].base.ref), 'main')
     strategy:
       fail-fast: false  # Disable fail-fast behavior
       matrix:

@@ -1,0 +1,98 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pinot-broker-config
+data:
+  broker.conf: |
+    pinot.broker.client.queryPort=8099
+    pinot.broker.timeoutMs=60000
+    pinot.broker.routing.table.builder.class=random
+    pinot.broker.routing.enable.dynamic.computing=true
+    pinot.broker.enable.query.limit.override=false
+    pinot.broker.healthcheck.enabled=true
+    pinot.set.instance.id.to.hostname=false
+    pinot.broker.helix.instance.id=Broker_pinot-broker_8099
+    pinot.broker.metrics.registry.registration.listeners.class=org.apache.pinot.broker.metrics.BrokerMetricsRegistryRegistrationListener
+    # pinot.broker.helix.cluster.name=openframe-pinot
+    # pinot.broker.helix.zk.str=zookeeper:2181
+---
+# Broker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinot-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pinot
+      component: broker
+  template:
+    metadata:
+      labels:
+        app: pinot
+        component: broker
+    spec:
+      initContainers:
+      - name: init-jmx
+        image: busybox
+        command:
+          - "sh"
+          - "-c"
+          - "wget -O /opt/jmx_exporter/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar"
+        volumeMounts:
+        - name: jmx-exporter
+          mountPath: /opt/jmx_exporter
+      containers:
+      - name: pinot-broker
+        image: apachepinot/pinot:latest
+        args:
+          - StartBroker
+          - -clusterName
+          - openframe-pinot
+          - -zkAddress
+          - zookeeper:2181
+          - -configFileName
+          - /opt/pinot/conf/broker.conf
+        ports:
+        - containerPort: 8099
+          name: broker
+        - containerPort: 7071
+          name: jmx
+        env:
+        - name: JAVA_OPTS
+          value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=7071:/opt/jmx_exporter/config.yml"
+        volumeMounts:
+        - name: jmx-exporter
+          mountPath: /opt/jmx_exporter
+        - name: jmx-config
+          mountPath: /opt/jmx_exporter/config.yml
+          subPath: config.yml
+        - name: pinot-config
+          mountPath: /opt/pinot/conf/broker.conf
+          subPath: broker.conf
+      volumes:
+      - name: jmx-exporter
+        emptyDir: {}
+      - name: jmx-config
+        configMap:
+          name: pinot-jmx-config
+      - name: pinot-config
+        configMap:
+          name: pinot-broker-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pinot-broker
+spec:
+  selector:
+    app: pinot
+    component: broker
+  ports:
+    - port: 8099
+      name: broker
+    - port: 7071
+      name: jmx
+  type: ClusterIP

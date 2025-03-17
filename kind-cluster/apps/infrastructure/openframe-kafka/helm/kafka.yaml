@@ -1,4 +1,5 @@
 broker:
+  resourcesPreset: medium
   replicaCount: 1
   podAntiAffinityPreset: hard
 
@@ -31,6 +32,7 @@ extraEnv:
   #   value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml -Dzookeeper.connect.timeout.ms=60000 -Dzookeeper.session.timeout.ms=60000"
 
 controller:
+  resourcesPreset: medium
   replicaCount: 1
 
 kraft:
