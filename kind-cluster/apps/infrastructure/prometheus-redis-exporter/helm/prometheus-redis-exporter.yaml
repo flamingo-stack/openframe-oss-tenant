@@ -1,1 +1,1 @@
-redisAddress: redis://redis-headless:6379
+redisAddress: redis://openframe-redis-headless:6379

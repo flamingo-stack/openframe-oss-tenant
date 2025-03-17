@@ -12,24 +12,14 @@ kubectl create secret docker-registry github-pat-secret \
 helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace \
   --version 4.12.0 \
-  -f ./kind-cluster/apps/infrastructure/ingress-nginx/helm/ingress-nginx.yaml
+  -f ./kind-cluster/apps/infrastructure/ingress-nginx/helm/ingress-nginx.yaml && \
 kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/name=ingress-nginx --timeout 20m
 
-# MONITORING
-helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-  -n monitoring --create-namespace \
-  --version 69.8.2 \
-  -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml
-kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
-
-# Dashboards
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
-
 # LOKI
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests && \
 kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-loki --timeout 20m
 
-kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests && \
 kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m
 # or
 # helm upgrade --install loki grafana/loki-stack \
@@ -69,17 +59,29 @@ kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail -
 #   -f ./kind-cluster/apps/infrastructure/logging/helm/kibana.yaml
 # kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
 
-# REDIS + EXPORTER
-helm upgrade -i redis bitnami/redis \
-  --version 20.11.3 \
-  -f ./kind-cluster/apps/infrastructure/redis/helm/redis.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m
+# GRAFANA + PROMETHEUS
+helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
+  --version 69.8.2 \
+  -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml && \
+kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m
 
-# TODO: install it to monitoring ns
-helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
-  --version 6.9.0 \
-  -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
-kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
+# Dashboards
+kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/manifests
+
+# REDIS
+helm upgrade -i openframe-redis bitnami/redis \
+  -n infrastructure --create-namespace \
+  --version 20.11.3 \
+  -f ./kind-cluster/apps/infrastructure/openframe-redis/helm/redis.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m
+
+# REDIS EXPORTER
+# TODO: service montor enabled in redis chart directly, no need to istall this one
+# helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
+#   --version 6.9.0 \
+#   -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
+# kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
 
 # MONGO + EXPORTER + UI
 kubectl apply -f ./kind-cluster/apps/infrastructure/mongodb/mongodb.yaml

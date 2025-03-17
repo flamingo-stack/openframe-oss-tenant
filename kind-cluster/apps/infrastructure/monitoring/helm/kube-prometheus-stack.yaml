@@ -163,10 +163,6 @@ prometheus:
         static_configs:
           - targets: ['openframe-gateway:8101']
 
-      - job_name: 'redis'
-        static_configs:
-          - targets: ['openframe-redis-exporter:9121']
-
       - job_name: 'kafka'
         static_configs:
           - targets: ['openframe-kafka:9308']
