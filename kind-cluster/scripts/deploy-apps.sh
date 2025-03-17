@@ -157,13 +157,17 @@ kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/zookeeper/
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=zookeeper --timeout 20m
 
 # PINOT
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/pinot/manifests && \
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-pinot/manifests && \
 kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 
-# helm repo add pinot https://raw.githubusercontent.com/apache/pinot/master/helm
+# helm repo add openframe-pinot https://raw.githubusercontent.com/apache/pinot/master/helm
 # helm upgrade -i pinot pinot/pinot \
 #     -n infrastructure --create-namespace \
 #     --version 0.3.1
+
+# CONFIG SERVER
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
 
 # GATEWAY
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
@@ -183,8 +187,7 @@ kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.ya
 kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
 kubectl wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
 
-kubectl apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml
-kubectl wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
+
 
 # ------------- AUTHENTIK -------------
 kubectl apply -f ./kind-cluster/apps/authentik
