@@ -35,32 +35,44 @@ export class ToastService {
     return 'Error';
   }
 
+  private addClickableToast(options: {
+    severity: 'success' | 'info' | 'warn' | 'error';
+    summary: string;
+    detail: string;
+    onClick: () => void;
+    duration?: number;
+  }) {
+    const { severity, summary, detail, onClick, duration = 3000 } = options;
+
+    this.toast.add({
+      severity,
+      summary,
+      detail,
+      life: duration,
+      contentStyleClass: 'clickable-toast'
+    });
+
+    // Add click handler to the most recent toast
+    setTimeout(() => {
+      const toasts = document.querySelectorAll(`.p-toast-message-${severity}`);
+      const latestToast = toasts[toasts.length - 1] as HTMLElement;
+      if (latestToast) {
+        latestToast.style.cursor = 'pointer';
+        latestToast.addEventListener('click', onClick, { once: true });
+      }
+    }, 0);
+  }
+
   showError(message: string, error?: string, duration = 5000) {
     if (message.includes('http')) {
       const { url, text } = extractUrlFromMessage(message);
-      
-      this.toast.add({
+      this.addClickableToast({
         severity: 'error',
         summary: this.getErrorTitle(text, error),
-        detail: `${text}`,
-        life: duration,
-        contentStyleClass: 'error-toast-content clickable-toast'
+        detail: text,
+        onClick: () => window.open(url, '_blank'),
+        duration
       });
-
-      // Add click handler to all error toasts
-      const handleToastClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.closest('.error-toast-content.clickable-toast')) {
-          window.open(url, '_blank');
-        }
-      };
-
-      document.addEventListener('click', handleToastClick);
-
-      // Clean up the event listener when the toast is removed
-      setTimeout(() => {
-        document.removeEventListener('click', handleToastClick);
-      }, duration);
     } else {
       this.toast.add({
         severity: 'error',
@@ -71,31 +83,61 @@ export class ToastService {
     }
   }
 
-  showSuccess(message: string, duration = 3000) {
-    this.toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: message,
-      life: duration
-    });
+  showSuccess(message: string, duration = 3000, onClick?: () => void) {
+    if (onClick) {
+      this.addClickableToast({
+        severity: 'success',
+        summary: 'Success',
+        detail: message,
+        onClick,
+        duration
+      });
+    } else {
+      this.toast.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: message,
+        life: duration
+      });
+    }
   }
 
-  showWarning(message: string, duration = 5000) {
-    this.toast.add({
-      severity: 'warn',
-      summary: 'Warning',
-      detail: message,
-      life: duration
-    });
+  showWarning(message: string, duration = 5000, onClick?: () => void) {
+    if (onClick) {
+      this.addClickableToast({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: message,
+        onClick,
+        duration
+      });
+    } else {
+      this.toast.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: message,
+        life: duration
+      });
+    }
   }
 
-  showInfo(message: string, duration = 3000) {
-    this.toast.add({
-      severity: 'info',
-      summary: 'Info',
-      detail: message,
-      life: duration
-    });
+  showInfo(message: string, duration = 3000, onClick?: () => void) {
+    if (onClick) {
+      this.addClickableToast({
+        severity: 'info',
+        summary: 'Info',
+        detail: message,
+        onClick,
+        duration
+      });
+    } else {
+      this.toast.add({
+        severity: 'info',
+        summary: 'Info',
+        detail: message,
+        life: duration
+      });
+    }
   }
 
   clear() {

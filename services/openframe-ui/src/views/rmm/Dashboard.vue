@@ -123,7 +123,7 @@
           </DataTable>
         </template>
         <div v-else class="empty-state">
-          <i class="pi pi-check-circle empty-icon success"></i>
+          <i class="pi pi-exclamation-triangle empty-icon"></i>
           <h3>No Recent Alerts</h3>
           <p>All systems are operating normally.</p>
           <p class="hint">Alerts will appear here when issues are detected.</p>
@@ -618,11 +618,6 @@ onMounted(async () => {
     color: var(--text-color-secondary);
     margin-bottom: 1.5rem;
     opacity: 0.5;
-
-    &.success {
-      color: var(--green-500);
-      opacity: 1;
-    }
   }
 
   h3 {

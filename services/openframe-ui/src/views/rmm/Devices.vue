@@ -1,61 +1,44 @@
 <template>
-  <ModuleLayout>
-    <template #sidebar>
-      <!-- Add sidebar content here -->
-    </template>
+  <div class="rmm-devices">
+    <ModuleHeader title="Devices">
+      <template #actions>
+        <Button label="Add Device" icon="pi pi-plus" @click="showAddDeviceDialog = true" class="p-button-primary" />
+        <Button icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
+          v-tooltip.left="'Script Execution History'" />
+      </template>
+    </ModuleHeader>
 
-    <div class="rmm-devices">
-      <ModuleHeader title="Devices">
-        <template #actions>
-          <Button 
-            label="Add Device" 
-            icon="pi pi-plus"
-            @click="showAddDeviceDialog = true"
-            class="p-button-primary"
-          />
-        </template>
-      </ModuleHeader>
+    <div class="devices-content">
+      <SearchBar v-model="filters['global'].value" placeholder="Search devices..." />
 
-      <SearchBar
-        v-model="filters['global'].value"
-        placeholder="Search devices..."
-      />
-
-      <ModuleTable
-        :items="devices"
-        :loading="loading"
-        :searchFields="['hostname', 'platform', 'os_version', 'status']"
-        emptyIcon="pi pi-desktop"
-        emptyTitle="No Devices Found"
-        emptyMessage="Add your first device to start monitoring."
-        emptyHint="Devices will appear here once they are added to your RMM server."
-      >
+      <ModuleTable :items="devices" :loading="loading"
+        :searchFields="['hostname', 'plat', 'operating_system', 'status']" emptyIcon="pi pi-desktop"
+        emptyTitle="No Devices Found" emptyMessage="Add your first device to start monitoring."
+        emptyHint="Devices will appear here once they are added to your RMM server.">
         <Column field="hostname" header="Hostname" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <i :class="getDeviceIcon(data.platform)" class="mr-2"></i>
+              <i :class="getDeviceIcon(data.plat)" class="mr-2"></i>
               <span>{{ data.hostname }}</span>
             </div>
           </template>
         </Column>
 
-        <Column field="platform" header="Platform" sortable>
+        <Column field="plat" header="Platform" sortable>
           <template #body="{ data }">
-            <Tag :value="formatPlatform(data.platform)" 
-                 :severity="getPlatformSeverity(data.platform)" />
+            <Tag :value="formatPlatform(data.plat)" :severity="getPlatformSeverity(data.plat)" />
           </template>
         </Column>
 
-        <Column field="os_version" header="OS Version" sortable>
+        <Column field="operating_system" header="OS Version" sortable>
           <template #body="{ data }">
-            <span class="text-sm">{{ data.os_version }}</span>
+            <span class="text-sm">{{ data.operating_system || 'Unknown' }}</span>
           </template>
         </Column>
 
         <Column field="status" header="Status" sortable>
           <template #body="{ data }">
-            <Tag :value="data.status" 
-                 :severity="getStatusSeverity(data.status)" />
+            <Tag :value="data.status" :severity="getStatusSeverity(data.status)" />
           </template>
         </Column>
 
@@ -65,45 +48,28 @@
           </template>
         </Column>
 
-        <Column field="ip_address" header="IP Address" sortable>
+        <Column field="public_ip" header="IP Address" sortable>
           <template #body="{ data }">
-            <span class="text-sm">{{ data.ip_address }}</span>
+            <div class="flex flex-column gap-1">
+              <span v-for="(ip, index) in getIPv4Addresses(data.local_ips)" :key="index" class="text-sm">
+                {{ ip }}
+              </span>
+              <span v-if="!getIPv4Addresses(data.local_ips).length" class="text-sm">N/A</span>
+            </div>
           </template>
         </Column>
 
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
-                icon="pi pi-desktop" 
-                class="p-button-text p-button-sm" 
-                v-tooltip.top="'Remote Control'"
-                @click="remoteControl(data)" 
-              />
-              <Button 
-                icon="pi pi-terminal" 
-                class="p-button-text p-button-sm" 
-                v-tooltip.top="'Run Command'"
-                @click="runCommand(data)" 
-              />
-              <Button 
-                icon="pi pi-eye" 
-                class="p-button-text p-button-sm" 
-                v-tooltip.top="'View Details'"
-                @click="viewDevice(data)" 
-              />
-              <Button 
-                icon="pi pi-pencil" 
-                class="p-button-text p-button-sm" 
-                v-tooltip.top="'Edit Device'"
-                @click="editDevice(data)" 
-              />
-              <Button 
-                icon="pi pi-trash" 
-                class="p-button-text p-button-sm p-button-danger" 
-                v-tooltip.top="'Delete Device'"
-                @click="deleteDevice(data)" 
-              />
+              <Button icon="pi pi-code" class="p-button-text p-button-sm" v-tooltip.top="'Run Command'"
+                @click="runCommand(data)" />
+              <Button icon="pi pi-eye" class="p-button-text p-button-sm" v-tooltip.top="'View Details'"
+                @click="viewDevice(data)" />
+              <Button icon="pi pi-pencil" class="p-button-text p-button-sm" v-tooltip.top="'Edit Device'"
+                @click="editDevice(data)" />
+              <Button icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                v-tooltip.top="'Delete Device'" @click="deleteDevice(data)" />
             </div>
           </template>
         </Column>
@@ -111,133 +77,25 @@
     </div>
 
     <!-- Add/Edit Device Dialog -->
-    <Dialog 
-      v-model:visible="showAddDeviceDialog" 
-      :style="{ width: '600px' }" 
-      :header="isEditMode ? 'Edit Device' : 'Add New Device'" 
-      :modal="true"
-      class="p-fluid"
-    >
-      <div class="field">
-        <label for="hostname">Hostname</label>
-        <InputText 
-          id="hostname" 
-          v-model="newDevice.hostname" 
-          required 
-          autofocus 
-          :class="{ 'p-invalid': submitted && !newDevice.hostname }"
-        />
-        <small class="p-error" v-if="submitted && !newDevice.hostname">
-          Hostname is required.
-        </small>
-      </div>
-
-      <div class="field">
-        <label for="platform">Platform</label>
-        <Dropdown
-          id="platform"
-          v-model="newDevice.platform"
-          :options="platforms"
-          optionLabel="name"
-          optionValue="value"
-          placeholder="Select a platform"
-          :class="{ 'p-invalid': submitted && !newDevice.platform }"
-        />
-        <small class="p-error" v-if="submitted && !newDevice.platform">
-          Platform is required.
-        </small>
-      </div>
-
-      <div class="field">
-        <label for="os_version">OS Version</label>
-        <InputText 
-          id="os_version" 
-          v-model="newDevice.os_version" 
-          required 
-          :class="{ 'p-invalid': submitted && !newDevice.os_version }"
-        />
-        <small class="p-error" v-if="submitted && !newDevice.os_version">
-          OS Version is required.
-        </small>
-      </div>
-
-      <div class="field">
-        <label for="ip_address">IP Address</label>
-        <InputText 
-          id="ip_address" 
-          v-model="newDevice.ip_address" 
-          required 
-          :class="{ 'p-invalid': submitted && !newDevice.ip_address }"
-        />
-        <small class="p-error" v-if="submitted && !newDevice.ip_address">
-          IP Address is required.
-        </small>
-      </div>
-
-      <template #footer>
-        <Button 
-          label="Cancel" 
-          icon="pi pi-times" 
-          class="p-button-text" 
-          @click="hideDialog"
-        />
-        <Button 
-          :label="isEditMode ? 'Save' : 'Add'" 
-          icon="pi pi-check" 
-          class="p-button-text" 
-          @click="saveDevice" 
-          :loading="submitting"
-        />
-      </template>
-    </Dialog>
+    <DeviceDialog v-model:visible="showAddDeviceDialog" :isEditMode="isEditMode" :loading="submitting"
+      :initialDevice="newDevice" @save="saveDevice" @cancel="hideDialog" />
 
     <!-- Run Command Dialog -->
-    <Dialog 
-      v-model:visible="showRunCommandDialog" 
-      :style="{ width: '600px' }" 
-      header="Run Command" 
-      :modal="true"
-      class="p-fluid"
-    >
-      <div class="field">
-        <label for="command">Command</label>
-        <Textarea 
-          id="command" 
-          v-model="command" 
-          rows="3" 
-          class="font-mono" 
-          :class="{ 'p-invalid': commandSubmitted && !command }"
-          placeholder="Enter command to execute"
-        />
-        <small class="p-error" v-if="commandSubmitted && !command">
-          Command is required.
-        </small>
-      </div>
-
-      <template #footer>
-        <Button 
-          label="Cancel" 
-          icon="pi pi-times" 
-          class="p-button-text" 
-          @click="showRunCommandDialog = false"
-        />
-        <Button 
-          label="Run" 
-          icon="pi pi-play" 
-          class="p-button-text" 
-          @click="executeCommand" 
-          :loading="executing"
-        />
-      </template>
-    </Dialog>
+    <CommandDialog
+      v-model:visible="showRunCommandDialog"
+      :loading="executing"
+      :lastCommand="lastCommand"
+      @run="executeCommand"
+      @update:output="updateCommandOutput"
+      @cancel="showRunCommandDialog = false"
+    />
 
     <!-- Delete Device Confirmation -->
-    <Dialog 
-      v-model:visible="deleteDeviceDialog" 
-      :style="{ width: '450px' }" 
-      header="Confirm" 
-      :modal="true"
-    >
+    <Dialog v-model:visible="deleteDeviceDialog" header="Confirm" :modal="true" :draggable="false"
+      :style="{ width: '450px' }" class="p-dialog-custom" :pt="{
+        root: { style: { position: 'relative', margin: '0 auto' } },
+        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+      }">
       <div class="confirmation-content">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
         <span v-if="selectedDevice">
@@ -245,22 +103,19 @@
         </span>
       </div>
       <template #footer>
-        <Button 
-          label="No" 
-          icon="pi pi-times" 
-          class="p-button-text" 
-          @click="deleteDeviceDialog = false"
-        />
-        <Button 
-          label="Yes" 
-          icon="pi pi-check" 
-          class="p-button-text" 
-          @click="confirmDelete" 
-          :loading="deleting"
-        />
+        <div class="flex justify-content-end gap-2">
+          <Button label="No" icon="pi pi-times" class="p-button-text" @click="deleteDeviceDialog = false" />
+          <Button label="Yes" icon="pi pi-check" class="p-button-danger" @click="confirmDelete" :loading="deleting" />
+        </div>
       </template>
     </Dialog>
-  </ModuleLayout>
+
+    <!-- Script Execution History -->
+    <ScriptExecutionHistory
+      v-model:visible="showExecutionHistory"
+      ref="executionHistoryRef"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -278,23 +133,23 @@ import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
-import ModuleLayout from '../../components/shared/ModuleLayout.vue';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import DeviceDialog from '../../components/shared/DeviceDialog.vue';
+import CommandDialog from '../../components/shared/CommandDialog.vue';
+import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 
 interface Device {
-  id: string;
+  agent_id: string;
   hostname: string;
-  platform: string;
-  os_version: string;
+  plat: string;
+  operating_system: string;
   status: string;
   last_seen: string;
-  ip_address: string;
-}
-
-interface DevicesResponse {
-  data: Device[];
+  public_ip: string;
+  local_ips: string;
+  // Add other fields as needed
 }
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
@@ -315,17 +170,23 @@ const isEditMode = ref(false);
 
 const selectedDevice = ref<Device | null>(null);
 const command = ref('');
+const lastCommand = ref<{ cmd: string; output: string } | null>(null);
 
-const newDevice = ref({
+const newDevice = ref<{
+  hostname: string;
+  platform: string | null;
+  os_version: string;
+  ip_address: string;
+}>({
   hostname: '',
-  platform: null as string | null,
+  platform: null,
   os_version: '',
   ip_address: ''
 });
 
 const platforms = [
   { name: 'Windows', value: 'windows' },
-  { name: 'macOS', value: 'macos' },
+  { name: 'macOS', value: 'darwin' },
   { name: 'Linux', value: 'linux' }
 ];
 
@@ -333,10 +194,13 @@ const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
+const showExecutionHistory = ref(false);
+const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
+
 const formatPlatform = (platform: string) => {
   const platformMap: Record<string, string> = {
+    darwin: 'macOS',
     windows: 'Windows',
-    macos: 'macOS',
     linux: 'Linux'
   };
   return platformMap[platform] || platform;
@@ -345,7 +209,7 @@ const formatPlatform = (platform: string) => {
 const getDeviceIcon = (platform: string) => {
   const iconMap: Record<string, string> = {
     windows: 'pi pi-microsoft',
-    macos: 'pi pi-apple',
+    darwin: 'pi pi-apple',
     linux: 'pi pi-server'
   };
   return iconMap[platform] || 'pi pi-desktop';
@@ -353,8 +217,8 @@ const getDeviceIcon = (platform: string) => {
 
 const getPlatformSeverity = (platform: string) => {
   const severityMap: Record<string, string> = {
-    windows: 'info',
-    macos: 'warning',
+    darwin: 'info',
+    windows: 'warning',
     linux: 'success'
   };
   return severityMap[platform] || 'info';
@@ -364,7 +228,7 @@ const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
     online: 'success',
     offline: 'danger',
-    pending: 'warning',
+    overdue: 'warning',
     unknown: 'info'
   };
   return severityMap[status.toLowerCase()] || 'info';
@@ -374,14 +238,40 @@ const formatTimestamp = (timestamp: string) => {
   return new Date(timestamp).toLocaleString();
 };
 
+const getIPv4Addresses = (ips: string) => {
+  if (!ips) return [];
+
+  // Split the IPs string into an array
+  const ipList = ips.split(',').map(ip => ip.trim());
+
+  // Filter to get only IPv4 addresses
+  return ipList
+    .map(ip => ip.split('/')[0]) // Remove CIDR notation
+    .filter(ip => ip.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) // Only IPv4
+    .sort((a, b) => { // Sort private IPs after public IPs
+      const isPrivateA = isPrivateIP(a);
+      const isPrivateB = isPrivateIP(b);
+      if (isPrivateA === isPrivateB) return 0;
+      return isPrivateA ? 1 : -1;
+    });
+};
+
+const isPrivateIP = (ip: string) => {
+  return ip.startsWith('127.') || // Loopback
+    ip.startsWith('169.254.') || // Link-local
+    ip.startsWith('172.16.') || // Private network
+    ip.startsWith('192.168.') || // Private network
+    ip.startsWith('10.'); // Private network
+};
+
 const fetchDevices = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
-    devices.value = response.data || [];
+    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
+    devices.value = response || [];
   } catch (error: any) {
     console.error('Error fetching devices:', error);
-    toastService.showError('Failed to fetch devices');
+    devices.value = [];
   } finally {
     loading.value = false;
   }
@@ -402,25 +292,22 @@ const hideDialog = () => {
 const saveDevice = async () => {
   submitted.value = true;
 
-  if (!newDevice.value.hostname || !newDevice.value.platform || 
-      !newDevice.value.os_version || !newDevice.value.ip_address) {
+  if (!newDevice.value.hostname || !newDevice.value.platform ||
+    !newDevice.value.os_version || !newDevice.value.ip_address) {
     return;
   }
 
   submitting.value = true;
   try {
     if (isEditMode.value && selectedDevice.value) {
-      await restClient.patch(`${API_URL}/agents/${selectedDevice.value.id}/`, newDevice.value);
-      toastService.showSuccess('Device updated successfully');
+      await restClient.patch(`${API_URL}/agents/${selectedDevice.value.agent_id}/`, newDevice.value);
     } else {
       await restClient.post(`${API_URL}/agents/`, newDevice.value);
-      toastService.showSuccess('Device added successfully');
     }
     await fetchDevices();
     hideDialog();
   } catch (error: any) {
     console.error('Error saving device:', error);
-    toastService.showError(isEditMode.value ? 'Failed to update device' : 'Failed to add device');
   } finally {
     submitting.value = false;
   }
@@ -433,32 +320,85 @@ const remoteControl = (device: Device) => {
 
 const runCommand = (device: Device) => {
   selectedDevice.value = device;
+  lastCommand.value = null;
   command.value = '';
   commandSubmitted.value = false;
   showRunCommandDialog.value = true;
 };
 
-const executeCommand = async () => {
+const executeCommand = async (cmd: string) => {
   if (!selectedDevice.value) return;
 
-  commandSubmitted.value = true;
-  if (!command.value) return;
-
+  console.log('Executing command:', cmd);
+  
+  // Store the command
+  lastCommand.value = { cmd, output: '' };
+  
+  // Close the command dialog and show history
+  showRunCommandDialog.value = false;
+  showExecutionHistory.value = true;
+  
+  // Add pending execution to history
+  const executionId = executionHistoryRef.value?.addExecution({
+    deviceName: selectedDevice.value.hostname,
+    command: cmd,
+    output: 'Executing...',
+    status: 'pending'
+  });
+  
   executing.value = true;
   try {
-    await restClient.post(`${API_URL}/agents/${selectedDevice.value.id}/cmd/`, {
-      cmd: command.value
+    console.log('Sending request to:', `${API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`);
+    
+    const response = await restClient.post<string>(`${API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`, {
+      shell: "/bin/bash",
+      cmd: cmd,
+      timeout: 30,
+      custom_shell: null,
+      run_as_user: false
     });
-    showRunCommandDialog.value = false;
-    command.value = '';
-    toastService.showSuccess('Command executed successfully');
+
+    console.log('Command response:', response);
+
+    // Parse the output - remove surrounding quotes and handle escaped newlines
+    const output = response ? response
+      .replace(/^"/, '')  // Remove leading quote
+      .replace(/"$/, '')  // Remove trailing quote
+      .replace(/\\n/g, '\n')  // Replace escaped newlines with actual newlines
+      : 'No output';
+
+    // Store the output
+    if (lastCommand.value) {
+      lastCommand.value.output = output;
+    }
+
+    // Update execution history
+    if (executionId) {
+      executionHistoryRef.value?.updateExecution(executionId, {
+        output,
+        status: 'success'
+      });
+    }
+
   } catch (error: any) {
     console.error('Error executing command:', error);
-    toastService.showError('Failed to execute command');
+    const errorMessage = error.response?.data || error.message || 'Failed to execute command';
+    
+    // Update execution history with error
+    if (executionId) {
+      executionHistoryRef.value?.updateExecution(executionId, {
+        output: errorMessage,
+        status: 'error'
+      });
+    }
   } finally {
     executing.value = false;
-    commandSubmitted.value = false;
   }
+};
+
+const updateCommandOutput = (output: string) => {
+  // No longer needed as we're handling output in toast
+  console.log('Command output received:', output);
 };
 
 const viewDevice = (device: Device) => {
@@ -470,9 +410,9 @@ const editDevice = (device: Device) => {
   selectedDevice.value = device;
   newDevice.value = {
     hostname: device.hostname,
-    platform: device.platform,
-    os_version: device.os_version,
-    ip_address: device.ip_address
+    platform: device.plat,
+    os_version: device.operating_system,
+    ip_address: device.public_ip
   };
   isEditMode.value = true;
   showAddDeviceDialog.value = true;
@@ -488,14 +428,12 @@ const confirmDelete = async () => {
 
   deleting.value = true;
   try {
-    await restClient.delete(`${API_URL}/agents/${selectedDevice.value.id}/`);
+    await restClient.delete(`${API_URL}/agents/${selectedDevice.value.agent_id}/`);
     await fetchDevices();
     deleteDeviceDialog.value = false;
     selectedDevice.value = null;
-    toastService.showSuccess('Device deleted successfully');
   } catch (error: any) {
     console.error('Error deleting device:', error);
-    toastService.showError('Failed to delete device');
   } finally {
     deleting.value = false;
   }
@@ -511,17 +449,71 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  background: var(--surface-ground);
 }
 
-.confirmation-content {
+.devices-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  min-height: 0;
+  background: var(--surface-ground);
+}
+
+:deep(.p-tag) {
+  min-width: 75px;
+  justify-content: center;
+}
+
+:deep(.p-datatable) {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+}
+
+:deep(.p-dialog-mask) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:deep(.p-dialog) {
+  margin: 0 auto !important;
+}
+
+:deep(.p-dialog-content) {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 120px) !important;
+}
+
+:deep(.clickable-toast) {
+  cursor: pointer !important;
+}
+
+:deep(.p-toast-message) {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1rem;
 }
 
-.font-mono {
-  font-family: monospace;
+.p-dialog-custom {
+  .p-dialog-header {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .p-dialog-content {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+  }
+
+  .p-dialog-footer {
+    background: var(--surface-section);
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--surface-border);
+  }
 }
-</style> 
+</style>
