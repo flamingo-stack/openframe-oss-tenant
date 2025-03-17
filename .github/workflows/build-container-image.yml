@@ -16,6 +16,7 @@ on:
 env:
   ORGANIZATION: flamingo-cx
   REGISTRY: ghcr.io
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
   wait-for-java:
