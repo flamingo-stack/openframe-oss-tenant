@@ -127,6 +127,8 @@ jobs:
       # Clean up old versions after successful push
       - name: Clean up old versions
         if: success() && steps.docker_build.outcome == 'success'
+        env:
+          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x ./kind-cluster/scripts/gh-packages.sh
           # Keep latest, commit SHA, and timestamp tags
