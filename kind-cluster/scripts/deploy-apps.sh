@@ -25,7 +25,7 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
 # + Pinot Controller (depends on Zookeeper)
 # + Pinot Broker (depends on Pinot Controller)
 # + Pinot Server (depends on Pinot Controller)
-# Config Server (no dependencies)
+# + Config Server (no dependencies)
 # API (depends on Config Server, MongoDB, Kafka, Cassandra)
 # Management (depends on Config Server, MongoDB)
 # Openframe UI (depends on API, Management)
@@ -166,8 +166,9 @@ kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 #     --version 0.3.1
 
 # CONFIG SERVER
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-config/config-server.yaml && \
-kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config --timeout 20m
+# Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-config && \
+kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config-server --timeout 20m
 
 # GATEWAY
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \

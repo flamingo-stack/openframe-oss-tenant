@@ -151,7 +151,7 @@ prometheus:
       - job_name: 'openframe-config'
         metrics_path: '/management/v1/prometheus'
         static_configs:
-          - targets: ['openframe-config-server:8889']
+          - targets: ['openframe-config-server.infrastructure.svc:8889']
 
       - job_name: 'openframe-management'
         metrics_path: '/management/v1/prometheus'
