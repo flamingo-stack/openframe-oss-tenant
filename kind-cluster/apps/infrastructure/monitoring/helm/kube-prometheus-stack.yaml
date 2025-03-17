@@ -185,4 +185,8 @@ prometheus:
 
       - job_name: 'pinot'
         static_configs:
-          - targets: ['openframe-pinot-controller.infrastructure.svc:9011', 'openframe-pinot-broker.infrastructure.svc:9012', 'openframe-pinot-server.infrastructure.svc:9013']
+          - targets: [
+              'openframe-pinot-controller.infrastructure.svc:9011',
+              'openframe-pinot-broker.infrastructure.svc:9011',
+              'openframe-pinot-server.infrastructure.svc:9011'
+            ]

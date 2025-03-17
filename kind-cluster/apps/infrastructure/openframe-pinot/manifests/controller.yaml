@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pinot-controller-config
+  name: openframe-pinot-controller-config
 data:
   controller.conf: |
     controller.host=pinot-controller
@@ -23,17 +23,17 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pinot-controller
+  name: openframe-pinot-controller
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pinot
+      app: openframe-pinot
       component: controller
   template:
     metadata:
       labels:
-        app: pinot
+        app: openframe-pinot
         component: controller
     spec:
       initContainers:
@@ -56,11 +56,11 @@ spec:
         ports:
         - containerPort: 9000
           name: controller
-        - containerPort: 7070
+        - containerPort: 9011
           name: jmx
         env:
         - name: JAVA_OPTS
-          value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=7070:/opt/jmx_exporter/config.yml"
+          value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9011:/opt/jmx_exporter/config.yml"
         volumeMounts:
         - name: jmx-exporter
           mountPath: /opt/jmx_exporter
@@ -77,10 +77,10 @@ spec:
         emptyDir: {}
       - name: jmx-config
         configMap:
-          name: pinot-jmx-config
+          name: openframe-pinot-jmx-config
       - name: pinot-config
         configMap:
-          name: pinot-controller-config
+          name: openframe-pinot-controller-config
       - name: controller-data
         emptyDir: {}
 ---
@@ -88,14 +88,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: pinot-controller
+  name: openframe-pinot-controller
 spec:
   selector:
-    app: pinot
+    app: openframe-pinot
     component: controller
   ports:
     - port: 9000
       name: controller
-    - port: 7070
+    - port: 9011
       name: jmx
   type: ClusterIP
