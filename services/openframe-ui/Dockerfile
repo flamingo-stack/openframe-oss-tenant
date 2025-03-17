@@ -14,6 +14,7 @@ COPY . .
 
 # Build the app with docker profile
 RUN npm run build -- --mode docker
+# FIX: Remove this line
 
 # Production stage
 FROM nginx:alpine

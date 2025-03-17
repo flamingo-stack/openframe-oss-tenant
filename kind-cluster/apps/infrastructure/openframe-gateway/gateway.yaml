@@ -30,7 +30,7 @@ spec:
               value: "optional:configserver:http://openframe-config-server:8888"
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
+              path: /management/v1/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -38,7 +38,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /management/v1/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -82,3 +82,21 @@ spec:
     - port: management
       path: /actuator/prometheus
       interval: 30s
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-gateway
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: openframe-gateway.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-gateway
+                port:
+                  name: http
