@@ -39,17 +39,16 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode package --file pom.xml
 
-      - name: Cache Java artifacts for all services
-        uses: actions/cache@v3
+      - name: Upload Java artifacts
+        uses: actions/upload-artifact@v4
         with:
+          name: java-artifacts
           path: |
             **/target/*.jar
             !**/target/original-*.jar
             !**/target/*-sources.jar
             !**/target/*-javadoc.jar
-          key: ${{ runner.os }}-java-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-java-
+          retention-days: 1
 
   build-container-image:
     needs: build-java-artifacts
@@ -94,15 +93,11 @@ jobs:
           echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
-      # Get the Java build artifacts from the current workflow run
       - name: Download Java artifacts
-        run: |
-          # Get the artifacts from the build-java-artifacts job in this workflow run
-          gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[] | select(.name | contains("java")) | .id' | while read -r artifact_id; do
-            gh api repos/${{ github.repository }}/actions/artifacts/$artifact_id/zip -H "Accept: application/vnd.github.v3+json" --output artifact.zip
-            unzip artifact.zip
-            rm artifact.zip
-          done
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: .
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
