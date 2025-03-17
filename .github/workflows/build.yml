@@ -1,4 +1,4 @@
-name: OpenFrame Build Container Images
+name: OpenFrame Build Java & Container Images
 
 permissions:
   contents: write
@@ -12,6 +12,12 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+    paths:
+      - 'libs/**'
+      - 'services/**'
+      - 'infrastructure/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
 
 env:
   ORGANIZATION: flamingo-cx
