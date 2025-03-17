@@ -17,6 +17,7 @@ spec:
       containers:
         - name: management
           image: ghcr.io/flamingo-cx/openframe-management:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8095
               name: http
