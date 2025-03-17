@@ -121,8 +121,14 @@ jobs:
           # Set build context
           BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
 
-          # Build and push the image
-          docker buildx build \
+          # Ensure the Dockerfile exists
+          if [ ! -f "${{ matrix.service.path }}Dockerfile" ]; then
+            echo "Error: Dockerfile not found at ${{ matrix.service.path }}Dockerfile"
+            exit 1
+          fi
+
+          # Build and push the image with error handling
+          if ! docker buildx build \
             --platform linux/amd64 \
             --push \
             --file "${{ matrix.service.path }}Dockerfile" \
@@ -131,8 +137,19 @@ jobs:
             --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.TIMESTAMP_TAG }}" \
             --cache-from "type=gha" \
             --cache-to "type=gha,mode=max" \
-            --provenance=true \
-            "$BUILD_CONTEXT"
+            --provenance=false \
+            "$BUILD_CONTEXT"; then
+            echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
+            exit 1
+          fi
+
+          # Verify the image exists in registry
+          if ! docker manifest inspect "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }}" > /dev/null 2>&1; then
+            echo "Error: Image ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }} not found in registry"
+            exit 1
+          fi
+
+          echo "Successfully built and pushed image for ${{ matrix.service.name }}"
 
       # Clean up old versions after successful push
       - name: Clean up old versions
