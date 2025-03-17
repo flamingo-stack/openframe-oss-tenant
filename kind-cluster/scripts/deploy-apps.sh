@@ -22,9 +22,9 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
 # + Cassandra (depends on Loki)
 # + Nifi (depends on Loki)
 # + Zookeeper (depends on Loki)
-# Pinot Controller (depends on Zookeeper)
-# Pinot Broker (depends on Pinot Controller)
-# Pinot Server (depends on Pinot Controller)
+# + Pinot Controller (depends on Zookeeper)
+# + Pinot Broker (depends on Pinot Controller)
+# + Pinot Server (depends on Pinot Controller)
 # Config Server (no dependencies)
 # API (depends on Config Server, MongoDB, Kafka, Cassandra)
 # Management (depends on Config Server, MongoDB)
@@ -157,13 +157,13 @@ kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/zookeeper/
 kubectl -n infrastructure wait --for=condition=Ready pod -l app=zookeeper --timeout 20m
 
 # PINOT
-kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/pinot/pinot.yaml && \
+kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/pinot/manifests && \
 kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
 
 # helm repo add pinot https://raw.githubusercontent.com/apache/pinot/master/helm
-helm upgrade -i pinot pinot/pinot \
-    -n infrastructure --create-namespace \
-    --version 0.3.1
+# helm upgrade -i pinot pinot/pinot \
+#     -n infrastructure --create-namespace \
+#     --version 0.3.1
 
 # GATEWAY
 kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
