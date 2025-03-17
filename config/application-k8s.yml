@@ -1,0 +1,29 @@
+# Docker environment specific configuration
+spring:
+  data:
+    # Docker MongoDB connection
+    mongodb:
+      uri: mongodb://openframe:password123456789@openframe-mongodb:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+    # Docker Cassandra connection
+    cassandra:
+      contact-points: openframe-cassandra
+
+    # Docker Redis connection (only used by API)
+    redis:
+      host: openframe-redis-headless
+      port: 6379
+
+# Docker logging configuration
+logging:
+  config: http://openframe-config-server:8888/logging/shared-logback-spring.xml
+
+# Docker monitoring endpoints
+loki:
+  url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+# Pinot connection details
+pinot:
+  controller:
+    url: http://openframe-pinot-controller:9000
+  broker:
+    url: http://openframe-pinot-broker:8099
