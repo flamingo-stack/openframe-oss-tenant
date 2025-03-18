@@ -12,7 +12,7 @@ const config = {
 };
 
 // Read the index.html file
-const indexPath = path.join(__dirname, '../dist/index.html');
+const indexPath = '/usr/share/nginx/html/index.html';
 let html = fs.readFileSync(indexPath, 'utf8');
 
 // Create the runtime config script
