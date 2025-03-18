@@ -1,0 +1,18 @@
+# API service docker environment configuration
+spring:
+  kafka:
+    bootstrap-servers: openframe-kafka:9092
+
+oauth:
+  client:
+    default:
+      id: openframe_web_dashboard
+      secret: prod_secret
+
+openframe:
+  management:
+    key: ${OPENFRAME_MANAGEMENT_KEY:docker-management-key-123}
+
+fleet:
+  api:
+    url: http://openframe-fleet:8070
