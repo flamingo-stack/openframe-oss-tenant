@@ -7,9 +7,11 @@ import { useAuthStore } from '@/stores/auth';
 import { AuthService } from '@/services/AuthService';
 import router from '@/router';
 import type { IntegratedTool, ToolUrlType, APIKeyType } from '@/types/graphql';
+import { ConfigService } from '@/config/config.service';
 
 let isRefreshing = false;
 let pendingRequests: Function[] = [];
+const config = ConfigService.getInstance();
 
 const resolvePendingRequests = () => {
   pendingRequests.forEach((callback) => callback());
@@ -55,7 +57,7 @@ const refreshAccessToken = async (): Promise<void> => {
     console.log('📤 [Auth] Making refresh token request...');
     const response = await AuthService.refreshToken(refreshToken);
     console.log('✅ [Auth] Token refresh successful');
-    
+
     localStorage.setItem('access_token', response.access_token);
     if (response.refresh_token) {
       localStorage.setItem('refresh_token', response.refresh_token);
@@ -140,7 +142,11 @@ const handleGraphQLAuthError = (operation: any, forward: any): Observable<FetchR
 };
 
 const httpLink = createHttpLink({
-  uri: `${import.meta.env.VITE_API_URL}/graphql`,
+  uri: `${config.apiUrl}/graphql`,
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
 const authLink = setContext(async (_, { headers }) => {
@@ -158,8 +164,8 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   if (graphQLErrors) {
     for (const err of graphQLErrors) {
       console.error('🔴 [GraphQL] Error:', err);
-      
-      if (err.extensions?.code === 'UNAUTHENTICATED' || 
+
+      if (err.extensions?.code === 'UNAUTHENTICATED' ||
           err.message.includes('Unauthorized') ||
           err.message.includes('unauthorized')) {
         return handleGraphQLAuthError(operation, forward);
@@ -270,12 +276,12 @@ export const restClient = {
       return await makeRequest();
     } catch (error: any) {
       console.error('❌ [REST] Request error:', error);
-      
+
       // Handle auth errors with token refresh
       if (isAuthError(error)) {
         return await handleRestAuthError(makeRequest);
       }
-      
+
       throw error;
     }
   },
@@ -283,7 +289,7 @@ export const restClient = {
   get<T>(url: string, options: RequestInit = {}): Promise<T> {
     return this.request<T>(url, { ...options, method: 'GET' });
   },
-  
+
   post<T>(url: string, data?: unknown, options: RequestInit = {}): Promise<T> {
     const isFormData = data instanceof URLSearchParams;
     const headers = {
@@ -298,7 +304,7 @@ export const restClient = {
       headers
     });
   },
-  
+
   patch<T>(url: string, data: unknown, options: RequestInit = {}): Promise<T> {
     return this.request<T>(url, {
       ...options,
@@ -310,8 +316,8 @@ export const restClient = {
       }
     });
   },
-  
+
   delete<T>(url: string, options: RequestInit = {}): Promise<T> {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }
-}; 
+};
