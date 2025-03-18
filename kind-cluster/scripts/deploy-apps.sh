@@ -202,6 +202,11 @@ case "$1" in
   authentik)
     # ------------- AUTHENTIK -------------
     kubectl create namespace authentik --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl -n authentik create secret docker-registry github-pat-secret \
+      --docker-server=ghcr.io \
+      --docker-username=vusal-fl \
+      --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
+      --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
     kubectl -n authentik apply -f ./kind-cluster/apps/authentik && \
     kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-server --timeout 20m && \
     kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-worker --timeout 20m && \
@@ -210,7 +215,12 @@ case "$1" in
     ;;
   fleet)
     # ------------- FLEET -------------
-    kubectl -n fleet create namespace --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl create namespace fleet --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl -n fleet create secret docker-registry github-pat-secret \
+      --docker-server=ghcr.io \
+      --docker-username=vusal-fl \
+      --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
+      --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
     kubectl -n fleet apply -f ./kind-cluster/apps/fleet && \
     kubectl -n fleet wait --for=condition=Ready pod -l app=fleet --timeout 20m && \
     kubectl -n fleet wait --for=condition=Ready pod -l app=fleet-mdm-mysql --timeout 20m && \
@@ -218,7 +228,12 @@ case "$1" in
     ;;
   meshcentral)
     # ------------- MESH CENTRAL -------------
-    kubectl -n meshcentral create namespace --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl create namespace meshcentral --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl -n meshcentral create secret docker-registry github-pat-secret \
+      --docker-server=ghcr.io \
+      --docker-username=vusal-fl \
+      --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
+      --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
     kubectl -n meshcentral apply -f ./kind-cluster/apps/meshcentral && \
     kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral --timeout 20m && \
     kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m && \
@@ -226,7 +241,12 @@ case "$1" in
     ;;
   rmm)
     # ------------- RMM -------------
-    kubectl -n tactical-rmm create namespace --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl create namespace tactical-rmm --dry-run=client -o yaml | kubectl apply -f -  && \
+    kubectl -n tactical-rmm create secret docker-registry github-pat-secret \
+      --docker-server=ghcr.io \
+      --docker-username=vusal-fl \
+      --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
+      --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
     kubectl -n tactical-rmm apply -f ./kind-cluster/apps/tactical-rmm  && \
     kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-rmm --timeout 20m
     ;;

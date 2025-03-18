@@ -83,14 +83,14 @@ spec:
                 name: openframe-ui
                 port:
                   name: http
-          - path: /api/
+          - path: /api
             pathType: Prefix
             backend:
               service:
                 name: openframe-api
                 port:
                   name: http
-          - path: /gateway/
+          - path: /gateway
             pathType: Prefix
             backend:
               service:
