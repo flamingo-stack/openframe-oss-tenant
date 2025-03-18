@@ -51,7 +51,6 @@
           icon="pi pi-play" 
           class="p-button-primary" 
           @click="onRun"
-          :loading="loading"
         />
       </div>
     </template>
@@ -65,7 +64,6 @@ import Button from 'primevue/button';
 
 const props = defineProps<{
   visible: boolean;
-  loading: boolean;
   lastCommand?: { cmd: string; output: string } | null;
 }>();
 
@@ -107,7 +105,6 @@ const onRun = async () => {
     .join(' ');
   
   try {
-    output.value = 'Executing command...';
     await emit('run', normalizedCommand);
   } catch (error: any) {
     const errorMessage = `Error: ${error?.message || 'Unknown error'}`;

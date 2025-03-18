@@ -261,9 +261,13 @@ defineExpose({
   }
 
   &.error {
-    background: var(--red-50);
-    border-color: var(--red-200);
-    color: var(--red-700);
+    background: var(--surface-ground);
+    border-color: var(--red-100);
+    color: var(--text-color);
+
+    code, pre {
+      color: var(--text-color);
+    }
   }
 }
 </style> 

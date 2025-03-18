@@ -132,7 +132,6 @@ public class IntegrationController {
                     .clientConnector(
                             new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
                     .build().method(request.getMethod()).uri(targetUri).headers(headers -> {
-                        headers.addAll(request.getHeaders());
 
                         ToolCredentials credentials = tool.getCredentials();
 

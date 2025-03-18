@@ -2,7 +2,6 @@
   <div class="rmm-devices">
     <ModuleHeader title="Devices">
       <template #actions>
-        <Button label="Add Device" icon="pi pi-plus" @click="showAddDeviceDialog = true" class="p-button-primary" />
         <Button icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
           v-tooltip.left="'Script Execution History'" />
       </template>
@@ -76,10 +75,6 @@
       </ModuleTable>
     </div>
 
-    <!-- Add/Edit Device Dialog -->
-    <DeviceDialog v-model:visible="showAddDeviceDialog" :isEditMode="isEditMode" :loading="submitting"
-      :initialDevice="newDevice" @save="saveDevice" @cancel="hideDialog" />
-
     <!-- Run Command Dialog -->
     <CommandDialog
       v-model:visible="showRunCommandDialog"
@@ -115,6 +110,22 @@
       v-model:visible="showExecutionHistory"
       ref="executionHistoryRef"
     />
+
+    <!-- Device Details Dialog -->
+    <DeviceDetailsDialog
+      v-model:visible="showDeviceDetailsDialog"
+      :device="selectedDevice"
+      @runCommand="handleDeviceDetailsRunCommand"
+      @edit="editDevice"
+      @delete="handleDeviceDetailsDelete"
+    />
+
+    <!-- Edit Device Dialog -->
+    <EditDeviceDialog
+      v-model:visible="showEditDeviceDialog"
+      :device="selectedDevice"
+      @saved="handleEditSaved"
+    />
   </div>
 </template>
 
@@ -136,9 +147,28 @@ import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import DeviceDialog from '../../components/shared/DeviceDialog.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
+import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
+import EditDeviceDialog from '../../components/shared/EditDeviceDialog.vue';
+
+interface WmiDetail {
+  cpus: string[];
+  gpus: string[];
+  disks: string[];
+  local_ips: string[];
+  make_model: string;
+  serialnumber: string;
+}
+
+interface Disk {
+  free: string;
+  used: string;
+  total: string;
+  device: string;
+  fstype: string;
+  percent: number;
+}
 
 interface Device {
   agent_id: string;
@@ -149,7 +179,14 @@ interface Device {
   last_seen: string;
   public_ip: string;
   local_ips: string;
-  // Add other fields as needed
+  cpu_model: string[];
+  total_ram: number;
+  logged_in_username: string;
+  timezone: string;
+  make_model: string;
+  wmi_detail: WmiDetail;
+  disks: Disk[];
+  physical_disks: string[];
 }
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
@@ -158,37 +195,16 @@ const toastService = ToastService.getInstance();
 
 const loading = ref(true);
 const devices = ref<Device[]>([]);
-const showAddDeviceDialog = ref(false);
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
-const submitted = ref(false);
-const commandSubmitted = ref(false);
-const submitting = ref(false);
+const showDeviceDetailsDialog = ref(false);
 const executing = ref(false);
 const deleting = ref(false);
-const isEditMode = ref(false);
+const showEditDeviceDialog = ref(false);
 
 const selectedDevice = ref<Device | null>(null);
 const command = ref('');
 const lastCommand = ref<{ cmd: string; output: string } | null>(null);
-
-const newDevice = ref<{
-  hostname: string;
-  platform: string | null;
-  os_version: string;
-  ip_address: string;
-}>({
-  hostname: '',
-  platform: null,
-  os_version: '',
-  ip_address: ''
-});
-
-const platforms = [
-  { name: 'Windows', value: 'windows' },
-  { name: 'macOS', value: 'darwin' },
-  { name: 'Linux', value: 'linux' }
-];
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -277,42 +293,6 @@ const fetchDevices = async () => {
   }
 };
 
-const hideDialog = () => {
-  showAddDeviceDialog.value = false;
-  submitted.value = false;
-  isEditMode.value = false;
-  newDevice.value = {
-    hostname: '',
-    platform: null,
-    os_version: '',
-    ip_address: ''
-  };
-};
-
-const saveDevice = async () => {
-  submitted.value = true;
-
-  if (!newDevice.value.hostname || !newDevice.value.platform ||
-    !newDevice.value.os_version || !newDevice.value.ip_address) {
-    return;
-  }
-
-  submitting.value = true;
-  try {
-    if (isEditMode.value && selectedDevice.value) {
-      await restClient.patch(`${API_URL}/agents/${selectedDevice.value.agent_id}/`, newDevice.value);
-    } else {
-      await restClient.post(`${API_URL}/agents/`, newDevice.value);
-    }
-    await fetchDevices();
-    hideDialog();
-  } catch (error: any) {
-    console.error('Error saving device:', error);
-  } finally {
-    submitting.value = false;
-  }
-};
-
 const remoteControl = (device: Device) => {
   // Implement remote control functionality
   console.log('Remote control:', device);
@@ -322,7 +302,6 @@ const runCommand = (device: Device) => {
   selectedDevice.value = device;
   lastCommand.value = null;
   command.value = '';
-  commandSubmitted.value = false;
   showRunCommandDialog.value = true;
 };
 
@@ -382,8 +361,17 @@ const executeCommand = async (cmd: string) => {
 
   } catch (error: any) {
     console.error('Error executing command:', error);
-    const errorMessage = error.response?.data || error.message || 'Failed to execute command';
     
+    // Get the actual error message from the response
+    let errorMessage;
+    
+    // For 500 errors, get the raw text directly from the response
+    if (error.message) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = 'Failed to execute command';
+    }
+
     // Update execution history with error
     if (executionId) {
       executionHistoryRef.value?.updateExecution(executionId, {
@@ -401,21 +389,52 @@ const updateCommandOutput = (output: string) => {
   console.log('Command output received:', output);
 };
 
-const viewDevice = (device: Device) => {
-  // Implement device details view
-  console.log('View device:', device);
+const viewDevice = async (device: Device) => {
+  try {
+    const response = await restClient.get<Device>(`${API_URL}/agents/${device.agent_id}/`);
+    if (response) {
+      selectedDevice.value = response;
+      showDeviceDetailsDialog.value = true;
+    }
+  } catch (error) {
+    console.error('Error fetching device details:', error);
+    toastService.showError('Failed to fetch device details');
+  }
 };
 
-const editDevice = (device: Device) => {
-  selectedDevice.value = device;
-  newDevice.value = {
-    hostname: device.hostname,
-    platform: device.plat,
-    os_version: device.operating_system,
-    ip_address: device.public_ip
-  };
-  isEditMode.value = true;
-  showAddDeviceDialog.value = true;
+const handleDeviceDetailsRunCommand = () => {
+  if (selectedDevice.value) {
+    runCommand(selectedDevice.value);
+  }
+};
+
+const handleDeviceDetailsDelete = () => {
+  if (selectedDevice.value) {
+    deleteDevice(selectedDevice.value);
+  }
+};
+
+const editDevice = async (device: Device) => {
+  try {
+    const response = await restClient.get<Device>(`${API_URL}/agents/${device.agent_id}/`);
+    if (response) {
+      selectedDevice.value = response;
+      // Close the details dialog if it's open
+      showDeviceDetailsDialog.value = false;
+      // Show the edit dialog
+      showEditDeviceDialog.value = true;
+    }
+  } catch (error) {
+    console.error('Error fetching device details:', error);
+    toastService.showError('Failed to fetch device details');
+  }
+};
+
+const handleEditSaved = () => {
+  fetchDevices();
+  // Make sure both dialogs stay closed after saving
+  showDeviceDetailsDialog.value = false;
+  showEditDeviceDialog.value = false;
 };
 
 const deleteDevice = (device: Device) => {
