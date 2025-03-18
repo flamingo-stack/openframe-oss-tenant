@@ -67,9 +67,7 @@
             <span class="ml-2">{{ settings.notify_on_info_alerts ? 'Enabled' : 'Disabled' }}</span>
           </div>
         </div>
-      </template>
 
-      <template v-else-if="category === 'email'">
         <div class="field">
           <label for="smtpFromEmail">From Email</label>
           <InputText
@@ -154,6 +152,50 @@
             @change="() => saveConfigProperty('email_alert_recipients', null)"
           />
         </div>
+
+        <div class="field">
+          <label for="twilioNumber">Twilio Number</label>
+          <InputText
+            id="twilioNumber"
+            v-model="settings.twilio_number"
+            class="w-full"
+            @change="() => saveConfigProperty('twilio_number', null)"
+          />
+        </div>
+
+        <div class="field">
+          <label for="twilioAccountSid">Twilio Account SID</label>
+          <InputText
+            id="twilioAccountSid"
+            v-model="settings.twilio_account_sid"
+            class="w-full"
+            @change="() => saveConfigProperty('twilio_account_sid', null)"
+          />
+        </div>
+
+        <div class="field">
+          <label for="twilioAuthToken">Twilio Auth Token</label>
+          <Password
+            id="twilioAuthToken"
+            v-model="settings.twilio_auth_token"
+            class="w-full"
+            :feedback="false"
+            toggleMask
+            @change="() => saveConfigProperty('twilio_auth_token', null)"
+          />
+        </div>
+
+        <div class="field">
+          <label for="smsRecipients">SMS Alert Recipients</label>
+          <Chips
+            id="smsRecipients"
+            v-model="settings.sms_alert_recipients"
+            separator=","
+            class="w-full"
+            placeholder="Enter phone number and press Enter"
+            @change="() => saveConfigProperty('sms_alert_recipients', null)"
+          />
+        </div>
       </template>
 
       <template v-else-if="category === 'cleanup'">
@@ -230,52 +272,6 @@
         </div>
       </template>
 
-      <template v-else-if="category === 'sms'">
-        <div class="field">
-          <label for="twilioNumber">Twilio Number</label>
-          <InputText
-            id="twilioNumber"
-            v-model="settings.twilio_number"
-            class="w-full"
-            @change="() => saveConfigProperty('twilio_number', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="twilioAccountSid">Twilio Account SID</label>
-          <InputText
-            id="twilioAccountSid"
-            v-model="settings.twilio_account_sid"
-            class="w-full"
-            @change="() => saveConfigProperty('twilio_account_sid', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="twilioAuthToken">Twilio Auth Token</label>
-          <Password
-            id="twilioAuthToken"
-            v-model="settings.twilio_auth_token"
-            class="w-full"
-            :feedback="false"
-            toggleMask
-            @change="() => saveConfigProperty('twilio_auth_token', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="smsRecipients">SMS Alert Recipients</label>
-          <Chips
-            id="smsRecipients"
-            v-model="settings.sms_alert_recipients"
-            separator=","
-            class="w-full"
-            placeholder="Enter phone number and press Enter"
-            @change="() => saveConfigProperty('sms_alert_recipients', null)"
-          />
-        </div>
-      </template>
-
       <template v-else-if="category === 'custom_fields'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
@@ -295,7 +291,6 @@
             emptyTitle="No Custom Fields"
             :paginator="false"
             :scrollable="true"
-            scrollHeight="calc(100vh - 300px)"
             class="settings-table"
           >
             <Column field="name" header="Name" sortable>
@@ -353,7 +348,6 @@
             emptyTitle="No Keys"
             :paginator="false"
             :scrollable="true"
-            scrollHeight="calc(100vh - 300px)"
             class="settings-table"
           >
             <Column field="name" header="Name" sortable>
@@ -409,7 +403,6 @@
             emptyTitle="No Actions"
             :paginator="false"
             :scrollable="true"
-            scrollHeight="calc(100vh - 300px)"
             class="settings-table"
           >
             <Column field="name" header="Name" sortable>
@@ -467,7 +460,6 @@
             emptyTitle="No API Keys"
             :paginator="false"
             :scrollable="true"
-            scrollHeight="calc(100vh - 300px)"
             class="settings-table"
           >
             <Column field="name" header="Name" sortable>
@@ -848,7 +840,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
@@ -868,61 +860,19 @@ import Calendar from 'primevue/calendar';
 import Textarea from 'primevue/textarea';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import { useToast } from 'primevue/usetoast';
-import type { DynamicSettings } from '../mdm/Settings';
-
-interface UrlAction {
-  id: number;
-  name: string;
-  desc: string;
-  pattern: string;
-  action_type: 'rest' | 'web';
-  rest_method: string;
-  rest_body: string;
-  rest_headers: string;
-}
-
-interface KeyStore {
-  id: number;
-  name: string;
-  value: string;
-}
-
-interface CustomField {
-  id: number;
-  name: string;
-  model: string;
-  type: string;
-  required: boolean;
-  options: string[];
-  created_by: string;
-  created_time: string;
-  modified_by: string;
-  modified_time: string;
-  order: number;
-  default_value_string: string;
-  default_value_bool: boolean;
-  default_values_multiple: string[];
-  hide_in_ui: boolean;
-  hide_in_summary: boolean;
-}
-
-interface ApiKey {
-  id: number;
-  name: string;
-  key: string;
-  expiration: string | null;
-}
+import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
 
 interface Props {
-  settings: DynamicSettings;
-  saveSettings: (settings: DynamicSettings) => Promise<void>;
+  category: string;
+  settings: DynamicSettings<RMMSettings>;
+  saveSettings: () => Promise<void>;
   fetchSettings: () => Promise<void>;
   hasChanges: boolean;
   changedValues: Record<string, any>;
   formatKey: (key: string) => string;
   hasPropertyChanges: (category: string) => boolean;
   isSaving: (category: string) => boolean;
-  saveConfigProperty: (key: string, subKey: string | null) => Promise<void>;
+  saveConfigProperty: (key: string, subKey: string | null) => void;
 }
 
 const props = defineProps<Props>();
@@ -1332,14 +1282,17 @@ const rowClass = (data: any) => {
 .settings-content {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
   background: var(--surface-ground);
   border-radius: 8px;
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .settings-header {
   margin-bottom: 2rem;
+  flex-shrink: 0;
 }
 
 .settings-header h2 {
@@ -1351,14 +1304,27 @@ const rowClass = (data: any) => {
 
 .settings-form {
   max-width: 800px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* RMM-specific table styles */
 .settings-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   :deep(.p-datatable) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     .p-datatable-wrapper {
+      flex: 1;
       border-radius: var(--border-radius);
       background: var(--surface-card);
+      overflow: auto;
     }
 
     .p-datatable-thead > tr > th {

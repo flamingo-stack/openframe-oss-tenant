@@ -57,6 +57,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
+import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -75,62 +76,6 @@ const toastService = ToastService.getInstance();
 const route = useRoute();
 const router = useRouter();
 
-interface Settings {
-  id: number;
-  agent_port?: number;
-  check_interval?: number;
-  agent_debug_level: string;
-  debug_log_prune_days: number;
-  agent_history_prune_days: number;
-  check_history_prune_days: number;
-  resolved_alerts_prune_days: number;
-  audit_log_prune_days: number;
-  clear_faults_days: number;
-  agent_auto_update: boolean;
-  smtp_from_email: string;
-  smtp_from_name: string | null;
-  smtp_host: string;
-  smtp_host_user: string;
-  smtp_host_password: string;
-  smtp_port: number;
-  smtp_requires_auth: boolean;
-  email_alert_recipients: string[];
-  sms_alert_recipients: string[];
-  twilio_number: string | null;
-  twilio_account_sid: string | null;
-  twilio_auth_token: string | null;
-  notify_on_warning_alerts: boolean;
-  notify_on_info_alerts: boolean;
-  default_time_zone: string;
-  all_timezones: string[];
-  date_format: string;
-  enable_server_scripts: boolean;
-  enable_server_webterminal: boolean;
-  mesh_token: string;
-  mesh_username: string;
-  mesh_site: string;
-  mesh_device_group: string;
-  mesh_company_name: string | null;
-  sync_mesh_with_trmm: boolean;
-  open_ai_token: string | null;
-  open_ai_model: string;
-  block_local_user_logon: boolean;
-  sso_enabled: boolean;
-  workstation_policy: string | null;
-  server_policy: string | null;
-  alert_template: string | null;
-  created_by: string;
-  created_time: string;
-  modified_by: string;
-  modified_time: string;
-  org_info: {
-    org_name: string;
-    org_logo_url: string | null;
-    org_logo_url_dark: string | null;
-    org_logo_url_light: string | null;
-  };
-}
-
 interface CategoryConfig {
   key: string;
   label: string;
@@ -138,65 +83,11 @@ interface CategoryConfig {
   endpoint?: string;
 }
 
-interface ApiKey {
-  id: number;
-  username: string;
-  created_by: null;
-  created_time: string;
-  modified_by: null;
-  modified_time: string;
-  name: string;
-  key: string;
-  expiration: string | null;
-  user: number;
-}
-
-interface UrlAction {
-  id: number;
-  created_by: string;
-  created_time: string;
-  modified_by: string;
-  modified_time: string;
-  name: string;
-  desc: string;
-  pattern: string;
-  action_type: 'rest' | 'web';
-  rest_method: string;
-  rest_body: string;
-  rest_headers: string;
-}
-
-interface DynamicSettings extends Settings {
-  [key: string]: any;
-  api_keys?: ApiKey[];
-  url_actions?: UrlAction[];
-  webhooks?: UrlAction[];
-}
-
-export type { DynamicSettings };
-
-interface KeyStore {
-  id: number;
-  name: string;
-  value: string;
-  created_time: string;
-  modified_time: string;
-}
-
-interface CustomField {
-  id: number;
-  name: string;
-  model: string;
-  type: string;
-  required: boolean;
-  options: string[];
-}
-
 const loading = ref(true);
 const saving = ref(false);
 const error = ref<string>('');
-const settings = ref<DynamicSettings>({} as DynamicSettings);
-const originalSettings = ref<DynamicSettings | null>(null);
+const settings = ref<DynamicSettings<RMMSettings>>({} as DynamicSettings<RMMSettings>);
+const originalSettings = ref<DynamicSettings<RMMSettings> | null>(null);
 const currentCategory = ref('general');
 const hasChanges = ref(false);
 const changedValues = ref<Record<string, any>>({});
@@ -204,8 +95,6 @@ const changedValues = ref<Record<string, any>>({});
 const categories = [
   { key: 'general', label: 'General', icon: 'pi pi-cog' },
   { key: 'alerts', label: 'Alerts', icon: 'pi pi-bell' },
-  { key: 'email', label: 'Email', icon: 'pi pi-envelope' },
-  { key: 'sms', label: 'SMS Alerts', icon: 'pi pi-mobile' },
   { key: 'cleanup', label: 'Cleanup', icon: 'pi pi-trash' },
   { key: 'custom_fields', label: 'Custom Fields', icon: 'pi pi-list' },
   { key: 'key_store', label: 'Key Store', icon: 'pi pi-key' },
@@ -230,7 +119,7 @@ const fetchSettings = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await restClient.get<Settings>(`${API_URL}/settings/`);
+    const response = await restClient.get<RMMSettings>(`${API_URL}/settings/`);
     // Initialize org_info if it doesn't exist
     settings.value = {
       ...response,
@@ -577,7 +466,12 @@ const customFieldForm = ref({
   model: '',
   type: '',
   required: false,
-  options: '' as string
+  options: '',
+  default_value_string: '',
+  default_value_bool: false,
+  default_values_multiple: [] as string[],
+  hide_in_ui: false,
+  hide_in_summary: false
 });
 
 const editCustomField = (field: CustomField) => {
@@ -587,7 +481,12 @@ const editCustomField = (field: CustomField) => {
     model: field.model,
     type: field.type,
     required: field.required,
-    options: field.options.join(', ')
+    options: field.options.join(', '),
+    default_value_string: field.default_value_string,
+    default_value_bool: field.default_value_bool,
+    default_values_multiple: field.default_values_multiple,
+    hide_in_ui: field.hide_in_ui,
+    hide_in_summary: field.hide_in_summary
   };
   showCustomFieldDialog.value = true;
 };
@@ -607,8 +506,16 @@ const saveCustomField = async () => {
       : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
 
     const formData = {
-      ...customFieldForm.value,
-      options: customFieldForm.value.options.split(',').map(opt => opt.trim()).filter(Boolean)
+      name: customFieldForm.value.name,
+      model: customFieldForm.value.model,
+      type: customFieldForm.value.type,
+      required: customFieldForm.value.required,
+      options: customFieldForm.value.options.split(',').map(opt => opt.trim()).filter(Boolean),
+      default_value_string: customFieldForm.value.default_value_string,
+      default_value_bool: customFieldForm.value.default_value_bool,
+      default_values_multiple: customFieldForm.value.default_values_multiple,
+      hide_in_ui: customFieldForm.value.hide_in_ui,
+      hide_in_summary: customFieldForm.value.hide_in_summary
     };
 
     const response = await restClient[method]<CustomField>(url, formData);
@@ -657,7 +564,7 @@ const saveSettings = async () => {
   saving.value = true;
   error.value = '';
   try {
-    const response = await restClient.patch<DynamicSettings>(`${API_URL}/settings/`, changedValues.value);
+    const response = await restClient.patch<RMMSettings>(`${API_URL}/settings/`, changedValues.value);
     settings.value = response;
     originalSettings.value = JSON.parse(JSON.stringify(response));
     changedValues.value = {};
