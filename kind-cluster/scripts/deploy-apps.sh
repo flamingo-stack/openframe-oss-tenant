@@ -17,6 +17,15 @@ case "$1" in
       -f ./kind-cluster/apps/infrastructure/ingress-nginx/helm/ingress-nginx.yaml && \
     kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/name=ingress-nginx --timeout 20m
     ;;
+  grafana)
+    # GRAFANA (depends on Prometheus, Loki) + PROMETHEUS (depends on Loki)
+    helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+      -n monitoring --create-namespace \
+      --version 69.8.2 \
+      -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml && \
+    kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m && \
+    kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/dashboards
+    ;;
   loki)
     # ------------- INFRASTRUCTURE -------------
     # LOKI (no dependencies)
@@ -37,15 +46,6 @@ case "$1" in
     # helm upgrade --install promtail grafana/promtail \
     #   --version 6.16.6 \
     #   -f ./kind-cluster/apps/infrastructure/promtail/helm/promtail.yaml
-    ;;
-  grafana)
-    # GRAFANA (depends on Prometheus, Loki) + PROMETHEUS (depends on Loki)
-    helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-      -n monitoring --create-namespace \
-      --version 69.8.2 \
-      -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml && \
-    kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m && \
-    kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/dashboards
     ;;
   redis)
     # REDIS (no dependencies)
@@ -151,7 +151,7 @@ case "$1" in
     # Pinot Broker (depends on Pinot Controller)
     # Pinot Server (depends on Pinot Controller)
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-pinot/manifests && \
-    kubectl wait --for=condition=Ready pod -l app=pinot --timeout 20m
+    kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-pinot --timeout 20m
 
     # helm repo add openframe-pinot https://raw.githubusercontent.com/apache/pinot/master/helm
     # helm upgrade -i pinot pinot/pinot \
@@ -160,7 +160,6 @@ case "$1" in
     ;;
   config-server)
     # CONFIG SERVER (no dependencies)
-    # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-config && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config-server --timeout 20m
     ;;
@@ -178,11 +177,6 @@ case "$1" in
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-management/management.yaml
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-management --timeout 20m
     ;;
-  openframe-ui)
-    # OPENFRAME UI (depends on API, Management)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml && \
-    kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
-    ;;
   stream)
     # STREAM (depends on Kafka, Config Server, Cassandra, MongoDB)
     # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
@@ -194,6 +188,11 @@ case "$1" in
     # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
+    ;;
+  openframe-ui)
+    # OPENFRAME UI (depends on API, Management)
+    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml && \
+    kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-ui --timeout 20m
     ;;
   authentik)
     # ------------- AUTHENTIK -------------
@@ -234,8 +233,8 @@ case "$1" in
   all)
     # ------------- ALL -------------
     ./deploy-apps.sh ingress-nginx && \
-    ./deploy-apps.sh loki && \
     ./deploy-apps.sh grafana && \
+    ./deploy-apps.sh loki && \
     ./deploy-apps.sh redis && \
     ./deploy-apps.sh efk && \
     ./deploy-apps.sh kafka && \
@@ -250,9 +249,9 @@ case "$1" in
     ./deploy-apps.sh config-server && \
     ./deploy-apps.sh api && \
     ./deploy-apps.sh management && \
-    ./deploy-apps.sh openframe-ui && \
     ./deploy-apps.sh stream && \
     ./deploy-apps.sh gateway && \
+    ./deploy-apps.sh openframe-ui && \
     ./deploy-apps.sh authentik && \
     ./deploy-apps.sh fleet && \
     ./deploy-apps.sh meshcentral && \
@@ -260,6 +259,37 @@ case "$1" in
     ./deploy-apps.sh register-tools
     ;;
   *)
-      echo "Usage: $0"
+      echo
+      echo "Pass app name to deploy specific app to deploy application to the Kubernetes cluster"
+      echo
+      echo "Available options:"
+      echo "  ingress-nginx    Deploy Ingress Nginx"
+      echo "  loki             Deploy Loki and Promtail"
+      echo "  grafana          Deploy Grafana and Prometheus stack"
+      echo "  redis            Deploy Redis"
+      echo "  efk              Deploy Elasticsearch, Fluentd, Kibana stack"
+      echo "  kafka            Deploy Kafka"
+      echo "  kafka-ui         Deploy Kafka UI"
+      echo "  mongodb          Deploy MongoDB"
+      echo "  mongodb-exporter Deploy MongoDB exporter"
+      echo "  mongo-express    Deploy Mongo Express"
+      echo "  cassandra        Deploy Cassandra"
+      echo "  nifi             Deploy NiFi"
+      echo "  zookeeper        Deploy Zookeeper"
+      echo "  pinot            Deploy Pinot"
+      echo "  config-server    Deploy Config Server"
+      echo "  api              Deploy API"
+      echo "  management       Deploy Management"
+      echo "  stream           Deploy Stream"
+      echo "  gateway          Deploy Gateway"
+      echo "  openframe-ui     Deploy OpenFrame UI"
+      echo "  authentik        Deploy Authentik"
+      echo "  fleet            Deploy Fleet"
+      echo "  meshcentral      Deploy Mesh Central"
+      echo "  rmm              Deploy RMM"
+      echo "  register-tools   Register tools"
+      echo
+      echo "  all              Deploy all applications"
+      echo
       exit 1
 esac
