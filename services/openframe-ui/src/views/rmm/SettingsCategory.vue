@@ -414,10 +414,7 @@
           >
             <Column field="name" header="Name" sortable>
               <template #body="{ data }">
-                <div class="flex align-items-center">
-                  <i class="pi pi-link mr-2"></i>
-                  <span>{{ data.name }}</span>
-                </div>
+                <span>{{ data.name }}</span>
               </template>
             </Column>
             <Column field="desc" header="Description" sortable>
@@ -475,10 +472,7 @@
           >
             <Column field="name" header="Name" sortable>
               <template #body="{ data }">
-                <div class="flex align-items-center">
-                  <i class="pi pi-key mr-2"></i>
-                  <span>{{ data.name }}</span>
-                </div>
+                <span>{{ data.name }}</span>
               </template>
             </Column>
             <Column field="key" header="Key">
@@ -522,41 +516,53 @@
     v-model:visible="showNewApiKeyDialog" 
     header="Generate New API Key" 
     :modal="true"
-    :style="{ width: '450px' }"
+    :draggable="false"
+    :style="{ width: '60vw', maxWidth: '800px' }"
+    class="p-dialog-custom"
+    :pt="{
+      root: { style: { position: 'relative', margin: '0 auto' } },
+      mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+    }"
   >
-    <div class="field">
-      <label for="apiKeyName">Name</label>
-      <InputText
-        id="apiKeyName"
-        v-model="newApiKey.name"
-        class="w-full"
-        placeholder="Enter a name for this API key"
-      />
-    </div>
-    <div class="field">
-      <label for="apiKeyExpiration">Expiration (Optional)</label>
-      <Calendar
-        id="apiKeyExpiration"
-        v-model="newApiKey.expiration"
-        class="w-full"
-        :showIcon="true"
-        dateFormat="yy-mm-dd"
-        placeholder="Select expiration date"
-      />
+    <div class="grid">
+      <div class="col-12">
+        <div class="field">
+          <label for="apiKeyName">Name</label>
+          <InputText
+            id="apiKeyName"
+            v-model="newApiKey.name"
+            class="w-full"
+            placeholder="Enter a name for this API key"
+          />
+        </div>
+        <div class="field">
+          <label for="apiKeyExpiration">Expiration (Optional)</label>
+          <Calendar
+            id="apiKeyExpiration"
+            v-model="newApiKey.expiration"
+            class="w-full"
+            :showIcon="true"
+            dateFormat="yy-mm-dd"
+            placeholder="Select expiration date"
+          />
+        </div>
+      </div>
     </div>
     <template #footer>
-      <Button 
-        label="Cancel" 
-        icon="pi pi-times" 
-        class="p-button-text" 
-        @click="showNewApiKeyDialog = false"
-      />
-      <Button 
-        label="Generate" 
-        icon="pi pi-check" 
-        :loading="generatingApiKey"
-        @click="generateApiKey"
-      />
+      <div class="flex justify-content-end gap-2">
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times" 
+          class="p-button-text" 
+          @click="showNewApiKeyDialog = false"
+        />
+        <Button 
+          label="Generate" 
+          icon="pi pi-check" 
+          :loading="generatingApiKey"
+          @click="generateApiKey"
+        />
+      </div>
     </template>
   </Dialog>
 
@@ -565,89 +571,101 @@
     v-model:visible="showUrlActionDialog" 
     :header="editingUrlAction ? 'Edit URL Action' : 'Add URL Action'" 
     :modal="true"
-    :style="{ width: '600px' }"
+    :draggable="false"
+    :style="{ width: '60vw', maxWidth: '800px' }"
+    class="p-dialog-custom"
+    :pt="{
+      root: { style: { position: 'relative', margin: '0 auto' } },
+      mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+    }"
   >
-    <div class="field">
-      <label for="urlActionName">Name</label>
-      <InputText
-        id="urlActionName"
-        v-model="urlActionForm.name"
-        class="w-full"
-        placeholder="Enter a name for this action"
-      />
-    </div>
-    <div class="field">
-      <label for="urlActionDesc">Description</label>
-      <Textarea
-        id="urlActionDesc"
-        v-model="urlActionForm.desc"
-        class="w-full"
-        rows="2"
-        placeholder="Enter a description"
-      />
-    </div>
-    <div class="field">
-      <label for="urlActionPattern">Pattern</label>
-      <InputText
-        id="urlActionPattern"
-        v-model="urlActionForm.pattern"
-        class="w-full"
-        placeholder="Enter URL pattern"
-      />
-    </div>
-    <div class="field">
-      <label for="urlActionType">Type</label>
-      <Dropdown
-        id="urlActionType"
-        v-model="urlActionForm.action_type"
-        :options="['rest', 'web']"
-        class="w-full"
-        placeholder="Select action type"
-      />
-    </div>
-    <div v-if="urlActionForm.action_type === 'rest'" class="field">
-      <label for="urlActionMethod">Method</label>
-      <Dropdown
-        id="urlActionMethod"
-        v-model="urlActionForm.rest_method"
-        :options="['get', 'post', 'put', 'patch', 'delete']"
-        class="w-full"
-        placeholder="Select HTTP method"
-      />
-    </div>
-    <div v-if="urlActionForm.action_type === 'rest'" class="field">
-      <label for="urlActionBody">Request Body</label>
-      <Textarea
-        id="urlActionBody"
-        v-model="urlActionForm.rest_body"
-        class="w-full"
-        rows="3"
-        placeholder="Enter request body (JSON)"
-      />
-    </div>
-    <div v-if="urlActionForm.action_type === 'rest'" class="field">
-      <label for="urlActionHeaders">Request Headers</label>
-      <Textarea
-        id="urlActionHeaders"
-        v-model="urlActionForm.rest_headers"
-        class="w-full"
-        rows="3"
-        placeholder="Enter request headers (JSON)"
-      />
+    <div class="grid">
+      <div class="col-12">
+        <div class="field">
+          <label for="urlActionName">Name</label>
+          <InputText
+            id="urlActionName"
+            v-model="urlActionForm.name"
+            class="w-full"
+            placeholder="Enter a name for this action"
+          />
+        </div>
+        <div class="field">
+          <label for="urlActionDesc">Description</label>
+          <Textarea
+            id="urlActionDesc"
+            v-model="urlActionForm.desc"
+            class="w-full"
+            rows="2"
+            placeholder="Enter a description"
+          />
+        </div>
+        <div class="field">
+          <label for="urlActionPattern">Pattern</label>
+          <InputText
+            id="urlActionPattern"
+            v-model="urlActionForm.pattern"
+            class="w-full"
+            placeholder="Enter URL pattern"
+          />
+        </div>
+        <div class="field">
+          <label for="urlActionType">Type</label>
+          <Dropdown
+            id="urlActionType"
+            v-model="urlActionForm.action_type"
+            :options="['rest', 'web']"
+            class="w-full"
+            placeholder="Select action type"
+          />
+        </div>
+        <div v-if="urlActionForm.action_type === 'rest'" class="field">
+          <label for="urlActionMethod">Method</label>
+          <Dropdown
+            id="urlActionMethod"
+            v-model="urlActionForm.rest_method"
+            :options="['get', 'post', 'put', 'patch', 'delete']"
+            class="w-full"
+            placeholder="Select HTTP method"
+          />
+        </div>
+        <div v-if="urlActionForm.action_type === 'rest'" class="field">
+          <label for="urlActionBody">Request Body</label>
+          <Textarea
+            id="urlActionBody"
+            v-model="urlActionForm.rest_body"
+            class="w-full"
+            rows="3"
+            placeholder="Enter request body (JSON)"
+          />
+        </div>
+        <div v-if="urlActionForm.action_type === 'rest'" class="field">
+          <label for="urlActionHeaders">Request Headers</label>
+          <Textarea
+            id="urlActionHeaders"
+            v-model="urlActionForm.rest_headers"
+            class="w-full"
+            rows="3"
+            placeholder="Enter request headers (JSON)"
+          />
+        </div>
+      </div>
     </div>
     <template #footer>
-      <Button 
-        label="Cancel" 
-        icon="pi pi-times" 
-        class="p-button-text" 
-        @click="closeUrlActionDialog"
-      />
-      <Button 
-        label="Save" 
-        icon="pi pi-check" 
-        :loading="savingUrlAction"
-        @click="saveUrlAction"
-      />
+      <div class="flex justify-content-end gap-2">
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times" 
+          class="p-button-text" 
+          @click="closeUrlActionDialog"
+        />
+        <Button 
+          label="Save" 
+          icon="pi pi-check" 
+          :loading="savingUrlAction"
+          @click="saveUrlAction"
+        />
+      </div>
     </template>
   </Dialog>
 
@@ -656,41 +674,53 @@
     v-model:visible="showKeyStoreDialog" 
     :header="editingKeyStore ? 'Edit Key' : 'Add Key'" 
     :modal="true"
-    :style="{ width: '450px' }"
+    :draggable="false"
+    :style="{ width: '60vw', maxWidth: '800px' }"
+    class="p-dialog-custom"
+    :pt="{
+      root: { style: { position: 'relative', margin: '0 auto' } },
+      mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+    }"
   >
-    <div class="field">
-      <label for="keyStoreName">Name</label>
-      <InputText
-        id="keyStoreName"
-        v-model="keyStoreForm.name"
-        class="w-full"
-        placeholder="Enter a name for this key"
-      />
-    </div>
-    <div class="field">
-      <label for="keyStoreValue">Value</label>
-      <Password
-        id="keyStoreValue"
-        v-model="keyStoreForm.value"
-        class="w-full"
-        :feedback="false"
-        toggleMask
-        placeholder="Enter the key value"
-      />
+    <div class="grid">
+      <div class="col-12">
+        <div class="field">
+          <label for="keyStoreName">Name</label>
+          <InputText
+            id="keyStoreName"
+            v-model="keyStoreForm.name"
+            class="w-full"
+            placeholder="Enter a name for this key"
+          />
+        </div>
+        <div class="field">
+          <label for="keyStoreValue">Value</label>
+          <Password
+            id="keyStoreValue"
+            v-model="keyStoreForm.value"
+            class="w-full"
+            :feedback="false"
+            toggleMask
+            placeholder="Enter the key value"
+          />
+        </div>
+      </div>
     </div>
     <template #footer>
-      <Button 
-        label="Cancel" 
-        icon="pi pi-times" 
-        class="p-button-text" 
-        @click="showKeyStoreDialog = false"
-      />
-      <Button 
-        label="Save" 
-        icon="pi pi-check" 
-        :loading="savingKeyStore"
-        @click="saveKeyStore"
-      />
+      <div class="flex justify-content-end gap-2">
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times" 
+          class="p-button-text" 
+          @click="showKeyStoreDialog = false"
+        />
+        <Button 
+          label="Save" 
+          icon="pi pi-check" 
+          :loading="savingKeyStore"
+          @click="saveKeyStore"
+        />
+      </div>
     </template>
   </Dialog>
 
@@ -699,108 +729,120 @@
     v-model:visible="showCustomFieldDialog" 
     :header="editingCustomField ? 'Edit Custom Field' : 'Add Custom Field'" 
     :modal="true"
-    :style="{ width: '600px' }"
+    :draggable="false"
+    :style="{ width: '60vw', maxWidth: '800px' }"
+    class="p-dialog-custom"
+    :pt="{
+      root: { style: { position: 'relative', margin: '0 auto' } },
+      mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+    }"
   >
-    <div class="field">
-      <label for="customFieldName">Name</label>
-      <InputText
-        id="customFieldName"
-        v-model="customFieldForm.name"
-        class="w-full"
-        placeholder="Enter a name for this field"
-      />
-    </div>
-    <div class="field">
-      <label for="customFieldModel">Model</label>
-      <Dropdown
-        id="customFieldModel"
-        v-model="customFieldForm.model"
-        :options="['client', 'site', 'agent']"
-        class="w-full"
-        placeholder="Select model"
-      />
-    </div>
-    <div class="field">
-      <label for="customFieldType">Type</label>
-      <Dropdown
-        id="customFieldType"
-        v-model="customFieldForm.type"
-        :options="['text', 'number', 'boolean', 'select', 'datetime']"
-        class="w-full"
-        placeholder="Select field type"
-      />
-    </div>
-    <div class="field">
-      <label for="customFieldRequired">Required</label>
-      <div class="flex align-items-center">
-        <InputSwitch
-          id="customFieldRequired"
-          v-model="customFieldForm.required"
-        />
-        <span class="ml-2">{{ customFieldForm.required ? 'Yes' : 'No' }}</span>
-      </div>
-    </div>
-    <div v-if="customFieldForm.type === 'select'" class="field">
-      <label for="customFieldOptions">Options (comma-separated)</label>
-      <InputText
-        id="customFieldOptions"
-        v-model="customFieldForm.options"
-        class="w-full"
-        placeholder="Enter options separated by commas"
-      />
-    </div>
-    <div v-if="customFieldForm.type === 'text'" class="field">
-      <label for="defaultValueString">Default Value</label>
-      <InputText
-        id="defaultValueString"
-        v-model="customFieldForm.default_value_string"
-        class="w-full"
-        placeholder="Enter default value"
-      />
-    </div>
-    <div v-if="customFieldForm.type === 'boolean'" class="field">
-      <label for="defaultValueBool">Default Value</label>
-      <div class="flex align-items-center">
-        <InputSwitch
-          id="defaultValueBool"
-          v-model="customFieldForm.default_value_bool"
-        />
-        <span class="ml-2">{{ customFieldForm.default_value_bool ? 'Yes' : 'No' }}</span>
-      </div>
-    </div>
-    <div class="field">
-      <label for="hideInUI">Hide in UI</label>
-      <div class="flex align-items-center">
-        <InputSwitch
-          id="hideInUI"
-          v-model="customFieldForm.hide_in_ui"
-        />
-        <span class="ml-2">{{ customFieldForm.hide_in_ui ? 'Yes' : 'No' }}</span>
-      </div>
-    </div>
-    <div class="field">
-      <label for="hideInSummary">Hide in Summary</label>
-      <div class="flex align-items-center">
-        <InputSwitch
-          id="hideInSummary"
-          v-model="customFieldForm.hide_in_summary"
-        />
-        <span class="ml-2">{{ customFieldForm.hide_in_summary ? 'Yes' : 'No' }}</span>
+    <div class="grid">
+      <div class="col-12">
+        <div class="field">
+          <label for="customFieldName">Name</label>
+          <InputText
+            id="customFieldName"
+            v-model="customFieldForm.name"
+            class="w-full"
+            placeholder="Enter a name for this field"
+          />
+        </div>
+        <div class="field">
+          <label for="customFieldModel">Model</label>
+          <Dropdown
+            id="customFieldModel"
+            v-model="customFieldForm.model"
+            :options="['client', 'site', 'agent']"
+            class="w-full"
+            placeholder="Select model"
+          />
+        </div>
+        <div class="field">
+          <label for="customFieldType">Type</label>
+          <Dropdown
+            id="customFieldType"
+            v-model="customFieldForm.type"
+            :options="['text', 'number', 'boolean', 'select', 'datetime']"
+            class="w-full"
+            placeholder="Select field type"
+          />
+        </div>
+        <div class="field">
+          <label for="customFieldRequired">Required</label>
+          <div class="flex align-items-center">
+            <InputSwitch
+              id="customFieldRequired"
+              v-model="customFieldForm.required"
+            />
+            <span class="ml-2">{{ customFieldForm.required ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
+        <div v-if="customFieldForm.type === 'select'" class="field">
+          <label for="customFieldOptions">Options (comma-separated)</label>
+          <InputText
+            id="customFieldOptions"
+            v-model="customFieldForm.options"
+            class="w-full"
+            placeholder="Enter options separated by commas"
+          />
+        </div>
+        <div v-if="customFieldForm.type === 'text'" class="field">
+          <label for="defaultValueString">Default Value</label>
+          <InputText
+            id="defaultValueString"
+            v-model="customFieldForm.default_value_string"
+            class="w-full"
+            placeholder="Enter default value"
+          />
+        </div>
+        <div v-if="customFieldForm.type === 'boolean'" class="field">
+          <label for="defaultValueBool">Default Value</label>
+          <div class="flex align-items-center">
+            <InputSwitch
+              id="defaultValueBool"
+              v-model="customFieldForm.default_value_bool"
+            />
+            <span class="ml-2">{{ customFieldForm.default_value_bool ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="hideInUI">Hide in UI</label>
+          <div class="flex align-items-center">
+            <InputSwitch
+              id="hideInUI"
+              v-model="customFieldForm.hide_in_ui"
+            />
+            <span class="ml-2">{{ customFieldForm.hide_in_ui ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="hideInSummary">Hide in Summary</label>
+          <div class="flex align-items-center">
+            <InputSwitch
+              id="hideInSummary"
+              v-model="customFieldForm.hide_in_summary"
+            />
+            <span class="ml-2">{{ customFieldForm.hide_in_summary ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
       </div>
     </div>
     <template #footer>
-      <Button 
-        label="Cancel" 
-        icon="pi pi-times" 
-        class="p-button-text" 
-        @click="showCustomFieldDialog = false"
-      />
-      <Button 
-        label="Save" 
-        icon="pi pi-check" 
-        :loading="savingCustomField"
-        @click="saveCustomField"
-      />
+      <div class="flex justify-content-end gap-2">
+        <Button 
+          label="Cancel" 
+          icon="pi pi-times" 
+          class="p-button-text" 
+          @click="showCustomFieldDialog = false"
+        />
+        <Button 
+          label="Save" 
+          icon="pi pi-check" 
+          :loading="savingCustomField"
+          @click="saveCustomField"
+        />
+      </div>
     </template>
   </Dialog>
 </template>
