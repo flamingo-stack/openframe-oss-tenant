@@ -176,7 +176,7 @@ const router = createRouter({
             {
               path: ':category',
               name: 'rmm-settings-category',
-              component: RMMSettings,
+              component: () => import('../views/rmm/SettingsCategory.vue'),
               props: true
             }
           ],

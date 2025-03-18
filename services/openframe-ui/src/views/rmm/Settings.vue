@@ -33,10 +33,19 @@
 
       <router-view
         :settings="settings"
-        :formatKey="formatKey"
-        :hasPropertyChanges="hasPropertyChanges"
-        :isSaving="isSaving"
-        :saveConfigProperty="saveConfigProperty"
+        :saveSettings="saveSettings"
+        :fetchSettings="fetchSettings"
+        :hasChanges="hasChanges"
+        :changedValues="changedValues"
+        :formatKey="(key: string) => key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')"
+        :hasPropertyChanges="(category: string) => Object.keys(changedValues).some(key => key.startsWith(category))"
+        :isSaving="(category: string) => saving"
+        :saveConfigProperty="async (key: string, subKey: string | null) => {
+          const fullKey = subKey ? `${key}.${subKey}` : key;
+          const value = subKey ? settings[key][subKey] : settings[key];
+          changedValues[fullKey] = value;
+          hasChanges = true;
+        }"
       />
     </div>
   </div>
@@ -48,6 +57,17 @@ import { useRoute, useRouter } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
+import Checkbox from 'primevue/checkbox';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import InputNumber from 'primevue/inputnumber';
+import Dropdown from 'primevue/dropdown';
+import Password from 'primevue/password';
+import Chips from 'primevue/chips';
+import Dialog from 'primevue/dialog';
+import Calendar from 'primevue/calendar';
+import Textarea from 'primevue/textarea';
+import InputMask from 'primevue/inputmask';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
@@ -56,6 +76,7 @@ const route = useRoute();
 const router = useRouter();
 
 interface Settings {
+  id: number;
   agent_port?: number;
   check_interval?: number;
   agent_debug_level: string;
@@ -74,10 +95,34 @@ interface Settings {
   smtp_port: number;
   smtp_requires_auth: boolean;
   email_alert_recipients: string[];
+  sms_alert_recipients: string[];
+  twilio_number: string | null;
+  twilio_account_sid: string | null;
+  twilio_auth_token: string | null;
   notify_on_warning_alerts: boolean;
   notify_on_info_alerts: boolean;
   default_time_zone: string;
   all_timezones: string[];
+  date_format: string;
+  enable_server_scripts: boolean;
+  enable_server_webterminal: boolean;
+  mesh_token: string;
+  mesh_username: string;
+  mesh_site: string;
+  mesh_device_group: string;
+  mesh_company_name: string | null;
+  sync_mesh_with_trmm: boolean;
+  open_ai_token: string | null;
+  open_ai_model: string;
+  block_local_user_logon: boolean;
+  sso_enabled: boolean;
+  workstation_policy: string | null;
+  server_policy: string | null;
+  alert_template: string | null;
+  created_by: string;
+  created_time: string;
+  modified_by: string;
+  modified_time: string;
 }
 
 interface CategoryConfig {
@@ -87,8 +132,56 @@ interface CategoryConfig {
   endpoint?: string;
 }
 
+interface ApiKey {
+  id: number;
+  username: string;
+  created_by: null;
+  created_time: string;
+  modified_by: null;
+  modified_time: string;
+  name: string;
+  key: string;
+  expiration: string | null;
+  user: number;
+}
+
+interface UrlAction {
+  id: number;
+  created_by: string;
+  created_time: string;
+  modified_by: string;
+  modified_time: string;
+  name: string;
+  desc: string;
+  pattern: string;
+  action_type: 'rest' | 'web';
+  rest_method: string;
+  rest_body: string;
+  rest_headers: string;
+}
+
 interface DynamicSettings extends Settings {
   [key: string]: any;
+  api_keys?: ApiKey[];
+  url_actions?: UrlAction[];
+  webhooks?: UrlAction[];
+}
+
+interface KeyStore {
+  id: number;
+  name: string;
+  value: string;
+  created_time: string;
+  modified_time: string;
+}
+
+interface CustomField {
+  id: number;
+  name: string;
+  model: string;
+  type: string;
+  required: boolean;
+  options: string[];
 }
 
 const loading = ref(true);
@@ -96,62 +189,33 @@ const saving = ref(false);
 const error = ref<string>('');
 const settings = ref<DynamicSettings>({} as DynamicSettings);
 const originalSettings = ref<DynamicSettings | null>(null);
-const savingProperties = ref(new Set<string>());
+const currentCategory = ref('general');
+const hasChanges = ref(false);
+const changedValues = ref<Record<string, any>>({});
 
-const categories = computed((): CategoryConfig[] => [
+const categories = [
   { key: 'general', label: 'General', icon: 'pi pi-cog' },
-  { key: 'email', label: 'Email Alerts', icon: 'pi pi-envelope' },
+  { key: 'alerts', label: 'Alerts', icon: 'pi pi-bell' },
+  { key: 'email', label: 'Email', icon: 'pi pi-envelope' },
   { key: 'sms', label: 'SMS Alerts', icon: 'pi pi-mobile' },
-  { key: 'mesh', label: 'MeshCentral', icon: 'pi pi-server' },
-  { key: 'custom_fields', label: 'Custom Fields', icon: 'pi pi-list', endpoint: '/core/customfields/' },
-  { key: 'key_store', label: 'Key Store', icon: 'pi pi-key', endpoint: '/core/keystore/' },
-  { key: 'url_actions', label: 'URL Actions', icon: 'pi pi-link', endpoint: '/core/urlaction/' },
-  { key: 'webhooks', label: 'Web Hooks', icon: 'pi pi-rss', endpoint: '/core/webhook/' },
-  { key: 'retention', label: 'Retention', icon: 'pi pi-trash' },
-  { key: 'api_keys', label: 'API Keys', icon: 'pi pi-key', endpoint: '/accounts/apikeys/' },
-  { key: 'sso', label: 'Single Sign-On (SSO)', icon: 'pi pi-sign-in', endpoint: '/accounts/ssoproviders/' }
-]);
+  { key: 'cleanup', label: 'Cleanup', icon: 'pi pi-trash' },
+  { key: 'custom_fields', label: 'Custom Fields', icon: 'pi pi-list' },
+  { key: 'key_store', label: 'Key Store', icon: 'pi pi-key' },
+  { key: 'url_actions', label: 'URL Actions & Webhooks', icon: 'pi pi-link' },
+  { key: 'api_keys', label: 'API Keys', icon: 'pi pi-key' }
+];
 
-const formatKey = (key: string): string => {
-  return key
-    .split(/[\s_]+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
-
-const hasPropertyChanges = (category: string): boolean => {
-  if (!originalSettings.value) return false;
-  
-  const currentValue = settings.value[category as keyof Settings];
-  const originalValue = originalSettings.value[category as keyof Settings];
-  
-  return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
-};
-
-const isSaving = (category: string): boolean => {
-  return savingProperties.value.has(category);
+const navigateToCategory = (category: string) => {
+  currentCategory.value = category;
+  router.push({ 
+    name: 'rmm-settings-category', 
+    params: { category }
+  });
 };
 
 const fetchCategoryData = async (category: string) => {
-  const categoryConfig = categories.value.find(c => c.key === category);
-  if (!categoryConfig?.endpoint) {
-    return null; // This category uses the main settings endpoint
-  }
-
-  try {
-    // Remove /core/ from the API URL for non-core endpoints
-    const baseUrl = categoryConfig.endpoint.startsWith('/accounts/') 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
-      
-    const response = await restClient.get(`${baseUrl}${categoryConfig.endpoint}`);
-    return response;
-  } catch (err: any) {
-    console.error(`Error fetching ${category} data:`, err);
-    const message = err.response?.message || err.message || `Failed to fetch ${category} data`;
-    toastService.showError(message);
-    throw err;
-  }
+  // All settings are now handled through the main settings object
+  return null;
 };
 
 const fetchSettings = async () => {
@@ -162,9 +226,8 @@ const fetchSettings = async () => {
     settings.value = response;
     originalSettings.value = JSON.parse(JSON.stringify(response));
 
-    // If we're on a category that needs additional data, fetch it
-    const currentCategory = route.params.category;
-    if (currentCategory && typeof currentCategory === 'string') {
+    const currentCategory = route.params.category as string;
+    if (currentCategory) {
       const categoryData = await fetchCategoryData(currentCategory);
       if (categoryData) {
         settings.value = {
@@ -183,9 +246,419 @@ const fetchSettings = async () => {
   }
 };
 
-// Update fetchSettings when route changes
+const saveAndTestEmail = async () => {
+  // TODO: Implement email test functionality
+};
+
+const resetPatchPolicy = async () => {
+  try {
+    await restClient.post(`${API_URL}/reset-patch-policy/`);
+    toastService.showSuccess('Patch policy reset successfully');
+  } catch (err: any) {
+    console.error('Error resetting patch policy:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to reset patch policy';
+    toastService.showError(message);
+  }
+};
+
+const showNewApiKeyDialog = ref(false);
+const generatingApiKey = ref(false);
+const newApiKey = ref({
+  name: '',
+  expiration: null as Date | null
+});
+
+const copyApiKey = (key: string) => {
+  navigator.clipboard.writeText(key);
+  toastService.showSuccess('API key copied to clipboard');
+};
+
+const deleteApiKey = async (id: number) => {
+  try {
+    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/${id}/`);
+    settings.value.api_keys = settings.value.api_keys?.filter(k => k.id !== id);
+    toastService.showSuccess('API key deleted successfully');
+  } catch (err: any) {
+    console.error('Error deleting API key:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to delete API key';
+    toastService.showError(message);
+  }
+};
+
+const generateApiKey = async () => {
+  if (!newApiKey.value.name) {
+    toastService.showError('Please enter a name for the API key');
+    return;
+  }
+
+  generatingApiKey.value = true;
+  try {
+    const response = await restClient.post<ApiKey>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`, {
+      name: newApiKey.value.name,
+      expiration: newApiKey.value.expiration?.toISOString() || null
+    });
+    
+    if (!settings.value.api_keys) {
+      settings.value.api_keys = [];
+    }
+    settings.value.api_keys.push(response);
+    
+    showNewApiKeyDialog.value = false;
+    newApiKey.value = { name: '', expiration: null };
+    toastService.showSuccess('API key generated successfully');
+  } catch (err: any) {
+    console.error('Error generating API key:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to generate API key';
+    toastService.showError(message);
+  } finally {
+    generatingApiKey.value = false;
+  }
+};
+
+const showUrlActionDialog = ref(false);
+const editingUrlAction = ref<UrlAction | null>(null);
+const savingUrlAction = ref(false);
+const urlActionForm = ref({
+  name: '',
+  desc: '',
+  pattern: '',
+  action_type: 'rest' as 'rest' | 'web',
+  rest_method: 'get',
+  rest_body: '',
+  rest_headers: ''
+});
+
+const allUrlActions = computed(() => {
+  const urlActions = settings.value.url_actions || [];
+  const webhooks = settings.value.webhooks || [];
+  return [...urlActions, ...webhooks];
+});
+
+const editUrlAction = (action: UrlAction) => {
+  editingUrlAction.value = action;
+  urlActionForm.value = {
+    name: action.name,
+    desc: action.desc,
+    pattern: action.pattern,
+    action_type: action.action_type,
+    rest_method: action.rest_method,
+    rest_body: action.rest_body,
+    rest_headers: action.rest_headers
+  };
+  showUrlActionDialog.value = true;
+};
+
+const deleteUrlAction = async (id: number) => {
+  try {
+    const endpoint = '/core/urlaction/';
+    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${id}/`);
+    
+    settings.value.url_actions = settings.value.url_actions?.filter(a => a.id !== id);
+    settings.value.webhooks = settings.value.webhooks?.filter(w => w.id !== id);
+    
+    toastService.showSuccess('URL Action deleted successfully');
+  } catch (err: any) {
+    console.error('Error deleting:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to delete';
+    toastService.showError(message);
+  }
+};
+
+const saveUrlAction = async () => {
+  if (!urlActionForm.value.name || !urlActionForm.value.pattern) {
+    toastService.showError('Please fill in all required fields');
+    return;
+  }
+
+  savingUrlAction.value = true;
+  try {
+    const endpoint = '/core/urlaction/';
+    const method = editingUrlAction.value ? 'patch' : 'post';
+    const url = editingUrlAction.value 
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrlAction.value.id}/`
+      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+
+    const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
+    
+    if (editingUrlAction.value) {
+      const index = allUrlActions.value.findIndex(a => a.id === editingUrlAction.value?.id);
+      if (index !== -1) {
+        if (response.action_type === 'web') {
+          settings.value.webhooks = settings.value.webhooks?.map(w => 
+            w.id === response.id ? response : w
+          );
+        } else {
+          settings.value.url_actions = settings.value.url_actions?.map(a => 
+            a.id === response.id ? response : a
+          );
+        }
+      }
+    } else {
+      if (response.action_type === 'web') {
+        if (!settings.value.webhooks) settings.value.webhooks = [];
+        settings.value.webhooks.push(response);
+      } else {
+        if (!settings.value.url_actions) settings.value.url_actions = [];
+        settings.value.url_actions.push(response);
+      }
+    }
+    
+    closeUrlActionDialog();
+    toastService.showSuccess('URL Action saved successfully');
+  } catch (err: any) {
+    console.error('Error saving:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to save';
+    toastService.showError(message);
+  } finally {
+    savingUrlAction.value = false;
+  }
+};
+
+const closeUrlActionDialog = () => {
+  showUrlActionDialog.value = false;
+  editingUrlAction.value = null;
+  urlActionForm.value = {
+    name: '',
+    desc: '',
+    pattern: '',
+    action_type: 'rest',
+    rest_method: 'get',
+    rest_body: '',
+    rest_headers: ''
+  };
+};
+
+const copyKeyStore = (value: string) => {
+  navigator.clipboard.writeText(value);
+  toastService.showSuccess('Key value copied to clipboard');
+};
+
+const showRecipientDialog = ref(false);
+const editingRecipientIndex = ref<number | null>(null);
+const savingRecipient = ref(false);
+const recipientForm = ref({
+  phone: ''
+});
+
+const editRecipient = (index: number) => {
+  editingRecipientIndex.value = index;
+  recipientForm.value = {
+    phone: settings.value.sms_alert_recipients[index]
+  };
+  showRecipientDialog.value = true;
+};
+
+const saveRecipient = async () => {
+  if (!recipientForm.value.phone) {
+    toastService.showError('Please enter a phone number');
+    return;
+  }
+
+  savingRecipient.value = true;
+  try {
+    if (!settings.value.sms_alert_recipients) {
+      settings.value.sms_alert_recipients = [];
+    }
+
+    if (editingRecipientIndex.value !== null) {
+      settings.value.sms_alert_recipients[editingRecipientIndex.value] = recipientForm.value.phone;
+    } else {
+      settings.value.sms_alert_recipients.push(recipientForm.value.phone);
+    }
+
+    closeRecipientDialog();
+    toastService.showSuccess('Recipient saved successfully');
+  } catch (err: any) {
+    console.error('Error saving recipient:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to save recipient';
+    toastService.showError(message);
+  } finally {
+    savingRecipient.value = false;
+  }
+};
+
+const closeRecipientDialog = () => {
+  showRecipientDialog.value = false;
+  editingRecipientIndex.value = null;
+  recipientForm.value = {
+    phone: ''
+  };
+};
+
+// Key Store functions
+const showKeyStoreDialog = ref(false);
+const savingKeyStore = ref(false);
+const editingKeyStore = ref<KeyStore | null>(null);
+const keyStoreForm = ref({
+  name: '',
+  value: ''
+});
+
+const editKeyStore = (key: KeyStore) => {
+  editingKeyStore.value = key;
+  keyStoreForm.value = {
+    name: key.name,
+    value: key.value
+  };
+  showKeyStoreDialog.value = true;
+};
+
+const saveKeyStore = async () => {
+  if (!keyStoreForm.value.name || !keyStoreForm.value.value) {
+    toastService.showError('Please fill in all required fields');
+    return;
+  }
+
+  savingKeyStore.value = true;
+  try {
+    const endpoint = '/core/keystore/';
+    const method = editingKeyStore.value ? 'patch' : 'post';
+    const url = editingKeyStore.value 
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingKeyStore.value.id}/`
+      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+
+    const response = await restClient[method]<KeyStore>(url, keyStoreForm.value);
+    
+    if (editingKeyStore.value) {
+      settings.value.key_store = settings.value.key_store?.map((k: KeyStore) => 
+        k.id === response.id ? response : k
+      );
+    } else {
+      if (!settings.value.key_store) settings.value.key_store = [];
+      settings.value.key_store.push(response);
+    }
+    
+    showKeyStoreDialog.value = false;
+    toastService.showSuccess('Key saved successfully');
+  } catch (err: any) {
+    console.error('Error saving key:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to save key';
+    toastService.showError(message);
+  } finally {
+    savingKeyStore.value = false;
+  }
+};
+
+const deleteKeyStore = async (id: number) => {
+  try {
+    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/${id}/`);
+    settings.value.key_store = settings.value.key_store?.filter((k: KeyStore) => k.id !== id);
+    toastService.showSuccess('Key deleted successfully');
+  } catch (err: any) {
+    console.error('Error deleting key:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to delete key';
+    toastService.showError(message);
+  }
+};
+
+// Custom Fields functions
+const showCustomFieldDialog = ref(false);
+const savingCustomField = ref(false);
+const editingCustomField = ref<CustomField | null>(null);
+const customFieldForm = ref({
+  name: '',
+  model: '',
+  type: '',
+  required: false,
+  options: '' as string
+});
+
+const editCustomField = (field: CustomField) => {
+  editingCustomField.value = field;
+  customFieldForm.value = {
+    name: field.name,
+    model: field.model,
+    type: field.type,
+    required: field.required,
+    options: field.options.join(', ')
+  };
+  showCustomFieldDialog.value = true;
+};
+
+const saveCustomField = async () => {
+  if (!customFieldForm.value.name || !customFieldForm.value.model || !customFieldForm.value.type) {
+    toastService.showError('Please fill in all required fields');
+    return;
+  }
+
+  savingCustomField.value = true;
+  try {
+    const endpoint = '/core/customfields/';
+    const method = editingCustomField.value ? 'patch' : 'post';
+    const url = editingCustomField.value 
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingCustomField.value.id}/`
+      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+
+    const formData = {
+      ...customFieldForm.value,
+      options: customFieldForm.value.options.split(',').map(opt => opt.trim()).filter(Boolean)
+    };
+
+    const response = await restClient[method]<CustomField>(url, formData);
+    
+    if (editingCustomField.value) {
+      settings.value.custom_fields = settings.value.custom_fields?.map((f: CustomField) => 
+        f.id === response.id ? response : f
+      );
+    } else {
+      if (!settings.value.custom_fields) settings.value.custom_fields = [];
+      settings.value.custom_fields.push(response);
+    }
+    
+    showCustomFieldDialog.value = false;
+    toastService.showSuccess('Custom field saved successfully');
+  } catch (err: any) {
+    console.error('Error saving custom field:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to save custom field';
+    toastService.showError(message);
+  } finally {
+    savingCustomField.value = false;
+  }
+};
+
+const deleteCustomField = async (id: number) => {
+  try {
+    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/${id}/`);
+    settings.value.custom_fields = settings.value.custom_fields?.filter((f: CustomField) => f.id !== id);
+    toastService.showSuccess('Custom field deleted successfully');
+  } catch (err: any) {
+    console.error('Error deleting custom field:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to delete custom field';
+    toastService.showError(message);
+  }
+};
+
+// Add removeRecipient function
+const removeRecipient = (index: number) => {
+  if (settings.value.sms_alert_recipients) {
+    settings.value.sms_alert_recipients.splice(index, 1);
+    toastService.showSuccess('Recipient removed successfully');
+  }
+};
+
+const saveSettings = async () => {
+  saving.value = true;
+  error.value = '';
+  try {
+    const response = await restClient.patch<DynamicSettings>(`${API_URL}/settings/`, changedValues.value);
+    settings.value = response;
+    originalSettings.value = JSON.parse(JSON.stringify(response));
+    changedValues.value = {};
+    hasChanges.value = false;
+    toastService.showSuccess('Settings saved successfully');
+  } catch (err: any) {
+    console.error('Error saving settings:', err);
+    const message = err.response?.message || err.message || 'Failed to save settings';
+    error.value = message;
+    toastService.showError(message);
+  } finally {
+    saving.value = false;
+  }
+};
+
 watch(() => route.params.category, async (newCategory) => {
   if (newCategory && typeof newCategory === 'string') {
+    currentCategory.value = newCategory;
     const categoryData = await fetchCategoryData(newCategory);
     if (categoryData) {
       settings.value = {
@@ -196,56 +669,13 @@ watch(() => route.params.category, async (newCategory) => {
   }
 });
 
-const saveConfigProperty = async (category: keyof Settings, subKey: string | null) => {
-  const path = subKey ? `${category}.${subKey}` : category;
-  savingProperties.value.add(path);
-
-  try {
-    let value: any;
-    if (subKey) {
-      const categoryValue = settings.value[category];
-      if (typeof categoryValue === 'object' && categoryValue !== null) {
-        value = (categoryValue as any)[subKey];
-      } else {
-        throw new Error(`Invalid category: ${category}`);
-      }
-    } else {
-      value = settings.value[category];
-    }
-    
-    const patchData = subKey 
-      ? { [category]: { [subKey]: value } }
-      : { [category]: value };
-
-    const categoryConfig = categories.value.find(c => c.key === category);
-    const baseUrl = categoryConfig?.endpoint?.startsWith('/accounts/') 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
-    
-    await restClient.patch(`${baseUrl}/settings/`, patchData);
-    
-    // Update original settings to reflect the saved state
-    originalSettings.value = JSON.parse(JSON.stringify(settings.value));
-    
-    toastService.showSuccess('Settings saved successfully');
-  } catch (err: any) {
-    console.error('Error saving settings:', err);
-    const message = err.response?.data?.message || err.message || 'Failed to save settings';
-    toastService.showError(message);
-    throw err;
-  } finally {
-    savingProperties.value.delete(path);
-  }
-};
-
 onMounted(async () => {
   await fetchSettings();
   
-  // If no category in URL, navigate to first available category
-  if (!route.params.category && categories.value.length > 0) {
+  if (!route.params.category && categories.length > 0) {
     router.push({ 
       name: 'rmm-settings-category', 
-      params: { category: categories.value[0].key }
+      params: { category: categories[0].key }
     });
   }
 });
@@ -304,7 +734,6 @@ onMounted(async () => {
 .category-menu li.active {
   background: var(--primary-color);
   color: var(--primary-color-text);
-
 }
 
 .category-menu li i {
@@ -320,6 +749,7 @@ onMounted(async () => {
   color: var(--red-700);
   border-radius: 8px;
   margin-bottom: 1rem;
+  width: 100%;
 }
 
 .loading-spinner {
@@ -327,5 +757,34 @@ onMounted(async () => {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
+  width: 100%;
+}
+
+.grid {
+  margin: 0;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.col-12 {
+  width: 100%;
+}
+
+@media screen and (min-width: 768px) {
+  .md\:col-12 {
+    width: 100%;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .xl\:col-6 {
+    width: 50%;
+  }
 }
 </style>
