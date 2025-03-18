@@ -13,7 +13,7 @@ grafana:
       disable_login_form: false
     security:
       allow_embedding: true
-      cookie_samesite: disabled  # 'none' Prevents login
+      cookie_samesite: none  # 'none' Prevents login, disabled requries login from same origin
       allow_embedding_from_anywhere: true
     # paths:
     #   provisioning: /etc/grafana/provisioning
