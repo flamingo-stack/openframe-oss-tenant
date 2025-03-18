@@ -283,40 +283,66 @@
             <Button 
               icon="pi pi-plus" 
               label="Add Field"
+              severity="success"
               @click="showCustomFieldDialog = true"
             />
           </div>
 
-          <DataTable 
-            :value="settings.custom_fields || []"
-            class="p-datatable-sm"
-            :paginator="true"
-            :rows="10"
-            :rowsPerPageOptions="[10, 20, 50]"
+          <ModuleTable
+            :items="settings.custom_fields || []"
+            :loading="loading"
+            :searchFields="['name', 'model', 'type']"
+            emptyIcon="pi pi-list"
+            emptyTitle="No Custom Fields"
+            emptyMessage="There are no custom fields defined yet."
+            emptyHint="Custom fields will appear here once they are created."
+            :paginator="false"
+            :scrollable="true"
+            scrollHeight="calc(100vh - 300px)"
+            class="settings-table"
           >
-            <Column field="name" header="Name"></Column>
-            <Column field="model" header="Model"></Column>
-            <Column field="type" header="Type"></Column>
-            <Column field="required" header="Required">
+            <Column field="name" header="Name" sortable>
+              <template #body="{ data }">
+                <div class="flex align-items-center">
+                  <i class="pi pi-tag mr-2"></i>
+                  <span>{{ data.name }}</span>
+                </div>
+              </template>
+            </Column>
+            <Column field="model" header="Model" sortable>
+              <template #body="{ data }">
+                <Tag :value="data.model" :severity="getModelSeverity(data.model)" />
+              </template>
+            </Column>
+            <Column field="type" header="Type" sortable>
+              <template #body="{ data }">
+                <Tag :value="data.type" :severity="getTypeSeverity(data.type)" />
+              </template>
+            </Column>
+            <Column field="required" header="Required" sortable>
               <template #body="{ data }">
                 <i :class="data.required ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"></i>
               </template>
             </Column>
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
-                <Button 
-                  icon="pi pi-pencil" 
-                  class="p-button-text p-button-sm"
-                  @click="editCustomField(data)"
-                />
-                <Button 
-                  icon="pi pi-trash" 
-                  class="p-button-text p-button-sm p-button-danger"
-                  @click="deleteCustomField(data.id)"
-                />
+                <div class="flex gap-2 justify-content-center">
+                  <Button 
+                    icon="pi pi-pencil" 
+                    class="p-button-text p-button-sm"
+                    v-tooltip.top="'Edit Field'"
+                    @click="editCustomField(data)"
+                  />
+                  <Button 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger"
+                    v-tooltip.top="'Delete Field'"
+                    @click="deleteCustomField(data.id)"
+                  />
+                </div>
               </template>
             </Column>
-          </DataTable>
+          </ModuleTable>
         </div>
       </template>
 
@@ -327,43 +353,64 @@
             <Button 
               icon="pi pi-plus" 
               label="Add Key"
+              severity="success"
               @click="showKeyStoreDialog = true"
             />
           </div>
 
-          <DataTable 
-            :value="settings.key_store || []"
-            class="p-datatable-sm"
-            :paginator="true"
-            :rows="10"
-            :rowsPerPageOptions="[10, 20, 50]"
+          <ModuleTable
+            :items="settings.key_store || []"
+            :loading="loading"
+            :searchFields="['name']"
+            emptyIcon="pi pi-key"
+            emptyTitle="No Keys"
+            emptyMessage="There are no keys stored yet."
+            emptyHint="Keys will appear here once they are added."
+            :paginator="false"
+            :scrollable="true"
+            scrollHeight="calc(100vh - 300px)"
+            class="settings-table"
           >
-            <Column field="name" header="Name"></Column>
+            <Column field="name" header="Name" sortable>
+              <template #body="{ data }">
+                <div class="flex align-items-center">
+                  <i class="pi pi-key mr-2"></i>
+                  <span>{{ data.name }}</span>
+                </div>
+              </template>
+            </Column>
             <Column field="value" header="Value">
               <template #body="{ data }">
-                <span class="text-muted">••••••••</span>
-                <Button 
-                  icon="pi pi-copy" 
-                  class="p-button-text p-button-sm"
-                  @click="copyKeyStore(data.value)"
-                />
+                <div class="flex align-items-center gap-2">
+                  <span class="text-muted">••••••••</span>
+                  <Button 
+                    icon="pi pi-copy" 
+                    class="p-button-text p-button-sm"
+                    v-tooltip.top="'Copy Value'"
+                    @click="copyKeyStore(data.value)"
+                  />
+                </div>
               </template>
             </Column>
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
-                <Button 
-                  icon="pi pi-pencil" 
-                  class="p-button-text p-button-sm"
-                  @click="editKeyStore(data)"
-                />
-                <Button 
-                  icon="pi pi-trash" 
-                  class="p-button-text p-button-sm p-button-danger"
-                  @click="deleteKeyStore(data.id)"
-                />
+                <div class="flex gap-2 justify-content-center">
+                  <Button 
+                    icon="pi pi-pencil" 
+                    class="p-button-text p-button-sm"
+                    v-tooltip.top="'Edit Key'"
+                    @click="editKeyStore(data)"
+                  />
+                  <Button 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger"
+                    v-tooltip.top="'Delete Key'"
+                    @click="deleteKeyStore(data.id)"
+                  />
+                </div>
               </template>
             </Column>
-          </DataTable>
+          </ModuleTable>
         </div>
       </template>
 
@@ -374,40 +421,66 @@
             <Button 
               icon="pi pi-plus" 
               label="Add Action"
+              severity="success"
               @click="showUrlActionDialog = true"
             />
           </div>
 
-          <DataTable 
-            :value="allUrlActions"
-            class="p-datatable-sm"
-            :paginator="true"
-            :rows="10"
-            :rowsPerPageOptions="[10, 20, 50]"
+          <ModuleTable
+            :items="allUrlActions"
+            :loading="loading"
+            :searchFields="['name', 'desc', 'pattern']"
+            emptyIcon="pi pi-link"
+            emptyTitle="No Actions"
+            emptyMessage="There are no URL actions or webhooks defined yet."
+            emptyHint="Actions will appear here once they are created."
+            :paginator="false"
+            :scrollable="true"
+            scrollHeight="calc(100vh - 300px)"
+            class="settings-table"
           >
-            <Column field="name" header="Name"></Column>
-            <Column field="desc" header="Description"></Column>
-            <Column field="pattern" header="Pattern"></Column>
-            <Column field="action_type" header="Type">
+            <Column field="name" header="Name" sortable>
+              <template #body="{ data }">
+                <div class="flex align-items-center">
+                  <i class="pi pi-link mr-2"></i>
+                  <span>{{ data.name }}</span>
+                </div>
+              </template>
+            </Column>
+            <Column field="desc" header="Description" sortable>
+              <template #body="{ data }">
+                <span class="text-sm">{{ data.desc }}</span>
+              </template>
+            </Column>
+            <Column field="pattern" header="Pattern" sortable>
+              <template #body="{ data }">
+                <span class="text-sm">{{ data.pattern }}</span>
+              </template>
+            </Column>
+            <Column field="action_type" header="Type" sortable>
               <template #body="{ data }">
                 <Tag :value="data.action_type" :severity="data.action_type === 'web' ? 'info' : 'warning'" />
               </template>
             </Column>
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
-                <Button 
-                  icon="pi pi-pencil" 
-                  class="p-button-text p-button-sm"
-                  @click="editUrlAction(data)"
-                />
-                <Button 
-                  icon="pi pi-trash" 
-                  class="p-button-text p-button-sm p-button-danger"
-                  @click="deleteUrlAction(data.id)"
-                />
+                <div class="flex gap-2 justify-content-center">
+                  <Button 
+                    icon="pi pi-pencil" 
+                    class="p-button-text p-button-sm"
+                    v-tooltip.top="'Edit Action'"
+                    @click="editUrlAction(data)"
+                  />
+                  <Button 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger"
+                    v-tooltip.top="'Delete Action'"
+                    @click="deleteUrlAction(data.id)"
+                  />
+                </div>
               </template>
             </Column>
-          </DataTable>
+          </ModuleTable>
         </div>
       </template>
 
@@ -418,43 +491,63 @@
             <Button 
               icon="pi pi-plus" 
               label="Generate Key"
+              severity="success"
               @click="showNewApiKeyDialog = true"
             />
           </div>
 
-          <DataTable 
-            :value="settings.api_keys || []"
-            class="p-datatable-sm"
-            :paginator="true"
-            :rows="10"
-            :rowsPerPageOptions="[10, 20, 50]"
+          <ModuleTable
+            :items="settings.api_keys || []"
+            :loading="loading"
+            :searchFields="['name']"
+            emptyIcon="pi pi-key"
+            emptyTitle="No API Keys"
+            emptyMessage="There are no API keys generated yet."
+            emptyHint="API keys will appear here once they are generated."
+            :paginator="false"
+            :scrollable="true"
+            scrollHeight="calc(100vh - 300px)"
+            class="settings-table"
           >
-            <Column field="name" header="Name"></Column>
-            <Column field="key" header="Key">
+            <Column field="name" header="Name" sortable>
               <template #body="{ data }">
-                <span class="text-muted">••••••••</span>
-                <Button 
-                  icon="pi pi-copy" 
-                  class="p-button-text p-button-sm"
-                  @click="copyApiKey(data.key)"
-                />
+                <div class="flex align-items-center">
+                  <i class="pi pi-key mr-2"></i>
+                  <span>{{ data.name }}</span>
+                </div>
               </template>
             </Column>
-            <Column field="expiration" header="Expiration">
+            <Column field="key" header="Key">
               <template #body="{ data }">
-                {{ data.expiration ? new Date(data.expiration).toLocaleDateString() : 'Never' }}
+                <div class="flex align-items-center gap-2">
+                  <span class="text-muted">••••••••</span>
+                  <Button 
+                    icon="pi pi-copy" 
+                    class="p-button-text p-button-sm"
+                    v-tooltip.top="'Copy Key'"
+                    @click="copyApiKey(data.key)"
+                  />
+                </div>
+              </template>
+            </Column>
+            <Column field="expiration" header="Expiration" sortable>
+              <template #body="{ data }">
+                <span class="text-sm">{{ data.expiration ? new Date(data.expiration).toLocaleDateString() : 'Never' }}</span>
               </template>
             </Column>
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
-                <Button 
-                  icon="pi pi-trash" 
-                  class="p-button-text p-button-sm p-button-danger"
-                  @click="deleteApiKey(data.id)"
-                />
+                <div class="flex gap-2 justify-content-center">
+                  <Button 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger"
+                    v-tooltip.top="'Delete Key'"
+                    @click="deleteApiKey(data.id)"
+                  />
+                </div>
               </template>
             </Column>
-          </DataTable>
+          </ModuleTable>
         </div>
       </template>
     </div>
@@ -642,7 +735,7 @@
     v-model:visible="showCustomFieldDialog" 
     :header="editingCustomField ? 'Edit Custom Field' : 'Add Custom Field'" 
     :modal="true"
-    :style="{ width: '450px' }"
+    :style="{ width: '600px' }"
   >
     <div class="field">
       <label for="customFieldName">Name</label>
@@ -668,7 +761,7 @@
       <Dropdown
         id="customFieldType"
         v-model="customFieldForm.type"
-        :options="['text', 'number', 'boolean', 'select']"
+        :options="['text', 'number', 'boolean', 'select', 'datetime']"
         class="w-full"
         placeholder="Select field type"
       />
@@ -692,6 +785,45 @@
         placeholder="Enter options separated by commas"
       />
     </div>
+    <div v-if="customFieldForm.type === 'text'" class="field">
+      <label for="defaultValueString">Default Value</label>
+      <InputText
+        id="defaultValueString"
+        v-model="customFieldForm.default_value_string"
+        class="w-full"
+        placeholder="Enter default value"
+      />
+    </div>
+    <div v-if="customFieldForm.type === 'boolean'" class="field">
+      <label for="defaultValueBool">Default Value</label>
+      <div class="flex align-items-center">
+        <InputSwitch
+          id="defaultValueBool"
+          v-model="customFieldForm.default_value_bool"
+        />
+        <span class="ml-2">{{ customFieldForm.default_value_bool ? 'Yes' : 'No' }}</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="hideInUI">Hide in UI</label>
+      <div class="flex align-items-center">
+        <InputSwitch
+          id="hideInUI"
+          v-model="customFieldForm.hide_in_ui"
+        />
+        <span class="ml-2">{{ customFieldForm.hide_in_ui ? 'Yes' : 'No' }}</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="hideInSummary">Hide in Summary</label>
+      <div class="flex align-items-center">
+        <InputSwitch
+          id="hideInSummary"
+          v-model="customFieldForm.hide_in_summary"
+        />
+        <span class="ml-2">{{ customFieldForm.hide_in_summary ? 'Yes' : 'No' }}</span>
+      </div>
+    </div>
     <template #footer>
       <Button 
         label="Cancel" 
@@ -710,7 +842,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
@@ -728,6 +860,7 @@ import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
 import Calendar from 'primevue/calendar';
 import Textarea from 'primevue/textarea';
+import ModuleTable from '../../components/shared/ModuleTable.vue';
 
 interface UrlAction {
   id: number;
@@ -753,6 +886,16 @@ interface CustomField {
   type: string;
   required: boolean;
   options: string[];
+  created_by: string;
+  created_time: string;
+  modified_by: string;
+  modified_time: string;
+  order: number;
+  default_value_string: string;
+  default_value_bool: boolean;
+  default_values_multiple: string[];
+  hide_in_ui: boolean;
+  hide_in_summary: boolean;
 }
 
 interface ApiKey {
@@ -772,6 +915,7 @@ const props = defineProps<{
 
 const route = useRoute();
 const category = computed(() => route.params.category as string);
+const loading = ref(false);
 
 const logLevels = [
   { name: 'Debug', value: 'debug' },
@@ -815,7 +959,12 @@ const customFieldForm = ref({
   model: '',
   type: '',
   required: false,
-  options: ''
+  options: '',
+  default_value_string: '',
+  default_value_bool: false,
+  default_values_multiple: [] as string[],
+  hide_in_ui: false,
+  hide_in_summary: false
 });
 
 // State refs
@@ -856,6 +1005,18 @@ const editKeyStore = (key: KeyStore) => {
 
 const editCustomField = (field: CustomField) => {
   editingCustomField.value = field;
+  customFieldForm.value = {
+    name: field.name,
+    model: field.model,
+    type: field.type,
+    required: field.required,
+    options: field.options.join(', '),
+    default_value_string: field.default_value_string,
+    default_value_bool: field.default_value_bool,
+    default_values_multiple: field.default_values_multiple,
+    hide_in_ui: field.hide_in_ui,
+    hide_in_summary: field.hide_in_summary
+  };
   showCustomFieldDialog.value = true;
 };
 
@@ -1053,8 +1214,16 @@ const saveCustomField = async () => {
       : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
 
     const formData = {
-      ...customFieldForm.value,
-      options: customFieldForm.value.options.split(',').map(opt => opt.trim()).filter(Boolean)
+      name: customFieldForm.value.name,
+      model: customFieldForm.value.model,
+      type: customFieldForm.value.type,
+      required: customFieldForm.value.required,
+      options: customFieldForm.value.options.split(',').map(opt => opt.trim()).filter(Boolean),
+      default_value_string: customFieldForm.value.default_value_string,
+      default_value_bool: customFieldForm.value.default_value_bool,
+      default_values_multiple: customFieldForm.value.default_values_multiple,
+      hide_in_ui: customFieldForm.value.hide_in_ui,
+      hide_in_summary: customFieldForm.value.hide_in_summary
     };
 
     const response = await restClient[method]<CustomField>(url, formData);
@@ -1077,6 +1246,69 @@ const saveCustomField = async () => {
   } finally {
     savingCustomField.value = false;
   }
+};
+
+// Add this after the category computed property
+watch(category, async (newCategory) => {
+  try {
+    switch (newCategory) {
+      case 'custom_fields':
+        const customFieldsResponse = await restClient.get<CustomField[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/`);
+        props.settings.custom_fields = customFieldsResponse;
+        break;
+      case 'api_keys':
+        const apiKeysResponse = await restClient.get<ApiKey[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`);
+        props.settings.api_keys = apiKeysResponse;
+        break;
+      case 'key_store':
+        const keyStoreResponse = await restClient.get<KeyStore[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/`);
+        props.settings.key_store = keyStoreResponse;
+        break;
+      case 'url_actions':
+        const urlActionsResponse = await restClient.get<UrlAction[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/`);
+        props.settings.url_actions = urlActionsResponse;
+        break;
+    }
+  } catch (err: any) {
+    console.error(`Error fetching ${newCategory}:`, err);
+    const message = err.response?.data?.message || err.message || `Failed to fetch ${newCategory}`;
+    toastService.showError(message);
+  }
+}, { immediate: true });
+
+const filters = ref({
+  global: { value: null, matchMode: 'contains' }
+});
+
+const filterGlobal = (value: any, filter: any) => {
+  if (filter === null) return true;
+  return value.toString().toLowerCase().includes(filter.toLowerCase());
+};
+
+const rowClass = (data: any) => {
+  return {
+    'cursor-pointer': true
+  };
+};
+
+const getModelSeverity = (model: string) => {
+  const severityMap: Record<string, string> = {
+    client: 'info',
+    site: 'warning',
+    agent: 'success'
+  };
+  return severityMap[model] || 'info';
+};
+
+const getTypeSeverity = (type: string) => {
+  const severityMap: Record<string, string> = {
+    text: 'info',
+    number: 'warning',
+    boolean: 'success',
+    select: 'info',
+    datetime: 'warning'
+  };
+  return severityMap[type] || 'info';
 };
 </script>
 
@@ -1151,36 +1383,115 @@ const saveCustomField = async () => {
   font-size: 0.9rem;
 }
 
-:deep(.p-datatable .p-datatable-header) {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
+.settings-table {
+  :deep(.p-datatable-wrapper) {
+    overflow: hidden;
+  }
 
-:deep(.p-datatable .p-datatable-thead > tr > th) {
-  background: var(--surface-ground);
-  color: var(--text-color-secondary);
-  font-weight: 600;
-  padding: 0.75rem;
-}
+  :deep(.p-datatable-scrollable-body) {
+    overflow-y: auto;
+  }
 
-:deep(.p-datatable .p-datatable-tbody > tr > td) {
-  padding: 0.75rem;
-}
+  :deep(.p-datatable) {
+    background: var(--surface-card);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+  }
 
-:deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background: var(--surface-hover);
-}
+  :deep(.p-datatable .p-datatable-header) {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
 
-:deep(.p-button-text) {
-  padding: 0.25rem;
-}
+  :deep(.p-datatable .p-datatable-thead > tr > th) {
+    background: var(--surface-ground);
+    color: var(--text-color-secondary);
+    font-weight: 600;
+    padding: 0.75rem;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 300px;
+    border-bottom: 1px solid var(--surface-border);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+  }
 
-:deep(.p-button-text:hover) {
-  background: var(--surface-hover);
-}
+  :deep(.p-datatable .p-datatable-thead > tr > th:last-child) {
+    max-width: 100px;
+    white-space: nowrap;
+  }
 
-:deep(.p-tag) {
-  text-transform: capitalize;
+  :deep(.p-datatable .p-datatable-tbody > tr > td) {
+    padding: 0.75rem;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 300px;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td:last-child) {
+    max-width: 100px;
+    white-space: nowrap;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr:hover) {
+    background: var(--surface-hover);
+  }
+
+  :deep(.p-button-text) {
+    padding: 0.25rem;
+  }
+
+  :deep(.p-button-text:hover) {
+    background: var(--surface-hover);
+  }
+
+  :deep(.p-tag) {
+    min-width: 75px;
+    justify-content: center;
+    text-transform: capitalize;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr:last-child > td) {
+    border-bottom: none;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td) {
+    transition: background-color 0.2s;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td:first-child) {
+    padding-left: 1rem;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td:last-child) {
+    padding-right: 1rem;
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td) {
+    background: var(--surface-card);
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr:hover > td) {
+    background: var(--surface-hover);
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text) {
+    color: var(--text-color-secondary);
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text:hover) {
+    color: var(--text-color);
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text.p-button-danger) {
+    color: var(--red-500);
+  }
+
+  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text.p-button-danger:hover) {
+    color: var(--red-600);
+  }
 }
 </style> 
