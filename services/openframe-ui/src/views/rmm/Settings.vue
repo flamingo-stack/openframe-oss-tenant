@@ -40,12 +40,7 @@
         :formatKey="(key: string) => key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')"
         :hasPropertyChanges="(category: string) => Object.keys(changedValues).some(key => key.startsWith(category))"
         :isSaving="(category: string) => saving"
-        :saveConfigProperty="async (key: string, subKey: string | null) => {
-          const fullKey = subKey ? `${key}.${subKey}` : key;
-          const value = subKey ? settings[key][subKey] : settings[key];
-          changedValues[fullKey] = value;
-          hasChanges = true;
-        }"
+        :saveConfigProperty="saveConfigProperty"
       />
     </div>
   </div>
@@ -58,6 +53,7 @@ import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
 import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
+import type { ExtendedRMMSettings } from '../../types/rmm';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -69,12 +65,29 @@ import Dialog from 'primevue/dialog';
 import Calendar from 'primevue/calendar';
 import Textarea from 'primevue/textarea';
 import InputMask from 'primevue/inputmask';
+import { useToast } from 'primevue/usetoast';
+import { useSettingsStore } from '../../stores/settings';
+import { useUserStore } from '../../stores/user';
+import { useAuthStore } from '../../stores/auth';
+import { useErrorStore } from '../../stores/error';
+import { useLoadingStore } from '../../stores/loading';
+import { useToastStore } from '../../stores/toast';
+import { useSettings } from '../../composables/useSettings';
+import SettingsCategory from './SettingsCategory.vue';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
+const settingsStore = useSettingsStore();
+const userStore = useUserStore();
+const authStore = useAuthStore();
+const errorStore = useErrorStore();
+const loadingStore = useLoadingStore();
+const toastStore = useToastStore();
+const { settings: storeSettings, loading: useSettingsLoading, error: useSettingsError, fetchConfig } = useSettings();
 
 interface CategoryConfig {
   key: string;
@@ -83,24 +96,41 @@ interface CategoryConfig {
   endpoint?: string;
 }
 
-const loading = ref(true);
-const saving = ref(false);
-const error = ref<string>('');
-const settings = ref<DynamicSettings<RMMSettings>>({} as DynamicSettings<RMMSettings>);
-const originalSettings = ref<DynamicSettings<RMMSettings> | null>(null);
-const currentCategory = ref('general');
-const hasChanges = ref(false);
-const changedValues = ref<Record<string, any>>({});
+type ExtendedRMMSettingsWithDefaults = ExtendedRMMSettings & {
+  id: number;
+  created_by: string;
+  created_time: string;
+  modified_by: string;
+  modified_time: string;
+  twilio_to_number: string;
+  twilio_alert_recipients: string[];
+  sso_enabled: boolean;
+  workstation_policy: string;
+  server_policy: string;
+  alert_template: string;
+  agent_auto_update_enabled: boolean;
+  agent_auto_update_policy: string;
+  agent_auto_update_schedule: string;
+  agent_auto_update_grace_period: number;
+};
 
-const categories = [
-  { key: 'general', label: 'General', icon: 'pi pi-cog' },
-  { key: 'alerts', label: 'Alerts', icon: 'pi pi-bell' },
-  { key: 'cleanup', label: 'Cleanup', icon: 'pi pi-trash' },
-  { key: 'custom_fields', label: 'Custom Fields', icon: 'pi pi-list' },
-  { key: 'key_store', label: 'Key Store', icon: 'pi pi-key' },
-  { key: 'url_actions', label: 'URL Actions & Webhooks', icon: 'pi pi-link' },
-  { key: 'api_keys', label: 'API Keys', icon: 'pi pi-key' }
-];
+const loading = ref<boolean>(true);
+const saving = ref<boolean>(false);
+const error = ref<string>('');
+const settings = ref<ExtendedRMMSettingsWithDefaults | null>(null);
+const originalSettings = ref<ExtendedRMMSettingsWithDefaults | null>(null);
+const currentCategory = ref<string>('general');
+const hasChanges = ref<boolean>(false);
+const changedValues = ref<Record<string, string | number | boolean | string[] | object>>({});
+
+const categories = computed(() => [
+  { key: 'general', icon: 'pi pi-cog', label: 'General' },
+  { key: 'alerts', icon: 'pi pi-bell', label: 'Alerts' },
+  { key: 'custom_fields', icon: 'pi pi-list', label: 'Custom Fields' },
+  { key: 'key_store', icon: 'pi pi-key', label: 'Key Store' },
+  { key: 'url_actions', icon: 'pi pi-link', label: 'URL Actions' },
+  { key: 'api_keys', icon: 'pi pi-lock', label: 'API Keys' }
+]);
 
 const navigateToCategory = (category: string) => {
   currentCategory.value = category;
@@ -119,26 +149,57 @@ const fetchSettings = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await restClient.get<RMMSettings>(`${API_URL}/settings/`);
+    const response = await restClient.get<ExtendedRMMSettings>(`${API_URL}/settings/`);
     // Initialize org_info if it doesn't exist
-    settings.value = {
+    const extendedSettings: ExtendedRMMSettingsWithDefaults = {
       ...response,
+      id: response.id || 0,
+      created_by: response.created_by || '',
+      created_time: response.created_time || '',
+      modified_by: response.modified_by || '',
+      modified_time: response.modified_time || '',
+      twilio_to_number: response.twilio_to_number || '',
+      twilio_alert_recipients: response.twilio_alert_recipients || [],
       org_info: response.org_info || {
         org_name: '',
         org_logo_url: null,
         org_logo_url_dark: null,
         org_logo_url_light: null
-      }
+      },
+      sso_enabled: response.sso_enabled || false,
+      workstation_policy: response.workstation_policy || '',
+      server_policy: response.server_policy || '',
+      alert_template: response.alert_template || '',
+      agent_auto_update_enabled: response.agent_auto_update_enabled || false,
+      agent_auto_update_policy: response.agent_auto_update_policy || '',
+      agent_auto_update_schedule: response.agent_auto_update_schedule || '',
+      agent_auto_update_grace_period: response.agent_auto_update_grace_period || 0
     };
-    originalSettings.value = JSON.parse(JSON.stringify(settings.value));
+    settings.value = extendedSettings;
+    originalSettings.value = JSON.parse(JSON.stringify(extendedSettings));
 
     const currentCategory = route.params.category as string;
     if (currentCategory) {
       const categoryData = await fetchCategoryData(currentCategory);
-      if (categoryData) {
+      if (categoryData && settings.value) {
         settings.value = {
           ...settings.value,
-          [currentCategory]: categoryData
+          [currentCategory]: categoryData,
+          id: settings.value.id,
+          created_by: settings.value.created_by,
+          created_time: settings.value.created_time,
+          modified_by: settings.value.modified_by,
+          modified_time: settings.value.modified_time,
+          twilio_to_number: settings.value.twilio_to_number,
+          twilio_alert_recipients: settings.value.twilio_alert_recipients,
+          sso_enabled: settings.value.sso_enabled,
+          workstation_policy: settings.value.workstation_policy,
+          server_policy: settings.value.server_policy,
+          alert_template: settings.value.alert_template,
+          agent_auto_update_enabled: settings.value.agent_auto_update_enabled,
+          agent_auto_update_policy: settings.value.agent_auto_update_policy,
+          agent_auto_update_schedule: settings.value.agent_auto_update_schedule,
+          agent_auto_update_grace_period: settings.value.agent_auto_update_grace_period
         };
       }
     }
@@ -159,11 +220,11 @@ const saveAndTestEmail = async () => {
 const resetPatchPolicy = async () => {
   try {
     await restClient.post(`${API_URL}/reset-patch-policy/`);
-    toastService.showSuccess('Patch policy reset successfully');
+    toastStore.showSuccess('Patch policy reset successfully');
   } catch (err: any) {
     console.error('Error resetting patch policy:', err);
     const message = err.response?.data?.message || err.message || 'Failed to reset patch policy';
-    toastService.showError(message);
+    toastStore.showError(message);
   }
 };
 
@@ -176,24 +237,26 @@ const newApiKey = ref({
 
 const copyApiKey = (key: string) => {
   navigator.clipboard.writeText(key);
-  toastService.showSuccess('API key copied to clipboard');
+  toastStore.showSuccess('API key copied to clipboard');
 };
 
 const deleteApiKey = async (id: number) => {
   try {
     await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/${id}/`);
-    settings.value.api_keys = settings.value.api_keys?.filter(k => k.id !== id);
-    toastService.showSuccess('API key deleted successfully');
+    if (settings.value?.api_keys) {
+      settings.value.api_keys = settings.value.api_keys.filter((k: ApiKey) => k.id !== id);
+    }
+    toastStore.showSuccess('API key deleted successfully');
   } catch (err: any) {
     console.error('Error deleting API key:', err);
     const message = err.response?.data?.message || err.message || 'Failed to delete API key';
-    toastService.showError(message);
+    toastStore.showError(message);
   }
 };
 
 const generateApiKey = async () => {
   if (!newApiKey.value.name) {
-    toastService.showError('Please enter a name for the API key');
+    toastStore.showError('Please enter a name for the API key');
     return;
   }
 
@@ -204,6 +267,9 @@ const generateApiKey = async () => {
       expiration: newApiKey.value.expiration?.toISOString() || null
     });
     
+    if (!settings.value) {
+      settings.value = {} as ExtendedRMMSettingsWithDefaults;
+    }
     if (!settings.value.api_keys) {
       settings.value.api_keys = [];
     }
@@ -211,11 +277,11 @@ const generateApiKey = async () => {
     
     showNewApiKeyDialog.value = false;
     newApiKey.value = { name: '', expiration: null };
-    toastService.showSuccess('API key generated successfully');
+    toastStore.showSuccess('API key generated successfully');
   } catch (err: any) {
     console.error('Error generating API key:', err);
     const message = err.response?.data?.message || err.message || 'Failed to generate API key';
-    toastService.showError(message);
+    toastStore.showError(message);
   } finally {
     generatingApiKey.value = false;
   }
@@ -235,6 +301,7 @@ const urlActionForm = ref({
 });
 
 const allUrlActions = computed(() => {
+  if (!settings.value) return [];
   const urlActions = settings.value.url_actions || [];
   const webhooks = settings.value.webhooks || [];
   return [...urlActions, ...webhooks];
@@ -259,8 +326,10 @@ const deleteUrlAction = async (id: number) => {
     const endpoint = '/core/urlaction/';
     await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${id}/`);
     
-    settings.value.url_actions = settings.value.url_actions?.filter(a => a.id !== id);
-    settings.value.webhooks = settings.value.webhooks?.filter(w => w.id !== id);
+    if (!settings.value) return;
+    
+    settings.value.url_actions = settings.value.url_actions?.filter((a: UrlAction) => a.id !== id);
+    settings.value.webhooks = settings.value.webhooks?.filter((w: UrlAction) => w.id !== id);
     
     toastService.showSuccess('URL Action deleted successfully');
   } catch (err: any) {
@@ -286,15 +355,17 @@ const saveUrlAction = async () => {
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
     
+    if (!settings.value) return;
+
     if (editingUrlAction.value) {
-      const index = allUrlActions.value.findIndex(a => a.id === editingUrlAction.value?.id);
+      const index = allUrlActions.value.findIndex((a: UrlAction) => a.id === editingUrlAction.value?.id);
       if (index !== -1) {
         if (response.action_type === 'web') {
-          settings.value.webhooks = settings.value.webhooks?.map(w => 
+          settings.value.webhooks = settings.value.webhooks?.map((w: UrlAction) => 
             w.id === response.id ? response : w
           );
         } else {
-          settings.value.url_actions = settings.value.url_actions?.map(a => 
+          settings.value.url_actions = settings.value.url_actions?.map((a: UrlAction) => 
             a.id === response.id ? response : a
           );
         }
@@ -347,6 +418,7 @@ const recipientForm = ref({
 });
 
 const editRecipient = (index: number) => {
+  if (!settings.value?.sms_alert_recipients) return;
   editingRecipientIndex.value = index;
   recipientForm.value = {
     phone: settings.value.sms_alert_recipients[index]
@@ -362,6 +434,8 @@ const saveRecipient = async () => {
 
   savingRecipient.value = true;
   try {
+    if (!settings.value) return;
+
     if (!settings.value.sms_alert_recipients) {
       settings.value.sms_alert_recipients = [];
     }
@@ -425,6 +499,8 @@ const saveKeyStore = async () => {
 
     const response = await restClient[method]<KeyStore>(url, keyStoreForm.value);
     
+    if (!settings.value) return;
+    
     if (editingKeyStore.value) {
       settings.value.key_store = settings.value.key_store?.map((k: KeyStore) => 
         k.id === response.id ? response : k
@@ -448,6 +524,7 @@ const saveKeyStore = async () => {
 const deleteKeyStore = async (id: number) => {
   try {
     await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/${id}/`);
+    if (!settings.value) return;
     settings.value.key_store = settings.value.key_store?.filter((k: KeyStore) => k.id !== id);
     toastService.showSuccess('Key deleted successfully');
   } catch (err: any) {
@@ -520,6 +597,8 @@ const saveCustomField = async () => {
 
     const response = await restClient[method]<CustomField>(url, formData);
     
+    if (!settings.value) return;
+    
     if (editingCustomField.value) {
       settings.value.custom_fields = settings.value.custom_fields?.map((f: CustomField) => 
         f.id === response.id ? response : f
@@ -543,6 +622,7 @@ const saveCustomField = async () => {
 const deleteCustomField = async (id: number) => {
   try {
     await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/${id}/`);
+    if (!settings.value) return;
     settings.value.custom_fields = settings.value.custom_fields?.filter((f: CustomField) => f.id !== id);
     toastService.showSuccess('Custom field deleted successfully');
   } catch (err: any) {
@@ -552,57 +632,282 @@ const deleteCustomField = async (id: number) => {
   }
 };
 
-// Add removeRecipient function
 const removeRecipient = (index: number) => {
-  if (settings.value.sms_alert_recipients) {
-    settings.value.sms_alert_recipients.splice(index, 1);
-    toastService.showSuccess('Recipient removed successfully');
-  }
+  if (!settings.value?.sms_alert_recipients) return;
+  settings.value.sms_alert_recipients.splice(index, 1);
+  toastService.showSuccess('Recipient removed successfully');
 };
 
 const saveSettings = async () => {
   saving.value = true;
   error.value = '';
   try {
-    const response = await restClient.patch<RMMSettings>(`${API_URL}/settings/`, changedValues.value);
-    settings.value = response;
-    originalSettings.value = JSON.parse(JSON.stringify(response));
+    if (!settings.value) {
+      throw new Error('Settings not initialized');
+    }
+    const response = await restClient.patch<ExtendedRMMSettings>(`${API_URL}/settings/`, changedValues.value);
+    const extendedResponse: ExtendedRMMSettingsWithDefaults = {
+      ...response,
+      id: response.id || 0,
+      created_by: response.created_by || '',
+      created_time: response.created_time || '',
+      modified_by: response.modified_by || '',
+      modified_time: response.modified_time || '',
+      twilio_to_number: response.twilio_to_number || '',
+      twilio_alert_recipients: response.twilio_alert_recipients || [],
+      org_info: response.org_info || {
+        org_name: '',
+        org_logo_url: null,
+        org_logo_url_dark: null,
+        org_logo_url_light: null
+      },
+      sso_enabled: response.sso_enabled || false,
+      workstation_policy: response.workstation_policy || '',
+      server_policy: response.server_policy || '',
+      alert_template: response.alert_template || '',
+      agent_auto_update_enabled: response.agent_auto_update_enabled || false,
+      agent_auto_update_policy: response.agent_auto_update_policy || '',
+      agent_auto_update_schedule: response.agent_auto_update_schedule || '',
+      agent_auto_update_grace_period: response.agent_auto_update_grace_period || 0
+    };
+    settings.value = extendedResponse;
+    originalSettings.value = JSON.parse(JSON.stringify(extendedResponse));
     changedValues.value = {};
     hasChanges.value = false;
-    toastService.showSuccess('Settings saved successfully');
+    toastStore.showSuccess('Settings saved successfully');
   } catch (err: any) {
     console.error('Error saving settings:', err);
     const message = err.response?.message || err.message || 'Failed to save settings';
     error.value = message;
-    toastService.showError(message);
+    toastStore.showError(message);
   } finally {
     saving.value = false;
   }
 };
 
-watch(() => route.params.category, async (newCategory) => {
-  if (newCategory && typeof newCategory === 'string') {
-    currentCategory.value = newCategory;
-    const categoryData = await fetchCategoryData(newCategory);
-    if (categoryData) {
-      settings.value = {
-        ...settings.value,
-        [newCategory]: categoryData
-      };
+const saveConfigProperty = async (key: keyof ExtendedRMMSettings, subKey: string | null) => {
+  // Wait for settings to be loaded if they're not already
+  if (loading.value) {
+    console.warn('Settings are still loading, please wait...');
+    return;
+  }
+
+  if (!settings.value) {
+    console.error('Settings not initialized');
+    return;
+  }
+
+  const fullKey = subKey ? `${String(key)}.${subKey}` : String(key);
+  const value = subKey 
+    ? (settings.value[key] as Record<string, unknown>)?.[subKey] 
+    : settings.value[key];
+
+  if (value === undefined) {
+    console.error(`Setting ${fullKey} not found`);
+    return;
+  }
+
+  // Get the current value from originalSettings for comparison
+  const currentValue = subKey 
+    ? (originalSettings.value?.[key] as Record<string, unknown>)?.[subKey] 
+    : originalSettings.value?.[key];
+
+  // If the value hasn't changed, don't send an update
+  if (JSON.stringify(value) === JSON.stringify(currentValue)) {
+    return;
+  }
+
+  // Store the current value for potential rollback
+  const rollbackValue = subKey 
+    ? (settings.value[key] as Record<string, unknown>)?.[subKey] 
+    : settings.value[key];
+
+  // Update local state immediately for better UX
+  if (subKey) {
+    if (!settings.value[key]) {
+      settings.value[key] = {} as Record<string, unknown>;
+    }
+    (settings.value[key] as Record<string, unknown>)[subKey] = value;
+  } else {
+    settings.value[key] = value;
+  }
+
+  changedValues.value[fullKey] = value as string | number | boolean | string[] | object;
+  hasChanges.value = true;
+
+  try {
+    // Only send the changed setting in the request
+    const requestData: Record<string, unknown> = subKey 
+      ? { [String(key)]: { [subKey]: value } }
+      : { [String(key)]: value };
+
+    // Handle numeric values - both string and number types
+    if (typeof value === 'string' && !isNaN(Number(value))) {
+      const numValue = Number(value);
+      if (subKey) {
+        (requestData[String(key)] as Record<string, unknown>)[subKey] = numValue;
+      } else {
+        requestData[String(key)] = numValue;
+      }
+    } else if (typeof value === 'number') {
+      // Ensure number values are sent as numbers
+      if (subKey) {
+        (requestData[String(key)] as Record<string, unknown>)[subKey] = value;
+      } else {
+        requestData[String(key)] = value;
+      }
+    } else if (typeof value === 'boolean') {
+      // Ensure boolean values are sent as booleans
+      if (subKey) {
+        (requestData[String(key)] as Record<string, unknown>)[subKey] = value;
+      } else {
+        requestData[String(key)] = value;
+      }
+    }
+
+    // Use PUT method via request
+    const response = await restClient.request<ExtendedRMMSettings>(`${API_URL}/settings/`, {
+      method: 'PUT',
+      body: JSON.stringify(requestData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Convert response to ExtendedRMMSettings
+    const extendedResponse = {
+      ...response,
+      org_info: response.org_info || {
+        org_name: '',
+        org_logo_url: null,
+        org_logo_url_dark: null,
+        org_logo_url_light: null
+      }
+    } as ExtendedRMMSettings;
+
+    // Update local state with the response to ensure we have the server's value
+    if (subKey) {
+      if (!settings.value[key]) {
+        settings.value[key] = {} as Record<string, unknown>;
+      }
+      // Keep the current value if it's a number or boolean
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        (settings.value[key] as Record<string, unknown>)[subKey] = value;
+      } else {
+        (settings.value[key] as Record<string, unknown>)[subKey] = (extendedResponse[key] as Record<string, unknown>)[subKey];
+      }
+    } else {
+      // Keep the current value if it's a number or boolean
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        settings.value[key] = value;
+      } else {
+        settings.value[key] = extendedResponse[key];
+      }
+    }
+
+    // Update original settings to match
+    if (originalSettings.value) {
+      if (subKey) {
+        if (!originalSettings.value[key]) {
+          originalSettings.value[key] = {} as Record<string, unknown>;
+        }
+        // Keep the current value if it's a number or boolean
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          (originalSettings.value[key] as Record<string, unknown>)[subKey] = value;
+        } else {
+          (originalSettings.value[key] as Record<string, unknown>)[subKey] = (extendedResponse[key] as Record<string, unknown>)[subKey];
+        }
+      } else {
+        // Keep the current value if it's a number or boolean
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          originalSettings.value[key] = value;
+        } else {
+          originalSettings.value[key] = extendedResponse[key];
+        }
+      }
+    }
+
+    // Remove the key from changedValues since it's been saved
+    delete changedValues.value[fullKey];
+    hasChanges.value = Object.keys(changedValues.value).length > 0;
+
+    toastStore.showSuccess('Setting updated successfully');
+  } catch (err: unknown) {
+    console.error('Error updating setting:', err);
+    const message = err instanceof Error ? err.message : 'Failed to update setting';
+    toastStore.showError(message);
+    
+    // Revert the change on error
+    if (subKey) {
+      if (!settings.value[key]) {
+        settings.value[key] = {} as Record<string, unknown>;
+      }
+      (settings.value[key] as Record<string, unknown>)[subKey] = rollbackValue;
+    } else {
+      settings.value[key] = rollbackValue;
     }
   }
+};
+
+// Fix TypeScript errors in watch functions
+watch(() => route.params.category, (value: string | string[]) => {
+  if (typeof value === 'string' && categories.value.some((c: { key: string; icon: string; label: string }) => c.key === value)) {
+    currentCategory.value = value;
+  }
 });
+
+watch(() => settings.value, (newSettings) => {
+  if (newSettings) {
+    originalSettings.value = JSON.parse(JSON.stringify(newSettings));
+  }
+}, { deep: true });
 
 onMounted(async () => {
   await fetchSettings();
   
-  if (!route.params.category && categories.length > 0) {
+  if (!route.params.category && categories.value.length > 0) {
     router.push({ 
       name: 'rmm-settings-category', 
-      params: { category: categories[0].key }
+      params: { category: categories.value[0].key }
     });
   }
 });
+
+// Fix TypeScript errors in formatKey function
+const formatKey = (k: string): string => {
+  return k.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
+// Fix TypeScript errors in handleSaveAll function
+const handleSaveAll = async () => {
+  saving.value = true;
+  error.value = '';
+
+  try {
+    // Save all changed values
+    for (const [key, value] of Object.entries(changedValues.value)) {
+      const [mainKey, subKey] = key.split('.');
+      await saveConfigProperty(mainKey as keyof ExtendedRMMSettings, subKey || null);
+    }
+
+    // Clear changed values
+    changedValues.value = {};
+    hasChanges.value = false;
+
+    toastStore.showSuccess('All settings saved successfully');
+  } catch (err) {
+    console.error('Error saving all settings:', err);
+    error.value = err instanceof Error ? err.message : 'Failed to save settings';
+    toastStore.showError(error.value);
+  } finally {
+    saving.value = false;
+  }
+};
+
+// Fix TypeScript errors in methods
+const handleCategoryClick = (category: { key: string; icon: string; label: string }) => {
+  router.push(`/rmm/settings/${category.key}`);
+};
 </script>
 
 <style scoped>

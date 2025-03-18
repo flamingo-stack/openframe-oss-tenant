@@ -41,164 +41,9 @@
             <span class="ml-2">{{ settings.agent_auto_update ? 'Enabled' : 'Disabled' }}</span>
           </div>
         </div>
-      </template>
 
-      <template v-else-if="category === 'alerts'">
-        <div class="field">
-          <label for="notifyWarning">Notify on Warning Alerts</label>
-          <div class="flex align-items-center">
-            <InputSwitch
-              id="notifyWarning"
-              v-model="settings.notify_on_warning_alerts"
-              @change="() => saveConfigProperty('notify_on_warning_alerts', null)"
-            />
-            <span class="ml-2">{{ settings.notify_on_warning_alerts ? 'Enabled' : 'Disabled' }}</span>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="notifyInfo">Notify on Info Alerts</label>
-          <div class="flex align-items-center">
-            <InputSwitch
-              id="notifyInfo"
-              v-model="settings.notify_on_info_alerts"
-              @change="() => saveConfigProperty('notify_on_info_alerts', null)"
-            />
-            <span class="ml-2">{{ settings.notify_on_info_alerts ? 'Enabled' : 'Disabled' }}</span>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="smtpFromEmail">From Email</label>
-          <InputText
-            id="smtpFromEmail"
-            v-model="settings.smtp_from_email"
-            class="w-full"
-            @change="() => saveConfigProperty('smtp_from_email', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="smtpFromName">From Name</label>
-          <InputText
-            id="smtpFromName"
-            v-model="settings.smtp_from_name"
-            class="w-full"
-            @change="() => saveConfigProperty('smtp_from_name', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="smtpHost">SMTP Host</label>
-          <InputText
-            id="smtpHost"
-            v-model="settings.smtp_host"
-            class="w-full"
-            @change="() => saveConfigProperty('smtp_host', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="smtpPort">SMTP Port</label>
-          <InputNumber
-            id="smtpPort"
-            v-model="settings.smtp_port"
-            class="w-full"
-            @change="() => saveConfigProperty('smtp_port', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="smtpRequiresAuth">SMTP Authentication</label>
-          <div class="flex align-items-center">
-            <InputSwitch
-              id="smtpRequiresAuth"
-              v-model="settings.smtp_requires_auth"
-              @change="() => saveConfigProperty('smtp_requires_auth', null)"
-            />
-            <span class="ml-2">{{ settings.smtp_requires_auth ? 'Required' : 'Not Required' }}</span>
-          </div>
-        </div>
-
-        <div v-if="settings.smtp_requires_auth" class="field">
-          <label for="smtpUser">SMTP Username</label>
-          <InputText
-            id="smtpUser"
-            v-model="settings.smtp_host_user"
-            class="w-full"
-            @change="() => saveConfigProperty('smtp_host_user', null)"
-          />
-        </div>
-
-        <div v-if="settings.smtp_requires_auth" class="field">
-          <label for="smtpPassword">SMTP Password</label>
-          <InputText
-            id="smtpPassword"
-            v-model="settings.smtp_host_password"
-            type="password"
-            class="w-full"
-            @change="() => saveConfigProperty('smtp_host_password', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="emailRecipients">Email Alert Recipients</label>
-          <Chips
-            id="emailRecipients"
-            v-model="settings.email_alert_recipients"
-            separator=","
-            class="w-full"
-            placeholder="Enter email and press Enter"
-            @change="() => saveConfigProperty('email_alert_recipients', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="twilioNumber">Twilio Number</label>
-          <InputText
-            id="twilioNumber"
-            v-model="settings.twilio_number"
-            class="w-full"
-            @change="() => saveConfigProperty('twilio_number', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="twilioAccountSid">Twilio Account SID</label>
-          <InputText
-            id="twilioAccountSid"
-            v-model="settings.twilio_account_sid"
-            class="w-full"
-            @change="() => saveConfigProperty('twilio_account_sid', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="twilioAuthToken">Twilio Auth Token</label>
-          <Password
-            id="twilioAuthToken"
-            v-model="settings.twilio_auth_token"
-            class="w-full"
-            :feedback="false"
-            toggleMask
-            @change="() => saveConfigProperty('twilio_auth_token', null)"
-          />
-        </div>
-
-        <div class="field">
-          <label for="smsRecipients">SMS Alert Recipients</label>
-          <Chips
-            id="smsRecipients"
-            v-model="settings.sms_alert_recipients"
-            separator=","
-            class="w-full"
-            placeholder="Enter phone number and press Enter"
-            @change="() => saveConfigProperty('sms_alert_recipients', null)"
-          />
-        </div>
-      </template>
-
-      <template v-else-if="category === 'cleanup'">
+        <div class="section-title">Cleanup Settings</div>
+        
         <div class="field">
           <label for="checkHistoryPrune">Check History Prune Days</label>
           <InputNumber
@@ -206,7 +51,9 @@
             v-model="settings.check_history_prune_days"
             :min="0"
             class="w-full"
-            @change="() => saveConfigProperty('check_history_prune_days', null)"
+            :showButtons="false"
+            :useGrouping="false"
+            @update:modelValue="val => saveConfigProperty('check_history_prune_days', null)"
           />
           <small>Days to keep check history (0 for no pruning)</small>
         </div>
@@ -218,7 +65,9 @@
             v-model="settings.resolved_alerts_prune_days"
             :min="0"
             class="w-full"
-            @change="() => saveConfigProperty('resolved_alerts_prune_days', null)"
+            :showButtons="false"
+            :useGrouping="false"
+            @update:modelValue="val => saveConfigProperty('resolved_alerts_prune_days', null)"
           />
           <small>Days to keep resolved alerts (0 for no pruning)</small>
         </div>
@@ -230,7 +79,9 @@
             v-model="settings.agent_history_prune_days"
             :min="0"
             class="w-full"
-            @change="() => saveConfigProperty('agent_history_prune_days', null)"
+            :showButtons="false"
+            :useGrouping="false"
+            @update:modelValue="val => saveConfigProperty('agent_history_prune_days', null)"
           />
           <small>Days to keep agent history (0 for no pruning)</small>
         </div>
@@ -242,7 +93,9 @@
             v-model="settings.debug_log_prune_days"
             :min="0"
             class="w-full"
-            @change="() => saveConfigProperty('debug_log_prune_days', null)"
+            :showButtons="false"
+            :useGrouping="false"
+            @update:modelValue="val => saveConfigProperty('debug_log_prune_days', null)"
           />
           <small>Days to keep debug logs (0 for no pruning)</small>
         </div>
@@ -254,7 +107,9 @@
             v-model="settings.audit_log_prune_days"
             :min="0"
             class="w-full"
-            @change="() => saveConfigProperty('audit_log_prune_days', null)"
+            :showButtons="false"
+            :useGrouping="false"
+            @update:modelValue="val => saveConfigProperty('audit_log_prune_days', null)"
           />
           <small>Days to keep audit logs (0 for no pruning)</small>
         </div>
@@ -266,9 +121,192 @@
             v-model="settings.clear_faults_days"
             :min="0"
             class="w-full"
-            @change="() => saveConfigProperty('clear_faults_days', null)"
+            :showButtons="false"
+            :useGrouping="false"
+            @update:modelValue="val => saveConfigProperty('clear_faults_days', null)"
           />
           <small>Days after which to automatically clear faults (0 to disable)</small>
+        </div>
+      </template>
+
+      <template v-else-if="category === 'alerts'">
+        <div class="field">
+          <label for="notifyWarning">Notify on Warning Alerts</label>
+          <div class="flex align-items-center">
+            <InputSwitch
+              id="notifyWarning"
+              v-model="settings.notify_on_warning_alerts"
+              @update:modelValue="val => saveConfigProperty('notify_on_warning_alerts', null)"
+            />
+            <span class="ml-2">{{ settings.notify_on_warning_alerts ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notifyInfo">Notify on Info Alerts</label>
+          <div class="flex align-items-center">
+            <InputSwitch
+              id="notifyInfo"
+              v-model="settings.notify_on_info_alerts"
+              @update:modelValue="val => saveConfigProperty('notify_on_info_alerts', null)"
+            />
+            <span class="ml-2">{{ settings.notify_on_info_alerts ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+        </div>
+
+        <div class="alert-section">
+          <h3 class="section-title">Email Alerts</h3>
+          <div class="section-content">
+            <div class="field">
+              <label for="smtpFromEmail">From Email</label>
+              <InputText
+                id="smtpFromEmail"
+                v-model="settings.smtp_from_email"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('smtp_from_email', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="smtpFromName">From Name</label>
+              <InputText
+                id="smtpFromName"
+                v-model="settings.smtp_from_name"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('smtp_from_name', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="smtpHost">SMTP Host</label>
+              <InputText
+                id="smtpHost"
+                v-model="settings.smtp_host"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('smtp_host', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="smtpPort">SMTP Port</label>
+              <InputNumber
+                id="smtpPort"
+                v-model="settings.smtp_port"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('smtp_port', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="smtpRequiresAuth">SMTP Authentication</label>
+              <div class="flex align-items-center">
+                <InputSwitch
+                  id="smtpRequiresAuth"
+                  v-model="settings.smtp_requires_auth"
+                  @update:modelValue="val => saveConfigProperty('smtp_requires_auth', null)"
+                />
+                <span class="ml-2">{{ settings.smtp_requires_auth ? 'Required' : 'Not Required' }}</span>
+              </div>
+            </div>
+
+            <div v-if="settings.smtp_requires_auth" class="field">
+              <label for="smtpUser">SMTP Username</label>
+              <InputText
+                id="smtpUser"
+                v-model="settings.smtp_host_user"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('smtp_host_user', null)"
+              />
+            </div>
+
+            <div v-if="settings.smtp_requires_auth" class="field">
+              <label for="smtpPassword">SMTP Password</label>
+              <Password
+                id="smtpPassword"
+                v-model="settings.smtp_host_password"
+                class="w-full"
+                :feedback="false"
+                toggleMask
+                @update:modelValue="val => saveConfigProperty('smtp_host_password', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="emailRecipients">Email Alert Recipients</label>
+              <Chips
+                id="emailRecipients"
+                v-model="settings.email_alert_recipients"
+                separator=","
+                class="w-full"
+                placeholder="Enter email and press Enter"
+                @update:modelValue="val => saveConfigProperty('email_alert_recipients', null)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="alert-section">
+          <h3 class="section-title">SMS Alerts</h3>
+          <div class="section-content">
+            <div class="field">
+              <label for="twilioNumber">Twilio Number</label>
+              <InputText
+                id="twilioNumber"
+                v-model="settings.twilio_number"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('twilio_number', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="twilioAccountSid">Twilio Account SID</label>
+              <InputText
+                id="twilioAccountSid"
+                v-model="settings.twilio_account_sid"
+                class="w-full"
+                @update:modelValue="val => saveConfigProperty('twilio_account_sid', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="twilioAuthToken">Twilio Auth Token</label>
+              <Password
+                id="twilioAuthToken"
+                v-model="settings.twilio_auth_token"
+                class="w-full"
+                :feedback="false"
+                toggleMask
+                @update:modelValue="val => saveConfigProperty('twilio_auth_token', null)"
+              />
+            </div>
+
+            <div class="field">
+              <label for="smsRecipients">SMS Alert Recipients</label>
+              <div class="recipients-list">
+                <div v-for="(recipient, index) in settings.sms_alert_recipients" :key="index" class="recipient-item">
+                  <span>{{ recipient }}</span>
+                  <Button 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger"
+                    @click="removeRecipient(index)"
+                  />
+                </div>
+                <div class="recipient-input">
+                  <InputText
+                    v-model="newRecipient"
+                    class="w-full"
+                    placeholder="Enter phone number and press Enter"
+                    @keyup.enter="addRecipient"
+                  />
+                  <Button 
+                    icon="pi pi-plus" 
+                    class="p-button-text p-button-sm"
+                    @click="addRecipient"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </template>
 
@@ -880,6 +918,7 @@ const props = defineProps<Props>();
 const route = useRoute();
 const category = computed(() => route.params.category as string);
 const loading = ref(false);
+const newRecipient = ref('');
 
 const logLevels = [
   { name: 'Debug', value: 'debug' },
@@ -1275,6 +1314,25 @@ const rowClass = (data: any) => {
     'cursor-pointer': true
   };
 };
+
+const addRecipient = () => {
+  if (!newRecipient.value) return;
+  
+  if (!props.settings.sms_alert_recipients) {
+    props.settings.sms_alert_recipients = [];
+  }
+  
+  props.settings.sms_alert_recipients.push(newRecipient.value);
+  newRecipient.value = '';
+  props.saveConfigProperty('sms_alert_recipients', null);
+};
+
+const removeRecipient = (index: number) => {
+  if (props.settings.sms_alert_recipients) {
+    props.settings.sms_alert_recipients.splice(index, 1);
+    props.saveConfigProperty('sms_alert_recipients', null);
+  }
+};
 </script>
 
 <style scoped>
@@ -1287,7 +1345,8 @@ const rowClass = (data: any) => {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .settings-header {
@@ -1303,28 +1362,64 @@ const rowClass = (data: any) => {
 }
 
 .settings-form {
-  max-width: 800px;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  width: 100%;
+  flex: 1;
+}
+
+.alert-section {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--card-shadow);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.recipients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recipient-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+}
+
+.recipient-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 /* RMM-specific table styles */
 .settings-table {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  width: 100%;
   :deep(.p-datatable) {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    width: 100%;
     .p-datatable-wrapper {
-      flex: 1;
       border-radius: var(--border-radius);
       background: var(--surface-card);
-      overflow: auto;
     }
 
     .p-datatable-thead > tr > th {
