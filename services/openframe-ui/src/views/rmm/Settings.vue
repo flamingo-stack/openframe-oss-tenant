@@ -123,6 +123,12 @@ interface Settings {
   created_time: string;
   modified_by: string;
   modified_time: string;
+  org_info: {
+    org_name: string;
+    org_logo_url: string | null;
+    org_logo_url_dark: string | null;
+    org_logo_url_light: string | null;
+  };
 }
 
 interface CategoryConfig {
@@ -166,6 +172,8 @@ interface DynamicSettings extends Settings {
   url_actions?: UrlAction[];
   webhooks?: UrlAction[];
 }
+
+export type { DynamicSettings };
 
 interface KeyStore {
   id: number;
@@ -223,8 +231,17 @@ const fetchSettings = async () => {
   error.value = '';
   try {
     const response = await restClient.get<Settings>(`${API_URL}/settings/`);
-    settings.value = response;
-    originalSettings.value = JSON.parse(JSON.stringify(response));
+    // Initialize org_info if it doesn't exist
+    settings.value = {
+      ...response,
+      org_info: response.org_info || {
+        org_name: '',
+        org_logo_url: null,
+        org_logo_url_dark: null,
+        org_logo_url_light: null
+      }
+    };
+    originalSettings.value = JSON.parse(JSON.stringify(settings.value));
 
     const currentCategory = route.params.category as string;
     if (currentCategory) {

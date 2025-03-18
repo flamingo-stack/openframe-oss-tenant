@@ -831,6 +831,8 @@ import Dialog from 'primevue/dialog';
 import Calendar from 'primevue/calendar';
 import Textarea from 'primevue/textarea';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import { useToast } from 'primevue/usetoast';
+import type { DynamicSettings } from '../mdm/Settings';
 
 interface UrlAction {
   id: number;
@@ -875,13 +877,19 @@ interface ApiKey {
   expiration: string | null;
 }
 
-const props = defineProps<{
-  settings: any;
+interface Props {
+  settings: DynamicSettings;
+  saveSettings: (settings: DynamicSettings) => Promise<void>;
+  fetchSettings: () => Promise<void>;
+  hasChanges: boolean;
+  changedValues: Record<string, any>;
   formatKey: (key: string) => string;
   hasPropertyChanges: (category: string) => boolean;
   isSaving: (category: string) => boolean;
-  saveConfigProperty: (category: string, subKey: string | null) => Promise<void>;
-}>();
+  saveConfigProperty: (key: string, subKey: string | null) => Promise<void>;
+}
+
+const props = defineProps<Props>();
 
 const route = useRoute();
 const category = computed(() => route.params.category as string);
@@ -951,6 +959,7 @@ const allUrlActions = computed(() => {
 });
 
 const toastService = ToastService.getInstance();
+const toast = useToast();
 
 // Methods
 const copyApiKey = (key: string) => {
@@ -1218,6 +1227,26 @@ const saveCustomField = async () => {
   }
 };
 
+const getModelSeverity = (model: string) => {
+  const severityMap: Record<string, string> = {
+    client: 'info',
+    site: 'warning',
+    agent: 'success'
+  };
+  return severityMap[model] || 'info';
+};
+
+const getTypeSeverity = (type: string) => {
+  const severityMap: Record<string, string> = {
+    text: 'info',
+    number: 'warning',
+    boolean: 'success',
+    select: 'info',
+    datetime: 'warning'
+  };
+  return severityMap[type] || 'info';
+};
+
 // Add this after the category computed property
 watch(category, async (newCategory) => {
   try {
@@ -1260,29 +1289,10 @@ const rowClass = (data: any) => {
     'cursor-pointer': true
   };
 };
-
-const getModelSeverity = (model: string) => {
-  const severityMap: Record<string, string> = {
-    client: 'info',
-    site: 'warning',
-    agent: 'success'
-  };
-  return severityMap[model] || 'info';
-};
-
-const getTypeSeverity = (type: string) => {
-  const severityMap: Record<string, string> = {
-    text: 'info',
-    number: 'warning',
-    boolean: 'success',
-    select: 'info',
-    datetime: 'warning'
-  };
-  return severityMap[type] || 'info';
-};
 </script>
 
 <style scoped>
+/* Only keep RMM-specific styles that don't exist in MDM */
 .settings-content {
   flex: 1;
   min-width: 0;
@@ -1307,85 +1317,7 @@ const getTypeSeverity = (type: string) => {
   max-width: 800px;
 }
 
-.field {
-  margin-bottom: 1.5rem;
-}
-
-.field:last-child {
-  margin-bottom: 0;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-.field small {
-  display: block;
-  margin-top: 0.25rem;
-  color: var(--text-color-secondary);
-}
-
-:deep(.p-inputswitch) {
-  width: 3rem;
-  height: 1.5rem;
-}
-
-:deep(.p-inputswitch .p-inputswitch-slider) {
-  background: var(--surface-300);
-}
-
-:deep(.p-inputswitch:not(.p-disabled):hover .p-inputswitch-slider) {
-  background: var(--surface-400);
-}
-
-:deep(.p-inputswitch.p-inputswitch-checked .p-inputswitch-slider) {
-  background: var(--primary-color);
-}
-
-:deep(.p-inputswitch.p-inputswitch-checked:not(.p-disabled):hover .p-inputswitch-slider) {
-  background: var(--primary-600);
-}
-
-:deep(.p-datatable) {
-  font-size: 0.9rem;
-}
-
-:deep(.p-datatable .p-datatable-header) {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-:deep(.p-datatable .p-datatable-thead > tr > th) {
-  background: var(--surface-ground);
-  color: var(--text-color-secondary);
-  font-weight: 600;
-  padding: 0.75rem;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr > td) {
-  padding: 0.75rem;
-}
-
-:deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background: var(--surface-hover);
-}
-
-:deep(.p-button-text) {
-  padding: 0.25rem;
-}
-
-:deep(.p-button-text:hover) {
-  background: var(--surface-hover);
-}
-
-:deep(.p-tag) {
-  text-transform: capitalize;
-}
-
+/* RMM-specific table styles */
 .settings-table {
   :deep(.p-datatable) {
     .p-datatable-wrapper {
@@ -1417,11 +1349,6 @@ const getTypeSeverity = (type: string) => {
         background: var(--surface-hover);
       }
     }
-  }
-
-  :deep(.p-tag) {
-    min-width: 75px;
-    justify-content: center;
   }
 }
 </style> 
