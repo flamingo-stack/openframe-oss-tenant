@@ -19,7 +19,7 @@ logging:
 
 # Docker monitoring endpoints
 loki:
-  url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+  url: http://openframe-loki.monitoring:3100/loki/api/v1/push
 
 # Pinot connection details
 pinot:
@@ -27,3 +27,12 @@ pinot:
     url: http://openframe-pinot-controller:9000
   broker:
     url: http://openframe-pinot-broker:8099
+
+security:
+  oauth2:
+    resourceserver:
+      jwt:
+        issuer-uri: http://openframe-api:8090
+    authorization:
+      cors:
+        allowed-origins: http://openframe-config-server

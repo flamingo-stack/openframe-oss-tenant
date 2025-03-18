@@ -178,14 +178,12 @@ case "$1" in
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-management --timeout 20m
     ;;
   stream)
-    # STREAM (depends on Kafka, Config Server, Cassandra, MongoDB)
-    # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+    # STREAM (depends on Kafka, Config Server, Cassandra, MongoDB, Loki)
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-stream/stream.yaml && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-stream --timeout 20m
     ;;
   gateway)
-    # GATEWAY (depends on Config Server, MongoDB, Cassandra)
-    # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+    # GATEWAY (depends on Config Server, MongoDB, Cassandra, Loki)
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
     ;;
