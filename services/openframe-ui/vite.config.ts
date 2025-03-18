@@ -5,7 +5,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  
+
   return {
     plugins: [vue()],
     server: {
@@ -16,6 +16,14 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src')
+      }
+    },
+    define: {
+      '__RUNTIME_CONFIG__': {
+        apiUrl: JSON.stringify(env.VITE_API_URL || 'http://localhost:8090'),
+        gatewayUrl: JSON.stringify(env.VITE_GATEWAY_URL || 'http://localhost:8100'),
+        clientId: JSON.stringify(env.VITE_CLIENT_ID || 'openframe_web_dashboard'),
+        clientSecret: JSON.stringify(env.VITE_CLIENT_SECRET || 'prod_secret')
       }
     },
     build: {
