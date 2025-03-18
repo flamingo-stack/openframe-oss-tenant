@@ -184,7 +184,7 @@ const systemHealthPanels = ref([
 const grafanaTheme = computed(() => themeStore.isDark ? 'dark' : 'light')
 
 const getGrafanaUrl = (panelId: number) => {
-  return `${import.meta.env.VITE_API_URL}/d-solo/home/openframe-overview?orgId=1&panelId=${panelId}&theme=${grafanaTheme.value}&refresh=1s`
+  return `${import.meta.env.VITE_GRAFANA_URL}/d-solo/home/openframe-overview?orgId=1&panelId=${panelId}&theme=${grafanaTheme.value}&refresh=1s`
 }
 
 onMounted(() => {
