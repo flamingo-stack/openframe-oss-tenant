@@ -105,7 +105,15 @@ export const useAuthStore = defineStore('auth', () => {
   async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
     try {
       const credentials = btoa(`${import.meta.env.VITE_CLIENT_ID}:${import.meta.env.VITE_CLIENT_SECRET}`);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/register`, {
+      const apiUrl = `${import.meta.env.VITE_API_URL}/oauth/register`;
+      console.log('Attempting to register with URL:', apiUrl);
+      console.log('Environment variables:', {
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        VITE_CLIENT_ID: import.meta.env.VITE_CLIENT_ID,
+        VITE_CLIENT_SECRET: import.meta.env.VITE_CLIENT_SECRET
+      });
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,4 +157,4 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     handleAuthError
   }
-}) 
+})
