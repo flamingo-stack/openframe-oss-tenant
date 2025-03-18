@@ -65,8 +65,6 @@
                 @click="runCommand(data)" />
               <Button icon="pi pi-eye" class="p-button-text p-button-sm" v-tooltip.top="'View Details'"
                 @click="viewDevice(data)" />
-              <Button icon="pi pi-pencil" class="p-button-text p-button-sm" v-tooltip.top="'Edit Device'"
-                @click="editDevice(data)" />
               <Button icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                 v-tooltip.top="'Delete Device'" @click="deleteDevice(data)" />
             </div>
@@ -116,15 +114,7 @@
       v-model:visible="showDeviceDetailsDialog"
       :device="selectedDevice"
       @runCommand="handleDeviceDetailsRunCommand"
-      @edit="editDevice"
       @delete="handleDeviceDetailsDelete"
-    />
-
-    <!-- Edit Device Dialog -->
-    <EditDeviceDialog
-      v-model:visible="showEditDeviceDialog"
-      :device="selectedDevice"
-      @saved="handleEditSaved"
     />
   </div>
 </template>
@@ -150,7 +140,6 @@ import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
-import EditDeviceDialog from '../../components/shared/EditDeviceDialog.vue';
 
 interface WmiDetail {
   cpus: string[];
@@ -200,7 +189,6 @@ const deleteDeviceDialog = ref(false);
 const showDeviceDetailsDialog = ref(false);
 const executing = ref(false);
 const deleting = ref(false);
-const showEditDeviceDialog = ref(false);
 
 const selectedDevice = ref<Device | null>(null);
 const command = ref('');
@@ -412,29 +400,6 @@ const handleDeviceDetailsDelete = () => {
   if (selectedDevice.value) {
     deleteDevice(selectedDevice.value);
   }
-};
-
-const editDevice = async (device: Device) => {
-  try {
-    const response = await restClient.get<Device>(`${API_URL}/agents/${device.agent_id}/`);
-    if (response) {
-      selectedDevice.value = response;
-      // Close the details dialog if it's open
-      showDeviceDetailsDialog.value = false;
-      // Show the edit dialog
-      showEditDeviceDialog.value = true;
-    }
-  } catch (error) {
-    console.error('Error fetching device details:', error);
-    toastService.showError('Failed to fetch device details');
-  }
-};
-
-const handleEditSaved = () => {
-  fetchDevices();
-  // Make sure both dialogs stay closed after saving
-  showDeviceDetailsDialog.value = false;
-  showEditDeviceDialog.value = false;
 };
 
 const deleteDevice = (device: Device) => {

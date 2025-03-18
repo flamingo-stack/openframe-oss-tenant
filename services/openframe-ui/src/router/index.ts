@@ -167,8 +167,19 @@ const router = createRouter({
         },
         {
           path: 'settings',
-          name: 'rmm-settings',
           component: RMMSettings,
+          children: [
+            {
+              path: '',
+              redirect: { name: 'rmm-settings-category', params: { category: 'general' } }
+            },
+            {
+              path: ':category',
+              name: 'rmm-settings-category',
+              component: RMMSettings,
+              props: true
+            }
+          ],
           meta: { title: 'RMM Settings' }
         }
       ]

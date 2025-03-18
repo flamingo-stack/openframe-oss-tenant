@@ -1,48 +1,34 @@
 <template>
   <div class="rmm-automation">
-    <div class="header">
-      <div class="title-section">
-        <h2>Automation</h2>
-        <p class="subtitle">Schedule and manage automated tasks</p>
-      </div>
-      <div class="actions">
+    <ModuleHeader title="Automation">
+      <template #subtitle>Schedule and manage automated tasks</template>
+      <template #actions>
         <Button 
           label="Add Task" 
           icon="pi pi-plus"
           @click="showAddTaskDialog = true"
+          class="p-button-primary"
         />
-      </div>
-    </div>
+      </template>
+    </ModuleHeader>
 
-    <div class="content">
-      <DataTable
-        :value="tasks"
+    <div class="automation-content">
+      <SearchBar v-model="filters['global'].value" placeholder="Search tasks..." />
+
+      <ModuleTable 
+        :items="tasks" 
         :loading="loading"
-        v-model:filters="filters"
-        filterDisplay="menu"
-        :paginator="true"
-        :rows="10"
-        :rowsPerPageOptions="[10, 20, 50]"
-        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} tasks"
-        responsiveLayout="scroll"
-        stripedRows
-        showGridlines
-        class="p-datatable-sm"
+        :searchFields="['name', 'type', 'description', 'schedule']"
+        emptyIcon="pi pi-clock"
+        emptyTitle="No Tasks Found"
+        emptyMessage="Add your first automation task to start scheduling."
+        emptyHint="Tasks will appear here once they are created."
       >
-        <template #empty>
-          <div class="empty-state">
-            <i class="pi pi-clock empty-icon"></i>
-            <h3>No Tasks Found</h3>
-            <p>Add your first automation task to start scheduling.</p>
-          </div>
-        </template>
-
         <Column field="name" header="Name" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <i :class="getTaskIcon(data.type)" class="mr-2"></i>
-              <span>{{ data.name }}</span>
+              <i :class="getTaskIcon(data.type)" class="task-icon mr-2"></i>
+              <span class="font-medium">{{ data.name }}</span>
             </div>
           </template>
         </Column>
@@ -109,7 +95,7 @@
             </div>
           </template>
         </Column>
-      </DataTable>
+      </ModuleTable>
     </div>
 
     <!-- Add/Edit Task Dialog -->
@@ -118,7 +104,11 @@
       :style="{ width: '800px' }" 
       :header="isEditMode ? 'Edit Task' : 'Add New Task'" 
       :modal="true"
-      class="p-fluid"
+      class="p-dialog-custom"
+      :pt="{
+        root: { style: { position: 'relative', margin: '0 auto' } },
+        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+      }"
     >
       <div class="field">
         <label for="name">Name</label>
@@ -214,28 +204,36 @@
       </div>
 
       <template #footer>
-        <Button 
-          label="Cancel" 
-          icon="pi pi-times" 
-          class="p-button-text" 
-          @click="hideDialog"
-        />
-        <Button 
-          :label="isEditMode ? 'Save' : 'Add'" 
-          icon="pi pi-check" 
-          class="p-button-text" 
-          @click="saveTask" 
-          :loading="submitting"
-        />
+        <div class="flex justify-content-end gap-2">
+          <Button 
+            label="Cancel" 
+            icon="pi pi-times" 
+            class="p-button-text" 
+            @click="hideDialog"
+          />
+          <Button 
+            :label="isEditMode ? 'Save' : 'Add'" 
+            icon="pi pi-check" 
+            class="p-button-primary" 
+            @click="saveTask" 
+            :loading="submitting"
+          />
+        </div>
       </template>
     </Dialog>
 
     <!-- Delete Task Confirmation -->
     <Dialog 
       v-model:visible="deleteTaskDialog" 
-      :style="{ width: '450px' }" 
       header="Confirm" 
       :modal="true"
+      :draggable="false"
+      :style="{ width: '450px' }" 
+      class="p-dialog-custom"
+      :pt="{
+        root: { style: { position: 'relative', margin: '0 auto' } },
+        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+      }"
     >
       <div class="confirmation-content">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
@@ -244,19 +242,21 @@
         </span>
       </div>
       <template #footer>
-        <Button 
-          label="No" 
-          icon="pi pi-times" 
-          class="p-button-text" 
-          @click="deleteTaskDialog = false"
-        />
-        <Button 
-          label="Yes" 
-          icon="pi pi-check" 
-          class="p-button-text" 
-          @click="confirmDelete" 
-          :loading="deleting"
-        />
+        <div class="flex justify-content-end gap-2">
+          <Button 
+            label="No" 
+            icon="pi pi-times" 
+            class="p-button-text" 
+            @click="deleteTaskDialog = false"
+          />
+          <Button 
+            label="Yes" 
+            icon="pi pi-check" 
+            class="p-button-danger" 
+            @click="confirmDelete" 
+            :loading="deleting"
+          />
+        </div>
       </template>
     </Dialog>
   </div>
@@ -264,7 +264,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -276,6 +275,9 @@ import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
+import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import SearchBar from '../../components/shared/SearchBar.vue';
+import ModuleTable from '../../components/shared/ModuleTable.vue';
 
 interface Task {
   id: string;
@@ -345,7 +347,7 @@ const taskTypes = [
 ];
 
 const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
 const formatTaskType = (type: string) => {
@@ -534,61 +536,58 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.header {
-  padding: 1.5rem 2rem;
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--surface-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title-section h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0 0 0.5rem 0;
-}
-
-.subtitle {
-  color: var(--text-color-secondary);
-  margin: 0;
-}
-
-.content {
-  flex: 1;
-  padding: 2rem;
   background: var(--surface-ground);
-  overflow-y: auto;
 }
 
-.empty-state {
+.automation-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  min-height: 0;
+  background: var(--surface-ground);
+}
+
+:deep(.p-tag) {
+  min-width: 75px;
   justify-content: center;
-  text-align: center;
-  padding: 3rem;
-  color: var(--text-color-secondary);
 }
 
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
+:deep(.p-dialog-mask) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+:deep(.p-dialog) {
+  margin: 0 auto !important;
 }
 
-.empty-state p {
-  margin: 0;
-  font-size: 0.875rem;
+:deep(.p-dialog-content) {
+  overflow-y: auto !important;
+  max-height: calc(90vh - 120px) !important;
+}
+
+.p-dialog-custom {
+  .p-dialog-header {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .p-dialog-content {
+    background: var(--surface-section);
+    color: var(--text-color);
+    padding: 1.5rem;
+  }
+
+  .p-dialog-footer {
+    background: var(--surface-section);
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--surface-border);
+  }
 }
 
 .confirmation-content {
@@ -596,6 +595,11 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+}
+
+.task-icon {
+  font-size: 1.125rem;
+  color: var(--primary-color);
 }
 
 .p-text-secondary {

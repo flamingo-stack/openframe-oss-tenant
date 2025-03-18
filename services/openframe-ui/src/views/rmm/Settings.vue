@@ -1,310 +1,253 @@
 <template>
   <div class="rmm-settings">
-    <div class="header">
-      <div class="title-section">
-        <h2>Settings</h2>
-        <p class="subtitle">Configure RMM settings and preferences</p>
-      </div>
-      <div class="actions">
-        <Button 
-          label="Save Changes" 
-          icon="pi pi-save"
-          :loading="saving"
-          :disabled="!hasChanges"
-          @click="saveSettings"
-        />
-      </div>
+    <div v-if="error" class="error-message">
+      <i class="pi pi-exclamation-triangle" style="font-size: 1.25rem"></i>
+      <span v-html="error"></span>
     </div>
 
-    <div class="content">
-      <div class="grid">
-        <!-- General Settings -->
-        <div class="col-12 md:col-6 lg:col-4">
-          <Panel header="General Settings">
-            <div class="field">
-              <label for="agentPort">Agent Port</label>
-              <InputNumber 
-                id="agentPort" 
-                v-model="settings.agent_port" 
-                :min="1" 
-                :max="65535"
-                class="w-full"
-              />
-            </div>
+    <div v-else-if="loading" class="loading-spinner">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+      <span>Loading configuration...</span>
+    </div>
 
-            <div class="field">
-              <label for="checkInterval">Check Interval (minutes)</label>
-              <InputNumber 
-                id="checkInterval" 
-                v-model="settings.check_interval" 
-                :min="1" 
-                :max="1440"
-                class="w-full"
-              />
-            </div>
-
-            <div class="field">
-              <label for="logLevel">Log Level</label>
-              <Dropdown
-                id="logLevel"
-                v-model="settings.log_level"
-                :options="logLevels"
-                optionLabel="name"
-                optionValue="value"
-                class="w-full"
-              />
-            </div>
-          </Panel>
-        </div>
-
-        <!-- Monitoring Settings -->
-        <div class="col-12 md:col-6 lg:col-4">
-          <Panel header="Monitoring Settings">
-            <div class="field">
-              <label for="cpuWarning">CPU Warning Threshold (%)</label>
-              <InputNumber 
-                id="cpuWarning" 
-                v-model="settings.monitoring.cpu_warning" 
-                :min="0" 
-                :max="100"
-                suffix="%"
-                class="w-full"
-              />
-            </div>
-
-            <div class="field">
-              <label for="cpuCritical">CPU Critical Threshold (%)</label>
-              <InputNumber 
-                id="cpuCritical" 
-                v-model="settings.monitoring.cpu_critical" 
-                :min="0" 
-                :max="100"
-                suffix="%"
-                class="w-full"
-              />
-            </div>
-
-            <div class="field">
-              <label for="memoryWarning">Memory Warning Threshold (%)</label>
-              <InputNumber 
-                id="memoryWarning" 
-                v-model="settings.monitoring.memory_warning" 
-                :min="0" 
-                :max="100"
-                suffix="%"
-                class="w-full"
-              />
-            </div>
-
-            <div class="field">
-              <label for="memoryCritical">Memory Critical Threshold (%)</label>
-              <InputNumber 
-                id="memoryCritical" 
-                v-model="settings.monitoring.memory_critical" 
-                :min="0" 
-                :max="100"
-                suffix="%"
-                class="w-full"
-              />
-            </div>
-
-            <div class="field">
-              <label for="diskWarning">Disk Warning Threshold (%)</label>
-              <InputNumber 
-                id="diskWarning" 
-                v-model="settings.monitoring.disk_warning" 
-                :min="0" 
-                :max="100"
-                suffix="%"
-                class="w-full"
-              />
-            </div>
-
-            <div class="field">
-              <label for="diskCritical">Disk Critical Threshold (%)</label>
-              <InputNumber 
-                id="diskCritical" 
-                v-model="settings.monitoring.disk_critical" 
-                :min="0" 
-                :max="100"
-                suffix="%"
-                class="w-full"
-              />
-            </div>
-          </Panel>
-        </div>
-
-        <!-- Notification Settings -->
-        <div class="col-12 md:col-6 lg:col-4">
-          <Panel header="Notification Settings">
-            <div class="field">
-              <label for="emailNotifications">Email Notifications</label>
-              <div class="flex align-items-center">
-                <InputSwitch 
-                  id="emailNotifications"
-                  v-model="settings.notifications.email_enabled"
-                />
-                <span class="ml-2">{{ settings.notifications.email_enabled ? 'Enabled' : 'Disabled' }}</span>
-              </div>
-            </div>
-
-            <div class="field" v-if="settings.notifications.email_enabled">
-              <label for="emailRecipients">Email Recipients</label>
-              <Chips
-                id="emailRecipients"
-                v-model="settings.notifications.email_recipients"
-                separator=","
-                class="w-full"
-                placeholder="Enter email and press Enter"
-              />
-            </div>
-
-            <div class="field">
-              <label for="slackNotifications">Slack Notifications</label>
-              <div class="flex align-items-center">
-                <InputSwitch 
-                  id="slackNotifications"
-                  v-model="settings.notifications.slack_enabled"
-                />
-                <span class="ml-2">{{ settings.notifications.slack_enabled ? 'Enabled' : 'Disabled' }}</span>
-              </div>
-            </div>
-
-            <div class="field" v-if="settings.notifications.slack_enabled">
-              <label for="slackWebhook">Slack Webhook URL</label>
-              <InputText 
-                id="slackWebhook"
-                v-model="settings.notifications.slack_webhook"
-                type="password"
-                class="w-full"
-                placeholder="https://hooks.slack.com/services/..."
-              />
-            </div>
-          </Panel>
-        </div>
+    <div v-else class="settings-layout">
+      <div class="settings-categories">
+        <ul class="category-menu">
+          <router-link 
+            v-for="category in categories" 
+            :key="category.key"
+            :to="{ name: 'rmm-settings-category', params: { category: category.key }}"
+            custom
+            v-slot="{ isActive, navigate }"
+          >
+            <li 
+              :class="{ active: isActive }"
+              @click="navigate"
+            >
+              <i :class="category.icon"></i>
+              <span>{{ category.label }}</span>
+            </li>
+          </router-link>
+        </ul>
       </div>
+
+      <router-view
+        :settings="settings"
+        :formatKey="formatKey"
+        :hasPropertyChanges="hasPropertyChanges"
+        :isSaving="isSaving"
+        :saveConfigProperty="saveConfigProperty"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import Panel from 'primevue/panel';
-import Button from 'primevue/button';
-import InputNumber from 'primevue/inputnumber';
-import Dropdown from 'primevue/dropdown';
-import InputSwitch from 'primevue/inputswitch';
-import InputText from 'primevue/inputtext';
-import Chips from 'primevue/chips';
+import { useRoute, useRouter } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
 
-interface MonitoringSettings {
-  cpu_warning: number;
-  cpu_critical: number;
-  memory_warning: number;
-  memory_critical: number;
-  disk_warning: number;
-  disk_critical: number;
-}
-
-interface NotificationSettings {
-  email_enabled: boolean;
-  email_recipients: string[];
-  slack_enabled: boolean;
-  slack_webhook: string;
-}
-
-interface Settings {
-  agent_port: number;
-  check_interval: number;
-  log_level: string;
-  monitoring: MonitoringSettings;
-  notifications: NotificationSettings;
-}
-
-interface SettingsResponse {
-  data: Settings;
-}
-
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm/api/v1`;
+const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
 
+const route = useRoute();
+const router = useRouter();
+
+interface Settings {
+  agent_port?: number;
+  check_interval?: number;
+  agent_debug_level: string;
+  debug_log_prune_days: number;
+  agent_history_prune_days: number;
+  check_history_prune_days: number;
+  resolved_alerts_prune_days: number;
+  audit_log_prune_days: number;
+  clear_faults_days: number;
+  agent_auto_update: boolean;
+  smtp_from_email: string;
+  smtp_from_name: string | null;
+  smtp_host: string;
+  smtp_host_user: string;
+  smtp_host_password: string;
+  smtp_port: number;
+  smtp_requires_auth: boolean;
+  email_alert_recipients: string[];
+  notify_on_warning_alerts: boolean;
+  notify_on_info_alerts: boolean;
+  default_time_zone: string;
+  all_timezones: string[];
+}
+
+interface CategoryConfig {
+  key: string;
+  label: string;
+  icon: string;
+  endpoint?: string;
+}
+
+interface DynamicSettings extends Settings {
+  [key: string]: any;
+}
+
+const loading = ref(true);
 const saving = ref(false);
-const originalSettings = ref<Settings | null>(null);
-const settings = ref<Settings>({
-  agent_port: 8080,
-  check_interval: 5,
-  log_level: 'info',
-  monitoring: {
-    cpu_warning: 80,
-    cpu_critical: 90,
-    memory_warning: 80,
-    memory_critical: 90,
-    disk_warning: 80,
-    disk_critical: 90
-  },
-  notifications: {
-    email_enabled: false,
-    email_recipients: [],
-    slack_enabled: false,
-    slack_webhook: ''
-  }
-});
+const error = ref<string>('');
+const settings = ref<DynamicSettings>({} as DynamicSettings);
+const originalSettings = ref<DynamicSettings | null>(null);
+const savingProperties = ref(new Set<string>());
 
-const logLevels = [
-  { name: 'Debug', value: 'debug' },
-  { name: 'Info', value: 'info' },
-  { name: 'Warning', value: 'warning' },
-  { name: 'Error', value: 'error' }
-];
+const categories = computed((): CategoryConfig[] => [
+  { key: 'general', label: 'General', icon: 'pi pi-cog' },
+  { key: 'email', label: 'Email Alerts', icon: 'pi pi-envelope' },
+  { key: 'sms', label: 'SMS Alerts', icon: 'pi pi-mobile' },
+  { key: 'mesh', label: 'MeshCentral', icon: 'pi pi-server' },
+  { key: 'custom_fields', label: 'Custom Fields', icon: 'pi pi-list', endpoint: '/core/customfields/' },
+  { key: 'key_store', label: 'Key Store', icon: 'pi pi-key', endpoint: '/core/keystore/' },
+  { key: 'url_actions', label: 'URL Actions', icon: 'pi pi-link', endpoint: '/core/urlaction/' },
+  { key: 'webhooks', label: 'Web Hooks', icon: 'pi pi-rss', endpoint: '/core/webhook/' },
+  { key: 'retention', label: 'Retention', icon: 'pi pi-trash' },
+  { key: 'api_keys', label: 'API Keys', icon: 'pi pi-key', endpoint: '/accounts/apikeys/' },
+  { key: 'sso', label: 'Single Sign-On (SSO)', icon: 'pi pi-sign-in', endpoint: '/accounts/ssoproviders/' }
+]);
 
-const hasChanges = computed(() => {
+const formatKey = (key: string): string => {
+  return key
+    .split(/[\s_]+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const hasPropertyChanges = (category: string): boolean => {
   if (!originalSettings.value) return false;
-  return JSON.stringify(settings.value) !== JSON.stringify(originalSettings.value);
-});
+  
+  const currentValue = settings.value[category as keyof Settings];
+  const originalValue = originalSettings.value[category as keyof Settings];
+  
+  return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
+};
+
+const isSaving = (category: string): boolean => {
+  return savingProperties.value.has(category);
+};
+
+const fetchCategoryData = async (category: string) => {
+  const categoryConfig = categories.value.find(c => c.key === category);
+  if (!categoryConfig?.endpoint) {
+    return null; // This category uses the main settings endpoint
+  }
+
+  try {
+    // Remove /core/ from the API URL for non-core endpoints
+    const baseUrl = categoryConfig.endpoint.startsWith('/accounts/') 
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm`
+      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
+      
+    const response = await restClient.get(`${baseUrl}${categoryConfig.endpoint}`);
+    return response;
+  } catch (err: any) {
+    console.error(`Error fetching ${category} data:`, err);
+    const message = err.response?.message || err.message || `Failed to fetch ${category} data`;
+    toastService.showError(message);
+    throw err;
+  }
+};
 
 const fetchSettings = async () => {
+  loading.value = true;
+  error.value = '';
   try {
-    const response = await restClient.get<SettingsResponse>(`${API_URL}/settings`);
-    settings.value = response.data;
-    originalSettings.value = JSON.parse(JSON.stringify(response.data));
-  } catch (error: any) {
-    console.error('Error fetching settings:', error);
-    toastService.showError('Failed to fetch settings');
-  }
-};
+    const response = await restClient.get<Settings>(`${API_URL}/settings/`);
+    settings.value = response;
+    originalSettings.value = JSON.parse(JSON.stringify(response));
 
-const saveSettings = async () => {
-  saving.value = true;
-  try {
-    await restClient.patch(`${API_URL}/settings`, settings.value);
-    originalSettings.value = JSON.parse(JSON.stringify(settings.value));
-    toastService.showSuccess('Settings saved successfully');
-  } catch (error: any) {
-    console.error('Error saving settings:', error);
-    toastService.showError('Failed to save settings');
+    // If we're on a category that needs additional data, fetch it
+    const currentCategory = route.params.category;
+    if (currentCategory && typeof currentCategory === 'string') {
+      const categoryData = await fetchCategoryData(currentCategory);
+      if (categoryData) {
+        settings.value = {
+          ...settings.value,
+          [currentCategory]: categoryData
+        };
+      }
+    }
+  } catch (err: any) {
+    console.error('Error fetching settings:', err);
+    const message = err.response?.message || err.message || 'Failed to fetch settings';
+    error.value = message;
+    toastService.showError(message);
   } finally {
-    saving.value = false;
+    loading.value = false;
   }
 };
 
-// Watch for changes in email_enabled and slack_enabled to reset related fields
-watch(() => settings.value.notifications.email_enabled, (newValue) => {
-  if (!newValue) {
-    settings.value.notifications.email_recipients = [];
+// Update fetchSettings when route changes
+watch(() => route.params.category, async (newCategory) => {
+  if (newCategory && typeof newCategory === 'string') {
+    const categoryData = await fetchCategoryData(newCategory);
+    if (categoryData) {
+      settings.value = {
+        ...settings.value,
+        [newCategory]: categoryData
+      };
+    }
   }
 });
 
-watch(() => settings.value.notifications.slack_enabled, (newValue) => {
-  if (!newValue) {
-    settings.value.notifications.slack_webhook = '';
+const saveConfigProperty = async (category: keyof Settings, subKey: string | null) => {
+  const path = subKey ? `${category}.${subKey}` : category;
+  savingProperties.value.add(path);
+
+  try {
+    let value: any;
+    if (subKey) {
+      const categoryValue = settings.value[category];
+      if (typeof categoryValue === 'object' && categoryValue !== null) {
+        value = (categoryValue as any)[subKey];
+      } else {
+        throw new Error(`Invalid category: ${category}`);
+      }
+    } else {
+      value = settings.value[category];
+    }
+    
+    const patchData = subKey 
+      ? { [category]: { [subKey]: value } }
+      : { [category]: value };
+
+    const categoryConfig = categories.value.find(c => c.key === category);
+    const baseUrl = categoryConfig?.endpoint?.startsWith('/accounts/') 
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm`
+      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
+    
+    await restClient.patch(`${baseUrl}/settings/`, patchData);
+    
+    // Update original settings to reflect the saved state
+    originalSettings.value = JSON.parse(JSON.stringify(settings.value));
+    
+    toastService.showSuccess('Settings saved successfully');
+  } catch (err: any) {
+    console.error('Error saving settings:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to save settings';
+    toastService.showError(message);
+    throw err;
+  } finally {
+    savingProperties.value.delete(path);
   }
-});
+};
 
 onMounted(async () => {
   await fetchSettings();
+  
+  // If no category in URL, navigate to first available category
+  if (!route.params.category && categories.value.length > 0) {
+    router.push({ 
+      name: 'rmm-settings-category', 
+      params: { category: categories.value[0].key }
+    });
+  }
 });
 </script>
 
@@ -313,52 +256,76 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.header {
-  padding: 1.5rem 2rem;
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--surface-border);
+.settings-layout {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title-section h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0 0 0.5rem 0;
-}
-
-.subtitle {
-  color: var(--text-color-secondary);
-  margin: 0;
-}
-
-.content {
+  gap: 2rem;
   flex: 1;
-  padding: 2rem;
+  min-height: 0;
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+}
+
+.settings-categories {
+  flex: 0 0 220px;
   background: var(--surface-ground);
+  border-radius: 8px;
+  padding: 0.5rem;
   overflow-y: auto;
 }
 
-.field {
-  margin-bottom: 1.5rem;
+.category-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.field:last-child {
-  margin-bottom: 0;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.5rem;
+.category-menu li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
   color: var(--text-color);
-  font-weight: 500;
 }
 
-.p-panel .p-panel-content {
-  padding: 1.5rem;
+.category-menu li:hover {
+  background: var(--surface-hover);
 }
-</style> 
+
+.category-menu li.active {
+  background: var(--primary-color);
+  color: var(--primary-color-text);
+
+}
+
+.category-menu li i {
+  font-size: 1rem;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--red-100);
+  color: var(--red-700);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+</style>

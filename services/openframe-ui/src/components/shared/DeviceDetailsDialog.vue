@@ -31,12 +31,6 @@
               @click="onRunCommand"
             />
             <Button 
-              icon="pi pi-pencil" 
-              class="p-button-text p-button-sm device-details-edit-dialog" 
-              v-tooltip.top="'Edit Settings'"
-              @click="onEdit"
-            />
-            <Button 
               icon="pi pi-trash" 
               class="p-button-text p-button-sm p-button-danger" 
               v-tooltip.top="'Delete Device'"
@@ -154,90 +148,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Edit Device Dialog -->
-    <Dialog
-      v-model:visible="showEditDialog"
-      :header="`Edit ${device?.hostname}`"
-      :modal="true"
-      class="p-dialog-custom"
-      :style="{ width: '500px' }"
-    >
-      <div class="grid">
-        <div class="col-12">
-          <span class="text-sm text-500">Site</span>
-          <Dropdown
-            v-model="editForm.site"
-            :options="[{ label: 'Default Site', value: 1 }]"
-            optionLabel="label"
-            optionValue="value"
-            class="w-full mt-1"
-          />
-        </div>
-        <div class="col-12">
-          <span class="text-sm text-500">Type</span>
-          <Dropdown
-            v-model="editForm.monitoring_type"
-            :options="[
-              { label: 'Server', value: 'server' },
-              { label: 'Workstation', value: 'workstation' }
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            class="w-full mt-1"
-          />
-        </div>
-        <div class="col-12">
-          <span class="text-sm text-500">Description</span>
-          <InputText v-model="editForm.description" class="w-full mt-1" />
-        </div>
-        <div class="col-12">
-          <span class="text-sm text-500">Timezone</span>
-          <Dropdown
-            v-model="editForm.time_zone"
-            :options="timezoneOptions"
-            optionLabel="label"
-            optionValue="value"
-            class="w-full mt-1"
-            :filter="true"
-          />
-        </div>
-        <div class="col-12">
-          <span class="text-sm text-500">Run checks every</span>
-          <div class="p-inputgroup mt-1">
-            <InputNumber v-model="editForm.check_interval" :min="60" :step="60" />
-            <span class="p-inputgroup-addon">Seconds</span>
-          </div>
-        </div>
-        <div class="col-12">
-          <span class="text-sm text-500">Mark as offline after</span>
-          <div class="p-inputgroup mt-1">
-            <InputNumber v-model="editForm.offline_time" :min="1" />
-            <span class="p-inputgroup-addon">Minutes</span>
-          </div>
-        </div>
-        <div class="col-12">
-          <span class="text-sm text-500">Mark as overdue after</span>
-          <div class="p-inputgroup mt-1">
-            <InputNumber v-model="editForm.overdue_time" :min="1" />
-            <span class="p-inputgroup-addon">Minutes</span>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="flex flex-column gap-2">
-            <Checkbox v-model="editForm.overdue_email_alert" :binary="true" label="Get overdue email alerts" />
-            <Checkbox v-model="editForm.overdue_text_alert" :binary="true" label="Get overdue SMS alerts" />
-            <Checkbox v-model="editForm.overdue_dashboard_alert" :binary="true" label="Show overdue alerts on dashboard" />
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <Button label="Cancel" class="p-button-text" @click="showEditDialog = false" />
-          <Button label="Save" @click="handleSaveEdit" />
-        </div>
-      </template>
-    </Dialog>
 
     <template #footer>
       <div class="flex justify-content-end">
@@ -369,7 +279,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
   (e: 'runCommand'): void;
-  (e: 'edit', device: Device): void;
   (e: 'delete'): void;
 }>();
 
@@ -482,39 +391,12 @@ const getUniqueDisks = (disks: Disk[]) => {
 };
 
 const onClose = () => {
-  showEditDialog.value = false;
   emit('update:visible', false);
 };
 
 const onRunCommand = () => {
   emit('runCommand');
   onClose();
-};
-
-const onEdit = () => {
-  if (props.device) {
-    emit('edit', props.device);
-  }
-};
-
-const handleSaveEdit = async () => {
-  try {
-    await restClient.post(
-      `${envConfig.GATEWAY_URL}/agents/${editForm.value.agent_id}/`,
-      editForm.value,
-      {
-        method: 'PUT'
-      }
-    );
-    toastService.showSuccess('Device settings updated successfully');
-    showEditDialog.value = false;
-    if (props.device) {
-      emit('edit', props.device);
-    }
-  } catch (error) {
-    console.error('Error updating device:', error);
-    toastService.showError('Failed to update device settings');
-  }
 };
 
 const onDelete = () => {
