@@ -1,0 +1,4 @@
+# Stream service docker environment configuration
+spring:
+  kafka:
+    bootstrap-servers: openframe-kafka:9092

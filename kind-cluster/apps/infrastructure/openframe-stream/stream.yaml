@@ -25,7 +25,7 @@ spec:
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "docker"
+              value: "k8s "
             - name: SPRING_CONFIG_IMPORT
               value: "optional:configserver:http://openframe-config-server:8888"
           livenessProbe:
