@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { OAuthError } from '@/errors/OAuthError'
+import { ConfigService } from '@/config/config.service'
 
 export interface TokenResponse {
   access_token: string;
@@ -12,6 +13,7 @@ export interface TokenResponse {
 
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
+  const config = ConfigService.getInstance()
 
   async function login(email: string, password: string): Promise<TokenResponse> {
     try {
@@ -22,11 +24,11 @@ export const useAuthStore = defineStore('auth', () => {
       formData.append('grant_type', 'password');
       formData.append('username', email);
       formData.append('password', password);
-      formData.append('client_id', import.meta.env.VITE_CLIENT_ID);
-      formData.append('client_secret', import.meta.env.VITE_CLIENT_SECRET);
+      formData.append('client_id', config.clientId);
+      formData.append('client_secret', config.clientSecret);
       formData.append('scope', 'openid profile email');
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/token`, {
+      const response = await fetch(`${config.apiUrl}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -52,10 +54,10 @@ export const useAuthStore = defineStore('auth', () => {
     const formData = new URLSearchParams();
     formData.append('grant_type', 'refresh_token');
     formData.append('refresh_token', refreshToken);
-    formData.append('client_id', import.meta.env.VITE_CLIENT_ID);
-    formData.append('client_secret', import.meta.env.VITE_CLIENT_SECRET);
+    formData.append('client_id', config.clientId);
+    formData.append('client_secret', config.clientSecret);
 
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/token`, {
+    const response = await fetch(`${config.apiUrl}/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -104,13 +106,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
     try {
-      const credentials = btoa(`${import.meta.env.VITE_CLIENT_ID}:${import.meta.env.VITE_CLIENT_SECRET}`);
-      const apiUrl = `${import.meta.env.VITE_API_URL}/oauth/register`;
+      const credentials = btoa(`${config.clientId}:${config.clientSecret}`);
+      const apiUrl = `${config.apiUrl}/oauth/register`;
       console.log('Attempting to register with URL:', apiUrl);
       console.log('Environment variables:', {
-        VITE_API_URL: import.meta.env.VITE_API_URL,
-        VITE_CLIENT_ID: import.meta.env.VITE_CLIENT_ID,
-        VITE_CLIENT_SECRET: import.meta.env.VITE_CLIENT_SECRET
+        apiUrl: config.apiUrl,
+        clientId: config.clientId,
+        clientSecret: config.clientSecret
       });
 
       const response = await fetch(apiUrl, {
