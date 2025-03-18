@@ -278,8 +278,7 @@
 
       <template v-else-if="category === 'custom_fields'">
         <div class="field">
-          <div class="flex justify-content-between align-items-center mb-3">
-            <h3>Custom Fields</h3>
+          <div class="flex justify-content-end align-items-center mb-3">
             <Button 
               icon="pi pi-plus" 
               label="Add Field"
@@ -294,8 +293,6 @@
             :searchFields="['name', 'model', 'type']"
             emptyIcon="pi pi-list"
             emptyTitle="No Custom Fields"
-            emptyMessage="There are no custom fields defined yet."
-            emptyHint="Custom fields will appear here once they are created."
             :paginator="false"
             :scrollable="true"
             scrollHeight="calc(100vh - 300px)"
@@ -328,12 +325,6 @@
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
                   <Button 
-                    icon="pi pi-pencil" 
-                    class="p-button-text p-button-sm"
-                    v-tooltip.top="'Edit Field'"
-                    @click="editCustomField(data)"
-                  />
-                  <Button 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Field'"
@@ -348,8 +339,7 @@
 
       <template v-else-if="category === 'key_store'">
         <div class="field">
-          <div class="flex justify-content-between align-items-center mb-3">
-            <h3>Key Store</h3>
+          <div class="flex justify-content-end align-items-center mb-3">
             <Button 
               icon="pi pi-plus" 
               label="Add Key"
@@ -364,8 +354,6 @@
             :searchFields="['name']"
             emptyIcon="pi pi-key"
             emptyTitle="No Keys"
-            emptyMessage="There are no keys stored yet."
-            emptyHint="Keys will appear here once they are added."
             :paginator="false"
             :scrollable="true"
             scrollHeight="calc(100vh - 300px)"
@@ -396,12 +384,6 @@
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
                   <Button 
-                    icon="pi pi-pencil" 
-                    class="p-button-text p-button-sm"
-                    v-tooltip.top="'Edit Key'"
-                    @click="editKeyStore(data)"
-                  />
-                  <Button 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Key'"
@@ -416,8 +398,7 @@
 
       <template v-else-if="category === 'url_actions'">
         <div class="field">
-          <div class="flex justify-content-between align-items-center mb-3">
-            <h3>URL Actions & Webhooks</h3>
+          <div class="flex justify-content-end align-items-center mb-3">
             <Button 
               icon="pi pi-plus" 
               label="Add Action"
@@ -432,8 +413,6 @@
             :searchFields="['name', 'desc', 'pattern']"
             emptyIcon="pi pi-link"
             emptyTitle="No Actions"
-            emptyMessage="There are no URL actions or webhooks defined yet."
-            emptyHint="Actions will appear here once they are created."
             :paginator="false"
             :scrollable="true"
             scrollHeight="calc(100vh - 300px)"
@@ -466,12 +445,6 @@
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
                   <Button 
-                    icon="pi pi-pencil" 
-                    class="p-button-text p-button-sm"
-                    v-tooltip.top="'Edit Action'"
-                    @click="editUrlAction(data)"
-                  />
-                  <Button 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Action'"
@@ -486,8 +459,7 @@
 
       <template v-else-if="category === 'api_keys'">
         <div class="field">
-          <div class="flex justify-content-between align-items-center mb-3">
-            <h3>API Keys</h3>
+          <div class="flex justify-content-end align-items-center mb-3">
             <Button 
               icon="pi pi-plus" 
               label="Generate Key"
@@ -502,8 +474,6 @@
             :searchFields="['name']"
             emptyIcon="pi pi-key"
             emptyTitle="No API Keys"
-            emptyMessage="There are no API keys generated yet."
-            emptyHint="API keys will appear here once they are generated."
             :paginator="false"
             :scrollable="true"
             scrollHeight="calc(100vh - 300px)"
@@ -1383,115 +1353,75 @@ const getTypeSeverity = (type: string) => {
   font-size: 0.9rem;
 }
 
+:deep(.p-datatable .p-datatable-header) {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  background: var(--surface-ground);
+  color: var(--text-color-secondary);
+  font-weight: 600;
+  padding: 0.75rem;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 0.75rem;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr:hover) {
+  background: var(--surface-hover);
+}
+
+:deep(.p-button-text) {
+  padding: 0.25rem;
+}
+
+:deep(.p-button-text:hover) {
+  background: var(--surface-hover);
+}
+
+:deep(.p-tag) {
+  text-transform: capitalize;
+}
+
 .settings-table {
-  :deep(.p-datatable-wrapper) {
-    overflow: hidden;
-  }
-
-  :deep(.p-datatable-scrollable-body) {
-    overflow-y: auto;
-  }
-
   :deep(.p-datatable) {
-    background: var(--surface-card);
-    border-radius: var(--border-radius);
-    font-size: 0.9rem;
-  }
+    .p-datatable-wrapper {
+      border-radius: var(--border-radius);
+      background: var(--surface-card);
+    }
 
-  :deep(.p-datatable .p-datatable-header) {
-    background: transparent;
-    border: none;
-    padding: 0;
-  }
+    .p-datatable-thead > tr > th {
+      background: var(--surface-card) !important;
+      color: var(--text-color-secondary) !important;
+      padding: 1rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      border: none;
+      border-bottom: 1px solid var(--surface-border);
+    }
 
-  :deep(.p-datatable .p-datatable-thead > tr > th) {
-    background: var(--surface-ground);
-    color: var(--text-color-secondary);
-    font-weight: 600;
-    padding: 0.75rem;
-    white-space: normal;
-    word-wrap: break-word;
-    max-width: 300px;
-    border-bottom: 1px solid var(--surface-border);
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
-  }
+    .p-datatable-tbody > tr {
+      background: var(--surface-card);
+      border-bottom: 1px solid var(--surface-border);
 
-  :deep(.p-datatable .p-datatable-thead > tr > th:last-child) {
-    max-width: 100px;
-    white-space: nowrap;
-  }
+      > td {
+        padding: 1rem;
+        border: none;
+      }
 
-  :deep(.p-datatable .p-datatable-tbody > tr > td) {
-    padding: 0.75rem;
-    white-space: normal;
-    word-wrap: break-word;
-    max-width: 300px;
-    border-bottom: 1px solid var(--surface-border);
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td:last-child) {
-    max-width: 100px;
-    white-space: nowrap;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr:hover) {
-    background: var(--surface-hover);
-  }
-
-  :deep(.p-button-text) {
-    padding: 0.25rem;
-  }
-
-  :deep(.p-button-text:hover) {
-    background: var(--surface-hover);
+      &:hover {
+        background: var(--surface-hover);
+      }
+    }
   }
 
   :deep(.p-tag) {
     min-width: 75px;
     justify-content: center;
-    text-transform: capitalize;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr:last-child > td) {
-    border-bottom: none;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td) {
-    transition: background-color 0.2s;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td:first-child) {
-    padding-left: 1rem;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td:last-child) {
-    padding-right: 1rem;
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td) {
-    background: var(--surface-card);
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr:hover > td) {
-    background: var(--surface-hover);
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text) {
-    color: var(--text-color-secondary);
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text:hover) {
-    color: var(--text-color);
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text.p-button-danger) {
-    color: var(--red-500);
-  }
-
-  :deep(.p-datatable .p-datatable-tbody > tr > td .p-button-text.p-button-danger:hover) {
-    color: var(--red-600);
   }
 }
 </style> 

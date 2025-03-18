@@ -83,15 +83,14 @@ const filters = ref({
   }
 
   .p-datatable-thead > tr > th {
-    background: var(--surface-card);
-    color: var(--text-color-secondary);
-    padding: 1rem 1.5rem;
-    font-weight: 700;
-    font-size: 0.75rem;
+    background: var(--surface-card) !important;
+    color: #ffffff !important;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
     border: none;
-    border-bottom: 2px solid var(--surface-border);
+    border-bottom: none;
 
     &:first-child {
       border-top-left-radius: var(--border-radius);
