@@ -126,8 +126,15 @@ case "$1" in
     ;;
   cassandra)
     # CASSANDRA (depends on Loki)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml && \
-    kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
+    # TODO: replace with bitnami/cassandra and remove docker build and files
+    # kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml && \
+    # kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
+
+    helm upgrade -i openframe-cassandra bitnami/cassandra \
+      -n infrastructure --create-namespace \
+      --version 12.2.1 \
+      -f ./kind-cluster/apps/infrastructure/openframe-cassandra/helm/bitnami-cassandra.yaml && \
+    kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=cassandra --timeout 20m
     ;;
   nifi)
     # NIFI (depends on Loki)
