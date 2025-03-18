@@ -16,3 +16,7 @@ openframe:
 fleet:
   api:
     url: http://openframe-fleet:8070
+
+# Docker monitoring endpoints
+loki:
+  url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
