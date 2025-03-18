@@ -300,10 +300,7 @@
           >
             <Column field="name" header="Name" sortable>
               <template #body="{ data }">
-                <div class="flex align-items-center">
-                  <i class="pi pi-tag mr-2"></i>
-                  <span>{{ data.name }}</span>
-                </div>
+                <span>{{ data.name }}</span>
               </template>
             </Column>
             <Column field="model" header="Model" sortable>
@@ -361,10 +358,7 @@
           >
             <Column field="name" header="Name" sortable>
               <template #body="{ data }">
-                <div class="flex align-items-center">
-                  <i class="pi pi-key mr-2"></i>
-                  <span>{{ data.name }}</span>
-                </div>
+                <span>{{ data.name }}</span>
               </template>
             </Column>
             <Column field="value" header="Value">
