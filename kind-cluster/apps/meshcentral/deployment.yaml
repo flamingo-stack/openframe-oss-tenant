@@ -66,7 +66,7 @@ spec:
         runAsUser: 0
       containers:
       - name: meshcentral
-        image: ghcr.io/flamingo-cx/openframe-meshcentral-server:110325
+        image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
         ports:
         - containerPort: 8383
         env:
@@ -146,7 +146,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: nginx
-        image: ghcr.io/flamingo-cx/openframe-meshcentral-nginx:110325
+        image: ghcr.io/flamingo-cx/openframe-meshcentral-nginx:latest
         ports:
         - containerPort: 8383
         env:

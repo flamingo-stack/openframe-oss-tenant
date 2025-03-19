@@ -99,12 +99,6 @@ spec:
             name: openframe-mongodb-init
         - name: logs
           emptyDir: {}
-
-  volumeClaimTemplates:
-    - metadata:
-        name: openframe-mongodb-storage
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 5Gi
+        - name: openframe-mongodb-storage
+          persistentVolumeClaim:
+            claimName: openframe-mongodb-pvc
