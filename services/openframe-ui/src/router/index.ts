@@ -212,7 +212,7 @@ router.beforeEach(async (to, from, next) => {
   if (!to.meta.requiresAuth) {
     if (to.path === '/login' && token) {
       console.log('↩️ [Router] Already logged in, redirecting to home');
-      next('/');
+      next('/dashboard');
     } else {
       console.log('➡️ [Router] Proceeding to public route:', to.path);
       next();
@@ -227,24 +227,18 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // Only validate token if we're not coming from login
-  if (from.path !== '/login') {
-    try {
-      console.log('🔍 [Router] Verifying token validity...');
-      await AuthService.getUserInfo();
-      console.log('✅ [Router] Token is valid, proceeding to route');
-      next();
-    } catch (error) {
-      console.error('❌ [Router] Token validation failed:', error);
-      // Clear tokens and redirect to login
-      const authStore = useAuthStore();
-      authStore.logout();
-      next('/login');
-    }
-  } else {
-    // If coming from login, trust the token is valid
-    console.log('✅ [Router] Coming from login, proceeding to route');
+  // For all protected routes, validate the token
+  try {
+    console.log('🔍 [Router] Verifying token validity...');
+    await AuthService.getUserInfo();
+    console.log('✅ [Router] Token is valid, proceeding to route');
     next();
+  } catch (error) {
+    console.error('❌ [Router] Token validation failed:', error);
+    // Clear tokens and redirect to login
+    const authStore = useAuthStore();
+    authStore.logout();
+    next('/login');
   }
 });
 

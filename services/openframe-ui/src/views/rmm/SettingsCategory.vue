@@ -13,7 +13,7 @@
             v-model="settings.default_time_zone"
             :options="settings.all_timezones"
             class="w-full"
-            @change="() => saveConfigProperty('default_time_zone', null)"
+            @update:modelValue="(val: string) => saveConfigProperty('default_time_zone', null, val)"
           />
         </div>
 
@@ -26,7 +26,7 @@
             optionLabel="name"
             optionValue="value"
             class="w-full"
-            @change="() => saveConfigProperty('agent_debug_level', null)"
+            @update:modelValue="(val: string) => saveConfigProperty('agent_debug_level', null, val)"
           />
         </div>
 
@@ -36,96 +36,99 @@
             <InputSwitch
               id="agentAutoUpdate"
               v-model="settings.agent_auto_update"
-              @change="() => saveConfigProperty('agent_auto_update', null)"
+              @change="(event: Event) => saveConfigProperty('agent_auto_update', null, (event.target as HTMLInputElement).checked)"
             />
             <span class="ml-2">{{ settings.agent_auto_update ? 'Enabled' : 'Disabled' }}</span>
           </div>
         </div>
 
-        <div class="section-title">Cleanup Settings</div>
-        
-        <div class="field">
-          <label for="checkHistoryPrune">Check History Prune Days</label>
-          <InputNumber
-            id="checkHistoryPrune"
-            v-model="settings.check_history_prune_days"
-            :min="0"
-            class="w-full"
-            :showButtons="false"
-            :useGrouping="false"
-            @update:modelValue="val => saveConfigProperty('check_history_prune_days', null)"
-          />
-          <small>Days to keep check history (0 for no pruning)</small>
-        </div>
+        <div class="alert-section">
+          <h3 class="section-title">Cleanup Settings</h3>
+          <div class="section-content">
+            <div class="field">
+              <label for="checkHistoryPrune">Check History Prune Days</label>
+              <InputNumber
+                id="checkHistoryPrune"
+                v-model="settings.check_history_prune_days"
+                :min="0"
+                class="w-full"
+                :showButtons="false"
+                :useGrouping="false"
+                @update:modelValue="(val: number | null) => saveConfigProperty('check_history_prune_days', null, val)"
+              />
+              <small>Days to keep check history (0 for no pruning)</small>
+            </div>
 
-        <div class="field">
-          <label for="resolvedAlertsPrune">Resolved Alerts Prune Days</label>
-          <InputNumber
-            id="resolvedAlertsPrune"
-            v-model="settings.resolved_alerts_prune_days"
-            :min="0"
-            class="w-full"
-            :showButtons="false"
-            :useGrouping="false"
-            @update:modelValue="val => saveConfigProperty('resolved_alerts_prune_days', null)"
-          />
-          <small>Days to keep resolved alerts (0 for no pruning)</small>
-        </div>
+            <div class="field">
+              <label for="resolvedAlertsPrune">Resolved Alerts Prune Days</label>
+              <InputNumber
+                id="resolvedAlertsPrune"
+                v-model="settings.resolved_alerts_prune_days"
+                :min="0"
+                class="w-full"
+                :showButtons="false"
+                :useGrouping="false"
+                @update:modelValue="(val: number | null) => saveConfigProperty('resolved_alerts_prune_days', null, val)"
+              />
+              <small>Days to keep resolved alerts (0 for no pruning)</small>
+            </div>
 
-        <div class="field">
-          <label for="agentHistoryPrune">Agent History Prune Days</label>
-          <InputNumber
-            id="agentHistoryPrune"
-            v-model="settings.agent_history_prune_days"
-            :min="0"
-            class="w-full"
-            :showButtons="false"
-            :useGrouping="false"
-            @update:modelValue="val => saveConfigProperty('agent_history_prune_days', null)"
-          />
-          <small>Days to keep agent history (0 for no pruning)</small>
-        </div>
+            <div class="field">
+              <label for="agentHistoryPrune">Agent History Prune Days</label>
+              <InputNumber
+                id="agentHistoryPrune"
+                v-model="settings.agent_history_prune_days"
+                :min="0"
+                class="w-full"
+                :showButtons="false"
+                :useGrouping="false"
+                @update:modelValue="(val: number | null) => saveConfigProperty('agent_history_prune_days', null, val)"
+              />
+              <small>Days to keep agent history (0 for no pruning)</small>
+            </div>
 
-        <div class="field">
-          <label for="debugLogPrune">Debug Log Prune Days</label>
-          <InputNumber
-            id="debugLogPrune"
-            v-model="settings.debug_log_prune_days"
-            :min="0"
-            class="w-full"
-            :showButtons="false"
-            :useGrouping="false"
-            @update:modelValue="val => saveConfigProperty('debug_log_prune_days', null)"
-          />
-          <small>Days to keep debug logs (0 for no pruning)</small>
-        </div>
+            <div class="field">
+              <label for="debugLogPrune">Debug Log Prune Days</label>
+              <InputNumber
+                id="debugLogPrune"
+                v-model="settings.debug_log_prune_days"
+                :min="0"
+                class="w-full"
+                :showButtons="false"
+                :useGrouping="false"
+                @update:modelValue="(val: number | null) => saveConfigProperty('debug_log_prune_days', null, val)"
+              />
+              <small>Days to keep debug logs (0 for no pruning)</small>
+            </div>
 
-        <div class="field">
-          <label for="auditLogPrune">Audit Log Prune Days</label>
-          <InputNumber
-            id="auditLogPrune"
-            v-model="settings.audit_log_prune_days"
-            :min="0"
-            class="w-full"
-            :showButtons="false"
-            :useGrouping="false"
-            @update:modelValue="val => saveConfigProperty('audit_log_prune_days', null)"
-          />
-          <small>Days to keep audit logs (0 for no pruning)</small>
-        </div>
+            <div class="field">
+              <label for="auditLogPrune">Audit Log Prune Days</label>
+              <InputNumber
+                id="auditLogPrune"
+                v-model="settings.audit_log_prune_days"
+                :min="0"
+                class="w-full"
+                :showButtons="false"
+                :useGrouping="false"
+                @update:modelValue="(val: number | null) => saveConfigProperty('audit_log_prune_days', null, val)"
+              />
+              <small>Days to keep audit logs (0 for no pruning)</small>
+            </div>
 
-        <div class="field">
-          <label for="clearFaults">Clear Faults Days</label>
-          <InputNumber
-            id="clearFaults"
-            v-model="settings.clear_faults_days"
-            :min="0"
-            class="w-full"
-            :showButtons="false"
-            :useGrouping="false"
-            @update:modelValue="val => saveConfigProperty('clear_faults_days', null)"
-          />
-          <small>Days after which to automatically clear faults (0 to disable)</small>
+            <div class="field">
+              <label for="clearFaults">Clear Faults Days</label>
+              <InputNumber
+                id="clearFaults"
+                v-model="settings.clear_faults_days"
+                :min="0"
+                class="w-full"
+                :showButtons="false"
+                :useGrouping="false"
+                @update:modelValue="(val: number | null) => saveConfigProperty('clear_faults_days', null, val)"
+              />
+              <small>Days after which to automatically clear faults (0 to disable)</small>
+            </div>
+          </div>
         </div>
       </template>
 
@@ -136,7 +139,7 @@
             <InputSwitch
               id="notifyWarning"
               v-model="settings.notify_on_warning_alerts"
-              @update:modelValue="val => saveConfigProperty('notify_on_warning_alerts', null)"
+              @update:modelValue="(val: boolean) => saveConfigProperty('notify_on_warning_alerts', null, val)"
             />
             <span class="ml-2">{{ settings.notify_on_warning_alerts ? 'Enabled' : 'Disabled' }}</span>
           </div>
@@ -148,7 +151,7 @@
             <InputSwitch
               id="notifyInfo"
               v-model="settings.notify_on_info_alerts"
-              @update:modelValue="val => saveConfigProperty('notify_on_info_alerts', null)"
+              @update:modelValue="(val: boolean) => saveConfigProperty('notify_on_info_alerts', null, val)"
             />
             <span class="ml-2">{{ settings.notify_on_info_alerts ? 'Enabled' : 'Disabled' }}</span>
           </div>
@@ -163,7 +166,7 @@
                 id="smtpFromEmail"
                 v-model="settings.smtp_from_email"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('smtp_from_email', null)"
+                @change="(event: Event) => saveConfigProperty('smtp_from_email', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -173,7 +176,7 @@
                 id="smtpFromName"
                 v-model="settings.smtp_from_name"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('smtp_from_name', null)"
+                @change="(event: Event) => saveConfigProperty('smtp_from_name', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -183,7 +186,7 @@
                 id="smtpHost"
                 v-model="settings.smtp_host"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('smtp_host', null)"
+                @change="(event: Event) => saveConfigProperty('smtp_host', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -193,7 +196,7 @@
                 id="smtpPort"
                 v-model="settings.smtp_port"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('smtp_port', null)"
+                @update:modelValue="(val: number | null) => saveConfigProperty('smtp_port', null, val)"
               />
             </div>
 
@@ -203,7 +206,7 @@
                 <InputSwitch
                   id="smtpRequiresAuth"
                   v-model="settings.smtp_requires_auth"
-                  @update:modelValue="val => saveConfigProperty('smtp_requires_auth', null)"
+                  @update:modelValue="(val: boolean) => saveConfigProperty('smtp_requires_auth', null, val)"
                 />
                 <span class="ml-2">{{ settings.smtp_requires_auth ? 'Required' : 'Not Required' }}</span>
               </div>
@@ -215,7 +218,7 @@
                 id="smtpUser"
                 v-model="settings.smtp_host_user"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('smtp_host_user', null)"
+                @change="(event: Event) => saveConfigProperty('smtp_host_user', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -227,20 +230,35 @@
                 class="w-full"
                 :feedback="false"
                 toggleMask
-                @update:modelValue="val => saveConfigProperty('smtp_host_password', null)"
+                @change="(event: Event) => saveConfigProperty('smtp_host_password', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
             <div class="field">
               <label for="emailRecipients">Email Alert Recipients</label>
-              <Chips
-                id="emailRecipients"
-                v-model="settings.email_alert_recipients"
-                separator=","
-                class="w-full"
-                placeholder="Enter email and press Enter"
-                @update:modelValue="val => saveConfigProperty('email_alert_recipients', null)"
-              />
+              <div class="recipients-list">
+                <div v-for="(recipient, index) in settings.email_alert_recipients" :key="index" class="recipient-item">
+                  <span>{{ recipient }}</span>
+                  <Button 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger"
+                    @click="removeEmailRecipient(index)"
+                  />
+                </div>
+                <div class="recipient-input">
+                  <InputText
+                    v-model="newEmailRecipient"
+                    class="w-full"
+                    placeholder="Enter email and press Enter"
+                    @keyup.enter="addEmailRecipient"
+                  />
+                  <Button 
+                    icon="pi pi-plus" 
+                    class="p-button-text p-button-sm"
+                    @click="addEmailRecipient"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -254,7 +272,7 @@
                 id="twilioNumber"
                 v-model="settings.twilio_number"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('twilio_number', null)"
+                @change="(event: Event) => saveConfigProperty('twilio_number', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -264,7 +282,7 @@
                 id="twilioAccountSid"
                 v-model="settings.twilio_account_sid"
                 class="w-full"
-                @update:modelValue="val => saveConfigProperty('twilio_account_sid', null)"
+                @change="(event: Event) => saveConfigProperty('twilio_account_sid', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -276,7 +294,7 @@
                 class="w-full"
                 :feedback="false"
                 toggleMask
-                @update:modelValue="val => saveConfigProperty('twilio_auth_token', null)"
+                @change="(event: Event) => saveConfigProperty('twilio_auth_token', null, (event.target as HTMLInputElement).value)"
               />
             </div>
 
@@ -348,7 +366,7 @@
             </Column>
             <Column field="required" header="Required" sortable>
               <template #body="{ data }">
-                <i :class="data.required ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"></i>
+                <span>{{ data.required ? 'Yes' : 'No' }}</span>
               </template>
             </Column>
             <Column :exportable="false" style="min-width: 8rem">
@@ -358,7 +376,7 @@
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Field'"
-                    @click="deleteCustomField(data.id)"
+                    @click="confirmDelete('custom_fields', data.id)"
                   />
                 </div>
               </template>
@@ -413,7 +431,7 @@
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Key'"
-                    @click="deleteKeyStore(data.id)"
+                    @click="confirmDelete('key_store', data.id)"
                   />
                 </div>
               </template>
@@ -470,7 +488,7 @@
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Action'"
-                    @click="deleteUrlAction(data.id)"
+                    @click="confirmDelete('url_actions', data.id)"
                   />
                 </div>
               </template>
@@ -529,8 +547,8 @@
                   <Button 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
-                    v-tooltip.top="'Delete Key'"
-                    @click="deleteApiKey(data.id)"
+                    v-tooltip.top="'Delete API Key'"
+                    @click="confirmDelete('api_keys', data.id)"
                   />
                 </div>
               </template>
@@ -875,10 +893,48 @@
       </div>
     </template>
   </Dialog>
+
+  <!-- Delete Confirmation Dialog -->
+  <Dialog 
+    v-model:visible="deleteDialog" 
+    header="Confirm" 
+    :modal="true" 
+    :draggable="false"
+    :style="{ width: '450px' }" 
+    class="p-dialog-custom"
+    :pt="{
+      root: { style: { position: 'relative', margin: '0 auto' } },
+      mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+    }"
+  >
+    <div class="confirmation-content">
+      <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
+      <span v-if="deleteType && deleteId">
+        Are you sure you want to delete this {{ deleteType.replace('_', ' ') }}?
+      </span>
+    </div>
+    <template #footer>
+      <div class="flex justify-content-end gap-2">
+        <Button 
+          label="No" 
+          icon="pi pi-times" 
+          class="p-button-text" 
+          @click="deleteDialog = false"
+        />
+        <Button 
+          label="Yes" 
+          icon="pi pi-check" 
+          class="p-button-danger" 
+          @click="handleDelete" 
+          :loading="deleting"
+        />
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
@@ -899,6 +955,12 @@ import Textarea from 'primevue/textarea';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import { useToast } from 'primevue/usetoast';
 import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
+import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
+import type { EditableValue } from '../mdm/Settings.vue';
+import type { DropdownChangeEvent } from 'primevue/dropdown';
+import { useQuery, provideApolloClient } from '@vue/apollo-composable';
+import { apolloClient } from '../../apollo/apolloClient';
+import gql from 'graphql-tag';
 
 interface Props {
   category: string;
@@ -910,7 +972,7 @@ interface Props {
   formatKey: (key: string) => string;
   hasPropertyChanges: (category: string) => boolean;
   isSaving: (category: string) => boolean;
-  saveConfigProperty: (key: string, subKey: string | null) => void;
+  saveConfigProperty: (key: string, subKey: string | null, value: any) => void;
 }
 
 const props = defineProps<Props>();
@@ -919,6 +981,7 @@ const route = useRoute();
 const category = computed(() => route.params.category as string);
 const loading = ref(false);
 const newRecipient = ref('');
+const newEmailRecipient = ref('');
 
 const logLevels = [
   { name: 'Debug', value: 'debug' },
@@ -1073,6 +1136,63 @@ const deleteApiKey = async (id: number) => {
   }
 };
 
+// Provide Apollo client at component level
+provideApolloClient(apolloClient);
+
+const INTEGRATED_TOOLS_QUERY = gql`
+  query GetIntegratedTools($filter: ToolFilter) {
+    integratedTools(filter: $filter) {
+      id
+      name
+      description
+      icon
+      toolUrls {
+        url
+        port
+        type
+      }
+      type
+      toolType
+      category
+      platformCategory
+      enabled
+      credentials {
+        username
+        password
+        apiKey {
+          key
+          type
+          keyName
+        }
+      }
+      layer
+      layerOrder
+      layerColor
+      metricsPath
+      healthCheckEndpoint
+      healthCheckInterval
+      connectionTimeout
+      readTimeout
+      allowedEndpoints
+    }
+  }
+`;
+
+interface TacticalRmmUser {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+  last_login: string | null;
+  last_login_ip: string;
+  role: number;
+  block_dashboard_login: boolean;
+  date_format: string | null;
+  social_accounts: any[];
+}
+
 const generateApiKey = async () => {
   if (!newApiKey.value.name) {
     toastService.showError('Please enter a name for the API key');
@@ -1081,9 +1201,21 @@ const generateApiKey = async () => {
 
   generatingApiKey.value = true;
   try {
+    // Fetch Tactical RMM users
+    const usersResponse = await restClient.get<TacticalRmmUser[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/users/`);
+    console.log('Tactical RMM Users:', usersResponse); // Debug log
+
+    if (!usersResponse || !usersResponse.length) {
+      throw new Error('Could not find any Tactical RMM users');
+    }
+
+    const firstUser = usersResponse[0];
+    console.log('Using first user:', firstUser); // Debug log
+
     const response = await restClient.post<ApiKey>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`, {
       name: newApiKey.value.name,
-      expiration: newApiKey.value.expiration?.toISOString() || null
+      expiration: newApiKey.value.expiration?.toISOString() || null,
+      user: firstUser.id
     });
     
     if (!props.settings.api_keys) {
@@ -1094,6 +1226,10 @@ const generateApiKey = async () => {
     showNewApiKeyDialog.value = false;
     newApiKey.value = { name: '', expiration: null };
     toastService.showSuccess('API key generated successfully');
+    
+    // Refetch API keys after adding
+    const apiKeysResponse = await restClient.get<ApiKey[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`);
+    props.settings.api_keys = apiKeysResponse;
   } catch (err: any) {
     console.error('Error generating API key:', err);
     const message = err.response?.data?.message || err.message || 'Failed to generate API key';
@@ -1144,6 +1280,10 @@ const saveUrlAction = async () => {
     
     closeUrlActionDialog();
     toastService.showSuccess('URL Action saved successfully');
+    
+    // Refetch URL actions after adding/editing
+    const urlActionsResponse = await restClient.get<UrlAction[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/`);
+    props.settings.url_actions = urlActionsResponse;
   } catch (err: any) {
     console.error('Error saving:', err);
     const message = err.response?.data?.message || err.message || 'Failed to save';
@@ -1194,6 +1334,10 @@ const saveKeyStore = async () => {
     
     showKeyStoreDialog.value = false;
     toastService.showSuccess('Key saved successfully');
+    
+    // Refetch key store after adding/editing
+    const keyStoreResponse = await restClient.get<KeyStore[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/`);
+    props.settings.key_store = keyStoreResponse;
   } catch (err: any) {
     console.error('Error saving key:', err);
     const message = err.response?.data?.message || err.message || 'Failed to save key';
@@ -1243,6 +1387,10 @@ const saveCustomField = async () => {
     
     showCustomFieldDialog.value = false;
     toastService.showSuccess('Custom field saved successfully');
+    
+    // Refetch custom fields after adding/editing
+    const customFieldsResponse = await restClient.get<CustomField[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/`);
+    props.settings.custom_fields = customFieldsResponse;
   } catch (err: any) {
     console.error('Error saving custom field:', err);
     const message = err.response?.data?.message || err.message || 'Failed to save custom field';
@@ -1324,13 +1472,89 @@ const addRecipient = () => {
   
   props.settings.sms_alert_recipients.push(newRecipient.value);
   newRecipient.value = '';
-  props.saveConfigProperty('sms_alert_recipients', null);
+  props.saveConfigProperty('sms_alert_recipients', null, props.settings.sms_alert_recipients);
 };
 
 const removeRecipient = (index: number) => {
   if (props.settings.sms_alert_recipients) {
     props.settings.sms_alert_recipients.splice(index, 1);
-    props.saveConfigProperty('sms_alert_recipients', null);
+    props.saveConfigProperty('sms_alert_recipients', null, props.settings.sms_alert_recipients);
+  }
+};
+
+const addEmailRecipient = () => {
+  if (!newEmailRecipient.value) return;
+  
+  if (!props.settings.email_alert_recipients) {
+    props.settings.email_alert_recipients = [];
+  }
+  
+  props.settings.email_alert_recipients.push(newEmailRecipient.value);
+  newEmailRecipient.value = '';
+  props.saveConfigProperty('email_alert_recipients', null, props.settings.email_alert_recipients);
+};
+
+const removeEmailRecipient = (index: number) => {
+  if (props.settings.email_alert_recipients) {
+    props.settings.email_alert_recipients.splice(index, 1);
+    props.saveConfigProperty('email_alert_recipients', null, props.settings.email_alert_recipients);
+  }
+};
+
+// Add these refs for the delete dialog
+const deleteDialog = ref(false);
+const deleteType = ref<string | null>(null);
+const deleteId = ref<number | null>(null);
+const deleting = ref(false);
+
+// Replace the confirmDelete function with this new version
+const confirmDelete = async (type: string, id: number) => {
+  deleteType.value = type;
+  deleteId.value = id;
+  deleteDialog.value = true;
+};
+
+// Add this new function to handle the actual deletion
+const handleDelete = async () => {
+  if (!deleteType.value || !deleteId.value) return;
+
+  deleting.value = true;
+  try {
+    switch (deleteType.value) {
+      case 'custom_fields':
+        await deleteCustomField(deleteId.value);
+        // Refetch custom fields after deletion
+        const customFieldsResponse = await restClient.get<CustomField[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/`);
+        props.settings.custom_fields = customFieldsResponse;
+        break;
+      case 'key_store':
+        await deleteKeyStore(deleteId.value);
+        // Refetch key store after deletion
+        const keyStoreResponse = await restClient.get<KeyStore[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/`);
+        props.settings.key_store = keyStoreResponse;
+        break;
+      case 'url_actions':
+        await deleteUrlAction(deleteId.value);
+        // Refetch URL actions after deletion
+        const urlActionsResponse = await restClient.get<UrlAction[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/`);
+        props.settings.url_actions = urlActionsResponse;
+        break;
+      case 'api_keys':
+        await deleteApiKey(deleteId.value);
+        // Refetch API keys after deletion
+        const apiKeysResponse = await restClient.get<ApiKey[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`);
+        props.settings.api_keys = apiKeysResponse;
+        break;
+    }
+    deleteDialog.value = false;
+  } catch (err: any) {
+    console.error('Error deleting:', err);
+    const message = err.response?.data?.message || err.message || 'Failed to delete';
+    toastService.showError(message);
+  } finally {
+    deleting.value = false;
+    deleteType.value = null;
+    deleteId.value = null;
   }
 };
 </script>

@@ -63,6 +63,7 @@ import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
 import { ToastService } from '../../services/ToastService';
+import { useSettingsSave } from '../../composables/useSettingsSave';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
@@ -81,13 +82,29 @@ const loading = ref(true);
 const saving = ref(false);
 const error = ref<string>('');
 const config = ref<Config | null>(null);
-const editedConfig = ref<Config>({});
+const editedConfig = ref<Record<string, any>>({});
 const changedValues = ref<Record<string, EditableValue>>({});
 const hasChanges = ref(false);
 const savingProperties = ref(new Set<string>());
 
 const route = useRoute();
 const router = useRouter();
+
+const { 
+  saveConfigProperty: saveConfigPropertyBase, 
+  updateChangedValue, 
+  clearChangedValues, 
+  isSaving: isSavingBase, 
+  changedValues: useSettingsSaveChangedValues, 
+  hasChanges: useSettingsSaveHasChanges 
+} = useSettingsSave({
+  apiUrl: `${API_URL}/config`,
+  onSuccess: () => {
+    // Refresh config after successful save
+    fetchMDMConfig();
+  },
+  httpMethod: 'patch'
+});
 
 const isPropertyEditable = (key: string | number, parentKey?: string | number): boolean => {
   // Known read-only fields that should never be editable
@@ -223,72 +240,28 @@ const getConfigValue = (key: string | number, subKey: string | number | null): E
   return value as EditableValue;
 };
 
-const updateConfigValue = (key: string | number, subKey: string | number | null, value: EditableValue) => {
-  if (!config.value) return;
-
-  // Create the path key for tracking changes
-  const path = subKey ? `${key}.${subKey}` : String(key);
-
-  // Initialize the edited config structure if it doesn't exist
-  if (!editedConfig.value[String(key)]) {
-    editedConfig.value[String(key)] = subKey === null ? {} : JSON.parse(JSON.stringify(config.value[String(key)]));
+// Initialize editedConfig when config changes
+watch(config, (newConfig) => {
+  if (newConfig) {
+    editedConfig.value = JSON.parse(JSON.stringify(newConfig));
   }
+}, { immediate: true });
 
-  // Special handling for array values (like decorators.load)
-  const isArrayValue = Array.isArray(value) || 
-    (typeof value === 'string' && path.includes('decorators.load'));
-
-  // Normalize the value
-  let normalizedValue: EditableValue;
-  if (isArrayValue) {
-    // If it's already an array, use it directly
-    normalizedValue = Array.isArray(value) ? JSON.parse(JSON.stringify(value)) : value.split('\n').map(v => v.trim()).filter(v => v);
-  } else {
-    normalizedValue = value;
-  }
-
-  console.log('Updating config value:', {
-    path,
-    oldValue: subKey === null ? editedConfig.value[String(key)] : editedConfig.value[String(key)][String(subKey)],
-    newValue: normalizedValue,
-    isArray: Array.isArray(normalizedValue)
-  });
-
-  // Update the edited config
+const updateConfigValue = (key: string | number, subKey: string | number | null, value: any) => {
+  console.log('🔄 [MDM] Updating config value:', { path: `${key}.${subKey}`, oldValue: subKey === null ? editedConfig.value[String(key)] : editedConfig.value[String(key)]?.[String(subKey)], newValue: value, isArray: Array.isArray(value) });
+  
   if (subKey === null) {
-    editedConfig.value[String(key)] = normalizedValue as ConfigValue;
+    editedConfig.value[String(key)] = value;
   } else {
-    if (typeof editedConfig.value[String(key)] !== 'object') {
-      editedConfig.value[String(key)] = JSON.parse(JSON.stringify(config.value[String(key)]));
+    if (!editedConfig.value[String(key)]) {
+      editedConfig.value[String(key)] = {};
     }
-    (editedConfig.value[String(key)] as Record<string, EditableValue>)[String(subKey)] = normalizedValue;
+    editedConfig.value[String(key)][String(subKey)] = value;
   }
 
-  // Force Vue to recognize the change by creating a new reference
-  editedConfig.value = JSON.parse(JSON.stringify(editedConfig.value));
-
-  // Get original value for comparison
-  const originalValue = subKey === null 
-    ? config.value[String(key)]
-    : config.value[String(key)][String(subKey)];
-
-  // Normalize original value for comparison
-  const normalizedOriginal = originalValue === '' ? null : originalValue;
-
-  // Special handling for empty/null values
-  if (normalizedValue === null && normalizedOriginal === null) {
-    delete changedValues.value[path];
-  } else if (normalizedValue === undefined && normalizedOriginal === null) {
-    delete changedValues.value[path];
-  } else if (normalizedValue === null && normalizedOriginal === undefined) {
-    delete changedValues.value[path];
-  } else if (JSON.stringify(normalizedValue) !== JSON.stringify(normalizedOriginal)) {
-    changedValues.value[path] = normalizedValue;
-  } else {
-    delete changedValues.value[path];
-  }
-
-  hasChanges.value = Object.keys(changedValues.value).length > 0;
+  // Track changes
+  const path = subKey ? `${key}.${subKey}` : String(key);
+  updateChangedValue(path, value);
 };
 
 const extractUrlFromMessage = (message: string) => {
@@ -434,42 +407,45 @@ const hasPropertyChanges = (key: string | number, subKey: string | number | null
   return JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedOriginal);
 };
 
-const isSaving = (key: string | number, subKey: string | number | null): boolean => {
-  const path = subKey ? `${key}.${subKey}` : String(key);
-  return savingProperties.value.has(path);
+const isSaving = (path: string): boolean => {
+  return isSavingBase(path);
 };
 
 const saveConfigProperty = async (category: string, subKey: string | null) => {
-  const path = subKey ? `${category}.${subKey}` : category;
-  savingProperties.value.add(path);
-
   try {
-    console.log('🔄 [MDM] Saving config property:', path);
-    const value = subKey ? editedConfig.value[category][subKey] : editedConfig.value[category];
+    console.log('🔄 [MDM] Starting saveConfigProperty:', { category, subKey });
     
-    // Create the proper nested structure for the PATCH request
-    const patchData = subKey 
-      ? { [category]: { [subKey]: value } }  // Nested update: { org_info: { org_logo_url: "value" } }
-      : { [category]: value };               // Top-level update: { org_info: {...} }
-    
-    console.log('📤 [MDM] Sending PATCH request with data:', patchData);
-    
-    // Make the PATCH request
-    await restClient.patch(`${API_URL}/config`, patchData);
+    // Get the value from editedConfig if it exists, otherwise fall back to config
+    const value = subKey 
+      ? (editedConfig.value[category]?.[subKey] ?? config.value?.[category]?.[subKey])
+      : (editedConfig.value[category] ?? config.value?.[category]);
 
-    console.log('✅ [MDM] Config property saved successfully');
-    toastService.showSuccess('Configuration updated successfully');
-    
-    // Fetch fresh data to ensure everything is in sync
-    await fetchMDMConfig();
+    console.log('📦 [MDM] Value to save:', value);
+
+    if (value === undefined) {
+      throw new Error(`No value found for ${category}${subKey ? `.${subKey}` : ''}`);
+    }
+
+    // Create the path key for tracking changes
+    const path = subKey ? `${category}.${subKey}` : category;
+
+    // Call the base save function with all three arguments
+    console.log('📤 [MDM] Calling saveConfigPropertyBase with:', { category, subKey, value });
+    await saveConfigPropertyBase(category, subKey, value);
+    console.log('✅ [MDM] saveConfigPropertyBase completed successfully');
+
+    // Clear the changed value after successful save
+    delete changedValues.value[path];
+    hasChanges.value = Object.keys(changedValues.value).length > 0;
+    console.log('🧹 [MDM] Cleared changed value for path:', path);
   } catch (err: any) {
-    console.error('❌ [MDM] Error saving config:', err);
-    console.error('Error response:', err.response);
-    
-    // Re-throw to be handled by SettingsCategory
+    console.error('❌ [MDM] Error in saveConfigProperty:', err);
+    console.error('Error details:', {
+      message: err.message,
+      response: err.response,
+      stack: err.stack
+    });
     throw err;
-  } finally {
-    savingProperties.value.delete(path);
   }
 };
 

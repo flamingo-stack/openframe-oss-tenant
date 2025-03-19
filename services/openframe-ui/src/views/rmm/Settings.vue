@@ -73,6 +73,7 @@ import { useErrorStore } from '../../stores/error';
 import { useLoadingStore } from '../../stores/loading';
 import { useToastStore } from '../../stores/toast';
 import { useSettings } from '../../composables/useSettings';
+import { useSettingsSave } from '../../composables/useSettingsSave';
 import SettingsCategory from './SettingsCategory.vue';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
@@ -87,7 +88,22 @@ const authStore = useAuthStore();
 const errorStore = useErrorStore();
 const loadingStore = useLoadingStore();
 const toastStore = useToastStore();
-const { settings: storeSettings, loading: useSettingsLoading, error: useSettingsError, fetchConfig } = useSettings();
+const { fetchConfig } = useSettings();
+
+const { 
+  saveConfigProperty, 
+  updateChangedValue, 
+  clearChangedValues, 
+  isSaving, 
+  changedValues, 
+  hasChanges 
+} = useSettingsSave({
+  apiUrl: `${API_URL}/settings/`,
+  onSuccess: () => {
+    // Refresh settings after successful save
+    fetchConfig();
+  }
+});
 
 interface CategoryConfig {
   key: string;
@@ -120,8 +136,6 @@ const error = ref<string>('');
 const settings = ref<ExtendedRMMSettingsWithDefaults | null>(null);
 const originalSettings = ref<ExtendedRMMSettingsWithDefaults | null>(null);
 const currentCategory = ref<string>('general');
-const hasChanges = ref<boolean>(false);
-const changedValues = ref<Record<string, string | number | boolean | string[] | object>>({});
 
 const categories = computed(() => [
   { key: 'general', icon: 'pi pi-cog', label: 'General' },
@@ -685,170 +699,6 @@ const saveSettings = async () => {
   }
 };
 
-const saveConfigProperty = async (key: keyof ExtendedRMMSettings, subKey: string | null) => {
-  // Wait for settings to be loaded if they're not already
-  if (loading.value) {
-    console.warn('Settings are still loading, please wait...');
-    return;
-  }
-
-  if (!settings.value) {
-    console.error('Settings not initialized');
-    return;
-  }
-
-  const fullKey = subKey ? `${String(key)}.${subKey}` : String(key);
-  const value = subKey 
-    ? (settings.value[key] as Record<string, unknown>)?.[subKey] 
-    : settings.value[key];
-
-  if (value === undefined) {
-    console.error(`Setting ${fullKey} not found`);
-    return;
-  }
-
-  // Get the current value from originalSettings for comparison
-  const currentValue = subKey 
-    ? (originalSettings.value?.[key] as Record<string, unknown>)?.[subKey] 
-    : originalSettings.value?.[key];
-
-  // If the value hasn't changed, don't send an update
-  if (JSON.stringify(value) === JSON.stringify(currentValue)) {
-    return;
-  }
-
-  // Store the current value for potential rollback
-  const rollbackValue = subKey 
-    ? (settings.value[key] as Record<string, unknown>)?.[subKey] 
-    : settings.value[key];
-
-  // Update local state immediately for better UX
-  if (subKey) {
-    if (!settings.value[key]) {
-      settings.value[key] = {} as Record<string, unknown>;
-    }
-    (settings.value[key] as Record<string, unknown>)[subKey] = value;
-  } else {
-    settings.value[key] = value;
-  }
-
-  changedValues.value[fullKey] = value as string | number | boolean | string[] | object;
-  hasChanges.value = true;
-
-  try {
-    // Only send the changed setting in the request
-    const requestData: Record<string, unknown> = subKey 
-      ? { [String(key)]: { [subKey]: value } }
-      : { [String(key)]: value };
-
-    // Handle numeric values - both string and number types
-    if (typeof value === 'string' && !isNaN(Number(value))) {
-      const numValue = Number(value);
-      if (subKey) {
-        (requestData[String(key)] as Record<string, unknown>)[subKey] = numValue;
-      } else {
-        requestData[String(key)] = numValue;
-      }
-    } else if (typeof value === 'number') {
-      // Ensure number values are sent as numbers
-      if (subKey) {
-        (requestData[String(key)] as Record<string, unknown>)[subKey] = value;
-      } else {
-        requestData[String(key)] = value;
-      }
-    } else if (typeof value === 'boolean') {
-      // Ensure boolean values are sent as booleans
-      if (subKey) {
-        (requestData[String(key)] as Record<string, unknown>)[subKey] = value;
-      } else {
-        requestData[String(key)] = value;
-      }
-    }
-
-    // Use PUT method via request
-    const response = await restClient.request<ExtendedRMMSettings>(`${API_URL}/settings/`, {
-      method: 'PUT',
-      body: JSON.stringify(requestData),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    // Convert response to ExtendedRMMSettings
-    const extendedResponse = {
-      ...response,
-      org_info: response.org_info || {
-        org_name: '',
-        org_logo_url: null,
-        org_logo_url_dark: null,
-        org_logo_url_light: null
-      }
-    } as ExtendedRMMSettings;
-
-    // Update local state with the response to ensure we have the server's value
-    if (subKey) {
-      if (!settings.value[key]) {
-        settings.value[key] = {} as Record<string, unknown>;
-      }
-      // Keep the current value if it's a number or boolean
-      if (typeof value === 'number' || typeof value === 'boolean') {
-        (settings.value[key] as Record<string, unknown>)[subKey] = value;
-      } else {
-        (settings.value[key] as Record<string, unknown>)[subKey] = (extendedResponse[key] as Record<string, unknown>)[subKey];
-      }
-    } else {
-      // Keep the current value if it's a number or boolean
-      if (typeof value === 'number' || typeof value === 'boolean') {
-        settings.value[key] = value;
-      } else {
-        settings.value[key] = extendedResponse[key];
-      }
-    }
-
-    // Update original settings to match
-    if (originalSettings.value) {
-      if (subKey) {
-        if (!originalSettings.value[key]) {
-          originalSettings.value[key] = {} as Record<string, unknown>;
-        }
-        // Keep the current value if it's a number or boolean
-        if (typeof value === 'number' || typeof value === 'boolean') {
-          (originalSettings.value[key] as Record<string, unknown>)[subKey] = value;
-        } else {
-          (originalSettings.value[key] as Record<string, unknown>)[subKey] = (extendedResponse[key] as Record<string, unknown>)[subKey];
-        }
-      } else {
-        // Keep the current value if it's a number or boolean
-        if (typeof value === 'number' || typeof value === 'boolean') {
-          originalSettings.value[key] = value;
-        } else {
-          originalSettings.value[key] = extendedResponse[key];
-        }
-      }
-    }
-
-    // Remove the key from changedValues since it's been saved
-    delete changedValues.value[fullKey];
-    hasChanges.value = Object.keys(changedValues.value).length > 0;
-
-    toastStore.showSuccess('Setting updated successfully');
-  } catch (err: unknown) {
-    console.error('Error updating setting:', err);
-    const message = err instanceof Error ? err.message : 'Failed to update setting';
-    toastStore.showError(message);
-    
-    // Revert the change on error
-    if (subKey) {
-      if (!settings.value[key]) {
-        settings.value[key] = {} as Record<string, unknown>;
-      }
-      (settings.value[key] as Record<string, unknown>)[subKey] = rollbackValue;
-    } else {
-      settings.value[key] = rollbackValue;
-    }
-  }
-};
-
 // Fix TypeScript errors in watch functions
 watch(() => route.params.category, (value: string | string[]) => {
   if (typeof value === 'string' && categories.value.some((c: { key: string; icon: string; label: string }) => c.key === value)) {
@@ -887,7 +737,7 @@ const handleSaveAll = async () => {
     // Save all changed values
     for (const [key, value] of Object.entries(changedValues.value)) {
       const [mainKey, subKey] = key.split('.');
-      await saveConfigProperty(mainKey as keyof ExtendedRMMSettings, subKey || null);
+      await handleSaveConfigProperty(mainKey as keyof ExtendedRMMSettings, subKey || null);
     }
 
     // Clear changed values
@@ -907,6 +757,19 @@ const handleSaveAll = async () => {
 // Fix TypeScript errors in methods
 const handleCategoryClick = (category: { key: string; icon: string; label: string }) => {
   router.push(`/rmm/settings/${category.key}`);
+};
+
+// Update the saveConfigProperty call to include the value
+const handleSaveConfigProperty = async (key: keyof ExtendedRMMSettings, subKey: string | null) => {
+  if (!settings.value) return;
+  
+  const value = subKey 
+    ? (settings.value[key] as Record<string, unknown>)?.[subKey] 
+    : settings.value[key];
+    
+  if (value === undefined) return;
+  
+  await saveConfigProperty(String(key), subKey, value);
 };
 </script>
 

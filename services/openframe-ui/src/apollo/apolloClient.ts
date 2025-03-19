@@ -254,6 +254,7 @@ export const restClient = {
 
       console.log('✅ [REST] Request successful');
       const data = await response.json();
+      console.log('📦 [REST] Response data:', data);
       return data as T;
     };
 
@@ -294,6 +295,18 @@ export const restClient = {
     return this.request<T>(url, {
       ...options,
       method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+  },
+  
+  put<T>(url: string, data: unknown, options: RequestInit = {}): Promise<T> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PUT',
       body: JSON.stringify(data),
       headers: {
         'Content-Type': 'application/json',
