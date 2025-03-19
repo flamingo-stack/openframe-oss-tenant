@@ -17,54 +17,12 @@
   <body>
     <div id="app"></div>
     <script>
-      (function() {
-        // Create a secure config object
-        const config = {
-          apiUrl: import.meta.env.VITE_API_URL,
-          gatewayUrl: import.meta.env.VITE_GATEWAY_URL,
-          clientId: import.meta.env.VITE_CLIENT_ID,
-          clientSecret: import.meta.env.VITE_CLIENT_SECRET,
-          grafanaUrl: import.meta.env.VITE_GRAFANA_URL
-        };
-
-        // Create a secure getter function
-        const getConfig = (key) => {
-          // Always return undefined for clientSecret
-          if (key === 'clientSecret') return undefined;
-
-          // For other keys, return the value from config
-          return config[key];
-        };
-
-        // Log the initial config for debugging
-        console.log('🔍 [Runtime Config] Initial config:', {
-          apiUrl: config.apiUrl,
-          gatewayUrl: config.gatewayUrl,
-          clientId: config.clientId,
-          clientSecret: '***',
-          grafanaUrl: config.grafanaUrl
-        });
-
-        // Make the config non-enumerable and non-configurable
-        Object.defineProperty(window, '__RUNTIME_CONFIG__', {
-          value: getConfig,
-          writable: false,
-          configurable: false,
-          enumerable: false
-        });
-
-        // Hide the config from console.log
-        const originalConsoleLog = console.log;
-        console.log = function(...args) {
-          if (args.some(arg => arg === window.__RUNTIME_CONFIG__ || arg === config)) {
-            return;
-          }
-          originalConsoleLog.apply(console, args);
-        };
-
-        // Prevent access to the config object
-        Object.freeze(config);
-      })();
+      window.__RUNTIME_CONFIG__ = {
+        apiUrl: '<%= VITE_API_URL || API_URL %>',
+        gatewayUrl: '<%= VITE_GATEWAY_URL || GATEWAY_URL %>',
+        clientId: '<%= VITE_CLIENT_ID || CLIENT_ID %>',
+        clientSecret: '<%= VITE_CLIENT_SECRET || CLIENT_SECRET %>'
+      };
     </script>
   </body>
 </html>

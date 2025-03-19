@@ -19,7 +19,13 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      'import.meta.env': JSON.stringify(env)
+      'process.env': env,
+      'window.__RUNTIME_CONFIG__': JSON.stringify({
+        apiUrl: env.API_URL || 'http://localhost:8090',
+        gatewayUrl: env.GATEWAY_URL || 'http://localhost:8100',
+        clientId: env.CLIENT_ID || 'openframe_web_dashboard',
+        clientSecret: env.CLIENT_SECRET || 'prod_secret'
+      })
     },
     build: {
       sourcemap: true,

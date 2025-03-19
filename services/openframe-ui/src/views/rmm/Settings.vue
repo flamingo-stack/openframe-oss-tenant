@@ -80,7 +80,7 @@ import SettingsCategory from './SettingsCategory.vue';
 
 const configService = ConfigService.getInstance();
 const config = configService.getConfig();
-const VITE_API_URL = `${config.gatewayUrl}/tools/tactical-rmm/core`;
+const API_URL = `${config.gatewayUrl}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
 
 const route = useRoute();
@@ -102,7 +102,7 @@ const {
   changedValues, 
   hasChanges 
 } = useSettingsSave({
-  apiUrl: `${VITE_API_URL}/settings/`,
+  apiUrl: `${API_URL}/settings/`,
   onSuccess: () => {
     // Refresh settings after successful save
     fetchConfig();
@@ -167,7 +167,7 @@ const fetchSettings = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await restClient.get<ExtendedRMMSettings>(`${VITE_API_URL}/settings/`);
+    const response = await restClient.get<ExtendedRMMSettings>(`${API_URL}/settings/`);
     // Initialize org_info if it doesn't exist
     const extendedSettings: ExtendedRMMSettingsWithDefaults = {
       ...response,
@@ -342,7 +342,7 @@ const editUrlAction = (action: UrlAction) => {
 const deleteUrlAction = async (id: number) => {
   try {
     const endpoint = '/core/urlaction/';
-    await restClient.delete(`${VITE_API_URL}${endpoint}${id}/`);
+    await restClient.delete(`${API_URL}${endpoint}${id}/`);
     
     if (!settings.value) return;
     
@@ -368,8 +368,8 @@ const saveUrlAction = async () => {
     const endpoint = '/core/urlaction/';
     const method = editingUrlAction.value ? 'patch' : 'post';
     const url = editingUrlAction.value 
-      ? `${VITE_API_URL}${endpoint}${editingUrlAction.value.id}/`
-      : `${VITE_API_URL}${endpoint}`;
+      ? `${API_URL}${endpoint}${editingUrlAction.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
     
@@ -512,8 +512,8 @@ const saveKeyStore = async () => {
     const endpoint = '/core/keystore/';
     const method = editingKeyStore.value ? 'patch' : 'post';
     const url = editingKeyStore.value 
-      ? `${VITE_API_URL}${endpoint}${editingKeyStore.value.id}/`
-      : `${VITE_API_URL}${endpoint}`;
+      ? `${API_URL}${endpoint}${editingKeyStore.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const response = await restClient[method]<KeyStore>(url, keyStoreForm.value);
     
@@ -541,7 +541,7 @@ const saveKeyStore = async () => {
 
 const deleteKeyStore = async (id: number) => {
   try {
-    await restClient.delete(`${VITE_API_URL}/core/keystore/${id}/`);
+    await restClient.delete(`${API_URL}/core/keystore/${id}/`);
     if (!settings.value) return;
     settings.value.key_store = settings.value.key_store?.filter((k: KeyStore) => k.id !== id);
     toastService.showSuccess('Key deleted successfully');
@@ -597,8 +597,8 @@ const saveCustomField = async () => {
     const endpoint = '/core/customfields/';
     const method = editingCustomField.value ? 'patch' : 'post';
     const url = editingCustomField.value 
-      ? `${VITE_API_URL}${endpoint}${editingCustomField.value.id}/`
-      : `${VITE_API_URL}${endpoint}`;
+      ? `${API_URL}${endpoint}${editingCustomField.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const formData = {
       name: customFieldForm.value.name,
@@ -639,7 +639,7 @@ const saveCustomField = async () => {
 
 const deleteCustomField = async (id: number) => {
   try {
-    await restClient.delete(`${VITE_API_URL}/core/customfields/${id}/`);
+    await restClient.delete(`${API_URL}/core/customfields/${id}/`);
     if (!settings.value) return;
     settings.value.custom_fields = settings.value.custom_fields?.filter((f: CustomField) => f.id !== id);
     toastService.showSuccess('Custom field deleted successfully');
@@ -663,7 +663,7 @@ const saveSettings = async () => {
     if (!settings.value) {
       throw new Error('Settings not initialized');
     }
-    const response = await restClient.patch<ExtendedRMMSettings>(`${VITE_API_URL}/settings/`, changedValues.value);
+    const response = await restClient.patch<ExtendedRMMSettings>(`${API_URL}/settings/`, changedValues.value);
     const extendedResponse: ExtendedRMMSettingsWithDefaults = {
       ...response,
       id: response.id || 0,
