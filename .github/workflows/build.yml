@@ -93,19 +93,41 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check for path changes
+        id: check_changes
+        run: |
+          # Set build context
+          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
+
+          # Get the base and head SHAs for the PR
+          BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
+          HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
+
+          # Check if there are any changes in the service path
+          if git diff --quiet $BASE_SHA $HEAD_SHA -- "$BUILD_CONTEXT"; then
+            echo "No changes detected in $BUILD_CONTEXT"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in $BUILD_CONTEXT"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up environment
+        if: steps.check_changes.outputs.changed == 'true'
         run: |
           echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
           echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
       - name: Download Java artifacts
+        if: steps.check_changes.outputs.changed == 'true'
         uses: actions/download-artifact@v4
         with:
           name: java-artifacts
           path: .
 
       - name: Log in to GitHub Container Registry
+        if: steps.check_changes.outputs.changed == 'true'
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
           registry: ${{ env.REGISTRY }}
@@ -113,9 +135,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
+        if: steps.check_changes.outputs.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push image
+        if: steps.check_changes.outputs.changed == 'true'
         id: docker_build
         run: |
           # Set build context
@@ -151,14 +175,12 @@ jobs:
 
           echo "Successfully built and pushed image for ${{ matrix.service.name }}"
 
-      # Clean up old versions after successful push
       - name: Clean up old versions
-        if: success() && steps.docker_build.outcome == 'success'
+        if: steps.check_changes.outputs.changed == 'true' && success() && steps.docker_build.outcome == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x ./kind-cluster/scripts/gh-packages.sh
-          # Keep latest, commit SHA, and timestamp tags
           ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.service.name }}" \
             "latest" \
             "${{ env.COMMIT_SHA }}" \
