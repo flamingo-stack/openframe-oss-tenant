@@ -3,6 +3,13 @@ FROM node:21-alpine as build
 
 WORKDIR /app
 
+# Define build arguments
+ARG PORT
+ARG API_URL
+ARG GATEWAY_URL
+ARG CLIENT_ID
+ARG CLIENT_SECRET
+
 # Copy package files
 COPY package*.json ./
 
@@ -11,6 +18,13 @@ RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Set environment variables for build
+ENV PORT=${PORT}
+ENV API_URL=${API_URL}
+ENV GATEWAY_URL=${GATEWAY_URL}
+ENV CLIENT_ID=${CLIENT_ID}
+ENV CLIENT_SECRET=${CLIENT_SECRET}
 
 # Build the app for production
 RUN npm run build -- --mode production

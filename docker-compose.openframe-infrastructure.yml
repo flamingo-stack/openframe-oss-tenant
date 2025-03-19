@@ -459,6 +459,8 @@ services:
     build:
       context: ./services/openframe-ui
       dockerfile: Dockerfile
+      args:
+        - PORT=3000
     environment:
       - API_URL=http://localhost:8090
       - GATEWAY_URL=http://localhost:8100
