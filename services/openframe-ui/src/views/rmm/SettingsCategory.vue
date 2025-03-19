@@ -1049,7 +1049,7 @@ const allUrlActions = computed(() => {
 
 const configService = ConfigService.getInstance();
 const config = configService.getConfig();
-const API_URL = `${config.gatewayUrl}/tools/tactical-rmm/core`;
+const API_URL = `${config.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 // Methods
