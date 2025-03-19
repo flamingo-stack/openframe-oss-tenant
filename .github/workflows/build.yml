@@ -101,7 +101,7 @@ jobs:
       fail-fast: false  # Disable fail-fast behavior
       matrix:
         service: [
-          { name: 'mongodb', path: './infrastructure/mongodb/',
+          { name: 'mongodb', path: './infrastructure/mongodb/', artifact_name: '',
             build_args: {
               MONGO_INITDB_ROOT_USERNAME: 'openframe',
               MONGO_INITDB_ROOT_PASSWORD: 'password123456789',
@@ -110,7 +110,7 @@ jobs:
               MONGO_APP_PASSWORD: 'password123456789'
             }
           },
-          { name: 'cassandra', path: './infrastructure/cassandra/',
+          { name: 'cassandra', path: './infrastructure/cassandra/', artifact_name: '',
             build_args: {
               CASSANDRA_CLUSTER_NAME: 'openframe_cluster',
               CASSANDRA_DC: 'datacenter1',
@@ -490,13 +490,13 @@ jobs:
             }
           },
           { name: 'fleetmdm', path: './infrastructure/fleetmdm/' },
-          { name: 'core', path: './libs/openframe-core/' },
-          { name: 'data', path: './libs/openframe-data/' },
-          { name: 'api', path: './services/openframe-api/' },
-          { name: 'config', path: './services/openframe-config/' },
-          { name: 'gateway', path: './services/openframe-gateway/' },
-          { name: 'management', path: './services/openframe-management/' },
-          { name: 'stream', path: './services/openframe-stream/' },
+          { name: 'core', path: './libs/openframe-core/', artifact_name: 'openframe-core' },
+          { name: 'data', path: './libs/openframe-data/', artifact_name: 'openframe-data' },
+          { name: 'api', path: './services/openframe-api/', artifact_name: 'openframe-api' },
+          { name: 'config', path: './services/openframe-config/', artifact_name: 'openframe-config' },
+          { name: 'gateway', path: './services/openframe-gateway/', artifact_name: 'openframe-gateway' },
+          { name: 'management', path: './services/openframe-management/', artifact_name: 'openframe-management' },
+          { name: 'stream', path: './services/openframe-stream/', artifact_name: 'openframe-stream' },
           { name: 'ui', path: './services/openframe-ui/' },
           {
             name: 'meshcentral',
@@ -591,11 +591,17 @@ jobs:
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
       - name: Download Java artifacts
-        if: steps.check_changes.outputs.changed == 'true'
+        if: steps.check_changes.outputs.changed == 'true' && matrix.service.artifact_name != ''
         uses: actions/download-artifact@v4
         with:
-          name: openframe-${{ matrix.service.name }}
+          name: ${{ matrix.service.artifact_name }}
           path: .
+
+      - name: Prepare Java artifacts for Docker build
+        if: steps.check_changes.outputs.changed == 'true' && matrix.service.artifact_name != ''
+        run: |
+          mkdir -p target
+          mv *.jar target/
 
       - name: Log in to GitHub Container Registry
         if: steps.check_changes.outputs.changed == 'true'
