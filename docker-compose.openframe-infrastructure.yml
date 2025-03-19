@@ -464,6 +464,7 @@ services:
       - VITE_GATEWAY_URL=http://localhost:8100
       - VITE_CLIENT_ID=openframe_web_dashboard
       - VITE_CLIENT_SECRET=prod_secret
+      - VITE_GRAFANA_URL=http://localhost:3000
       - PORT=3000
     ports:
       - "80:3000"

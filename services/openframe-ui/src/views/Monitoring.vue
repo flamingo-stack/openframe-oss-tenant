@@ -148,12 +148,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref } from 'vue'
+import { onMounted, computed } from '@vue/runtime-core'
 import { useThemeStore } from '@/stores/themeStore'
+import { ConfigService } from '@/config/config.service'
 
 const loading = ref(true)
 const error = ref<Error | null>(null)
 const themeStore = useThemeStore()
+const configService = ConfigService.getInstance()
 
 // Chart loading states
 const memoryChartLoaded = ref(false)
@@ -184,7 +187,8 @@ const systemHealthPanels = ref([
 const grafanaTheme = computed(() => themeStore.isDark ? 'dark' : 'light')
 
 const getGrafanaUrl = (panelId: number) => {
-  return `${import.meta.env.VITE_GRAFANA_URL}/d-solo/home/openframe-overview?orgId=1&panelId=${panelId}&theme=${grafanaTheme.value}&refresh=1s`
+  const config = configService.getConfig()
+  return `${config.grafanaUrl}/d-solo/home/openframe-overview?orgId=1&panelId=${panelId}&theme=${grafanaTheme.value}&refresh=1s`
 }
 
 onMounted(() => {

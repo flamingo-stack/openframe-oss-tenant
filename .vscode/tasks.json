@@ -4,7 +4,7 @@
         {
             "label": "start-vue",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/services/openframe-ui && PORT=5177 VITE_API_URL=http://localhost:8090 VITE_GATEWAY_URL=http://localhost:8100 VITE_CLIENT_ID=openframe_web_dashboard VITE_CLIENT_SECRET=prod_secret npm run dev",
+            "command": "cd ${workspaceFolder}/services/openframe-ui && PORT=5177 VITE_API_URL=http://localhost:8090 VITE_GATEWAY_URL=http://localhost:8100 VITE_CLIENT_ID=openframe_web_dashboard VITE_CLIENT_SECRET=prod_secret VITE_GRAFANA_URL=http://localhost:3000 npm run dev",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "custom",
