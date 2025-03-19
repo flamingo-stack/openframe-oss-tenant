@@ -171,8 +171,7 @@ case "$1" in
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config-server --timeout 20m
     ;;
   api)
-    # API (depends on Config Server, MongoDB, Kafka, Cassandra)
-    # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
+    # API (depends on Config Server, MongoDB, Kafka, Cassandra, Redis)
     # management-key: docker-management-key-123  ???
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml && \
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
@@ -180,7 +179,6 @@ case "$1" in
     ;;
   management)
     # MANAGEMENT (depends on Config Server, MongoDB)
-    # Exception: Could not resolve placeholder 'pinot.broker.url' in value "${pinot.broker.url}"
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-management/management.yaml
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-management --timeout 20m
     ;;
