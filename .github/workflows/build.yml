@@ -28,6 +28,19 @@ env:
 jobs:
   build-java:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [
+          { name: 'core', path: 'libs/openframe-core' },
+          { name: 'data', path: 'libs/openframe-data' },
+          { name: 'api', path: 'services/openframe-api' },
+          { name: 'config', path: 'services/openframe-config' },
+          { name: 'gateway', path: 'services/openframe-gateway' },
+          { name: 'management', path: 'services/openframe-management' },
+          { name: 'stream', path: 'services/openframe-stream' },
+          { name: 'ui', path: 'services/openframe-ui' }
+        ]
     outputs:
       status: ${{ job.status }}
     steps:
@@ -43,18 +56,43 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Check for path changes
+        id: check_changes
+        run: |
+          # Check if this is a PR or manual trigger
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Get the base and head SHAs for the PR
+            BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
+            HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
+
+            # Check if there are any changes in the module path
+            if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.module.path }}"; then
+              echo "No changes detected in ${{ matrix.module.path }}"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in ${{ matrix.module.path }}"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            # For manual triggers, always build
+            echo "Manual trigger - building all modules"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build with Maven
-        run: mvn --batch-mode package --file pom.xml
+        if: steps.check_changes.outputs.changed == 'true'
+        run: mvn clean install -pl ${{ matrix.module.path }} -am
 
       - name: Upload Java artifacts
+        if: steps.check_changes.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: java-artifacts
+          name: java-artifacts-${{ matrix.module.name }}
           path: |
-            **/target/*.jar
-            !**/target/original-*.jar
-            !**/target/*-sources.jar
-            !**/target/*-javadoc.jar
+            ${{ matrix.module.path }}/target/*.jar
+            !${{ matrix.module.path }}/target/original-*.jar
+            !${{ matrix.module.path }}/target/*-sources.jar
+            !${{ matrix.module.path }}/target/*-javadoc.jar
           retention-days: 1
 
   build-image:
@@ -103,7 +141,6 @@ jobs:
           {
             name: 'authentik-postgresql',
             path: './infrastructure/postgresql/',
-            context: './infrastructure/postgresql',
             build_args: {
               POSTGRES_USER: 'authentik-user',
               POSTGRES_PASSWORD: 'authentik-password-1234',
@@ -113,7 +150,6 @@ jobs:
           {
             name: 'tactical-base',
             path: './infrastructure/tactical-rmm/tactical-base/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -157,7 +193,6 @@ jobs:
           {
             name: 'tactical-frontend',
             path: './infrastructure/tactical-rmm/tactical-frontend/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -201,7 +236,6 @@ jobs:
           {
             name: 'tactical-nginx',
             path: './infrastructure/tactical-rmm/tactical-nginx/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -245,7 +279,6 @@ jobs:
           {
             name: 'tactical-backend',
             path: './infrastructure/tactical-rmm/tactical-base/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -289,7 +322,6 @@ jobs:
           {
             name: 'tactical-nats',
             path: './infrastructure/tactical-rmm/tactical-base/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -333,7 +365,6 @@ jobs:
           {
             name: 'tactical-websockets',
             path: './infrastructure/tactical-rmm/tactical-base/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -377,7 +408,6 @@ jobs:
           {
             name: 'tactical-celery',
             path: './infrastructure/tactical-rmm/tactical-base/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -421,7 +451,6 @@ jobs:
           {
             name: 'tactical-celerybeat',
             path: './infrastructure/tactical-rmm/tactical-base/',
-            context: './infrastructure/tactical-rmm',
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -462,7 +491,7 @@ jobs:
               NATS_WEBSOCKET_PORT: '4222'
             }
           },
-          { name: 'fleetmdm', path: './infrastructure/fleetmdm/', context: './infrastructure/fleetmdm' },
+          { name: 'fleetmdm', path: './infrastructure/fleetmdm/' },
           { name: 'core', path: './libs/openframe-core/' },
           { name: 'data', path: './libs/openframe-data/' },
           { name: 'api', path: './services/openframe-api/' },
@@ -536,9 +565,6 @@ jobs:
       - name: Check for path changes
         id: check_changes
         run: |
-          # Set build context
-          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
-
           # Check if this is a PR or manual trigger
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # Get the base and head SHAs for the PR
@@ -546,11 +572,11 @@ jobs:
             HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
 
             # Check if there are any changes in the service path
-            if git diff --quiet $BASE_SHA $HEAD_SHA -- "$BUILD_CONTEXT"; then
-              echo "No changes detected in $BUILD_CONTEXT"
+            if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}"; then
+              echo "No changes detected in ${{ matrix.service.path }}"
               echo "changed=false" >> $GITHUB_OUTPUT
             else
-              echo "Changes detected in $BUILD_CONTEXT"
+              echo "Changes detected in ${{ matrix.service.path }}"
               echo "changed=true" >> $GITHUB_OUTPUT
             fi
           else
@@ -589,9 +615,6 @@ jobs:
         if: steps.check_changes.outputs.changed == 'true'
         id: docker_build
         run: |
-          # Set build context
-          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
-
           # Ensure the Dockerfile exists
           if [ ! -f "${{ matrix.service.path }}Dockerfile" ]; then
             echo "Error: Dockerfile not found at ${{ matrix.service.path }}Dockerfile"
@@ -610,18 +633,10 @@ jobs:
             --cache-to "type=gha,mode=max" \
             --provenance=false \
             ${{ matrix.service.build_args && format('--build-arg {0}={1}', matrix.service.build_args.*.key, matrix.service.build_args.*.value) || '' }} \
-            "$BUILD_CONTEXT"; then
+            "${{ matrix.service.path }}"; then
             echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
             exit 1
           fi
-
-          # Verify the image exists in registry
-          if ! docker manifest inspect "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }}" > /dev/null 2>&1; then
-            echo "Error: Image ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }} not found in registry"
-            exit 1
-          fi
-
-          echo "Successfully built and pushed image for ${{ matrix.service.name }}"
 
       - name: Clean up old versions
         if: steps.check_changes.outputs.changed == 'true' && success() && steps.docker_build.outcome == 'success'
