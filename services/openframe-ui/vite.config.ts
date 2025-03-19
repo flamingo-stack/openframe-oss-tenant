@@ -4,7 +4,7 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, process.cwd())
 
   return {
     plugins: [vue()],
@@ -19,12 +19,13 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      '__RUNTIME_CONFIG__': {
-        apiUrl: JSON.stringify(env.VITE_API_URL || 'http://localhost:8090'),
-        gatewayUrl: JSON.stringify(env.VITE_GATEWAY_URL || 'http://localhost:8100'),
-        clientId: JSON.stringify(env.VITE_CLIENT_ID || 'openframe_web_dashboard'),
-        clientSecret: JSON.stringify(env.VITE_CLIENT_SECRET || 'prod_secret')
-      }
+      'process.env': env,
+      'window.__RUNTIME_CONFIG__': JSON.stringify({
+        apiUrl: env.API_URL || 'http://localhost:8090',
+        gatewayUrl: env.GATEWAY_URL || 'http://localhost:8100',
+        clientId: env.CLIENT_ID || 'openframe_web_dashboard',
+        clientSecret: env.CLIENT_SECRET || 'prod_secret'
+      })
     },
     build: {
       sourcemap: true,

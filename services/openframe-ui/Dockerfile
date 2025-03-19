@@ -16,12 +16,22 @@ COPY . .
 RUN npm run build -- --mode production
 
 # Production stage
-FROM nginx:alpine
+FROM node:21-alpine
+
+WORKDIR /app
+
+# Copy package files and install production dependencies
+COPY package*.json ./
+RUN npm ci --production
 
 # Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist ./dist
 
-EXPOSE 80
+# Copy server file
+COPY server.js ./
 
-CMD ["nginx", "-g", "daemon off;"]
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Start the application
+CMD ["node", "server.js"]

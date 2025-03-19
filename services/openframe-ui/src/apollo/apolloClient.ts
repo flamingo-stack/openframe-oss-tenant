@@ -142,7 +142,7 @@ const handleGraphQLAuthError = (operation: any, forward: any): Observable<FetchR
 };
 
 const httpLink = createHttpLink({
-  uri: `${config.apiUrl}/graphql`,
+  uri: `${config.getConfig().apiUrl}/graphql`,
   credentials: 'include',
   headers: {
     'Content-Type': 'application/json',

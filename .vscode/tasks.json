@@ -7,6 +7,14 @@
             "script": "dev",
             "path": "services/openframe-ui/",
             "isBackground": true,
+            "options": {
+                "env": {
+                    "API_URL": "http://localhost:8090",
+                    "GATEWAY_URL": "http://localhost:8100",
+                    "CLIENT_ID": "openframe_web_dashboard_dev",
+                    "CLIENT_SECRET": "your_client_secret_here"
+                }
+            },
             "problemMatcher": {
                 "owner": "custom",
                 "pattern": {
