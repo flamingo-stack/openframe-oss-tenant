@@ -59,7 +59,7 @@ jobs:
 
   build-image:
     needs: build-java
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false  # Disable fail-fast behavior
