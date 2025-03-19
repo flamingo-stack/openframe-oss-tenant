@@ -1,12 +1,5 @@
 import { ref } from 'vue';
 
-interface RuntimeConfig {
-  apiUrl?: string;
-  gatewayUrl?: string;
-  clientId?: string;
-  clientSecret?: string;
-}
-
 interface Config {
   apiUrl: string;
   gatewayUrl: string;
@@ -20,22 +13,18 @@ class ConfigService {
   private configRef = ref<Config | null>(null);
 
   private constructor() {
-    // Get runtime config from window object if available
-    const runtimeConfig = (window as any).__RUNTIME_CONFIG__ as RuntimeConfig || {};
-    console.log('🔍 [Config] Runtime config:', runtimeConfig);
-    console.log('🔍 [Config] import.meta.env:', import.meta.env);
+    // Get configuration from environment variables
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const gatewayUrl = import.meta.env.VITE_GATEWAY_URL;
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    const clientSecret = import.meta.env.VITE_CLIENT_SECRET;
 
-    // Get environment variables with fallbacks
-    const apiUrl = runtimeConfig.apiUrl || import.meta.env.VITE_API_URL || import.meta.env.API_URL;
-    const gatewayUrl = runtimeConfig.gatewayUrl || import.meta.env.VITE_GATEWAY_URL || import.meta.env.GATEWAY_URL;
-    const clientId = runtimeConfig.clientId || import.meta.env.VITE_CLIENT_ID || import.meta.env.CLIENT_ID;
-    const clientSecret = runtimeConfig.clientSecret || import.meta.env.VITE_CLIENT_SECRET || import.meta.env.CLIENT_SECRET;
-
-    console.log('🔍 [Config] Resolved values:', {
+    // Log configuration (excluding sensitive data)
+    console.log('🔧 [Config] Environment Variables:', {
       apiUrl,
       gatewayUrl,
       clientId,
-      clientSecret: clientSecret ? '***' : undefined
+      clientSecret: '***'
     });
 
     // Validate and set configuration
@@ -47,7 +36,9 @@ class ConfigService {
     };
 
     this.configRef.value = this.config;
-    console.log('🔧 [Config] Loaded configuration:', {
+
+    // Log validated configuration
+    console.log('✅ [Config] Validated Configuration:', {
       apiUrl: this.config.apiUrl,
       gatewayUrl: this.config.gatewayUrl,
       clientId: this.config.clientId,
@@ -56,22 +47,29 @@ class ConfigService {
   }
 
   private validateUrl(value: string | undefined, name: string): string {
-    console.log(`🔍 [Config] Validating URL for ${name}:`, value);
     if (!value) {
-      throw new Error(`${name} is not configured. Please set ${name.toUpperCase().replace(' ', '_')} in your environment.`);
+      throw new Error(`${name} is not configured. Please set VITE_${name.toUpperCase().replace(' ', '_')} in your environment.`);
     }
     try {
-      new URL(value);
+      const url = new URL(value);
+      if (!url.protocol) {
+        throw new Error(`${name} must include a protocol (http:// or https://)`);
+      }
       return value;
-    } catch {
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`${name} is not a valid URL: ${error.message}`);
+      }
       throw new Error(`${name} is not a valid URL: ${value}`);
     }
   }
 
   private validateString(value: string | undefined, name: string): string {
-    console.log(`🔍 [Config] Validating string for ${name}:`, value);
     if (!value) {
-      throw new Error(`${name} is not configured. Please set ${name.toUpperCase().replace(' ', '_')} in your environment.`);
+      throw new Error(`${name} is not configured. Please set VITE_${name.toUpperCase().replace(' ', '_')} in your environment.`);
+    }
+    if (value.trim().length === 0) {
+      throw new Error(`${name} cannot be empty`);
     }
     return value;
   }
@@ -89,6 +87,34 @@ class ConfigService {
 
   public getConfigRef() {
     return this.configRef;
+  }
+
+  public updateConfig(newConfig: Partial<Config>): void {
+    console.log('🔄 [Config] Updating configuration:', {
+      ...newConfig,
+      clientSecret: newConfig.clientSecret ? '***' : undefined
+    });
+
+    if (newConfig.apiUrl) {
+      this.config.apiUrl = this.validateUrl(newConfig.apiUrl, 'API URL');
+    }
+    if (newConfig.gatewayUrl) {
+      this.config.gatewayUrl = this.validateUrl(newConfig.gatewayUrl, 'Gateway URL');
+    }
+    if (newConfig.clientId) {
+      this.config.clientId = this.validateString(newConfig.clientId, 'Client ID');
+    }
+    if (newConfig.clientSecret) {
+      this.config.clientSecret = this.validateString(newConfig.clientSecret, 'Client Secret');
+    }
+    this.configRef.value = this.config;
+
+    console.log('✅ [Config] Updated configuration:', {
+      apiUrl: this.config.apiUrl,
+      gatewayUrl: this.config.gatewayUrl,
+      clientId: this.config.clientId,
+      clientSecret: '***'
+    });
   }
 }
 
