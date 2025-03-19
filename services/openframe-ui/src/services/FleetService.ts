@@ -56,12 +56,12 @@ export interface CreatePolicyPayload {
 
 export class FleetService {
   private static instance: FleetService;
-  private readonly VITE_API_URL: string;
+  private readonly API_URL: string;
 
   private constructor() {
     const configService = ConfigService.getInstance();
     const config = configService.getConfig();
-    this.VITE_API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
+    this.API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
   }
 
   public static getInstance(): FleetService {
@@ -73,47 +73,47 @@ export class FleetService {
 
   // Device Operations
   async getDevices(): Promise<Device[]> {
-    const response = await restClient.get(`${this.VITE_API_URL}/hosts`) as FleetResponse<Device[]>;
+    const response = await restClient.get(`${this.API_URL}/hosts`) as FleetResponse<Device[]>;
     return response.data || [];
   }
 
   async lockDevice(deviceUuid: string): Promise<void> {
-    await restClient.post(`${this.VITE_API_URL}/devices/${deviceUuid}/lock`);
+    await restClient.post(`${this.API_URL}/devices/${deviceUuid}/lock`);
   }
 
   async unlockDevice(deviceUuid: string): Promise<void> {
-    await restClient.post(`${this.VITE_API_URL}/devices/${deviceUuid}/unlock`);
+    await restClient.post(`${this.API_URL}/devices/${deviceUuid}/unlock`);
   }
 
   async eraseDevice(deviceUuid: string): Promise<void> {
-    await restClient.post(`${this.VITE_API_URL}/devices/${deviceUuid}/erase`);
+    await restClient.post(`${this.API_URL}/devices/${deviceUuid}/erase`);
   }
 
   async deleteDevice(deviceId: number): Promise<void> {
-    await restClient.delete(`${this.VITE_API_URL}/hosts/${deviceId}`);
+    await restClient.delete(`${this.API_URL}/hosts/${deviceId}`);
   }
 
   // Policy Operations
   async getPolicies(): Promise<Policy[]> {
-    const response = await restClient.get(`${this.VITE_API_URL}/global/policies`) as FleetResponse<Policy[]>;
+    const response = await restClient.get(`${this.API_URL}/global/policies`) as FleetResponse<Policy[]>;
     return response.data || [];
   }
 
   async createPolicy(payload: CreatePolicyPayload): Promise<void> {
-    await restClient.post(`${this.VITE_API_URL}/global/policies`, payload);
+    await restClient.post(`${this.API_URL}/global/policies`, payload);
   }
 
   async updatePolicy(policyId: number, payload: CreatePolicyPayload): Promise<void> {
-    await restClient.patch(`${this.VITE_API_URL}/global/policies/${policyId}`, payload);
+    await restClient.patch(`${this.API_URL}/global/policies/${policyId}`, payload);
   }
 
   async deletePolicy(policyId: number): Promise<void> {
-    await restClient.delete(`${this.VITE_API_URL}/global/policies/${policyId}`);
+    await restClient.delete(`${this.API_URL}/global/policies/${policyId}`);
   }
 
   // Activity Operations
   async getRecentActivities(limit: number = 5): Promise<Activity[]> {
-    const response = await restClient.get(`${this.VITE_API_URL}/activities?limit=${limit}`) as FleetResponse<Activity[]>;
+    const response = await restClient.get(`${this.API_URL}/activities?limit=${limit}`) as FleetResponse<Activity[]>;
     return response.data || [];
   }
 

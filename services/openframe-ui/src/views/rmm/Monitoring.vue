@@ -252,7 +252,7 @@ interface MonitorsResponse {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -335,7 +335,7 @@ const formatTimestamp = (timestamp: string) => {
 const fetchMonitors = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<MonitorsResponse>(`${VITE_API_URL}/checks/`);
+    const response = await restClient.get<MonitorsResponse>(`${API_URL}/checks/`);
     monitors.value = response.data || [];
   } catch (error) {
     console.error('Failed to fetch monitors:', error);
@@ -364,8 +364,8 @@ const saveMonitor = async () => {
 
     submitting.value = true;
     const endpoint = isEditMode.value && selectedMonitor.value ? 
-      `${VITE_API_URL}/checks/${selectedMonitor.value.id}` : 
-      `${VITE_API_URL}/checks`;
+      `${API_URL}/checks/${selectedMonitor.value.id}` : 
+      `${API_URL}/checks`;
 
     const method = isEditMode.value ? 'put' : 'post';
     await restClient[method](endpoint, newMonitor.value);
@@ -397,7 +397,7 @@ const editMonitor = (monitor: Monitor) => {
 
 const deleteMonitor = async (monitor: Monitor) => {
   try {
-    await restClient.delete(`${VITE_API_URL}/checks/${monitor.id}`);
+    await restClient.delete(`${API_URL}/checks/${monitor.id}`);
     await fetchMonitors();
     deleteMonitorDialog.value = false;
     toastService.showSuccess('Monitor deleted successfully');

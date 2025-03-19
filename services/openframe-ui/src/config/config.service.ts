@@ -26,10 +26,10 @@ class ConfigService {
     console.log('🔍 [Config] import.meta.env:', import.meta.env);
 
     // Get environment variables with fallbacks
-    const apiUrl = import.meta.env.VITE_API_URL || runtimeConfig.apiUrl;
-    const gatewayUrl = import.meta.env.VITE_GATEWAY_URL || runtimeConfig.gatewayUrl;
-    const clientId = import.meta.env.VITE_CLIENT_ID || runtimeConfig.clientId;
-    const clientSecret = import.meta.env.VITE_CLIENT_SECRET || runtimeConfig.clientSecret;
+    const apiUrl = runtimeConfig.apiUrl || import.meta.env.VITE_API_URL || import.meta.env.API_URL;
+    const gatewayUrl = runtimeConfig.gatewayUrl || import.meta.env.VITE_GATEWAY_URL || import.meta.env.GATEWAY_URL;
+    const clientId = runtimeConfig.clientId || import.meta.env.VITE_CLIENT_ID || import.meta.env.CLIENT_ID;
+    const clientSecret = runtimeConfig.clientSecret || import.meta.env.VITE_CLIENT_SECRET || import.meta.env.CLIENT_SECRET;
 
     console.log('🔍 [Config] Resolved values:', {
       apiUrl,
@@ -38,26 +38,13 @@ class ConfigService {
       clientSecret: clientSecret ? '***' : undefined
     });
 
-    console.log('🔍 [Config] API URL details:', {
-      value: apiUrl,
-      type: typeof apiUrl,
-      isNull: apiUrl === null,
-      isUndefined: apiUrl === undefined,
-      isEmptyString: apiUrl === ''
-    });
-
     // Validate and set configuration
-    try {
-      this.config = {
-        apiUrl: this.validateUrl(apiUrl, 'API URL'),
-        gatewayUrl: this.validateUrl(gatewayUrl, 'Gateway URL'),
-        clientId: this.validateString(clientId, 'Client ID'),
-        clientSecret: this.validateString(clientSecret, 'Client Secret')
-      };
-    } catch (error) {
-      console.error('🔴 [Config] Validation error:', error);
-      throw error;
-    }
+    this.config = {
+      apiUrl: this.validateUrl(apiUrl, 'API URL'),
+      gatewayUrl: this.validateUrl(gatewayUrl, 'Gateway URL'),
+      clientId: this.validateString(clientId, 'Client ID'),
+      clientSecret: this.validateString(clientSecret, 'Client Secret')
+    };
 
     this.configRef.value = this.config;
     console.log('🔧 [Config] Loaded configuration:', {
@@ -70,12 +57,8 @@ class ConfigService {
 
   private validateUrl(value: string | undefined, name: string): string {
     console.log(`🔍 [Config] Validating URL for ${name}:`, value);
-    console.log(`🔍 [Config] Value type:`, typeof value);
-    console.log(`🔍 [Config] Value is null/undefined:`, value === null || value === undefined);
-    console.log(`🔍 [Config] Value is empty string:`, value === '');
     if (!value) {
-      console.log(`🔍 [Config] Validation failed for ${name}`);
-      throw new Error(`${name} is not configured. Please set VITE_${name.toUpperCase().replace(' ', '_')} in your environment.`);
+      throw new Error(`${name} is not configured. Please set ${name.toUpperCase().replace(' ', '_')} in your environment.`);
     }
     try {
       new URL(value);
@@ -87,12 +70,8 @@ class ConfigService {
 
   private validateString(value: string | undefined, name: string): string {
     console.log(`🔍 [Config] Validating string for ${name}:`, value);
-    console.log(`🔍 [Config] Value type:`, typeof value);
-    console.log(`🔍 [Config] Value is null/undefined:`, value === null || value === undefined);
-    console.log(`🔍 [Config] Value is empty string:`, value === '');
     if (!value) {
-      console.log(`🔍 [Config] Validation failed for ${name}`);
-      throw new Error(`${name} is not configured. Please set VITE_${name.toUpperCase().replace(' ', '_')} in your environment.`);
+      throw new Error(`${name} is not configured. Please set ${name.toUpperCase().replace(' ', '_')} in your environment.`);
     }
     return value;
   }

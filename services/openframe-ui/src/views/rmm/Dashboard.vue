@@ -172,7 +172,7 @@ import type { Device, Alert, Check, Task } from '../../types/rmm';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 interface DeviceStats {
@@ -220,7 +220,7 @@ const recentAlerts = ref<Alert[]>([]);
 const fetchDeviceStats = async () => {
   try {
     console.log('Fetching device stats...');
-    const response = await restClient.get<Device[]>(`${VITE_API_URL}/agents/`);
+    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
     console.log('API Response:', response);
     
     const devices = Array.isArray(response) ? response : [];
@@ -247,7 +247,7 @@ const fetchDeviceStats = async () => {
 
 const fetchMonitoringStats = async () => {
   try {
-    const response = await restClient.get<Check[]>(`${VITE_API_URL}/checks/`);
+    const response = await restClient.get<Check[]>(`${API_URL}/checks/`);
     const checks = Array.isArray(response) ? response : [];
     
     const totalChecks = checks.length;
@@ -269,7 +269,7 @@ const fetchMonitoringStats = async () => {
 
 const fetchAutomationStats = async () => {
   try {
-    const response = await restClient.get<Task[]>(`${VITE_API_URL}/tasks/`);
+    const response = await restClient.get<Task[]>(`${API_URL}/tasks/`);
     const tasks = Array.isArray(response) ? response : [];
     
     const totalTasks = tasks.length;
@@ -289,7 +289,7 @@ const fetchAutomationStats = async () => {
 
 const fetchRecentAlerts = async () => {
   try {
-    const response = await restClient.patch<{ alerts: Alert[] }>(`${VITE_API_URL}/alerts/`, {
+    const response = await restClient.patch<{ alerts: Alert[] }>(`${API_URL}/alerts/`, {
       top: 10
     }, {
       headers: { 

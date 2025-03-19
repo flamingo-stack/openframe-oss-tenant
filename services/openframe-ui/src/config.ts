@@ -1,1 +1,1 @@
-export const VITE_API_URL = `${import.meta.env.VITE_GATEWAY_URL}/tools/tactical-rmm/core`; 
+export const API_URL = `${import.meta.env.VITE_GATEWAY_URL}/tools/tactical-rmm/core`; 
