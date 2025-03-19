@@ -474,8 +474,9 @@ jobs:
           {
             name: 'meshcentral',
             path: './infrastructure/meshcentral/server/',
-            context: './infrastructure/meshcentral',
             build_args: {
+              MESH_DIR: '/opt/mesh',
+              MESH_TEMP_DIR: '/tmp/mesh',
               MONGO_INITDB_ROOT_USERNAME: 'mongouser',
               MONGO_INITDB_ROOT_PASSWORD: 'mongopass',
               MONGO_INITDB_DATABASE: 'meshcentral',
@@ -495,16 +496,15 @@ jobs:
               MESH_PERSISTENT_CONFIG: '0',
               MESH_DISABLE_SSL: '1',
               MESH_COMPRESSION_ENABLED: 'true',
-              MESH_WEBRTC_ENABLED: 'false',
-              MESH_TEMP_DIR: '/tmp/mesh',
-              MESH_DIR: '/opt/mesh'
+              MESH_WEBRTC_ENABLED: 'false'
             }
           },
           {
             name: 'meshcentral-nginx',
             path: './infrastructure/meshcentral/nginx/',
-            context: './infrastructure/meshcentral',
             build_args: {
+              MESH_DIR: '/opt/mesh',
+              MESH_TEMP_DIR: '/tmp/mesh',
               MONGO_INITDB_ROOT_USERNAME: 'mongouser',
               MONGO_INITDB_ROOT_PASSWORD: 'mongopass',
               MONGO_INITDB_DATABASE: 'meshcentral',
@@ -524,9 +524,7 @@ jobs:
               MESH_PERSISTENT_CONFIG: '0',
               MESH_DISABLE_SSL: '1',
               MESH_COMPRESSION_ENABLED: 'true',
-              MESH_WEBRTC_ENABLED: 'false',
-              MESH_TEMP_DIR: '/tmp/mesh',
-              MESH_DIR: '/opt/mesh'
+              MESH_WEBRTC_ENABLED: 'false'
             }
           }
         ]

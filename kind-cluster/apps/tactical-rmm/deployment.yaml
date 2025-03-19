@@ -415,8 +415,8 @@ spec:
         image: ghcr.io/flamingo-cx/openframe-tactical-celery:latest
         args: ["tactical-celery"]
         env:
-        - name: DJANGO_SETTINGS_MODULE
-          value: "tacticalrmm.settings"
+        # - name: DJANGO_SETTINGS_MODULE
+        #   value: "tacticalrmm.settings"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
