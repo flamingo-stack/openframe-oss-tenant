@@ -213,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "@vue/runtime-core";
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -221,11 +221,11 @@ import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
-import { FilterMatchMode } from 'primevue/api';
-import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
-import { ToastService } from '../../services/ToastService';
-import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import { FilterMatchMode } from "primevue/api";
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from "../../config/config.service";
+import { ToastService } from "../../services/ToastService";
+import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 
@@ -250,7 +250,9 @@ interface MonitorsResponse {
   data: Monitor[];
 }
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -275,10 +277,8 @@ const monitorTypes = [
   { name: 'CPU Usage', value: 'cpu' },
   { name: 'Memory Usage', value: 'memory' },
   { name: 'Disk Usage', value: 'disk' },
-  { name: 'Network', value: 'network' },
-  { name: 'Process', value: 'process' },
-  { name: 'Service', value: 'service' },
-  { name: 'Custom', value: 'custom' }
+  { name: 'Network Traffic', value: 'network' },
+  { name: 'Service Status', value: 'service' }
 ];
 
 const filters = ref({
@@ -290,10 +290,8 @@ const formatMonitorType = (type: string) => {
     cpu: 'CPU Usage',
     memory: 'Memory Usage',
     disk: 'Disk Usage',
-    network: 'Network',
-    process: 'Process',
-    service: 'Service',
-    custom: 'Custom'
+    network: 'Network Traffic',
+    service: 'Service Status'
   };
   return typeMap[type] || type;
 };
@@ -301,12 +299,10 @@ const formatMonitorType = (type: string) => {
 const getMonitorIcon = (type: string) => {
   const iconMap: Record<string, string> = {
     cpu: 'pi pi-microchip',
-    memory: 'pi pi-database',
-    disk: 'pi pi-save',
-    network: 'pi pi-wifi',
-    process: 'pi pi-cog',
-    service: 'pi pi-server',
-    custom: 'pi pi-chart-line'
+    memory: 'pi pi-server',
+    disk: 'pi pi-hdd',
+    network: 'pi pi-globe',
+    service: 'pi pi-cog'
   };
   return iconMap[type] || 'pi pi-chart-line';
 };
@@ -317,34 +313,32 @@ const getMonitorTypeSeverity = (type: string) => {
     memory: 'warning',
     disk: 'danger',
     network: 'success',
-    process: 'info',
-    service: 'warning',
-    custom: 'info'
+    service: 'primary'
   };
   return severityMap[type] || 'info';
 };
 
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
-    healthy: 'success',
-    warning: 'warning',
-    critical: 'danger',
-    unknown: 'info'
+    'ok': 'success',
+    'warning': 'warning',
+    'critical': 'danger',
+    'unknown': 'info'
   };
   return severityMap[status.toLowerCase()] || 'info';
 };
 
 const formatTimestamp = (timestamp: string) => {
-  return new Date(timestamp).toLocaleString();
+  return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
 };
 
 const fetchMonitors = async () => {
-  loading.value = true;
   try {
-    const response = await restClient.get<MonitorsResponse>(`${API_URL}/checks/`);
+    loading.value = true;
+    const response = await restClient.get<MonitorsResponse>(`${API_URL}/monitors/`);
     monitors.value = response.data || [];
-  } catch (error: any) {
-    console.error('Error fetching monitors:', error);
+  } catch (error) {
+    console.error('Failed to fetch monitors:', error);
     toastService.showError('Failed to fetch monitors');
   } finally {
     loading.value = false;
@@ -364,52 +358,53 @@ const hideDialog = () => {
 };
 
 const saveMonitor = async () => {
-  submitted.value = true;
-
-  if (!newMonitor.value.name || !newMonitor.value.type || 
-      !newMonitor.value.target || !newMonitor.value.description) {
-    return;
-  }
-
-  submitting.value = true;
   try {
-    if (isEditMode.value && selectedMonitor.value) {
-      await restClient.patch(`${API_URL}/checks/${selectedMonitor.value.id}/`, newMonitor.value);
-      toastService.showSuccess('Monitor updated successfully');
-    } else {
-      await restClient.post(`${API_URL}/checks/`, newMonitor.value);
-      toastService.showSuccess('Monitor added successfully');
-    }
-    await fetchMonitors();
+    submitted.value = true;
+    if (!validateMonitor()) return;
+
+    submitting.value = true;
+    const endpoint = isEditMode.value && selectedMonitor.value ? 
+      `${API_URL}/monitors/${selectedMonitor.value.id}` : 
+      `${API_URL}/monitors`;
+
+    const method = isEditMode.value ? 'put' : 'post';
+    await restClient[method](endpoint, newMonitor.value);
+
     hideDialog();
-  } catch (error: any) {
-    console.error('Error saving monitor:', error);
-    toastService.showError(isEditMode.value ? 'Failed to update monitor' : 'Failed to add monitor');
+    await fetchMonitors();
+    toastService.showSuccess(`Monitor ${isEditMode.value ? 'updated' : 'created'} successfully`);
+  } catch (error) {
+    console.error('Failed to save monitor:', error);
+    toastService.showError(`Failed to ${isEditMode.value ? 'update' : 'create'} monitor`);
   } finally {
     submitting.value = false;
   }
 };
 
 const viewMonitor = (monitor: Monitor) => {
-  // Implement monitor details view
-  console.log('View monitor:', monitor);
-};
-
-const editMonitor = (monitor: Monitor) => {
   selectedMonitor.value = monitor;
-  newMonitor.value = {
-    name: monitor.name,
-    type: monitor.type,
-    target: monitor.target,
-    description: monitor.description
-  };
+  newMonitor.value = { ...monitor };
   isEditMode.value = true;
   showAddMonitorDialog.value = true;
 };
 
-const deleteMonitor = (monitor: Monitor) => {
+const editMonitor = (monitor: Monitor) => {
   selectedMonitor.value = monitor;
-  deleteMonitorDialog.value = true;
+  newMonitor.value = { ...monitor };
+  isEditMode.value = true;
+  showAddMonitorDialog.value = true;
+};
+
+const deleteMonitor = async (monitor: Monitor) => {
+  try {
+    await restClient.delete(`${API_URL}/monitors/${monitor.id}`);
+    await fetchMonitors();
+    deleteMonitorDialog.value = false;
+    toastService.showSuccess('Monitor deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete monitor:', error);
+    toastService.showError('Failed to delete monitor');
+  }
 };
 
 const confirmDelete = async () => {
@@ -417,17 +412,21 @@ const confirmDelete = async () => {
 
   deleting.value = true;
   try {
-    await restClient.delete(`${API_URL}/checks/${selectedMonitor.value.id}/`);
-    await fetchMonitors();
-    deleteMonitorDialog.value = false;
-    selectedMonitor.value = null;
-    toastService.showSuccess('Monitor deleted successfully');
-  } catch (error: any) {
-    console.error('Error deleting monitor:', error);
+    await deleteMonitor(selectedMonitor.value);
+  } catch (error) {
+    console.error('Failed to delete monitor:', error);
     toastService.showError('Failed to delete monitor');
   } finally {
     deleting.value = false;
   }
+};
+
+const validateMonitor = () => {
+  if (!newMonitor.value.name || !newMonitor.value.type || 
+      !newMonitor.value.target || !newMonitor.value.description) {
+    return false;
+  }
+  return true;
 };
 
 onMounted(async () => {

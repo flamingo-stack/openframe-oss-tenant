@@ -131,16 +131,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
+import { onMounted } from '@vue/runtime-core';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
 import { FleetService } from '../../services/FleetService';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+const configService = ConfigService.getInstance();
+const config = configService.getConfig();
+
+const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
 const fleetService = FleetService.getInstance();
 

@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import Column from 'primevue/column';
@@ -93,15 +93,37 @@ import Editor from 'primevue/editor';
 import Dropdown from 'primevue/dropdown';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
-import { FilterMatchMode } from 'primevue/api';
-import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
-import { ToastService } from '../../services/ToastService';
+import { FilterMatchMode } from "primevue/api";
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from '../../config/config.service';
+import { ToastService } from "../../services/ToastService";
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+interface Profile {
+  profile_uuid: string;
+  name: string;
+  identifier: string;
+  platform: string;
+  created_at: string;
+  updated_at: string;
+}
 
+interface FleetErrorResponse {
+  message: string;
+  errors?: Array<{
+    name: string;
+    reason: string;
+  }>;
+}
+
+interface FleetResponse {
+  profiles: Profile[];
+}
+
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -110,7 +132,7 @@ const vTooltip = Tooltip;
 
 const loading = ref(true);
 const error = ref('');
-const profiles = ref<any[]>([]);
+const profiles = ref<Profile[]>([]);
 const showCreateDialog = ref(false);
 const submitted = ref(false);
 const submitting = ref(false);
@@ -122,10 +144,6 @@ const filters = ref({
 });
 
 const formatPlatform = (platform: string) => {
-  if (!platform) return 'All Platforms';
-  const platforms = platform.split(',');
-  if (platforms.length > 1) return 'Multiple';
-  
   const platformMap: Record<string, string> = {
     darwin: 'macOS',
     windows: 'Windows',
@@ -137,7 +155,6 @@ const formatPlatform = (platform: string) => {
 };
 
 const getPlatformSeverity = (platform: string) => {
-  if (!platform || platform.includes(',')) return 'info';
   const severityMap: Record<string, string> = {
     darwin: 'info',
     windows: 'warning',
@@ -159,51 +176,35 @@ const extractUrlFromMessage = (message: string) => {
   return { text: message };
 };
 
-interface Profile {
-  profile_uuid: string;
-  name: string;
-  identifier: string;
-  platform: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface FleetErrorResponse {
-  message: string;
-  errors?: Array<{
-    name: string;
-    reason: string;
-  }>;
-}
-
-interface FleetResponse<T> {
-  data?: T;
-  error?: FleetErrorResponse;
-}
-
 const fetchProfiles = async () => {
-  loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/configuration_profiles`) as FleetResponse<any[]>;
-    profiles.value = response.data || [];
-  } catch (err: any) {
-    toastService.showError(err.message);
+    loading.value = true;
+    const response = await restClient.get<FleetResponse>(`${API_URL}/configuration_profiles`);
+    profiles.value = response.profiles || [];
+  } catch (error: any) {
+    console.error('Failed to fetch profiles:', error);
+    if (error.message) {
+      toastService.showError(error.message);
+    } else {
+      toastService.showError('Failed to fetch profiles');
+    }
   } finally {
     loading.value = false;
   }
 };
 
-const deleteProfile = async (profile: any) => {
+const deleteProfile = async (profile: Profile) => {
   try {
     await restClient.delete(`${API_URL}/configuration_profiles/${profile.profile_uuid}`);
     await fetchProfiles();
     toastService.showSuccess('Profile deleted successfully');
-  } catch (err: any) {
-    toastService.showError(err.message);
+  } catch (error) {
+    console.error('Failed to delete profile:', error);
+    toastService.showError('Failed to delete profile');
   }
 };
 
-const editProfile = (profile: any) => {
+const editProfile = (profile: Profile) => {
   // TODO: Implement profile editing
   console.log('Edit profile:', profile);
 };
@@ -214,8 +215,8 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-onMounted(() => {
-  fetchProfiles();
+onMounted(async () => {
+  await fetchProfiles();
 });
 </script>
 

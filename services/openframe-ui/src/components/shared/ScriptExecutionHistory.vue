@@ -2,7 +2,7 @@
   <div class="script-execution-history">
     <div 
       v-if="visible" 
-      class="sidebar-mask" 
+      class="sidebar-mask active" 
       @click="onVisibilityChange(false)"
     ></div>
     <div 
@@ -11,12 +11,20 @@
     >
       <div class="sidebar-header">
         <h3 class="text-xl m-0">Script Execution History</h3>
-        <Button 
-          icon="pi pi-trash" 
-          class="p-button-text p-button-rounded" 
-          @click="clearHistory"
-          aria-label="Clear History"
-        />
+        <div class="flex gap-2">
+          <Button 
+            icon="pi pi-trash" 
+            class="p-button-text p-button-rounded" 
+            @click="clearHistory"
+            aria-label="Clear History"
+          />
+          <Button 
+            icon="pi pi-times" 
+            class="p-button-text p-button-rounded" 
+            @click="onVisibilityChange(false)"
+            aria-label="Close"
+          />
+        </div>
       </div>
 
       <div class="sidebar-content">
@@ -173,6 +181,11 @@ defineExpose({
     height: 100%;
     background: rgba(0, 0, 0, 0.4);
     z-index: 1000;
+    display: none;
+
+    &.active {
+      display: block;
+    }
   }
 
   .sidebar {
@@ -185,7 +198,8 @@ defineExpose({
     border-left: 1px solid var(--surface-border);
     z-index: 1001;
     transform: translateX(100%);
-    transition: transform 0.3s;
+    transition: transform 0.3s ease-in-out;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 
     &.active {
       transform: translateX(0);

@@ -1,7 +1,10 @@
 import { ref } from 'vue';
 import { restClient } from '../apollo/apolloClient';
-import { config as envConfig } from '../config/env.config';
+import { ConfigService } from '../config/config.service';
 import { useToastStore } from '../stores/toast';
+
+const configService = ConfigService.getInstance();
+const config = configService.getConfig();
 
 export interface SettingsSaveOptions {
   apiUrl: string;

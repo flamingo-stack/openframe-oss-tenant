@@ -1,5 +1,5 @@
 // Runtime configuration that can be injected via Kubernetes
-interface RuntimeConfig {
+export interface RuntimeConfig {
   apiUrl: string;
   gatewayUrl: string;
   clientId: string;

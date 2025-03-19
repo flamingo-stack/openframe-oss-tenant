@@ -74,4 +74,170 @@ export interface RMMSettings {
 
 export type ExtendedRMMSettings = RMMSettings & {
   [key: string]: unknown;
+}
+
+export interface WmiDetail {
+  cpus: string[];
+  gpus: string[];
+  disks: string[];
+  local_ips: string[];
+  make_model: string;
+  serialnumber: string;
+}
+
+export interface Disk {
+  free: string;
+  used: string;
+  total: string;
+  device: string;
+  fstype: string;
+  percent: number;
+}
+
+export interface Device {
+  agent_id: string;
+  hostname: string;
+  plat: string;
+  operating_system: string;
+  status: string;
+  last_seen: string;
+  public_ip: string;
+  local_ips: string;
+  cpu_model: string[];
+  total_ram: number;
+  logged_in_username: string;
+  timezone: string;
+  make_model: string;
+  wmi_detail: WmiDetail;
+  disks: Disk[];
+  physical_disks: string[];
+  storage: {
+    total: number;
+    used: number;
+    free: number;
+    percent: number;
+  };
+  ram: {
+    total: number;
+    used: number;
+    free: number;
+    percent: number;
+  };
+  swap: {
+    total: number;
+    used: number;
+    free: number;
+    percent: number;
+  };
+  private_ips: string[];
+  public_ips: string[];
+  antivirus: {
+    name: string;
+    status: string;
+  };
+  firewall: {
+    enabled: boolean;
+    status: string;
+  };
+  antivirus_status: string;
+  firewall_status: string;
+  antivirus_enabled: boolean;
+  firewall_enabled: boolean;
+  antivirus_name: string;
+  firewall_name: string;
+  antivirus_definitions: string;
+  antivirus_scan_time: string;
+  antivirus_scan_status: string;
+  antivirus_scan_progress: number;
+  antivirus_scan_last_run: string;
+  antivirus_scan_next_run: string;
+  antivirus_scan_scheduled: boolean;
+  antivirus_scan_schedule: string;
+  antivirus_scan_type: string;
+  antivirus_scan_target: string;
+  antivirus_scan_exclusions: string[];
+  antivirus_scan_history: {
+    timestamp: string;
+    status: string;
+    type: string;
+    target: string;
+    results: string;
+  }[];
+  firewall_rules: {
+    name: string;
+    enabled: boolean;
+    direction: string;
+    action: string;
+    protocol: string;
+    local_port: string;
+    remote_port: string;
+    local_ip: string;
+    remote_ip: string;
+    profile: string;
+  }[];
+  firewall_profiles: {
+    name: string;
+    enabled: boolean;
+    inbound_rules: string[];
+    outbound_rules: string[];
+  }[];
+  firewall_logs: {
+    timestamp: string;
+    action: string;
+    direction: string;
+    protocol: string;
+    local_port: string;
+    remote_port: string;
+    local_ip: string;
+    remote_ip: string;
+    profile: string;
+  }[];
+}
+
+// Base API response interface
+export interface ApiResponse<T> {
+  data: T;
+}
+
+// Command response using the base interface
+export interface CommandResponse extends ApiResponse<{
+  output: string;
+}> {}
+
+// Alert response using the base interface
+export interface AlertResponse extends ApiResponse<{
+  alerts_count: number;
+  alerts: Alert[];
+}> {}
+
+// Device response using the base interface
+export interface DeviceResponse extends ApiResponse<Device[]> {}
+
+// Check response using the base interface
+export interface CheckResponse extends ApiResponse<Check[]> {}
+
+// Task response using the base interface
+export interface TaskResponse extends ApiResponse<Task[]> {}
+
+export interface Alert {
+  id?: number;
+  timestamp?: string;
+  created?: string;
+  alert_time?: string;
+  alert_type?: string;
+  severity: string;
+  message: string | null;
+  snoozed?: boolean;
+  resolved?: boolean;
+}
+
+export interface Check {
+  id: string;
+  status: string;
+}
+
+export interface Task {
+  id: string;
+  status: string;
+  completed: boolean;
 } 

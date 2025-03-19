@@ -20,4 +20,5 @@ declare module 'pinia' {
     id: string,
     setup: () => any
   ): () => any
+  export function storeToRefs<T extends object>(store: T): T
 }

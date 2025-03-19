@@ -52,7 +52,7 @@ import { computed, onMounted, watch } from '@vue/runtime-core';
 import type { ComputedRef, WatchSource } from '@vue/runtime-core';
 import { useRoute, useRouter } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
 import type { ExtendedRMMSettings } from '../../types/rmm';
@@ -78,7 +78,9 @@ import { useSettings } from '../../composables/useSettings';
 import { useSettingsSave } from '../../composables/useSettingsSave';
 import SettingsCategory from './SettingsCategory.vue';
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm/core`;
+const configService = ConfigService.getInstance();
+const config = configService.getConfig();
+const API_URL = `${config.gatewayUrl}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
 
 const route = useRoute();
@@ -235,7 +237,7 @@ const saveAndTestEmail = async () => {
 
 const resetPatchPolicy = async () => {
   try {
-    await restClient.post(`${API_URL}/reset-patch-policy/`);
+    await restClient.post(`${config.gatewayUrl}/tools/tactical-rmm/core/reset-patch-policy/`);
     toastStore.showSuccess('Patch policy reset successfully');
   } catch (err: any) {
     console.error('Error resetting patch policy:', err);
@@ -258,7 +260,7 @@ const copyApiKey = (key: string) => {
 
 const deleteApiKey = async (id: number) => {
   try {
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/${id}/`);
+    await restClient.delete(`${config.gatewayUrl}/tools/tactical-rmm/accounts/apikeys/${id}/`);
     if (settings.value?.api_keys) {
       settings.value.api_keys = settings.value.api_keys.filter((k: ApiKey) => k.id !== id);
     }
@@ -278,7 +280,7 @@ const generateApiKey = async () => {
 
   generatingApiKey.value = true;
   try {
-    const response = await restClient.post<ApiKey>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`, {
+    const response = await restClient.post<ApiKey>(`${config.gatewayUrl}/tools/tactical-rmm/accounts/apikeys/`, {
       name: newApiKey.value.name,
       expiration: newApiKey.value.expiration?.toISOString() || null
     });
@@ -340,7 +342,7 @@ const editUrlAction = (action: UrlAction) => {
 const deleteUrlAction = async (id: number) => {
   try {
     const endpoint = '/core/urlaction/';
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${id}/`);
+    await restClient.delete(`${API_URL}${endpoint}${id}/`);
     
     if (!settings.value) return;
     
@@ -366,8 +368,8 @@ const saveUrlAction = async () => {
     const endpoint = '/core/urlaction/';
     const method = editingUrlAction.value ? 'patch' : 'post';
     const url = editingUrlAction.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrlAction.value.id}/`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+      ? `${API_URL}${endpoint}${editingUrlAction.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
     
@@ -510,8 +512,8 @@ const saveKeyStore = async () => {
     const endpoint = '/core/keystore/';
     const method = editingKeyStore.value ? 'patch' : 'post';
     const url = editingKeyStore.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingKeyStore.value.id}/`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+      ? `${API_URL}${endpoint}${editingKeyStore.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const response = await restClient[method]<KeyStore>(url, keyStoreForm.value);
     
@@ -539,7 +541,7 @@ const saveKeyStore = async () => {
 
 const deleteKeyStore = async (id: number) => {
   try {
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/${id}/`);
+    await restClient.delete(`${API_URL}/core/keystore/${id}/`);
     if (!settings.value) return;
     settings.value.key_store = settings.value.key_store?.filter((k: KeyStore) => k.id !== id);
     toastService.showSuccess('Key deleted successfully');
@@ -595,8 +597,8 @@ const saveCustomField = async () => {
     const endpoint = '/core/customfields/';
     const method = editingCustomField.value ? 'patch' : 'post';
     const url = editingCustomField.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingCustomField.value.id}/`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+      ? `${API_URL}${endpoint}${editingCustomField.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const formData = {
       name: customFieldForm.value.name,
@@ -637,7 +639,7 @@ const saveCustomField = async () => {
 
 const deleteCustomField = async (id: number) => {
   try {
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/${id}/`);
+    await restClient.delete(`${API_URL}/core/customfields/${id}/`);
     if (!settings.value) return;
     settings.value.custom_fields = settings.value.custom_fields?.filter((f: CustomField) => f.id !== id);
     toastService.showSuccess('Custom field deleted successfully');

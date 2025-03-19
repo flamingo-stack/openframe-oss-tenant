@@ -1,6 +1,6 @@
 import authConfig from '../config/auth.config';
 import axios from 'axios';
-import { config } from '../config/env.config';
+import { ConfigService } from '../config/config.service';
 import { apolloClient } from '../apollo/apolloClient';
 import { gql } from '@apollo/client/core';
 import { restClient } from '../apollo/apolloClient';
@@ -72,6 +72,9 @@ export class OAuthError extends Error {
 }
 
 export class AuthService {
+  private static configService = ConfigService.getInstance();
+  private static runtimeConfig = AuthService.configService.getConfig();
+
   private static getHeaders(includeAuth: boolean = false): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -198,7 +201,7 @@ export class AuthService {
         clientId: authConfig.clientId
       });
 
-      const response = await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
+      const response = await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
       
       console.log('✅ [Auth] Login successful:', {
         hasAccessToken: !!response.access_token,
@@ -244,7 +247,7 @@ export class AuthService {
       };
 
       const response = await restClient.post<TokenResponse>(
-        `${config.API_URL}/oauth/register`, 
+        `${AuthService.runtimeConfig.apiUrl}/oauth/register`, 
         data,
         { headers }
       );
@@ -277,7 +280,7 @@ export class AuthService {
         client_secret: authConfig.clientSecret
       });
 
-      return await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
+      return await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
     } catch (error: unknown) {
       throw this.handleError(error);
     }
@@ -285,7 +288,7 @@ export class AuthService {
 
   static async getUserInfo(): Promise<UserInfo> {
     try {
-      return await restClient.get<UserInfo>(`${config.API_URL}/.well-known/userinfo`);
+      return await restClient.get<UserInfo>(`${AuthService.runtimeConfig.apiUrl}/.well-known/userinfo`);
     } catch (error: unknown) {
       throw this.handleError(error);
     }
@@ -302,7 +305,7 @@ export class AuthService {
       });
 
       const data = await restClient.post<{ redirect_url: string }>(
-        `${config.API_URL}/oauth/authorize?${params}`,
+        `${AuthService.runtimeConfig.apiUrl}/oauth/authorize?${params}`,
         null
       );
       return data.redirect_url;
@@ -321,7 +324,7 @@ export class AuthService {
         client_secret: authConfig.clientSecret
       });
 
-      return await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
+      return await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
     } catch (error: unknown) {
       throw this.handleError(error);
     }

@@ -52,7 +52,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch } from '@vue/runtime-core';
+import type { ComputedRef, WatchSource } from '@vue/runtime-core';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -60,12 +61,15 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
 import { ToastService } from '../../services/ToastService';
 import { useSettingsSave } from '../../composables/useSettingsSave';
+import type { RuntimeConfig } from '../../config/runtime-config';
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+let API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
 interface ConfigValue {
   [key: string]: string | number | boolean | null | ConfigValue | ConfigValue[] | Record<string, unknown>;
@@ -531,6 +535,11 @@ onMounted(() => {
     }
   });
 });
+
+const handleConfigChange = (newConfig: RuntimeConfig) => {
+  // Update the API URL when config changes
+  API_URL = `${newConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+};
 </script>
 
 <style scoped>

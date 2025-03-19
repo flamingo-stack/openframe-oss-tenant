@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from '@vue/runtime-core';
 import { useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -97,7 +97,7 @@ import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
@@ -107,7 +107,10 @@ interface FleetResponse {
   hosts: any[];
 }
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+const configService = ConfigService.getInstance();
+const config = configService.getConfig();
+
+const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
 const router = useRouter();
 const toastService = ToastService.getInstance();
@@ -186,7 +189,7 @@ const fetchDevices = async () => {
 
 const lockDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/devices/${device.device_uuid}/lock`);
+    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/lock`);
     toastService.showSuccess('Device locked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
@@ -195,7 +198,7 @@ const lockDevice = async (device: any) => {
 
 const unlockDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/devices/${device.device_uuid}/unlock`);
+    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/unlock`);
     toastService.showSuccess('Device unlocked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
@@ -204,7 +207,7 @@ const unlockDevice = async (device: any) => {
 
 const eraseDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/devices/${device.device_uuid}/erase`);
+    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/erase`);
     toastService.showSuccess('Device erase command sent successfully');
   } catch (err: any) {
     toastService.showError(err.message);
@@ -213,7 +216,7 @@ const eraseDevice = async (device: any) => {
 
 const deleteDevice = async (device: any) => {
   try {
-    await restClient.delete(`${API_URL}/hosts/${device.id}`);
+    await restClient.delete(`${API_URL}/global/hosts/${device.id}`);
     await fetchDevices();
     toastService.showSuccess('Device deleted successfully');
   } catch (err) {

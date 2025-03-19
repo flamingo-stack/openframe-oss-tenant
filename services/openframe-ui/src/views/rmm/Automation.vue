@@ -263,7 +263,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "@vue/runtime-core";
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -271,11 +271,11 @@ import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 import MultiSelect from 'primevue/multiselect';
 import Tag from 'primevue/tag';
-import { FilterMatchMode } from 'primevue/api';
-import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
-import { ToastService } from '../../services/ToastService';
-import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import { FilterMatchMode } from "primevue/api";
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from "../../config/config.service";
+import { ToastService } from "../../services/ToastService";
+import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 
@@ -287,9 +287,9 @@ interface Task {
   schedule: string;
   script_id: string;
   device_ids: string[];
-  last_run: string;
-  next_run: string;
-  status: string;
+  last_run?: string;
+  next_run?: string;
+  status?: string;
 }
 
 interface Device {
@@ -314,7 +314,9 @@ interface ScriptsResponse {
   data: Script[];
 }
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -400,13 +402,13 @@ const formatSchedule = (schedule: string) => {
 };
 
 const fetchTasks = async () => {
-  loading.value = true;
   try {
-    const response = await restClient.get<TasksResponse>(`${API_URL}/tasks/`);
-    tasks.value = response.data || [];
-  } catch (error: any) {
-    console.error('Error fetching tasks:', error);
-    toastService.showError('Failed to fetch tasks');
+    loading.value = true;
+    const response = await restClient.get<Task[]>(`${API_URL}/tasks/`);
+    tasks.value = response;
+  } catch (error) {
+    console.error('Failed to fetch tasks:', error);
+    toastService.showError('Failed to fetch automation tasks');
   } finally {
     loading.value = false;
   }
@@ -447,28 +449,24 @@ const hideDialog = () => {
 };
 
 const saveTask = async () => {
-  submitted.value = true;
-
-  if (!newTask.value.name || !newTask.value.type || 
-      !newTask.value.description || !newTask.value.schedule ||
-      !newTask.value.script_id || newTask.value.device_ids.length === 0) {
-    return;
-  }
-
-  submitting.value = true;
   try {
-    if (isEditMode.value && selectedTask.value) {
-      await restClient.patch(`${API_URL}/tasks/${selectedTask.value.id}/`, newTask.value);
-      toastService.showSuccess('Task updated successfully');
-    } else {
-      await restClient.post(`${API_URL}/tasks/`, newTask.value);
-      toastService.showSuccess('Task added successfully');
-    }
-    await fetchTasks();
+    submitted.value = true;
+    if (!validateTask()) return;
+
+    submitting.value = true;
+    const endpoint = isEditMode.value && selectedTask.value ? 
+      `${API_URL}/automation/tasks/${selectedTask.value.id}` : 
+      `${API_URL}/automation/tasks`;
+
+    const method = isEditMode.value ? 'put' : 'post';
+    await restClient[method](endpoint, newTask.value);
+
     hideDialog();
-  } catch (error: any) {
-    console.error('Error saving task:', error);
-    toastService.showError(isEditMode.value ? 'Failed to update task' : 'Failed to add task');
+    await fetchTasks();
+    toastService.showSuccess(`Task ${isEditMode.value ? 'updated' : 'created'} successfully`);
+  } catch (error) {
+    console.error('Failed to save task:', error);
+    toastService.showError(`Failed to ${isEditMode.value ? 'update' : 'create'} task`);
   } finally {
     submitting.value = false;
   }
@@ -476,11 +474,11 @@ const saveTask = async () => {
 
 const runTask = async (task: Task) => {
   try {
-    await restClient.post(`${API_URL}/tasks/${task.id}/run/`);
-    toastService.showSuccess('Task execution started');
+    await restClient.post(`${API_URL}/automation/tasks/${task.id}/run`);
     await fetchTasks();
-  } catch (error: any) {
-    console.error('Error running task:', error);
+    toastService.showSuccess('Task execution started');
+  } catch (error) {
+    console.error('Failed to run task:', error);
     toastService.showError('Failed to run task');
   }
 };
@@ -499,9 +497,16 @@ const editTask = (task: Task) => {
   showAddTaskDialog.value = true;
 };
 
-const deleteTask = (task: Task) => {
-  selectedTask.value = task;
-  deleteTaskDialog.value = true;
+const deleteTask = async (task: Task) => {
+  try {
+    await restClient.delete(`${API_URL}/automation/tasks/${task.id}`);
+    await fetchTasks();
+    deleteTaskDialog.value = false;
+    toastService.showSuccess('Task deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete task:', error);
+    toastService.showError('Failed to delete task');
+  }
 };
 
 const confirmDelete = async () => {
@@ -509,17 +514,22 @@ const confirmDelete = async () => {
 
   deleting.value = true;
   try {
-    await restClient.delete(`${API_URL}/tasks/${selectedTask.value.id}/`);
-    await fetchTasks();
-    deleteTaskDialog.value = false;
-    selectedTask.value = null;
-    toastService.showSuccess('Task deleted successfully');
+    await deleteTask(selectedTask.value);
   } catch (error: any) {
     console.error('Error deleting task:', error);
     toastService.showError('Failed to delete task');
   } finally {
     deleting.value = false;
   }
+};
+
+const validateTask = () => {
+  if (!newTask.value.name || !newTask.value.type || 
+      !newTask.value.description || !newTask.value.schedule ||
+      !newTask.value.script_id || newTask.value.device_ids.length === 0) {
+    return false;
+  }
+  return true;
 };
 
 onMounted(async () => {

@@ -47,17 +47,6 @@
           </template>
         </Column>
 
-        <Column field="public_ip" header="IP Address" sortable>
-          <template #body="{ data }">
-            <div class="flex flex-column gap-1">
-              <span v-for="(ip, index) in getIPv4Addresses(data.local_ips)" :key="index" class="text-sm">
-                {{ ip }}
-              </span>
-              <span v-if="!getIPv4Addresses(data.local_ips).length" class="text-sm">N/A</span>
-            </div>
-          </template>
-        </Column>
-
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
@@ -120,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -130,55 +119,21 @@ import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
-import { FilterMatchMode } from 'primevue/api';
-import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
-import { ToastService } from '../../services/ToastService';
-import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import { FilterMatchMode } from "primevue/api";
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from "../../config/config.service";
+import { ToastService } from "../../services/ToastService";
+import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
+import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
 
-interface WmiDetail {
-  cpus: string[];
-  gpus: string[];
-  disks: string[];
-  local_ips: string[];
-  make_model: string;
-  serialnumber: string;
-}
-
-interface Disk {
-  free: string;
-  used: string;
-  total: string;
-  device: string;
-  fstype: string;
-  percent: number;
-}
-
-interface Device {
-  agent_id: string;
-  hostname: string;
-  plat: string;
-  operating_system: string;
-  status: string;
-  last_seen: string;
-  public_ip: string;
-  local_ips: string;
-  cpu_model: string[];
-  total_ram: number;
-  logged_in_username: string;
-  timezone: string;
-  make_model: string;
-  wmi_detail: WmiDetail;
-  disks: Disk[];
-  physical_disks: string[];
-}
-
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -239,7 +194,15 @@ const getStatusSeverity = (status: string) => {
 };
 
 const formatTimestamp = (timestamp: string) => {
-  return new Date(timestamp).toLocaleString();
+  return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
+};
+
+const formatBytes = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 const getIPv4Addresses = (ips: string) => {
@@ -248,34 +211,24 @@ const getIPv4Addresses = (ips: string) => {
   // Split the IPs string into an array
   const ipList = ips.split(',').map(ip => ip.trim());
 
-  // Filter to get only IPv4 addresses
-  return ipList
-    .map(ip => ip.split('/')[0]) // Remove CIDR notation
-    .filter(ip => ip.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) // Only IPv4
-    .sort((a, b) => { // Sort private IPs after public IPs
-      const isPrivateA = isPrivateIP(a);
-      const isPrivateB = isPrivateIP(b);
-      if (isPrivateA === isPrivateB) return 0;
-      return isPrivateA ? 1 : -1;
+  // Filter for IPv4 addresses
+  return ipList.filter(ip => {
+    const parts = ip.split('.');
+    return parts.length === 4 && parts.every(part => {
+      const num = parseInt(part, 10);
+      return num >= 0 && num <= 255;
     });
-};
-
-const isPrivateIP = (ip: string) => {
-  return ip.startsWith('127.') || // Loopback
-    ip.startsWith('169.254.') || // Link-local
-    ip.startsWith('172.16.') || // Private network
-    ip.startsWith('192.168.') || // Private network
-    ip.startsWith('10.'); // Private network
+  });
 };
 
 const fetchDevices = async () => {
-  loading.value = true;
   try {
+    loading.value = true;
     const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
-    devices.value = response || [];
-  } catch (error: any) {
-    console.error('Error fetching devices:', error);
-    devices.value = [];
+    devices.value = Array.isArray(response) ? response : [];
+  } catch (error) {
+    console.error('Failed to fetch devices:', error);
+    toastService.showError('Failed to fetch devices');
   } finally {
     loading.value = false;
   }
@@ -288,35 +241,30 @@ const remoteControl = (device: Device) => {
 
 const runCommand = (device: Device) => {
   selectedDevice.value = device;
-  lastCommand.value = null;
-  command.value = '';
   showRunCommandDialog.value = true;
 };
 
 const executeCommand = async (cmd: string) => {
   if (!selectedDevice.value) return;
 
-  console.log('Executing command:', cmd);
+  let executionId: string | undefined;
   
-  // Store the command
-  lastCommand.value = { cmd, output: '' };
-  
-  // Close the command dialog and show history
+  // Add command to execution history with pending status and close dialog immediately
+  if (executionHistoryRef.value) {
+    executionId = executionHistoryRef.value.addExecution({
+      deviceName: selectedDevice.value.hostname,
+      command: cmd,
+      output: 'Executing command...',
+      status: 'pending'
+    });
+  }
+
+  // Close dialog and show history immediately
   showRunCommandDialog.value = false;
   showExecutionHistory.value = true;
-  
-  // Add pending execution to history
-  const executionId = executionHistoryRef.value?.addExecution({
-    deviceName: selectedDevice.value.hostname,
-    command: cmd,
-    output: 'Executing...',
-    status: 'pending'
-  });
-  
-  executing.value = true;
+
   try {
-    console.log('Sending request to:', `${API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`);
-    
+    executing.value = true;
     const response = await restClient.post<string>(`${API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`, {
       shell: "/bin/bash",
       cmd: cmd,
@@ -325,45 +273,28 @@ const executeCommand = async (cmd: string) => {
       run_as_user: false
     });
 
-    console.log('Command response:', response);
+    lastCommand.value = {
+      cmd,
+      output: response || 'No output'
+    };
 
-    // Parse the output - remove surrounding quotes and handle escaped newlines
-    const output = response ? response
-      .replace(/^"/, '')  // Remove leading quote
-      .replace(/"$/, '')  // Remove trailing quote
-      .replace(/\\n/g, '\n')  // Replace escaped newlines with actual newlines
-      : 'No output';
-
-    // Store the output
-    if (lastCommand.value) {
-      lastCommand.value.output = output;
-    }
-
-    // Update execution history
-    if (executionId) {
-      executionHistoryRef.value?.updateExecution(executionId, {
-        output,
+    // Update execution history with success status and output
+    if (executionHistoryRef.value && executionId) {
+      executionHistoryRef.value.updateExecution(executionId, {
+        output: response || 'No output',
         status: 'success'
       });
     }
 
-  } catch (error: any) {
-    console.error('Error executing command:', error);
-    
-    // Get the actual error message from the response
-    let errorMessage;
-    
-    // For 500 errors, get the raw text directly from the response
-    if (error.message) {
-      errorMessage = error.message;
-    } else {
-      errorMessage = 'Failed to execute command';
-    }
+    toastService.showSuccess('Command executed successfully');
+  } catch (error) {
+    console.error('Failed to execute command:', error);
+    toastService.showError('Failed to execute command');
 
-    // Update execution history with error
-    if (executionId) {
-      executionHistoryRef.value?.updateExecution(executionId, {
-        output: errorMessage,
+    // Update execution history with error status
+    if (executionHistoryRef.value && executionId) {
+      executionHistoryRef.value.updateExecution(executionId, {
+        output: error instanceof Error ? error.message : 'Command execution failed',
         status: 'error'
       });
     }
@@ -373,33 +304,26 @@ const executeCommand = async (cmd: string) => {
 };
 
 const updateCommandOutput = (output: string) => {
-  // No longer needed as we're handling output in toast
-  console.log('Command output received:', output);
+  if (lastCommand.value) {
+    lastCommand.value.output = output;
+  }
 };
 
-const viewDevice = async (device: Device) => {
-  try {
-    const response = await restClient.get<Device>(`${API_URL}/agents/${device.agent_id}/`);
-    if (response) {
-      selectedDevice.value = response;
-      showDeviceDetailsDialog.value = true;
-    }
-  } catch (error) {
-    console.error('Error fetching device details:', error);
-    toastService.showError('Failed to fetch device details');
-  }
+const viewDevice = (device: Device) => {
+  selectedDevice.value = device;
+  showDeviceDetailsDialog.value = true;
 };
 
 const handleDeviceDetailsRunCommand = () => {
   if (selectedDevice.value) {
+    showDeviceDetailsDialog.value = false;
     runCommand(selectedDevice.value);
   }
 };
 
-const handleDeviceDetailsDelete = () => {
-  if (selectedDevice.value) {
-    deleteDevice(selectedDevice.value);
-  }
+const handleDeviceDetailsDelete = (device: Device) => {
+  showDeviceDetailsDialog.value = false;
+  deleteDevice(device);
 };
 
 const deleteDevice = (device: Device) => {
@@ -410,14 +334,15 @@ const deleteDevice = (device: Device) => {
 const confirmDelete = async () => {
   if (!selectedDevice.value) return;
 
-  deleting.value = true;
   try {
+    deleting.value = true;
     await restClient.delete(`${API_URL}/agents/${selectedDevice.value.agent_id}/`);
     await fetchDevices();
     deleteDeviceDialog.value = false;
-    selectedDevice.value = null;
-  } catch (error: any) {
-    console.error('Error deleting device:', error);
+    toastService.showSuccess('Device deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete device:', error);
+    toastService.showError('Failed to delete device');
   } finally {
     deleting.value = false;
   }

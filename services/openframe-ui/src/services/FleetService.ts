@@ -1,5 +1,5 @@
 import { restClient } from '../apollo/apolloClient';
-import { config as envConfig } from '../config/env.config';
+import { ConfigService } from '../config/config.service';
 
 export interface FleetResponse<T> {
   data: T;
@@ -59,7 +59,9 @@ export class FleetService {
   private readonly API_URL: string;
 
   private constructor() {
-    this.API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+    const configService = ConfigService.getInstance();
+    const config = configService.getConfig();
+    this.API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
   }
 
   public static getInstance(): FleetService {

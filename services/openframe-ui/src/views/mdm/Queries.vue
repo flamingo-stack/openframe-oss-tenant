@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import Column from 'primevue/column';
@@ -200,9 +200,9 @@ import Editor from 'primevue/editor';
 import Dropdown from 'primevue/dropdown';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
-import { FilterMatchMode } from 'primevue/api';
+import { FilterMatchMode } from "primevue/api";
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
@@ -221,8 +221,9 @@ interface Query {
   error_count?: number;
 }
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
-
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -257,10 +258,6 @@ const filters = ref({
 });
 
 const formatPlatform = (platform: string) => {
-  if (!platform) return 'All Platforms';
-  const platforms = platform.split(',');
-  if (platforms.length > 1) return 'Multiple';
-  
   const platformMap: Record<string, string> = {
     darwin: 'macOS',
     windows: 'Windows',
@@ -270,7 +267,6 @@ const formatPlatform = (platform: string) => {
 };
 
 const getPlatformSeverity = (platform: string) => {
-  if (!platform || platform.includes(',')) return 'info';
   const severityMap: Record<string, string> = {
     darwin: 'info',
     windows: 'warning',
@@ -280,44 +276,15 @@ const getPlatformSeverity = (platform: string) => {
 };
 
 const fetchQueries = async () => {
-  loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/queries`) as FleetResponse;
+    loading.value = true;
+    const response = await restClient.get<FleetResponse>(`${API_URL}/queries`);
     queries.value = response.queries || [];
-  } catch (err: any) {
-    toastService.showError(err.message);
+  } catch (error) {
+    console.error('Failed to fetch queries:', error);
+    toastService.showError('Failed to fetch queries');
   } finally {
     loading.value = false;
-  }
-};
-
-const deleteQuery = async (query: any) => {
-  try {
-    await restClient.delete(`${API_URL}/queries/${query.id}`);
-    toastService.showSuccess('Query deleted successfully');
-    await fetchQueries();
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
-};
-
-const runQuery = async (query: any) => {
-  try {
-    await restClient.post(`${API_URL}/queries/${query.id}/run`);
-    toastService.showSuccess('Query started successfully');
-    await fetchQueries();
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
-};
-
-const stopQuery = async (query: any) => {
-  try {
-    await restClient.post(`${API_URL}/queries/${query.id}/stop`);
-    toastService.showSuccess('Query stopped successfully');
-    await fetchQueries();
-  } catch (err: any) {
-    toastService.showError(err.message);
   }
 };
 
@@ -335,76 +302,80 @@ const hideCreateDialog = () => {
 };
 
 const createQuery = async () => {
-  submitted.value = true;
-
-  if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
-    toastService.showError('Please fill in all required fields');
-    return;
-  }
-
-  submitting.value = true;
   try {
-    await restClient.post(`${API_URL}/queries`, {
-      name: newQuery.value.name,
-      description: newQuery.value.description,
-      platform: newQuery.value.platform || '',
-      query: newQuery.value.query
-    });
+    submitted.value = true;
+    if (!validateQuery()) return;
 
-    toastService.showSuccess('Query created successfully');
+    submitting.value = true;
+    await restClient.post(`${API_URL}/queries`, newQuery.value);
     hideCreateDialog();
     await fetchQueries();
-  } catch (err) {
-    console.error('Error creating query:', err);
+    toastService.showSuccess('Query created successfully');
+  } catch (error) {
+    console.error('Failed to create query:', error);
     toastService.showError('Failed to create query');
   } finally {
     submitting.value = false;
   }
 };
 
-const editQuery = (query: any) => {
+const editQuery = (query: Query) => {
+  newQuery.value = { ...query };
   isEditMode.value = true;
-  newQuery.value = {
-    id: query.id,
-    name: query.name,
-    description: query.description,
-    platform: query.platform || null,
-    query: query.query
-  };
   showCreateDialog.value = true;
 };
 
 const updateQuery = async () => {
-  submitted.value = true;
+  if (!newQuery.value.id) return;
 
-  if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
-    toastService.showError('Please fill in all required fields');
-    return;
-  }
-
-  submitting.value = true;
   try {
-    await restClient.patch(`${API_URL}/queries/${newQuery.value.id}`, {
-      name: newQuery.value.name,
-      description: newQuery.value.description,
-      platform: newQuery.value.platform || '',
-      query: newQuery.value.query
-    });
+    submitted.value = true;
+    if (!validateQuery()) return;
 
-    toastService.showSuccess('Query updated successfully');
-
+    submitting.value = true;
+    await restClient.put(`${API_URL}/queries/${newQuery.value.id}`, newQuery.value);
     hideCreateDialog();
     await fetchQueries();
-  } catch (err) {
-    console.error('Error updating query:', err);
+    toastService.showSuccess('Query updated successfully');
+  } catch (error) {
+    console.error('Failed to update query:', error);
     toastService.showError('Failed to update query');
   } finally {
     submitting.value = false;
   }
 };
 
-onMounted(() => {
-  fetchQueries();
+const deleteQuery = async (query: Query) => {
+  try {
+    await restClient.delete(`${API_URL}/queries/${query.id}`);
+    await fetchQueries();
+    toastService.showSuccess('Query deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete query:', error);
+    toastService.showError('Failed to delete query');
+  }
+};
+
+const runQuery = async (query: Query) => {
+  try {
+    const response = await restClient.post(`${API_URL}/queries/${query.id}/run`);
+    toastService.showSuccess('Query executed successfully');
+    await fetchQueries(); // Refresh to get updated counts
+  } catch (error) {
+    console.error('Failed to run query:', error);
+    toastService.showError('Failed to run query');
+  }
+};
+
+const validateQuery = () => {
+  if (!newQuery.value.name || !newQuery.value.description || !newQuery.value.query) {
+    return false;
+  }
+  return true;
+};
+
+onMounted(async () => {
+  await fetchQueries();
 });
 </script>
 

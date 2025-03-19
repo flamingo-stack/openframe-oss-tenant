@@ -1,8 +1,8 @@
 <template>
   <Dialog 
     :visible="visible"
-    @update:visible="(val) => emit('update:visible', val)"
-    :header="device?.hostname"
+    @update:visible="(val: boolean) => emit('update:visible', val)"
+    :header="displayDevice?.hostname"
     :modal="true"
     :draggable="false"
     :style="{ width: '60vw', maxWidth: '800px' }"
@@ -12,15 +12,15 @@
       mask: { style: { alignItems: 'center', justifyContent: 'center' } }
     }"
   >
-    <div v-if="device" class="grid">
+    <div v-if="displayDevice" class="grid">
       <!-- Device Status -->
       <div class="col-12">
         <div class="flex align-items-center justify-content-between mb-3">
           <div class="flex align-items-center gap-3">
-            <i :class="getDeviceIcon(device.plat)" class="text-xl"></i>
+            <i :class="getDeviceIcon(displayDevice.plat)" class="text-xl"></i>
             <div class="flex gap-2">
-              <Tag :value="formatPlatform(device.plat)" :severity="getPlatformSeverity(device.plat)" class="status-tag" />
-              <Tag :value="device.status" :severity="getStatusSeverity(device.status)" class="status-tag" />
+              <Tag :value="formatPlatform(displayDevice.plat)" :severity="getPlatformSeverity(displayDevice.plat)" class="status-tag" />
+              <Tag :value="displayDevice.status" :severity="getStatusSeverity(displayDevice.status)" class="status-tag" />
             </div>
           </div>
           <div class="flex gap-2">
@@ -47,35 +47,35 @@
           <div class="grid">
             <div class="col-12">
               <span class="text-sm text-500">Agent ID</span>
-              <p class="text-base m-0 word-break-all">{{ device.agent_id }}</p>
+              <p class="text-base m-0 word-break-all">{{ displayDevice.agent_id }}</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">Operating System</span>
-              <p class="text-base m-0">{{ device.operating_system || 'Unknown' }}</p>
+              <p class="text-base m-0">{{ displayDevice.operating_system || 'Unknown' }}</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">Platform</span>
-              <p class="text-base m-0">{{ formatPlatform(device.plat) }}</p>
+              <p class="text-base m-0">{{ formatPlatform(displayDevice.plat) }}</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">Last Seen</span>
-              <p class="text-base m-0">{{ formatTimestamp(device.last_seen) }}</p>
+              <p class="text-base m-0">{{ formatTimestamp(displayDevice.last_seen) }}</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">CPU Model</span>
-              <p class="text-base m-0">{{ device.cpu_model?.[0] || 'Unknown' }}</p>
+              <p class="text-base m-0">{{ displayDevice.cpu_model?.[0] || 'Unknown' }}</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">Total RAM</span>
-              <p class="text-base m-0">{{ device.total_ram }} GB</p>
+              <p class="text-base m-0">{{ displayDevice.total_ram }} GB</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">Logged In User</span>
-              <p class="text-base m-0">{{ device.logged_in_username || 'Unknown' }}</p>
+              <p class="text-base m-0">{{ displayDevice.logged_in_username || 'Unknown' }}</p>
             </div>
             <div class="col-6">
               <span class="text-sm text-500">Timezone</span>
-              <p class="text-base m-0">{{ device.timezone || 'Unknown' }}</p>
+              <p class="text-base m-0">{{ displayDevice.timezone || 'Unknown' }}</p>
             </div>
           </div>
         </div>
@@ -89,23 +89,23 @@
             <div class="col-12">
               <span class="text-sm text-500">IP Addresses</span>
               <div class="flex flex-column gap-1">
-                <span v-for="(ip, index) in getIPv4Addresses(device.local_ips)" :key="index" class="text-base">
+                <span v-for="(ip, index) in getIPv4Addresses(displayDevice.local_ips)" :key="index" class="text-base">
                   {{ ip }}
                 </span>
-                <span v-if="!getIPv4Addresses(device.local_ips).length" class="text-base">N/A</span>
+                <span v-if="!getIPv4Addresses(displayDevice.local_ips).length" class="text-base">N/A</span>
               </div>
             </div>
             <div class="col-12">
               <span class="text-sm text-500">Public IP</span>
-              <p class="text-base m-0">{{ device.public_ip || 'N/A' }}</p>
+              <p class="text-base m-0">{{ displayDevice.public_ip || 'N/A' }}</p>
             </div>
             <div class="col-12">
               <span class="text-sm text-500">Make/Model</span>
-              <p class="text-base m-0">{{ device.make_model || 'N/A' }}</p>
+              <p class="text-base m-0">{{ displayDevice.make_model || 'N/A' }}</p>
             </div>
             <div class="col-12">
               <span class="text-sm text-500">Serial Number</span>
-              <p class="text-base m-0">{{ device.wmi_detail?.serialnumber || 'N/A' }}</p>
+              <p class="text-base m-0">{{ displayDevice.wmi_detail?.serialnumber || 'N/A' }}</p>
             </div>
           </div>
         </div>
@@ -116,18 +116,21 @@
         <div class="surface-card p-3 border-round">
           <h3 class="text-lg font-semibold mb-3">Storage Information</h3>
           <div class="grid">
-            <div v-for="(disk, index) in device.physical_disks" :key="index" class="col-12">
+            <div v-for="(disk, index) in displayDevice.physical_disks" :key="index" class="col-12">
               <div class="p-2 border-round surface-ground mb-2">
-                <div class="flex align-items-center">
-                  <i class="pi pi-database mr-2"></i>
-                  <span class="text-base">{{ disk }}</span>
+                <div class="flex align-items-center justify-content-between">
+                  <div class="flex align-items-center">
+                    <i class="pi pi-database mr-2"></i>
+                    <span class="text-base">{{ disk.split(' ').slice(0, -1).join(' ') }}</span>
+                  </div>
+                  <span class="text-base font-semibold">{{ disk.split(' ').pop() }}</span>
                 </div>
               </div>
             </div>
-            <div v-if="device.disks?.length" class="col-12">
+            <div v-if="displayDevice.disks?.length" class="col-12">
               <h4 class="text-base font-semibold mt-3 mb-2">Volumes</h4>
               <div class="grid">
-                <div v-for="(volume, idx) in getUniqueDisks(device.disks)" :key="idx" class="col-12 md:col-4">
+                <div v-for="(volume, idx) in getUniqueDisks(displayDevice.disks)" :key="idx" class="col-12 md:col-4">
                   <div class="p-2 border-round surface-ground">
                     <div class="flex justify-content-between align-items-center mb-2">
                       <span class="text-sm font-semibold">{{ volume.device }}</span>
@@ -163,7 +166,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from '@vue/runtime-core';
+import { watch, computed } from '@vue/runtime-core';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -173,8 +177,8 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
+import { ConfigService } from '../../config/config.service';
 
 interface Disk {
   free: string;
@@ -284,22 +288,39 @@ const emit = defineEmits<{
 
 const showEditDialog = ref(false);
 const toastService = ToastService.getInstance();
+const loading = ref(false);
+const detailedDevice = ref<Device | null>(null);
 
-const editForm = ref<EditFormData>({
-  agent_id: '',
-  monitoring_type: 'workstation',
-  description: '',
-  overdue_email_alert: false,
-  overdue_text_alert: false,
-  overdue_dashboard_alert: false,
-  offline_time: 4,
-  overdue_time: 30,
-  check_interval: 120,
-  time_zone: null,
-  site: 1,
-  custom_fields: [],
-  winupdatepolicy: []
+const configService = ConfigService.getInstance();
+const fetchDeviceDetails = async () => {
+  if (!props.device?.agent_id) return;
+  
+  loading.value = true;
+  try {
+    const response = await restClient.get(`${configService.getConfig().gatewayUrl}/tools/tactical-rmm/agents/${props.device.agent_id}/`) as Device;
+    detailedDevice.value = response;
+  } catch (err: any) {
+    toastService.showError(err.message);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Update the watch handler
+watch(() => props.visible, async (newValue: boolean) => {
+  if (newValue) {
+    await fetchDeviceDetails();
+    if (props.showEditOnMount) {
+      showEditDialog.value = true;
+    }
+  } else {
+    showEditDialog.value = false;
+    detailedDevice.value = null;
+  }
 });
+
+// Update the template to use detailedDevice when available
+const displayDevice = computed(() => detailedDevice.value || props.device);
 
 const timezoneOptions = [
   { label: 'America/Los_Angeles', value: 'America/Los_Angeles' },
@@ -350,11 +371,9 @@ const formatTimestamp = (timestamp: string) => {
 const getIPv4Addresses = (ips: string) => {
   if (!ips) return [];
 
-  // Split the IPs string into an array
-  const ipList = ips.split(',').map(ip => ip.trim());
-
-  // Filter to get only IPv4 addresses
-  return ipList
+  // Split the IPs string into an array and clean up each IP
+  return ips.split(',')
+    .map(ip => ip.trim())
     .map(ip => ip.split('/')[0]) // Remove CIDR notation
     .filter(ip => ip.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) // Only IPv4
     .sort((a, b) => { // Sort private IPs after public IPs
@@ -373,7 +392,7 @@ const isPrivateIP = (ip: string) => {
     ip.startsWith('10.'); // Private network
 };
 
-const getUniqueDisks = (disks: Disk[]) => {
+const getUniqueDisks = (disks: any[]) => {
   if (!disks) return [];
   
   // Filter out disks with 0 total space and map auto_home
@@ -403,17 +422,6 @@ const onDelete = () => {
   emit('delete');
   onClose();
 };
-
-// Update the watch handler
-watch(() => props.visible, (newValue) => {
-  if (newValue && props.showEditOnMount) {
-    // When opening in edit mode, show edit dialog immediately
-    showEditDialog.value = true;
-  } else if (!newValue) {
-    // Reset edit dialog state when main dialog is closed
-    showEditDialog.value = false;
-  }
-});
 </script>
 
 <style scoped>
@@ -496,16 +504,5 @@ watch(() => props.visible, (newValue) => {
 
 :deep(.p-tag) {
   text-transform: capitalize;
-}
-
-:deep(.p-inputgroup-addon) {
-  background: var(--surface-ground);
-  border-color: var(--surface-border);
-  color: var(--text-color-secondary);
-}
-
-:deep(.p-checkbox) {
-  width: 1.25rem;
-  height: 1.25rem;
 }
 </style> 

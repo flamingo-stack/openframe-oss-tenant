@@ -161,15 +161,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "@vue/runtime-core";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
+import type { Device, Alert, Check, Task } from '../../types/rmm';
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 interface DeviceStats {
@@ -190,74 +193,6 @@ interface AutomationStats {
   total: number;
   completed: number;
   pending: number;
-}
-
-interface Alert {
-  id?: number;
-  timestamp?: string;
-  created?: string;
-  alert_time?: string;
-  alert_type?: string;
-  severity: string;
-  message: string | null;
-  snoozed?: boolean;
-  resolved?: boolean;
-}
-
-interface Agent {
-  id: string;
-  status: string;
-}
-
-interface Check {
-  id: string;
-  status: string;
-}
-
-interface Task {
-  id: string;
-  status: string;
-  completed: boolean;
-}
-
-interface ApiResponse<T> {
-  data: T;
-}
-
-interface DeviceStatsResponse {
-  id: string;
-  status: string;
-  // Add other fields as needed
-}
-
-interface MonitoringStatsResponse {
-  id: string;
-  status: string;
-  // Add other fields as needed
-}
-
-interface AutomationStatsResponse {
-  id: string;
-  status: string;
-  // Add other fields as needed
-}
-
-interface AlertResponse {
-  alerts_count: number;
-  alerts: Alert[];
-}
-
-interface DashboardInfo {
-  agents_online: number;
-  agents_offline: number;
-  agents_total: number;
-  checks_failing: number;
-  checks_passing: number;
-  checks_total: number;
-  tasks_completed: number;
-  tasks_pending: number;
-  tasks_total: number;
-  alerts: AlertResponse[];
 }
 
 const deviceStats = ref<DeviceStats>({
@@ -282,122 +217,125 @@ const automationStats = ref<AutomationStats>({
 
 const recentAlerts = ref<Alert[]>([]);
 
-const formatTimestamp = (timestamp: string) => {
-  return new Date(timestamp).toLocaleString();
-};
-
-const getAlertSeverity = (severity: string): string => {
-  switch (severity.toLowerCase()) {
-    case 'critical':
-      return 'danger';
-    case 'warning':
-      return 'warning';
-    case 'info':
-      return 'info';
-    default:
-      return 'info';
-  }
-};
-
 const fetchDeviceStats = async () => {
   try {
-    const response = await restClient.get<Agent[]>(`${API_URL}/agents/`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (Array.isArray(response)) {
-      const total = response.length;
-      const online = response.filter(agent => agent.status === 'online').length;
-      deviceStats.value = {
-        total,
-        online,
-        offline: total - online,
-        onlineRate: total > 0 ? Math.round((online / total) * 100) : 0
-      };
-    }
+    console.log('Fetching device stats...');
+    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
+    console.log('API Response:', response);
+    
+    const devices = Array.isArray(response) ? response : [];
+    console.log('Processed devices:', devices);
+    
+    const total = devices.length;
+    const online = devices.filter((d: Device) => d.status === 'online').length;
+    const offline = total - online;
+    const onlineRate = total > 0 ? Math.round((online / total) * 100) : 0;
+    
+    console.log('Calculated stats:', { total, online, offline, onlineRate });
+    
+    deviceStats.value = {
+      total,
+      online,
+      offline,
+      onlineRate
+    };
   } catch (error) {
-    console.error('Error fetching device stats:', error);
-    toastService.showError('Failed to fetch device statistics');
+    console.error('Failed to fetch device stats:', error);
+    toastService.showError('Failed to fetch device stats');
   }
 };
 
 const fetchMonitoringStats = async () => {
   try {
-    const response = await restClient.get<Check[]>(`${API_URL}/checks/`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (Array.isArray(response)) {
-      const total = response.length;
-      const healthy = response.filter(check => check.status === 'passing').length;
-      monitoringStats.value = {
-        total,
-        healthy,
-        failing: total - healthy,
-        healthRate: total > 0 ? Math.round((healthy / total) * 100) : 0
-      };
-    }
+    const response = await restClient.get<Check[]>(`${API_URL}/checks/`);
+    const checks = Array.isArray(response) ? response : [];
+    
+    const totalChecks = checks.length;
+    const healthy = checks.filter(c => c.status === 'healthy').length;
+    const failing = totalChecks - healthy;
+    const healthRate = totalChecks > 0 ? Math.round((healthy / totalChecks) * 100) : 0;
+    
+    monitoringStats.value = {
+      total: totalChecks,
+      healthy,
+      failing,
+      healthRate
+    };
   } catch (error) {
-    console.error('Error fetching monitoring stats:', error);
-    toastService.showError('Failed to fetch monitoring statistics');
+    console.error('Failed to fetch monitoring stats:', error);
+    toastService.showError('Failed to fetch monitoring stats');
   }
 };
 
 const fetchAutomationStats = async () => {
   try {
-    const response = await restClient.get<Task[]>(`${API_URL}/tasks/`, {
-      headers: { 'Accept': 'application/json' }
-    });
-
-    if (Array.isArray(response)) {
-      const total = response.length;
-      const completed = response.filter(task => task.completed).length;
-      automationStats.value = {
-        total,
-        completed,
-        pending: total - completed
-      };
-    }
+    const response = await restClient.get<Task[]>(`${API_URL}/tasks/`);
+    const tasks = Array.isArray(response) ? response : [];
+    
+    const totalTasks = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    const pending = totalTasks - completed;
+    
+    automationStats.value = {
+      total: totalTasks,
+      completed,
+      pending
+    };
   } catch (error) {
-    console.error('Error fetching automation stats:', error);
-    toastService.showError('Failed to fetch automation statistics');
+    console.error('Failed to fetch automation stats:', error);
+    toastService.showError('Failed to fetch automation stats');
   }
 };
 
 const fetchRecentAlerts = async () => {
   try {
-    const response = await restClient.patch<AlertResponse>(`${API_URL}/alerts/`, {
+    const response = await restClient.patch<{ alerts: Alert[] }>(`${API_URL}/alerts/`, {
       top: 10
     }, {
       headers: { 
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br'  // Allow standard encodings
+        'Accept-Encoding': 'gzip, deflate, br'
       },
-      credentials: 'include'  // This enables sending cookies with the request
+      credentials: 'include'
     });
-
-    if (response?.alerts) {
-      recentAlerts.value = response.alerts.slice(0, 5).map((alert: Alert) => ({
-        timestamp: alert.timestamp || alert.created || alert.alert_time || '',
-        severity: alert.severity,
-        message: alert.message || alert.alert_type || null
-      } as Alert));
-    }
+    recentAlerts.value = response.alerts || [];
   } catch (error) {
-    console.error('Error fetching recent alerts:', error);
+    console.error('Failed to fetch recent alerts:', error);
     toastService.showError('Failed to fetch recent alerts');
   }
 };
 
+const fetchDashboardData = async () => {
+  try {
+    await Promise.all([
+      fetchDeviceStats(),
+      fetchMonitoringStats(),
+      fetchAutomationStats(),
+      fetchRecentAlerts()
+    ]);
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error);
+    toastService.showError('Failed to fetch dashboard data');
+  }
+};
+
+const formatTimestamp = (timestamp: string) => {
+  return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
+};
+
+const getAlertSeverity = (severity: string) => {
+  const severityMap: Record<string, string> = {
+    critical: 'danger',
+    warning: 'warning',
+    info: 'info'
+  };
+  return severityMap[severity.toLowerCase()] || 'info';
+};
+
 onMounted(async () => {
-  await Promise.all([
-    fetchDeviceStats(),
-    fetchMonitoringStats(),
-    fetchAutomationStats(),
-    fetchRecentAlerts()
-  ]);
+  await fetchDashboardData();
 });
 </script>
 

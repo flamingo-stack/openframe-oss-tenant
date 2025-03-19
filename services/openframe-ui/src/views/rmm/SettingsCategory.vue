@@ -938,7 +938,7 @@ import { ref, computed, watch, nextTick } from '@vue/runtime-core';
 import type { ComputedRef, WatchSource } from '@vue/runtime-core';
 import { useRoute } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
+import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
@@ -1047,8 +1047,10 @@ const allUrlActions = computed(() => {
   return [...urlActions, ...webhooks];
 });
 
+const configService = ConfigService.getInstance();
+const config = configService.getConfig();
+const API_URL = `${config.gatewayUrl}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
-const toast = useToast();
 
 // Methods
 const copyApiKey = (key: string) => {
@@ -1090,7 +1092,7 @@ const editCustomField = (field: CustomField) => {
 
 const deleteUrlAction = async (id: number) => {
   try {
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/${id}/`);
+    await restClient.delete(`${config.gatewayUrl}/tools/tactical-rmm/core/urlaction/${id}/`);
     props.settings.url_actions = props.settings.url_actions?.filter((a: UrlAction) => a.id !== id);
     props.settings.webhooks = props.settings.webhooks?.filter((w: UrlAction) => w.id !== id);
     toastService.showSuccess('URL Action deleted successfully');
@@ -1103,7 +1105,7 @@ const deleteUrlAction = async (id: number) => {
 
 const deleteKeyStore = async (id: number) => {
   try {
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/${id}/`);
+    await restClient.delete(`${config.gatewayUrl}/tools/tactical-rmm/core/keystore/${id}/`);
     props.settings.key_store = props.settings.key_store?.filter((k: KeyStore) => k.id !== id);
     toastService.showSuccess('Key deleted successfully');
   } catch (err: any) {
@@ -1115,7 +1117,7 @@ const deleteKeyStore = async (id: number) => {
 
 const deleteCustomField = async (id: number) => {
   try {
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/${id}/`);
+    await restClient.delete(`${config.gatewayUrl}/tools/tactical-rmm/core/customfields/${id}/`);
     props.settings.custom_fields = props.settings.custom_fields?.filter((f: CustomField) => f.id !== id);
     toastService.showSuccess('Custom field deleted successfully');
   } catch (err: any) {
@@ -1132,7 +1134,7 @@ const deleteApiKey = async (id: number) => {
       return;
     }
 
-    await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/${id}/`);
+    await restClient.delete(`${config.gatewayUrl}/tools/tactical-rmm/accounts/apikeys/${id}/`);
     props.settings.api_keys = props.settings.api_keys?.filter((k: ApiKey) => k.id !== id);
     toastService.showSuccess('API key deleted successfully');
   } catch (err: any) {
@@ -1208,7 +1210,7 @@ const generateApiKey = async () => {
   generatingApiKey.value = true;
   try {
     // Fetch Tactical RMM users
-    const usersResponse = await restClient.get<TacticalRmmUser[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/users/`);
+    const usersResponse = await restClient.get<TacticalRmmUser[]>(`${config.gatewayUrl}/tools/tactical-rmm/accounts/users/`);
     console.log('Tactical RMM Users:', usersResponse); // Debug log
 
     if (!usersResponse || !usersResponse.length) {
@@ -1218,7 +1220,7 @@ const generateApiKey = async () => {
     const firstUser = usersResponse[0];
     console.log('Using first user:', firstUser); // Debug log
 
-    const response = await restClient.post<ApiKey>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`, {
+    const response = await restClient.post<ApiKey>(`${config.gatewayUrl}/tools/tactical-rmm/accounts/apikeys/`, {
       name: newApiKey.value.name,
       expiration: newApiKey.value.expiration?.toISOString() || null,
       user: firstUser.id
@@ -1234,7 +1236,7 @@ const generateApiKey = async () => {
     toastService.showSuccess('API key generated successfully');
     
     // Refetch API keys after adding
-    const apiKeysResponse = await restClient.get<ApiKey[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`);
+    const apiKeysResponse = await restClient.get<ApiKey[]>(`${config.gatewayUrl}/tools/tactical-rmm/accounts/apikeys/`);
     props.settings.api_keys = apiKeysResponse;
   } catch (err: any) {
     console.error('Error generating API key:', err);
@@ -1256,8 +1258,8 @@ const saveUrlAction = async () => {
     const endpoint = '/core/urlaction/';
     const method = editingUrlAction.value ? 'patch' : 'post';
     const url = editingUrlAction.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrlAction.value.id}/`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+      ? `${API_URL}${endpoint}${editingUrlAction.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
     
@@ -1288,7 +1290,7 @@ const saveUrlAction = async () => {
     toastService.showSuccess('URL Action saved successfully');
     
     // Refetch URL actions after adding/editing
-    const urlActionsResponse = await restClient.get<UrlAction[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/`);
+    const urlActionsResponse = await restClient.get<UrlAction[]>(`${API_URL}/core/urlaction/`);
     props.settings.url_actions = urlActionsResponse;
   } catch (err: any) {
     console.error('Error saving:', err);
@@ -1324,8 +1326,8 @@ const saveKeyStore = async () => {
     const endpoint = '/core/keystore/';
     const method = editingKeyStore.value ? 'patch' : 'post';
     const url = editingKeyStore.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingKeyStore.value.id}/`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+      ? `${API_URL}${endpoint}${editingKeyStore.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const response = await restClient[method]<KeyStore>(url, keyStoreForm.value);
     
@@ -1342,7 +1344,7 @@ const saveKeyStore = async () => {
     toastService.showSuccess('Key saved successfully');
     
     // Refetch key store after adding/editing
-    const keyStoreResponse = await restClient.get<KeyStore[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/`);
+    const keyStoreResponse = await restClient.get<KeyStore[]>(`${API_URL}/core/keystore/`);
     props.settings.key_store = keyStoreResponse;
   } catch (err: any) {
     console.error('Error saving key:', err);
@@ -1364,8 +1366,8 @@ const saveCustomField = async () => {
     const endpoint = '/core/customfields/';
     const method = editingCustomField.value ? 'patch' : 'post';
     const url = editingCustomField.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingCustomField.value.id}/`
-      : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
+      ? `${API_URL}${endpoint}${editingCustomField.value.id}/`
+      : `${API_URL}${endpoint}`;
 
     const formData = {
       name: customFieldForm.value.name,
@@ -1395,7 +1397,7 @@ const saveCustomField = async () => {
     toastService.showSuccess('Custom field saved successfully');
     
     // Refetch custom fields after adding/editing
-    const customFieldsResponse = await restClient.get<CustomField[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/`);
+    const customFieldsResponse = await restClient.get<CustomField[]>(`${API_URL}/core/customfields/`);
     props.settings.custom_fields = customFieldsResponse;
   } catch (err: any) {
     console.error('Error saving custom field:', err);
@@ -1431,19 +1433,19 @@ watch(category as WatchSource<string>, async (newCategory: string) => {
   try {
     switch (newCategory) {
       case 'custom_fields':
-        const customFieldsResponse = await restClient.get<CustomField[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/`);
+        const customFieldsResponse = await restClient.get<CustomField[]>(`${API_URL}/core/customfields/`);
         props.settings.custom_fields = customFieldsResponse;
         break;
       case 'api_keys':
-        const apiKeysResponse = await restClient.get<ApiKey[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`);
+        const apiKeysResponse = await restClient.get<ApiKey[]>(`${API_URL}/accounts/apikeys/`);
         props.settings.api_keys = apiKeysResponse;
         break;
       case 'key_store':
-        const keyStoreResponse = await restClient.get<KeyStore[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/`);
+        const keyStoreResponse = await restClient.get<KeyStore[]>(`${API_URL}/core/keystore/`);
         props.settings.key_store = keyStoreResponse;
         break;
       case 'url_actions':
-        const urlActionsResponse = await restClient.get<UrlAction[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/`);
+        const urlActionsResponse = await restClient.get<UrlAction[]>(`${API_URL}/core/urlaction/`);
         props.settings.url_actions = urlActionsResponse;
         break;
     }
@@ -1530,25 +1532,25 @@ const handleDelete = async () => {
       case 'custom_fields':
         await deleteCustomField(deleteId.value);
         // Refetch custom fields after deletion
-        const customFieldsResponse = await restClient.get<CustomField[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/customfields/`);
+        const customFieldsResponse = await restClient.get<CustomField[]>(`${API_URL}/core/customfields/`);
         props.settings.custom_fields = customFieldsResponse;
         break;
       case 'key_store':
         await deleteKeyStore(deleteId.value);
         // Refetch key store after deletion
-        const keyStoreResponse = await restClient.get<KeyStore[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/keystore/`);
+        const keyStoreResponse = await restClient.get<KeyStore[]>(`${API_URL}/core/keystore/`);
         props.settings.key_store = keyStoreResponse;
         break;
       case 'url_actions':
         await deleteUrlAction(deleteId.value);
         // Refetch URL actions after deletion
-        const urlActionsResponse = await restClient.get<UrlAction[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/core/urlaction/`);
+        const urlActionsResponse = await restClient.get<UrlAction[]>(`${API_URL}/core/urlaction/`);
         props.settings.url_actions = urlActionsResponse;
         break;
       case 'api_keys':
         await deleteApiKey(deleteId.value);
         // Refetch API keys after deletion
-        const apiKeysResponse = await restClient.get<ApiKey[]>(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/`);
+        const apiKeysResponse = await restClient.get<ApiKey[]>(`${API_URL}/accounts/apikeys/`);
         props.settings.api_keys = apiKeysResponse;
         break;
     }

@@ -267,7 +267,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "@vue/runtime-core";
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -276,11 +276,11 @@ import Textarea from 'primevue/textarea';
 import Dropdown from 'primevue/dropdown';
 import MultiSelect from 'primevue/multiselect';
 import Tag from 'primevue/tag';
-import { FilterMatchMode } from 'primevue/api';
-import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
-import { ToastService } from '../../services/ToastService';
-import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import { FilterMatchMode } from "primevue/api";
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from "../../config/config.service";
+import { ToastService } from "../../services/ToastService";
+import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 
@@ -291,7 +291,7 @@ interface Script {
   description: string;
   content: string;
   created_at: string;
-  last_run: string;
+  last_run?: string;
 }
 
 interface Device {
@@ -307,7 +307,9 @@ interface DevicesResponse {
   data: Device[];
 }
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/tactical-rmm`;
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm/core`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -335,9 +337,9 @@ const newScript = ref({
 
 const scriptTypes = [
   { name: 'PowerShell', value: 'powershell' },
-  { name: 'Bash', value: 'bash' },
-  { name: 'Python', value: 'python' },
-  { name: 'Batch', value: 'batch' }
+  { name: 'Batch', value: 'batch' },
+  { name: 'Shell', value: 'shell' },
+  { name: 'Python', value: 'python' }
 ];
 
 const filters = ref({
@@ -347,19 +349,19 @@ const filters = ref({
 const formatScriptType = (type: string) => {
   const typeMap: Record<string, string> = {
     powershell: 'PowerShell',
-    bash: 'Bash',
-    python: 'Python',
-    batch: 'Batch'
+    batch: 'Batch',
+    shell: 'Shell',
+    python: 'Python'
   };
   return typeMap[type] || type;
 };
 
 const getScriptIcon = (type: string) => {
   const iconMap: Record<string, string> = {
-    powershell: 'pi pi-microsoft',
-    bash: 'pi pi-terminal',
-    python: 'pi pi-code',
-    batch: 'pi pi-file-edit'
+    powershell: 'pi pi-window-maximize',
+    batch: 'pi pi-terminal',
+    shell: 'pi pi-terminal',
+    python: 'pi pi-code'
   };
   return iconMap[type] || 'pi pi-code';
 };
@@ -367,9 +369,9 @@ const getScriptIcon = (type: string) => {
 const getScriptTypeSeverity = (type: string) => {
   const severityMap: Record<string, string> = {
     powershell: 'info',
-    bash: 'warning',
-    python: 'success',
-    batch: 'info'
+    batch: 'warning',
+    shell: 'warning',
+    python: 'success'
   };
   return severityMap[type] || 'info';
 };
@@ -379,12 +381,12 @@ const formatTimestamp = (timestamp: string) => {
 };
 
 const fetchScripts = async () => {
-  loading.value = true;
   try {
+    loading.value = true;
     const response = await restClient.get<ScriptsResponse>(`${API_URL}/scripts/`);
     scripts.value = response.data || [];
-  } catch (error: any) {
-    console.error('Error fetching scripts:', error);
+  } catch (error) {
+    console.error('Failed to fetch scripts:', error);
     toastService.showError('Failed to fetch scripts');
   } finally {
     loading.value = false;
@@ -395,8 +397,8 @@ const fetchDevices = async () => {
   try {
     const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
     devices.value = response.data || [];
-  } catch (error: any) {
-    console.error('Error fetching devices:', error);
+  } catch (error) {
+    console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
   }
 };
@@ -414,72 +416,56 @@ const hideDialog = () => {
 };
 
 const saveScript = async () => {
-  submitted.value = true;
-
-  if (!newScript.value.name || !newScript.value.type || 
-      !newScript.value.content || !newScript.value.description) {
-    return;
-  }
-
-  submitting.value = true;
   try {
-    if (isEditMode.value && selectedScript.value) {
-      await restClient.patch(`${API_URL}/scripts/${selectedScript.value.id}/`, newScript.value);
-      toastService.showSuccess('Script updated successfully');
-    } else {
-      await restClient.post(`${API_URL}/scripts/`, newScript.value);
-      toastService.showSuccess('Script added successfully');
-    }
-    await fetchScripts();
+    submitted.value = true;
+    if (!validateScript()) return;
+
+    submitting.value = true;
+    const endpoint = isEditMode.value && selectedScript.value ? 
+      `${API_URL}/scripts/${selectedScript.value.id}` : 
+      `${API_URL}/scripts`;
+
+    const method = isEditMode.value ? 'put' : 'post';
+    await restClient[method](endpoint, newScript.value);
+
     hideDialog();
-  } catch (error: any) {
-    console.error('Error saving script:', error);
-    toastService.showError(isEditMode.value ? 'Failed to update script' : 'Failed to add script');
+    await fetchScripts();
+    toastService.showSuccess(`Script ${isEditMode.value ? 'updated' : 'created'} successfully`);
+  } catch (error) {
+    console.error('Failed to save script:', error);
+    toastService.showError(`Failed to ${isEditMode.value ? 'update' : 'create'} script`);
   } finally {
     submitting.value = false;
   }
 };
 
 const runScript = async (script: Script) => {
-  if (selectedDevices.value.length === 0) {
-    toastService.showError('Please select at least one device');
-    return;
-  }
-
-  executing.value = true;
-  try {
-    await restClient.post(`${API_URL}/scripts/${script.id}/run/`, {
-      device_ids: selectedDevices.value
-    });
-    showRunScriptDialog.value = false;
-    selectedDevices.value = [];
-    toastService.showSuccess('Script execution started');
-  } catch (error: any) {
-    console.error('Error running script:', error);
-    toastService.showError('Failed to run script');
-  } finally {
-    executing.value = false;
-  }
+  selectedScript.value = script;
+  showRunScriptDialog.value = true;
 };
 
 const executeScript = async () => {
-  if (!selectedScript.value) return;
+  if (!selectedScript.value || selectedDevices.value.length === 0) return;
 
-  runSubmitted.value = true;
-  if (selectedDevices.value.length === 0) return;
-
-  executing.value = true;
   try {
-    await restClient.post(`${API_URL}/scripts/${selectedScript.value.id}/run/`, {
+    runSubmitted.value = true;
+    if (selectedDevices.value.length === 0) return;
+
+    executing.value = true;
+    await restClient.post(`${API_URL}/scripts/${selectedScript.value.id}/run`, {
       device_ids: selectedDevices.value
     });
-    toastService.showSuccess('Script execution started');
+
     showRunScriptDialog.value = false;
-  } catch (error: any) {
-    console.error('Error executing script:', error);
-    toastService.showError('Failed to execute script');
+    selectedDevices.value = [];
+    await fetchScripts();
+    toastService.showSuccess('Script execution started');
+  } catch (error) {
+    console.error('Failed to run script:', error);
+    toastService.showError('Failed to run script');
   } finally {
     executing.value = false;
+    runSubmitted.value = false;
   }
 };
 
@@ -497,9 +483,16 @@ const editScript = (script: Script) => {
   showAddScriptDialog.value = true;
 };
 
-const deleteScript = (script: Script) => {
-  selectedScript.value = script;
-  deleteScriptDialog.value = true;
+const deleteScript = async (script: Script) => {
+  try {
+    await restClient.delete(`${API_URL}/scripts/${script.id}`);
+    await fetchScripts();
+    deleteScriptDialog.value = false;
+    toastService.showSuccess('Script deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete script:', error);
+    toastService.showError('Failed to delete script');
+  }
 };
 
 const confirmDelete = async () => {
@@ -507,21 +500,28 @@ const confirmDelete = async () => {
 
   deleting.value = true;
   try {
-    await restClient.delete(`${API_URL}/scripts/${selectedScript.value.id}`);
-    await fetchScripts();
-    deleteScriptDialog.value = false;
-    selectedScript.value = null;
-    toastService.showSuccess('Script deleted successfully');
-  } catch (error: any) {
-    console.error('Error deleting script:', error);
+    await deleteScript(selectedScript.value);
+  } catch (error) {
+    console.error('Failed to delete script:', error);
     toastService.showError('Failed to delete script');
   } finally {
     deleting.value = false;
   }
 };
 
+const validateScript = () => {
+  if (!newScript.value.name || !newScript.value.type || 
+      !newScript.value.description || !newScript.value.content) {
+    return false;
+  }
+  return true;
+};
+
 onMounted(async () => {
-  await fetchScripts();
+  await Promise.all([
+    fetchScripts(),
+    fetchDevices()
+  ]);
 });
 </script>
 

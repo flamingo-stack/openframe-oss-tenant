@@ -10,10 +10,10 @@ const app = express();
 
 // Create runtime config object from environment variables
 const runtimeConfig = {
-  apiUrl: process.env.API_URL || 'http://localhost:8090',
-  gatewayUrl: process.env.GATEWAY_URL || 'http://localhost:8100',
-  clientId: process.env.CLIENT_ID || 'openframe_web_dashboard',
-  clientSecret: process.env.CLIENT_SECRET || 'prod_secret'
+  apiUrl: process.env.API_URL,
+  gatewayUrl: process.env.GATEWAY_URL,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET
 };
 
 // Function to replace template variables

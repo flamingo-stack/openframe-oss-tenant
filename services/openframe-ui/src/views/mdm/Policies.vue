@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import Column from 'primevue/column';
@@ -248,11 +248,11 @@ import Editor from 'primevue/editor';
 import Dropdown from 'primevue/dropdown';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
-import { FilterMatchMode } from 'primevue/api';
-import { restClient } from '../../apollo/apolloClient';
-import { config as envConfig } from '../../config/env.config';
-import { ToastService } from '../../services/ToastService';
-import Checkbox from 'primevue/checkbox';
+import { FilterMatchMode } from "primevue/api";
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from '../../config/config.service';
+import { ToastService } from "../../services/ToastService";
+import Checkbox from "primevue/checkbox";
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 
@@ -260,39 +260,33 @@ interface FleetResponse {
   policies: Policy[];
 }
 
-const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
+interface Policy {
+  id: string;
+  name: string;
+  description: string;
+  platform: string | null;
+  query: string;
+  enabled: boolean;
+  scope: 'global' | 'team';
+}
 
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
-const loading = ref(false);
-const policies = ref<any[]>([]);
+
+// Add directive registration
+const vTooltip = Tooltip;
+
+const loading = ref(true);
+const error = ref('');
+const policies = ref<Policy[]>([]);
 const showCreateDialog = ref(false);
 const submitted = ref(false);
 const submitting = ref(false);
 const isEditMode = ref(false);
 const dialogTitle = computed(() => isEditMode.value ? 'Edit Policy' : 'Create Policy');
-
-interface Policy {
-  id: string;
-  name: string;
-  query: string;
-  critical: boolean;
-  description: string;
-  author_id: number;
-  author_name: string;
-  author_email: string;
-  team_id: number | null;
-  resolution: string;
-  platform: string | null;
-  calendar_events_enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  passing_host_count: number;
-  failing_host_count: number;
-  host_count_updated_at: string | null;
-  enabled?: boolean;
-  scope?: 'global' | 'team';
-}
 
 const newPolicy = ref({
   id: null as string | null,
@@ -301,8 +295,7 @@ const newPolicy = ref({
   platform: null as string | null,
   query: '',
   enabled: true,
-  scope: 'global' as 'global' | 'team',
-  team_id: null as number | null
+  scope: 'global' as 'global' | 'team'
 });
 
 const platformOptions = [
@@ -312,14 +305,10 @@ const platformOptions = [
 ];
 
 const filters = ref({
-  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
 const formatPlatform = (platform: string) => {
-  if (!platform) return 'All Platforms';
-  const platforms = platform.split(',');
-  if (platforms.length > 1) return 'Multiple';
-  
   const platformMap: Record<string, string> = {
     darwin: 'macOS',
     windows: 'Windows',
@@ -329,7 +318,6 @@ const formatPlatform = (platform: string) => {
 };
 
 const getPlatformSeverity = (platform: string) => {
-  if (!platform || platform.includes(',')) return 'info';
   const severityMap: Record<string, string> = {
     darwin: 'info',
     windows: 'warning',
@@ -338,13 +326,18 @@ const getPlatformSeverity = (platform: string) => {
   return severityMap[platform] || 'info';
 };
 
+const isEnabled = (policy: Policy) => {
+  return policy.enabled;
+};
+
 const fetchPolicies = async () => {
-  loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/global/policies`) as FleetResponse;
+    loading.value = true;
+    const response = await restClient.get<FleetResponse>(`${API_URL}/global/policies`);
     policies.value = response.policies || [];
-  } catch (err: any) {
-    toastService.showError(err.message);
+  } catch (error) {
+    console.error('Failed to fetch policies:', error);
+    toastService.showError('Failed to fetch policies');
   } finally {
     loading.value = false;
   }
@@ -361,126 +354,88 @@ const hideCreateDialog = () => {
     platform: null,
     query: '',
     enabled: true,
-    scope: 'global',
-    team_id: null
+    scope: 'global'
   };
 };
 
 const createPolicy = async () => {
-  submitted.value = true;
-
-  if (!newPolicy.value.name || !newPolicy.value.description || !newPolicy.value.query) {
-    toastService.showError('Please fill in all required fields');
-    return;
-  }
-
-  submitting.value = true;
   try {
-    const endpoint = newPolicy.value.scope === 'global' 
-      ? `${API_URL}/global/policies`
-      : `${API_URL}/teams/${newPolicy.value.team_id}/policies`;
+    submitted.value = true;
+    if (!validatePolicy()) return;
 
-    await restClient.post(endpoint, {
-      name: newPolicy.value.name,
-      description: newPolicy.value.description,
-      platform: newPolicy.value.platform || '',
-      query: newPolicy.value.query,
-      enabled: newPolicy.value.enabled
-    });
-
-    toastService.showSuccess('Policy created successfully');
-
+    submitting.value = true;
+    await restClient.post(`${API_URL}/global/policies`, newPolicy.value);
     hideCreateDialog();
     await fetchPolicies();
-  } catch (err: any) {
+    toastService.showSuccess('Policy created successfully');
+  } catch (error) {
+    console.error('Failed to create policy:', error);
     toastService.showError('Failed to create policy');
   } finally {
     submitting.value = false;
   }
 };
 
-const isEnabled = (policy: Policy) => {
-  return policy.passing_host_count > 0 || policy.failing_host_count > 0;
-};
-
-const togglePolicy = async (policy: Policy) => {
-  try {
-    await restClient.patch(`${API_URL}/global/policies/${policy.id}`, {
-      name: policy.name,
-      description: policy.description,
-      platform: policy.platform || '',
-      query: policy.query,
-      enabled: !isEnabled(policy)
-    });
-    
-    // Fetch fresh data instead of updating local state directly
-    await fetchPolicies();
-    
-    toastService.showSuccess(`Policy ${isEnabled(policy) ? 'disabled' : 'enabled'} successfully`);
-  } catch (err: any) {
-    toastService.showError('Failed to toggle policy');
-  }
-};
-
-const deletePolicy = async (policy: any) => {
-  try {
-    await restClient.delete(`${API_URL}/global/policies/${policy.id}`);
-    toastService.showSuccess('Policy deleted successfully');
-    await fetchPolicies();
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
-};
-
 const editPolicy = (policy: Policy) => {
+  newPolicy.value = { ...policy };
   isEditMode.value = true;
-  newPolicy.value = {
-    id: policy.id,
-    name: policy.name,
-    description: policy.description,
-    platform: policy.platform || null,
-    query: policy.query,
-    enabled: policy.enabled ?? true,
-    scope: policy.team_id ? 'team' : 'global',
-    team_id: policy.team_id
-  };
   showCreateDialog.value = true;
 };
 
 const updatePolicy = async () => {
-  submitted.value = true;
+  if (!newPolicy.value.id) return;
 
-  if (!newPolicy.value.name || !newPolicy.value.description || !newPolicy.value.query) {
-    toastService.showError('Please fill in all required fields');
-    return;
-  }
-
-  submitting.value = true;
   try {
-    await restClient.patch(`${API_URL}/global/policies/${newPolicy.value.id}`, {
-      name: newPolicy.value.name,
-      description: newPolicy.value.description,
-      platform: newPolicy.value.platform || '',
-      query: newPolicy.value.query,
-      enabled: newPolicy.value.enabled
-    });
+    submitted.value = true;
+    if (!validatePolicy()) return;
 
-    toastService.showSuccess('Policy updated successfully');
-
+    submitting.value = true;
+    await restClient.put(`${API_URL}/global/policies/${newPolicy.value.id}`, newPolicy.value);
     hideCreateDialog();
     await fetchPolicies();
-  } catch (err: any) {
+    toastService.showSuccess('Policy updated successfully');
+  } catch (error) {
+    console.error('Failed to update policy:', error);
     toastService.showError('Failed to update policy');
   } finally {
     submitting.value = false;
   }
 };
 
-// Add directive registration
-const vTooltip = Tooltip;
+const deletePolicy = async (policy: Policy) => {
+  try {
+    await restClient.delete(`${API_URL}/global/policies/${policy.id}`);
+    await fetchPolicies();
+    toastService.showSuccess('Policy deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete policy:', error);
+    toastService.showError('Failed to delete policy');
+  }
+};
 
-onMounted(() => {
-  fetchPolicies();
+const togglePolicy = async (policy: Policy) => {
+  try {
+    await restClient.put(`${API_URL}/global/policies/${policy.id}`, {
+      ...policy,
+      enabled: !policy.enabled
+    });
+    await fetchPolicies();
+    toastService.showSuccess(`Policy ${policy.enabled ? 'disabled' : 'enabled'} successfully`);
+  } catch (error) {
+    console.error('Failed to toggle policy:', error);
+    toastService.showError('Failed to toggle policy');
+  }
+};
+
+const validatePolicy = () => {
+  if (!newPolicy.value.name || !newPolicy.value.description || !newPolicy.value.query) {
+    return false;
+  }
+  return true;
+};
+
+onMounted(async () => {
+  await fetchPolicies();
 });
 </script>
 
