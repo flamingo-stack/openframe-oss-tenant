@@ -654,7 +654,7 @@ jobs:
             --cache-to "type=gha,mode=max" \
             --provenance=false \
             $BUILD_ARGS \
-            "${{ matrix.service.path }}"; then
+            "${{ matrix.service.context || matrix.service.path }}"; then
             echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
             exit 1
           fi

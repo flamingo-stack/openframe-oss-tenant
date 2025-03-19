@@ -29,7 +29,7 @@ spec:
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
               value: "prod_secret"
-            - name: GRAFANA_URL
+            - name: VITE_GRAFANA_URL
               value: "http://grafana.192.168.100.100.nip.io"
           livenessProbe:
             httpGet:
