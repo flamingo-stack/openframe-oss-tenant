@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_GATEWAY_URL: string;
   readonly VITE_CLIENT_ID: string;
   readonly VITE_CLIENT_SECRET: string;
+  readonly VITE_GRAFANA_URL: string;
 }
 
 interface ImportMeta {

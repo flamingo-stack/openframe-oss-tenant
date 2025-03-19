@@ -11,10 +11,18 @@ grafana:
       enabled: true
     auth:
       disable_login_form: false
+      login_maximum_inactive_lifetime_duration: 7d
+      login_maximum_lifetime_duration: 30d
+      token_rotation_interval_minutes: 10
     security:
       allow_embedding: true
-      cookie_samesite: none  # 'none' Prevents login, disabled requries login from same origin
+      cookie_samesite: strict
       allow_embedding_from_anywhere: true
+      cookie_secure: false
+      disable_initial_admin_creation: false
+    server:
+      domain: grafana.192.168.100.100.nip.io
+      root_url: "%(protocol)s://%(domain)s/"
     # paths:
     #   provisioning: /etc/grafana/provisioning
     dashboards:
@@ -141,12 +149,12 @@ prometheus:
       - job_name: 'openframe-api'
         metrics_path: '/management/v1/prometheus'
         static_configs:
-          - targets: ['openframe-api:8091']
+          - targets: ['openframe-api.infrastructure.svc:8091']
 
       - job_name: 'openframe-stream'
         metrics_path: '/management/v1/prometheus'
         static_configs:
-          - targets: ['openframe-stream:8083']
+          - targets: ['openframe-stream.infrastructure.svc:8083']
 
       - job_name: 'openframe-config'
         metrics_path: '/management/v1/prometheus'
@@ -156,7 +164,7 @@ prometheus:
       - job_name: 'openframe-management'
         metrics_path: '/management/v1/prometheus'
         static_configs:
-          - targets: ['openframe-management:8096']
+          - targets: ['openframe-management.infrastructure.svc:8096']
 
       - job_name: 'openframe-gateway'
         metrics_path: '/management/v1/prometheus'

@@ -18,7 +18,7 @@ spec:
         - name: ui
           image: ghcr.io/flamingo-cx/openframe-ui:latest
           ports:
-            - containerPort: 80
+            - containerPort: 3000
               name: http
           env:
             - name: VITE_API_URL
@@ -63,8 +63,8 @@ spec:
   selector:
     app: openframe-ui
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 3000
+      targetPort: 3000
       name: http
   type: ClusterIP
 ---
@@ -85,17 +85,3 @@ spec:
                 name: openframe-ui
                 port:
                   name: http
-          # - path: /api
-          #   pathType: Prefix
-          #   backend:
-          #     service:
-          #       name: openframe-api
-          #       port:
-          #         name: http
-          # - path: /gateway
-          #   pathType: Prefix
-          #   backend:
-          #     service:
-          #       name: openframe-gateway
-          #       port:
-          #         name: http
