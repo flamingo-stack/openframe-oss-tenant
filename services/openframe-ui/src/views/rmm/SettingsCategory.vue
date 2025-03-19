@@ -1126,6 +1126,11 @@ const deleteCustomField = async (id: number) => {
 
 const deleteApiKey = async (id: number) => {
   try {
+    if (id === 1) {
+      toastService.showError('Cannot delete the default API key');
+      return;
+    }
+
     await restClient.delete(`${envConfig.GATEWAY_URL}/tools/tactical-rmm/accounts/apikeys/${id}/`);
     props.settings.api_keys = props.settings.api_keys?.filter((k: ApiKey) => k.id !== id);
     toastService.showSuccess('API key deleted successfully');
@@ -1250,7 +1255,7 @@ const saveUrlAction = async () => {
     const endpoint = '/core/urlaction/';
     const method = editingUrlAction.value ? 'patch' : 'post';
     const url = editingUrlAction.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrlAction.value.id}/`
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrl.value.id}/`
       : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
