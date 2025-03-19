@@ -399,6 +399,9 @@ services:
     build:
       context: ./services/openframe-config
       dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOKI_URL=http://openframe-loki:3100/loki/api/v1/push
     ports:
       - "8888:8888"
       - "8889:8889"
@@ -409,7 +412,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    image: openframe-config:latest
   api:
     container_name: openframe-api
     build:
@@ -433,7 +435,6 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: openframe-api:latest
   management:
     container_name: openframe-management
     build:
@@ -453,21 +454,24 @@ services:
         condition: service_healthy
     networks:
       - openframe-network
-    image: openframe-management:latest
   openframe-ui:
+    container_name: openframe-ui
     build:
       context: ./services/openframe-ui
+      dockerfile: Dockerfile
     environment:
-      - VITE_CLIENT_ID=openframe_web_dashboard
-      - VITE_CLIENT_SECRET=prod_secret
+      - API_URL=http://localhost:8090
+      - GATEWAY_URL=http://localhost:8100
+      - CLIENT_ID=openframe_web_dashboard
+      - CLIENT_SECRET=prod_secret
+      - PORT=3000
     ports:
-      - "80:80"
+      - "80:3000"
     depends_on:
       - api
       - management
     networks:
       - openframe-network
-    image: openframe-ui:latest
   stream:
     container_name: openframe-stream
     build:

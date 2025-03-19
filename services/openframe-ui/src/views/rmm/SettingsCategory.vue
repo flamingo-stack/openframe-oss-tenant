@@ -934,7 +934,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick } from '@vue/runtime-core';
+import type { ComputedRef, WatchSource } from '@vue/runtime-core';
 import { useRoute } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
@@ -1255,13 +1256,13 @@ const saveUrlAction = async () => {
     const endpoint = '/core/urlaction/';
     const method = editingUrlAction.value ? 'patch' : 'post';
     const url = editingUrlAction.value 
-      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrl.value.id}/`
+      ? `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}${editingUrlAction.value.id}/`
       : `${envConfig.GATEWAY_URL}/tools/tactical-rmm${endpoint}`;
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
     
     if (editingUrlAction.value) {
-      const index = allUrlActions.value.findIndex(a => a.id === editingUrlAction.value?.id);
+      const index = allUrlActions.value.findIndex((a: UrlAction) => a.id === editingUrlAction.value?.id);
       if (index !== -1) {
         if (response.action_type === 'web') {
           props.settings.webhooks = props.settings.webhooks?.map((w: UrlAction) => 
@@ -1426,7 +1427,7 @@ const getTypeSeverity = (type: string) => {
 };
 
 // Add this after the category computed property
-watch(category, async (newCategory) => {
+watch(category as WatchSource<string>, async (newCategory: string) => {
   try {
     switch (newCategory) {
       case 'custom_fields':

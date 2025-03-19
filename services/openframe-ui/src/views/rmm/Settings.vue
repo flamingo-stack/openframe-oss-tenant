@@ -47,7 +47,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref } from 'vue';
+import { computed, onMounted, watch } from '@vue/runtime-core';
+import type { ComputedRef, WatchSource } from '@vue/runtime-core';
 import { useRoute, useRouter } from 'vue-router';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
@@ -706,7 +708,7 @@ watch(() => route.params.category, (value: string | string[]) => {
   }
 });
 
-watch(() => settings.value, (newSettings) => {
+watch(() => settings.value, (newSettings: ExtendedRMMSettingsWithDefaults | null) => {
   if (newSettings) {
     originalSettings.value = JSON.parse(JSON.stringify(newSettings));
   }

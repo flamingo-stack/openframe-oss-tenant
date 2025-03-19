@@ -24,11 +24,11 @@ export const useAuthStore = defineStore('auth', () => {
       formData.append('grant_type', 'password');
       formData.append('username', email);
       formData.append('password', password);
-      formData.append('client_id', config.clientId);
-      formData.append('client_secret', config.clientSecret);
+      formData.append('client_id', config.getConfig().clientId);
+      formData.append('client_secret', config.getConfig().clientSecret);
       formData.append('scope', 'openid profile email');
 
-      const response = await fetch(`${config.apiUrl}/oauth/token`, {
+      const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -54,10 +54,10 @@ export const useAuthStore = defineStore('auth', () => {
     const formData = new URLSearchParams();
     formData.append('grant_type', 'refresh_token');
     formData.append('refresh_token', refreshToken);
-    formData.append('client_id', config.clientId);
-    formData.append('client_secret', config.clientSecret);
+    formData.append('client_id', config.getConfig().clientId);
+    formData.append('client_secret', config.getConfig().clientSecret);
 
-    const response = await fetch(`${config.apiUrl}/oauth/token`, {
+    const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -106,13 +106,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
     try {
-      const credentials = btoa(`${config.clientId}:${config.clientSecret}`);
-      const apiUrl = `${config.apiUrl}/oauth/register`;
+      const credentials = btoa(`${config.getConfig().clientId}:${config.getConfig().clientSecret}`);
+      const apiUrl = `${config.getConfig().apiUrl}/oauth/register`;
       console.log('Attempting to register with URL:', apiUrl);
       console.log('Environment variables:', {
-        apiUrl: config.apiUrl,
-        clientId: config.clientId,
-        clientSecret: config.clientSecret
+        apiUrl: config.getConfig().apiUrl,
+        clientId: config.getConfig().clientId,
+        clientSecret: config.getConfig().clientSecret
       });
 
       const response = await fetch(apiUrl, {

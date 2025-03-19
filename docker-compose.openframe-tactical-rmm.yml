@@ -208,8 +208,6 @@ services:
     depends_on:
       tactical-postgres:
         condition: service_healthy
-      # tactical-meshcentral:
-      #   condition: service_healthy
       tactical-redis:
         condition: service_healthy
       tactical-nginx:

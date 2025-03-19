@@ -7,7 +7,13 @@
             "name": "OpenFrame UI",
             "url": "http://localhost:5174",
             "webRoot": "${workspaceFolder}/services/openframe-ui",
-            "preLaunchTask": "start-vue"
+            "preLaunchTask": "start-vue",
+            "env": {
+                "API_URL": "http://localhost:8090",
+                "GATEWAY_URL": "http://localhost:8100",
+                "CLIENT_ID": "openframe_web_dashboard_dev",
+                "CLIENT_SECRET": "your_client_secret_here"
+            }
         },
         {
             "type": "java",
