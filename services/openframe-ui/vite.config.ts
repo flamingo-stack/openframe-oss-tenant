@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      'process.env': env
+      'import.meta.env': JSON.stringify(env)
     },
     build: {
       sourcemap: true,
