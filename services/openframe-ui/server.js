@@ -10,6 +10,7 @@ const app = express();
 const env = {
   API_URL: process.env.VITE_API_URL,
   GATEWAY_URL: process.env.VITE_GATEWAY_URL,
+  GRAFANA_URL: process.env.VITE_GRAFANA_URL,
   CLIENT_ID: process.env.VITE_CLIENT_ID,
   CLIENT_SECRET: process.env.VITE_CLIENT_SECRET,
   PORT: process.env.PORT || '3000'
@@ -29,6 +30,7 @@ app.listen(port, () => {
   console.log('Environment Variables:', {
     apiUrl: env.API_URL,
     gatewayUrl: env.GATEWAY_URL,
+    grafanaUrl: env.GRAFANA_URL,
     clientId: env.CLIENT_ID,
     clientSecret: '***'
   });

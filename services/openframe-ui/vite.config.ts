@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
       'process.env': {},
       'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL),
       'import.meta.env.VITE_GATEWAY_URL': JSON.stringify(env.VITE_GATEWAY_URL),
+      'import.meta.env.VITE_GRAFANA_URL': JSON.stringify(env.VITE_GRAFANA_URL),
       'import.meta.env.VITE_CLIENT_ID': JSON.stringify(env.VITE_CLIENT_ID),
       'import.meta.env.VITE_CLIENT_SECRET': JSON.stringify(env.VITE_CLIENT_SECRET),
       'import.meta.env.MODE': JSON.stringify(mode)

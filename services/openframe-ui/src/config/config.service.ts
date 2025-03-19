@@ -5,6 +5,7 @@ interface Config {
   gatewayUrl: string;
   clientId: string;
   clientSecret: string;
+  grafanaUrl: string;
 }
 
 class ConfigService {
@@ -18,13 +19,15 @@ class ConfigService {
     const gatewayUrl = import.meta.env.VITE_GATEWAY_URL;
     const clientId = import.meta.env.VITE_CLIENT_ID;
     const clientSecret = import.meta.env.VITE_CLIENT_SECRET;
+    const grafanaUrl = import.meta.env.VITE_GRAFANA_URL;
 
     // Log configuration (excluding sensitive data)
     console.log('🔧 [Config] Environment Variables:', {
       apiUrl,
       gatewayUrl,
       clientId,
-      clientSecret: '***'
+      clientSecret: '***',
+      grafanaUrl
     });
 
     // Validate and set configuration
@@ -32,7 +35,8 @@ class ConfigService {
       apiUrl: this.validateUrl(apiUrl, 'API URL'),
       gatewayUrl: this.validateUrl(gatewayUrl, 'Gateway URL'),
       clientId: this.validateString(clientId, 'Client ID'),
-      clientSecret: this.validateString(clientSecret, 'Client Secret')
+      clientSecret: this.validateString(clientSecret, 'Client Secret'),
+      grafanaUrl: this.validateUrl(grafanaUrl, 'Grafana URL')
     };
 
     this.configRef.value = this.config;
@@ -42,7 +46,8 @@ class ConfigService {
       apiUrl: this.config.apiUrl,
       gatewayUrl: this.config.gatewayUrl,
       clientId: this.config.clientId,
-      clientSecret: '***'
+      clientSecret: '***',
+      grafanaUrl: this.config.grafanaUrl
     });
   }
 
@@ -107,13 +112,17 @@ class ConfigService {
     if (newConfig.clientSecret) {
       this.config.clientSecret = this.validateString(newConfig.clientSecret, 'Client Secret');
     }
+    if (newConfig.grafanaUrl) {
+      this.config.grafanaUrl = this.validateUrl(newConfig.grafanaUrl, 'Grafana URL');
+    }
     this.configRef.value = this.config;
 
     console.log('✅ [Config] Updated configuration:', {
       apiUrl: this.config.apiUrl,
       gatewayUrl: this.config.gatewayUrl,
       clientId: this.config.clientId,
-      clientSecret: '***'
+      clientSecret: '***',
+      grafanaUrl: this.config.grafanaUrl
     });
   }
 }
