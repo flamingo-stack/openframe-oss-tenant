@@ -29,9 +29,21 @@
 
         // Create a secure getter function
         const getConfig = (key) => {
+          // Always return undefined for clientSecret
           if (key === 'clientSecret') return undefined;
+
+          // For other keys, return the value from config
           return config[key];
         };
+
+        // Log the initial config for debugging
+        console.log('🔍 [Runtime Config] Initial config:', {
+          apiUrl: config.apiUrl,
+          gatewayUrl: config.gatewayUrl,
+          clientId: config.clientId,
+          clientSecret: '***',
+          grafanaUrl: config.grafanaUrl
+        });
 
         // Make the config non-enumerable and non-configurable
         Object.defineProperty(window, '__RUNTIME_CONFIG__', {
