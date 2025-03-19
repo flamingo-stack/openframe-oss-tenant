@@ -17,12 +17,23 @@
   <body>
     <div id="app"></div>
     <script>
-      window.__RUNTIME_CONFIG__ = {
-        apiUrl: '<%= VITE_API_URL || API_URL %>',
-        gatewayUrl: '<%= VITE_GATEWAY_URL || GATEWAY_URL %>',
-        clientId: '<%= VITE_CLIENT_ID || CLIENT_ID %>',
-        clientSecret: '<%= VITE_CLIENT_SECRET || CLIENT_SECRET %>'
-      };
+      (function() {
+        const config = {
+          apiUrl: '<%= VITE_API_URL %>',
+          gatewayUrl: '<%= VITE_GATEWAY_URL %>',
+          clientId: '<%= VITE_CLIENT_ID %>',
+          clientSecret: '<%= VITE_CLIENT_SECRET %>',
+          grafanaUrl: '<%= VITE_GRAFANA_URL %>'
+        };
+
+        // Make config non-enumerable and non-configurable
+        Object.defineProperty(window, '__RUNTIME_CONFIG__', {
+          value: config,
+          writable: false,
+          configurable: false,
+          enumerable: false
+        });
+      })();
     </script>
   </body>
 </html>

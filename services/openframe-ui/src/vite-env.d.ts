@@ -1,13 +1,3 @@
 /// <reference types="vite/client" />
 
-interface ImportMetaEnv {
-  readonly API_URL: string
-  readonly GATEWAY_URL: string
-  readonly CLIENT_ID: string
-  readonly CLIENT_SECRET: string
-  readonly PORT: string
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv
-}
+// This file is kept for reference but environment variables are now declared in env.d.ts
