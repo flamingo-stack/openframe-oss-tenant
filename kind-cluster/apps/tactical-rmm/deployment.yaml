@@ -415,6 +415,8 @@ spec:
         image: ghcr.io/flamingo-cx/openframe-tactical-celery:latest
         args: ["tactical-celery"]
         env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: "tacticalrmm.settings"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
@@ -427,14 +429,68 @@ spec:
           value: "5432"
         - name: REDIS_HOST
           value: "tactical-redis"
+        - name: SMTP_HOST
+          value: "smtp.example.com"
+        - name: SMTP_PORT
+          value: "587"
+        - name: SMTP_FROM
+          value: "mesh@example.com"
+        - name: SMTP_USER
+          value: "mesh@example.com"
+        - name: SMTP_PASS
+          value: "mesh-smtp-pass"
+        - name: SMTP_TLS
+          value: "false"
+        - name: TRMM_USER
+          value: "tactical"
+        - name: TRMM_PASS
+          value: "tactical"
+        - name: TACTICAL_BACKEND_PORT
+          value: "8000"
+        - name: TRMM_PROTO
+          value: "http"
+        - name: TRMM_DISABLE_WEB_TERMINAL
+          value: "False"
+        - name: TRMM_DISABLE_SERVER_SCRIPTS
+          value: "False"
+        - name: TRMM_DISABLE_SSO
+          value: "False"
+        - name: TRMM_DISABLE_2FA
+          value: "True"
+        - name: NODE_ENV
+          value: "development"
+        - name: WS_PROTO
+          value: "ws"
+        - name: WS_MASK_OVERRIDE
+          value: "1"
         - name: TACTICAL_DIR
           value: "/opt/tactical"
         - name: TACTICAL_TMP_DIR
           value: "/tmp/tactical"
         - name: API_HOST
           value: "tactical-backend:8000"
+        - name: API_LOCALHOST_HOST
+          value: "localhost:8000"
         - name: APP_HOST
           value: "tactical-frontend:8080"
+        - name: APP_LOCALHOST_HOST
+          value: "localhost:8080"
+        - name: NATS_CONFIG
+          value: "/opt/tactical/nats-rmm.conf"
+        - name: NATS_API_CONFIG
+          value: "/opt/tactical/nats-api.conf"
+        - name: NATS_CONFIG_CHECK_INTERVAL
+          value: "5"
+        - name: NATS_STD_BIND_HOST
+          value: "tactical-nats"
+        - name: NATS_WS_BIND_HOST
+          value: "tactical-nats"
+        - name: NATS_CONNECT_HOST
+          value: "tactical-nats"
+        - name: NATS_STANDARD_PORT
+          value: "9235"
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
         volumeMounts:
         - name: celery-data
           mountPath: /opt/tactical
