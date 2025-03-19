@@ -600,8 +600,8 @@ jobs:
       - name: Prepare Java artifacts for Docker build
         if: steps.check_changes.outputs.changed == 'true' && matrix.service.artifact_name != ''
         run: |
-          mkdir -p target
-          mv *.jar target/
+          mkdir -p ${{ matrix.service.path }}/target
+          mv *.jar ${{ matrix.service.path }}/target/
 
       - name: Log in to GitHub Container Registry
         if: steps.check_changes.outputs.changed == 'true'
@@ -636,7 +636,7 @@ jobs:
             --cache-from "type=gha" \
             --cache-to "type=gha,mode=max" \
             --provenance=false \
-            ${{ matrix.service.build_args && format('--build-arg {0}={1}', matrix.service.build_args.*.key, matrix.service.build_args.*.value) || '' }} \
+            ${{ matrix.service.build_args && format('--build-arg %s=%s', matrix.service.build_args.*.key, matrix.service.build_args.*.value) || '' }} \
             "${{ matrix.service.path }}"; then
             echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
             exit 1
