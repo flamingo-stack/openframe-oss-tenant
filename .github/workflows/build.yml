@@ -191,6 +191,7 @@ jobs:
           {
             name: 'tactical-frontend',
             path: './infrastructure/tactical-rmm/tactical-frontend/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -234,6 +235,7 @@ jobs:
           {
             name: 'tactical-nginx',
             path: './infrastructure/tactical-rmm/tactical-nginx/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -277,6 +279,7 @@ jobs:
           {
             name: 'tactical-backend',
             path: './infrastructure/tactical-rmm/tactical-base/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -320,6 +323,7 @@ jobs:
           {
             name: 'tactical-nats',
             path: './infrastructure/tactical-rmm/tactical-base/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -363,6 +367,7 @@ jobs:
           {
             name: 'tactical-websockets',
             path: './infrastructure/tactical-rmm/tactical-base/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -406,6 +411,7 @@ jobs:
           {
             name: 'tactical-celery',
             path: './infrastructure/tactical-rmm/tactical-base/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
@@ -449,6 +455,7 @@ jobs:
           {
             name: 'tactical-celerybeat',
             path: './infrastructure/tactical-rmm/tactical-base/',
+            context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
               POSTGRES_USER: 'postgres',
