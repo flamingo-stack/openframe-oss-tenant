@@ -102,61 +102,142 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
-        <label for="name">Name</label>
-        <InputText 
-          id="name" 
-          v-model="newScript.name" 
-          required 
-          autofocus 
-          :class="{ 'p-invalid': submitted && !newScript.name }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.name">
-          Name is required.
-        </small>
-      </div>
+      <div class="script-form">
+        <div class="form-section">
+          <div class="field">
+            <label for="name">Name</label>
+            <InputText 
+              id="name" 
+              v-model="newScript.name" 
+              required 
+              autofocus 
+              :class="{ 'p-invalid': submitted && !newScript.name }"
+            />
+            <small class="p-error" v-if="submitted && !newScript.name">
+              Name is required.
+            </small>
+          </div>
 
-      <div class="field">
-        <label for="type">Type</label>
-        <Dropdown
-          id="type"
-          v-model="newScript.type"
-          :options="scriptTypes"
-          optionLabel="name"
-          optionValue="value"
-          placeholder="Select a script type"
-          :class="{ 'p-invalid': submitted && !newScript.type }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.type">
-          Type is required.
-        </small>
-      </div>
+          <div class="field">
+            <label for="description">Description</label>
+            <Textarea 
+              id="description" 
+              v-model="newScript.description" 
+              required 
+              :class="{ 'p-invalid': submitted && !newScript.description }"
+              rows="2"
+            />
+            <small class="p-error" v-if="submitted && !newScript.description">
+              Description is required.
+            </small>
+          </div>
 
-      <div class="field">
-        <label for="description">Description</label>
-        <InputText 
-          id="description" 
-          v-model="newScript.description" 
-          required 
-          :class="{ 'p-invalid': submitted && !newScript.description }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.description">
-          Description is required.
-        </small>
-      </div>
+          <div class="field">
+            <label for="shell">Shell Type</label>
+            <Dropdown
+              id="shell"
+              v-model="newScript.shell"
+              :options="shellOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select shell type"
+              :class="{ 'p-invalid': submitted && !newScript.shell }"
+            />
+            <small class="p-error" v-if="submitted && !newScript.shell">
+              Shell type is required.
+            </small>
+          </div>
+        </div>
 
-      <div class="field">
-        <label for="content">Script Content</label>
-        <Textarea 
-          id="content" 
-          v-model="newScript.content" 
-          rows="12"
-          class="font-mono"
-          :class="{ 'p-invalid': submitted && !newScript.content }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.content">
-          Script content is required.
-        </small>
+        <div class="form-section">
+          <div class="field">
+            <label for="platforms">Supported Platforms</label>
+            <MultiSelect
+              id="platforms"
+              v-model="newScript.supported_platforms"
+              :options="platformOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select supported platforms"
+              display="chip"
+            />
+          </div>
+
+          <div class="field">
+            <label for="category">Category</label>
+            <Dropdown
+              id="category"
+              v-model="newScript.category"
+              :options="[]"
+              optionLabel="name"
+              optionValue="value"
+              placeholder="Select category"
+              filter
+            />
+          </div>
+
+          <div class="field">
+            <label for="timeout">Timeout (seconds)</label>
+            <InputNumber
+              id="timeout"
+              v-model="newScript.default_timeout"
+              :min="1"
+              :max="3600"
+              class="w-full"
+            />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="field">
+            <label for="args">Script Arguments</label>
+            <MultiSelect
+              id="args"
+              v-model="newScript.args"
+              :options="[]"
+              placeholder="Press Enter after typing each argument"
+              display="chip"
+              :createOnEnter="true"
+            />
+          </div>
+
+          <div class="field">
+            <label for="env_vars">Environment Variables</label>
+            <MultiSelect
+              id="env_vars"
+              v-model="newScript.env_vars"
+              :options="[]"
+              placeholder="Press Enter after typing each key=value pair"
+              display="chip"
+              :createOnEnter="true"
+            />
+          </div>
+
+          <div class="field-checkbox">
+            <Checkbox
+              id="run_as_user"
+              v-model="newScript.run_as_user"
+              :binary="true"
+            />
+            <label for="run_as_user" class="ml-2">Run As User (Windows only)</label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="field">
+            <label for="syntax">Script Content</label>
+            <Textarea 
+              id="syntax" 
+              v-model="newScript.syntax" 
+              rows="6"
+              class="font-mono"
+              :class="{ 'p-invalid': submitted && !newScript.syntax }"
+            />
+            <small class="p-error" v-if="submitted && !newScript.syntax">
+              Script content is required.
+            </small>
+          </div>
+        </div>
       </div>
 
       <template #footer>
@@ -283,6 +364,8 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import InputNumber from 'primevue/inputnumber';
+import Checkbox from 'primevue/checkbox';
 
 interface Script {
   id: string;
@@ -292,6 +375,14 @@ interface Script {
   content: string;
   created_at: string;
   last_run?: string;
+  shell: string;
+  default_timeout: number;
+  args: string[];
+  run_as_user: boolean;
+  env_vars: string[];
+  supported_platforms: string[];
+  category: string | null;
+  syntax: string;
 }
 
 interface Device {
@@ -332,7 +423,15 @@ const newScript = ref({
   name: '',
   type: null as string | null,
   description: '',
-  content: ''
+  content: '',
+  shell: 'shell',
+  default_timeout: 90,
+  args: [] as string[],
+  run_as_user: false,
+  env_vars: [] as string[],
+  supported_platforms: [] as string[],
+  category: null as string | null,
+  syntax: ''
 });
 
 const scriptTypes = [
@@ -340,6 +439,19 @@ const scriptTypes = [
   { name: 'Batch', value: 'batch' },
   { name: 'Shell', value: 'shell' },
   { name: 'Python', value: 'python' }
+];
+
+const platformOptions = [
+  { label: 'Windows', value: 'windows' },
+  { label: 'Linux', value: 'linux' },
+  { label: 'macOS', value: 'darwin' }
+];
+
+const shellOptions = [
+  { label: 'Shell', value: 'shell' },
+  { label: 'PowerShell', value: 'powershell' },
+  { label: 'Batch', value: 'batch' },
+  { label: 'Python', value: 'python' }
 ];
 
 const filters = ref({
@@ -411,7 +523,15 @@ const hideDialog = () => {
     name: '',
     type: null,
     description: '',
-    content: ''
+    content: '',
+    shell: 'shell',
+    default_timeout: 90,
+    args: [],
+    run_as_user: false,
+    env_vars: [],
+    supported_platforms: [],
+    category: null,
+    syntax: ''
   };
 };
 
@@ -425,8 +545,21 @@ const saveScript = async () => {
       `${API_URL}/scripts/${selectedScript.value.id}` : 
       `${API_URL}/scripts`;
 
+    const payload = {
+      name: newScript.value.name,
+      shell: newScript.value.shell,
+      default_timeout: newScript.value.default_timeout,
+      args: newScript.value.args,
+      script_body: newScript.value.syntax,
+      run_as_user: newScript.value.run_as_user,
+      env_vars: newScript.value.env_vars,
+      description: newScript.value.description,
+      supported_platforms: newScript.value.supported_platforms,
+      category: newScript.value.category
+    };
+
     const method = isEditMode.value ? 'put' : 'post';
-    await restClient[method](endpoint, newScript.value);
+    await restClient[method](endpoint, payload);
 
     hideDialog();
     await fetchScripts();
@@ -510,8 +643,8 @@ const confirmDelete = async () => {
 };
 
 const validateScript = () => {
-  if (!newScript.value.name || !newScript.value.type || 
-      !newScript.value.description || !newScript.value.content) {
+  if (!newScript.value.name || !newScript.value.shell || 
+      !newScript.value.description || !newScript.value.syntax) {
     return false;
   }
   return true;
@@ -548,19 +681,27 @@ onMounted(async () => {
   justify-content: center;
 }
 
-:deep(.p-dialog-mask) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+.script-icon {
+  font-size: 1.125rem;
+  color: var(--primary-color);
 }
 
+.font-mono {
+  font-family: monospace;
+}
+
+/* Dialog specific styles */
 :deep(.p-dialog) {
-  margin: 0 auto !important;
-}
+  .p-dialog-mask {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
 
-:deep(.p-dialog-content) {
-  overflow-y: auto !important;
-  max-height: calc(90vh - 120px) !important;
+  .p-dialog-content {
+    overflow-y: auto !important;
+    max-height: calc(90vh - 120px) !important;
+  }
 }
 
 .p-dialog-custom {
@@ -591,12 +732,64 @@ onMounted(async () => {
   padding: 1rem;
 }
 
-.script-icon {
-  font-size: 1.125rem;
-  color: var(--primary-color);
+/* Script form styles */
+.script-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.font-mono {
-  font-family: monospace;
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--surface-card);
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field label {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Form input styles */
+:deep(.p-dialog) {
+  .p-multiselect,
+  .p-inputnumber,
+  .p-dropdown,
+  .p-inputtext,
+  .p-textarea {
+    width: 100%;
+  }
+
+  .p-checkbox {
+    margin-right: 0.5rem;
+  }
+
+  .p-multiselect {
+    .p-multiselect-label {
+      padding: 0.5rem;
+    }
+
+    .p-multiselect-token {
+      margin: 0.25rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
 }
 </style> 
