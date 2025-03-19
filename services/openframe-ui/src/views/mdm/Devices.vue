@@ -110,7 +110,7 @@ interface FleetResponse {
 const configService = ConfigService.getInstance();
 const config = configService.getConfig();
 
-const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const VITE_API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
 const router = useRouter();
 const toastService = ToastService.getInstance();
@@ -178,7 +178,7 @@ const extractUrlFromMessage = (message: string) => {
 const fetchDevices = async () => {
   loading.value = true;
   try {
-    const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse;
+    const response = await restClient.get(`${VITE_API_URL}/hosts`) as FleetResponse;
     devices.value = response.hosts || [];
   } catch (err: any) {
     toastService.showError(err.message);
@@ -189,7 +189,7 @@ const fetchDevices = async () => {
 
 const lockDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/lock`);
+    await restClient.post(`${VITE_API_URL}/global/devices/${device.device_uuid}/lock`);
     toastService.showSuccess('Device locked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
@@ -198,7 +198,7 @@ const lockDevice = async (device: any) => {
 
 const unlockDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/unlock`);
+    await restClient.post(`${VITE_API_URL}/global/devices/${device.device_uuid}/unlock`);
     toastService.showSuccess('Device unlocked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
@@ -207,7 +207,7 @@ const unlockDevice = async (device: any) => {
 
 const eraseDevice = async (device: any) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/erase`);
+    await restClient.post(`${VITE_API_URL}/global/devices/${device.device_uuid}/erase`);
     toastService.showSuccess('Device erase command sent successfully');
   } catch (err: any) {
     toastService.showError(err.message);
@@ -216,7 +216,7 @@ const eraseDevice = async (device: any) => {
 
 const deleteDevice = async (device: any) => {
   try {
-    await restClient.delete(`${API_URL}/global/hosts/${device.id}`);
+    await restClient.delete(`${VITE_API_URL}/global/hosts/${device.id}`);
     await fetchDevices();
     toastService.showSuccess('Device deleted successfully');
   } catch (err) {

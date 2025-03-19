@@ -133,7 +133,7 @@ import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -224,7 +224,7 @@ const getIPv4Addresses = (ips: string) => {
 const fetchDevices = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
+    const response = await restClient.get<Device[]>(`${VITE_API_URL}/agents/`);
     devices.value = Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Failed to fetch devices:', error);
@@ -265,7 +265,7 @@ const executeCommand = async (cmd: string) => {
 
   try {
     executing.value = true;
-    const response = await restClient.post<string>(`${API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`, {
+    const response = await restClient.post<string>(`${VITE_API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`, {
       shell: "/bin/bash",
       cmd: cmd,
       timeout: 30,
@@ -336,7 +336,7 @@ const confirmDelete = async () => {
 
   try {
     deleting.value = true;
-    await restClient.delete(`${API_URL}/agents/${selectedDevice.value.agent_id}/`);
+    await restClient.delete(`${VITE_API_URL}/agents/${selectedDevice.value.agent_id}/`);
     await fetchDevices();
     deleteDeviceDialog.value = false;
     toastService.showSuccess('Device deleted successfully');

@@ -144,7 +144,7 @@ import { ConfigService } from '../../config/config.service';
 const configService = ConfigService.getInstance();
 const config = configService.getConfig();
 
-const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const VITE_API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
 const fleetService = FleetService.getInstance();
 
@@ -221,7 +221,7 @@ const formatTimestamp = (timestamp: string) => {
 
 const fetchDeviceStats = async () => {
   try {
-    const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse;
+    const response = await restClient.get(`${VITE_API_URL}/hosts`) as FleetResponse;
     const devices = response.hosts || [];
     
     const stats: DeviceStats = {
@@ -248,7 +248,7 @@ const fetchDeviceStats = async () => {
 
 const fetchPolicyStats = async () => {
   try {
-    const response = await restClient.get(`${API_URL}/global/policies`) as FleetPolicyResponse;
+    const response = await restClient.get(`${VITE_API_URL}/global/policies`) as FleetPolicyResponse;
     const policies = response.policies || [];
     
     const stats: PolicyStats = {
@@ -273,7 +273,7 @@ const fetchPolicyStats = async () => {
 
 const fetchRecentActivities = async () => {
   try {
-    const response = await restClient.get(`${API_URL}/activities?limit=5`) as FleetActivityResponse;
+    const response = await restClient.get(`${VITE_API_URL}/activities?limit=5`) as FleetActivityResponse;
     recentActivities.value = response.activities.map(activity => ({
       timestamp: activity.created_at,
       type: activity.type,

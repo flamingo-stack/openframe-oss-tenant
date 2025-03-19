@@ -25,7 +25,7 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  build-java-artifacts:
+  build-java:
     runs-on: ubuntu-latest
     outputs:
       status: ${{ job.status }}
@@ -56,8 +56,8 @@ jobs:
             !**/target/*-javadoc.jar
           retention-days: 1
 
-  build-container-image:
-    needs: build-java-artifacts
+  build-image:
+    needs: build-java
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     strategy:

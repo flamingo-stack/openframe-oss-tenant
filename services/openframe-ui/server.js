@@ -10,7 +10,7 @@ const app = express();
 
 // Create runtime config object from environment variables
 const runtimeConfig = {
-  apiUrl: process.env.API_URL,
+  apiUrl: process.env.VITE_API_URL,
   gatewayUrl: process.env.GATEWAY_URL,
   clientId: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET
@@ -20,7 +20,7 @@ const runtimeConfig = {
 function replaceTemplateVariables(html) {
   console.log('Original HTML:', html);
   const replaced = html
-    .replace(/<%= VITE_API_URL \|\| API_URL %>/g, runtimeConfig.apiUrl)
+    .replace(/<%= VITE_API_URL \|\| VITE_API_URL %>/g, runtimeConfig.apiUrl)
     .replace(/<%= VITE_GATEWAY_URL \|\| GATEWAY_URL %>/g, runtimeConfig.gatewayUrl)
     .replace(/<%= VITE_CLIENT_ID \|\| CLIENT_ID %>/g, runtimeConfig.clientId)
     .replace(/<%= VITE_CLIENT_SECRET \|\| CLIENT_SECRET %>/g, runtimeConfig.clientSecret);

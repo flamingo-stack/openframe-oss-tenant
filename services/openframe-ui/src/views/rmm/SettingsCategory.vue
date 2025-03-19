@@ -1049,7 +1049,7 @@ const allUrlActions = computed(() => {
 
 const configService = ConfigService.getInstance();
 const config = configService.getConfig();
-const API_URL = `${config.gatewayUrl}/tools/tactical-rmm`;
+const VITE_API_URL = `${config.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 // Methods
@@ -1258,8 +1258,8 @@ const saveUrlAction = async () => {
     const endpoint = '/core/urlaction/';
     const method = editingUrlAction.value ? 'patch' : 'post';
     const url = editingUrlAction.value 
-      ? `${API_URL}${endpoint}${editingUrlAction.value.id}/`
-      : `${API_URL}${endpoint}`;
+      ? `${VITE_API_URL}${endpoint}${editingUrlAction.value.id}/`
+      : `${VITE_API_URL}${endpoint}`;
 
     const response = await restClient[method]<UrlAction>(url, urlActionForm.value);
     
@@ -1290,7 +1290,7 @@ const saveUrlAction = async () => {
     toastService.showSuccess('URL Action saved successfully');
     
     // Refetch URL actions after adding/editing
-    const urlActionsResponse = await restClient.get<UrlAction[]>(`${API_URL}/core/urlaction/`);
+    const urlActionsResponse = await restClient.get<UrlAction[]>(`${VITE_API_URL}/core/urlaction/`);
     props.settings.url_actions = urlActionsResponse;
   } catch (err: any) {
     console.error('Error saving:', err);
@@ -1326,8 +1326,8 @@ const saveKeyStore = async () => {
     const endpoint = '/core/keystore/';
     const method = editingKeyStore.value ? 'patch' : 'post';
     const url = editingKeyStore.value 
-      ? `${API_URL}${endpoint}${editingKeyStore.value.id}/`
-      : `${API_URL}${endpoint}`;
+      ? `${VITE_API_URL}${endpoint}${editingKeyStore.value.id}/`
+      : `${VITE_API_URL}${endpoint}`;
 
     const response = await restClient[method]<KeyStore>(url, keyStoreForm.value);
     
@@ -1344,7 +1344,7 @@ const saveKeyStore = async () => {
     toastService.showSuccess('Key saved successfully');
     
     // Refetch key store after adding/editing
-    const keyStoreResponse = await restClient.get<KeyStore[]>(`${API_URL}/core/keystore/`);
+    const keyStoreResponse = await restClient.get<KeyStore[]>(`${VITE_API_URL}/core/keystore/`);
     props.settings.key_store = keyStoreResponse;
   } catch (err: any) {
     console.error('Error saving key:', err);
@@ -1366,8 +1366,8 @@ const saveCustomField = async () => {
     const endpoint = '/core/customfields/';
     const method = editingCustomField.value ? 'patch' : 'post';
     const url = editingCustomField.value 
-      ? `${API_URL}${endpoint}${editingCustomField.value.id}/`
-      : `${API_URL}${endpoint}`;
+      ? `${VITE_API_URL}${endpoint}${editingCustomField.value.id}/`
+      : `${VITE_API_URL}${endpoint}`;
 
     const formData = {
       name: customFieldForm.value.name,
@@ -1397,7 +1397,7 @@ const saveCustomField = async () => {
     toastService.showSuccess('Custom field saved successfully');
     
     // Refetch custom fields after adding/editing
-    const customFieldsResponse = await restClient.get<CustomField[]>(`${API_URL}/core/customfields/`);
+    const customFieldsResponse = await restClient.get<CustomField[]>(`${VITE_API_URL}/core/customfields/`);
     props.settings.custom_fields = customFieldsResponse;
   } catch (err: any) {
     console.error('Error saving custom field:', err);
@@ -1433,19 +1433,19 @@ watch(category as WatchSource<string>, async (newCategory: string) => {
   try {
     switch (newCategory) {
       case 'custom_fields':
-        const customFieldsResponse = await restClient.get<CustomField[]>(`${API_URL}/core/customfields/`);
+        const customFieldsResponse = await restClient.get<CustomField[]>(`${VITE_API_URL}/core/customfields/`);
         props.settings.custom_fields = customFieldsResponse;
         break;
       case 'api_keys':
-        const apiKeysResponse = await restClient.get<ApiKey[]>(`${API_URL}/accounts/apikeys/`);
+        const apiKeysResponse = await restClient.get<ApiKey[]>(`${VITE_API_URL}/accounts/apikeys/`);
         props.settings.api_keys = apiKeysResponse;
         break;
       case 'key_store':
-        const keyStoreResponse = await restClient.get<KeyStore[]>(`${API_URL}/core/keystore/`);
+        const keyStoreResponse = await restClient.get<KeyStore[]>(`${VITE_API_URL}/core/keystore/`);
         props.settings.key_store = keyStoreResponse;
         break;
       case 'url_actions':
-        const urlActionsResponse = await restClient.get<UrlAction[]>(`${API_URL}/core/urlaction/`);
+        const urlActionsResponse = await restClient.get<UrlAction[]>(`${VITE_API_URL}/core/urlaction/`);
         props.settings.url_actions = urlActionsResponse;
         break;
     }
@@ -1532,25 +1532,25 @@ const handleDelete = async () => {
       case 'custom_fields':
         await deleteCustomField(deleteId.value);
         // Refetch custom fields after deletion
-        const customFieldsResponse = await restClient.get<CustomField[]>(`${API_URL}/core/customfields/`);
+        const customFieldsResponse = await restClient.get<CustomField[]>(`${VITE_API_URL}/core/customfields/`);
         props.settings.custom_fields = customFieldsResponse;
         break;
       case 'key_store':
         await deleteKeyStore(deleteId.value);
         // Refetch key store after deletion
-        const keyStoreResponse = await restClient.get<KeyStore[]>(`${API_URL}/core/keystore/`);
+        const keyStoreResponse = await restClient.get<KeyStore[]>(`${VITE_API_URL}/core/keystore/`);
         props.settings.key_store = keyStoreResponse;
         break;
       case 'url_actions':
         await deleteUrlAction(deleteId.value);
         // Refetch URL actions after deletion
-        const urlActionsResponse = await restClient.get<UrlAction[]>(`${API_URL}/core/urlaction/`);
+        const urlActionsResponse = await restClient.get<UrlAction[]>(`${VITE_API_URL}/core/urlaction/`);
         props.settings.url_actions = urlActionsResponse;
         break;
       case 'api_keys':
         await deleteApiKey(deleteId.value);
         // Refetch API keys after deletion
-        const apiKeysResponse = await restClient.get<ApiKey[]>(`${API_URL}/accounts/apikeys/`);
+        const apiKeysResponse = await restClient.get<ApiKey[]>(`${VITE_API_URL}/accounts/apikeys/`);
         props.settings.api_keys = apiKeysResponse;
         break;
     }

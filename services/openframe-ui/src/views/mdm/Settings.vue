@@ -69,7 +69,7 @@ import type { RuntimeConfig } from '../../config/runtime-config';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-let API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+let VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
 interface ConfigValue {
   [key: string]: string | number | boolean | null | ConfigValue | ConfigValue[] | Record<string, unknown>;
@@ -102,7 +102,7 @@ const {
   changedValues: useSettingsSaveChangedValues, 
   hasChanges: useSettingsSaveHasChanges 
 } = useSettingsSave({
-  apiUrl: `${API_URL}/config`,
+  apiUrl: `${VITE_API_URL}/config`,
   onSuccess: () => {
     // Refresh config after successful save
     fetchMDMConfig();
@@ -283,8 +283,8 @@ const fetchMDMConfig = async () => {
   loading.value = true;
   error.value = '';
   try {
-    console.log('Fetching MDM config from:', API_URL);
-    const response = await restClient.get(`${API_URL}/config`);
+    console.log('Fetching MDM config from:', VITE_API_URL);
+    const response = await restClient.get(`${VITE_API_URL}/config`);
     console.log('MDM config response:', response);
 
     if (!response) {
@@ -340,7 +340,7 @@ const handleSaveConfig = async (retryCount = 0) => {
 
     console.log('📤 [MDM] Sending config update:', fleetConfig);
     const response = await restClient.patch(
-      `${API_URL}/config`,
+      `${VITE_API_URL}/config`,
       fleetConfig
     );
 
@@ -538,7 +538,7 @@ onMounted(() => {
 
 const handleConfigChange = (newConfig: RuntimeConfig) => {
   // Update the API URL when config changes
-  API_URL = `${newConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+  VITE_API_URL = `${newConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 };
 </script>
 
