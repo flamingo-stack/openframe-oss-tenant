@@ -28,6 +28,19 @@ env:
 jobs:
   build-java:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [
+          { name: 'core', path: 'libs/openframe-core' },
+          { name: 'data', path: 'libs/openframe-data' },
+          { name: 'api', path: 'services/openframe-api' },
+          { name: 'config', path: 'services/openframe-config' },
+          { name: 'gateway', path: 'services/openframe-gateway' },
+          { name: 'management', path: 'services/openframe-management' },
+          { name: 'stream', path: 'services/openframe-stream' },
+          { name: 'ui', path: 'services/openframe-ui' }
+        ]
     outputs:
       status: ${{ job.status }}
     steps:
@@ -43,18 +56,43 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Check for path changes
+        id: check_changes
+        run: |
+          # Check if this is a PR or manual trigger
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Get the base and head SHAs for the PR
+            BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
+            HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
+
+            # Check if there are any changes in the module path
+            if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.module.path }}"; then
+              echo "No changes detected in ${{ matrix.module.path }}"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in ${{ matrix.module.path }}"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            # For manual triggers, always build
+            echo "Manual trigger - building all modules"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build with Maven
-        run: mvn --batch-mode package --file pom.xml
+        if: steps.check_changes.outputs.changed == 'true'
+        run: mvn clean install -pl ${{ matrix.module.path }} -am
 
       - name: Upload Java artifacts
+        if: steps.check_changes.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: java-artifacts
+          name: java-artifacts-${{ matrix.module.name }}
           path: |
-            **/target/*.jar
-            !**/target/original-*.jar
-            !**/target/*-sources.jar
-            !**/target/*-javadoc.jar
+            ${{ matrix.module.path }}/target/*.jar
+            !${{ matrix.module.path }}/target/original-*.jar
+            !${{ matrix.module.path }}/target/*-sources.jar
+            !${{ matrix.module.path }}/target/*-javadoc.jar
           retention-days: 1
 
   build-image:
