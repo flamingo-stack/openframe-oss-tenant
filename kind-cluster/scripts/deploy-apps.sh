@@ -248,7 +248,12 @@ case "$1" in
       --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
       --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
     kubectl -n tactical-rmm apply -f ./kind-cluster/apps/tactical-rmm  && \
-    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-rmm --timeout 20m
+    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-backend --timeout 20m && \
+    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-celery --timeout 20m && \
+    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-celerybeat --timeout 20m && \
+    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-frontend --timeout 20m && \
+    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-nats --timeout 20m && \
+    kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-websockets --timeout 20m
     ;;
   register-tools)
     # ------------- REGISTER TOOLS -------------
