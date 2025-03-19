@@ -1,4 +1,4 @@
-import authConfig from '../config/auth.config';
+import { authConfig } from '../config/auth.config';
 import axios from 'axios';
 import { ConfigService } from '../config/config.service';
 import { apolloClient } from '../apollo/apolloClient';

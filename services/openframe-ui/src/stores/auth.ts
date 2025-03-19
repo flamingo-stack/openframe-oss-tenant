@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { OAuthError } from '@/errors/OAuthError'
 import { ConfigService } from '@/config/config.service'
-import { runtimeConfig } from '@/config/runtime-config';
 
 export interface TokenResponse {
   access_token: string;
@@ -107,13 +106,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
     try {
-      const credentials = btoa(`${runtimeConfig.clientId}:${runtimeConfig.clientSecret}`);
-      const apiUrl = `${runtimeConfig.apiUrl}/oauth/register`;
+      const config = ConfigService.getInstance().getConfig();
+      const credentials = btoa(`${config.clientId}:${config.clientSecret}`);
+      const apiUrl = `${config.apiUrl}/oauth/register`;
       console.log('Attempting to register with URL:', apiUrl);
       console.log('Environment variables:', {
-        apiUrl: runtimeConfig.apiUrl, 
-        clientId: runtimeConfig.clientId,
-        clientSecret: runtimeConfig.clientSecret
+        apiUrl: config.apiUrl, 
+        clientId: config.clientId,
+        clientSecret: config.clientSecret
       });
 
       const response = await fetch(apiUrl, {

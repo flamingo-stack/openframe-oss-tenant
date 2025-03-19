@@ -1,13 +1,16 @@
+import { ConfigService } from './config.service';
+
 interface AuthConfig {
   clientId: string;
   clientSecret: string;
 }
 
-const isDev = import.meta.env.DEV;
+const configService = ConfigService.getInstance();
+const config = configService.getConfig();
 
 const authConfig: AuthConfig = {
-  clientId: isDev ? 'openframe_web_dashboard_dev' : 'openframe_web_dashboard',
-  clientSecret: isDev ? 'dev_secret' : import.meta.env.VITE_CLIENT_SECRET
+  clientId: config.clientId,
+  clientSecret: config.clientSecret
 };
 
-export default authConfig; 
+export { authConfig }; 

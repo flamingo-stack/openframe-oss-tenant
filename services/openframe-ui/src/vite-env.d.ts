@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly API_URL: string
-  readonly GATEWAY_URL: string
-  readonly CLIENT_ID: string
-  readonly CLIENT_SECRET: string
+  readonly VITE_API_URL: string
+  readonly VITE_GATEWAY_URL: string
+  readonly VITE_CLIENT_ID: string
+  readonly VITE_CLIENT_SECRET: string
   readonly PORT: string
 }
 
