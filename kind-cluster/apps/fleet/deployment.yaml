@@ -105,7 +105,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: fleet
-        image: ghcr.io/flamingo-cx/openframe-fleet-mdm-fleet:110325
+        image: ghcr.io/flamingo-cx/openframe-fleetmdm:latest
         ports:
         - containerPort: 8070
         env:
