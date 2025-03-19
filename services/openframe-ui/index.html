@@ -18,13 +18,13 @@
     <div id="app"></div>
     <script>
       (function() {
-        // Create a secure config object with all variables hidden
+        // Create a secure config object
         const config = {
-          apiUrl: process.env.VITE_API_URL,
-          gatewayUrl: process.env.VITE_GATEWAY_URL,
-          clientId: process.env.VITE_CLIENT_ID,
-          clientSecret: process.env.VITE_CLIENT_SECRET,
-          grafanaUrl: process.env.VITE_GRAFANA_URL
+          apiUrl: import.meta.env.VITE_API_URL,
+          gatewayUrl: import.meta.env.VITE_GATEWAY_URL,
+          clientId: import.meta.env.VITE_CLIENT_ID,
+          clientSecret: import.meta.env.VITE_CLIENT_SECRET,
+          grafanaUrl: import.meta.env.VITE_GRAFANA_URL
         };
 
         // Create a secure getter function
@@ -33,7 +33,7 @@
           return config[key];
         };
 
-        // Make the config completely hidden
+        // Make the config non-enumerable and non-configurable
         Object.defineProperty(window, '__RUNTIME_CONFIG__', {
           value: getConfig,
           writable: false,

@@ -26,10 +26,10 @@ class ConfigService {
     console.log('🔍 [Config] import.meta.env:', import.meta.env);
 
     // Get environment variables with fallbacks
-    const apiUrl = runtimeConfig.apiUrl || import.meta.env.VITE_API_URL || import.meta.env.API_URL;
-    const gatewayUrl = runtimeConfig.gatewayUrl || import.meta.env.VITE_GATEWAY_URL || import.meta.env.GATEWAY_URL;
-    const clientId = runtimeConfig.clientId || import.meta.env.VITE_CLIENT_ID || import.meta.env.CLIENT_ID;
-    const clientSecret = runtimeConfig.clientSecret || import.meta.env.VITE_CLIENT_SECRET || import.meta.env.CLIENT_SECRET;
+    const apiUrl = runtimeConfig.apiUrl || import.meta.env.VITE_API_URL;
+    const gatewayUrl = runtimeConfig.gatewayUrl || import.meta.env.VITE_GATEWAY_URL;
+    const clientId = runtimeConfig.clientId || import.meta.env.VITE_CLIENT_ID;
+    const clientSecret = runtimeConfig.clientSecret || import.meta.env.VITE_CLIENT_SECRET;
 
     console.log('🔍 [Config] Resolved values:', {
       apiUrl,
