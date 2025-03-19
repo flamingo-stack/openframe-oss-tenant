@@ -132,10 +132,13 @@ public class IntegrationController {
                     .clientConnector(
                             new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
                     .build().method(request.getMethod()).uri(targetUri).headers(headers -> {
-                        headers.addAll(request.getHeaders());
+
+                        headers.set("Accept-Charset", "UTF-8");
+                        headers.set("Accept-Language", "en-US,en;q=0.9");
+                        headers.set("Content-Type", "application/json");
+                        headers.set("Accept", "application/json");
 
                         ToolCredentials credentials = tool.getCredentials();
-
                         switch (credentials.getApiKey().getType()) {
                         case HEADER:
                             headers.set(credentials.getApiKey().getKeyName(), credentials.getApiKey().getKey());

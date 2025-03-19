@@ -108,11 +108,16 @@ export class AuthService {
 
     // Store tokens if they exist in response
     if (data.access_token) {
+      console.log('🔑 [Auth] Storing access token');
       localStorage.setItem('access_token', data.access_token);
     }
     if (data.refresh_token) {
+      console.log('🔑 [Auth] Storing refresh token');
       localStorage.setItem('refresh_token', data.refresh_token);
     }
+
+    // Wait a moment to ensure tokens are stored
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     return data;
   }
@@ -188,8 +193,36 @@ export class AuthService {
         client_secret: authConfig.clientSecret
       });
 
-      return await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
+      console.log('🔑 [Auth] Attempting login with credentials:', {
+        email: credentials.email,
+        clientId: authConfig.clientId
+      });
+
+      const response = await restClient.post<TokenResponse>(`${config.API_URL}/oauth/token`, formData);
+      
+      console.log('✅ [Auth] Login successful:', {
+        hasAccessToken: !!response.access_token,
+        hasRefreshToken: !!response.refresh_token,
+        tokenType: response.token_type,
+        expiresIn: response.expires_in
+      });
+
+      // Store tokens immediately
+      if (response.access_token) {
+        console.log('🔑 [Auth] Storing access token');
+        localStorage.setItem('access_token', response.access_token);
+      }
+      if (response.refresh_token) {
+        console.log('🔑 [Auth] Storing refresh token');
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
+
+      // Wait a moment to ensure tokens are stored
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      return response;
     } catch (error: unknown) {
+      console.error('❌ [Auth] Login failed:', error);
       throw this.handleError(error);
     }
   }
@@ -200,7 +233,8 @@ export class AuthService {
         email: credentials.email,
         password: credentials.password,
         first_name: credentials.firstName || '',
-        last_name: credentials.lastName || ''
+        last_name: credentials.lastName || '',
+        confirm_password: credentials.confirmPassword
       };
 
       const authString = btoa(`${authConfig.clientId}:${authConfig.clientSecret}`);
@@ -209,11 +243,26 @@ export class AuthService {
         'Authorization': 'Basic ' + authString
       };
 
-      return await restClient.post<TokenResponse>(
+      const response = await restClient.post<TokenResponse>(
         `${config.API_URL}/oauth/register`, 
         data,
         { headers }
       );
+      
+      // Store tokens immediately
+      if (response.access_token) {
+        console.log('🔑 [Auth] Storing access token');
+        localStorage.setItem('access_token', response.access_token);
+      }
+      if (response.refresh_token) {
+        console.log('🔑 [Auth] Storing refresh token');
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
+
+      // Wait a moment to ensure tokens are stored
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      return response;
     } catch (error: unknown) {
       throw this.handleError(error);
     }

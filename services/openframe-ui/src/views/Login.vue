@@ -61,10 +61,18 @@ const handleSubmit = async () => {
 
   try {
     loading.value = true;
-    await authStore.login(email.value, password.value);
+    console.log('🔑 [Login] Starting login process');
+    const response = await authStore.login(email.value, password.value);
+    console.log('✅ [Login] Login successful, response:', response);
     toastService.showSuccess('Login successful!');
-    router.push('/');
+    
+    // Wait a moment to ensure tokens are stored
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    console.log('🚀 [Login] Navigating to dashboard');
+    router.push('/dashboard');
   } catch (error: any) {
+    console.error('❌ [Login] Login failed:', error);
     toastService.showError(error.message || 'Login failed. Please try again.');
   } finally {
     loading.value = false;

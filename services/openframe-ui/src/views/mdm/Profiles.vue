@@ -1,44 +1,31 @@
 <template>
   <div class="mdm-profiles">
-    <div class="of-mdm-header">
-      <h1 class="of-title">Profiles</h1>
-    </div>
-
-    <div class="w-30rem mr-auto">
-      <div class="p-inputgroup">
-        <span class="p-inputgroup-addon">
-          <i class="pi pi-search"></i>
-        </span>
-        <InputText 
-          v-model="filters['global'].value" 
-          placeholder="Search profiles..." 
+    <ModuleHeader title="Profiles">
+      <template #actions>
+        <Button 
+          label="Create Profile" 
+          icon="pi pi-plus" 
+          @click="showCreateDialog = true"
+          class="p-button-primary" 
         />
-      </div>
-    </div>
+      </template>
+    </ModuleHeader>
 
     <div class="profiles-content">
-      <DataTable 
-        :value="profiles" 
-        :paginator="true" 
-        :rows="10"
-        :rowsPerPageOptions="[10, 20, 50]"
-        responsiveLayout="scroll"
-        class="p-datatable-sm"
-        v-model:filters="filters"
-        filterDisplay="menu"
-        :loading="loading"
-        :globalFilterFields="['name', 'platform', 'identifier']"
-        stripedRows
-      >
-        <template #empty>
-          <div class="empty-state">
-            <i class="pi pi-file empty-icon"></i>
-            <h3>No Profiles Found</h3>
-            <p>There are no configuration profiles available.</p>
-            <p class="hint">Add profiles to manage device settings and configurations.</p>
-          </div>
-        </template>
+      <SearchBar
+        v-model="filters['global'].value"
+        placeholder="Search profiles..."
+      />
 
+      <ModuleTable
+        :items="profiles"
+        :loading="loading"
+        :searchFields="['name', 'platform', 'identifier']"
+        emptyIcon="pi pi-file"
+        emptyTitle="No Profiles Found"
+        emptyMessage="There are no configuration profiles available."
+        emptyHint="Add profiles to manage device settings and configurations."
+      >
         <Column field="name" header="Name" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
@@ -88,7 +75,7 @@
             </div>
           </template>
         </Column>
-      </DataTable>
+      </ModuleTable>
     </div>
   </div>
 </template>
@@ -96,7 +83,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import DataTable from 'primevue/datatable';
+import ModuleTable from '../../components/shared/ModuleTable.vue';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -110,6 +97,8 @@ import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
+import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import SearchBar from '../../components/shared/SearchBar.vue';
 
 const API_URL = `${envConfig.GATEWAY_URL}/tools/fleet/api/v1/fleet`;
 
@@ -129,7 +118,7 @@ const isEditMode = ref(false);
 const dialogTitle = computed(() => isEditMode.value ? 'Edit Profile' : 'Create Profile');
 
 const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
 const formatPlatform = (platform: string) => {
@@ -232,31 +221,19 @@ onMounted(() => {
 
 <style scoped>
 .mdm-profiles {
-  padding: 2rem;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
-
-.of-mdm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.of-title {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
+  background: var(--surface-ground);
 }
 
 .profiles-content {
   flex: 1;
-  background: var(--surface-ground);
-  border-radius: var(--border-radius);
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  min-height: 0;
 }
 
 .profile-info {
@@ -266,10 +243,12 @@ onMounted(() => {
 
   .profile-name {
     font-weight: 500;
+    color: var(--text-color);
   }
 
   .profile-identifier {
     color: var(--text-color-secondary);
+    font-size: 0.875rem;
   }
 }
 

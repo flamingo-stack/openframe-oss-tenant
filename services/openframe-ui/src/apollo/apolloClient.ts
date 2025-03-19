@@ -199,6 +199,7 @@ export const apolloClient = new ApolloClient({
       }
     }
   }),
+  connectToDevTools: true,
   defaultOptions: {
     watchQuery: {
       fetchPolicy: 'network-only',
@@ -237,38 +238,29 @@ export const restClient = {
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
+        // For error responses, get the text content
+        const errorText = await response.text();
+        
         console.error('❌ [REST] Request failed:', {
           status: response.status,
-          data
+          data: errorText
         });
 
-        // Create a standardized error object
         const error = new Error() as any;
         error.status = response.status;
         error.name = 'ApiError';
-        error.response = { status: response.status, data };
-
-        // Parse error data into a consistent format
-        let errorMessage: string;
-        if (data.message) {
-          errorMessage = data.message;
-        } else if (data.error_description) {
-          errorMessage = data.error_description;
-        } else if (data.error) {
-          errorMessage = data.error;
-        } else if (data.errors && Array.isArray(data.errors)) {
-          errorMessage = data.errors.map((e: any) => e.reason || e.message).join(', ');
-        } else {
-          errorMessage = response.statusText;
-        }
-
-        error.message = errorMessage;
+        error.response = { 
+          status: response.status, 
+          data: errorText 
+        };
+        error.message = errorText || response.statusText;
+        
         throw error;
       }
 
       console.log('✅ [REST] Request successful');
       const data = await response.json();
+      console.log('📦 [REST] Response data:', data);
       return data as T;
     };
 
@@ -316,7 +308,19 @@ export const restClient = {
       }
     });
   },
-
+  
+  put<T>(url: string, data: unknown, options: RequestInit = {}): Promise<T> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+  },
+  
   delete<T>(url: string, options: RequestInit = {}): Promise<T> {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }

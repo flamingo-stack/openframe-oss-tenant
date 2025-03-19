@@ -1,5 +1,5 @@
 # creates python virtual env
-FROM python:3.11.8-slim AS create_venv_stage
+FROM python:3.13.1-slim AS create_venv_stage
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -25,14 +25,14 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r api/tacticalrmm/requirements.txt
 
 # pulls community scripts from git repo
-FROM python:3.11.8-slim AS get_scripts_stage
+FROM python:3.13.1-slim AS get_scripts_stage
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     git clone https://github.com/amidaware/community-scripts.git /community-scripts
 
 # runtime image
-FROM python:3.11.8-slim
+FROM python:3.13.1-slim
 
 # set env variables
 ENV VIRTUAL_ENV /opt/venv

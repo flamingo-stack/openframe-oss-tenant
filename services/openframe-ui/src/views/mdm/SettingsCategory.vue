@@ -50,7 +50,12 @@
                           @error="handleNestedError"
                         />
                         <div v-else class="array-value">
-                          <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
+                          <Chips
+                            :modelValue="getConfigValue(category, subKey)"
+                            :disabled="!isPropertyEditable(subKey, category)"
+                            class="w-full"
+                            @update:modelValue="val => updateConfigValue(category, subKey, val)"
+                          />
                         </div>
                       </div>
                     </template>
@@ -135,7 +140,12 @@
                           @error="handleNestedError"
                         />
                         <div v-else class="array-value">
-                          <pre>{{ JSON.stringify(subValue, null, 2) }}</pre>
+                          <Chips
+                            :modelValue="getConfigValue(category, subKey)"
+                            :disabled="!isPropertyEditable(subKey, category)"
+                            class="w-full"
+                            @update:modelValue="val => updateConfigValue(category, subKey, val)"
+                          />
                         </div>
                       </div>
                     </template>
@@ -189,6 +199,7 @@ import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
+import Chips from 'primevue/chips';
 import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
 import { ToastService } from '../../services/ToastService';
 import type { EditableValue } from './Settings.vue';
@@ -204,7 +215,7 @@ const props = defineProps<{
   updateConfigValue: (key: string, subKey: string | null, value: any) => void;
   hasPropertyChanges: (key: string, subKey: string | null) => boolean;
   isSaving: (key: string, subKey: string | null) => boolean;
-  saveConfigProperty: (key: string, subKey: string | null) => Promise<void>;
+  saveConfigProperty: (key: string, subKey: string | null, value: any) => Promise<void>;
   fetchMDMConfig: () => Promise<void>;
   editedConfig: { value: Record<string, any> };
   changedValues: { value: Record<string, any> };
@@ -230,45 +241,69 @@ const booleanFields = computed(() => {
 
 const toastService = ToastService.getInstance();
 
+const addArrayItem = (category: string, subKey: string | undefined) => {
+  if (!subKey) return;
+  const currentValue = props.getConfigValue(category, subKey) || [];
+  props.updateConfigValue(category, subKey, [...currentValue, '']);
+};
+
+const removeArrayItem = (category: string, subKey: string | undefined, index: number) => {
+  if (!subKey) return;
+  const currentValue = props.getConfigValue(category, subKey) || [];
+  const newValue = [...currentValue];
+  newValue.splice(index, 1);
+  props.updateConfigValue(category, subKey, newValue);
+};
+
+const updateArrayItem = (category: string, subKey: string | undefined, index: number, value: string) => {
+  if (!subKey) return;
+  const currentValue = props.getConfigValue(category, subKey) || [];
+  const newValue = [...currentValue];
+  newValue[index] = value;
+  props.updateConfigValue(category, subKey, newValue);
+};
+
 const handleNestedError = (error: string) => {
   toastService.showError(error);
 };
 
-// Add error handling for save operations
 const handleSave = async (category: string, subKey: string | null) => {
   try {
-    await props.saveConfigProperty(category, subKey);
-  } catch (err: any) {
-    console.error('Error in handleSave:', err);
-    const errorData = err.response?.data;
-    const message = errorData?.message || err.message || 'Failed to update configuration';
-    const errors = errorData?.errors || [];
+    console.log('🔄 [MDM] Starting handleSave:', { category, subKey });
     
-    let errorMessage = message;
-    if (errors && errors.length > 0) {
-      const validationErrors = errors.map((error: any) => {
-        const fieldName = error.name.split('.').pop();
-        return `${props.formatKey(fieldName)}: ${error.reason}`;
-      }).join('\n');
-      errorMessage = `${message}\n${validationErrors}`;
-    }
-    
-    // Show the error toast
-    toastService.showError(errorMessage);
+    // Get the value from editedConfig if it exists, otherwise fall back to config
+    const value = subKey 
+      ? (props.editedConfig?.value?.[category]?.[subKey] ?? props.config?.[category]?.[subKey])
+      : (props.editedConfig?.value?.[category] ?? props.config?.[category]);
 
-    // Then handle the value reversion
-    if (subKey !== null && props.config[category]) {
-      // Get the original value from the config
-      const originalValue = props.config[category][subKey];
-      
-      // Update the value using the same method as the parent component
-      props.updateConfigValue(category, subKey, originalValue);
-      
-      // Wait for Vue to process the update
-      await nextTick();
-      
-      // Fetch fresh data to ensure everything is in sync
-      await props.fetchMDMConfig();
+    console.log('📦 [MDM] Value to save:', value);
+
+    if (value === undefined) {
+      throw new Error(`No value found for ${category}${subKey ? `.${subKey}` : ''}`);
+    }
+
+    // Call saveConfigProperty with all three arguments
+    await props.saveConfigProperty(category, subKey, value);
+    console.log('✅ [MDM] handleSave completed successfully');
+  } catch (err: any) {
+    console.error('❌ [MDM] Error in handleSave:', err);
+    console.error('Error details:', {
+      message: err.message,
+      response: err.response,
+      stack: err.stack
+    });
+    
+    // Show error toast
+    toastService.showError(err.response?.data?.message || err.message || 'Failed to update setting');
+    
+    // Revert the value in editedConfig if it exists
+    if (props.editedConfig?.value) {
+      if (subKey) {
+        props.editedConfig.value[category] = props.editedConfig.value[category] || {};
+        props.editedConfig.value[category][subKey] = props.config[category][subKey];
+      } else {
+        props.editedConfig.value[category] = props.config[category];
+      }
     }
   }
 };

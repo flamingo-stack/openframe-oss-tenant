@@ -13,6 +13,7 @@ import Column from 'primevue/column'
 import Tooltip from 'primevue/tooltip'
 import InputSwitch from 'primevue/inputswitch'
 import InputNumber from 'primevue/inputnumber'
+import ConfirmationService from 'primevue/confirmationservice';
 import { DefaultApolloClient } from '@vue/apollo-composable'
 import { apolloClient } from './apollo/apolloClient'
 
@@ -52,5 +53,6 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     app.component('InputNumber', InputNumber)
     app.directive('tooltip', Tooltip)
     app.use(ToastService);
+    app.use(ConfirmationService);
     app.mount('#app')
 }

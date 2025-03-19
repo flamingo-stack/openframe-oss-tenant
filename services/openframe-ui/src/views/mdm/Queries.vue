@@ -1,50 +1,31 @@
 <template>
   <div class="mdm-queries">
-    <div class="of-mdm-header">
-      <h1 class="of-title">Queries</h1>
-      <Button 
-        label="Create Query" 
-        icon="pi pi-plus" 
-        @click="showCreateDialog = true"
-        class="p-button-primary" 
-      />
-    </div>
-
-    <div class="w-30rem mr-auto">
-      <div class="p-inputgroup">
-        <span class="p-inputgroup-addon">
-          <i class="pi pi-search"></i>
-        </span>
-        <InputText 
-          v-model="filters['global'].value" 
-          placeholder="Search queries..." 
+    <ModuleHeader title="Queries">
+      <template #actions>
+        <Button 
+          label="Create Query" 
+          icon="pi pi-plus" 
+          @click="showCreateDialog = true"
+          class="p-button-primary" 
         />
-      </div>
-    </div>
+      </template>
+    </ModuleHeader>
 
     <div class="queries-content">
-      <DataTable 
-        :value="queries" 
-        :paginator="true" 
-        :rows="10"
-        :rowsPerPageOptions="[10, 20, 50]"
-        responsiveLayout="scroll"
-        class="p-datatable-sm"
-        v-model:filters="filters"
-        filterDisplay="menu"
-        :loading="loading"
-        :globalFilterFields="['name', 'description', 'platform']"
-        stripedRows
-      >
-        <template #empty>
-          <div class="empty-state">
-            <i class="pi pi-database empty-icon"></i>
-            <h3>No Queries Found</h3>
-            <p>There are no live queries configured yet.</p>
-            <p class="hint">Add queries to gather real-time information from your devices.</p>
-          </div>
-        </template>
+      <SearchBar
+        v-model="filters['global'].value"
+        placeholder="Search queries..."
+      />
 
+      <ModuleTable
+        :items="queries"
+        :loading="loading"
+        :searchFields="['name', 'description', 'platform']"
+        emptyIcon="pi pi-database"
+        emptyTitle="No Queries Found"
+        emptyMessage="There are no live queries configured yet."
+        emptyHint="Add queries to gather real-time information from your devices."
+      >
         <Column field="name" header="Name" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
@@ -103,7 +84,7 @@
             </div>
           </template>
         </Column>
-      </DataTable>
+      </ModuleTable>
     </div>
 
     <!-- Create Query Dialog -->
@@ -209,7 +190,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import DataTable from 'primevue/datatable';
+import ModuleTable from '../../components/shared/ModuleTable.vue';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -223,6 +204,8 @@ import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { config as envConfig } from '../../config/env.config';
 import { ToastService } from '../../services/ToastService';
+import ModuleHeader from '../../components/shared/ModuleHeader.vue';
+import SearchBar from '../../components/shared/SearchBar.vue';
 
 interface FleetResponse {
   queries: Query[];
@@ -270,7 +253,7 @@ const platformOptions = [
 ];
 
 const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
 const formatPlatform = (platform: string) => {
@@ -544,32 +527,19 @@ onMounted(() => {
 
 <style scoped>
 .mdm-queries {
-  padding: 2rem;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   background: var(--surface-ground);
-}
-
-.of-mdm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.of-title {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0;
 }
 
 .queries-content {
   flex: 1;
-  background: var(--surface-ground);
-  border-radius: var(--border-radius);
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  min-height: 0;
 }
 
 .query-info {
@@ -579,10 +549,12 @@ onMounted(() => {
 
   .query-name {
     font-weight: 500;
+    color: var(--text-color);
   }
 
   .query-description {
     color: var(--text-color-secondary);
+    font-size: 0.875rem;
   }
 }
 
@@ -603,200 +575,20 @@ onMounted(() => {
   }
 }
 
-:deep(.p-datatable) {
-  .p-datatable-wrapper {
-    border-radius: var(--border-radius);
-    background: var(--surface-card);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .p-datatable-header {
-    background: var(--surface-card);
-    padding: 1.5rem;
-    border: none;
-    border-bottom: 1px solid var(--surface-border);
-  }
-
-  .p-datatable-thead > tr > th {
-    background: var(--surface-card);
-    color: var(--text-color-secondary);
-    padding: 1rem 1.5rem;
-    font-weight: 700;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: none;
-    border-bottom: 2px solid var(--surface-border);
-
-    &:first-child {
-      border-top-left-radius: var(--border-radius);
-    }
-
-    &:last-child {
-      border-top-right-radius: var(--border-radius);
-    }
-  }
-
-  .p-datatable-tbody > tr {
-    background: var(--surface-card);
-    transition: all 0.2s ease;
-    border-bottom: 1px solid var(--surface-border);
-
-    &:hover {
-      background: var(--surface-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    > td {
-      padding: 1.25rem 1.5rem;
-      border: none;
-      color: var(--text-color);
-      font-size: 0.875rem;
-      line-height: 1.5;
-
-      .pi {
-        font-size: 1.125rem;
-        color: var(--primary-color);
-
-        &.pi-database {
-          color: var(--text-color-secondary);
-          opacity: 0.7;
-        }
-      }
-    }
-
-    &:last-child {
-      border-bottom: none;
-      
-      > td:first-child {
-        border-bottom-left-radius: var(--border-radius);
-      }
-      
-      > td:last-child {
-        border-bottom-right-radius: var(--border-radius);
-      }
-    }
-  }
-
-  .p-paginator {
-    background: var(--surface-ground);
-    border: none;
-    padding: 1.25rem 1rem;
-    margin-top: 1rem;
-    border-radius: var(--border-radius);
-
-    .p-paginator-pages .p-paginator-page {
-      min-width: 2.5rem;
-      height: 2.5rem;
-      margin: 0 0.25rem;
-      border-radius: var(--border-radius);
-      font-weight: 600;
-      transition: all 0.2s ease;
-
-      &.p-highlight {
-        background: var(--primary-color);
-        color: var(--primary-color-text);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.4);
-      }
-
-      &:not(.p-highlight):hover {
-        background: var(--surface-hover);
-        transform: translateY(-1px);
-      }
-    }
-  }
-}
-
-:deep(.p-tag) {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  border-radius: 2rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-
-  &.p-tag-success {
-    background: var(--green-50);
-    color: var(--green-900);
-    border: 1px solid var(--green-200);
-  }
-
-  &.p-tag-danger {
-    background: var(--red-50);
-    color: var(--red-900);
-    border: 1px solid var(--red-200);
-  }
-
-  &.p-tag-warning {
-    background: var(--yellow-50);
-    color: var(--yellow-900);
-    border: 1px solid var(--yellow-200);
-  }
-
-  &.p-tag-info {
-    background: var(--blue-50);
-    color: var(--blue-900);
-    border: 1px solid var(--blue-200);
-  }
-}
-
-:deep(.p-button.p-button-icon-only) {
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
-  border-radius: var(--border-radius);
-  transition: all 0.2s ease;
-
-  &.p-button-text:enabled:hover {
-    background: var(--surface-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-
-  &.p-button-danger:enabled:hover {
-    background: var(--red-50);
-    color: var(--red-900);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-
-  .pi {
-    font-size: 1rem;
-    transition: transform 0.2s ease;
-  }
-
-  &:hover .pi {
-    transform: scale(1.1);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-  }
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3rem 2rem;
   text-align: center;
   background: var(--surface-card);
   border-radius: var(--border-radius);
 
   .empty-icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
     color: var(--text-color-secondary);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     opacity: 0.5;
   }
 
@@ -818,12 +610,5 @@ onMounted(() => {
       opacity: 0.8;
     }
   }
-}
-
-/* Remove the tooltip styles */
-:deep(.p-tooltip),
-:deep(.p-tooltip .p-tooltip-arrow),
-:deep(.p-tooltip .p-tooltip-text) {
-  display: none;
 }
 </style> 

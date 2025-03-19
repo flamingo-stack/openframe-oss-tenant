@@ -15,6 +15,13 @@ import Settings from '../views/mdm/Settings.vue'
 import Profiles from '../views/mdm/Profiles.vue'
 import SettingsCategory from '../views/mdm/SettingsCategory.vue'
 import SystemArchitecture from '../views/SystemArchitecture.vue'
+import RMMLayout from '../views/rmm/RMMLayout.vue'
+import RMMDashboard from '../views/rmm/Dashboard.vue'
+import RMMDevices from '../views/rmm/Devices.vue'
+import RMMMonitoring from '../views/rmm/Monitoring.vue'
+import RMMScripts from '../views/rmm/Scripts.vue'
+import RMMAutomation from '../views/rmm/Automation.vue'
+import RMMSettings from '../views/rmm/Settings.vue'
 import { AuthService } from '@/services/AuthService';
 import { useAuthStore } from '@/stores/auth';
 
@@ -120,6 +127,64 @@ const router = createRouter({
       ]
     },
     {
+      path: '/rmm',
+      component: RMMLayout,
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          redirect: '/rmm/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'rmm-dashboard',
+          component: RMMDashboard,
+          meta: { title: 'RMM Dashboard' }
+        },
+        {
+          path: 'devices',
+          name: 'rmm-devices',
+          component: RMMDevices,
+          meta: { title: 'RMM Devices' }
+        },
+        {
+          path: 'monitoring',
+          name: 'rmm-monitoring',
+          component: RMMMonitoring,
+          meta: { title: 'RMM Monitoring' }
+        },
+        {
+          path: 'scripts',
+          name: 'rmm-scripts',
+          component: RMMScripts,
+          meta: { title: 'RMM Scripts' }
+        },
+        {
+          path: 'automation',
+          name: 'rmm-automation',
+          component: RMMAutomation,
+          meta: { title: 'RMM Automation' }
+        },
+        {
+          path: 'settings',
+          component: RMMSettings,
+          children: [
+            {
+              path: '',
+              redirect: { name: 'rmm-settings-category', params: { category: 'general' } }
+            },
+            {
+              path: ':category',
+              name: 'rmm-settings-category',
+              component: () => import('../views/rmm/SettingsCategory.vue'),
+              props: true
+            }
+          ],
+          meta: { title: 'RMM Settings' }
+        }
+      ]
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: SettingsView,
@@ -147,7 +212,7 @@ router.beforeEach(async (to, from, next) => {
   if (!to.meta.requiresAuth) {
     if (to.path === '/login' && token) {
       console.log('↩️ [Router] Already logged in, redirecting to home');
-      next('/');
+      next('/dashboard');
     } else {
       console.log('➡️ [Router] Proceeding to public route:', to.path);
       next();
@@ -162,24 +227,18 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // Only validate token if we're not coming from login
-  if (from.path !== '/login') {
-    try {
-      console.log('🔍 [Router] Verifying token validity...');
-      await AuthService.getUserInfo();
-      console.log('✅ [Router] Token is valid, proceeding to route');
-      next();
-    } catch (error) {
-      console.error('❌ [Router] Token validation failed:', error);
-      // Clear tokens and redirect to login
-      const authStore = useAuthStore();
-      authStore.logout();
-      next('/login');
-    }
-  } else {
-    // If coming from login, trust the token is valid
-    console.log('✅ [Router] Coming from login, proceeding to route');
+  // For all protected routes, validate the token
+  try {
+    console.log('🔍 [Router] Verifying token validity...');
+    await AuthService.getUserInfo();
+    console.log('✅ [Router] Token is valid, proceeding to route');
     next();
+  } catch (error) {
+    console.error('❌ [Router] Token validation failed:', error);
+    // Clear tokens and redirect to login
+    const authStore = useAuthStore();
+    authStore.logout();
+    next('/login');
   }
 });
 

@@ -1,7 +1,6 @@
 import authentikLogo from '@/assets/authentik-logo.svg'
 import fleetLogo from '@/assets/fleet-logo.svg'
 import tacticalRmmLogo from '@/assets/tactical-rmm-logo.svg'
-import rustdeskLogo from '@/assets/rustdesk-logo.svg'
 import grafanaLogo from '@/assets/grafana-logo.svg'
 import lokiLogo from '@/assets/loki-logo.svg'
 import prometheusLogo from '@/assets/prometheus-logo.svg'
