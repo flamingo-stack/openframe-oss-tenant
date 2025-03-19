@@ -1,3 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-certs
+data:
+  # Empty for now, can be populated with certificates later
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-templates
+data:
+  # Empty for now, can be populated with custom templates later
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-server
+spec:
+  selector:
+    app: authentik-server
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-redis
+spec:
+  selector:
+    app: authentik-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-postgresql
+spec:
+  selector:
+    app: authentik-postgresql
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: authentik-redis-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: authentik-postgresql-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +98,11 @@ spec:
             port: 6379
           initialDelaySeconds: 30
           periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
       volumes:
       - name: redis-data
         persistentVolumeClaim:
@@ -46,9 +124,11 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      securityContext:
+        fsGroup: 999
       containers:
       - name: postgresql
-        image: ghcr.io/flamingo-cx/openframe-authentik-authentik-postgresql:110325
+        image: ghcr.io/flamingo-cx/openframe-postgresql:latest
         ports:
         - containerPort: 5432
         env:
@@ -56,6 +136,8 @@ spec:
           value: authentik-user
         - name: POSTGRES_PASSWORD
           value: authentik-password-1234
+        # - name: POSTGRES_MULTIPLE_DATABASES
+        #   value: authentik-database,authentik-database-authentik
         - name: POSTGRES_DB
           value: authentik-database-authentik
         volumeMounts:
@@ -69,6 +151,21 @@ spec:
             - authentik-user
           initialDelaySeconds: 30
           periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - authentik-user
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
       volumes:
       - name: postgresql-data
         persistentVolumeClaim:
@@ -94,7 +191,11 @@ spec:
         args: ["server"]
         ports:
         - containerPort: 9000
+          name: http
+          protocol: TCP
         env:
+        - name: AUTHENTIK_API_URL
+          value: "http://authentik-server:9000"
         - name: AUTHENTIK_BOOTSTRAP_PASSWORD
           value: "openframe123!"
         - name: AUTHENTIK_BOOTSTRAP_TOKEN
@@ -108,7 +209,7 @@ spec:
         - name: AUTHENTIK_POSTGRESQL__USER
           value: "authentik-user"
         - name: AUTHENTIK_POSTGRESQL__NAME
-          value: "authentik-database-authentik"
+          value: authentik-database-authentik
         - name: AUTHENTIK_POSTGRESQL__PASSWORD
           value: "authentik-password-1234"
         - name: AUTHENTIK_SECRET_KEY
@@ -135,25 +236,52 @@ spec:
           value: "10"
         - name: AUTHENTIK_EMAIL__FROM
           value: "authentik@localhost"
+        - name: TMPDIR
+          value: /tmp
         volumeMounts:
-        # - name: media
-        #   mountPath: /media
         - name: media-tmp
           mountPath: /media
         - name: certs
           mountPath: /certs
         - name: templates
           mountPath: /templates
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 9000
+        startupProbe:
+          exec:
+            command:
+            - ak
+            - healthcheck
+          failureThreshold: 2000
           initialDelaySeconds: 30
           periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        livenessProbe:
+          httpGet:
+            path: /-/health/live/
+            port: http
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /-/health/ready/
+            port: http
+            scheme: HTTP
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 150m
+            memory: 512Mi
+          requests:
+            cpu: 150m
+            memory: 512Mi
       volumes:
-      # - name: media
-      #   configMap:
-      #     name: authentik-media
       - name: media-tmp
         emptyDir: {}
       - name: certs
@@ -182,6 +310,8 @@ spec:
         image: ghcr.io/goauthentik/server:latest
         args: ["worker"]
         env:
+        - name: AUTHENTIK_API_URL
+          value: "http://authentik-server:9000"
         - name: AUTHENTIK_BOOTSTRAP_PASSWORD
           value: "openframe123!"
         - name: AUTHENTIK_BOOTSTRAP_TOKEN
@@ -195,7 +325,7 @@ spec:
         - name: AUTHENTIK_POSTGRESQL__USER
           value: "authentik-user"
         - name: AUTHENTIK_POSTGRESQL__NAME
-          value: "authentik-database-authentik"
+          value: authentik-database-authentik
         - name: AUTHENTIK_POSTGRESQL__PASSWORD
           value: "authentik-password-1234"
         - name: AUTHENTIK_SECRET_KEY
@@ -222,9 +352,12 @@ spec:
           value: "10"
         - name: AUTHENTIK_EMAIL__FROM
           value: "authentik@localhost"
+        startupProbe:
+          exec:
+            command:
+            - ak
+            - healthcheck
         volumeMounts:
-        # - name: media
-        #   mountPath: /media
         - name: media-tmp
           mountPath: /media
         - name: certs
@@ -232,9 +365,6 @@ spec:
         - name: templates
           mountPath: /templates
       volumes:
-      # - name: media
-      #   configMap:
-      #     name: authentik-media
       - name: media-tmp
         emptyDir: {}
       - name: certs

@@ -18,18 +18,18 @@ spec:
         - name: ui
           image: ghcr.io/flamingo-cx/openframe-ui:latest
           ports:
-            - containerPort: 80
+            - containerPort: 3000
               name: http
           env:
-            - name: VITE_API_URL
+            - name: API_URL
               value: "http://openframe-api.192.168.100.100.nip.io"
-            - name: VITE_GATEWAY_URL
+            - name: GATEWAY_URL
               value: "http://openframe-gateway.192.168.100.100.nip.io"
-            - name: VITE_CLIENT_ID
+            - name: CLIENT_ID
               value: "openframe_web_dashboard"
-            - name: VITE_CLIENT_SECRET
+            - name: CLIENT_SECRET
               value: "prod_secret"
-            - name: VITE_GRAFANA_URL
+            - name: GRAFANA_URL
               value: "http://grafana.192.168.100.100.nip.io"
           livenessProbe:
             httpGet:
@@ -63,8 +63,8 @@ spec:
   selector:
     app: openframe-ui
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 3000
+      targetPort: 3000
       name: http
   type: ClusterIP
 ---
@@ -85,17 +85,3 @@ spec:
                 name: openframe-ui
                 port:
                   name: http
-          # - path: /api
-          #   pathType: Prefix
-          #   backend:
-          #     service:
-          #       name: openframe-api
-          #       port:
-          #         name: http
-          # - path: /gateway
-          #   pathType: Prefix
-          #   backend:
-          #     service:
-          #       name: openframe-gateway
-          #       port:
-          #         name: http

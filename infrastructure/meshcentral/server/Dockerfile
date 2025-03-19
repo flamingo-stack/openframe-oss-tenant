@@ -1,8 +1,10 @@
 FROM node:20-alpine
 
 ARG MESH_TEMP_DIR=/tmp/meshcentral
+ENV MESH_TEMP_DIR=${MESH_TEMP_DIR}
+ENV MESH_DIR=/opt/meshcentral
 
-RUN mkdir -p ${MESH_TEMP_DIR}
+RUN mkdir -p ${MESH_TEMP_DIR} ${MESH_DIR}
 
 WORKDIR ${MESH_TEMP_DIR}
 
@@ -20,7 +22,7 @@ COPY nginx.conf.template /
 
 COPY config.json ${MESH_TEMP_DIR}
 
-RUN chown -R node:node ${MESH_TEMP_DIR}
+RUN chown -R node:node ${MESH_TEMP_DIR} ${MESH_DIR}
 
 USER node
 

@@ -93,7 +93,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: frontend
-        image: ghcr.io/flamingo-cx/openframe-tactical-frontend:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-frontend:latest
         ports:
         - containerPort: 8080
         env:
@@ -135,7 +135,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: nginx
-        image: ghcr.io/flamingo-cx/openframe-tactical-nginx:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-nginx:latest
         ports:
         - containerPort: 8080
         - containerPort: 8000
@@ -184,7 +184,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: backend
-        image: ghcr.io/flamingo-cx/openframe-tactical-backend:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-backend:latest
         args: ["tactical-backend"]
         ports:
         - containerPort: 8000
@@ -291,7 +291,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: nats
-        image: ghcr.io/flamingo-cx/openframe-tactical-nats:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-nats:latest
         args: ["tactical-nats"]
         ports:
         - containerPort: 9235
@@ -350,7 +350,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: websockets
-        image: ghcr.io/flamingo-cx/openframe-tactical-websockets:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-websockets:latest
         args: ["tactical-websockets"]
         ports:
         - containerPort: 8000
@@ -412,7 +412,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: celery
-        image: ghcr.io/flamingo-cx/openframe-tactical-celery:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-celery:latest
         args: ["tactical-celery"]
         env:
         - name: POSTGRES_DB
@@ -468,7 +468,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: celerybeat
-        image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:110325
+        image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:latest
         args: ["tactical-celerybeat"]
         env:
         - name: POSTGRES_DB

@@ -19,15 +19,15 @@ export PGDATA=/var/lib/postgresql/data/pgdata
 # Initialize PostgreSQL if needed
 if [ ! -f "$PGDATA/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
-    
+
     # Remove the data directory if it exists but is not initialized
     rm -rf "$PGDATA"
-    
+
     # Create fresh data directory
     mkdir -p "$PGDATA"
     chmod 700 "$PGDATA"
     chown postgres:postgres "$PGDATA"
-    
+
     # Initialize database
     initdb --username="$POSTGRES_USER" --pwfile=<(echo "$POSTGRES_PASSWORD") \
            --auth=trust --auth-local=trust \
@@ -62,55 +62,48 @@ EOL
     create_databases() {
         local database_list="$1"
         local database_array
-        
+
         # Split comma-separated string into array
         IFS=',' read -ra database_array <<< "$database_list"
-        
+
         for db in "${database_array[@]}"; do
             # Trim whitespace
             db=$(echo "$db" | tr -d '[:space:]')
-            
-            echo "Creating database: $db"
-            echo "1 create database"
-            psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<-EOSQL
-                -- Create tacticalrmm role if it doesn't exist and set password
-                DO \$\$ 
-                BEGIN
-                    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'tacticalrmm') THEN
-                        CREATE ROLE tacticalrmm WITH LOGIN PASSWORD '$POSTGRES_PASSWORD';
-                    END IF;
-                END
-                \$\$;
 
-                -- Drop database if exists
-                DROP DATABASE IF EXISTS "$db";
-                
-                -- Create database
+            echo "Creating database: $db"
+            psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<-EOSQL
+                -- Create database if it doesn't exist
                 CREATE DATABASE "$db";
-                
+
                 -- Grant necessary permissions
                 GRANT ALL PRIVILEGES ON DATABASE "$db" TO "$POSTGRES_USER";
-                GRANT ALL PRIVILEGES ON DATABASE "$db" TO tacticalrmm;
+                GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "$POSTGRES_USER";
+                GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "$POSTGRES_USER";
+                GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO "$POSTGRES_USER";
 
+                -- Set default privileges for future objects
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "$POSTGRES_USER";
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "$POSTGRES_USER";
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO "$POSTGRES_USER";
 EOSQL
-            echo "2 database created $db"
+            echo "Database created: $db"
         done
     }
 
     # Create databases if not already done
     if [ ! -f "/var/lib/postgresql/.init-flags/dbs_initialized" ]; then
         echo "Creating configured databases..."
-        
+
         # Create init-flags directory with proper permissions
         mkdir -p /var/lib/postgresql/.init-flags
         chown postgres:postgres /var/lib/postgresql/.init-flags
         chmod 700 /var/lib/postgresql/.init-flags
-        
+
         # Create databases from POSTGRES_DB if set
         if [ ! -z "${POSTGRES_DB}" ]; then
             create_databases "${POSTGRES_DB}"
         fi
-        
+
         # Create databases from POSTGRES_MULTIPLE_DATABASES if set
         if [ ! -z "${POSTGRES_MULTIPLE_DATABASES}" ]; then
             create_databases "${POSTGRES_MULTIPLE_DATABASES}"
@@ -120,7 +113,7 @@ EOSQL
         touch /var/lib/postgresql/.init-flags/dbs_initialized
     fi
 
-    # Stop PostgreSQL after initialization    
+    # Stop PostgreSQL after initialization
     pg_ctl -D "$PGDATA" -m fast -w stop
 fi
 
