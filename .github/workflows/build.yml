@@ -39,7 +39,6 @@ jobs:
           { name: 'gateway', path: 'services/openframe-gateway' },
           { name: 'management', path: 'services/openframe-management' },
           { name: 'stream', path: 'services/openframe-stream' },
-          { name: 'ui', path: 'services/openframe-ui' }
         ]
     outputs:
       status: ${{ job.status }}
@@ -81,13 +80,13 @@ jobs:
 
       - name: Build with Maven
         if: steps.check_changes.outputs.changed == 'true'
-        run: mvn clean install -pl ${{ matrix.module.path }} -am
+        run: mvn clean install -pl ${{ matrix.module.path }} -am -Dcompress
 
       - name: Upload Java artifacts
         if: steps.check_changes.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: java-artifacts-${{ matrix.module.name }}
+          name: openframe-${{ matrix.module.name }}
           path: |
             ${{ matrix.module.path }}/target/*.jar
             !${{ matrix.module.path }}/target/original-*.jar
@@ -97,7 +96,6 @@ jobs:
 
   build-image:
     needs: build-java
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false  # Disable fail-fast behavior
@@ -596,7 +594,7 @@ jobs:
         if: steps.check_changes.outputs.changed == 'true'
         uses: actions/download-artifact@v4
         with:
-          name: java-artifacts
+          name: openframe-${{ matrix.service.name }}
           path: .
 
       - name: Log in to GitHub Container Registry
