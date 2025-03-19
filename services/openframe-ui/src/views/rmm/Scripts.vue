@@ -309,7 +309,7 @@ interface DevicesResponse {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -383,7 +383,7 @@ const formatTimestamp = (timestamp: string) => {
 const fetchScripts = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<ScriptsResponse>(`${API_URL}/scripts/`);
+    const response = await restClient.get<ScriptsResponse>(`${VITE_API_URL}/scripts/`);
     scripts.value = response.data || [];
   } catch (error) {
     console.error('Failed to fetch scripts:', error);
@@ -395,7 +395,7 @@ const fetchScripts = async () => {
 
 const fetchDevices = async () => {
   try {
-    const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
+    const response = await restClient.get<DevicesResponse>(`${VITE_API_URL}/agents/`);
     devices.value = response.data || [];
   } catch (error) {
     console.error('Failed to fetch devices:', error);
@@ -422,8 +422,8 @@ const saveScript = async () => {
 
     submitting.value = true;
     const endpoint = isEditMode.value && selectedScript.value ? 
-      `${API_URL}/scripts/${selectedScript.value.id}` : 
-      `${API_URL}/scripts`;
+      `${VITE_API_URL}/scripts/${selectedScript.value.id}` : 
+      `${VITE_API_URL}/scripts`;
 
     const method = isEditMode.value ? 'put' : 'post';
     await restClient[method](endpoint, newScript.value);
@@ -452,7 +452,7 @@ const executeScript = async () => {
     if (selectedDevices.value.length === 0) return;
 
     executing.value = true;
-    await restClient.post(`${API_URL}/scripts/${selectedScript.value.id}/run`, {
+    await restClient.post(`${VITE_API_URL}/scripts/${selectedScript.value.id}/run`, {
       device_ids: selectedDevices.value
     });
 
@@ -485,7 +485,7 @@ const editScript = (script: Script) => {
 
 const deleteScript = async (script: Script) => {
   try {
-    await restClient.delete(`${API_URL}/scripts/${script.id}`);
+    await restClient.delete(`${VITE_API_URL}/scripts/${script.id}`);
     await fetchScripts();
     deleteScriptDialog.value = false;
     toastService.showSuccess('Script deleted successfully');

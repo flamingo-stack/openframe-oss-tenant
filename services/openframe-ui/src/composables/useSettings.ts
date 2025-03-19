@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { restClient } from '../apollo/apolloClient';
-import { API_URL } from '../config';
+import { VITE_API_URL } from '../config';
 import type { ExtendedRMMSettings } from '../types/rmm';
 
 export function useSettings() {
@@ -13,7 +13,7 @@ export function useSettings() {
     error.value = null;
 
     try {
-      const response = await restClient.request<ExtendedRMMSettings>(`${API_URL}/settings/`, {
+      const response = await restClient.request<ExtendedRMMSettings>(`${VITE_API_URL}/settings/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

@@ -123,7 +123,7 @@ interface FleetResponse {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -179,7 +179,7 @@ const extractUrlFromMessage = (message: string) => {
 const fetchProfiles = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<FleetResponse>(`${API_URL}/configuration_profiles`);
+    const response = await restClient.get<FleetResponse>(`${VITE_API_URL}/configuration_profiles`);
     profiles.value = response.profiles || [];
   } catch (error: any) {
     console.error('Failed to fetch profiles:', error);
@@ -195,7 +195,7 @@ const fetchProfiles = async () => {
 
 const deleteProfile = async (profile: Profile) => {
   try {
-    await restClient.delete(`${API_URL}/configuration_profiles/${profile.profile_uuid}`);
+    await restClient.delete(`${VITE_API_URL}/configuration_profiles/${profile.profile_uuid}`);
     await fetchProfiles();
     toastService.showSuccess('Profile deleted successfully');
   } catch (error) {

@@ -316,7 +316,7 @@ interface ScriptsResponse {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -404,7 +404,7 @@ const formatSchedule = (schedule: string) => {
 const fetchTasks = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<Task[]>(`${API_URL}/tasks/`);
+    const response = await restClient.get<Task[]>(`${VITE_API_URL}/tasks/`);
     tasks.value = response;
   } catch (error) {
     console.error('Failed to fetch tasks:', error);
@@ -416,7 +416,7 @@ const fetchTasks = async () => {
 
 const fetchDevices = async () => {
   try {
-    const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
+    const response = await restClient.get<DevicesResponse>(`${VITE_API_URL}/agents/`);
     devices.value = response.data || [];
   } catch (error: any) {
     console.error('Error fetching devices:', error);
@@ -426,7 +426,7 @@ const fetchDevices = async () => {
 
 const fetchScripts = async () => {
   try {
-    const response = await restClient.get<ScriptsResponse>(`${API_URL}/scripts/`);
+    const response = await restClient.get<ScriptsResponse>(`${VITE_API_URL}/scripts/`);
     scripts.value = response.data || [];
   } catch (error: any) {
     console.error('Error fetching scripts:', error);
@@ -455,8 +455,8 @@ const saveTask = async () => {
 
     submitting.value = true;
     const endpoint = isEditMode.value && selectedTask.value ? 
-      `${API_URL}/automation/tasks/${selectedTask.value.id}` : 
-      `${API_URL}/automation/tasks`;
+      `${VITE_API_URL}/automation/tasks/${selectedTask.value.id}` : 
+      `${VITE_API_URL}/automation/tasks`;
 
     const method = isEditMode.value ? 'put' : 'post';
     await restClient[method](endpoint, newTask.value);
@@ -474,7 +474,7 @@ const saveTask = async () => {
 
 const runTask = async (task: Task) => {
   try {
-    await restClient.post(`${API_URL}/automation/tasks/${task.id}/run`);
+    await restClient.post(`${VITE_API_URL}/automation/tasks/${task.id}/run`);
     await fetchTasks();
     toastService.showSuccess('Task execution started');
   } catch (error) {
@@ -499,7 +499,7 @@ const editTask = (task: Task) => {
 
 const deleteTask = async (task: Task) => {
   try {
-    await restClient.delete(`${API_URL}/automation/tasks/${task.id}`);
+    await restClient.delete(`${VITE_API_URL}/automation/tasks/${task.id}`);
     await fetchTasks();
     deleteTaskDialog.value = false;
     toastService.showSuccess('Task deleted successfully');

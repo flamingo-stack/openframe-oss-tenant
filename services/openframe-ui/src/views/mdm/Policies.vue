@@ -272,7 +272,7 @@ interface Policy {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -333,7 +333,7 @@ const isEnabled = (policy: Policy) => {
 const fetchPolicies = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<FleetResponse>(`${API_URL}/global/policies`);
+    const response = await restClient.get<FleetResponse>(`${VITE_API_URL}/global/policies`);
     policies.value = response.policies || [];
   } catch (error) {
     console.error('Failed to fetch policies:', error);
@@ -364,7 +364,7 @@ const createPolicy = async () => {
     if (!validatePolicy()) return;
 
     submitting.value = true;
-    await restClient.post(`${API_URL}/global/policies`, newPolicy.value);
+    await restClient.post(`${VITE_API_URL}/global/policies`, newPolicy.value);
     hideCreateDialog();
     await fetchPolicies();
     toastService.showSuccess('Policy created successfully');
@@ -390,7 +390,7 @@ const updatePolicy = async () => {
     if (!validatePolicy()) return;
 
     submitting.value = true;
-    await restClient.put(`${API_URL}/global/policies/${newPolicy.value.id}`, newPolicy.value);
+    await restClient.put(`${VITE_API_URL}/global/policies/${newPolicy.value.id}`, newPolicy.value);
     hideCreateDialog();
     await fetchPolicies();
     toastService.showSuccess('Policy updated successfully');
@@ -404,7 +404,7 @@ const updatePolicy = async () => {
 
 const deletePolicy = async (policy: Policy) => {
   try {
-    await restClient.delete(`${API_URL}/global/policies/${policy.id}`);
+    await restClient.delete(`${VITE_API_URL}/global/policies/${policy.id}`);
     await fetchPolicies();
     toastService.showSuccess('Policy deleted successfully');
   } catch (error) {
@@ -415,7 +415,7 @@ const deletePolicy = async (policy: Policy) => {
 
 const togglePolicy = async (policy: Policy) => {
   try {
-    await restClient.put(`${API_URL}/global/policies/${policy.id}`, {
+    await restClient.put(`${VITE_API_URL}/global/policies/${policy.id}`, {
       ...policy,
       enabled: !policy.enabled
     });

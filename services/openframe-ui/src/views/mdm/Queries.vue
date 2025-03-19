@@ -223,7 +223,7 @@ interface Query {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const VITE_API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 
@@ -278,7 +278,7 @@ const getPlatformSeverity = (platform: string) => {
 const fetchQueries = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<FleetResponse>(`${API_URL}/queries`);
+    const response = await restClient.get<FleetResponse>(`${VITE_API_URL}/queries`);
     queries.value = response.queries || [];
   } catch (error) {
     console.error('Failed to fetch queries:', error);
@@ -307,7 +307,7 @@ const createQuery = async () => {
     if (!validateQuery()) return;
 
     submitting.value = true;
-    await restClient.post(`${API_URL}/queries`, newQuery.value);
+    await restClient.post(`${VITE_API_URL}/queries`, newQuery.value);
     hideCreateDialog();
     await fetchQueries();
     toastService.showSuccess('Query created successfully');
@@ -333,7 +333,7 @@ const updateQuery = async () => {
     if (!validateQuery()) return;
 
     submitting.value = true;
-    await restClient.put(`${API_URL}/queries/${newQuery.value.id}`, newQuery.value);
+    await restClient.put(`${VITE_API_URL}/queries/${newQuery.value.id}`, newQuery.value);
     hideCreateDialog();
     await fetchQueries();
     toastService.showSuccess('Query updated successfully');
@@ -347,7 +347,7 @@ const updateQuery = async () => {
 
 const deleteQuery = async (query: Query) => {
   try {
-    await restClient.delete(`${API_URL}/queries/${query.id}`);
+    await restClient.delete(`${VITE_API_URL}/queries/${query.id}`);
     await fetchQueries();
     toastService.showSuccess('Query deleted successfully');
   } catch (error) {
@@ -358,7 +358,7 @@ const deleteQuery = async (query: Query) => {
 
 const runQuery = async (query: Query) => {
   try {
-    const response = await restClient.post(`${API_URL}/queries/${query.id}/run`);
+    const response = await restClient.post(`${VITE_API_URL}/queries/${query.id}/run`);
     toastService.showSuccess('Query executed successfully');
     await fetchQueries(); // Refresh to get updated counts
   } catch (error) {
