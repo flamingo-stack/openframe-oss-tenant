@@ -13,7 +13,7 @@ grafana:
       disable_login_form: false
     security:
       allow_embedding: true
-      cookie_samesite: disabled  # 'none' Prevents login
+      cookie_samesite: none  # 'none' Prevents login, disabled requries login from same origin
       allow_embedding_from_anywhere: true
     # paths:
     #   provisioning: /etc/grafana/provisioning
@@ -175,9 +175,9 @@ prometheus:
             target_label: service
             replacement: 'zookeeper'
 
-      - job_name: 'cassandra'
-        static_configs:
-          - targets: ['openframe-cassandra.infrastructure.svc:9404']
+      # - job_name: 'cassandra'
+      #   static_configs:
+      #     - targets: ['openframe-cassandra.infrastructure.svc:9404']
 
       - job_name: 'nifi'
         static_configs:

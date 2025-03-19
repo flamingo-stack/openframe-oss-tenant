@@ -1,0 +1,166 @@
+name: OpenFrame Build Java & Container Images
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+  pull-requests: write
+  attestations: write
+  id-token: write
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - 'libs/**'
+      - 'services/**'
+      - 'infrastructure/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
+
+env:
+  ORGANIZATION: flamingo-cx
+  REGISTRY: ghcr.io
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  build-java-artifacts:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ job.status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Maven Central Repository with JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn --batch-mode package --file pom.xml
+
+      - name: Upload Java artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artifacts
+          path: |
+            **/target/*.jar
+            !**/target/original-*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          retention-days: 1
+
+  build-container-image:
+    needs: build-java-artifacts
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false  # Disable fail-fast behavior
+      matrix:
+        service: [
+          { name: 'mongodb', path: './infrastructure/mongodb/' },
+          { name: 'cassandra', path: './infrastructure/cassandra/' },
+          { name: 'nifi', path: './infrastructure/nifi/' },
+          { name: 'postgresql', path: './infrastructure/postgresql/' },
+          { name: 'tactical-base', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-websockets', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-celery', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'tactical-celerybeat', path: './infrastructure/tactical-rmm/tactical-base/', context: './infrastructure/tactical-rmm' },
+          { name: 'fleetmdm', path: './infrastructure/fleetmdm/', context: './infrastructure/fleetmdm' },
+          { name: 'core', path: './libs/openframe-core/' },
+          { name: 'data', path: './libs/openframe-data/' },
+          { name: 'api', path: './services/openframe-api/' },
+          { name: 'config', path: './services/openframe-config/' },
+          { name: 'gateway', path: './services/openframe-gateway/' },
+          { name: 'management', path: './services/openframe-management/' },
+          { name: 'stream', path: './services/openframe-stream/' },
+          { name: 'ui', path: './services/openframe-ui/' },
+          { name: 'meshcentral', path: './infrastructure/meshcentral/server/' },
+          { name: 'meshcentral-nginx', path: './infrastructure/meshcentral/nginx/' }
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        run: |
+          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+          echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
+          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+      - name: Download Java artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: .
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: docker_build
+        run: |
+          # Set build context
+          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
+
+          # Ensure the Dockerfile exists
+          if [ ! -f "${{ matrix.service.path }}Dockerfile" ]; then
+            echo "Error: Dockerfile not found at ${{ matrix.service.path }}Dockerfile"
+            exit 1
+          fi
+
+          # Build and push the image with error handling
+          if ! docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --file "${{ matrix.service.path }}Dockerfile" \
+            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:latest" \
+            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }}" \
+            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.TIMESTAMP_TAG }}" \
+            --cache-from "type=gha" \
+            --cache-to "type=gha,mode=max" \
+            --provenance=false \
+            "$BUILD_CONTEXT"; then
+            echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
+            exit 1
+          fi
+
+          # Verify the image exists in registry
+          if ! docker manifest inspect "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }}" > /dev/null 2>&1; then
+            echo "Error: Image ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }} not found in registry"
+            exit 1
+          fi
+
+          echo "Successfully built and pushed image for ${{ matrix.service.name }}"
+
+      # Clean up old versions after successful push
+      - name: Clean up old versions
+        if: success() && steps.docker_build.outcome == 'success'
+        env:
+          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x ./kind-cluster/scripts/gh-packages.sh
+          # Keep latest, commit SHA, and timestamp tags
+          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.service.name }}" \
+            "latest" \
+            "${{ env.COMMIT_SHA }}" \
+            "${{ env.TIMESTAMP_TAG }}"
+        continue-on-error: true

@@ -175,7 +175,7 @@ kind: ConfigMap
 metadata:
   name: openframe-cassandra-init
 data:
-  cassandra-init.sql: |
+  cassandra-init.cql: |
     CREATE KEYSPACE IF NOT EXISTS openframe_events
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
 

@@ -29,6 +29,8 @@ spec:
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
               value: "prod_secret"
+            - name: VITE_GRAFANA_URL
+              value: "http://grafana.192.168.100.100.nip.io"
           livenessProbe:
             httpGet:
               path: /
@@ -83,3 +85,17 @@ spec:
                 name: openframe-ui
                 port:
                   name: http
+          # - path: /api
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: openframe-api
+          #       port:
+          #         name: http
+          # - path: /gateway
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: openframe-gateway
+          #       port:
+          #         name: http
