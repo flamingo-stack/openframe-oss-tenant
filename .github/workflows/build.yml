@@ -9,6 +9,7 @@ permissions:
   id-token: write
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [closed]
     branches: [main]
@@ -540,16 +541,23 @@ jobs:
           # Set build context
           BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
 
-          # Get the base and head SHAs for the PR
-          BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
-          HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
+          # Check if this is a PR or manual trigger
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Get the base and head SHAs for the PR
+            BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
+            HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
 
-          # Check if there are any changes in the service path
-          if git diff --quiet $BASE_SHA $HEAD_SHA -- "$BUILD_CONTEXT"; then
-            echo "No changes detected in $BUILD_CONTEXT"
-            echo "changed=false" >> $GITHUB_OUTPUT
+            # Check if there are any changes in the service path
+            if git diff --quiet $BASE_SHA $HEAD_SHA -- "$BUILD_CONTEXT"; then
+              echo "No changes detected in $BUILD_CONTEXT"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in $BUILD_CONTEXT"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "Changes detected in $BUILD_CONTEXT"
+            # For manual triggers, always build
+            echo "Manual trigger - building all images"
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
