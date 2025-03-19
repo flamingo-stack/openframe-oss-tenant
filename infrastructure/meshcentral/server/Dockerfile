@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-ARG MESH_TEMP_DIR=/tmp/meshcentral
+ARG MESH_TEMP_DIR=/tmp/mesh
 ENV MESH_TEMP_DIR=${MESH_TEMP_DIR}
 ENV MESH_DIR=/opt/meshcentral
 
