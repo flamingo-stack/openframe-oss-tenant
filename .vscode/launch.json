@@ -5,15 +5,15 @@
             "type": "chrome",
             "request": "launch",
             "name": "OpenFrame UI",
-            "url": "http://localhost:5174",
+            "url": "http://localhost:5177",
             "webRoot": "${workspaceFolder}/services/openframe-ui",
             "preLaunchTask": "start-vue",
             "env": {
+                "PORT": "5177",
                 "API_URL": "http://localhost:8090",
                 "GATEWAY_URL": "http://localhost:8100",
-                "CLIENT_ID": "openframe_web_dashboard_dev123",
-                "CLIENT_SECRET": "dev_secret123",
-                "PORT": "5174"
+                "CLIENT_ID": "openframe_web_dashboard_dev",
+                "CLIENT_SECRET": "dev_secret"
             }
         },
         {

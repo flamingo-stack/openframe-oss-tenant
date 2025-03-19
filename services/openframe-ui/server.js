@@ -10,10 +10,10 @@ const app = express();
 
 // Create runtime config object from environment variables
 const runtimeConfig = {
-  apiUrl: process.env.API_URL,
-  gatewayUrl: process.env.GATEWAY_URL,
-  clientId: process.env.CLIENT_ID,
-  clientSecret: process.env.CLIENT_SECRET
+  apiUrl: process.env.API_URL || window.__RUNTIME_CONFIG__.apiUrl,
+  gatewayUrl: process.env.GATEWAY_URL || window.__RUNTIME_CONFIG__.gatewayUrl,
+  clientId: process.env.CLIENT_ID || window.__RUNTIME_CONFIG__.clientId,
+  clientSecret: process.env.CLIENT_SECRET || window.__RUNTIME_CONFIG__.clientSecret
 };
 
 // Function to replace template variables
