@@ -1,15 +1,19 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd())
+export default defineConfig(() => {
+  console.log('Environment variables:', process.env)
+
+  if (!process.env.PORT) {
+    throw new Error('PORT environment variable is required')
+  }
 
   return {
     plugins: [vue()],
     server: {
-      port: 5174,
+      port: parseInt(process.env.PORT),
       strictPort: true,
       host: true
     },
@@ -19,12 +23,12 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
-      'process.env': env,
+      'process.env': process.env,
       'window.__RUNTIME_CONFIG__': JSON.stringify({
-        apiUrl: env.API_URL || 'http://localhost:8090',
-        gatewayUrl: env.GATEWAY_URL || 'http://localhost:8100',
-        clientId: env.CLIENT_ID || 'openframe_web_dashboard',
-        clientSecret: env.CLIENT_SECRET || 'prod_secret'
+        apiUrl: process.env.API_URL,
+        gatewayUrl: process.env.GATEWAY_URL,
+        clientId: process.env.CLIENT_ID,
+        clientSecret: process.env.CLIENT_SECRET
       })
     },
     build: {

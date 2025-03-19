@@ -3,18 +3,9 @@
     "tasks": [
         {
             "label": "start-vue",
-            "type": "npm",
-            "script": "dev",
-            "path": "services/openframe-ui/",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/services/openframe-ui && PORT=5177 API_URL=http://localhost:8090 GATEWAY_URL=http://localhost:8100 CLIENT_ID=openframe_web_dashboard_dev CLIENT_SECRET=dev_secret npm run dev",
             "isBackground": true,
-            "options": {
-                "env": {
-                    "API_URL": "http://localhost:8090",
-                    "GATEWAY_URL": "http://localhost:8100",
-                    "CLIENT_ID": "openframe_web_dashboard_dev",
-                    "CLIENT_SECRET": "your_client_secret_here"
-                }
-            },
             "problemMatcher": {
                 "owner": "custom",
                 "pattern": {
