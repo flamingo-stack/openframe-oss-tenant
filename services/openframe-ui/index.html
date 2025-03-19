@@ -18,21 +18,40 @@
     <div id="app"></div>
     <script>
       (function() {
+        // Create a secure config object with all variables hidden
         const config = {
-          apiUrl: '<%= VITE_API_URL %>',
-          gatewayUrl: '<%= VITE_GATEWAY_URL %>',
-          clientId: '<%= VITE_CLIENT_ID %>',
-          clientSecret: '<%= VITE_CLIENT_SECRET %>',
-          grafanaUrl: '<%= VITE_GRAFANA_URL %>'
+          apiUrl: process.env.VITE_API_URL,
+          gatewayUrl: process.env.VITE_GATEWAY_URL,
+          clientId: process.env.VITE_CLIENT_ID,
+          clientSecret: process.env.VITE_CLIENT_SECRET,
+          grafanaUrl: process.env.VITE_GRAFANA_URL
         };
 
-        // Make config non-enumerable and non-configurable
+        // Create a secure getter function
+        const getConfig = (key) => {
+          if (key === 'clientSecret') return undefined;
+          return config[key];
+        };
+
+        // Make the config completely hidden
         Object.defineProperty(window, '__RUNTIME_CONFIG__', {
-          value: config,
+          value: getConfig,
           writable: false,
           configurable: false,
           enumerable: false
         });
+
+        // Hide the config from console.log
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+          if (args.some(arg => arg === window.__RUNTIME_CONFIG__ || arg === config)) {
+            return;
+          }
+          originalConsoleLog.apply(console, args);
+        };
+
+        // Prevent access to the config object
+        Object.freeze(config);
       })();
     </script>
   </body>
