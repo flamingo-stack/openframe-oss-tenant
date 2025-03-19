@@ -3,9 +3,6 @@ FROM node:20-alpine
 ARG MESH_DIR
 ARG MESH_TEMP_DIR
 
-RUN echo ${MESH_DIR}
-RUN echo ${MESH_TEMP_DIR}
-
 RUN mkdir -p ${MESH_TEMP_DIR}
 
 WORKDIR ${MESH_TEMP_DIR}

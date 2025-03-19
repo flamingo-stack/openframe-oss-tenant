@@ -615,6 +615,9 @@ jobs:
         if: steps.check_changes.outputs.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
+      - name: Debug Build Args
+        run: echo '${{ toJson(matrix.service.build_args) }}'
+
       - name: Build and push image
         if: steps.check_changes.outputs.changed == 'true'
         id: docker_build
@@ -624,6 +627,13 @@ jobs:
             echo "Error: Dockerfile not found at ${{ matrix.service.path }}Dockerfile"
             exit 1
           fi
+
+          # Construct build arguments dynamically
+          BUILD_ARGS=""
+          for key in $(echo '${{ toJson(matrix.service.build_args) }}' | jq -r 'keys[]'); do
+            value=$(echo '${{ toJson(matrix.service.build_args) }}' | jq -r ".\"$key\"")
+            BUILD_ARGS="$BUILD_ARGS --build-arg $key=$value"
+          done
 
           # Build and push the image with error handling
           if ! docker buildx build \
@@ -636,7 +646,7 @@ jobs:
             --cache-from "type=gha" \
             --cache-to "type=gha,mode=max" \
             --provenance=false \
-            ${{ matrix.service.build_args && format('--build-arg %s=%s', matrix.service.build_args.*.key, matrix.service.build_args.*.value) || '' }} \
+            $BUILD_ARGS \
             "${{ matrix.service.path }}"; then
             echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
             exit 1
