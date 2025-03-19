@@ -48,7 +48,7 @@ spec:
         - name: github-pat-secret
       containers:
       - name: postgresql
-        image: ghcr.io/flamingo-cx/openframe-authentik-authentik-postgresql:110325
+        image: ghcr.io/flamingo-cx/openframe-postgresql:latest
         ports:
         - containerPort: 5432
         env:

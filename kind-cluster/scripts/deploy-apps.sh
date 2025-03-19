@@ -257,31 +257,31 @@ case "$1" in
     ;;
   all)
     # ------------- ALL -------------
-    ./deploy-apps.sh ingress-nginx && \
-    ./deploy-apps.sh grafana && \
-    ./deploy-apps.sh loki && \
-    ./deploy-apps.sh redis && \
-    ./deploy-apps.sh efk && \
-    ./deploy-apps.sh kafka && \
-    ./deploy-apps.sh kafka-ui && \
-    ./deploy-apps.sh mongodb && \
-    ./deploy-apps.sh mongodb-exporter && \
-    ./deploy-apps.sh mongo-express && \
-    ./deploy-apps.sh cassandra && \
-    ./deploy-apps.sh nifi && \
-    ./deploy-apps.sh zookeeper && \
-    ./deploy-apps.sh pinot && \
-    ./deploy-apps.sh config-server && \
-    ./deploy-apps.sh api && \
-    ./deploy-apps.sh management && \
-    ./deploy-apps.sh stream && \
-    ./deploy-apps.sh gateway && \
-    ./deploy-apps.sh openframe-ui && \
-    ./deploy-apps.sh authentik && \
-    ./deploy-apps.sh fleet && \
-    ./deploy-apps.sh meshcentral && \
-    ./deploy-apps.sh rmm && \
-    ./deploy-apps.sh register-tools
+    $0 ingress-nginx && \
+    $0 grafana && \
+    $0 loki && \
+    $0 redis && \
+    $0 efk && \
+    $0 kafka && \
+    $0 kafka-ui && \
+    $0 mongodb && \
+    $0 mongodb-exporter && \
+    $0 mongo-express && \
+    $0 cassandra && \
+    $0 nifi && \
+    $0 zookeeper && \
+    $0 pinot && \
+    $0 config-server && \
+    $0 api && \
+    $0 management && \
+    $0 stream && \
+    $0 gateway && \
+    $0 openframe-ui && \
+    $0 authentik && \
+    $0 fleet && \
+    $0 meshcentral && \
+    $0 rmm && \
+    $0 register-tools
     ;;
   *)
       echo
