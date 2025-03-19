@@ -111,7 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
       const apiUrl = `${runtimeConfig.apiUrl}/oauth/register`;
       console.log('Attempting to register with URL:', apiUrl);
       console.log('Environment variables:', {
-        apiUrl: runtimeConfig.apiUrl,
+        apiUrl: runtimeConfig.apiUrl, 
         clientId: runtimeConfig.clientId,
         clientSecret: runtimeConfig.clientSecret
       });
