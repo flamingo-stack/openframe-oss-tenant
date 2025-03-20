@@ -369,7 +369,7 @@ const saveScript = async (scriptData: any) => {
     submitting.value = true;
     const endpoint = isEditMode.value && selectedScript.value ? 
       `${API_URL}/scripts/${selectedScript.value.id}` : 
-      `${API_URL}/scripts`;
+      `${API_URL}/scripts/`;
 
     const payload = {
       name: scriptData.name,

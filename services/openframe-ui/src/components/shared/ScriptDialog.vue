@@ -85,7 +85,7 @@
 
             <div class="field">
               <label for="platforms">Supported Platforms</label>
-              <Dropdown
+              <MultiSelect
                 id="platforms"
                 v-model="script.supported_platforms"
                 :options="platformOptions"
@@ -93,7 +93,6 @@
                 optionValue="value"
                 placeholder="Select supported platforms"
                 :class="{ 'p-invalid': submitted && !script.supported_platforms.length }"
-                multiple
                 class="w-full"
               />
               <small class="p-error" v-if="submitted && !script.supported_platforms.length">
@@ -252,6 +251,7 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Dropdown from 'primevue/dropdown';
+import MultiSelect from 'primevue/multiselect';
 import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
 import { ToastService } from '../../services/ToastService';
