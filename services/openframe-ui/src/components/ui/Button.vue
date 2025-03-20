@@ -15,7 +15,9 @@
       buttonClass
     ]"
     @click="$emit('click', $event)"
-  />
+  >
+    <slot />
+  </PrimeButton>
 </template>
 
 <script setup lang="ts">
@@ -61,11 +63,17 @@ const props = defineProps({
 });
 
 const buttonClass = computed(() => {
+  const classes = [];
+  
   if (props.severity === 'secondary') {
-    return props.variant === 'filled' ? 'p-button-secondary' : '';
+    classes.push(props.variant === 'filled' ? 'p-button-secondary' : '');
   }
   
-  return props.severity !== 'primary' ? `p-button-${props.severity}` : '';
+  if (props.severity !== 'primary') {
+    classes.push(`p-button-${props.severity}`);
+  }
+  
+  return classes.join(' ');
 });
 
 defineEmits(['click']);
