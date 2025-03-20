@@ -1,5 +1,5 @@
 <template>
-  <div class="rmm-monitoring">
+  <div class="of-monitoring">
     <ModuleHeader title="Monitoring">
       <template #actions>
         <OFButton 
@@ -11,10 +11,10 @@
       </template>
     </ModuleHeader>
 
-    <div class="monitoring-content">
-      <div class="filters-container">
-        <div class="filters-row">
-          <div class="search-container">
+    <div class="of-monitoring-content">
+      <div class="of-filters-container">
+        <div class="of-filters-row">
+          <div class="of-search-container">
             <SearchBar v-model="filters['global'].value" placeholder="Search monitors..." />
           </div>
         </div>
@@ -92,19 +92,18 @@
     </div>
 
     <!-- Add/Edit Monitor Dialog -->
-    <Dialog 
-      v-model:visible="showAddMonitorDialog" 
-      :style="{ width: '600px' }" 
-      :header="isEditMode ? 'Edit Monitor' : 'Add New Monitor'" 
-      :modal="true"
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFScriptDialog
+      v-model="showAddMonitorDialog" 
+      :header="isEditMode ? 'Edit Monitor' : 'Add New Monitor'"
+      width="600px"
+      confirmIcon="pi pi-check"
+      :confirmLabel="isEditMode ? 'Save' : 'Add'"
+      :loading="submitting"
+      @confirm="saveMonitor"
+      @cancel="hideDialog"
     >
       <div class="of-form-group">
-        <label for="name">Name</label>
+        <label for="name" class="of-form-label">Name</label>
         <InputText 
           id="name" 
           v-model="newMonitor.name" 
@@ -118,7 +117,7 @@
       </div>
 
       <div class="of-form-group">
-        <label for="type">Type</label>
+        <label for="type" class="of-form-label">Type</label>
         <Dropdown
           id="type"
           v-model="newMonitor.type"
@@ -134,7 +133,7 @@
       </div>
 
       <div class="of-form-group">
-        <label for="target">Target</label>
+        <label for="target" class="of-form-label">Target</label>
         <InputText 
           id="target" 
           v-model="newMonitor.target" 
@@ -147,7 +146,7 @@
       </div>
 
       <div class="of-form-group">
-        <label for="description">Description</label>
+        <label for="description" class="of-form-label">Description</label>
         <Textarea 
           id="description" 
           v-model="newMonitor.description" 
@@ -158,75 +157,27 @@
           Description is required.
         </small>
       </div>
-
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="Cancel" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="hideDialog"
-          />
-          <OFButton 
-            :label="isEditMode ? 'Save' : 'Add'" 
-            icon="pi pi-check" 
-            class="p-button-primary" 
-            @click="saveMonitor" 
-            :loading="submitting"
-          />
-        </div>
-      </template>
-    </Dialog>
+    </OFScriptDialog>
 
     <!-- Delete Monitor Confirmation -->
-    <Dialog 
-      v-model:visible="deleteMonitorDialog" 
-      header="Confirm" 
-      :modal="true"
-      :draggable="false"
-      :style="{ width: '450px' }" 
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFConfirmationDialog
+      v-model="deleteMonitorDialog" 
+      header="Confirm"
+      width="450px"
+      icon="pi pi-exclamation-triangle"
+      :loading="deleting"
+      @confirm="confirmDelete"
+      @cancel="deleteMonitorDialog = false"
     >
-      <div class="confirmation-content">
-        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-        <span v-if="selectedMonitor">
-          Are you sure you want to delete <b>{{ selectedMonitor.name }}</b>?
-        </span>
-      </div>
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="No" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="deleteMonitorDialog = false"
-          />
-          <OFButton 
-            label="Yes" 
-            icon="pi pi-check" 
-            class="p-button-danger" 
-            @click="confirmDelete" 
-            :loading="deleting"
-          />
-        </div>
-      </template>
-    </Dialog>
+      <span v-if="selectedMonitor">
+        Are you sure you want to delete <b>{{ selectedMonitor.name }}</b>?
+      </span>
+    </OFConfirmationDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "@vue/runtime-core";
-import Column from 'primevue/column';
-import { OFButton } from '../../components/ui';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Dropdown from 'primevue/dropdown';
-import Textarea from 'primevue/textarea';
-import Tag from 'primevue/tag';
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -234,6 +185,16 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import { 
+  OFButton, 
+  Column, 
+  InputText, 
+  Dropdown, 
+  Textarea, 
+  Tag,
+  OFScriptDialog,
+  OFConfirmationDialog
+} from '../../components/ui';
 
 interface Monitor {
   id: string;
@@ -441,14 +402,14 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.rmm-monitoring {
+.of-monitoring {
   height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--surface-ground);
 }
 
-.monitoring-content {
+.of-monitoring-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -458,18 +419,18 @@ onMounted(async () => {
   background: var(--surface-ground);
 }
 
-.filters-container {
+.of-filters-container {
   margin-bottom: 1rem;
 }
 
-.filters-row {
+.of-filters-row {
   display: flex;
   gap: 1rem;
   align-items: stretch;
   height: 42px;
 }
 
-.search-container {
+.of-search-container {
   flex: 1;
   height: 100%;
 }
@@ -526,4 +487,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>      
+</style>                

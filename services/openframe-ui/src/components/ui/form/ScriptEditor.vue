@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import * as monaco from 'monaco-editor';
 
 const props = defineProps({
   id: {
@@ -55,33 +54,40 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const editorContainer = ref<HTMLElement | null>(null);
-let editor: monaco.editor.IStandaloneCodeEditor | null = null;
+let editor: any = null;
 
-onMounted(() => {
+onMounted(async () => {
   if (!editorContainer.value) return;
 
-  editor = monaco.editor.create(editorContainer.value, {
-    value: props.modelValue,
-    language: 'powershell',
-    theme: 'vs-dark',
-    readOnly: props.disabled,
-    automaticLayout: true,
-    minimap: {
-      enabled: true
-    },
-    scrollBeyondLastLine: false,
-    fontSize: 12,
-    lineNumbers: 'on',
-    roundedSelection: false,
-    scrollbar: {
-      vertical: 'visible',
-      horizontal: 'visible'
-    }
-  });
+  try {
+    // Dynamically import monaco-editor
+    const monaco = await import('monaco-editor');
+    
+    editor = monaco.editor.create(editorContainer.value, {
+      value: props.modelValue,
+      language: 'powershell',
+      theme: 'vs-dark',
+      readOnly: props.disabled,
+      automaticLayout: true,
+      minimap: {
+        enabled: true
+      },
+      scrollBeyondLastLine: false,
+      fontSize: 12,
+      lineNumbers: 'on',
+      roundedSelection: false,
+      scrollbar: {
+        vertical: 'visible',
+        horizontal: 'visible'
+      }
+    });
 
-  editor.onDidChangeModelContent(() => {
-    emit('update:modelValue', editor?.getValue() || '');
-  });
+    editor.onDidChangeModelContent(() => {
+      emit('update:modelValue', editor?.getValue() || '');
+    });
+  } catch (error) {
+    console.error('Failed to load monaco editor:', error);
+  }
 });
 
 watch(() => props.modelValue, (newValue) => {

@@ -1,5 +1,5 @@
 <template>
-  <div class="module-table">
+  <div class="of-module-table">
     <DataTable
       :value="items"
       :loading="loading"
@@ -10,18 +10,18 @@
       :rowsPerPageOptions="[10, 20, 50]"
       responsiveLayout="scroll"
       stripedRows
-      class="p-datatable-sm"
+      class="p-datatable-sm of-datatable"
       :globalFilterFields="searchFields"
       dataKey="id"
       removableSort
       showGridlines
     >
       <template #empty>
-        <div class="empty-state">
-          <i :class="emptyIcon" class="empty-icon"></i>
+        <div class="of-empty-state">
+          <i :class="emptyIcon" class="of-empty-icon"></i>
           <h3>{{ emptyTitle }}</h3>
           <p>{{ emptyMessage }}</p>
-          <p class="hint">{{ emptyHint }}</p>
+          <p class="of-hint">{{ emptyHint }}</p>
         </div>
       </template>
       
@@ -59,7 +59,7 @@ const filters = ref({
 </script>
 
 <style scoped>
-.module-table {
+.of-module-table {
   background: var(--surface-ground);
   border-radius: var(--border-radius);
   padding: 1rem;
@@ -247,7 +247,7 @@ const filters = ref({
   }
 }
 
-.empty-state {
+.of-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -257,7 +257,7 @@ const filters = ref({
   background: var(--surface-card);
   border-radius: var(--border-radius);
 
-  .empty-icon {
+  .of-empty-icon {
     font-size: 3rem;
     color: var(--text-color-secondary);
     margin-bottom: 1.5rem;
@@ -276,11 +276,11 @@ const filters = ref({
     margin: 0;
     line-height: 1.5;
 
-    &.hint {
+    &.of-hint {
       font-size: 0.875rem;
       margin-top: 0.5rem;
       opacity: 0.8;
     }
   }
 }
-</style>  
+</style>        

@@ -1,5 +1,5 @@
 <template>
-  <div class="rmm-scripts">
+  <div class="of-scripts-view">
     <ModuleHeader title="Scripts">
       <template #actions>
         <OFButton 
@@ -11,13 +11,13 @@
       </template>
     </ModuleHeader>
 
-    <div class="scripts-content">
-      <div class="filters-container">
-        <div class="filters-row">
-          <div class="search-container">
+    <div class="of-scripts-content">
+      <div class="of-filters-container">
+        <div class="of-filters-row">
+          <div class="of-search-container">
             <SearchBar v-model="filters['global'].value" placeholder="Search scripts..." />
           </div>
-          <div class="filter-item">
+          <div class="of-filter-item">
             <Dropdown
               id="scriptTypeFilter"
               v-model="filters['script_type'].value"
@@ -28,7 +28,7 @@
               class="w-full"
             />
           </div>
-          <div class="filter-item">
+          <div class="of-filter-item">
             <Dropdown
               id="shellTypeFilter"
               v-model="filters['shell'].value"
@@ -39,7 +39,7 @@
               class="w-full"
             />
           </div>
-          <div class="filter-item">
+          <div class="of-filter-item">
             <MultiSelect
               id="platformFilter"
               v-model="filters['platforms'].value"
@@ -130,16 +130,15 @@
     </div>
 
     <!-- Add/Edit Script Dialog -->
-    <Dialog 
-      v-model:visible="showAddScriptDialog" 
-      :style="{ width: '800px' }" 
-      :header="isEditMode ? 'Edit Script' : 'Add New Script'" 
-      :modal="true"
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFScriptDialog
+      v-model="showAddScriptDialog" 
+      :header="isEditMode ? 'Edit Script' : 'Add New Script'"
+      width="800px"
+      :confirmLabel="isEditMode ? 'Save' : 'Add'"
+      confirmIcon="pi pi-check"
+      :loading="submitting"
+      @confirm="saveScript"
+      @cancel="hideDialog"
     >
       <div class="of-form-group">
         <label for="name" class="of-form-label">Name</label>
@@ -193,37 +192,18 @@
           :error="submitted && !newScript.content ? 'Script content is required.' : ''"
         />
       </div>
-
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="Cancel" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="hideDialog"
-          />
-          <OFButton 
-            :label="isEditMode ? 'Save' : 'Add'" 
-            icon="pi pi-check" 
-            class="p-button-primary" 
-            @click="saveScript" 
-            :loading="submitting"
-          />
-        </div>
-      </template>
-    </Dialog>
+    </OFScriptDialog>
 
     <!-- Run Script Dialog -->
-    <Dialog 
-      v-model:visible="showRunScriptDialog" 
-      :style="{ width: '600px' }" 
-      header="Run Script" 
-      :modal="true"
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFScriptDialog
+      v-model="showRunScriptDialog" 
+      header="Run Script"
+      width="600px"
+      confirmLabel="Run"
+      confirmIcon="pi pi-play"
+      :loading="executing"
+      @confirm="executeScript"
+      @cancel="showRunScriptDialog = false"
     >
       <div class="of-form-group">
         <label for="devices" class="of-form-label">Target Devices</label>
@@ -237,63 +217,22 @@
           :error="runSubmitted && selectedDevices.length === 0 ? 'Select at least one device.' : ''"
         />
       </div>
-
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="Cancel" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="showRunScriptDialog = false"
-          />
-          <OFButton 
-            label="Run" 
-            icon="pi pi-play" 
-            class="p-button-primary" 
-            @click="executeScript" 
-            :loading="executing"
-          />
-        </div>
-      </template>
-    </Dialog>
+    </OFScriptDialog>
 
     <!-- Delete Script Confirmation -->
-    <Dialog 
-      v-model:visible="deleteScriptDialog" 
-      header="Confirm" 
-      :modal="true"
-      :draggable="false"
-      :style="{ width: '450px' }" 
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFConfirmationDialog
+      v-model="deleteScriptDialog" 
+      header="Confirm"
+      width="450px"
+      icon="pi pi-exclamation-triangle"
+      :loading="deleting"
+      @confirm="confirmDelete"
+      @cancel="deleteScriptDialog = false"
     >
-      <div class="confirmation-content">
-        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-        <span v-if="selectedScript">
-          Are you sure you want to delete <b>{{ selectedScript.name }}</b>?
-        </span>
-      </div>
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="No" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="deleteScriptDialog = false"
-          />
-          <OFButton 
-            label="Yes" 
-            icon="pi pi-check" 
-            class="p-button-danger" 
-            @click="confirmDelete" 
-            :loading="deleting"
-          />
-        </div>
-      </template>
-    </Dialog>
+      <span v-if="selectedScript">
+        Are you sure you want to delete <b>{{ selectedScript.name }}</b>?
+      </span>
+    </OFConfirmationDialog>
   </div>
 </template>
 
@@ -310,12 +249,14 @@ import ModuleTable from '../../components/shared/ModuleTable.vue';
 import { 
   OFButton, 
   Column, 
-  Dialog, 
   InputText, 
   Dropdown, 
   MultiSelect, 
   Tag,
-  ScriptEditor 
+  ScriptEditor,
+  OFScriptDialog,
+  OFConfirmationDialog,
+  OFCodeBlock
 } from "../../components/ui";
 
 interface Script {
@@ -673,14 +614,14 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.rmm-scripts {
+.of-scripts-view {
   height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--surface-ground);
 }
 
-.scripts-content {
+.of-scripts-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -690,23 +631,23 @@ onMounted(async () => {
   background: var(--surface-ground);
 }
 
-.filters-container {
+.of-filters-container {
   margin-bottom: 1rem;
 }
 
-.filters-row {
+.of-filters-row {
   display: flex;
   gap: 1rem;
   align-items: stretch;
   height: 42px;
 }
 
-.search-container {
+.of-search-container {
   flex: 2;
   height: 100%;
 }
 
-.filter-item {
+.of-filter-item {
   flex: 1;
   min-width: 180px;
   height: 100%;
@@ -831,4 +772,4 @@ onMounted(async () => {
     }
   }
 }
-</style>              
+</style>                            
