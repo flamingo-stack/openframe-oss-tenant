@@ -12,13 +12,13 @@
       <div class="sidebar-header">
         <h3 class="text-xl m-0">Script Execution History</h3>
         <div class="flex gap-2">
-          <Button 
+          <OFButton 
             icon="pi pi-trash" 
             class="p-button-text p-button-rounded" 
             @click="clearHistory"
             aria-label="Clear History"
           />
-          <Button 
+          <OFButton 
             icon="pi pi-times" 
             class="p-button-text p-button-rounded" 
             @click="onVisibilityChange(false)"
@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import Sidebar from 'primevue/sidebar';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 
 interface ScriptExecution {
   id: string;
@@ -284,4 +284,4 @@ defineExpose({
     }
   }
 }
-</style> 
+</style>  

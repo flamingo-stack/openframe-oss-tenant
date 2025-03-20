@@ -2,7 +2,7 @@
   <div class="mdm-policies">
     <ModuleHeader title="Policies">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Create Policy" 
           icon="pi pi-plus" 
           @click="showCreateDialog = true"
@@ -55,19 +55,19 @@
         <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Policy'"
                 @click="editPolicy(data)" 
               />
-              <Button 
+              <OFButton 
                 :icon="isEnabled(data) ? 'pi pi-pause' : 'pi pi-play'" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="isEnabled(data) ? 'Disable Policy' : 'Enable Policy'"
                 @click="togglePolicy(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Policy'"
@@ -213,13 +213,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideCreateDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Update' : 'Create'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -244,7 +244,7 @@ import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 // Import from our new UI component library
 import { 
-  Button, 
+  OFButton, 
   Column, 
   InputText, 
   Dialog, 
@@ -274,6 +274,7 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 // Add directive registration
+import { Tooltip } from '../../components/ui';
 const vTooltip = Tooltip;
 
 const loading = ref(true);
@@ -759,4 +760,4 @@ onMounted(async () => {
     }
   }
 }
-</style>     
+</style>           

@@ -35,13 +35,13 @@
 
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Close" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="onCancel"
         />
-        <Button 
+        <OFButton 
           label="Run" 
           icon="pi pi-play" 
           class="p-button-primary" 
@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Dialog, Button, ScriptEditor } from '../../components/ui';
+import { Dialog, OFButton, ScriptEditor } from '../../components/ui';
 
 const props = defineProps<{
   visible: boolean;
@@ -206,4 +206,4 @@ const resetForm = () => {
   font-size: 0.875rem;
   line-height: 1.4;
 }
-</style>     
+</style>         

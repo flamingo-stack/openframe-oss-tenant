@@ -2,7 +2,7 @@
   <div class="mdm-devices">
     <ModuleHeader title="Devices">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Add Device" 
           icon="pi pi-plus" 
           @click="showCreateDialog = true"
@@ -65,14 +65,14 @@
         <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-lock" 
                 class="p-button-text p-button-sm" 
                 :disabled="!data.mdm?.enrollment_status"
                 v-tooltip.top="'Lock Device'"
                 @click="lockDevice(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Device'"
@@ -251,4 +251,4 @@ onMounted(() => {
   min-width: 75px;
   justify-content: center;
 }
-</style> 
+</style>  

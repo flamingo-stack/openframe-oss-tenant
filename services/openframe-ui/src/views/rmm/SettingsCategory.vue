@@ -239,7 +239,7 @@
               <div class="recipients-list">
                 <div v-for="(recipient, index) in settings.email_alert_recipients" :key="index" class="recipient-item">
                   <span>{{ recipient }}</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     @click="removeEmailRecipient(index)"
@@ -252,7 +252,7 @@
                     placeholder="Enter email and press Enter"
                     @keyup.enter="addEmailRecipient"
                   />
-                  <Button 
+                  <OFButton 
                     icon="pi pi-plus" 
                     class="p-button-text p-button-sm"
                     @click="addEmailRecipient"
@@ -303,7 +303,7 @@
               <div class="recipients-list">
                 <div v-for="(recipient, index) in settings.sms_alert_recipients" :key="index" class="recipient-item">
                   <span>{{ recipient }}</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     @click="removeRecipient(index)"
@@ -316,7 +316,7 @@
                     placeholder="Enter phone number and press Enter"
                     @keyup.enter="addRecipient"
                   />
-                  <Button 
+                  <OFButton 
                     icon="pi pi-plus" 
                     class="p-button-text p-button-sm"
                     @click="addRecipient"
@@ -331,7 +331,7 @@
       <template v-else-if="category === 'custom_fields'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Add Field"
               severity="success"
@@ -372,7 +372,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Field'"
@@ -388,7 +388,7 @@
       <template v-else-if="category === 'key_store'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Add Key"
               severity="success"
@@ -415,7 +415,7 @@
               <template #body="{ data }">
                 <div class="flex align-items-center gap-2">
                   <span class="text-muted">••••••••</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-copy" 
                     class="p-button-text p-button-sm"
                     v-tooltip.top="'Copy Value'"
@@ -1680,4 +1680,4 @@ const handleDelete = async () => {
     }
   }
 }
-</style> 
+</style>  

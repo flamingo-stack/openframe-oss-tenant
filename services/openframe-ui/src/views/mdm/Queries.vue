@@ -2,7 +2,7 @@
   <div class="mdm-queries">
     <ModuleHeader title="Queries">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Create Query" 
           icon="pi pi-plus" 
           @click="showCreateDialog = true"
@@ -63,19 +63,19 @@
         <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Query'"
                 @click="editQuery(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Query'"
                 @click="runQuery(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Query'"
@@ -167,13 +167,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideCreateDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Update' : 'Create'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -198,7 +198,7 @@ import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 // Import from our new UI component library
 import { 
-  Button, 
+  OFButton, 
   Column, 
   InputText, 
   Dialog, 
@@ -582,4 +582,4 @@ onMounted(async () => {
     }
   }
 }
-</style>     
+</style>         

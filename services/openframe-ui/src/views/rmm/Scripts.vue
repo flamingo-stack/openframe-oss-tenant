@@ -2,7 +2,7 @@
   <div class="rmm-scripts">
     <ModuleHeader title="Scripts">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Add Script" 
           icon="pi pi-plus"
           @click="showAddScriptDialog = true"
@@ -60,25 +60,25 @@
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Script'"
                 @click="runScript(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'View Script'"
                 @click="viewScript(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Script'"
                 @click="editScript(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Script'"
@@ -157,13 +157,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Save' : 'Add'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -201,13 +201,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="showRunScriptDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Run" 
             icon="pi pi-play" 
             class="p-button-primary" 
@@ -269,7 +269,7 @@ import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 // Import from our new UI component library
 import { 
-  Button, 
+  OFButton, 
   Column, 
   Dialog, 
   InputText, 
@@ -594,4 +594,4 @@ onMounted(async () => {
 .font-mono {
   font-family: monospace;
 }
-</style>        
+</style>            

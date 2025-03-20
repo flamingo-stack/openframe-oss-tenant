@@ -59,7 +59,10 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     
     // Register all UI components
     Object.entries(UIComponents).forEach(([name, component]) => {
-      app.component(name, component);
+      // Skip components that are already registered globally
+      if (!['Button', 'InputText', 'DataTable', 'Column'].includes(name)) {
+        app.component(name, component);
+      }
     });
     
     app.mount('#app')

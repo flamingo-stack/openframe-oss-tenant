@@ -2,7 +2,7 @@
   <div class="rmm-devices">
     <ModuleHeader title="Devices">
       <template #actions>
-        <Button icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
+        <OFButton icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
           v-tooltip.left="'Script Execution History'" />
       </template>
     </ModuleHeader>
@@ -50,11 +50,11 @@
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button icon="pi pi-code" class="p-button-text p-button-sm" v-tooltip.top="'Run Command'"
+              <OFButton icon="pi pi-code" class="p-button-text p-button-sm" v-tooltip.top="'Run Command'"
                 @click="runCommand(data)" />
-              <Button icon="pi pi-eye" class="p-button-text p-button-sm" v-tooltip.top="'View Details'"
+              <OFButton icon="pi pi-eye" class="p-button-text p-button-sm" v-tooltip.top="'View Details'"
                 @click="viewDevice(data)" />
-              <Button icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+              <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                 v-tooltip.top="'Delete Device'" @click="deleteDevice(data)" />
             </div>
           </template>
@@ -86,8 +86,8 @@
       </div>
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button label="No" icon="pi pi-times" class="p-button-text" @click="deleteDeviceDialog = false" />
-          <Button label="Yes" icon="pi pi-check" class="p-button-danger" @click="confirmDelete" :loading="deleting" />
+          <OFButton label="No" icon="pi pi-times" class="p-button-text" @click="deleteDeviceDialog = false" />
+          <OFButton label="Yes" icon="pi pi-check" class="p-button-danger" @click="confirmDelete" :loading="deleting" />
         </div>
       </template>
     </Dialog>
@@ -113,7 +113,7 @@ import { ref, onMounted } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';

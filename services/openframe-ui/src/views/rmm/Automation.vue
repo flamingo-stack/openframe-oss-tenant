@@ -3,7 +3,7 @@
     <ModuleHeader title="Automation">
       <template #subtitle>Schedule and manage automated tasks</template>
       <template #actions>
-        <Button 
+        <OFButton 
           label="Add Task" 
           icon="pi pi-plus"
           @click="showAddTaskDialog = true"
@@ -68,25 +68,25 @@
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Now'"
                 @click="runTask(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'View Details'"
                 @click="viewTask(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Task'"
                 @click="editTask(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Task'"
@@ -201,13 +201,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Save' : 'Add'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -239,13 +239,13 @@
       </div>
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="No" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="deleteTaskDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Yes" 
             icon="pi pi-check" 
             class="p-button-danger" 
@@ -269,7 +269,7 @@ import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 // Import from our new UI component library
 import { 
-  Button, 
+  OFButton, 
   Column, 
   Dialog, 
   InputText, 
@@ -617,4 +617,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>       
+</style>           

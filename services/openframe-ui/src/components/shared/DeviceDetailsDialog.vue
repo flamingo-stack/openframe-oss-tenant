@@ -24,13 +24,13 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <Button 
+            <OFButton 
               icon="pi pi-code" 
               class="p-button-text p-button-sm" 
               v-tooltip.top="'Run Command'"
               @click="onRunCommand"
             />
-            <Button 
+            <OFButton 
               icon="pi pi-trash" 
               class="p-button-text p-button-sm p-button-danger" 
               v-tooltip.top="'Delete Device'"
@@ -154,7 +154,7 @@
 
     <template #footer>
       <div class="flex justify-content-end">
-        <Button 
+        <OFButton 
           label="Close" 
           icon="pi pi-times" 
           class="p-button-text" 
@@ -169,7 +169,7 @@
 import { ref } from '@vue/runtime-core';
 import { watch, computed } from '@vue/runtime-core';
 import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
 import Dropdown from 'primevue/dropdown';
@@ -505,4 +505,4 @@ const onDelete = () => {
 :deep(.p-tag) {
   text-transform: capitalize;
 }
-</style> 
+</style>  

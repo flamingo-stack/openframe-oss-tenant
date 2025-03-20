@@ -1,5 +1,5 @@
 <template>
-  <Button
+  <OFButton
     :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'"
     class="theme-toggle p-button-text p-button-rounded"
     @click="toggleTheme"
@@ -23,4 +23,4 @@ const { toggleTheme } = themeStore
 .theme-toggle:hover {
   background: var(--surface-hover);
 }
-</style> 
+</style>  
