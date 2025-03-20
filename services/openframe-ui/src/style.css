@@ -616,9 +616,10 @@ body {
 .p-multiselect .p-multiselect-token {
   margin-right: 0.25rem !important;
   height: 1.25rem !important;
-  padding: 0 0.25rem !important;
-  font-size: 0.675rem !important;
-  max-width: 60px !important;
+  padding: 0 0.5rem !important;
+  font-size: 0.75rem !important;
+  min-width: 50px !important;
+  max-width: 80px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
