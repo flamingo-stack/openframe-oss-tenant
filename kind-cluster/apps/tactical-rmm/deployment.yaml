@@ -182,6 +182,20 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Nginx..." &&
+          until nc -z tactical-nginx 8081; do sleep 2; done &&
+          echo "Nginx is ready!"
+          ']
       containers:
       - name: backend
         image: ghcr.io/flamingo-cx/openframe-tactical-backend:latest
@@ -289,6 +303,14 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      initContainers:
+      - name: wait-for-backend
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
       containers:
       - name: nats
         image: ghcr.io/flamingo-cx/openframe-tactical-nats:latest
@@ -348,6 +370,20 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
       containers:
       - name: websockets
         image: ghcr.io/flamingo-cx/openframe-tactical-websockets:latest
@@ -410,6 +446,20 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
       containers:
       - name: celery
         image: ghcr.io/flamingo-cx/openframe-tactical-celery:latest
@@ -522,6 +572,20 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
       containers:
       - name: celerybeat
         image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:latest
