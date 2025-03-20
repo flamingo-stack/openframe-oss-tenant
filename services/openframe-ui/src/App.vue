@@ -60,16 +60,19 @@ body {
 .p-paginator {
   background: var(--surface-card) !important;
   border: none !important;
-  padding: 1.25rem 1rem !important;
-  margin-top: 1rem !important;
+  padding: 0.5rem 0.5rem !important; /* Further reduced padding */
+  margin-top: 0.5rem !important; /* Further reduced margin */
   border-radius: var(--border-radius) !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important; /* Lighter shadow */
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
+  font-size: 0.875rem !important; /* Smaller font size */
+  min-height: unset !important; /* Remove min-height */
+  height: auto !important; /* Auto height */
 }
 
 /* Fix layout container to ensure all elements stay on one line */
@@ -78,6 +81,8 @@ body {
   align-items: center !important;
   flex-wrap: nowrap !important;
   white-space: nowrap !important;
+  gap: 0.125rem !important; /* Smaller gap between elements */
+  height: 1.75rem !important; /* Fixed height to match buttons */
 }
 
 /* Current page indicator */
@@ -85,8 +90,9 @@ body {
   display: inline-flex !important;
   white-space: nowrap !important;
   flex: 0 0 auto !important;
-  margin-right: 1rem !important;
+  margin-right: 0.5rem !important; /* Reduced margin */
   max-width: max-content !important;
+  font-size: 0.875rem !important; /* Smaller font */
 }
 
 /* Pagination controls group */
@@ -104,15 +110,17 @@ body {
 
 /* Individual page buttons */
 .p-paginator-pages .p-paginator-page {
-  min-width: 2.5rem !important;
-  height: 2.5rem !important;
-  margin: 0 0.25rem !important;
+  min-width: 1.75rem !important; /* Even smaller buttons */
+  height: 1.75rem !important; /* Even smaller buttons */
+  margin: 0 0.125rem !important; /* Reduced margin */
   border-radius: var(--border-radius) !important;
   font-weight: 600 !important;
   transition: all 0.2s ease !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  font-size: 0.75rem !important; /* Smaller font */
+  padding: 0 !important; /* Remove padding */
 }
 
 /* Highlighted page */
@@ -133,8 +141,24 @@ body {
 .p-paginator-rpp-options {
   flex: 0 0 auto !important;
   min-width: 4rem !important;
-  margin-left: 1rem !important;
+  margin-left: 0.5rem !important; /* Reduced margin */
   max-width: max-content !important;
+}
+
+/* Make dropdown more compact */
+.p-paginator .p-dropdown {
+  height: 2rem !important; /* Smaller height */
+  font-size: 0.875rem !important; /* Smaller font */
+}
+
+/* Compact dropdown items */
+.p-paginator .p-dropdown-panel .p-dropdown-items {
+  padding: 0.25rem 0 !important; /* Reduced padding */
+}
+
+.p-paginator .p-dropdown-panel .p-dropdown-item {
+  padding: 0.25rem 0.5rem !important; /* Reduced padding */
+  font-size: 0.875rem !important; /* Smaller font */
 }
 
 /* Dark mode for pagination */
@@ -173,28 +197,44 @@ body {
   border-color: var(--surface-border) !important;
 }
 
+/* Navigation buttons (first, prev, next, last) */
+.p-paginator-first,
+.p-paginator-prev,
+.p-paginator-next,
+.p-paginator-last {
+  min-width: 1.75rem !important; /* Smaller buttons */
+  height: 1.75rem !important; /* Smaller buttons */
+  margin: 0 0.125rem !important; /* Reduced margin */
+  border-radius: var(--border-radius) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.75rem !important; /* Smaller font */
+}
+
 /* Improved mobile responsive layout */
 @media screen and (max-width: 768px) {
   .p-paginator {
-    padding: 1rem 0.75rem !important;
-    flex-direction: column !important;
+    padding: 0.5rem 0.5rem !important; /* Further reduced padding */
+    flex-direction: row !important; /* Keep on one row */
     align-items: center !important;
-    gap: 0.75rem !important;
+    gap: 0.5rem !important; /* Reduced gap */
+    flex-wrap: wrap !important; /* Allow wrapping if needed */
   }
   
   /* Group all elements properly for mobile */
   .p-paginator > div {
-    width: 100% !important;
     justify-content: center !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0 !important; /* Remove bottom margin */
   }
   
-  /* Force current page indicator to have its own row in mobile */
+  /* Force current page indicator to be inline in mobile */
   .p-paginator .p-paginator-current {
-    width: 100% !important;
-    flex: 1 0 100% !important;
-    text-align: center !important;
-    margin: 0 0 0.5rem 0 !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    text-align: left !important;
+    margin: 0 0.25rem 0 0 !important;
   }
   
   /* Center pagination controls in mobile */
@@ -204,11 +244,13 @@ body {
   .p-paginator .p-paginator-next,
   .p-paginator .p-paginator-last {
     margin: 0 0.125rem !important;
+    min-width: 1.5rem !important; /* Even smaller on mobile */
+    height: 1.5rem !important; /* Even smaller on mobile */
   }
   
   /* Position rows-per-page dropdown in mobile */
   .p-paginator .p-paginator-rpp-options {
-    margin: 0.5rem 0 0 0 !important;
+    margin: 0 0 0 0.25rem !important;
   }
 }
 
