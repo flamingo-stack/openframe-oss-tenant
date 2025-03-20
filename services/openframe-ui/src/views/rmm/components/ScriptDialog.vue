@@ -192,8 +192,7 @@ const emit = defineEmits<{
     (e: 'cancel'): void;
 }>();
 
-const submitted = ref(false);
-const scriptData = ref({
+const defaultScriptData = {
     name: '',
     description: '',
     shell: 'powershell',
@@ -208,7 +207,10 @@ const scriptData = ref({
     run_as_user: false,
     env_vars: [] as string[],
     script_type: 'userdefined' as 'userdefined' | 'builtin'
-});
+};
+
+const submitted = ref(false);
+const scriptData = ref({...defaultScriptData});
 
 const { formatScriptType, getScriptTypeSeverity, getScriptTypeClass } = useScriptType();
 
@@ -273,17 +275,25 @@ const removeEnvVar = (index: number) => {
     scriptData.value.env_vars.splice(index, 1);
 };
 
-watch(() => props.initialData, (newData: typeof props.initialData) => {
-    if (newData) {
-        console.log('Initial Data:', newData);
-        scriptData.value = {
-            ...scriptData.value,
-            ...newData,
-            script_type: newData.script_type || 'userdefined'
-        };
-        console.log('Updated Script Data:', scriptData.value);
-    }
-}, { immediate: true });
+watch(
+    [() => props.modelValue, () => props.initialData, () => props.isEditMode],
+    ([newModelValue, newInitialData, newIsEditMode]) => {
+        if (newModelValue) {
+            if (newInitialData && (newIsEditMode || newInitialData.script_type === 'builtin')) {
+                // Edit or View mode - use initial data
+                scriptData.value = {
+                    ...defaultScriptData,
+                    ...newInitialData,
+                    script_type: newInitialData.script_type || 'userdefined'
+                };
+            } else {
+                // Add mode - reset to defaults
+                scriptData.value = {...defaultScriptData};
+            }
+        }
+    },
+    { immediate: true }
+);
 
 const handleConfirm = () => {
     submitted.value = true;
@@ -294,6 +304,7 @@ const handleConfirm = () => {
 
 const handleCancel = () => {
     submitted.value = false;
+    scriptData.value = {...defaultScriptData};
     emit('cancel');
 };
 

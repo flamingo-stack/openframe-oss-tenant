@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
+import { ref, onMounted, computed, nextTick } from "@vue/runtime-core";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -252,7 +252,10 @@ const selectedDevices = ref<string[]>([]);
 const openAddScriptDialog = () => {
   selectedScript.value = null;
   isEditMode.value = false;
-  showAddScriptDialog.value = true;
+  showAddScriptDialog.value = false;
+  nextTick(() => {
+    showAddScriptDialog.value = true;
+  });
 };
 
 const newScript = ref({
