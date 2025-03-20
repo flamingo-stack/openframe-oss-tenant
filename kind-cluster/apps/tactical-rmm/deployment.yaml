@@ -141,13 +141,13 @@ spec:
         - containerPort: 8000
         env:
         - name: NGINX_HOST_IP
-          value: "tactical-nginx"
+          value: "tactical-nginx.tactical-rmm.svc.cluster.local"
         - name: NGINX_HOST_PORT
           value: "8080"
         - name: API_HOST
-          value: "tactical-backend:8000"
+          value: "tactical-backend.tactical-rmm.svc.cluster.local:8000"
         - name: APP_HOST
-          value: "tactical-frontend:8080"
+          value: "tactical-frontend.tactical-rmm.svc.cluster.local:8080"
         - name: NATS_STD_BIND_HOST
           value: tactical-nats.tactical-rmm.svc.cluster.local:9235
         - name: NATS_WEBSOCKET_HOST
