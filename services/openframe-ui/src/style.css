@@ -481,6 +481,67 @@ body {
   box-shadow: 0 0 0 1px var(--primary-color) !important;
 }
 
+/* MultiSelect panel styles */
+.p-multiselect-panel {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 6px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%) !important;
+}
+
+.p-multiselect-panel .p-multiselect-items {
+  padding: 0.5rem 0 !important;
+}
+
+.p-multiselect-panel .p-multiselect-header {
+  display: none !important;
+}
+
+.p-multiselect-panel .p-multiselect-items-wrapper {
+  background: var(--surface-card) !important;
+}
+
+.p-multiselect-panel .p-multiselect-item {
+  padding: 0.5rem 0.75rem !important;
+  color: var(--text-color) !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.p-multiselect-panel .p-multiselect-item:hover {
+  background: var(--surface-hover) !important;
+}
+
+.p-multiselect-panel .p-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  margin-right: 0.75rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.p-multiselect-panel .p-checkbox .p-checkbox-box {
+  width: 18px !important;
+  height: 18px !important;
+  border: 1px solid var(--surface-border) !important;
+  background: var(--surface-section) !important;
+  border-radius: 4px !important;
+}
+
+.p-multiselect-panel .p-checkbox .p-checkbox-box .p-checkbox-icon {
+  font-size: 12px !important;
+  color: var(--surface-card) !important;
+}
+
+.p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
 .p-overlay-modal {
   background: none !important;
 }

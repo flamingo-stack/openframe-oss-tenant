@@ -71,15 +71,16 @@
 
                         <div class="of-form-group">
                             <label for="platforms" class="of-form-label">Supported Platforms</label>
-                            <MultiSelect id="platforms" v-model="scriptData.supported_platforms"
-                                :options="platformOptions" optionLabel="label" optionValue="value"
-                                placeholder="All Platforms" class="w-full" display="chip" :showClear="true"
-                                :filter="false" :showToggleAll="false" :selectAll="false" :resetFilterOnHide="true"
-                                :autoOptionFocus="false" :panelClass="'surface-0'"
-                                :disabled="isFieldDisabled">
-                                <template #header>
-                                </template>
-                            </MultiSelect>
+                            <MultiSelect 
+                                id="platforms" 
+                                v-model="scriptData.supported_platforms"
+                                :options="platformOptions" 
+                                optionLabel="label" 
+                                optionValue="value"
+                                placeholder="All Platforms" 
+                                display="chip"
+                                :disabled="isFieldDisabled"
+                            />
                         </div>
 
                         <div class="of-form-group">
@@ -154,9 +155,9 @@ import {
     Textarea,
     Dropdown,
     ScriptEditor,
-    OFButton
+    OFButton,
+    MultiSelect
 } from "../../../components/ui";
-import MultiSelect from 'primevue/multiselect';
 import Checkbox from 'primevue/checkbox';
 import InputNumber from 'primevue/inputnumber';
 import Tag from 'primevue/tag';
@@ -466,39 +467,7 @@ const isFieldDisabled = computed(() => {
     align-items: center;
 }
 
-:deep(.p-multiselect) {
-    width: 100%;
-    height: 42px;
-    background: var(--surface-section);
-    border: none;
-}
-
-:deep(.p-multiselect .p-multiselect-label) {
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-}
-
-:deep(.p-multiselect .p-multiselect-trigger) {
-    width: 3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-:deep(.p-multiselect-panel) {
-    .p-multiselect-header {
-        display: none !important;
-    }
-
-    .p-multiselect-items {
-        padding: 0;
-    }
-
-    .p-multiselect-item:first-child {
-        display: none !important;
-    }
-}
+/* MultiSelect styling is now handled globally in style.css */
 
 .checkbox-group {
     margin-bottom: 0;
