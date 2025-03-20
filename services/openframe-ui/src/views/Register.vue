@@ -67,7 +67,7 @@
           </div>
         </div>
         <div class="of-form-group">
-          <Button type="submit" :loading="loading" class="of-button w-full">Create Account</Button>
+          <OFButton type="submit" :loading="loading" class="of-button w-full">Create Account</OFButton>
         </div>
         <div class="of-text-center">
           <p class="of-text-secondary">
@@ -84,7 +84,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
+import { OFButton } from '@/components/ui'
 import { ToastService } from '@/services/ToastService'
 
 const router = useRouter()
@@ -407,4 +407,4 @@ const handleSubmit = async () => {
   margin-top: 0.25rem;
   display: block;
 }
-</style> 
+</style>  

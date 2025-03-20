@@ -49,7 +49,7 @@
           </div>
 
           <div class="button-row">
-            <Button 
+            <OFButton 
               v-if="!editing"
               type="button" 
               label="Edit Profile" 
@@ -59,7 +59,7 @@
               size="large"
             />
             <template v-else>
-              <Button 
+              <OFButton 
                 type="submit" 
                 label="Save Changes" 
                 :loading="saving"
@@ -67,7 +67,7 @@
                 severity="primary"
                 size="large"
               />
-              <Button 
+              <OFButton 
                 type="button" 
                 label="Cancel" 
                 @click="cancelEditing"
@@ -89,7 +89,7 @@ import { useRouter } from 'vue-router';
 import { AuthService } from '../services/AuthService';
 import { useAuthStore } from '../stores/auth';
 import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
+import { OFButton } from '../components/ui';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -236,4 +236,4 @@ onMounted(() => {
   font-weight: 600;
   line-height: 1.5;
 }
-</style> 
+</style>  

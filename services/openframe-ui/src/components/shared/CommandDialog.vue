@@ -14,24 +14,19 @@
   >
     <div class="grid">
       <div class="col-12">
-        <div class="field">
+        <div class="of-form-group">
           <label for="command">Command</label>
-          <textarea 
+          <ScriptEditor 
             id="command" 
             v-model="command" 
-            class="code-editor"
-            rows="4"
+            :rows="4"
             required
-            :class="{ 'p-invalid': submitted && !command }"
-            placeholder="Enter command to execute"
-          ></textarea>
-          <small class="p-error" v-if="submitted && !command">Command is required.</small>
-          <small class="helper-text">
-            The command will be executed on the selected device. Make sure to use the correct syntax for the target platform.
-          </small>
+            :error="submitted && !command ? 'Command is required.' : ''"
+            helperText="The command will be executed on the selected device. Make sure to use the correct syntax for the target platform."
+          />
         </div>
 
-        <div v-if="output" class="field">
+        <div v-if="output" class="of-form-group">
           <label>Output</label>
           <pre class="command-output">{{ output }}</pre>
         </div>
@@ -40,13 +35,13 @@
 
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Close" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="onCancel"
         />
-        <Button 
+        <OFButton 
           label="Run" 
           icon="pi pi-play" 
           class="p-button-primary" 
@@ -59,8 +54,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
+import { Dialog, OFButton, ScriptEditor } from '../../components/ui';
 
 const props = defineProps<{
   visible: boolean;
@@ -147,7 +141,7 @@ const resetForm = () => {
     border-top: 1px solid var(--surface-border);
   }
 
-  .field {
+  .of-form-group {
     margin-bottom: 1.5rem;
 
     label {
@@ -212,4 +206,4 @@ const resetForm = () => {
   font-size: 0.875rem;
   line-height: 1.4;
 }
-</style> 
+</style>           

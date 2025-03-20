@@ -15,7 +15,7 @@
                     </div>
                     <div class="tool-header-right">
                       <div class="save-button-wrapper">
-                        <Button v-if="hasPropertyChanges(category, subKey)"
+                        <OFButton v-if="hasPropertyChanges(category, subKey)"
                           icon="pi pi-save"
                           class="p-button-text p-button-sm save-button"
                           @click="handleSave(category, subKey)"
@@ -105,7 +105,7 @@
                     </div>
                     <div class="tool-header-right">
                       <div class="save-button-wrapper">
-                        <Button v-if="hasPropertyChanges(category, subKey)"
+                        <OFButton v-if="hasPropertyChanges(category, subKey)"
                           icon="pi pi-save"
                           class="p-button-text p-button-sm save-button"
                           @click="handleSave(category, subKey)"
@@ -194,7 +194,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
@@ -479,4 +479,4 @@ h2 {
     background: var(--primary-600);
   }
 }
-</style> 
+</style>    

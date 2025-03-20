@@ -85,12 +85,12 @@
                     <div class="p-inputgroup mb-2">
                       <span class="p-inputgroup-addon" :title="toolUrl.type">{{ formatUrlType(toolUrl.type) }}</span>
                       <input class="p-inputtext p-component" readonly :value="getUrlWithPort(toolUrl)" />
-                      <button class="p-button p-component p-button-icon-only" @click.stop="() => copyToolUrl(toolUrl)">
+                      <OFButton class="p-button-icon-only" @click.stop="() => copyToolUrl(toolUrl)">
                         <i class="pi pi-copy"></i>
-                      </button>
-                      <button class="p-button p-component p-button-icon-only" @click.stop="() => openToolUrl(toolUrl)">
+                      </OFButton>
+                      <OFButton class="p-button-icon-only" @click.stop="() => openToolUrl(toolUrl)">
                         <i class="pi pi-external-link"></i>
-                      </button>
+                      </OFButton>
                     </div>
                     <!-- Show API key for API URLs -->
                     <div v-if="toolUrl.type === 'API' && tool?.credentials?.apiKey" class="p-inputgroup mb-2 credential-group">
@@ -102,18 +102,18 @@
                         input-class="w-full" 
                         toggle-mask 
                       />
-                      <button class="p-button p-component p-button-icon-only" @click.stop="() => copyText(tool.credentials?.apiKey?.key)">
+                      <OFButton class="p-button-icon-only" @click.stop="() => copyText(tool.credentials?.apiKey?.key)">
                         <i class="pi pi-copy"></i>
-                      </button>
+                      </OFButton>
                     </div>
                     <!-- Show username/password for DASHBOARD URLs -->
                     <template v-if="toolUrl.type === 'DASHBOARD'">
                       <div v-if="tool?.credentials?.username" class="p-inputgroup mb-2 credential-group">
                         <span class="p-inputgroup-addon">User</span>
                         <input class="p-inputtext p-component" readonly :value="tool.credentials?.username" />
-                        <button class="p-button p-component p-button-icon-only" @click.stop="() => copyText(tool.credentials?.username)">
+                        <OFButton class="p-button-icon-only" @click.stop="() => copyText(tool.credentials?.username)">
                           <i class="pi pi-copy"></i>
-                        </button>
+                        </OFButton>
                       </div>
                       <div v-if="tool.credentials?.password" class="p-inputgroup mb-2 credential-group">
                         <span class="p-inputgroup-addon">Pass</span>
@@ -124,9 +124,9 @@
                           input-class="w-full" 
                           toggle-mask 
                         />
-                        <button class="p-button p-component p-button-icon-only" @click.stop="() => copyText(tool.credentials?.password)">
+                        <OFButton class="p-button-icon-only" @click.stop="() => copyText(tool.credentials?.password)">
                           <i class="pi pi-copy"></i>
-                        </button>
+                        </OFButton>
                       </div>
                     </template>
                   </template>
@@ -159,7 +159,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { getDisplayName } from '../utils/displayUtils';
 import { useRoute, useRouter } from 'vue-router';
 import { getToolCategory, getCategoryClass, sortToolsByCategory } from '../utils/categoryUtils';
-import Button from 'primevue/button';
+import { OFButton } from '../components/ui';
 
 // Get theme store
 const themeStore = useThemeStore();
@@ -937,4 +937,4 @@ h2 {
   align-items: center;
   gap: 1rem;
 }
-</style> 
+</style>          

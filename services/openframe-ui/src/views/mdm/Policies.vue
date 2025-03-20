@@ -2,7 +2,7 @@
   <div class="mdm-policies">
     <ModuleHeader title="Policies">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Create Policy" 
           icon="pi pi-plus" 
           @click="showCreateDialog = true"
@@ -55,19 +55,19 @@
         <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Policy'"
                 @click="editPolicy(data)" 
               />
-              <Button 
+              <OFButton 
                 :icon="isEnabled(data) ? 'pi pi-pause' : 'pi pi-play'" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="isEnabled(data) ? 'Disable Policy' : 'Enable Policy'"
                 @click="togglePolicy(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Policy'"
@@ -94,8 +94,8 @@
     >
       <div class="grid">
         <div class="col-12">
-          <div class="field">
-            <label for="name">Name</label>
+          <div class="of-form-group">
+            <label for="name" class="of-form-label">Name</label>
             <InputText 
               id="name" 
               v-model="newPolicy.name" 
@@ -108,8 +108,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label>Status</label>
+          <div class="of-form-group">
+            <label class="of-form-label">Status</label>
             <div class="flex gap-4">
               <div class="status-option" :class="{ active: newPolicy.enabled }" @click="newPolicy.enabled = true">
                 <div class="radio-button">
@@ -134,8 +134,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label for="description">Description</label>
+          <div class="of-form-group">
+            <label for="description" class="of-form-label">Description</label>
             <Textarea 
               id="description" 
               v-model="newPolicy.description" 
@@ -149,8 +149,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label for="platform">Platform</label>
+          <div class="of-form-group">
+            <label for="platform" class="of-form-label">Platform</label>
             <Dropdown
               id="platform"
               v-model="newPolicy.platform"
@@ -169,27 +169,24 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label for="query">Query</label>
-            <textarea 
+          <div class="of-form-group">
+            <label for="query" class="of-form-label">Query</label>
+            <ScriptEditor 
+              id="query"
               v-model="newPolicy.query" 
-              class="code-editor"
-              rows="12"
+              :rows="12"
               required
-              :class="{ 'p-invalid': submitted && !newPolicy.query }"
+              :error="submitted && !newPolicy.query ? 'Query is required.' : ''"
+              helperText="To target specific devices, you can add conditions to your query using device properties like hostname, IP, etc.
+              Example: SELECT 1 FROM system_info WHERE hostname IN ('device1', 'device2') AND ..."
               placeholder="Enter your policy query here..."
-            ></textarea>
-            <small class="p-error" v-if="submitted && !newPolicy.query">Query is required.</small>
-            <small class="helper-text">
-              To target specific devices, you can add conditions to your query using device properties like hostname, IP, etc.
-              Example: SELECT 1 FROM system_info WHERE hostname IN ('device1', 'device2') AND ...
-            </small>
+            />
           </div>
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label>Policy Scope</label>
+          <div class="of-form-group">
+            <label class="of-form-label">Policy Scope</label>
             <div class="flex gap-4">
               <div class="status-option" :class="{ active: newPolicy.scope === 'global' }" @click="newPolicy.scope = 'global'">
                 <div class="radio-button">
@@ -216,13 +213,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideCreateDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Update' : 'Create'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -236,25 +233,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dialog from 'primevue/dialog';
-import Editor from 'primevue/editor';
-import Dropdown from 'primevue/dropdown';
-import Tag from 'primevue/tag';
-import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from "../../services/ToastService";
-import Checkbox from "primevue/checkbox";
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
+// Import from our new UI component library
+import { 
+  OFButton, 
+  Column, 
+  InputText, 
+  Dialog, 
+  Dropdown, 
+  Tag,
+  ScriptEditor,
+  Textarea
+} from '../../components/ui';
 
 interface FleetResponse {
   policies: Policy[];
@@ -277,7 +275,8 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 // Add directive registration
-const vTooltip = Tooltip;
+import { TooltipDirective } from '../../components/ui';
+const vTooltip = TooltipDirective;
 
 const loading = ref(true);
 const error = ref('');
@@ -762,4 +761,4 @@ onMounted(async () => {
     }
   }
 }
-</style> 
+</style>                           

@@ -6,8 +6,8 @@
 
     <div class="settings-form">
       <template v-if="category === 'general'">
-        <div class="field">
-          <label for="defaultTimeZone">Default Time Zone</label>
+        <div class="of-form-group">
+          <label for="defaultTimeZone" class="of-form-label">Default Time Zone</label>
           <Dropdown
             id="defaultTimeZone"
             v-model="settings.default_time_zone"
@@ -17,8 +17,8 @@
           />
         </div>
 
-        <div class="field">
-          <label for="agentDebugLevel">Agent Debug Level</label>
+        <div class="of-form-group">
+          <label for="agentDebugLevel" class="of-form-label">Agent Debug Level</label>
           <Dropdown
             id="agentDebugLevel"
             v-model="settings.agent_debug_level"
@@ -30,8 +30,8 @@
           />
         </div>
 
-        <div class="field">
-          <label for="agentAutoUpdate">Agent Auto Update</label>
+        <div class="of-form-group">
+          <label for="agentAutoUpdate" class="of-form-label">Agent Auto Update</label>
           <div class="flex align-items-center">
             <InputSwitch
               id="agentAutoUpdate"
@@ -239,7 +239,7 @@
               <div class="recipients-list">
                 <div v-for="(recipient, index) in settings.email_alert_recipients" :key="index" class="recipient-item">
                   <span>{{ recipient }}</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     @click="removeEmailRecipient(index)"
@@ -252,7 +252,7 @@
                     placeholder="Enter email and press Enter"
                     @keyup.enter="addEmailRecipient"
                   />
-                  <Button 
+                  <OFButton 
                     icon="pi pi-plus" 
                     class="p-button-text p-button-sm"
                     @click="addEmailRecipient"
@@ -303,7 +303,7 @@
               <div class="recipients-list">
                 <div v-for="(recipient, index) in settings.sms_alert_recipients" :key="index" class="recipient-item">
                   <span>{{ recipient }}</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     @click="removeRecipient(index)"
@@ -316,7 +316,7 @@
                     placeholder="Enter phone number and press Enter"
                     @keyup.enter="addRecipient"
                   />
-                  <Button 
+                  <OFButton 
                     icon="pi pi-plus" 
                     class="p-button-text p-button-sm"
                     @click="addRecipient"
@@ -331,7 +331,7 @@
       <template v-else-if="category === 'custom_fields'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Add Field"
               severity="success"
@@ -372,7 +372,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Field'"
@@ -388,7 +388,7 @@
       <template v-else-if="category === 'key_store'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Add Key"
               severity="success"
@@ -415,7 +415,7 @@
               <template #body="{ data }">
                 <div class="flex align-items-center gap-2">
                   <span class="text-muted">••••••••</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-copy" 
                     class="p-button-text p-button-sm"
                     v-tooltip.top="'Copy Value'"
@@ -427,7 +427,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Key'"
@@ -443,7 +443,7 @@
       <template v-else-if="category === 'url_actions'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Add Action"
               severity="success"
@@ -484,7 +484,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Action'"
@@ -500,7 +500,7 @@
       <template v-else-if="category === 'api_keys'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Generate Key"
               severity="success"
@@ -527,7 +527,7 @@
               <template #body="{ data }">
                 <div class="flex align-items-center gap-2">
                   <span class="text-muted">••••••••</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-copy" 
                     class="p-button-text p-button-sm"
                     v-tooltip.top="'Copy Key'"
@@ -544,7 +544,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete API Key'"
@@ -598,13 +598,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="showNewApiKeyDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Generate" 
           icon="pi pi-check" 
           :loading="generatingApiKey"
@@ -701,13 +701,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="closeUrlActionDialog"
         />
-        <Button 
+        <OFButton 
           label="Save" 
           icon="pi pi-check" 
           :loading="savingUrlAction"
@@ -756,13 +756,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="showKeyStoreDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Save" 
           icon="pi pi-check" 
           :loading="savingKeyStore"
@@ -878,13 +878,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="showCustomFieldDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Save" 
           icon="pi pi-check" 
           :loading="savingCustomField"
@@ -915,13 +915,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="No" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="deleteDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Yes" 
           icon="pi pi-check" 
           class="p-button-danger" 
@@ -948,7 +948,7 @@ import Chips from 'primevue/chips';
 import Password from 'primevue/password';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
 import Calendar from 'primevue/calendar';
@@ -1680,4 +1680,4 @@ const handleDelete = async () => {
     }
   }
 }
-</style> 
+</style>                                

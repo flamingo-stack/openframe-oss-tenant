@@ -2,7 +2,7 @@
   <div class="mdm-queries">
     <ModuleHeader title="Queries">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Create Query" 
           icon="pi pi-plus" 
           @click="showCreateDialog = true"
@@ -63,19 +63,19 @@
         <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Query'"
                 @click="editQuery(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Query'"
                 @click="runQuery(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Query'"
@@ -102,7 +102,7 @@
     >
       <div class="grid">
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="name">Name</label>
             <InputText 
               id="name" 
@@ -116,7 +116,7 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="description">Description</label>
             <Textarea 
               id="description" 
@@ -131,7 +131,7 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="platform">Platform</label>
             <Dropdown
               id="platform"
@@ -151,30 +151,29 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="query">Query</label>
-            <textarea 
+            <ScriptEditor 
+              id="query"
               v-model="newQuery.query" 
-              class="code-editor"
-              rows="12"
+              :rows="12"
               required
-              :class="{ 'p-invalid': submitted && !newQuery.query }"
+              :error="submitted && !newQuery.query ? 'Query is required.' : ''"
               placeholder="Enter your query script here..."
-            ></textarea>
-            <small class="p-error" v-if="submitted && !newQuery.query">Query is required.</small>
+            />
           </div>
         </div>
       </div>
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideCreateDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Update' : 'Create'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -188,24 +187,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dialog from 'primevue/dialog';
-import Editor from 'primevue/editor';
-import Dropdown from 'primevue/dropdown';
-import Tag from 'primevue/tag';
-import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
+// Import from our new UI component library
+import { 
+  OFButton, 
+  Column, 
+  InputText, 
+  Dialog, 
+  Dropdown, 
+  Tag,
+  ScriptEditor 
+} from '../../components/ui';
 
 interface FleetResponse {
   queries: Query[];
@@ -228,7 +228,8 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 // Add directive registration
-const vTooltip = Tooltip;
+import { TooltipDirective } from '../../components/ui';
+const vTooltip = TooltipDirective;
 
 const loading = ref(true);
 const error = ref('');
@@ -415,7 +416,7 @@ onMounted(async () => {
     border-top: 1px solid var(--surface-border);
   }
 
-  .field {
+  .of-form-group {
     margin-bottom: 1.5rem;
 
     label {
@@ -582,4 +583,4 @@ onMounted(async () => {
     }
   }
 }
-</style> 
+</style>             

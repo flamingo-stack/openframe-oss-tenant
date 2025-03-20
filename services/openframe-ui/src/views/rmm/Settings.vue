@@ -57,7 +57,7 @@ import { ToastService } from '../../services/ToastService';
 import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
 import type { ExtendedRMMSettings } from '../../types/rmm';
 import Checkbox from 'primevue/checkbox';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Dropdown from 'primevue/dropdown';

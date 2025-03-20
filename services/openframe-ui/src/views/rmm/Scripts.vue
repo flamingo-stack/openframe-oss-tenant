@@ -2,7 +2,7 @@
   <div class="rmm-scripts">
     <ModuleHeader title="Scripts">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Add Script" 
           icon="pi pi-plus"
           @click="showAddScriptDialog = true"
@@ -99,28 +99,25 @@
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Script'"
                 @click="runScript(data)" 
               />
-              <Button 
-                v-if="data.script_type === 'builtin'"
+              <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'View Script'"
                 @click="viewScript(data)" 
               />
-              <Button 
-                v-if="data.script_type === 'userdefined'"
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Script'"
                 @click="editScript(data)" 
               />
-              <Button 
-                v-if="data.script_type === 'userdefined'"
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Script'"
@@ -133,15 +130,88 @@
     </div>
 
     <!-- Add/Edit Script Dialog -->
-    <ScriptDialog
-      v-model:visible="showAddScriptDialog"
-      :is-edit-mode="isEditMode"
-      :loading="submitting"
-      :initial-script="selectedScript"
-      :script-type="selectedScript?.script_type"
-      @save="saveScript"
-      @cancel="hideDialog"
-    />
+    <Dialog 
+      v-model:visible="showAddScriptDialog" 
+      :style="{ width: '800px' }" 
+      :header="isEditMode ? 'Edit Script' : 'Add New Script'" 
+      :modal="true"
+      class="p-dialog-custom"
+      :pt="{
+        root: { style: { position: 'relative', margin: '0 auto' } },
+        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
+      }"
+    >
+      <div class="of-form-group">
+        <label for="name" class="of-form-label">Name</label>
+        <InputText 
+          id="name" 
+          v-model="newScript.name" 
+          required 
+          autofocus 
+          :class="{ 'p-invalid': submitted && !newScript.name }"
+        />
+        <small class="p-error" v-if="submitted && !newScript.name">
+          Name is required.
+        </small>
+      </div>
+
+      <div class="of-form-group">
+        <label for="type" class="of-form-label">Type</label>
+        <Dropdown
+          id="type"
+          v-model="newScript.type"
+          :options="scriptTypes"
+          optionLabel="name"
+          optionValue="value"
+          placeholder="Select a script type"
+          :class="{ 'p-invalid': submitted && !newScript.type }"
+        />
+        <small class="p-error" v-if="submitted && !newScript.type">
+          Type is required.
+        </small>
+      </div>
+
+      <div class="of-form-group">
+        <label for="description" class="of-form-label">Description</label>
+        <InputText 
+          id="description" 
+          v-model="newScript.description" 
+          required 
+          :class="{ 'p-invalid': submitted && !newScript.description }"
+        />
+        <small class="p-error" v-if="submitted && !newScript.description">
+          Description is required.
+        </small>
+      </div>
+
+      <div class="of-form-group">
+        <label for="content" class="of-form-label">Script Content</label>
+        <ScriptEditor 
+          id="content" 
+          v-model="newScript.content" 
+          :rows="12"
+          :error="submitted && !newScript.content ? 'Script content is required.' : ''"
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex justify-content-end gap-2">
+          <OFButton 
+            label="Cancel" 
+            icon="pi pi-times" 
+            class="p-button-text" 
+            @click="hideDialog"
+          />
+          <OFButton 
+            :label="isEditMode ? 'Save' : 'Add'" 
+            icon="pi pi-check" 
+            class="p-button-primary" 
+            @click="saveScript" 
+            :loading="submitting"
+          />
+        </div>
+      </template>
+    </Dialog>
 
     <!-- Run Script Dialog -->
     <Dialog 
@@ -155,8 +225,8 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
-        <label for="devices">Target Devices</label>
+      <div class="of-form-group">
+        <label for="devices" class="of-form-label">Target Devices</label>
         <MultiSelect
           id="devices"
           v-model="selectedDevices"
@@ -164,23 +234,19 @@
           optionLabel="hostname"
           optionValue="id"
           placeholder="Select target devices"
-          :class="{ 'p-invalid': runSubmitted && selectedDevices.length === 0 }"
-          display="chip"
+          :error="runSubmitted && selectedDevices.length === 0 ? 'Select at least one device.' : ''"
         />
-        <small class="p-error" v-if="runSubmitted && selectedDevices.length === 0">
-          Select at least one device.
-        </small>
       </div>
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="showRunScriptDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Run" 
             icon="pi pi-play" 
             class="p-button-primary" 
@@ -212,13 +278,13 @@
       </div>
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="No" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="deleteScriptDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Yes" 
             icon="pi pi-check" 
             class="p-button-danger" 
@@ -232,15 +298,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dropdown from 'primevue/dropdown';
-import MultiSelect from 'primevue/multiselect';
-import Tag from 'primevue/tag';
+import { ref, onMounted } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -248,9 +306,17 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import InputNumber from 'primevue/inputnumber';
-import Checkbox from 'primevue/checkbox';
-import ScriptDialog from '../../components/shared/ScriptDialog.vue';
+// Import from our new UI component library
+import { 
+  OFButton, 
+  Column, 
+  Dialog, 
+  InputText, 
+  Dropdown, 
+  MultiSelect, 
+  Tag,
+  ScriptEditor 
+} from "../../components/ui";
 
 interface Script {
   id: string;
@@ -765,4 +831,4 @@ onMounted(async () => {
     }
   }
 }
-</style> 
+</style>              

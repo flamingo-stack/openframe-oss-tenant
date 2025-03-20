@@ -1,5 +1,5 @@
 <template>
-  <div class="search-bar">
+  <div class="of-search-bar">
     <div class="p-inputgroup">
       <span class="p-inputgroup-addon">
         <i class="pi pi-search"></i>
@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext';
+import { InputText } from '../../components/ui';
 
 defineProps<{
   modelValue: string;
@@ -35,48 +35,14 @@ const handleKeyPress = (e: KeyboardEvent) => {
 }
 </script>
 
-<style scoped>
-.search-bar {
-  width: 100%;
-  height: 100%;
+<style>
+.of-search-bar {
+  width: 30rem;
+  margin-right: auto;
+  margin-bottom: var(--of-spacing-md, 1rem);
 }
 
-:deep(.p-inputgroup) {
-  height: 100%;
-  background: var(--surface-section);
-  border-radius: 6px;
-  box-shadow: none;
+.of-search-bar .p-inputgroup {
+  box-shadow: var(--card-shadow);
 }
-
-:deep(.p-inputgroup-addon) {
-  background: var(--surface-section);
-  border: none;
-  padding: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-:deep(.p-inputgroup .p-inputtext) {
-  background: var(--surface-section);
-  border: none;
-  padding: 0.75rem 1rem;
-  height: 100%;
-}
-
-:deep(.p-inputgroup .p-inputtext:focus) {
-  box-shadow: none;
-  border: none;
-  outline: none;
-}
-
-:deep(.p-inputgroup-addon:first-child) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-:deep(.p-inputgroup .p-inputtext:last-child) {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-</style> 
+</style>       
