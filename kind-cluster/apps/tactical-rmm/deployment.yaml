@@ -148,6 +148,10 @@ spec:
           value: "tactical-backend:8000"
         - name: APP_HOST
           value: "tactical-frontend:8080"
+        - name: NATS_STD_BIND_HOST
+          value: tactical-nats.tactical-rmm.svc.cluster.local:9235
+        - name: NATS_WEBSOCKET_HOST
+          value: tactical-websockets.tactical-rmm.svc.cluster.local:8383
         - name: TACTICAL_DIR
           value: "/opt/tactical"
         - name: TACTICAL_TMP_DIR
