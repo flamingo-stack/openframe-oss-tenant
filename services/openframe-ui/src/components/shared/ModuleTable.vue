@@ -82,21 +82,32 @@ const filters = ref({
       background: var(--surface-section);
     }
     
+    /* Ensure all pagination elements get dark styling */
     .p-paginator.of-paginator {
-      background: var(--surface-section);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+      background: var(--surface-section) !important;
+      color: var(--text-color) !important;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
       
+      /* Target buttons and controls */
       .p-paginator-page,
       .p-paginator-first,
       .p-paginator-prev,
       .p-paginator-next,
-      .p-paginator-last {
-        background: transparent;
+      .p-paginator-last,
+      .p-dropdown-trigger,
+      .p-dropdown-panel {
+        background: var(--surface-section);
         color: var(--text-color);
         
         &:not(.p-highlight):hover {
           background: rgba(255, 255, 255, 0.1);
         }
+      }
+      
+      /* Style dropdown in dark mode */
+      .p-dropdown {
+        background: var(--surface-section);
+        border-color: var(--surface-border);
       }
     }
   }
@@ -185,63 +196,75 @@ const filters = ref({
     border-radius: var(--border-radius);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     display: flex;
+    flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+    width: 100%;
 
-    .p-paginator-current {
-      flex: 0 0 auto;
-      margin-right: auto;
-      white-space: nowrap;
-      padding-right: 1rem;
+    /* Ensure that the pagination elements stay on a single row */
+    .p-paginator-left-content,
+    .p-paginator-right-content {
+      display: flex;
+      align-items: center;
     }
 
+    /* Current page indicator */
+    .p-paginator-current {
+      margin-right: auto;
+      white-space: nowrap;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    /* Container for pagination controls */
+    .p-paginator-pages,
     .p-paginator-first,
     .p-paginator-prev,
-    .p-paginator-pages,
     .p-paginator-next,
     .p-paginator-last {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      white-space: nowrap;
     }
 
-    .p-paginator-pages {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
+    /* Page selector dropdown */
     .p-paginator-rpp-options {
       flex: 0 0 auto;
       margin-left: 1rem;
+      min-width: 4rem;
     }
 
+    /* Mobile responsive layout */
     @media screen and (max-width: 768px) {
+      padding: 1rem 0.75rem;
       flex-direction: row;
       flex-wrap: wrap;
-      align-items: center;
       justify-content: center;
-      gap: 0.75rem;
+      align-items: center;
+      row-gap: 0.75rem;
+      column-gap: 0.5rem;
       
+      /* Force current page indicator to take full width in mobile */
       .p-paginator-current {
-        order: 1;
+        width: 100%;
         flex: 1 0 100%;
         margin: 0 0 0.5rem 0;
         text-align: center;
-        padding-right: 0;
+        order: 1;
       }
       
+      /* Center pagination controls in mobile */
       .p-paginator-first,
       .p-paginator-prev,
       .p-paginator-pages,
       .p-paginator-next,
       .p-paginator-last {
         order: 2;
-        margin: 0;
+        margin: 0 0.125rem;
       }
       
+      /* Position rows-per-page dropdown in mobile */
       .p-paginator-rpp-options {
         order: 3;
         margin: 0.5rem 0 0 0;
@@ -381,4 +404,4 @@ const filters = ref({
     }
   }
 }
-</style>                                                                                                                                                                                                    
+</style>                                                                                                                                                                                                                                                                                        

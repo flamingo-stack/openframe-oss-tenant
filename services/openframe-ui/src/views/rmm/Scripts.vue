@@ -697,6 +697,58 @@ onMounted(async () => {
 }
 
 /* Using standardized pagination styling from ModuleTable */
+/* Custom pagination styling for Scripts view */
+:deep(.p-paginator) {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  
+  .p-paginator-current {
+    white-space: nowrap;
+    flex: 0 0 auto;
+    margin-right: auto;
+  }
+  
+  .p-paginator-first,
+  .p-paginator-prev,
+  .p-paginator-pages,
+  .p-paginator-next,
+  .p-paginator-last {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  
+  .p-paginator-rpp-options {
+    flex: 0 0 auto;
+    margin-left: 1rem;
+  }
+}
+
+/* Dark mode support for Scripts pagination */
+:global([data-theme="dark"]) {
+  :deep(.p-paginator) {
+    background: var(--surface-section) !important;
+    color: var(--text-color) !important;
+    
+    .p-paginator-page,
+    .p-paginator-first,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-last,
+    .p-dropdown-trigger,
+    .p-dropdown-panel {
+      background: var(--surface-section);
+      color: var(--text-color);
+      
+      &:not(.p-highlight):hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
 
 /* Dialog specific styles */
 :deep(.p-dialog) {
@@ -765,4 +817,4 @@ onMounted(async () => {
     }
   }
 }
-</style>                              
+</style>                                                                                                                        
