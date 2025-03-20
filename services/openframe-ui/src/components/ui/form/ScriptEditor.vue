@@ -75,7 +75,7 @@ onMounted(async () => {
         enabled: true
       },
       scrollBeyondLastLine: false,
-      fontSize: 12,
+      fontSize: 14,
       lineNumbers: 'on',
       roundedSelection: false,
       scrollbar: {
@@ -123,5 +123,17 @@ onBeforeUnmount(() => {
 
 .of-script-editor-wrapper.p-invalid .monaco-editor-container {
   border-color: var(--red-500);
+}
+
+:deep(.monaco-editor) {
+  font-size: 14px !important;
+}
+
+:deep(.monaco-editor .margin) {
+  font-size: 14px !important;
+}
+
+:deep(.monaco-editor .line-numbers) {
+  font-size: 14px !important;
 }
 </style>
