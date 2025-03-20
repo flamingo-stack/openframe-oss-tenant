@@ -160,7 +160,7 @@ body {
 /* Make dropdown more compact */
 .p-paginator .p-dropdown {
   height: 2rem !important; /* Smaller height */
-  font-size: 0.875rem !important; /* Smaller font */
+  font-size: 0.65rem !important; /* Match page number font size */
 }
 
 /* Compact dropdown items */
