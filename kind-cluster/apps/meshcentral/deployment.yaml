@@ -89,9 +89,9 @@ spec:
         - name: MESH_PORT
           value: "8383"
         - name: MESH_HOST
-          value: "meshcentral"
+          value: "meshcentral.meshcentral.svc.cluster.local"
         - name: MESH_EXTERNAL_HOST
-          value: "localhost"
+          value: "meshcentral"
         - name: MESH_EXTERNAL_PORT
           value: "8383"
         - name: MESH_NGINX_HOST
@@ -169,7 +169,7 @@ spec:
         - name: MESH_PORT
           value: "8383"
         - name: MESH_HOST
-          value: "meshcentral"
+          value: "meshcentral.meshcentral.svc.cluster.local"
         - name: MESH_EXTERNAL_HOST
           value: "meshcentral"
         - name: MESH_EXTERNAL_PORT
