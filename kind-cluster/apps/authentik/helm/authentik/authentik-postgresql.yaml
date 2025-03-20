@@ -1,0 +1,92 @@
+primary:
+  name: primary
+  pgHbaConfiguration: |-
+    local all all trust
+    host all all localhost trust
+  initdb:
+    ## @param primary.initdb.args PostgreSQL initdb extra arguments
+    ##
+    args: ""
+    postgresqlWalDir: ""
+    ## @param primary.initdb.scripts Dictionary of initdb scripts
+    ## Specify dictionary of scripts to be run at first boot
+    ## e.g:
+    ## scripts:
+    ##   my_init_script.sh: |
+    ##      #!/bin/sh
+    ##      echo "Do something."
+    ##
+    scripts: |
+      00-create-databases.sh: |
+        #!/bin/bash
+
+        set -e
+
+        echo "Starting database initialization script"
+        echo "POSTGRES_MULTIPLE_DATABASES=$POSTGRES_MULTIPLE_DATABASES"
+        echo "POSTGRES_USER=$POSTGRES_USER"
+
+        create_user_and_database() {
+            database=$1
+            echo "Creating database '$database'"
+
+            # Create database and user
+            psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+                CREATE DATABASE "$database";
+
+                -- Create user if not exists
+                DO \$\$
+                BEGIN
+                    IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'integrated-tools-user') THEN
+                        CREATE USER "integrated-tools-user" WITH PASSWORD 'integrated-tools-password-1234';
+                    END IF;
+                END
+                \$\$;
+
+                GRANT ALL PRIVILEGES ON DATABASE "$database" TO "integrated-tools-user";
+        EOSQL
+
+            # If database name contains 'authentik' (case insensitive), create schemas
+            if [[ $database =~ [Aa][Uu][Tt][Hh][Ee][Nn][Tt][Ii][Kk] ]]; then
+                echo "Authentik database detected, creating schemas..."
+                psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" <<-EOSQL
+                    CREATE SCHEMA IF NOT EXISTS authentik;
+                    CREATE SCHEMA IF NOT EXISTS public;
+                    SET search_path TO authentik, public;
+        EOSQL
+                echo "Authentik schemas created successfully"
+            fi
+
+            echo "Database '$database' created successfully"
+        }
+
+        if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
+            echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
+            for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
+                create_user_and_database $db
+            done
+            echo "Multiple databases created"
+        fi
+
+        echo "Database initialization script completed"
+
+      # 00-init-tactical.sh: |
+      #   #!/bin/bash
+
+      #   # Process the template file
+      #   envsubst < /docker-entrypoint-initdb.d/tactical-init.sql.template > /docker-entrypoint-initdb.d/tactical-init.sql
+
+      #   # Wait for PostgreSQL to be ready
+      #   until pg_isready -h localhost -p 5432; do
+      #       echo "Waiting for PostgreSQL to be ready..."
+      #       sleep 1
+      #   done
+
+      #   # Run the initialization script
+      #   echo "Running tactical initialization script..."
+      #   psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/tactical-init.sql
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
