@@ -23,7 +23,7 @@
                             <label for="name" class="of-form-label">Name</label>
                             <InputText id="name" v-model="scriptData.name" required autofocus class="w-full"
                                 :class="{ 'p-invalid': submitted && !scriptData.name }" 
-                                :disabled="!isEditMode" />
+                                :disabled="isFieldDisabled" />
                             <small class="p-error" v-if="submitted && !scriptData.name">
                                 Name is required.
                             </small>
@@ -33,7 +33,7 @@
                             <label for="description" class="of-form-label">Description</label>
                             <Textarea id="description" v-model="scriptData.description" required :rows="2"
                                 class="w-full" :class="{ 'p-invalid': submitted && !scriptData.description }"
-                                :disabled="!isEditMode" />
+                                :disabled="isFieldDisabled" />
                             <small class="p-error" v-if="submitted && !scriptData.description">
                                 Description is required.
                             </small>
@@ -43,7 +43,7 @@
                             <label for="category" class="of-form-label">Category</label>
                             <Dropdown id="category" v-model="scriptData.category" :options="categoryOptions"
                                 optionLabel="label" optionValue="value" placeholder="Select category" filter
-                                :disabled="!isEditMode" />
+                                :disabled="isFieldDisabled" />
                         </div>
 
                         <div class="of-form-group">
@@ -63,7 +63,7 @@
                             <Dropdown id="shell" v-model="scriptData.shell" :options="shellOptions" optionLabel="label"
                                 optionValue="value" placeholder="Select script type"
                                 :class="{ 'p-invalid': submitted && !scriptData.shell }"
-                                :disabled="!isEditMode" />
+                                :disabled="isFieldDisabled" />
                             <small class="p-error" v-if="submitted && !scriptData.shell">
                                 Script type is required.
                             </small>
@@ -76,7 +76,7 @@
                                 placeholder="All Platforms" class="w-full" display="chip" :showClear="true"
                                 :filter="false" :showToggleAll="false" :selectAll="false" :resetFilterOnHide="true"
                                 :autoOptionFocus="false" :panelClass="'surface-0'"
-                                :disabled="!isEditMode">
+                                :disabled="isFieldDisabled">
                                 <template #header>
                                 </template>
                             </MultiSelect>
@@ -85,7 +85,7 @@
                         <div class="of-form-group">
                             <label for="timeout" class="of-form-label">Timeout (seconds)</label>
                             <InputNumber id="timeout" v-model="scriptData.default_timeout" :min="1" :max="86400"
-                                class="w-full" :disabled="!isEditMode" />
+                                class="w-full" :disabled="isFieldDisabled" />
                         </div>
 
                         <div class="of-form-group">
@@ -93,10 +93,10 @@
                             <div class="recipients-list">
                                 <div v-for="(arg, index) in scriptData.args" :key="index" class="recipient-item">
                                     <span>{{ arg }}</span>
-                                    <OFButton v-if="isEditMode" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                                    <OFButton v-if="!isFieldDisabled" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                                         @click="removeArg(index)" />
                                 </div>
-                                <div v-if="isEditMode" class="recipient-input">
+                                <div v-if="!isFieldDisabled" class="recipient-input">
                                     <InputText v-model="newArg" class="w-full"
                                         placeholder="Enter argument and press Enter" @keyup.enter="addArg" />
                                     <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addArg" />
@@ -109,10 +109,10 @@
                             <div class="recipients-list">
                                 <div v-for="(envVar, index) in scriptData.env_vars" :key="index" class="recipient-item">
                                     <span>{{ envVar }}</span>
-                                    <OFButton v-if="isEditMode" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                                    <OFButton v-if="!isFieldDisabled" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                                         @click="removeEnvVar(index)" />
                                 </div>
-                                <div v-if="isEditMode" class="recipient-input">
+                                <div v-if="!isFieldDisabled" class="recipient-input">
                                     <InputText v-model="newEnvVar" class="w-full"
                                         placeholder="Enter key=value and press Enter" @keyup.enter="addEnvVar" />
                                     <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addEnvVar" />
@@ -123,7 +123,7 @@
                         <div class="of-form-group checkbox-group">
                             <div class="checkbox-container">
                                 <Checkbox id="run_as_user" v-model="scriptData.run_as_user" :binary="true"
-                                    :disabled="!isEditMode" />
+                                    :disabled="isFieldDisabled" />
                                 <label for="run_as_user" class="checkbox-label">Run As User (Windows only)</label>
                             </div>
                         </div>
@@ -138,7 +138,7 @@
                     <div class="editor-wrapper">
                         <ScriptEditor id="content" v-model="scriptData.syntax" class="script-editor"
                             :error="submitted && !scriptData.syntax ? 'Script content is required.' : ''"
-                            :readonly="!isEditMode" />
+                            :readonly="isFieldDisabled" />
                     </div>
                 </div>
             </div>
@@ -310,6 +310,10 @@ const scriptTypeDisplay = computed(() => {
 
 const isViewMode = computed(() => {
     return props.initialData?.script_type === 'builtin';
+});
+
+const isFieldDisabled = computed(() => {
+    return isViewMode.value || (!props.isEditMode && props.initialData);
 });
 </script>
 

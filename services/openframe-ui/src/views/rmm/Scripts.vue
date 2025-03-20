@@ -5,7 +5,7 @@
         <OFButton 
           label="Add Script" 
           icon="pi pi-plus"
-          @click="showAddScriptDialog = true"
+          @click="openAddScriptDialog"
           class="p-button-primary"
         />
       </template>
@@ -259,6 +259,12 @@ const isEditMode = ref(false);
 
 const selectedScript = ref<Script | null>(null);
 const selectedDevices = ref<string[]>([]);
+
+const openAddScriptDialog = () => {
+  selectedScript.value = null;
+  isEditMode.value = false;
+  showAddScriptDialog.value = true;
+};
 
 const newScript = ref({
   name: '',
