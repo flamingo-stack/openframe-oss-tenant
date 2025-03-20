@@ -618,12 +618,17 @@ body {
   height: 1.25rem !important;
   padding: 0 0.5rem !important;
   font-size: 0.75rem !important;
-  min-width: 65px !important;
-  max-width: 100px !important;
+  min-width: 80px !important;
+  max-width: 120px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
+}
+
+/* Hide token remove icon */
+.p-multiselect .p-multiselect-token .p-multiselect-token-icon {
+  display: none !important;
 }
 
 /* Handle multiple token display */
