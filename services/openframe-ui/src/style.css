@@ -529,6 +529,15 @@ body {
   visibility: visible !important;
 }
 
+/* Add explicit checkbox icon for selected items */
+.p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight .p-checkbox-icon:before {
+  font-family: 'primeicons';
+  content: "\e909" !important; /* PrimeIcons check character */
+  display: inline-block !important;
+  visibility: visible !important;
+  color: white !important;
+}
+
 .p-multiselect-panel .p-checkbox {
   width: 18px !important;
   height: 18px !important;
@@ -536,6 +545,7 @@ body {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  opacity: 1 !important;
 }
 
 .p-multiselect-panel .p-checkbox .p-checkbox-box {
@@ -544,11 +554,20 @@ body {
   border: 1px solid var(--surface-border) !important;
   background: var(--surface-section) !important;
   border-radius: 4px !important;
+  opacity: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .p-multiselect-panel .p-checkbox .p-checkbox-box .p-checkbox-icon {
   font-size: 12px !important;
   color: white !important; /* Changed from var(--surface-card) to white for better visibility */
+  display: inline-block !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
