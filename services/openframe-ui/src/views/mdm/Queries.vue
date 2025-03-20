@@ -152,16 +152,15 @@
 
         <div class="col-12">
           <div class="field">
-            <label for="query">Query</label>
-            <textarea 
+            <label for="query" class="block text-sm font-medium mb-1">Query</label>
+            <ScriptEditor 
+              id="query"
               v-model="newQuery.query" 
-              class="code-editor"
-              rows="12"
+              :rows="12"
               required
-              :class="{ 'p-invalid': submitted && !newQuery.query }"
               placeholder="Enter your query script here..."
-            ></textarea>
-            <small class="p-error" v-if="submitted && !newQuery.query">Query is required.</small>
+              :error="submitted && !newQuery.query ? 'Query is required.' : ''"
+            />
           </div>
         </div>
       </div>
@@ -188,24 +187,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dialog from 'primevue/dialog';
-import Editor from 'primevue/editor';
-import Dropdown from 'primevue/dropdown';
-import Tag from 'primevue/tag';
-import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
+// Import from our new UI component library
+import { 
+  Button, 
+  Column, 
+  InputText, 
+  Dialog, 
+  Dropdown, 
+  Tag,
+  ScriptEditor 
+} from '../../components/ui';
 
 interface FleetResponse {
   queries: Query[];
@@ -582,4 +582,4 @@ onMounted(async () => {
     }
   }
 }
-</style> 
+</style>    

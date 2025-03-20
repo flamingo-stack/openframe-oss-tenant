@@ -1,5 +1,5 @@
 <template>
-  <div class="rmm-automation">
+  <div class="h-full flex flex-col bg-surface-ground">
     <ModuleHeader title="Automation">
       <template #subtitle>Schedule and manage automated tasks</template>
       <template #actions>
@@ -7,12 +7,12 @@
           label="Add Task" 
           icon="pi pi-plus"
           @click="showAddTaskDialog = true"
-          class="p-button-primary"
+          severity="primary"
         />
       </template>
     </ModuleHeader>
 
-    <div class="automation-content">
+    <div class="flex-1 flex flex-col gap-4 p-6 min-h-0 bg-surface-ground">
       <SearchBar v-model="filters['global'].value" placeholder="Search tasks..." />
 
       <ModuleTable 
@@ -110,22 +110,23 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
-        <label for="name">Name</label>
+      <div class="of-form-group">
+        <label for="name" class="of-form-label">Name</label>
         <InputText 
           id="name" 
           v-model="newTask.name" 
           required 
           autofocus 
-          :class="{ 'p-invalid': submitted && !newTask.name }"
+          class="w-full rounded-md border border-surface-border p-2"
+          :class="{ 'border-red-500': submitted && !newTask.name }"
         />
-        <small class="p-error" v-if="submitted && !newTask.name">
+        <small class="text-red-500 text-xs mt-1" v-if="submitted && !newTask.name">
           Name is required.
         </small>
       </div>
 
-      <div class="field">
-        <label for="type">Type</label>
+      <div class="of-form-group">
+        <label for="type" class="of-form-label">Type</label>
         <Dropdown
           id="type"
           v-model="newTask.type"
@@ -133,45 +134,48 @@
           optionLabel="name"
           optionValue="value"
           placeholder="Select a task type"
-          :class="{ 'p-invalid': submitted && !newTask.type }"
+          class="w-full rounded-md border border-surface-border"
+          :class="{ 'border-red-500': submitted && !newTask.type }"
         />
-        <small class="p-error" v-if="submitted && !newTask.type">
+        <small class="text-red-500 text-xs mt-1" v-if="submitted && !newTask.type">
           Type is required.
         </small>
       </div>
 
-      <div class="field">
-        <label for="description">Description</label>
+      <div class="of-form-group">
+        <label for="description" class="of-form-label">Description</label>
         <InputText 
           id="description" 
           v-model="newTask.description" 
           required 
-          :class="{ 'p-invalid': submitted && !newTask.description }"
+          class="w-full rounded-md border border-surface-border p-2"
+          :class="{ 'border-red-500': submitted && !newTask.description }"
         />
-        <small class="p-error" v-if="submitted && !newTask.description">
+        <small class="text-red-500 text-xs mt-1" v-if="submitted && !newTask.description">
           Description is required.
         </small>
       </div>
 
-      <div class="field">
-        <label for="schedule">Schedule (Cron Expression)</label>
+      <div class="of-form-group">
+        <label for="schedule" class="of-form-label">Schedule (Cron Expression)</label>
         <InputText 
           id="schedule" 
           v-model="newTask.schedule" 
           required 
           placeholder="*/5 * * * *"
-          :class="{ 'p-invalid': submitted && !newTask.schedule }"
+          class="w-full rounded-md border border-surface-border p-2"
+          :class="{ 'border-red-500': submitted && !newTask.schedule }"
         />
-        <small class="p-error" v-if="submitted && !newTask.schedule">
+        <small class="text-red-500 text-xs mt-1" v-if="submitted && !newTask.schedule">
           Schedule is required.
         </small>
-        <small class="p-text-secondary">
+        <small class="text-secondary text-xs mt-1">
           Example: */5 * * * * (every 5 minutes)
         </small>
       </div>
 
-      <div class="field">
-        <label for="devices">Target Devices</label>
+      <div class="of-form-group">
+        <label for="devices" class="of-form-label">Target Devices</label>
         <MultiSelect
           id="devices"
           v-model="newTask.device_ids"
@@ -179,16 +183,12 @@
           optionLabel="hostname"
           optionValue="id"
           placeholder="Select target devices"
-          :class="{ 'p-invalid': submitted && newTask.device_ids.length === 0 }"
-          display="chip"
+          :error="submitted && newTask.device_ids.length === 0 ? 'Select at least one device.' : ''"
         />
-        <small class="p-error" v-if="submitted && newTask.device_ids.length === 0">
-          Select at least one device.
-        </small>
       </div>
 
-      <div class="field">
-        <label for="script">Script</label>
+      <div class="of-form-group">
+        <label for="script" class="of-form-label">Script</label>
         <Dropdown
           id="script"
           v-model="newTask.script_id"
@@ -196,9 +196,9 @@
           optionLabel="name"
           optionValue="id"
           placeholder="Select a script"
-          :class="{ 'p-invalid': submitted && !newTask.script_id }"
+          :class="{ 'border-red-500': submitted && !newTask.script_id }"
         />
-        <small class="p-error" v-if="submitted && !newTask.script_id">
+        <small class="text-red-500 text-xs mt-1" v-if="submitted && !newTask.script_id">
           Script is required.
         </small>
       </div>
@@ -263,18 +263,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Dropdown from 'primevue/dropdown';
-import MultiSelect from 'primevue/multiselect';
-import Tag from 'primevue/tag';
+import { ref, onMounted } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
 import { ToastService } from "../../services/ToastService";
+// Import from our new UI component library
+import { 
+  Button, 
+  MultiSelect, 
+  Dialog, 
+  DataTable, 
+  Column, 
+  InputText, 
+  Dropdown, 
+  Tag, 
+  ModuleLayout 
+} from "../../components/ui";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
@@ -618,4 +623,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style> 
+</style>          

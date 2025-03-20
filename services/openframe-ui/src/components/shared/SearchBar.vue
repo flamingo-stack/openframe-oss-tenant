@@ -1,6 +1,6 @@
 <template>
-  <div class="search-bar">
-    <div class="p-inputgroup">
+  <div class="w-full max-w-md mb-4">
+    <div class="p-inputgroup shadow-card">
       <span class="p-inputgroup-addon">
         <i class="pi pi-search"></i>
       </span>
@@ -8,13 +8,14 @@
         :value="modelValue"
         :placeholder="placeholder"
         @input="(e) => $emit('update:modelValue', (e.target as HTMLInputElement).value)"
+        class="w-full"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext';
+import { InputText } from '../../components/ui';
 
 defineProps<{
   modelValue: string;
@@ -24,16 +25,4 @@ defineProps<{
 defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
-</script>
-
-<style scoped>
-.search-bar {
-  width: 30rem;
-  margin-right: auto;
-  margin-bottom: 1rem;
-}
-
-.p-inputgroup {
-  box-shadow: var(--card-shadow);
-}
-</style> 
+</script> 

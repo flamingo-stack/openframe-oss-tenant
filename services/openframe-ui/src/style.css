@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Reset styles */
 * {
   margin: 0;
@@ -82,13 +86,37 @@
   --shadow-md: 0 4px 6px -1px var(--shadow-color);
 }
 
-/* Basic global styles */
-body {
-  background-color: var(--surface-ground);
-  color: var(--text-color);
-  font-family: var(--font-family);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Apply Tailwind classes to basic elements */
+@layer base {
+  body {
+    @apply bg-surface-ground text-primary font-sans;
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  a {
+    @apply text-primary no-underline hover:underline;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-primary;
+  }
+}
+
+/* Custom component styles that extend Tailwind */
+@layer components {
+  .of-card {
+    @apply bg-surface-card rounded-md border border-surface-border p-4 shadow-card;
+  }
+  
+  .of-form-group {
+    @apply mb-4;
+  }
+  
+  .of-form-label {
+    @apply block text-sm font-medium mb-1 text-primary;
+  }
 }
 
 /* Brand font usage */

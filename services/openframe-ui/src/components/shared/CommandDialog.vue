@@ -15,20 +15,16 @@
     <div class="grid">
       <div class="col-12">
         <div class="field">
-          <label for="command">Command</label>
-          <textarea 
+          <label for="command" class="block text-sm font-medium mb-1">Command</label>
+          <ScriptEditor 
             id="command" 
             v-model="command" 
-            class="code-editor"
-            rows="4"
+            :rows="4"
             required
-            :class="{ 'p-invalid': submitted && !command }"
             placeholder="Enter command to execute"
-          ></textarea>
-          <small class="p-error" v-if="submitted && !command">Command is required.</small>
-          <small class="helper-text">
-            The command will be executed on the selected device. Make sure to use the correct syntax for the target platform.
-          </small>
+            :error="submitted && !command ? 'Command is required.' : ''"
+            helperText="The command will be executed on the selected device. Make sure to use the correct syntax for the target platform."
+          />
         </div>
 
         <div v-if="output" class="field">
@@ -59,8 +55,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
+import { Dialog, Button, ScriptEditor } from '../../components/ui';
 
 const props = defineProps<{
   visible: boolean;
@@ -212,4 +207,4 @@ const resetForm = () => {
   font-size: 0.875rem;
   line-height: 1.4;
 }
-</style> 
+</style>    
