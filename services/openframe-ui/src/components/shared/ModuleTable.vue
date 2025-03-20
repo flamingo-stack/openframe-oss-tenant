@@ -77,9 +77,27 @@ const filters = ref({
 
   :deep(.p-datatable) {
     .p-datatable-wrapper,
+    .p-datatable-header,
+    .p-datatable-footer {
+      background: var(--surface-section);
+    }
+    
     .p-paginator.of-paginator {
       background: var(--surface-section);
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+      
+      .p-paginator-page,
+      .p-paginator-first,
+      .p-paginator-prev,
+      .p-paginator-next,
+      .p-paginator-last {
+        background: transparent;
+        color: var(--text-color);
+        
+        &:not(.p-highlight):hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
     }
   }
 }
@@ -167,15 +185,16 @@ const filters = ref({
     border-radius: var(--border-radius);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
 
     .p-paginator-current {
-      order: 1;
       flex: 0 0 auto;
-      margin-right: 1rem;
+      margin-right: auto;
+      white-space: nowrap;
+      padding-right: 1rem;
     }
 
     .p-paginator-first,
@@ -183,26 +202,35 @@ const filters = ref({
     .p-paginator-pages,
     .p-paginator-next,
     .p-paginator-last {
-      order: 2;
-      display: flex;
-      flex-wrap: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .p-paginator-pages {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .p-paginator-rpp-options {
-      order: 3;
       flex: 0 0 auto;
       margin-left: 1rem;
     }
 
     @media screen and (max-width: 768px) {
-      flex-direction: column;
+      flex-direction: row;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
       
       .p-paginator-current {
         order: 1;
+        flex: 1 0 100%;
         margin: 0 0 0.5rem 0;
-        width: 100%;
         text-align: center;
+        padding-right: 0;
       }
       
       .p-paginator-first,
@@ -211,12 +239,12 @@ const filters = ref({
       .p-paginator-next,
       .p-paginator-last {
         order: 2;
-        margin: 0 0 0.5rem 0;
+        margin: 0;
       }
       
       .p-paginator-rpp-options {
         order: 3;
-        margin: 0;
+        margin: 0.5rem 0 0 0;
       }
     }
 
@@ -353,4 +381,4 @@ const filters = ref({
     }
   }
 }
-</style>                                                                                                                
+</style>                                                                                                                                                                                                    
