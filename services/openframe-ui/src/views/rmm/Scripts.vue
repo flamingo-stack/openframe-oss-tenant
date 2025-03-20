@@ -239,13 +239,13 @@
       </div>
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="No" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="deleteScriptDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Yes" 
             icon="pi pi-check" 
             class="p-button-danger" 
@@ -594,4 +594,4 @@ onMounted(async () => {
 .font-mono {
   font-family: monospace;
 }
-</style>            
+</style>              

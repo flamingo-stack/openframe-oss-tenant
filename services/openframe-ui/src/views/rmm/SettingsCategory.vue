@@ -427,7 +427,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Key'"
@@ -443,7 +443,7 @@
       <template v-else-if="category === 'url_actions'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Add Action"
               severity="success"
@@ -484,7 +484,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete Action'"
@@ -500,7 +500,7 @@
       <template v-else-if="category === 'api_keys'">
         <div class="field">
           <div class="flex justify-content-end align-items-center mb-3">
-            <Button 
+            <OFButton 
               icon="pi pi-plus" 
               label="Generate Key"
               severity="success"
@@ -527,7 +527,7 @@
               <template #body="{ data }">
                 <div class="flex align-items-center gap-2">
                   <span class="text-muted">••••••••</span>
-                  <Button 
+                  <OFButton 
                     icon="pi pi-copy" 
                     class="p-button-text p-button-sm"
                     v-tooltip.top="'Copy Key'"
@@ -544,7 +544,7 @@
             <Column :exportable="false" style="min-width: 8rem">
               <template #body="{ data }">
                 <div class="flex gap-2 justify-content-center">
-                  <Button 
+                  <OFButton 
                     icon="pi pi-trash" 
                     class="p-button-text p-button-sm p-button-danger"
                     v-tooltip.top="'Delete API Key'"
@@ -598,13 +598,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="showNewApiKeyDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Generate" 
           icon="pi pi-check" 
           :loading="generatingApiKey"
@@ -701,13 +701,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="closeUrlActionDialog"
         />
-        <Button 
+        <OFButton 
           label="Save" 
           icon="pi pi-check" 
           :loading="savingUrlAction"
@@ -756,13 +756,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="showKeyStoreDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Save" 
           icon="pi pi-check" 
           :loading="savingKeyStore"
@@ -878,13 +878,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="showCustomFieldDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Save" 
           icon="pi pi-check" 
           :loading="savingCustomField"
@@ -915,13 +915,13 @@
     </div>
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="No" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="deleteDialog = false"
         />
-        <Button 
+        <OFButton 
           label="Yes" 
           icon="pi pi-check" 
           class="p-button-danger" 
@@ -948,7 +948,7 @@ import Chips from 'primevue/chips';
 import Password from 'primevue/password';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
 import Calendar from 'primevue/calendar';
@@ -1680,4 +1680,4 @@ const handleDelete = async () => {
     }
   }
 }
-</style>  
+</style>                          

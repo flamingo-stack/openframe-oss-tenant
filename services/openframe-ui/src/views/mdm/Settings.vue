@@ -55,7 +55,7 @@
 import { ref, onMounted, computed, watch } from '@vue/runtime-core';
 import type { ComputedRef, WatchSource } from '@vue/runtime-core';
 import { useRoute, useRouter } from 'vue-router';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
@@ -930,4 +930,4 @@ section {
 .grid {
   margin: 0;
 }
-</style> 
+</style>  

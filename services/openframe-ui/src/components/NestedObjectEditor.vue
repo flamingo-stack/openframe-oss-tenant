@@ -22,7 +22,7 @@
                   :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
                   class="w-full"
                 />
-                <Button
+                <OFButton
                   icon="pi pi-trash"
                   severity="danger"
                   text
@@ -33,7 +33,7 @@
                 />
               </div>
               <div class="add-item-wrapper">
-                <Button
+                <OFButton
                   icon="pi pi-plus"
                   :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
                   @click="addArrayItem(key)"
@@ -80,7 +80,7 @@ import { defineProps, defineEmits, toRaw, computed, ref } from 'vue';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
-import Button from 'primevue/button';
+import { OFButton } from '@/components/ui';
 import NestedObjectEditor from './NestedObjectEditor.vue';
 
 const props = defineProps<{
@@ -284,4 +284,4 @@ const updateArrayItem = (key: string | number, index: number, newValue: string |
 .array-item-move {
   transition: transform 0.3s ease;
 }
-</style> 
+</style>  

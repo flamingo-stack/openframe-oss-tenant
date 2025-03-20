@@ -55,7 +55,7 @@
         <div class="table-card">
           <div class="table-header mb-3">
             <h2 class="table-title my-0">Platforms</h2>
-            <Button label="Add Platform" icon="pi pi-plus" severity="success" rounded />
+            <OFButton label="Add Platform" icon="pi pi-plus" severity="success" rounded />
           </div>
           
           <DataTable 
@@ -101,8 +101,8 @@
             <Column header="Actions" style="width: 100px">
               <template #body>
                 <div class="flex align-items-center gap-2">
-                  <Button icon="pi pi-pencil" text rounded severity="secondary" />
-                  <Button icon="pi pi-trash" text rounded severity="danger" />
+                  <OFButton icon="pi pi-pencil" text rounded severity="secondary" />
+                  <OFButton icon="pi pi-trash" text rounded severity="danger" />
                 </div>
               </template>
             </Column>
@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import Button from 'primevue/button';
+import { OFButton } from '@/components/ui';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
@@ -348,4 +348,4 @@ const rowsPerPage = ref(10);
 :deep(.p-paginator-rpp-options) {
   display: none !important;
 }
-</style> 
+</style>  

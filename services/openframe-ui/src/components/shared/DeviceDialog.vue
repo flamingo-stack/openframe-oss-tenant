@@ -89,13 +89,13 @@
 
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="onCancel"
         />
-        <Button 
+        <OFButton 
           :label="isEditMode ? 'Update' : 'Add'" 
           icon="pi pi-check" 
           class="p-button-primary" 
@@ -110,7 +110,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 
@@ -258,4 +258,4 @@ const resetForm = () => {
     }
   }
 }
-</style> 
+</style>  

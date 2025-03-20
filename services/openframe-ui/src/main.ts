@@ -59,8 +59,9 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     
     // Register all UI components
     Object.entries(UIComponents).forEach(([name, component]) => {
-      // Skip components that are already registered globally
-      if (!['Button', 'InputText', 'DataTable', 'Column'].includes(name)) {
+      // Only register components that are not directives and not already registered globally
+      if (name !== 'TooltipDirective' && 
+          !['Button', 'InputText', 'DataTable', 'Column'].includes(name)) {
         app.component(name, component);
       }
     });

@@ -199,7 +199,7 @@
             class="p-button-text" 
             @click="deleteMonitorDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Yes" 
             icon="pi pi-check" 
             class="p-button-danger" 
@@ -504,4 +504,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>  
+</style>    

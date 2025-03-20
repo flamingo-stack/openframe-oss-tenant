@@ -91,7 +91,7 @@ import { ref, onMounted } from '@vue/runtime-core';
 import { useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import InputText from 'primevue/inputtext';
 import Tag from 'primevue/tag';
 import Tooltip from 'primevue/tooltip';
@@ -251,4 +251,4 @@ onMounted(() => {
   min-width: 75px;
   justify-content: center;
 }
-</style>  
+</style>    

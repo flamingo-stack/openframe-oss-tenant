@@ -8,11 +8,11 @@ export { default as OFButton } from './Button.vue';
 // Layout components
 export { default as ModuleLayout } from './layout/ModuleLayout.vue';
 
-// Export all from PrimeVue that we're using as-is
+// Export all from PrimeVue that we're using as-is but not already globally registered
 export { default as Dialog } from 'primevue/dialog';
-export { default as DataTable } from 'primevue/datatable';
-export { default as Column } from 'primevue/column';
-export { default as InputText } from 'primevue/inputtext';
 export { default as Dropdown } from 'primevue/dropdown';
 export { default as Tag } from 'primevue/tag';
-export { default as Tooltip } from 'primevue/tooltip';
+export { default as InputText } from 'primevue/inputtext';
+export { default as Column } from 'primevue/column';
+// Re-export PrimeVue directives properly
+export { default as TooltipDirective } from 'primevue/tooltip';
