@@ -106,8 +106,9 @@
               <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
-                v-tooltip.top="'View Script'"
+                v-tooltip.top="data.script_type === 'userdefined' ? 'View is only available for community scripts' : 'View Script'"
                 @click="viewScript(data)" 
+                :disabled="data.script_type === 'userdefined'"
               />
               <OFButton 
                 icon="pi pi-pencil" 

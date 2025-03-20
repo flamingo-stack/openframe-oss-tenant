@@ -2,10 +2,11 @@
     <OFScriptDialog :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)"
         :header="isEditMode ? 'Edit Script' : 'Add New Script'" width="90vw" :style="{ maxWidth: '1800px' }"
         :confirmLabel="isEditMode ? 'Save' : 'Add'" confirmIcon="pi pi-check" :loading="submitting"
-        @confirm="handleConfirm" @cancel="handleCancel" class="script-dialog">
+        @confirm="handleConfirm" @cancel="handleCancel" class="script-dialog"
+        :showConfirm="!isViewMode">
         <template #header>
             <div class="flex align-items-center gap-2">
-                <span>{{ isEditMode ? 'Edit Script' : 'Add New Script' }}</span>
+                <span>{{ isViewMode ? 'View Script' : isEditMode ? 'Edit Script' : 'Add New Script' }}</span>
                 <Tag :value="formatScriptType(scriptData.script_type)" 
                      :severity="getScriptTypeSeverity(scriptData.script_type)" />
             </div>
@@ -21,7 +22,8 @@
                         <div class="of-form-group w-full">
                             <label for="name" class="of-form-label">Name</label>
                             <InputText id="name" v-model="scriptData.name" required autofocus class="w-full"
-                                :class="{ 'p-invalid': submitted && !scriptData.name }" />
+                                :class="{ 'p-invalid': submitted && !scriptData.name }" 
+                                :disabled="!isEditMode" />
                             <small class="p-error" v-if="submitted && !scriptData.name">
                                 Name is required.
                             </small>
@@ -30,7 +32,8 @@
                         <div class="of-form-group w-full">
                             <label for="description" class="of-form-label">Description</label>
                             <Textarea id="description" v-model="scriptData.description" required :rows="2"
-                                class="w-full" :class="{ 'p-invalid': submitted && !scriptData.description }" />
+                                class="w-full" :class="{ 'p-invalid': submitted && !scriptData.description }"
+                                :disabled="!isEditMode" />
                             <small class="p-error" v-if="submitted && !scriptData.description">
                                 Description is required.
                             </small>
@@ -39,7 +42,8 @@
                         <div class="of-form-group">
                             <label for="category" class="of-form-label">Category</label>
                             <Dropdown id="category" v-model="scriptData.category" :options="categoryOptions"
-                                optionLabel="label" optionValue="value" placeholder="Select category" filter />
+                                optionLabel="label" optionValue="value" placeholder="Select category" filter
+                                :disabled="!isEditMode" />
                         </div>
 
                         <div class="of-form-group">
@@ -58,7 +62,8 @@
                             <label for="shell" class="of-form-label">Script Type</label>
                             <Dropdown id="shell" v-model="scriptData.shell" :options="shellOptions" optionLabel="label"
                                 optionValue="value" placeholder="Select script type"
-                                :class="{ 'p-invalid': submitted && !scriptData.shell }" />
+                                :class="{ 'p-invalid': submitted && !scriptData.shell }"
+                                :disabled="!isEditMode" />
                             <small class="p-error" v-if="submitted && !scriptData.shell">
                                 Script type is required.
                             </small>
@@ -70,7 +75,8 @@
                                 :options="platformOptions" optionLabel="label" optionValue="value"
                                 placeholder="All Platforms" class="w-full" display="chip" :showClear="true"
                                 :filter="false" :showToggleAll="false" :selectAll="false" :resetFilterOnHide="true"
-                                :autoOptionFocus="false" :panelClass="'surface-0'">
+                                :autoOptionFocus="false" :panelClass="'surface-0'"
+                                :disabled="!isEditMode">
                                 <template #header>
                                 </template>
                             </MultiSelect>
@@ -79,7 +85,7 @@
                         <div class="of-form-group">
                             <label for="timeout" class="of-form-label">Timeout (seconds)</label>
                             <InputNumber id="timeout" v-model="scriptData.default_timeout" :min="1" :max="86400"
-                                class="w-full" />
+                                class="w-full" :disabled="!isEditMode" />
                         </div>
 
                         <div class="of-form-group">
@@ -87,10 +93,10 @@
                             <div class="recipients-list">
                                 <div v-for="(arg, index) in scriptData.args" :key="index" class="recipient-item">
                                     <span>{{ arg }}</span>
-                                    <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                                    <OFButton v-if="isEditMode" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                                         @click="removeArg(index)" />
                                 </div>
-                                <div class="recipient-input">
+                                <div v-if="isEditMode" class="recipient-input">
                                     <InputText v-model="newArg" class="w-full"
                                         placeholder="Enter argument and press Enter" @keyup.enter="addArg" />
                                     <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addArg" />
@@ -103,10 +109,10 @@
                             <div class="recipients-list">
                                 <div v-for="(envVar, index) in scriptData.env_vars" :key="index" class="recipient-item">
                                     <span>{{ envVar }}</span>
-                                    <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                                    <OFButton v-if="isEditMode" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                                         @click="removeEnvVar(index)" />
                                 </div>
-                                <div class="recipient-input">
+                                <div v-if="isEditMode" class="recipient-input">
                                     <InputText v-model="newEnvVar" class="w-full"
                                         placeholder="Enter key=value and press Enter" @keyup.enter="addEnvVar" />
                                     <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addEnvVar" />
@@ -116,7 +122,8 @@
 
                         <div class="of-form-group checkbox-group">
                             <div class="checkbox-container">
-                                <Checkbox id="run_as_user" v-model="scriptData.run_as_user" :binary="true" />
+                                <Checkbox id="run_as_user" v-model="scriptData.run_as_user" :binary="true"
+                                    :disabled="!isEditMode" />
                                 <label for="run_as_user" class="checkbox-label">Run As User (Windows only)</label>
                             </div>
                         </div>
@@ -130,7 +137,8 @@
                     <h3 class="section-title">Script Content</h3>
                     <div class="editor-wrapper">
                         <ScriptEditor id="content" v-model="scriptData.syntax" class="script-editor"
-                            :error="submitted && !scriptData.syntax ? 'Script content is required.' : ''" />
+                            :error="submitted && !scriptData.syntax ? 'Script content is required.' : ''"
+                            :readonly="!isEditMode" />
                     </div>
                 </div>
             </div>
@@ -298,6 +306,10 @@ const validateScript = () => {
 
 const scriptTypeDisplay = computed(() => {
     return scriptData.value.script_type === 'userdefined' ? 'User Defined' : 'Built-In';
+});
+
+const isViewMode = computed(() => {
+    return props.initialData?.script_type === 'builtin';
 });
 </script>
 
