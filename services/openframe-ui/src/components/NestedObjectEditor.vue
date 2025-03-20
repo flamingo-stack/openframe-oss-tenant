@@ -5,7 +5,7 @@
         <div class="nested-field-label">{{ formatKey(key) }}</div>
         <div class="nested-field-value">
           <template v-if="getValueType(val) === 'Object'">
-            <NestedObjectEditor
+            <OFNestedObjectEditor
               :value="val"
               :isPropertyEditable="isPropertyEditable"
               :parentKey="parentKey"
@@ -81,7 +81,7 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import { OFButton } from '@/components/ui';
-import NestedObjectEditor from './NestedObjectEditor.vue';
+import OFNestedObjectEditor from './OFNestedObjectEditor.vue';
 
 const props = defineProps<{
   value: Record<string | number, any>;
