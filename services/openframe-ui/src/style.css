@@ -522,6 +522,13 @@ body {
   border-left: 2px solid var(--primary-color) !important; /* Added border indicator */
 }
 
+/* Fix for checkbox visibility in MultiSelect dropdown */
+.p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight .p-checkbox-icon {
+  color: white !important; /* Ensure icon is visible against primary color background */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 .p-multiselect-panel .p-checkbox {
   width: 18px !important;
   height: 18px !important;
