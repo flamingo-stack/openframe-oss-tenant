@@ -97,7 +97,7 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
+      <div class="of-form-group">
         <label for="name">Name</label>
         <InputText 
           id="name" 
@@ -111,7 +111,7 @@
         </small>
       </div>
 
-      <div class="field">
+      <div class="of-form-group">
         <label for="type">Type</label>
         <Dropdown
           id="type"
@@ -127,7 +127,7 @@
         </small>
       </div>
 
-      <div class="field">
+      <div class="of-form-group">
         <label for="target">Target</label>
         <InputText 
           id="target" 
@@ -140,7 +140,7 @@
         </small>
       </div>
 
-      <div class="field">
+      <div class="of-form-group">
         <label for="description">Description</label>
         <Textarea 
           id="description" 
@@ -504,4 +504,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>    
+</style>      

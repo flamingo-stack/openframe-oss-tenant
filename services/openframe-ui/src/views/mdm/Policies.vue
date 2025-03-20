@@ -94,8 +94,8 @@
     >
       <div class="grid">
         <div class="col-12">
-          <div class="field">
-            <label for="name">Name</label>
+          <div class="of-form-group">
+            <label for="name" class="of-form-label">Name</label>
             <InputText 
               id="name" 
               v-model="newPolicy.name" 
@@ -108,8 +108,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label>Status</label>
+          <div class="of-form-group">
+            <label class="of-form-label">Status</label>
             <div class="flex gap-4">
               <div class="status-option" :class="{ active: newPolicy.enabled }" @click="newPolicy.enabled = true">
                 <div class="radio-button">
@@ -134,8 +134,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label for="description">Description</label>
+          <div class="of-form-group">
+            <label for="description" class="of-form-label">Description</label>
             <Textarea 
               id="description" 
               v-model="newPolicy.description" 
@@ -149,8 +149,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label for="platform">Platform</label>
+          <div class="of-form-group">
+            <label for="platform" class="of-form-label">Platform</label>
             <Dropdown
               id="platform"
               v-model="newPolicy.platform"
@@ -169,8 +169,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label for="query">Query</label>
+          <div class="of-form-group">
+            <label for="query" class="of-form-label">Query</label>
             <ScriptEditor 
               id="query"
               v-model="newPolicy.query" 
@@ -185,8 +185,8 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
-            <label>Policy Scope</label>
+          <div class="of-form-group">
+            <label class="of-form-label">Policy Scope</label>
             <div class="flex gap-4">
               <div class="status-option" :class="{ active: newPolicy.scope === 'global' }" @click="newPolicy.scope = 'global'">
                 <div class="radio-button">
@@ -761,4 +761,4 @@ onMounted(async () => {
     }
   }
 }
-</style>               
+</style>                           

@@ -14,7 +14,7 @@
   >
     <div class="grid">
       <div class="col-12">
-        <div class="field">
+        <div class="of-form-group">
           <label for="command">Command</label>
           <ScriptEditor 
             id="command" 
@@ -26,7 +26,7 @@
           />
         </div>
 
-        <div v-if="output" class="field">
+        <div v-if="output" class="of-form-group">
           <label>Output</label>
           <pre class="command-output">{{ output }}</pre>
         </div>
@@ -141,7 +141,7 @@ const resetForm = () => {
     border-top: 1px solid var(--surface-border);
   }
 
-  .field {
+  .of-form-group {
     margin-bottom: 1.5rem;
 
     label {
@@ -206,4 +206,4 @@ const resetForm = () => {
   font-size: 0.875rem;
   line-height: 1.4;
 }
-</style>         
+</style>           

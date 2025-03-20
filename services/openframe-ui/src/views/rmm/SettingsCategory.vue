@@ -6,8 +6,8 @@
 
     <div class="settings-form">
       <template v-if="category === 'general'">
-        <div class="field">
-          <label for="defaultTimeZone">Default Time Zone</label>
+        <div class="of-form-group">
+          <label for="defaultTimeZone" class="of-form-label">Default Time Zone</label>
           <Dropdown
             id="defaultTimeZone"
             v-model="settings.default_time_zone"
@@ -17,8 +17,8 @@
           />
         </div>
 
-        <div class="field">
-          <label for="agentDebugLevel">Agent Debug Level</label>
+        <div class="of-form-group">
+          <label for="agentDebugLevel" class="of-form-label">Agent Debug Level</label>
           <Dropdown
             id="agentDebugLevel"
             v-model="settings.agent_debug_level"
@@ -30,8 +30,8 @@
           />
         </div>
 
-        <div class="field">
-          <label for="agentAutoUpdate">Agent Auto Update</label>
+        <div class="of-form-group">
+          <label for="agentAutoUpdate" class="of-form-label">Agent Auto Update</label>
           <div class="flex align-items-center">
             <InputSwitch
               id="agentAutoUpdate"
@@ -1680,4 +1680,4 @@ const handleDelete = async () => {
     }
   }
 }
-</style>                          
+</style>                                

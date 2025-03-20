@@ -183,8 +183,8 @@
         />
       </div>
 
-      <div class="field">
-        <label for="script">Script</label>
+      <div class="of-form-group">
+        <label for="script" class="of-form-label">Script</label>
         <Dropdown
           id="script"
           v-model="newTask.script_id"
@@ -617,4 +617,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>           
+</style>             

@@ -37,14 +37,14 @@
             <span class="text-sm text-color-secondary">{{ formatTimestamp(execution.timestamp) }}</span>
           </div>
           
-          <div class="field mb-3">
+          <div class="of-form-group mb-3">
             <label>Command</label>
             <div class="code-block">
               <code>{{ execution.command }}</code>
             </div>
           </div>
           
-          <div class="field">
+          <div class="of-form-group">
             <label>Output</label>
             <div class="code-block" :class="{ 'error': execution.status === 'error' }">
               <pre>{{ execution.output || 'No output' }}</pre>
@@ -249,7 +249,7 @@ defineExpose({
   }
 }
 
-.field {
+.of-form-group {
   margin-bottom: 1.5rem;
 
   label {
@@ -284,4 +284,4 @@ defineExpose({
     }
   }
 }
-</style>  
+</style>    

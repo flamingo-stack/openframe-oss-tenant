@@ -102,7 +102,7 @@
     >
       <div class="grid">
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="name">Name</label>
             <InputText 
               id="name" 
@@ -116,7 +116,7 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="description">Description</label>
             <Textarea 
               id="description" 
@@ -131,7 +131,7 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="platform">Platform</label>
             <Dropdown
               id="platform"
@@ -151,7 +151,7 @@
         </div>
 
         <div class="col-12">
-          <div class="field">
+          <div class="of-form-group">
             <label for="query">Query</label>
             <ScriptEditor 
               id="query"
@@ -416,7 +416,7 @@ onMounted(async () => {
     border-top: 1px solid var(--surface-border);
   }
 
-  .field {
+  .of-form-group {
     margin-bottom: 1.5rem;
 
     label {
@@ -583,4 +583,4 @@ onMounted(async () => {
     }
   }
 }
-</style>           
+</style>             
