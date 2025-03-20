@@ -47,19 +47,8 @@
               optionLabel="label"
               optionValue="value"
               placeholder="All Platforms"
-              class="w-full"
               display="chip"
-              :showClear="true"
-              :filter="false"
-              :showToggleAll="false"
-              :selectAll="false"
-              :resetFilterOnHide="true"
-              :autoOptionFocus="false"
-              :panelClass="'surface-0'"
-            >
-              <template #header>
-              </template>
-            </MultiSelect>
+            />
           </div>
         </div>
       </div>
@@ -202,9 +191,9 @@ import {
   ScriptEditor,
   OFScriptDialog,
   OFConfirmationDialog,
-  OFCodeBlock
+  OFCodeBlock,
+  MultiSelect
 } from "../../components/ui";
-import MultiSelect from 'primevue/multiselect';
 import { useScriptType } from '../../composables/useScriptType';
 
 interface Script {
@@ -724,4 +713,4 @@ onMounted(async () => {
 :deep(.hidden) {
   display: none !important;
 }
-</style>                                                                                                                                                                                                                                                                                                                                                                        
+</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

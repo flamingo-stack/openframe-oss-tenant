@@ -445,6 +445,42 @@ body {
   background: none !important;
 }
 
+/* MultiSelect styles */
+.p-multiselect {
+  height: 42px !important;
+  background: var(--surface-section) !important;
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+  border: 1px solid var(--surface-border) !important;
+}
+
+.p-multiselect .p-multiselect-label {
+  height: 100% !important;
+  padding: 0.75rem 1rem !important;
+  background: var(--surface-section) !important;
+  font-size: 0.875rem !important;
+  color: var(--text-color) !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+}
+
+.p-multiselect .p-multiselect-trigger {
+  width: 42px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--text-color) !important;
+  background: var(--surface-section) !important;
+}
+
+.p-multiselect:not(.p-disabled).p-focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
 .p-overlay-modal {
   background: none !important;
 }
