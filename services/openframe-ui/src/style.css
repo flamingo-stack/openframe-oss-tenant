@@ -445,6 +445,195 @@ body {
   background: none !important;
 }
 
+/* MultiSelect styles */
+.p-multiselect {
+  height: 42px !important;
+  background: var(--surface-section) !important;
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+  border: 1px solid var(--surface-border) !important;
+  overflow: hidden !important;
+}
+
+.p-multiselect .p-multiselect-label {
+  height: 100% !important;
+  padding: 0.75rem 1rem !important;
+  background: var(--surface-section) !important;
+  font-size: 0.875rem !important;
+  color: var(--text-color) !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+}
+
+.p-multiselect .p-multiselect-trigger {
+  width: 42px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--text-color) !important;
+  background: var(--surface-section) !important;
+}
+
+.p-multiselect:not(.p-disabled).p-focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+/* MultiSelect panel styles */
+.p-multiselect-panel {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 6px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%) !important;
+}
+
+.p-multiselect-panel .p-multiselect-items {
+  padding: 0.5rem 0 !important;
+}
+
+.p-multiselect-panel .p-multiselect-header {
+  display: none !important;
+}
+
+.p-multiselect-panel .p-multiselect-items-wrapper {
+  background: var(--surface-card) !important;
+}
+
+.p-multiselect-panel .p-multiselect-item {
+  padding: 0.5rem 0.75rem !important;
+  color: var(--text-color) !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.p-multiselect-panel .p-multiselect-item:hover {
+  background: var(--surface-hover) !important;
+}
+
+.p-multiselect-panel .p-multiselect-item.p-highlight {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+  font-weight: 600 !important; /* Increased from 500 to 600 for better visibility */
+  border-left: 2px solid var(--primary-color) !important; /* Added border indicator */
+}
+
+/* Fix for checkbox visibility in MultiSelect dropdown */
+.p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight .p-checkbox-icon {
+  color: white !important; /* Ensure icon is visible against primary color background */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Add explicit checkbox icon for selected items */
+.p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight .p-checkbox-icon:before {
+  font-family: 'primeicons';
+  content: "\e909" !important; /* PrimeIcons check character */
+  display: inline-block !important;
+  visibility: visible !important;
+  color: white !important;
+}
+
+.p-multiselect-panel .p-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  margin-right: 0.75rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+}
+
+.p-multiselect-panel .p-checkbox .p-checkbox-box {
+  width: 18px !important;
+  height: 18px !important;
+  border: 1px solid var(--surface-border) !important;
+  background: var(--surface-section) !important;
+  border-radius: 4px !important;
+  opacity: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.p-multiselect-panel .p-checkbox .p-checkbox-box .p-checkbox-icon {
+  font-size: 12px !important;
+  color: white !important; /* Changed from var(--surface-card) to white for better visibility */
+  display: inline-block !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* MultiSelect chip/token styling */
+.p-multiselect .p-multiselect-label .p-multiselect-token {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+  border-radius: 4px !important;
+  padding: 0.25rem 0.5rem !important;
+  margin-right: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.p-multiselect .p-multiselect-label .p-multiselect-token .p-multiselect-token-label {
+  max-width: 100px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin-right: 0.25rem !important;
+  font-size: 0.75rem !important;
+}
+
+.p-multiselect .p-multiselect-label .p-multiselect-token .p-multiselect-token-icon {
+  font-size: 0.675rem !important;
+  color: var(--text-color-secondary) !important;
+  margin-left: 0.25rem !important;
+}
+
+/* Improve token display in MultiSelect label */
+.p-multiselect .p-multiselect-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 0.5rem !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Fix token size and positioning */
+.p-multiselect .p-multiselect-token {
+  margin-right: 0.25rem !important;
+  height: 1.25rem !important;
+  padding: 0 0.5rem !important;
+  font-size: 0.75rem !important;
+  min-width: 80px !important;
+  max-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* Hide token remove icon */
+.p-multiselect .p-multiselect-token .p-multiselect-token-icon {
+  display: none !important;
+}
+
+/* Show all tokens */
+/* Removed token limit to show all selected items */
+
 .p-overlay-modal {
   background: none !important;
 }

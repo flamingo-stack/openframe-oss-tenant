@@ -1,9 +1,9 @@
 <template>
-  <div class="nested-object">
+  <div class="of-nested-object">
     <template v-if="localValue && typeof localValue === 'object'">
-      <div v-for="(val, key) in localValue" :key="key" class="nested-field">
-        <div class="nested-field-label">{{ formatKey(key) }}</div>
-        <div class="nested-field-value">
+      <div v-for="(val, key) in localValue" :key="key" class="of-nested-field">
+        <div class="of-nested-field-label">{{ formatKey(key) }}</div>
+        <div class="of-nested-field-value">
           <template v-if="getValueType(val) === 'Object'">
             <OFNestedObjectEditor
               :value="val"
@@ -14,8 +14,8 @@
             />
           </template>
           <template v-else-if="getValueType(val) === 'Array'">
-            <div class="array-inputs">
-              <div v-for="(item, index) in getArrayItems(val)" :key="'item-' + key + '-' + index" class="array-input-row">
+            <div class="of-array-inputs">
+              <div v-for="(item, index) in getArrayItems(val)" :key="'item-' + key + '-' + index" class="of-array-input-row">
                 <InputText
                   :modelValue="item"
                   @update:modelValue="newVal => updateArrayItem(key, index, newVal)"
@@ -32,7 +32,7 @@
                   v-tooltip.top="'Remove item'"
                 />
               </div>
-              <div class="add-item-wrapper">
+              <div class="of-add-item-wrapper">
                 <OFButton
                   icon="pi pi-plus"
                   :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
@@ -44,12 +44,12 @@
             </div>
           </template>
           <template v-else-if="getValueType(val) === 'Boolean'">
-            <div class="switch-wrapper">
+            <div class="of-switch-wrapper">
               <InputSwitch
                 :modelValue="val"
                 @update:modelValue="newVal => updateValue(key, newVal)"
                 :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
-                class="settings-switch"
+                class="of-settings-switch"
               />
             </div>
           </template>
@@ -76,12 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, toRaw, computed, ref } from 'vue';
+import { defineProps, defineEmits, toRaw, computed, ref, defineAsyncComponent } from 'vue';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import { OFButton } from '@/components/ui';
-import OFNestedObjectEditor from './OFNestedObjectEditor.vue';
+// Self-reference for recursive component
+const OFNestedObjectEditor = defineAsyncComponent(() => import('./OFNestedObjectEditor.vue'));
 
 const props = defineProps<{
   value: Record<string | number, any>;
@@ -172,41 +173,41 @@ const updateArrayItem = (key: string | number, index: number, newValue: string |
 </script>
 
 <style scoped>
-.nested-object {
+.of-nested-object {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.nested-field {
+.of-nested-field {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.nested-field-label {
+.of-nested-field-label {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-color-secondary);
 }
 
-.nested-field-value {
+.of-nested-field-value {
   width: 100%;
 }
 
-.array-inputs {
+.of-array-inputs {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.array-input-row {
+.of-array-input-row {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
-.add-item-wrapper {
+.of-add-item-wrapper {
   margin-top: 0.5rem;
 }
 
@@ -228,12 +229,12 @@ const updateArrayItem = (key: string | number, index: number, newValue: string |
   }
 }
 
-.switch-wrapper {
+.of-switch-wrapper {
   display: flex;
   align-items: center;
 }
 
-:deep(.settings-switch) {
+:deep(.of-settings-switch) {
   .p-inputswitch {
     width: 3rem;
     height: 1.5rem;
@@ -270,18 +271,18 @@ const updateArrayItem = (key: string | number, index: number, newValue: string |
   }
 }
 
-.array-item-enter-active,
-.array-item-leave-active {
+.of-array-item-enter-active,
+.of-array-item-leave-active {
   transition: all 0.3s ease;
 }
 
-.array-item-enter-from,
-.array-item-leave-to {
+.of-array-item-enter-from,
+.of-array-item-leave-to {
   opacity: 0;
   transform: translateY(-10px);
 }
 
-.array-item-move {
+.of-array-item-move {
   transition: transform 0.3s ease;
 }
-</style>  
+</style>

@@ -42,7 +42,7 @@
                   <div class="tool-content">
                     <template v-if="typeof subValue === 'object' && subValue !== null">
                       <div class="nested-object-wrapper">
-                        <NestedObjectEditor
+                        <OFNestedObjectEditor
                           v-if="!Array.isArray(subValue)"
                           :value="subValue"
                           :isEditable="isPropertyEditable(subKey, category)"
@@ -132,7 +132,7 @@
                   <div class="tool-content">
                     <template v-if="typeof subValue === 'object' && subValue !== null">
                       <div class="nested-object-wrapper">
-                        <NestedObjectEditor
+                        <OFNestedObjectEditor
                           v-if="!Array.isArray(subValue)"
                           :value="subValue"
                           :isEditable="isPropertyEditable(subKey, category)"
@@ -200,7 +200,7 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import Chips from 'primevue/chips';
-import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
+import { OFNestedObjectEditor } from '../../components/ui';
 import { ToastService } from '../../services/ToastService';
 import type { EditableValue } from './Settings.vue';
 import Textarea from 'primevue/textarea';
@@ -479,4 +479,4 @@ h2 {
     background: var(--primary-600);
   }
 }
-</style>    
+</style>        

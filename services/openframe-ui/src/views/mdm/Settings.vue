@@ -62,7 +62,7 @@ import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
-import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
+import { OFNestedObjectEditor } from '../../components/ui';
 import { ToastService } from '../../services/ToastService';
 import { useSettingsSave } from '../../composables/useSettingsSave';
 import type { RuntimeConfig } from '../../config/runtime-config';
@@ -930,4 +930,4 @@ section {
 .grid {
   margin: 0;
 }
-</style>  
+</style>    

@@ -5,7 +5,7 @@
         <OFButton 
           label="Add Script" 
           icon="pi pi-plus"
-          @click="showAddScriptDialog = true"
+          @click="openAddScriptDialog"
           class="p-button-primary"
         />
       </template>
@@ -47,19 +47,8 @@
               optionLabel="label"
               optionValue="value"
               placeholder="All Platforms"
-              class="w-full"
               display="chip"
-              :showClear="true"
-              :filter="false"
-              :showToggleAll="false"
-              :selectAll="false"
-              :resetFilterOnHide="true"
-              :autoOptionFocus="false"
-              :panelClass="'surface-0'"
-            >
-              <template #header>
-              </template>
-            </MultiSelect>
+            />
           </div>
         </div>
       </div>
@@ -183,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
+import { ref, onMounted, computed, nextTick } from "@vue/runtime-core";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -202,9 +191,9 @@ import {
   ScriptEditor,
   OFScriptDialog,
   OFConfirmationDialog,
-  OFCodeBlock
+  OFCodeBlock,
+  MultiSelect
 } from "../../components/ui";
-import MultiSelect from 'primevue/multiselect';
 import { useScriptType } from '../../composables/useScriptType';
 
 interface Script {
@@ -259,6 +248,15 @@ const isEditMode = ref(false);
 
 const selectedScript = ref<Script | null>(null);
 const selectedDevices = ref<string[]>([]);
+
+const openAddScriptDialog = () => {
+  selectedScript.value = null;
+  isEditMode.value = false;
+  showAddScriptDialog.value = false;
+  nextTick(() => {
+    showAddScriptDialog.value = true;
+  });
+};
 
 const newScript = ref({
   name: '',
@@ -724,4 +722,4 @@ onMounted(async () => {
 :deep(.hidden) {
   display: none !important;
 }
-</style>                                                                                                                                                                                                                                                                                                                                                                        
+</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
