@@ -21,9 +21,18 @@ defineProps<{
   placeholder?: string;
 }>();
 
-defineEmits<{
-  (e: 'update:modelValue', value: string): void;
-}>();
+const emit = defineEmits(['update:modelValue', 'search'])
+
+const handleInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  emit('update:modelValue', target.value)
+}
+
+const handleKeyPress = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    emit('search')
+  }
+}
 </script>
 
 <style>

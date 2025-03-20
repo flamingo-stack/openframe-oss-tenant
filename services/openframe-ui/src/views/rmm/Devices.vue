@@ -8,7 +8,13 @@
     </ModuleHeader>
 
     <div class="devices-content">
-      <SearchBar v-model="filters['global'].value" placeholder="Search devices..." />
+      <div class="filters-container">
+        <div class="filters-row">
+          <div class="search-container">
+            <SearchBar v-model="filters['global'].value" placeholder="Search devices..." />
+          </div>
+        </div>
+      </div>
 
       <ModuleTable :items="devices" :loading="loading"
         :searchFields="['hostname', 'plat', 'operating_system', 'status']" emptyIcon="pi pi-desktop"

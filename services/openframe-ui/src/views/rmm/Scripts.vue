@@ -12,12 +12,52 @@
     </ModuleHeader>
 
     <div class="scripts-content">
-      <SearchBar v-model="filters['global'].value" placeholder="Search scripts..." />
+      <div class="filters-container">
+        <div class="filters-row">
+          <div class="search-container">
+            <SearchBar v-model="filters['global'].value" placeholder="Search scripts..." />
+          </div>
+          <div class="filter-item">
+            <Dropdown
+              id="scriptTypeFilter"
+              v-model="filters['script_type'].value"
+              :options="scriptTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Types"
+              class="w-full"
+            />
+          </div>
+          <div class="filter-item">
+            <Dropdown
+              id="shellTypeFilter"
+              v-model="filters['shell'].value"
+              :options="shellOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Shells"
+              class="w-full"
+            />
+          </div>
+          <div class="filter-item">
+            <MultiSelect
+              id="platformFilter"
+              v-model="filters['platforms'].value"
+              :options="platformOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Platforms"
+              class="w-full"
+              display="chip"
+            />
+          </div>
+        </div>
+      </div>
 
       <ModuleTable 
-        :items="scripts" 
+        :items="filteredScripts" 
         :loading="loading"
-        :searchFields="['name', 'type', 'description']"
+        :searchFields="['name', 'script_type', 'description', 'shell']"
         emptyIcon="pi pi-code"
         emptyTitle="No Scripts Found"
         emptyMessage="Add your first script to start automating tasks."
@@ -26,16 +66,15 @@
         <Column field="name" header="Name" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <i :class="getScriptIcon(data.type)" class="script-icon mr-2"></i>
               <span class="font-medium">{{ data.name }}</span>
             </div>
           </template>
         </Column>
 
-        <Column field="type" header="Type" sortable>
+        <Column field="script_type" header="Type" sortable>
           <template #body="{ data }">
-            <Tag :value="formatScriptType(data.type)" 
-                 :severity="getScriptTypeSeverity(data.type)" />
+            <Tag :value="formatScriptType(data.script_type)" 
+                 :severity="getScriptTypeSeverity(data.script_type)" />
           </template>
         </Column>
 
@@ -259,7 +298,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "@vue/runtime-core";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -282,11 +321,20 @@ import {
 interface Script {
   id: string;
   name: string;
-  type: string;
+  script_type: string;
   description: string;
   content: string;
+  script_body?: string;
   created_at: string;
   last_run?: string;
+  shell: string;
+  default_timeout: number;
+  args: string[];
+  run_as_user: boolean;
+  env_vars: string[];
+  supported_platforms: string[];
+  category: string | null;
+  syntax: string;
 }
 
 interface Device {
@@ -325,9 +373,22 @@ const selectedDevices = ref<string[]>([]);
 
 const newScript = ref({
   name: '',
-  type: null as string | null,
+  script_type: 'userdefined',
   description: '',
-  content: ''
+  content: '',
+  created_at: '',
+  last_run: '',
+  shell: 'shell',
+  default_timeout: 90,
+  args: [] as string[],
+  run_as_user: false,
+  env_vars: [] as string[],
+  supported_platforms: [] as string[],
+  category: null as string | null,
+  syntax: '',
+  filename: null,
+  favorite: false,
+  hidden: false
 });
 
 const scriptTypes = [
@@ -337,36 +398,80 @@ const scriptTypes = [
   { name: 'Python', value: 'python' }
 ];
 
+const platformOptions = [
+  { label: 'Windows', value: 'windows' },
+  { label: 'Linux', value: 'linux' },
+  { label: 'macOS', value: 'darwin' }
+];
+
+const shellOptions = [
+  { label: 'Shell', value: 'shell' },
+  { label: 'PowerShell', value: 'powershell' },
+  { label: 'Batch', value: 'batch' },
+  { label: 'Python', value: 'python' }
+];
+
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+  script_type: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+  shell: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+  platforms: { value: [] as string[], matchMode: FilterMatchMode.IN }
+});
+
+const scriptTypeOptions = [
+  { label: 'All Types', value: null },
+  { label: 'Built-in', value: 'builtin' },
+  { label: 'User Defined', value: 'userdefined' }
+];
+
+const filteredScripts = computed(() => {
+  let filtered = [...scripts.value];
+
+  if (filters.value.global.value) {
+    const searchValue = filters.value.global.value.toLowerCase();
+    filtered = filtered.filter(script => 
+      script.name.toLowerCase().includes(searchValue) ||
+      script.description.toLowerCase().includes(searchValue) ||
+      script.shell.toLowerCase().includes(searchValue) ||
+      formatScriptType(script.script_type).toLowerCase().includes(searchValue)
+    );
+  }
+
+  if (filters.value.script_type.value) {
+    filtered = filtered.filter(script => 
+      script.script_type === filters.value.script_type.value
+    );
+  }
+
+  if (filters.value.shell.value) {
+    filtered = filtered.filter(script => 
+      script.shell === filters.value.shell.value
+    );
+  }
+
+  if (filters.value.platforms.value.length > 0) {
+    filtered = filtered.filter(script => 
+      script.supported_platforms.some(platform => 
+        filters.value.platforms.value.includes(platform)
+      )
+    );
+  }
+
+  return filtered;
 });
 
 const formatScriptType = (type: string) => {
   const typeMap: Record<string, string> = {
-    powershell: 'PowerShell',
-    batch: 'Batch',
-    shell: 'Shell',
-    python: 'Python'
+    builtin: 'Built-in',
+    userdefined: 'User Defined'
   };
   return typeMap[type] || type;
 };
 
-const getScriptIcon = (type: string) => {
-  const iconMap: Record<string, string> = {
-    powershell: 'pi pi-window-maximize',
-    batch: 'pi pi-terminal',
-    shell: 'pi pi-terminal',
-    python: 'pi pi-code'
-  };
-  return iconMap[type] || 'pi pi-code';
-};
-
 const getScriptTypeSeverity = (type: string) => {
   const severityMap: Record<string, string> = {
-    powershell: 'info',
-    batch: 'warning',
-    shell: 'warning',
-    python: 'success'
+    builtin: 'info',
+    userdefined: 'success'
   };
   return severityMap[type] || 'info';
 };
@@ -378,8 +483,8 @@ const formatTimestamp = (timestamp: string) => {
 const fetchScripts = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<ScriptsResponse>(`${API_URL}/scripts/`);
-    scripts.value = response.data || [];
+    const response = await restClient.get<Script[]>(`${API_URL}/scripts/`);
+    scripts.value = response || [];
   } catch (error) {
     console.error('Failed to fetch scripts:', error);
     toastService.showError('Failed to fetch scripts');
@@ -402,26 +507,31 @@ const hideDialog = () => {
   showAddScriptDialog.value = false;
   submitted.value = false;
   isEditMode.value = false;
-  newScript.value = {
-    name: '',
-    type: null,
-    description: '',
-    content: ''
-  };
+  selectedScript.value = null;
 };
 
-const saveScript = async () => {
+const saveScript = async (scriptData: any) => {
   try {
-    submitted.value = true;
-    if (!validateScript()) return;
-
     submitting.value = true;
     const endpoint = isEditMode.value && selectedScript.value ? 
-      `${API_URL}/scripts/${selectedScript.value.id}` : 
-      `${API_URL}/scripts`;
+      `${API_URL}/scripts/${selectedScript.value.id}/` : 
+      `${API_URL}/scripts/`;
+
+    const payload = {
+      name: scriptData.name,
+      shell: scriptData.shell,
+      default_timeout: scriptData.default_timeout,
+      args: scriptData.args,
+      script_body: scriptData.syntax,
+      run_as_user: scriptData.run_as_user,
+      env_vars: scriptData.env_vars,
+      description: scriptData.description,
+      supported_platforms: scriptData.supported_platforms,
+      category: scriptData.category
+    };
 
     const method = isEditMode.value ? 'put' : 'post';
-    await restClient[method](endpoint, newScript.value);
+    await restClient[method](endpoint, payload);
 
     hideDialog();
     await fetchScripts();
@@ -464,18 +574,60 @@ const executeScript = async () => {
   }
 };
 
-const viewScript = (script: Script) => {
-  selectedScript.value = script;
-  newScript.value = { ...script };
-  isEditMode.value = true;
-  showAddScriptDialog.value = true;
+const viewScript = async (script: Script) => {
+  if (script.script_type !== 'builtin') {
+    toastService.showError('Only community scripts can be viewed');
+    return;
+  }
+
+  try {
+    const response = await restClient.get<Script>(`${API_URL}/scripts/${script.id}/`);
+    if (!response) {
+      throw new Error('No script data received');
+    }
+    selectedScript.value = {
+      ...response,
+      syntax: response.script_body || response.content || ''
+    };
+    isEditMode.value = false;
+    showAddScriptDialog.value = true;
+  } catch (error) {
+    console.error('Failed to fetch script details:', error);
+    toastService.showError('Failed to fetch script details');
+    selectedScript.value = script;
+    isEditMode.value = false;
+    showAddScriptDialog.value = true;
+  }
 };
 
-const editScript = (script: Script) => {
-  selectedScript.value = script;
-  newScript.value = { ...script };
-  isEditMode.value = true;
-  showAddScriptDialog.value = true;
+const editScript = async (script: Script) => {
+  if (script.script_type !== 'userdefined') {
+    toastService.showError('Only user-defined scripts can be edited');
+    return;
+  }
+  
+  try {
+    const response = await restClient.get<Script>(`${API_URL}/scripts/${script.id}/`);
+    if (!response) {
+      throw new Error('No script data received');
+    }
+    selectedScript.value = {
+      ...response,
+      script_type: 'userdefined',
+      syntax: response.script_body || response.content || ''
+    };
+    isEditMode.value = true;
+    showAddScriptDialog.value = true;
+  } catch (error) {
+    console.error('Failed to fetch script details:', error);
+    toastService.showError('Failed to fetch script details');
+    selectedScript.value = {
+      ...script,
+      script_type: 'userdefined'
+    };
+    isEditMode.value = true;
+    showAddScriptDialog.value = true;
+  }
 };
 
 const deleteScript = async (script: Script) => {
@@ -505,8 +657,8 @@ const confirmDelete = async () => {
 };
 
 const validateScript = () => {
-  if (!newScript.value.name || !newScript.value.type || 
-      !newScript.value.description || !newScript.value.content) {
+  if (!newScript.value.name || !newScript.value.shell || 
+      !newScript.value.description || !newScript.value.syntax) {
     return false;
   }
   return true;
@@ -538,24 +690,92 @@ onMounted(async () => {
   background: var(--surface-ground);
 }
 
+.filters-container {
+  margin-bottom: 1rem;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  height: 42px;
+}
+
+.search-container {
+  flex: 2;
+  height: 100%;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 180px;
+  height: 100%;
+}
+
+:deep(.p-dropdown),
+:deep(.p-multiselect) {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-section);
+  border: none;
+}
+
+:deep(.p-dropdown .p-dropdown-label),
+:deep(.p-multiselect .p-multiselect-label) {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+:deep(.p-dropdown-trigger),
+:deep(.p-multiselect-trigger) {
+  width: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.p-inputgroup) {
+  height: 100%;
+}
+
+:deep(.p-inputgroup-addon) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 :deep(.p-tag) {
   min-width: 75px;
   justify-content: center;
 }
 
-:deep(.p-dialog-mask) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+:deep(.p-datatable) {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
 }
 
+:deep(.p-paginator-bottom) {
+  border-top: 1px solid var(--surface-border);
+}
+
+:deep(.p-paginator) {
+  background: var(--surface-card);
+  padding: 1rem;
+}
+
+/* Dialog specific styles */
 :deep(.p-dialog) {
-  margin: 0 auto !important;
-}
+  .p-dialog-mask {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
 
-:deep(.p-dialog-content) {
-  overflow-y: auto !important;
-  max-height: calc(90vh - 120px) !important;
+  .p-dialog-content {
+    overflow-y: auto !important;
+    max-height: calc(90vh - 120px) !important;
+  }
 }
 
 .p-dialog-custom {
@@ -586,12 +806,29 @@ onMounted(async () => {
   padding: 1rem;
 }
 
-.script-icon {
-  font-size: 1.125rem;
-  color: var(--primary-color);
-}
+/* Form input styles */
+:deep(.p-dialog) {
+  .p-multiselect,
+  .p-inputnumber,
+  .p-dropdown,
+  .p-inputtext,
+  .p-textarea {
+    width: 100%;
+  }
 
-.font-mono {
-  font-family: monospace;
+  .p-checkbox {
+    margin-right: 0.5rem;
+  }
+
+  .p-multiselect {
+    .p-multiselect-label {
+      padding: 0.5rem;
+    }
+
+    .p-multiselect-token {
+      margin: 0.25rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
 }
 </style>              

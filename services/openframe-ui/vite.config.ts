@@ -36,26 +36,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     optimizeDeps: {
-      include: [
-        'rxjs',
-        '@grafana/experimental',
-        '@grafana/faro-core',
-        '@grafana/faro-web-sdk',
-        '@opentelemetry/api',
-        'dompurify',
-        'micro-memoize',
-        'performance-now',
-        'react-from-dom',
-        'react-inlinesvg',
-        'react-window',
-        'tabbable',
-        '@reduxjs/toolkit',
-        'immer',
-        'react-redux',
-        'html-parse-stringify',
-        'redux',
-        'reselect'
-      ]
+      include: []
     }
   }
 })

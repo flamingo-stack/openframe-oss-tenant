@@ -11,8 +11,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+ARG PORT
+ENV PORT=${PORT:-3000}
+
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE ${PORT}
 
 # Start the application in development mode
-CMD ["npm", "run", "dev", "--", "--port", "${PORT:-3000}"]
+CMD npm run dev -- --port $PORT

@@ -12,7 +12,13 @@
     </ModuleHeader>
 
     <div class="monitoring-content">
-      <SearchBar v-model="filters['global'].value" placeholder="Search monitors..." />
+      <div class="filters-container">
+        <div class="filters-row">
+          <div class="search-container">
+            <SearchBar v-model="filters['global'].value" placeholder="Search monitors..." />
+          </div>
+        </div>
+      </div>
 
       <ModuleTable 
         :items="monitors" 
@@ -450,6 +456,22 @@ onMounted(async () => {
   padding: 1.5rem;
   min-height: 0;
   background: var(--surface-ground);
+}
+
+.filters-container {
+  margin-bottom: 1rem;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  height: 42px;
+}
+
+.search-container {
+  flex: 1;
+  height: 100%;
 }
 
 :deep(.p-tag) {
