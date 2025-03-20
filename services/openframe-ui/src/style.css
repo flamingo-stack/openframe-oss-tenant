@@ -447,7 +447,8 @@ body {
 
 /* MultiSelect styles */
 .p-multiselect {
-  height: 42px !important;
+  min-height: 42px !important;
+  height: auto !important;
   background: var(--surface-section) !important;
   font-size: 0.875rem !important;
   display: flex !important;
@@ -604,6 +605,15 @@ body {
   max-height: 100% !important;
   overflow-y: auto !important;
   padding: 0.5rem 1rem !important;
+  align-items: flex-start !important;
+}
+
+/* Fix token size and positioning */
+.p-multiselect .p-multiselect-token {
+  margin-right: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  height: 1.5rem !important;
+  padding: 0.15rem 0.5rem !important;
 }
 
 .p-overlay-modal {
