@@ -69,6 +69,21 @@ const filters = ref({
   flex-direction: column;
 }
 
+/* Dark mode specific styles */
+:global([data-theme="dark"]) {
+  .of-module-table {
+    background: var(--surface-section);
+  }
+
+  :deep(.p-datatable) {
+    .p-datatable-wrapper,
+    .p-paginator.of-paginator {
+      background: var(--surface-section);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    }
+  }
+}
+
 :deep(.p-datatable) {
   .p-datatable-wrapper {
     border-radius: var(--border-radius);
@@ -154,15 +169,55 @@ const filters = ref({
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 0.5rem;
 
     .p-paginator-current {
-      margin-right: auto;
+      order: 1;
+      flex: 0 0 auto;
+      margin-right: 1rem;
+    }
+
+    .p-paginator-first,
+    .p-paginator-prev,
+    .p-paginator-pages,
+    .p-paginator-next,
+    .p-paginator-last {
+      order: 2;
+      display: flex;
+      flex-wrap: nowrap;
     }
 
     .p-paginator-rpp-options {
+      order: 3;
+      flex: 0 0 auto;
       margin-left: 1rem;
+    }
+
+    @media screen and (max-width: 768px) {
+      flex-direction: column;
+      align-items: center;
+      
+      .p-paginator-current {
+        order: 1;
+        margin: 0 0 0.5rem 0;
+        width: 100%;
+        text-align: center;
+      }
+      
+      .p-paginator-first,
+      .p-paginator-prev,
+      .p-paginator-pages,
+      .p-paginator-next,
+      .p-paginator-last {
+        order: 2;
+        margin: 0 0 0.5rem 0;
+      }
+      
+      .p-paginator-rpp-options {
+        order: 3;
+        margin: 0;
+      }
     }
 
     .p-paginator-pages .p-paginator-page {
@@ -298,4 +353,4 @@ const filters = ref({
     }
   }
 }
-</style>                                                        
+</style>                                                                                                                
