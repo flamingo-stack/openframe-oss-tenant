@@ -589,11 +589,11 @@ body {
 }
 
 .p-multiselect .p-multiselect-label .p-multiselect-token .p-multiselect-token-label {
-  max-width: 40px !important;
+  max-width: 100px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   margin-right: 0.25rem !important;
-  font-size: 0.675rem !important;
+  font-size: 0.75rem !important;
 }
 
 .p-multiselect .p-multiselect-label .p-multiselect-token .p-multiselect-token-icon {
