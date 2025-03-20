@@ -696,14 +696,7 @@ onMounted(async () => {
   border-radius: var(--border-radius);
 }
 
-:deep(.p-paginator-bottom) {
-  border-top: 1px solid var(--surface-border);
-}
-
-:deep(.p-paginator) {
-  background: var(--surface-card);
-  padding: 1rem;
-}
+/* Using standardized pagination styling from ModuleTable */
 
 /* Dialog specific styles */
 :deep(.p-dialog) {
@@ -772,4 +765,4 @@ onMounted(async () => {
     }
   }
 }
-</style>                            
+</style>                              

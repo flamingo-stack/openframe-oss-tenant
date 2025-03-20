@@ -6,6 +6,7 @@
       v-model:filters="filters"
       filterDisplay="menu"
       :paginator="true"
+      paginatorClass="of-paginator"
       :rows="10"
       :rowsPerPageOptions="[10, 20, 50]"
       responsiveLayout="scroll"
@@ -143,12 +144,13 @@ const filters = ref({
     }
   }
 
-  .p-paginator {
+  .p-paginator.of-paginator {
     background: var(--surface-ground);
     border: none;
     padding: 1.25rem 1rem;
     margin-top: 1rem;
     border-radius: var(--border-radius);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 
     .p-paginator-pages .p-paginator-page {
       min-width: 2.5rem;
@@ -283,4 +285,4 @@ const filters = ref({
     }
   }
 }
-</style>        
+</style>              
