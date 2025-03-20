@@ -145,12 +145,25 @@ const filters = ref({
   }
 
   .p-paginator.of-paginator {
-    background: var(--surface-ground);
+    background: var(--surface-card);
     border: none;
     padding: 1.25rem 1rem;
     margin-top: 1rem;
     border-radius: var(--border-radius);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+
+    .p-paginator-current {
+      margin-right: auto;
+    }
+
+    .p-paginator-rpp-options {
+      margin-left: 1rem;
+    }
 
     .p-paginator-pages .p-paginator-page {
       min-width: 2.5rem;
@@ -285,4 +298,4 @@ const filters = ref({
     }
   }
 }
-</style>              
+</style>                                                        
