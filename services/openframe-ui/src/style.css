@@ -515,6 +515,13 @@ body {
   background: var(--surface-hover) !important;
 }
 
+.p-multiselect-panel .p-multiselect-item.p-highlight {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+  font-weight: 600 !important; /* Increased from 500 to 600 for better visibility */
+  border-left: 2px solid var(--primary-color) !important; /* Added border indicator */
+}
+
 .p-multiselect-panel .p-checkbox {
   width: 18px !important;
   height: 18px !important;
@@ -534,12 +541,40 @@ body {
 
 .p-multiselect-panel .p-checkbox .p-checkbox-box .p-checkbox-icon {
   font-size: 12px !important;
-  color: var(--surface-card) !important;
+  color: white !important; /* Changed from var(--surface-card) to white for better visibility */
 }
 
 .p-multiselect-panel .p-checkbox .p-checkbox-box.p-highlight {
   background: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
+}
+
+/* MultiSelect chip/token styling */
+.p-multiselect .p-multiselect-label .p-multiselect-token {
+  background: var(--surface-hover) !important;
+  color: var(--text-color) !important;
+  border-radius: 4px !important;
+  padding: 0.25rem 0.5rem !important;
+  margin-right: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.p-multiselect .p-multiselect-label .p-multiselect-token .p-multiselect-token-label {
+  margin-right: 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.p-multiselect .p-multiselect-label .p-multiselect-token .p-multiselect-token-icon {
+  font-size: 0.75rem !important;
+  color: var(--text-color-secondary) !important;
+}
+
+/* Improve token display in MultiSelect label */
+.p-multiselect .p-multiselect-label {
+  flex-wrap: wrap !important;
+  gap: 0.25rem !important;
 }
 
 .p-overlay-modal {
