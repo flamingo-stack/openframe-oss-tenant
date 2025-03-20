@@ -2,16 +2,7 @@
   <div class="of-form-group">
     <label v-if="label" :for="id" class="of-form-label">{{ label }}</label>
     <div :class="['of-script-editor-wrapper', { 'p-invalid': error }]">
-      <textarea
-        :id="id"
-        :value="modelValue"
-        :rows="rows"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        :required="required"
-        class="of-script-editor code-editor"
-        @input="$emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+      <div ref="editorContainer" class="monaco-editor-container"></div>
     </div>
     <small v-if="error" class="p-error">{{ error }}</small>
     <small v-if="helperText" class="of-text-secondary of-text-sm">{{ helperText }}</small>
@@ -19,9 +10,10 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import * as monaco from 'monaco-editor';
 
-defineProps({
+const props = defineProps({
   id: {
     type: String,
     default: () => `script-editor-${Math.random().toString(36).substring(2, 9)}`
@@ -60,40 +52,68 @@ defineProps({
   }
 });
 
-defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue']);
+
+const editorContainer = ref<HTMLElement | null>(null);
+let editor: monaco.editor.IStandaloneCodeEditor | null = null;
+
+onMounted(() => {
+  if (!editorContainer.value) return;
+
+  editor = monaco.editor.create(editorContainer.value, {
+    value: props.modelValue,
+    language: 'powershell',
+    theme: 'vs-dark',
+    readOnly: props.disabled,
+    automaticLayout: true,
+    minimap: {
+      enabled: true
+    },
+    scrollBeyondLastLine: false,
+    fontSize: 12,
+    lineNumbers: 'on',
+    roundedSelection: false,
+    scrollbar: {
+      vertical: 'visible',
+      horizontal: 'visible'
+    }
+  });
+
+  editor.onDidChangeModelContent(() => {
+    emit('update:modelValue', editor?.getValue() || '');
+  });
+});
+
+watch(() => props.modelValue, (newValue) => {
+  if (editor && newValue !== editor.getValue()) {
+    editor.setValue(newValue);
+  }
+});
+
+watch(() => props.disabled, (newValue) => {
+  if (editor) {
+    editor.updateOptions({ readOnly: newValue });
+  }
+});
+
+onBeforeUnmount(() => {
+  if (editor) {
+    editor.dispose();
+  }
+});
 </script>
 
 <style>
-.of-script-editor {
+.monaco-editor-container {
   width: 100%;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  padding: 1rem;
-  background: var(--surface-ground);
-  color: var(--text-color);
-  border: none;
+  height: 100%;
+  min-height: 200px;
+  border: 1px solid var(--surface-border);
   border-radius: var(--border-radius);
-  resize: vertical;
-  transition: all 0.2s;
-  outline: none !important;
+  overflow: hidden;
 }
 
-.of-script-editor:hover {
-  background: var(--surface-hover);
-}
-
-.of-script-editor:focus {
-  background: var(--surface-hover);
-  box-shadow: var(--focus-ring);
-}
-
-.of-script-editor::placeholder {
-  color: var(--text-color-secondary);
-  opacity: 0.7;
-}
-
-.of-script-editor-wrapper.p-invalid .of-script-editor {
+.of-script-editor-wrapper.p-invalid .monaco-editor-container {
   border-color: var(--red-500);
 }
 </style>

@@ -108,11 +108,10 @@
             <div class="field">
               <label for="syntax">Script Content</label>
               <div class="command-input-container">
-                <Textarea 
+                <ScriptEditor 
                   id="syntax" 
                   v-model="script.syntax" 
-                  rows="6"
-                  class="command-input font-mono"
+                  :rows="6"
                   placeholder="Enter script content"
                   :class="{ 'p-invalid': submitted && !script.syntax }"
                   :disabled="!isEditMode"
@@ -260,7 +259,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { watch } from '@vue/runtime-core';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -271,6 +270,7 @@ import MultiSelect from 'primevue/multiselect';
 import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
 import { ToastService } from '../../services/ToastService';
+import ScriptEditor from '../ui/form/ScriptEditor.vue';
 
 const toastService = ToastService.getInstance();
 
