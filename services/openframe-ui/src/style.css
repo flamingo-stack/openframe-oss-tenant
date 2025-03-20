@@ -631,17 +631,8 @@ body {
   display: none !important;
 }
 
-/* Handle multiple token display */
-.p-multiselect .p-multiselect-label:has(.p-multiselect-token:nth-child(n+3)) .p-multiselect-token:not(:first-child):not(:nth-child(2)) {
-  display: none !important;
-}
-
-.p-multiselect .p-multiselect-label:has(.p-multiselect-token:nth-child(n+3))::after {
-  content: "..." !important;
-  margin-left: 0.25rem !important;
-  font-size: 0.675rem !important;
-  color: var(--text-color-secondary) !important;
-}
+/* Show all tokens */
+/* Removed token limit to show all selected items */
 
 .p-overlay-modal {
   background: none !important;
