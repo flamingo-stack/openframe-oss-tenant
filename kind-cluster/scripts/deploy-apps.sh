@@ -210,6 +210,22 @@ case "$1" in
     kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-worker --timeout 20m && \
     kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-postgresql --timeout 20m && \
     kubectl -n authentik wait --for=condition=Ready pod -l app=authentik-redis --timeout 20m
+
+    # helm upgrade -i authentik-redis authentik/redis \
+    # -n authentik2 --create-namespace \
+    # --version 15.7.6 \
+    # -f ./kind-cluster/apps/authentik/helm/authentik/authentik-redis.yaml
+
+    # helm upgrade -i authentik-postgresql authentik/postgresql \
+    #     -n authentik2 --create-namespace \
+    #     --version 12.8.2 \
+    #     -f ./kind-cluster/apps/authentik/helm/authentik/authentik-postgresql.yaml
+
+    # helm upgrade -i authentik-authentik authentik/authentik \
+    #     -n authentik2 --create-namespace \
+    #     --version 2025.2.1 \
+    #     -f ./kind-cluster/apps/authentik/helm/authentik/authentik-authentik.yaml
+
     ;;
   fleet)
     # ------------- FLEET -------------

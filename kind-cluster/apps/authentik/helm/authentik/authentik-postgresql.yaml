@@ -1,22 +1,18 @@
+auth:
+  database: "authentik-database-authentik"
+  username: "authentik-user"
+  password: "authentik-password-1234"
+
 primary:
   name: primary
   pgHbaConfiguration: |-
     local all all trust
     host all all localhost trust
+
   initdb:
-    ## @param primary.initdb.args PostgreSQL initdb extra arguments
-    ##
-    args: ""
-    postgresqlWalDir: ""
-    ## @param primary.initdb.scripts Dictionary of initdb scripts
-    ## Specify dictionary of scripts to be run at first boot
-    ## e.g:
-    ## scripts:
-    ##   my_init_script.sh: |
-    ##      #!/bin/sh
-    ##      echo "Do something."
-    ##
-    scripts: |
+    user: "authentik-user"
+    password: "authentik-password-1234"
+    scripts:
       00-create-databases.sh: |
         #!/bin/bash
 
