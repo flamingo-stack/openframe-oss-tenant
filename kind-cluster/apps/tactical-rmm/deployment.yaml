@@ -603,8 +603,8 @@ spec:
         image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:latest
         args: ["tactical-celerybeat"]
         env:
-        - name: TRMM_DISABLE_WEB_TERMINAL
-          value: "False"
+        # - name: DJANGO_SETTINGS_MODULE
+        #   value: "tacticalrmm.settings"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
