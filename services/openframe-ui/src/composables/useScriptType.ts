@@ -7,8 +7,8 @@ export interface ScriptTypeOptions {
 export function useScriptType() {
     const formatScriptType = (type: string) => {
         const typeMap: Record<string, string> = {
-            builtin: 'Built-in',
-            userdefined: 'User Defined'
+            builtin: 'BUILT-IN',
+            userdefined: 'USER DEFINED'
         };
         return typeMap[type] || type;
     };

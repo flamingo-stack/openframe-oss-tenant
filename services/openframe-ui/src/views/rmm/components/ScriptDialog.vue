@@ -6,9 +6,8 @@
         <template #header>
             <div class="flex align-items-center gap-2">
                 <span>{{ isEditMode ? 'Edit Script' : 'Add New Script' }}</span>
-                <Tag :value="formatScriptType(scriptData.script_type)"
-                    :severity="getScriptTypeSeverity(scriptData.script_type)"
-                    class="min-w-75px justify-content-center" />
+                <Tag :value="formatScriptType(scriptData.script_type)" 
+                     :severity="getScriptTypeSeverity(scriptData.script_type)" />
             </div>
         </template>
 
@@ -46,8 +45,7 @@
                         <div class="of-form-group">
                             <label class="of-form-label">Script Type</label>
                             <Tag :value="formatScriptType(scriptData.script_type)" 
-                                 :severity="getScriptTypeSeverity(scriptData.script_type)"
-                                 class="min-w-75px justify-content-center" />
+                                 :severity="getScriptTypeSeverity(scriptData.script_type)" />
                         </div>
                     </div>
                 </div>
@@ -515,36 +513,37 @@ const scriptTypeDisplay = computed(() => {
 
 /* Update tag styling to match table exactly */
 :deep(.p-tag) {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
     min-width: 75px;
     justify-content: center;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    border-radius: var(--border-radius);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-transform: none;
-}
 
-:deep(.p-tag-info) {
-    background: var(--info-bg);
-    color: var(--info-text);
-    border: 1px solid var(--info-border);
-}
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
 
-:deep(.p-tag-success) {
-    background: var(--success-bg);
-    color: var(--success-text);
-    border: 1px solid var(--success-border);
-}
+    &.p-tag-success {
+        background: var(--green-50);
+        color: var(--green-900);
+        border: 1px solid var(--green-200);
+    }
 
-:deep(.p-tag-value) {
-    line-height: 1;
-    font-weight: 500;
+    &.p-tag-info {
+        background: var(--blue-50);
+        color: var(--blue-900);
+        border: 1px solid var(--blue-200);
+    }
 }
 
 /* Remove any custom tag styling that might interfere */
 :deep(.p-tag.p-component) {
-    border-radius: var(--border-radius);
+    border-radius: 2rem;
 }
 </style>

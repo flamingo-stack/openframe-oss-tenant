@@ -73,40 +73,28 @@
         emptyMessage="Add your first script to start automating tasks."
         emptyHint="Scripts will appear here once they are created."
       >
-        <Column field="name" header="Name" sortable>
+        <Column field="name" header="Name" sortable style="width: 25%">
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <span class="font-medium">{{ data.name }}</span>
+              <span class="font-medium text-truncate" style="max-width: 300px">{{ data.name }}</span>
             </div>
           </template>
         </Column>
 
-        <Column field="script_type" header="Type" sortable>
+        <Column field="script_type" header="Type" sortable style="width: 15%">
           <template #body="{ data }">
             <Tag :value="formatScriptType(data.script_type)" 
                  :severity="getScriptTypeSeverity(data.script_type)" />
           </template>
         </Column>
 
-        <Column field="description" header="Description" sortable>
+        <Column field="description" header="Description" sortable style="width: 45%">
           <template #body="{ data }">
-            <span class="text-sm">{{ data.description }}</span>
+            <span class="text-sm text-truncate" style="max-width: 500px">{{ data.description }}</span>
           </template>
         </Column>
 
-        <Column field="created_at" header="Created" sortable>
-          <template #body="{ data }">
-            <span class="text-sm">{{ formatTimestamp(data.created_at) }}</span>
-          </template>
-        </Column>
-
-        <Column field="last_run" header="Last Run" sortable>
-          <template #body="{ data }">
-            <span class="text-sm">{{ formatTimestamp(data.last_run) }}</span>
-          </template>
-        </Column>
-
-        <Column header="Actions" :exportable="false">
+        <Column header="Actions" :exportable="false" style="width: 15%">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
               <OFButton 
@@ -124,14 +112,16 @@
               <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
-                v-tooltip.top="'Edit Script'"
-                @click="editScript(data)" 
+                v-tooltip.top="data.script_type === 'builtin' ? 'Cannot edit community scripts' : 'Edit Script'"
+                @click="editScript(data)"
+                :disabled="data.script_type === 'builtin'"
               />
               <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
-                v-tooltip.top="'Delete Script'"
-                @click="deleteScript(data)" 
+                v-tooltip.top="data.script_type === 'builtin' ? 'Cannot delete community scripts' : 'Delete Script'"
+                @click="deleteScript(data)"
+                :disabled="data.script_type === 'builtin'"
               />
             </div>
           </template>
