@@ -2,7 +2,7 @@
   <Dialog 
     :visible="visible"
     @update:visible="(val: boolean) => emit('update:visible', val)"
-    :header="isEditMode ? 'Edit Script' : 'Add New Script'"
+    :header="isEditMode ? 'Edit Script' : 'View Script'"
     :modal="true"
     :draggable="false"
     :style="{ width: '60vw', maxWidth: '800px' }"
@@ -27,6 +27,7 @@
                 autofocus 
                 placeholder="Enter script name"
                 :class="{ 'p-invalid': submitted && !script.name }"
+                :disabled="!isEditMode"
               />
               <small class="p-error" v-if="submitted && !script.name">
                 Name is required.
@@ -42,6 +43,7 @@
                 placeholder="Enter script description"
                 :class="{ 'p-invalid': submitted && !script.description }"
                 rows="2"
+                :disabled="!isEditMode"
               />
               <small class="p-error" v-if="submitted && !script.description">
                 Description is required.
@@ -58,6 +60,7 @@
                 optionValue="value"
                 placeholder="Select category"
                 filter
+                :disabled="!isEditMode"
               />
             </div>
           </div>
@@ -77,6 +80,7 @@
                 optionValue="value"
                 placeholder="Select script type"
                 :class="{ 'p-invalid': submitted && !script.shell }"
+                :disabled="!isEditMode"
               />
               <small class="p-error" v-if="submitted && !script.shell">
                 Script type is required.
@@ -94,6 +98,7 @@
                 placeholder="Select supported platforms"
                 :class="{ 'p-invalid': submitted && !script.supported_platforms.length }"
                 class="w-full"
+                :disabled="!isEditMode"
               />
               <small class="p-error" v-if="submitted && !script.supported_platforms.length">
                 At least one platform is required.
@@ -110,6 +115,7 @@
                   class="command-input font-mono"
                   placeholder="Enter script content"
                   :class="{ 'p-invalid': submitted && !script.syntax }"
+                  :disabled="!isEditMode"
                 />
                 <small class="p-error" v-if="submitted && !script.syntax">
                   Script content is required.
@@ -125,6 +131,7 @@
                 :min="1"
                 :max="3600"
                 class="w-full"
+                :disabled="!isEditMode"
               />
             </div>
 
@@ -133,6 +140,7 @@
                 id="run_as_user"
                 v-model="script.run_as_user"
                 :binary="true"
+                :disabled="!isEditMode"
               />
               <label for="run_as_user" class="ml-2">Run As User (Windows only)</label>
             </div>
@@ -154,6 +162,7 @@
                       class="recipient-input"
                       @keyup.enter="addArg"
                       @keydown.enter.prevent
+                      :disabled="!isEditMode"
                     />
                     <small class="recipient-hint">Press Enter to add another argument</small>
                   </div>
@@ -162,6 +171,7 @@
                     class="p-button-text p-button-sm p-button-danger"
                     @click="removeArg(index)"
                     v-tooltip.top="'Remove argument'"
+                    :disabled="!isEditMode"
                   />
                 </div>
                 <div class="recipient-actions">
@@ -170,6 +180,7 @@
                     icon="pi pi-plus"
                     class="p-button-text"
                     @click="addArg"
+                    :disabled="!isEditMode"
                   />
                   <small class="recipient-hint">Arguments will be passed to the script in order</small>
                 </div>
@@ -188,6 +199,7 @@
                         class="env-var-key"
                         @keyup.enter="addEnvVar"
                         @keydown.enter.prevent
+                        :disabled="!isEditMode"
                       />
                       <span class="env-var-separator">=</span>
                       <InputText
@@ -196,6 +208,7 @@
                         class="env-var-value"
                         @keyup.enter="addEnvVar"
                         @keydown.enter.prevent
+                        :disabled="!isEditMode"
                       />
                     </div>
                     <small class="recipient-hint">Press Enter to add another variable</small>
@@ -205,6 +218,7 @@
                     class="p-button-text p-button-sm p-button-danger"
                     @click="removeEnvVar(index)"
                     v-tooltip.top="'Remove environment variable'"
+                    :disabled="!isEditMode"
                   />
                 </div>
                 <div class="recipient-actions">
@@ -213,6 +227,7 @@
                     icon="pi pi-plus"
                     class="p-button-text"
                     @click="addEnvVar"
+                    :disabled="!isEditMode"
                   />
                   <small class="recipient-hint">Format: KEY=VALUE</small>
                 </div>
@@ -226,13 +241,14 @@
     <template #footer>
       <div class="flex justify-content-end gap-2">
         <Button 
-          label="Cancel" 
+          label="Close" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="onCancel"
         />
         <Button 
-          :label="isEditMode ? 'Update' : 'Add'" 
+          v-if="isEditMode && props.scriptType === 'userdefined'"
+          label="Update" 
           icon="pi pi-check" 
           class="p-button-primary" 
           @click="onSave" 
@@ -278,6 +294,7 @@ const props = defineProps<{
   isEditMode: boolean;
   loading: boolean;
   initialScript?: ScriptForm;
+  scriptType?: string;
 }>();
 
 const emit = defineEmits<{
@@ -353,6 +370,7 @@ const onSave = () => {
   if (!script.value.name || !script.value.shell || 
       !script.value.description || !script.value.syntax ||
       !script.value.supported_platforms.length) {
+    toastService.showError('Please fill in all required fields');
     return;
   }
 

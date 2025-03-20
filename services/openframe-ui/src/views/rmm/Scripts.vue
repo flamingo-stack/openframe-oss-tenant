@@ -12,12 +12,52 @@
     </ModuleHeader>
 
     <div class="scripts-content">
-      <SearchBar v-model="filters['global'].value" placeholder="Search scripts..." />
+      <div class="filters-container">
+        <div class="filters-row">
+          <div class="search-container">
+            <SearchBar v-model="filters['global'].value" placeholder="Search scripts..." />
+          </div>
+          <div class="filter-item">
+            <Dropdown
+              id="scriptTypeFilter"
+              v-model="filters['script_type'].value"
+              :options="scriptTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Types"
+              class="w-full"
+            />
+          </div>
+          <div class="filter-item">
+            <Dropdown
+              id="shellTypeFilter"
+              v-model="filters['shell'].value"
+              :options="shellOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Shells"
+              class="w-full"
+            />
+          </div>
+          <div class="filter-item">
+            <MultiSelect
+              id="platformFilter"
+              v-model="filters['platforms'].value"
+              :options="platformOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Platforms"
+              class="w-full"
+              display="chip"
+            />
+          </div>
+        </div>
+      </div>
 
       <ModuleTable 
-        :items="scripts" 
+        :items="filteredScripts" 
         :loading="loading"
-        :searchFields="['name', 'type', 'description']"
+        :searchFields="['name', 'script_type', 'description', 'shell']"
         emptyIcon="pi pi-code"
         emptyTitle="No Scripts Found"
         emptyMessage="Add your first script to start automating tasks."
@@ -26,16 +66,15 @@
         <Column field="name" header="Name" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <i :class="getScriptIcon(data.type)" class="script-icon mr-2"></i>
               <span class="font-medium">{{ data.name }}</span>
             </div>
           </template>
         </Column>
 
-        <Column field="type" header="Type" sortable>
+        <Column field="script_type" header="Type" sortable>
           <template #body="{ data }">
-            <Tag :value="formatScriptType(data.type)" 
-                 :severity="getScriptTypeSeverity(data.type)" />
+            <Tag :value="formatScriptType(data.script_type)" 
+                 :severity="getScriptTypeSeverity(data.script_type)" />
           </template>
         </Column>
 
@@ -67,18 +106,21 @@
                 @click="runScript(data)" 
               />
               <Button 
+                v-if="data.script_type === 'builtin'"
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'View Script'"
                 @click="viewScript(data)" 
               />
               <Button 
+                v-if="data.script_type === 'userdefined'"
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Script'"
                 @click="editScript(data)" 
               />
               <Button 
+                v-if="data.script_type === 'userdefined'"
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Script'"
@@ -96,6 +138,7 @@
       :is-edit-mode="isEditMode"
       :loading="submitting"
       :initial-script="selectedScript"
+      :script-type="selectedScript?.script_type"
       @save="saveScript"
       @cancel="hideDialog"
     />
@@ -189,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
+import { ref, onMounted, computed } from "@vue/runtime-core";
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -212,9 +255,10 @@ import ScriptDialog from '../../components/shared/ScriptDialog.vue';
 interface Script {
   id: string;
   name: string;
-  type: string;
+  script_type: string;
   description: string;
   content: string;
+  script_body?: string;
   created_at: string;
   last_run?: string;
   shell: string;
@@ -263,9 +307,11 @@ const selectedDevices = ref<string[]>([]);
 
 const newScript = ref({
   name: '',
-  type: null as string | null,
+  script_type: 'userdefined',
   description: '',
   content: '',
+  created_at: '',
+  last_run: '',
   shell: 'shell',
   default_timeout: 90,
   args: [] as string[],
@@ -273,7 +319,10 @@ const newScript = ref({
   env_vars: [] as string[],
   supported_platforms: [] as string[],
   category: null as string | null,
-  syntax: ''
+  syntax: '',
+  filename: null,
+  favorite: false,
+  hidden: false
 });
 
 const scriptTypes = [
@@ -298,34 +347,65 @@ const shellOptions = [
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+  script_type: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+  shell: { value: null as string | null, matchMode: FilterMatchMode.EQUALS },
+  platforms: { value: [] as string[], matchMode: FilterMatchMode.IN }
+});
+
+const scriptTypeOptions = [
+  { label: 'All Types', value: null },
+  { label: 'Built-in', value: 'builtin' },
+  { label: 'User Defined', value: 'userdefined' }
+];
+
+const filteredScripts = computed(() => {
+  let filtered = [...scripts.value];
+
+  if (filters.value.global.value) {
+    const searchValue = filters.value.global.value.toLowerCase();
+    filtered = filtered.filter(script => 
+      script.name.toLowerCase().includes(searchValue) ||
+      script.description.toLowerCase().includes(searchValue) ||
+      script.shell.toLowerCase().includes(searchValue) ||
+      formatScriptType(script.script_type).toLowerCase().includes(searchValue)
+    );
+  }
+
+  if (filters.value.script_type.value) {
+    filtered = filtered.filter(script => 
+      script.script_type === filters.value.script_type.value
+    );
+  }
+
+  if (filters.value.shell.value) {
+    filtered = filtered.filter(script => 
+      script.shell === filters.value.shell.value
+    );
+  }
+
+  if (filters.value.platforms.value.length > 0) {
+    filtered = filtered.filter(script => 
+      script.supported_platforms.some(platform => 
+        filters.value.platforms.value.includes(platform)
+      )
+    );
+  }
+
+  return filtered;
 });
 
 const formatScriptType = (type: string) => {
   const typeMap: Record<string, string> = {
-    powershell: 'PowerShell',
-    batch: 'Batch',
-    shell: 'Shell',
-    python: 'Python'
+    builtin: 'Built-in',
+    userdefined: 'User Defined'
   };
   return typeMap[type] || type;
 };
 
-const getScriptIcon = (type: string) => {
-  const iconMap: Record<string, string> = {
-    powershell: 'pi pi-window-maximize',
-    batch: 'pi pi-terminal',
-    shell: 'pi pi-terminal',
-    python: 'pi pi-code'
-  };
-  return iconMap[type] || 'pi pi-code';
-};
-
 const getScriptTypeSeverity = (type: string) => {
   const severityMap: Record<string, string> = {
-    powershell: 'info',
-    batch: 'warning',
-    shell: 'warning',
-    python: 'success'
+    builtin: 'info',
+    userdefined: 'success'
   };
   return severityMap[type] || 'info';
 };
@@ -337,8 +417,8 @@ const formatTimestamp = (timestamp: string) => {
 const fetchScripts = async () => {
   try {
     loading.value = true;
-    const response = await restClient.get<ScriptsResponse>(`${API_URL}/scripts/`);
-    scripts.value = response.data || [];
+    const response = await restClient.get<Script[]>(`${API_URL}/scripts/`);
+    scripts.value = response || [];
   } catch (error) {
     console.error('Failed to fetch scripts:', error);
     toastService.showError('Failed to fetch scripts');
@@ -368,7 +448,7 @@ const saveScript = async (scriptData: any) => {
   try {
     submitting.value = true;
     const endpoint = isEditMode.value && selectedScript.value ? 
-      `${API_URL}/scripts/${selectedScript.value.id}` : 
+      `${API_URL}/scripts/${selectedScript.value.id}/` : 
       `${API_URL}/scripts/`;
 
     const payload = {
@@ -428,16 +508,60 @@ const executeScript = async () => {
   }
 };
 
-const viewScript = (script: Script) => {
-  selectedScript.value = script;
-  isEditMode.value = true;
-  showAddScriptDialog.value = true;
+const viewScript = async (script: Script) => {
+  if (script.script_type !== 'builtin') {
+    toastService.showError('Only community scripts can be viewed');
+    return;
+  }
+
+  try {
+    const response = await restClient.get<Script>(`${API_URL}/scripts/${script.id}/`);
+    if (!response) {
+      throw new Error('No script data received');
+    }
+    selectedScript.value = {
+      ...response,
+      syntax: response.script_body || response.content || ''
+    };
+    isEditMode.value = false;
+    showAddScriptDialog.value = true;
+  } catch (error) {
+    console.error('Failed to fetch script details:', error);
+    toastService.showError('Failed to fetch script details');
+    selectedScript.value = script;
+    isEditMode.value = false;
+    showAddScriptDialog.value = true;
+  }
 };
 
-const editScript = (script: Script) => {
-  selectedScript.value = script;
-  isEditMode.value = true;
-  showAddScriptDialog.value = true;
+const editScript = async (script: Script) => {
+  if (script.script_type !== 'userdefined') {
+    toastService.showError('Only user-defined scripts can be edited');
+    return;
+  }
+  
+  try {
+    const response = await restClient.get<Script>(`${API_URL}/scripts/${script.id}/`);
+    if (!response) {
+      throw new Error('No script data received');
+    }
+    selectedScript.value = {
+      ...response,
+      script_type: 'userdefined',
+      syntax: response.script_body || response.content || ''
+    };
+    isEditMode.value = true;
+    showAddScriptDialog.value = true;
+  } catch (error) {
+    console.error('Failed to fetch script details:', error);
+    toastService.showError('Failed to fetch script details');
+    selectedScript.value = {
+      ...script,
+      script_type: 'userdefined'
+    };
+    isEditMode.value = true;
+    showAddScriptDialog.value = true;
+  }
 };
 
 const deleteScript = async (script: Script) => {
@@ -500,18 +624,78 @@ onMounted(async () => {
   background: var(--surface-ground);
 }
 
+.filters-container {
+  margin-bottom: 1rem;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  height: 42px;
+}
+
+.search-container {
+  flex: 2;
+  height: 100%;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 180px;
+  height: 100%;
+}
+
+:deep(.p-dropdown),
+:deep(.p-multiselect) {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-section);
+  border: none;
+}
+
+:deep(.p-dropdown .p-dropdown-label),
+:deep(.p-multiselect .p-multiselect-label) {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+:deep(.p-dropdown-trigger),
+:deep(.p-multiselect-trigger) {
+  width: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.p-inputgroup) {
+  height: 100%;
+}
+
+:deep(.p-inputgroup-addon) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 :deep(.p-tag) {
   min-width: 75px;
   justify-content: center;
 }
 
-.script-icon {
-  font-size: 1.125rem;
-  color: var(--primary-color);
+:deep(.p-datatable) {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
 }
 
-.font-mono {
-  font-family: monospace;
+:deep(.p-paginator-bottom) {
+  border-top: 1px solid var(--surface-border);
+}
+
+:deep(.p-paginator) {
+  background: var(--surface-card);
+  padding: 1rem;
 }
 
 /* Dialog specific styles */
@@ -554,41 +738,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-}
-
-/* Script form styles */
-.script-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--surface-card);
-  border-radius: 6px;
-  border: 1px solid var(--surface-border);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.field label {
-  font-weight: 500;
-  color: var(--text-color);
-}
-
-.field-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
 }
 
 /* Form input styles */
