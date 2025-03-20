@@ -12,13 +12,13 @@
       <div class="sidebar-header">
         <h3 class="text-xl m-0">Script Execution History</h3>
         <div class="flex gap-2">
-          <Button 
+          <OFButton 
             icon="pi pi-trash" 
             class="p-button-text p-button-rounded" 
             @click="clearHistory"
             aria-label="Clear History"
           />
-          <Button 
+          <OFButton 
             icon="pi pi-times" 
             class="p-button-text p-button-rounded" 
             @click="onVisibilityChange(false)"
@@ -37,14 +37,14 @@
             <span class="text-sm text-color-secondary">{{ formatTimestamp(execution.timestamp) }}</span>
           </div>
           
-          <div class="field mb-3">
+          <div class="of-form-group mb-3">
             <label>Command</label>
             <div class="code-block">
               <code>{{ execution.command }}</code>
             </div>
           </div>
           
-          <div class="field">
+          <div class="of-form-group">
             <label>Output</label>
             <div class="code-block" :class="{ 'error': execution.status === 'error' }">
               <pre>{{ execution.output || 'No output' }}</pre>
@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import Sidebar from 'primevue/sidebar';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 
 interface ScriptExecution {
   id: string;
@@ -249,7 +249,7 @@ defineExpose({
   }
 }
 
-.field {
+.of-form-group {
   margin-bottom: 1.5rem;
 
   label {
@@ -284,4 +284,4 @@ defineExpose({
     }
   }
 }
-</style> 
+</style>    

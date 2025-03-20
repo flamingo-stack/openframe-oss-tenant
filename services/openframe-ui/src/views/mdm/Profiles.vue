@@ -2,7 +2,7 @@
   <div class="mdm-profiles">
     <ModuleHeader title="Profiles">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Create Profile" 
           icon="pi pi-plus" 
           @click="showCreateDialog = true"
@@ -60,13 +60,13 @@
         <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Profile'"
                 @click="editProfile(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Profile'"
@@ -85,7 +85,7 @@ import { ref, onMounted, computed } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Dialog from 'primevue/dialog';
@@ -128,7 +128,8 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 // Add directive registration
-const vTooltip = Tooltip;
+import { TooltipDirective } from '../../components/ui';
+const vTooltip = TooltipDirective;
 
 const loading = ref(true);
 const error = ref('');
@@ -496,4 +497,4 @@ onMounted(async () => {
     }
   }
 }
-</style> 
+</style>    

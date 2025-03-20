@@ -84,7 +84,7 @@ const filters = ref({
 
   .p-datatable-thead > tr > th {
     background: var(--surface-card) !important;
-    color: #ffffff !important;
+    color: var(--text-color) !important;
     padding: 1rem;
     font-weight: 600;
     font-size: 0.875rem;
@@ -283,4 +283,4 @@ const filters = ref({
     }
   }
 }
-</style> 
+</style>  

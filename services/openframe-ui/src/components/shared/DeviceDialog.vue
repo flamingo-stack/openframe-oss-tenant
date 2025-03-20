@@ -14,7 +14,7 @@
   >
     <div class="grid">
       <div class="col-12">
-        <div class="field">
+        <div class="of-form-group">
           <label for="hostname">Hostname</label>
           <InputText 
             id="hostname" 
@@ -31,7 +31,7 @@
       </div>
 
       <div class="col-12">
-        <div class="field">
+        <div class="of-form-group">
           <label for="platform">Platform</label>
           <Dropdown
             id="platform"
@@ -55,7 +55,7 @@
       </div>
 
       <div class="col-12">
-        <div class="field">
+        <div class="of-form-group">
           <label for="os_version">OS Version</label>
           <InputText 
             id="os_version" 
@@ -71,7 +71,7 @@
       </div>
 
       <div class="col-12">
-        <div class="field">
+        <div class="of-form-group">
           <label for="ip_address">IP Address</label>
           <InputText 
             id="ip_address" 
@@ -89,13 +89,13 @@
 
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button 
+        <OFButton 
           label="Cancel" 
           icon="pi pi-times" 
           class="p-button-text" 
           @click="onCancel"
         />
-        <Button 
+        <OFButton 
           :label="isEditMode ? 'Update' : 'Add'" 
           icon="pi pi-check" 
           class="p-button-primary" 
@@ -110,7 +110,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 
@@ -225,7 +225,7 @@ const resetForm = () => {
     border-top: 1px solid var(--surface-border);
   }
 
-  .field {
+  .of-form-group {
     margin-bottom: 1.5rem;
 
     label {
@@ -258,4 +258,4 @@ const resetForm = () => {
     }
   }
 }
-</style> 
+</style>    

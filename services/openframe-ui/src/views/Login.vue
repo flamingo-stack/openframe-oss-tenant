@@ -15,7 +15,7 @@
           <Password id="password" v-model="password" :feedback="false" toggleMask class="w-full" />
         </div>
         <div class="of-form-group">
-          <Button type="submit" :loading="loading" class="of-button w-full">Sign In</Button>
+          <OFButton type="submit" :loading="loading" class="of-button w-full">Sign In</OFButton>
         </div>
         <div class="of-text-center">
           <p class="of-text-secondary">
@@ -34,7 +34,7 @@ import { useAuthStore } from '../stores/auth'
 import { ToastService } from '../services/ToastService'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import Button from 'primevue/button'
+import { OFButton } from '../components/ui'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -188,4 +188,4 @@ const handleOAuthError = (error: any) => {
     padding: 1rem;
   }
 }
-</style> 
+</style>  

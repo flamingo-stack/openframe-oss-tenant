@@ -2,7 +2,7 @@
   <div class="rmm-monitoring">
     <ModuleHeader title="Monitoring">
       <template #actions>
-        <Button 
+        <OFButton 
           label="Add Monitor" 
           icon="pi pi-plus"
           @click="showAddMonitorDialog = true"
@@ -61,19 +61,19 @@
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'View Details'"
                 @click="viewMonitor(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Monitor'"
                 @click="editMonitor(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger"
                 v-tooltip.top="'Delete Monitor'"
@@ -97,7 +97,7 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
+      <div class="of-form-group">
         <label for="name">Name</label>
         <InputText 
           id="name" 
@@ -111,7 +111,7 @@
         </small>
       </div>
 
-      <div class="field">
+      <div class="of-form-group">
         <label for="type">Type</label>
         <Dropdown
           id="type"
@@ -127,7 +127,7 @@
         </small>
       </div>
 
-      <div class="field">
+      <div class="of-form-group">
         <label for="target">Target</label>
         <InputText 
           id="target" 
@@ -140,7 +140,7 @@
         </small>
       </div>
 
-      <div class="field">
+      <div class="of-form-group">
         <label for="description">Description</label>
         <Textarea 
           id="description" 
@@ -155,13 +155,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Save' : 'Add'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -193,13 +193,13 @@
       </div>
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="No" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="deleteMonitorDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Yes" 
             icon="pi pi-check" 
             class="p-button-danger" 
@@ -215,7 +215,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "@vue/runtime-core";
 import Column from 'primevue/column';
-import Button from 'primevue/button';
+import { OFButton } from '../../components/ui';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
@@ -504,4 +504,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style> 
+</style>      

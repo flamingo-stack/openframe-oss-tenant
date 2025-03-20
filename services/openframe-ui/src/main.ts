@@ -16,6 +16,8 @@ import InputNumber from 'primevue/inputnumber'
 import ConfirmationService from 'primevue/confirmationservice';
 import { DefaultApolloClient } from '@vue/apollo-composable'
 import { apolloClient } from './apollo/apolloClient'
+// Import UI components
+import * as UIComponents from './components/ui'
 
 // PrimeVue styles
 import 'primevue/resources/themes/lara-light-blue/theme.css'
@@ -54,5 +56,15 @@ if (!token && currentPath !== '/login' && currentPath !== '/register') {
     app.directive('tooltip', Tooltip)
     app.use(ToastService);
     app.use(ConfirmationService);
+    
+    // Register all UI components
+    Object.entries(UIComponents).forEach(([name, component]) => {
+      // Only register components that are not directives and not already registered globally
+      if (name !== 'TooltipDirective' && 
+          !['Button', 'InputText', 'DataTable', 'Column'].includes(name)) {
+        app.component(name, component);
+      }
+    });
+    
     app.mount('#app')
 }

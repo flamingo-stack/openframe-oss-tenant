@@ -2,7 +2,7 @@
   <div class="layout-container" :data-theme="isDark ? 'dark' : 'light'">
     <nav class="navbar">
       <div class="navbar-start">
-        <Button icon="pi pi-bars" text rounded @click="toggleMenu" class="menu-button" />
+        <OFButton icon="pi pi-bars" text rounded @click="toggleMenu" class="menu-button" />
         <div class="brand">
           <div class="brand-name">
             <span class="brand-title">Open<span class="brand-highlight">Frame</span></span>
@@ -13,14 +13,14 @@
       </div>
       <div class="navbar-end">
         <ThemeToggle />
-        <Button 
+        <OFButton 
           icon="pi pi-user" 
           text 
           rounded 
           class="mr-2" 
           @click="router.push('/profile')"
         />
-        <Button icon="pi pi-power-off" text rounded severity="secondary" @click="handleLogout" />
+        <OFButton icon="pi pi-power-off" text rounded severity="secondary" @click="handleLogout" />
       </div>
     </nav>
 
@@ -36,7 +36,7 @@
     >
       <template #header>
         <div class="sidebar-header">
-          <Button 
+          <OFButton 
             icon="pi pi-times" 
             text 
             rounded 
@@ -137,7 +137,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import Button from 'primevue/button';
+import { OFButton } from '@/components/ui';
 import Sidebar from 'primevue/sidebar';
 import { AuthService } from '../services/AuthService';
 import ThemeToggle from './ThemeToggle.vue'
@@ -478,4 +478,4 @@ const handleLogout = () => {
   color: var(--surface-900);
   font-weight: 600;
 }
-</style> 
+</style>  

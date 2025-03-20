@@ -3,7 +3,7 @@
     <ModuleHeader title="Automation">
       <template #subtitle>Schedule and manage automated tasks</template>
       <template #actions>
-        <Button 
+        <OFButton 
           label="Add Task" 
           icon="pi pi-plus"
           @click="showAddTaskDialog = true"
@@ -68,25 +68,25 @@
         <Column header="Actions" :exportable="false">
           <template #body="{ data }">
             <div class="flex gap-2 justify-content-center">
-              <Button 
+              <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Run Now'"
                 @click="runTask(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'View Details'"
                 @click="viewTask(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
                 v-tooltip.top="'Edit Task'"
                 @click="editTask(data)" 
               />
-              <Button 
+              <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
                 v-tooltip.top="'Delete Task'"
@@ -110,8 +110,8 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
-        <label for="name">Name</label>
+      <div class="of-form-group">
+        <label for="name" class="of-form-label">Name</label>
         <InputText 
           id="name" 
           v-model="newTask.name" 
@@ -124,8 +124,8 @@
         </small>
       </div>
 
-      <div class="field">
-        <label for="type">Type</label>
+      <div class="of-form-group">
+        <label for="type" class="of-form-label">Type</label>
         <Dropdown
           id="type"
           v-model="newTask.type"
@@ -140,8 +140,8 @@
         </small>
       </div>
 
-      <div class="field">
-        <label for="description">Description</label>
+      <div class="of-form-group">
+        <label for="description" class="of-form-label">Description</label>
         <InputText 
           id="description" 
           v-model="newTask.description" 
@@ -153,8 +153,8 @@
         </small>
       </div>
 
-      <div class="field">
-        <label for="schedule">Schedule (Cron Expression)</label>
+      <div class="of-form-group">
+        <label for="schedule" class="of-form-label">Schedule (Cron Expression)</label>
         <InputText 
           id="schedule" 
           v-model="newTask.schedule" 
@@ -165,13 +165,13 @@
         <small class="p-error" v-if="submitted && !newTask.schedule">
           Schedule is required.
         </small>
-        <small class="p-text-secondary">
+        <small class="of-text-secondary of-text-sm">
           Example: */5 * * * * (every 5 minutes)
         </small>
       </div>
 
-      <div class="field">
-        <label for="devices">Target Devices</label>
+      <div class="of-form-group">
+        <label for="devices" class="of-form-label">Target Devices</label>
         <MultiSelect
           id="devices"
           v-model="newTask.device_ids"
@@ -179,16 +179,12 @@
           optionLabel="hostname"
           optionValue="id"
           placeholder="Select target devices"
-          :class="{ 'p-invalid': submitted && newTask.device_ids.length === 0 }"
-          display="chip"
+          :error="submitted && newTask.device_ids.length === 0 ? 'Select at least one device.' : ''"
         />
-        <small class="p-error" v-if="submitted && newTask.device_ids.length === 0">
-          Select at least one device.
-        </small>
       </div>
 
-      <div class="field">
-        <label for="script">Script</label>
+      <div class="of-form-group">
+        <label for="script" class="of-form-label">Script</label>
         <Dropdown
           id="script"
           v-model="newTask.script_id"
@@ -205,13 +201,13 @@
 
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="Cancel" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="hideDialog"
           />
-          <Button 
+          <OFButton 
             :label="isEditMode ? 'Save' : 'Add'" 
             icon="pi pi-check" 
             class="p-button-primary" 
@@ -243,13 +239,13 @@
       </div>
       <template #footer>
         <div class="flex justify-content-end gap-2">
-          <Button 
+          <OFButton 
             label="No" 
             icon="pi pi-times" 
             class="p-button-text" 
             @click="deleteTaskDialog = false"
           />
-          <Button 
+          <OFButton 
             label="Yes" 
             icon="pi pi-check" 
             class="p-button-danger" 
@@ -263,14 +259,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Dropdown from 'primevue/dropdown';
-import MultiSelect from 'primevue/multiselect';
-import Tag from 'primevue/tag';
+import { ref, onMounted } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -278,6 +267,16 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+// Import from our new UI component library
+import { 
+  OFButton, 
+  Column, 
+  Dialog, 
+  InputText, 
+  Dropdown, 
+  MultiSelect, 
+  Tag 
+} from "../../components/ui";
 
 interface Task {
   id: string;
@@ -618,4 +617,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style> 
+</style>             
