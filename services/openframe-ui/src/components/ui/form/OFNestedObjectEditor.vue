@@ -5,7 +5,7 @@
         <div class="of-nested-field-label">{{ formatKey(key) }}</div>
         <div class="of-nested-field-value">
           <template v-if="getValueType(val) === 'Object'">
-            <OFOFNestedObjectEditor
+            <OFNestedObjectEditor
               :value="val"
               :isPropertyEditable="isPropertyEditable"
               :parentKey="parentKey"
@@ -76,12 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, toRaw, computed, ref } from 'vue';
+import { defineProps, defineEmits, toRaw, computed, ref, defineAsyncComponent } from 'vue';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import { OFButton } from '@/components/ui';
-import OFOFNestedObjectEditor from './OFOFNestedObjectEditor.vue';
+// Self-reference for recursive component
+const OFNestedObjectEditor = defineAsyncComponent(() => import('./OFNestedObjectEditor.vue'));
 
 const props = defineProps<{
   value: Record<string | number, any>;
