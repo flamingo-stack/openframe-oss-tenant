@@ -10,7 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref } from 'vue';
+import { onMounted, onBeforeUnmount, watch } from '@vue/runtime-core';
 
 const props = defineProps({
   id: {
