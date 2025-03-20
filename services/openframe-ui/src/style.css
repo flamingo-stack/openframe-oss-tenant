@@ -601,6 +601,9 @@ body {
 .p-multiselect .p-multiselect-label {
   flex-wrap: wrap !important;
   gap: 0.25rem !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  padding: 0.5rem 1rem !important;
 }
 
 .p-overlay-modal {
