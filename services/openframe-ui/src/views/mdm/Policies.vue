@@ -233,7 +233,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed } from '@vue/runtime-core';
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import { FilterMatchMode } from "primevue/api";

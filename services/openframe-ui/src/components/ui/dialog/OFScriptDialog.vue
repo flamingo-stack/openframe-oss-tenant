@@ -17,6 +17,7 @@
             @click="$emit('cancel')"
           />
           <OFButton 
+            v-if="showConfirm"
             :label="confirmLabel" 
             :icon="confirmIcon" 
             class="p-button-primary" 
@@ -61,6 +62,10 @@ defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  showConfirm: {
+    type: Boolean,
+    default: true
   }
 });
 
