@@ -228,7 +228,8 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 // Add directive registration
-const vTooltip = Tooltip;
+import { TooltipDirective } from '../../components/ui';
+const vTooltip = TooltipDirective;
 
 const loading = ref(true);
 const error = ref('');
@@ -582,4 +583,4 @@ onMounted(async () => {
     }
   }
 }
-</style>         
+</style>           

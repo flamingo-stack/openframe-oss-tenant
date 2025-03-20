@@ -14,5 +14,6 @@ export { default as Dropdown } from 'primevue/dropdown';
 export { default as Tag } from 'primevue/tag';
 export { default as InputText } from 'primevue/inputtext';
 export { default as Column } from 'primevue/column';
+export { default as Textarea } from 'primevue/textarea';
 // Re-export PrimeVue directives properly
 export { default as TooltipDirective } from 'primevue/tooltip';

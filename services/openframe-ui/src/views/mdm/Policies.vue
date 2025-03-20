@@ -250,7 +250,8 @@ import {
   Dialog, 
   Dropdown, 
   Tag,
-  ScriptEditor 
+  ScriptEditor,
+  Textarea
 } from '../../components/ui';
 
 interface FleetResponse {
@@ -760,4 +761,4 @@ onMounted(async () => {
     }
   }
 }
-</style>             
+</style>               
