@@ -203,7 +203,7 @@ spec:
           until nc -z tactical-redis 6379; do sleep 2; done &&
           echo "Redis is ready!" &&
           echo "Waiting for Nginx..." &&
-          until nc -z tactical-nginx 8081; do sleep 2; done &&
+          until nc -z tactical-nginx 8080; do sleep 2; done &&
           echo "Nginx is ready!"
           ']
       containers:
@@ -401,6 +401,8 @@ spec:
         ports:
         - containerPort: 8000
         env:
+        - name: TRMM_DISABLE_WEB_TERMINAL
+          value: "False"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
@@ -601,6 +603,8 @@ spec:
         image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:latest
         args: ["tactical-celerybeat"]
         env:
+        - name: TRMM_DISABLE_WEB_TERMINAL
+          value: "False"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
