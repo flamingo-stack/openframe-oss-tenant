@@ -699,31 +699,49 @@ onMounted(async () => {
 /* Using standardized pagination styling from ModuleTable */
 /* Custom pagination styling for Scripts view */
 :deep(.p-paginator) {
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
   
-  .p-paginator-current {
-    white-space: nowrap;
-    flex: 0 0 auto;
-    margin-right: auto;
+  /* Force all container elements to stay on one line */
+  > div {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    max-width: max-content !important;
   }
   
+  /* Current page indicator - force to stay inline */
+  .p-paginator-current {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    margin-right: 1rem !important;
+    max-width: max-content !important;
+  }
+  
+  /* Container for pagination controls - force to stay on same line */
   .p-paginator-first,
   .p-paginator-prev,
   .p-paginator-pages,
   .p-paginator-next,
   .p-paginator-last {
-    display: inline-flex;
-    flex-wrap: nowrap;
-    white-space: nowrap;
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+    margin: 0 0.125rem !important;
   }
   
+  /* Page selector dropdown - force to stay inline */
   .p-paginator-rpp-options {
-    flex: 0 0 auto;
-    margin-left: 1rem;
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    margin-left: 1rem !important;
+    max-width: max-content !important;
   }
 }
 
@@ -732,19 +750,25 @@ onMounted(async () => {
   :deep(.p-paginator) {
     background: var(--surface-section) !important;
     color: var(--text-color) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
     
-    .p-paginator-page,
+    /* Apply dark styling to all elements */
+    > div,
+    .p-paginator-current,
     .p-paginator-first,
     .p-paginator-prev,
+    .p-paginator-pages,
+    .p-paginator-page,
     .p-paginator-next,
     .p-paginator-last,
+    .p-dropdown-label,
     .p-dropdown-trigger,
     .p-dropdown-panel {
-      background: var(--surface-section);
-      color: var(--text-color);
+      background: var(--surface-section) !important;
+      color: var(--text-color) !important;
       
       &:not(.p-highlight):hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1) !important;
       }
     }
   }
@@ -817,4 +841,4 @@ onMounted(async () => {
     }
   }
 }
-</style>                                                                                                                        
+</style>                                                                                                                                                                                                                                                                                                            
