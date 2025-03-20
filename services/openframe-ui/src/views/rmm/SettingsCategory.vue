@@ -956,7 +956,7 @@ import Textarea from 'primevue/textarea';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import { useToast } from 'primevue/usetoast';
 import type { RMMSettings, DynamicSettings, ApiKey, UrlAction, KeyStore, CustomField } from '../../types/settings';
-import NestedObjectEditor from '../../components/NestedObjectEditor.vue';
+import { OFNestedObjectEditor } from '../../components/ui';
 import type { EditableValue } from '../mdm/Settings.vue';
 import type { DropdownChangeEvent } from 'primevue/dropdown';
 import { useQuery, provideApolloClient } from '@vue/apollo-composable';
@@ -1680,4 +1680,4 @@ const handleDelete = async () => {
     }
   }
 }
-</style>                                
+</style>                                                                

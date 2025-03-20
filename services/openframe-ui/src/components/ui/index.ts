@@ -1,6 +1,8 @@
 // Form components
 export { default as MultiSelect } from './form/MultiSelect.vue';
 export { default as ScriptEditor } from './form/ScriptEditor.vue';
+export { default as OFDropdown } from './form/OFDropdown.vue';
+export { default as OFNestedObjectEditor } from './form/OFNestedObjectEditor.vue';
 
 // Button components
 export { default as OFButton } from './Button.vue';

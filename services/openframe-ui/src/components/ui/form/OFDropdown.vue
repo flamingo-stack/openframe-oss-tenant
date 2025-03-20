@@ -1,7 +1,7 @@
 <template>
   <div class="of-form-group">
     <label v-if="label" :for="id" class="of-form-label">{{ label }}</label>
-    <PrimeMultiSelect
+    <PrimeDropdown
       :id="id"
       :modelValue="modelValue"
       :options="options"
@@ -9,8 +9,7 @@
       :optionValue="optionValue"
       :placeholder="placeholder"
       :disabled="disabled"
-      :class="['of-multiselect', { 'p-invalid': error }]"
-      display="chip"
+      :class="['of-dropdown', { 'p-invalid': error }]"
       @update:modelValue="$emit('update:modelValue', $event)"
     />
     <small v-if="error" class="p-error">{{ error }}</small>
@@ -20,15 +19,15 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import PrimeMultiSelect from 'primevue/multiselect';
+import PrimeDropdown from 'primevue/dropdown';
 
 defineProps({
   id: {
     type: String,
-    default: () => `multiselect-${Math.random().toString(36).substring(2, 9)}`
+    default: () => `dropdown-${Math.random().toString(36).substring(2, 9)}`
   },
   modelValue: {
-    type: Array,
+    type: [String, Number, Object],
     required: true
   },
   options: {
@@ -45,7 +44,7 @@ defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Select options'
+    default: 'Select an option'
   },
   disabled: {
     type: Boolean,
@@ -69,25 +68,25 @@ defineEmits(['update:modelValue']);
 </script>
 
 <style>
-.of-multiselect {
+.of-dropdown {
   width: 100%;
   height: 42px;
   background: var(--surface-section);
   border: 1px solid var(--surface-border);
 }
 
-.of-multiselect:not(.p-disabled).p-focus {
+.of-dropdown:not(.p-disabled).p-focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 1px var(--primary-color);
 }
 
-.of-multiselect .p-multiselect-label {
+.of-dropdown .p-dropdown-label {
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
 }
 
-.of-multiselect .p-multiselect-trigger {
+.of-dropdown .p-dropdown-trigger {
   width: 3rem;
   display: flex;
   align-items: center;
