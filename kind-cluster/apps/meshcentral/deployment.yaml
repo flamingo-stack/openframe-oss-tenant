@@ -90,8 +90,9 @@ spec:
           value: "8383"
         - name: MESH_HOST
           value: "meshcentral.meshcentral.svc.cluster.local"
+        # https://github.com/Ylianst/MeshCentral/issues/5826
         - name: MESH_EXTERNAL_HOST
-          value: "meshcentral"
+          value: "meshcentral.192.168.100.100.nip.io"
         - name: MESH_EXTERNAL_PORT
           value: "8383"
         - name: MESH_NGINX_HOST
