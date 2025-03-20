@@ -10,7 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref } from 'vue';
+import { onMounted, onBeforeUnmount, watch } from '@vue/runtime-core';
 import * as monaco from 'monaco-editor';
 
 const props = defineProps({
@@ -84,13 +85,13 @@ onMounted(() => {
   });
 });
 
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.modelValue, (newValue: string) => {
   if (editor && newValue !== editor.getValue()) {
     editor.setValue(newValue);
   }
 });
 
-watch(() => props.disabled, (newValue) => {
+watch(() => props.disabled, (newValue: boolean) => {
   if (editor) {
     editor.updateOptions({ readOnly: newValue });
   }
