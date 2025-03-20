@@ -1,7 +1,7 @@
 <template>
   <OFScriptDialog
     :modelValue="modelValue" 
-    @update:modelValue="(val) => $emit('update:modelValue', val)"
+    @update:modelValue="$emit('update:modelValue', $event)"
     :header="header"
     :width="width"
     :cancelLabel="cancelLabel"
