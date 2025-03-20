@@ -447,8 +447,7 @@ body {
 
 /* MultiSelect styles */
 .p-multiselect {
-  min-height: 42px !important;
-  height: auto !important;
+  height: 42px !important;
   background: var(--surface-section) !important;
   font-size: 0.875rem !important;
   display: flex !important;
@@ -600,20 +599,21 @@ body {
 
 /* Improve token display in MultiSelect label */
 .p-multiselect .p-multiselect-label {
-  flex-wrap: wrap !important;
-  gap: 0.25rem !important;
-  max-height: 100% !important;
-  overflow-y: auto !important;
-  padding: 0.5rem 1rem !important;
-  align-items: flex-start !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0.75rem 1rem !important;
 }
 
 /* Fix token size and positioning */
 .p-multiselect .p-multiselect-token {
   margin-right: 0.25rem !important;
-  margin-bottom: 0.25rem !important;
   height: 1.5rem !important;
   padding: 0.15rem 0.5rem !important;
+  max-width: 100px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .p-overlay-modal {
