@@ -49,7 +49,17 @@
               placeholder="All Platforms"
               class="w-full"
               display="chip"
-            />
+              :showClear="true"
+              :filter="false"
+              :showToggleAll="false"
+              :selectAll="false"
+              :resetFilterOnHide="true"
+              :autoOptionFocus="false"
+              :panelClass="'surface-0'"
+            >
+              <template #header>
+              </template>
+            </MultiSelect>
           </div>
         </div>
       </div>
@@ -130,69 +140,14 @@
     </div>
 
     <!-- Add/Edit Script Dialog -->
-    <OFScriptDialog
-      v-model="showAddScriptDialog" 
-      :header="isEditMode ? 'Edit Script' : 'Add New Script'"
-      width="800px"
-      :confirmLabel="isEditMode ? 'Save' : 'Add'"
-      confirmIcon="pi pi-check"
-      :loading="submitting"
+    <ScriptDialog
+      v-model="showAddScriptDialog"
+      :is-edit-mode="isEditMode"
+      :submitting="submitting"
+      :initial-data="selectedScript"
       @confirm="saveScript"
       @cancel="hideDialog"
-    >
-      <div class="of-form-group">
-        <label for="name" class="of-form-label">Name</label>
-        <InputText 
-          id="name" 
-          v-model="newScript.name" 
-          required 
-          autofocus 
-          :class="{ 'p-invalid': submitted && !newScript.name }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.name">
-          Name is required.
-        </small>
-      </div>
-
-      <div class="of-form-group">
-        <label for="type" class="of-form-label">Type</label>
-        <Dropdown
-          id="type"
-          v-model="newScript.type"
-          :options="scriptTypes"
-          optionLabel="name"
-          optionValue="value"
-          placeholder="Select a script type"
-          :class="{ 'p-invalid': submitted && !newScript.type }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.type">
-          Type is required.
-        </small>
-      </div>
-
-      <div class="of-form-group">
-        <label for="description" class="of-form-label">Description</label>
-        <InputText 
-          id="description" 
-          v-model="newScript.description" 
-          required 
-          :class="{ 'p-invalid': submitted && !newScript.description }"
-        />
-        <small class="p-error" v-if="submitted && !newScript.description">
-          Description is required.
-        </small>
-      </div>
-
-      <div class="of-form-group">
-        <label for="content" class="of-form-label">Script Content</label>
-        <ScriptEditor 
-          id="content" 
-          v-model="newScript.content" 
-          :rows="12"
-          :error="submitted && !newScript.content ? 'Script content is required.' : ''"
-        />
-      </div>
-    </OFScriptDialog>
+    />
 
     <!-- Run Script Dialog -->
     <OFScriptDialog
@@ -245,19 +200,21 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import ScriptDialog from './components/ScriptDialog.vue';
 // Import from our new UI component library
 import { 
   OFButton, 
   Column, 
   InputText, 
-  Dropdown, 
-  MultiSelect, 
+  Dropdown,
   Tag,
   ScriptEditor,
   OFScriptDialog,
   OFConfirmationDialog,
   OFCodeBlock
 } from "../../components/ui";
+import MultiSelect from 'primevue/multiselect';
+import { useScriptType } from '../../composables/useScriptType';
 
 interface Script {
   id: string;
@@ -346,6 +303,7 @@ const platformOptions = [
 ];
 
 const shellOptions = [
+  { label: 'All Shells', value: null },
   { label: 'Shell', value: 'shell' },
   { label: 'PowerShell', value: 'powershell' },
   { label: 'Batch', value: 'batch' },
@@ -364,6 +322,8 @@ const scriptTypeOptions = [
   { label: 'Built-in', value: 'builtin' },
   { label: 'User Defined', value: 'userdefined' }
 ];
+
+const { formatScriptType, getScriptTypeSeverity } = useScriptType();
 
 const filteredScripts = computed(() => {
   let filtered = [...scripts.value];
@@ -400,22 +360,6 @@ const filteredScripts = computed(() => {
 
   return filtered;
 });
-
-const formatScriptType = (type: string) => {
-  const typeMap: Record<string, string> = {
-    builtin: 'Built-in',
-    userdefined: 'User Defined'
-  };
-  return typeMap[type] || type;
-};
-
-const getScriptTypeSeverity = (type: string) => {
-  const severityMap: Record<string, string> = {
-    builtin: 'info',
-    userdefined: 'success'
-  };
-  return severityMap[type] || 'info';
-};
 
 const formatTimestamp = (timestamp: string) => {
   return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
@@ -460,10 +404,10 @@ const saveScript = async (scriptData: any) => {
 
     const payload = {
       name: scriptData.name,
-      shell: scriptData.shell,
+      shell: scriptData.type,
       default_timeout: scriptData.default_timeout,
       args: scriptData.args,
-      script_body: scriptData.syntax,
+      script_body: scriptData.content,
       run_as_user: scriptData.run_as_user,
       env_vars: scriptData.env_vars,
       description: scriptData.description,
@@ -527,7 +471,9 @@ const viewScript = async (script: Script) => {
       throw new Error('No script data received');
     }
     selectedScript.value = {
+      ...script,
       ...response,
+      script_type: script.script_type,
       syntax: response.script_body || response.content || ''
     };
     isEditMode.value = false;
@@ -535,7 +481,10 @@ const viewScript = async (script: Script) => {
   } catch (error) {
     console.error('Failed to fetch script details:', error);
     toastService.showError('Failed to fetch script details');
-    selectedScript.value = script;
+    selectedScript.value = {
+      ...script,
+      script_type: script.script_type
+    };
     isEditMode.value = false;
     showAddScriptDialog.value = true;
   }
@@ -553,8 +502,9 @@ const editScript = async (script: Script) => {
       throw new Error('No script data received');
     }
     selectedScript.value = {
+      ...script,
       ...response,
-      script_type: 'userdefined',
+      script_type: script.script_type,
       syntax: response.script_body || response.content || ''
     };
     isEditMode.value = true;
@@ -564,7 +514,7 @@ const editScript = async (script: Script) => {
     toastService.showError('Failed to fetch script details');
     selectedScript.value = {
       ...script,
-      script_type: 'userdefined'
+      script_type: script.script_type
     };
     isEditMode.value = true;
     showAddScriptDialog.value = true;
@@ -764,5 +714,23 @@ onMounted(async () => {
       padding: 0.25rem 0.5rem;
     }
   }
+}
+
+:deep(.p-multiselect-panel) {
+  .p-multiselect-header {
+    display: none !important;
+  }
+  
+  .p-multiselect-items {
+    padding: 0;
+  }
+
+  .p-multiselect-item:first-child {
+    display: none !important;
+  }
+}
+
+:deep(.hidden) {
+  display: none !important;
 }
 </style>                                                                                                                                                                                                                                                                                                                                                                        
