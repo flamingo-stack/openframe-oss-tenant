@@ -478,6 +478,9 @@ services:
     build:
       context: ./services/openframe-stream
       dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://openframe-config-server:8888
     ports:
       - "8082:8082"
       - "8083:8083"

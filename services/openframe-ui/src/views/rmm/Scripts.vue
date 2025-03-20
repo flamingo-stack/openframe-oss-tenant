@@ -91,173 +91,14 @@
     </div>
 
     <!-- Add/Edit Script Dialog -->
-    <Dialog 
-      v-model:visible="showAddScriptDialog" 
-      :style="{ width: '800px' }" 
-      :header="isEditMode ? 'Edit Script' : 'Add New Script'" 
-      :modal="true"
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
-    >
-      <div class="script-form">
-        <div class="form-section">
-          <div class="field">
-            <label for="name">Name</label>
-            <InputText 
-              id="name" 
-              v-model="newScript.name" 
-              required 
-              autofocus 
-              :class="{ 'p-invalid': submitted && !newScript.name }"
-            />
-            <small class="p-error" v-if="submitted && !newScript.name">
-              Name is required.
-            </small>
-          </div>
-
-          <div class="field">
-            <label for="description">Description</label>
-            <Textarea 
-              id="description" 
-              v-model="newScript.description" 
-              required 
-              :class="{ 'p-invalid': submitted && !newScript.description }"
-              rows="2"
-            />
-            <small class="p-error" v-if="submitted && !newScript.description">
-              Description is required.
-            </small>
-          </div>
-
-          <div class="field">
-            <label for="shell">Shell Type</label>
-            <Dropdown
-              id="shell"
-              v-model="newScript.shell"
-              :options="shellOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select shell type"
-              :class="{ 'p-invalid': submitted && !newScript.shell }"
-            />
-            <small class="p-error" v-if="submitted && !newScript.shell">
-              Shell type is required.
-            </small>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="field">
-            <label for="platforms">Supported Platforms</label>
-            <MultiSelect
-              id="platforms"
-              v-model="newScript.supported_platforms"
-              :options="platformOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select supported platforms"
-              display="chip"
-            />
-          </div>
-
-          <div class="field">
-            <label for="category">Category</label>
-            <Dropdown
-              id="category"
-              v-model="newScript.category"
-              :options="[]"
-              optionLabel="name"
-              optionValue="value"
-              placeholder="Select category"
-              filter
-            />
-          </div>
-
-          <div class="field">
-            <label for="timeout">Timeout (seconds)</label>
-            <InputNumber
-              id="timeout"
-              v-model="newScript.default_timeout"
-              :min="1"
-              :max="3600"
-              class="w-full"
-            />
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="field">
-            <label for="args">Script Arguments</label>
-            <MultiSelect
-              id="args"
-              v-model="newScript.args"
-              :options="[]"
-              placeholder="Press Enter after typing each argument"
-              display="chip"
-              :createOnEnter="true"
-            />
-          </div>
-
-          <div class="field">
-            <label for="env_vars">Environment Variables</label>
-            <MultiSelect
-              id="env_vars"
-              v-model="newScript.env_vars"
-              :options="[]"
-              placeholder="Press Enter after typing each key=value pair"
-              display="chip"
-              :createOnEnter="true"
-            />
-          </div>
-
-          <div class="field-checkbox">
-            <Checkbox
-              id="run_as_user"
-              v-model="newScript.run_as_user"
-              :binary="true"
-            />
-            <label for="run_as_user" class="ml-2">Run As User (Windows only)</label>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="field">
-            <label for="syntax">Script Content</label>
-            <Textarea 
-              id="syntax" 
-              v-model="newScript.syntax" 
-              rows="6"
-              class="font-mono"
-              :class="{ 'p-invalid': submitted && !newScript.syntax }"
-            />
-            <small class="p-error" v-if="submitted && !newScript.syntax">
-              Script content is required.
-            </small>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <Button 
-            label="Cancel" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="hideDialog"
-          />
-          <Button 
-            :label="isEditMode ? 'Save' : 'Add'" 
-            icon="pi pi-check" 
-            class="p-button-primary" 
-            @click="saveScript" 
-            :loading="submitting"
-          />
-        </div>
-      </template>
-    </Dialog>
+    <ScriptDialog
+      v-model:visible="showAddScriptDialog"
+      :is-edit-mode="isEditMode"
+      :loading="submitting"
+      :initial-script="selectedScript"
+      @save="saveScript"
+      @cancel="hideDialog"
+    />
 
     <!-- Run Script Dialog -->
     <Dialog 
@@ -366,6 +207,7 @@ import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
+import ScriptDialog from '../../components/shared/ScriptDialog.vue';
 
 interface Script {
   id: string;
@@ -519,43 +361,27 @@ const hideDialog = () => {
   showAddScriptDialog.value = false;
   submitted.value = false;
   isEditMode.value = false;
-  newScript.value = {
-    name: '',
-    type: null,
-    description: '',
-    content: '',
-    shell: 'shell',
-    default_timeout: 90,
-    args: [],
-    run_as_user: false,
-    env_vars: [],
-    supported_platforms: [],
-    category: null,
-    syntax: ''
-  };
+  selectedScript.value = null;
 };
 
-const saveScript = async () => {
+const saveScript = async (scriptData: any) => {
   try {
-    submitted.value = true;
-    if (!validateScript()) return;
-
     submitting.value = true;
     const endpoint = isEditMode.value && selectedScript.value ? 
       `${API_URL}/scripts/${selectedScript.value.id}` : 
       `${API_URL}/scripts`;
 
     const payload = {
-      name: newScript.value.name,
-      shell: newScript.value.shell,
-      default_timeout: newScript.value.default_timeout,
-      args: newScript.value.args,
-      script_body: newScript.value.syntax,
-      run_as_user: newScript.value.run_as_user,
-      env_vars: newScript.value.env_vars,
-      description: newScript.value.description,
-      supported_platforms: newScript.value.supported_platforms,
-      category: newScript.value.category
+      name: scriptData.name,
+      shell: scriptData.shell,
+      default_timeout: scriptData.default_timeout,
+      args: scriptData.args,
+      script_body: scriptData.syntax,
+      run_as_user: scriptData.run_as_user,
+      env_vars: scriptData.env_vars,
+      description: scriptData.description,
+      supported_platforms: scriptData.supported_platforms,
+      category: scriptData.category
     };
 
     const method = isEditMode.value ? 'put' : 'post';
@@ -604,14 +430,12 @@ const executeScript = async () => {
 
 const viewScript = (script: Script) => {
   selectedScript.value = script;
-  newScript.value = { ...script };
   isEditMode.value = true;
   showAddScriptDialog.value = true;
 };
 
 const editScript = (script: Script) => {
   selectedScript.value = script;
-  newScript.value = { ...script };
   isEditMode.value = true;
   showAddScriptDialog.value = true;
 };
