@@ -60,8 +60,9 @@ body {
 .p-paginator {
   background: var(--surface-card) !important;
   border: none !important;
-  padding: 0.5rem 0.5rem !important; /* Further reduced padding */
-  margin-top: 0.5rem !important; /* Further reduced margin */
+  padding: 0.3rem 0.3rem !important; /* Minimal padding */
+  margin-top: 0.5rem !important; /* Reduced margin */
+  margin-bottom: 0 !important; /* No bottom margin */
   border-radius: var(--border-radius) !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important; /* Lighter shadow */
   display: flex !important;
@@ -70,9 +71,14 @@ body {
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
-  font-size: 0.875rem !important; /* Smaller font size */
+  font-size: 0.75rem !important; /* Even smaller font size */
   min-height: unset !important; /* Remove min-height */
   height: auto !important; /* Auto height */
+  position: sticky !important; /* Sticky positioning */
+  bottom: 0 !important; /* Position at bottom */
+  z-index: 1 !important; /* Ensure it stays on top */
+  margin-left: auto !important; /* Center horizontally */
+  margin-right: auto !important;
 }
 
 /* Fix layout container to ensure all elements stay on one line */
@@ -82,7 +88,8 @@ body {
   flex-wrap: nowrap !important;
   white-space: nowrap !important;
   gap: 0.125rem !important; /* Smaller gap between elements */
-  height: 1.75rem !important; /* Fixed height to match buttons */
+  height: 1.5rem !important; /* Even smaller fixed height */
+  max-width: fit-content !important; /* Prevent excessive width */
 }
 
 /* Current page indicator */
@@ -110,8 +117,8 @@ body {
 
 /* Individual page buttons */
 .p-paginator-pages .p-paginator-page {
-  min-width: 1.75rem !important; /* Even smaller buttons */
-  height: 1.75rem !important; /* Even smaller buttons */
+  min-width: 1.5rem !important; /* Even smaller buttons */
+  height: 1.5rem !important; /* Even smaller buttons */
   margin: 0 0.125rem !important; /* Reduced margin */
   border-radius: var(--border-radius) !important;
   font-weight: 600 !important;
@@ -119,7 +126,7 @@ body {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 0.75rem !important; /* Smaller font */
+  font-size: 0.7rem !important; /* Even smaller font */
   padding: 0 !important; /* Remove padding */
 }
 
@@ -202,31 +209,41 @@ body {
 .p-paginator-prev,
 .p-paginator-next,
 .p-paginator-last {
-  min-width: 1.75rem !important; /* Smaller buttons */
-  height: 1.75rem !important; /* Smaller buttons */
+  min-width: 1.5rem !important; /* Even smaller buttons */
+  height: 1.5rem !important; /* Even smaller buttons */
   margin: 0 0.125rem !important; /* Reduced margin */
   border-radius: var(--border-radius) !important;
   transition: all 0.2s ease !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 0.75rem !important; /* Smaller font */
+  font-size: 0.7rem !important; /* Even smaller font */
+  padding: 0 !important; /* Remove padding */
+}
+
+/* Container for pagination to ensure proper positioning */
+.p-datatable-wrapper {
+  position: relative !important;
 }
 
 /* Improved mobile responsive layout */
 @media screen and (max-width: 768px) {
   .p-paginator {
-    padding: 0.5rem 0.5rem !important; /* Further reduced padding */
+    padding: 0.3rem 0.3rem !important; /* Minimal padding */
     flex-direction: row !important; /* Keep on one row */
     align-items: center !important;
-    gap: 0.5rem !important; /* Reduced gap */
-    flex-wrap: wrap !important; /* Allow wrapping if needed */
+    gap: 0.25rem !important; /* Minimal gap */
+    flex-wrap: nowrap !important; /* Prevent wrapping */
+    overflow-x: auto !important; /* Allow horizontal scrolling if needed */
+    justify-content: flex-start !important; /* Start from left */
+    min-height: 2rem !important; /* Ensure minimum height */
   }
   
   /* Group all elements properly for mobile */
   .p-paginator > div {
-    justify-content: center !important;
+    justify-content: flex-start !important;
     margin-bottom: 0 !important; /* Remove bottom margin */
+    flex-shrink: 0 !important; /* Prevent shrinking */
   }
   
   /* Force current page indicator to be inline in mobile */
@@ -234,7 +251,11 @@ body {
     width: auto !important;
     flex: 0 0 auto !important;
     text-align: left !important;
-    margin: 0 0.25rem 0 0 !important;
+    margin: 0 0.125rem 0 0 !important;
+    font-size: 0.65rem !important; /* Even smaller font */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   
   /* Center pagination controls in mobile */
@@ -243,14 +264,23 @@ body {
   .p-paginator .p-paginator-pages,
   .p-paginator .p-paginator-next,
   .p-paginator .p-paginator-last {
-    margin: 0 0.125rem !important;
-    min-width: 1.5rem !important; /* Even smaller on mobile */
-    height: 1.5rem !important; /* Even smaller on mobile */
+    margin: 0 0.1rem !important; /* Minimal margins */
+    min-width: 1.4rem !important; /* Even smaller on mobile */
+    height: 1.4rem !important; /* Even smaller on mobile */
+    flex-shrink: 0 !important; /* Prevent shrinking */
   }
   
   /* Position rows-per-page dropdown in mobile */
   .p-paginator .p-paginator-rpp-options {
-    margin: 0 0 0 0.25rem !important;
+    margin: 0 0 0 0.125rem !important;
+    min-width: 3rem !important; /* Smaller dropdown */
+    flex-shrink: 0 !important; /* Prevent shrinking */
+  }
+  
+  /* Make dropdown more compact on mobile */
+  .p-paginator .p-dropdown {
+    height: 1.5rem !important; /* Smaller height */
+    font-size: 0.7rem !important; /* Smaller font */
   }
 }
 
