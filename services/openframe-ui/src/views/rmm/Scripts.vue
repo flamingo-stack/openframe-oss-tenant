@@ -102,8 +102,8 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
-        <label for="name">Name</label>
+      <div class="of-form-group">
+        <label for="name" class="of-form-label">Name</label>
         <InputText 
           id="name" 
           v-model="newScript.name" 
@@ -116,8 +116,8 @@
         </small>
       </div>
 
-      <div class="field">
-        <label for="type">Type</label>
+      <div class="of-form-group">
+        <label for="type" class="of-form-label">Type</label>
         <Dropdown
           id="type"
           v-model="newScript.type"
@@ -132,8 +132,8 @@
         </small>
       </div>
 
-      <div class="field">
-        <label for="description">Description</label>
+      <div class="of-form-group">
+        <label for="description" class="of-form-label">Description</label>
         <InputText 
           id="description" 
           v-model="newScript.description" 
@@ -145,18 +145,14 @@
         </small>
       </div>
 
-      <div class="field">
-        <label for="content">Script Content</label>
-        <Textarea 
+      <div class="of-form-group">
+        <label for="content" class="of-form-label">Script Content</label>
+        <ScriptEditor 
           id="content" 
           v-model="newScript.content" 
-          rows="12"
-          class="font-mono"
-          :class="{ 'p-invalid': submitted && !newScript.content }"
+          :rows="12"
+          :error="submitted && !newScript.content ? 'Script content is required.' : ''"
         />
-        <small class="p-error" v-if="submitted && !newScript.content">
-          Script content is required.
-        </small>
       </div>
 
       <template #footer>
@@ -190,8 +186,8 @@
         mask: { style: { alignItems: 'center', justifyContent: 'center' } }
       }"
     >
-      <div class="field">
-        <label for="devices">Target Devices</label>
+      <div class="of-form-group">
+        <label for="devices" class="of-form-label">Target Devices</label>
         <MultiSelect
           id="devices"
           v-model="selectedDevices"
@@ -199,12 +195,8 @@
           optionLabel="hostname"
           optionValue="id"
           placeholder="Select target devices"
-          :class="{ 'p-invalid': runSubmitted && selectedDevices.length === 0 }"
-          display="chip"
+          :error="runSubmitted && selectedDevices.length === 0 ? 'Select at least one device.' : ''"
         />
-        <small class="p-error" v-if="runSubmitted && selectedDevices.length === 0">
-          Select at least one device.
-        </small>
       </div>
 
       <template #footer>
@@ -267,15 +259,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dropdown from 'primevue/dropdown';
-import MultiSelect from 'primevue/multiselect';
-import Tag from 'primevue/tag';
+import { ref, onMounted } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -283,6 +267,17 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+// Import from our new UI component library
+import { 
+  Button, 
+  Column, 
+  Dialog, 
+  InputText, 
+  Dropdown, 
+  MultiSelect, 
+  Tag,
+  ScriptEditor 
+} from "../../components/ui";
 
 interface Script {
   id: string;
@@ -599,4 +594,4 @@ onMounted(async () => {
 .font-mono {
   font-family: monospace;
 }
-</style> 
+</style>        

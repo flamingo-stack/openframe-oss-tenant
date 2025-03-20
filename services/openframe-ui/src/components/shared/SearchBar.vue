@@ -1,5 +1,5 @@
 <template>
-  <div class="search-bar">
+  <div class="of-search-bar">
     <div class="p-inputgroup">
       <span class="p-inputgroup-addon">
         <i class="pi pi-search"></i>
@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext';
+import { InputText } from '../../components/ui';
 
 defineProps<{
   modelValue: string;
@@ -26,14 +26,14 @@ defineEmits<{
 }>();
 </script>
 
-<style scoped>
-.search-bar {
+<style>
+.of-search-bar {
   width: 30rem;
   margin-right: auto;
-  margin-bottom: 1rem;
+  margin-bottom: var(--of-spacing-md, 1rem);
 }
 
-.p-inputgroup {
+.of-search-bar .p-inputgroup {
   box-shadow: var(--card-shadow);
 }
-</style> 
+</style>       

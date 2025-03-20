@@ -171,19 +171,16 @@
         <div class="col-12">
           <div class="field">
             <label for="query">Query</label>
-            <textarea 
+            <ScriptEditor 
+              id="query"
               v-model="newPolicy.query" 
-              class="code-editor"
-              rows="12"
+              :rows="12"
               required
-              :class="{ 'p-invalid': submitted && !newPolicy.query }"
+              :error="submitted && !newPolicy.query ? 'Query is required.' : ''"
+              helperText="To target specific devices, you can add conditions to your query using device properties like hostname, IP, etc.
+              Example: SELECT 1 FROM system_info WHERE hostname IN ('device1', 'device2') AND ..."
               placeholder="Enter your policy query here..."
-            ></textarea>
-            <small class="p-error" v-if="submitted && !newPolicy.query">Query is required.</small>
-            <small class="helper-text">
-              To target specific devices, you can add conditions to your query using device properties like hostname, IP, etc.
-              Example: SELECT 1 FROM system_info WHERE hostname IN ('device1', 'device2') AND ...
-            </small>
+            />
           </div>
         </div>
 
@@ -236,25 +233,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "@vue/runtime-core";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from 'vue-router';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dialog from 'primevue/dialog';
-import Editor from 'primevue/editor';
-import Dropdown from 'primevue/dropdown';
-import Tag from 'primevue/tag';
-import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from "../../services/ToastService";
-import Checkbox from "primevue/checkbox";
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
+// Import from our new UI component library
+import { 
+  Button, 
+  Column, 
+  InputText, 
+  Dialog, 
+  Dropdown, 
+  Tag,
+  ScriptEditor 
+} from '../../components/ui';
 
 interface FleetResponse {
   policies: Policy[];
@@ -762,4 +759,4 @@ onMounted(async () => {
     }
   }
 }
-</style> 
+</style>     
