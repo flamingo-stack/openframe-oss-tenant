@@ -696,7 +696,7 @@ onMounted(async () => {
   border-radius: var(--border-radius);
 }
 
-/* Using standardized pagination styling from ModuleTable */
+/* Using standardized global pagination styling from App.vue */
 
 /* Dialog specific styles */
 :deep(.p-dialog) {
@@ -765,4 +765,4 @@ onMounted(async () => {
     }
   }
 }
-</style>                              
+</style>                                                                                                                                                                                                                                                                                                                                                                        

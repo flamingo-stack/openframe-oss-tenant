@@ -69,6 +69,23 @@ const filters = ref({
   flex-direction: column;
 }
 
+/* Dark mode specific styles */
+:global([data-theme="dark"]) {
+  .of-module-table {
+    background: var(--surface-section);
+  }
+
+  :deep(.p-datatable) {
+    .p-datatable-wrapper,
+    .p-datatable-header,
+    .p-datatable-footer {
+      background: var(--surface-section);
+    }
+    
+    /* Pagination styling now handled by global styles in App.vue */
+  }
+}
+
 :deep(.p-datatable) {
   .p-datatable-wrapper {
     border-radius: var(--border-radius);
@@ -145,33 +162,7 @@ const filters = ref({
   }
 
   .p-paginator.of-paginator {
-    background: var(--surface-ground);
-    border: none;
-    padding: 1.25rem 1rem;
-    margin-top: 1rem;
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-
-    .p-paginator-pages .p-paginator-page {
-      min-width: 2.5rem;
-      height: 2.5rem;
-      margin: 0 0.25rem;
-      border-radius: var(--border-radius);
-      font-weight: 600;
-      transition: all 0.2s ease;
-
-      &.p-highlight {
-        background: var(--primary-color);
-        color: var(--primary-color-text);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.4);
-      }
-
-      &:not(.p-highlight):hover {
-        background: var(--surface-hover);
-        transform: translateY(-1px);
-      }
-    }
+    /* Styles now handled by global style in App.vue */
   }
 }
 
@@ -285,4 +276,4 @@ const filters = ref({
     }
   }
 }
-</style>              
+</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
