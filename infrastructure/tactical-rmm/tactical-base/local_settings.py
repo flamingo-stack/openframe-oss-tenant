@@ -1,6 +1,15 @@
 from .custom_settings import *
+import os
 
-SECRET_KEY = '${DJANGO_SEKRET}'
+def get_env_var(key, default=''):
+    value = os.getenv(key, default)
+    # Handle Docker Compose style variables
+    if value.startswith('${') and value.endswith('}'):
+        inner_key = value[2:-1]
+        return os.getenv(inner_key, default)
+    return value
+
+SECRET_KEY = get_env_var('DJANGO_SEKRET', '9=w)banooqsbug+x-klraw4%yak9l#-l(67s!hcl^z@p*3ir8v')  # https://djecrety.ir/
 
 DEBUG = True
 
@@ -8,14 +17,14 @@ DOCKER_BUILD = True
 
 TRMM_PROTO = 'http'
 
-EXE_DIR = '${TACTICAL_DIR}/api/tacticalrmm/private/exe'
-LOG_DIR = '${TACTICAL_DIR}/api/tacticalrmm/private/log'
+EXE_DIR = get_env_var('TACTICAL_DIR', '') + '/api/tacticalrmm/private/exe'
+LOG_DIR = get_env_var('TACTICAL_DIR', '') + '/api/tacticalrmm/private/log'
 
-SCRIPTS_DIR = '${TACTICAL_DIR}/community-scripts'
+SCRIPTS_DIR = get_env_var('TACTICAL_DIR', '') + '/community-scripts'
 
 ALLOWED_HOSTS = ['*']
 
-ADMIN_URL = '${ADMINURL}/'
+ADMIN_URL = get_env_var('ADMINURL', '') + '/'
 ADMIN_ENABLED = True
 SWAGGER_ENABLED = True
 BETA_API_ENABLED = True
@@ -41,16 +50,18 @@ SESSION_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SAMESITE = None
 SESSION_COOKIE_DOMAIN = None
 
-HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'http://${APP_HOST}/account/provider/callback'}
+HEADLESS_FRONTEND_URLS = {
+    'socialaccount_login_error': 'http://' + get_env_var('APP_HOST', '') + '/account/provider/callback'
+}
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '${POSTGRES_DB}',
-        'USER': '${POSTGRES_USER}',
-        'PASSWORD': '${POSTGRES_PASSWORD}',
-        'HOST': '${POSTGRES_HOST}',
-        'PORT': '${POSTGRES_PORT}',
+        'NAME': get_env_var('POSTGRES_DB', ''),
+        'USER': get_env_var('POSTGRES_USER', ''),
+        'PASSWORD': get_env_var('POSTGRES_PASSWORD', ''),
+        'HOST': get_env_var('POSTGRES_HOST', ''),
+        'PORT': get_env_var('POSTGRES_PORT', ''),
     }
 }
 
@@ -61,9 +72,9 @@ MESH_TOKEN_KEY = 'disabled'
 MESH_DEVICE_GROUP = 'disabled'
 MESH_WS_URL = 'disabled'
 ADMIN_ENABLED = False
-TRMM_DISABLE_WEB_TERMINAL = ${TRMM_DISABLE_WEB_TERMINAL}
-TRMM_DISABLE_SERVER_SCRIPTS = ${TRMM_DISABLE_SERVER_SCRIPTS}
-TRMM_DISABLE_SSO = ${TRMM_DISABLE_SSO}
+TRMM_DISABLE_WEB_TERMINAL = get_env_var('TRMM_DISABLE_WEB_TERMINAL', 'False').lower() == 'true'
+TRMM_DISABLE_SERVER_SCRIPTS = get_env_var('TRMM_DISABLE_SERVER_SCRIPTS', 'False').lower() == 'true'
+TRMM_DISABLE_SSO = get_env_var('TRMM_DISABLE_SSO', 'False').lower() == 'true'
 TRMM_DISABLE_2FA = True
 
 # Disable SSL/TLS
@@ -73,11 +84,11 @@ NATS_HTTP_PROTOCOL = 'http'
 NATS_WS_PROTOCOL = 'ws'
 
 # Certificate paths for NATS
-CERT_FILE = '${CERT_PUB_PATH}'
-KEY_FILE = '${CERT_PRIV_PATH}'
+CERT_FILE = get_env_var('CERT_PUB_PATH', '')
+KEY_FILE = get_env_var('CERT_PRIV_PATH', '')
 
 # Redis configuration
-REDIS_HOST = '${REDIS_HOST}'
+REDIS_HOST = get_env_var('REDIS_HOST', '')
 REDIS_PORT = 6379
 REDIS_DB = 0
 
