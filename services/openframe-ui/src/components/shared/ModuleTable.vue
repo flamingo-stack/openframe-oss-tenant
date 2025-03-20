@@ -82,36 +82,7 @@ const filters = ref({
       background: var(--surface-section);
     }
     
-    /* Ensure all pagination elements get dark styling */
-    .p-paginator.of-paginator {
-      background: var(--surface-section) !important;
-      color: var(--text-color) !important;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
-      
-      /* Apply dark mode to all paginator elements */
-      .p-paginator-current,
-      .p-paginator-first,
-      .p-paginator-prev,
-      .p-paginator-next,
-      .p-paginator-last,
-      .p-paginator-page,
-      .p-dropdown-label,
-      .p-dropdown-trigger,
-      .p-dropdown-panel {
-        background: var(--surface-section) !important;
-        color: var(--text-color) !important;
-        
-        &:not(.p-highlight):hover {
-          background: rgba(255, 255, 255, 0.1) !important;
-        }
-      }
-      
-      /* Fix dropdown styling in dark mode */
-      .p-dropdown {
-        background: var(--surface-section) !important;
-        border-color: var(--surface-border) !important;
-      }
-    }
+    /* Pagination styling now handled by global styles in App.vue */
   }
 }
 
@@ -191,139 +162,7 @@ const filters = ref({
   }
 
   .p-paginator.of-paginator {
-    background: var(--surface-card);
-    border: none;
-    padding: 1.25rem 1rem;
-    margin-top: 1rem;
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    width: 100% !important;
-    
-    /* Fix layout container to ensure all elements stay on one line */
-    > div {
-      display: inline-flex !important;
-      align-items: center !important;
-      flex-wrap: nowrap !important;
-      white-space: nowrap !important;
-    }
-    
-    /* Current page indicator */
-    .p-paginator-current {
-      display: inline-flex !important;
-      white-space: nowrap !important;
-      flex: 0 0 auto !important;
-      margin-right: 1rem !important;
-      max-width: max-content !important;
-    }
-    
-    /* Pagination controls group */
-    .p-paginator-first,
-    .p-paginator-prev,
-    .p-paginator-pages,
-    .p-paginator-next,
-    .p-paginator-last {
-      display: inline-flex !important;
-      flex-wrap: nowrap !important;
-      white-space: nowrap !important;
-      align-items: center !important;
-      justify-content: center !important;
-    }
-    
-    /* Individual page buttons */
-    .p-paginator-pages .p-paginator-page {
-      min-width: 2.5rem;
-      height: 2.5rem;
-      margin: 0 0.25rem;
-      border-radius: var(--border-radius);
-      font-weight: 600;
-      transition: all 0.2s ease;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-
-      &.p-highlight {
-        background: var(--primary-color);
-        color: var(--primary-color-text);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.4);
-      }
-
-      &:not(.p-highlight):hover {
-        background: var(--surface-hover);
-        transform: translateY(-1px);
-      }
-    }
-    
-    /* Rows per page selector */
-    .p-paginator-rpp-options {
-      flex: 0 0 auto !important;
-      min-width: 4rem !important;
-      margin-left: 1rem !important;
-      max-width: max-content !important;
-    }
-
-    /* Improved mobile responsive layout */
-    @media screen and (max-width: 768px) {
-      padding: 1rem 0.75rem;
-      flex-direction: column !important;
-      align-items: center !important;
-      gap: 0.75rem;
-      
-      /* Group all elements properly for mobile */
-      > div {
-        width: 100% !important;
-        justify-content: center !important;
-        margin-bottom: 0.5rem !important;
-      }
-      
-      /* Force current page indicator to have its own row in mobile */
-      .p-paginator-current {
-        width: 100% !important;
-        flex: 1 0 100% !important;
-        text-align: center !important;
-        margin: 0 0 0.5rem 0 !important;
-      }
-      
-      /* Center pagination controls in mobile */
-      .p-paginator-first,
-      .p-paginator-prev,
-      .p-paginator-pages,
-      .p-paginator-next,
-      .p-paginator-last {
-        margin: 0 0.125rem !important;
-      }
-      
-      /* Position rows-per-page dropdown in mobile */
-      .p-paginator-rpp-options {
-        margin: 0.5rem 0 0 0 !important;
-      }
-    }
-
-    .p-paginator-pages .p-paginator-page {
-      min-width: 2.5rem;
-      height: 2.5rem;
-      margin: 0 0.25rem;
-      border-radius: var(--border-radius);
-      font-weight: 600;
-      transition: all 0.2s ease;
-
-      &.p-highlight {
-        background: var(--primary-color);
-        color: var(--primary-color-text);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.4);
-      }
-
-      &:not(.p-highlight):hover {
-        background: var(--surface-hover);
-        transform: translateY(-1px);
-      }
-    }
+    /* Styles now handled by global style in App.vue */
   }
 }
 
@@ -437,4 +276,4 @@ const filters = ref({
     }
   }
 }
-</style>                                                                                                                                                                                                                                                                                                                                                                            
+</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

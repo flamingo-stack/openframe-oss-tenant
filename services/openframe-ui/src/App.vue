@@ -56,6 +56,162 @@ body {
   color: var(--text-color);
 }
 
+/* Global pagination styles */
+.p-paginator {
+  background: var(--surface-card) !important;
+  border: none !important;
+  padding: 1.25rem 1rem !important;
+  margin-top: 1rem !important;
+  border-radius: var(--border-radius) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* Fix layout container to ensure all elements stay on one line */
+.p-paginator > div {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+}
+
+/* Current page indicator */
+.p-paginator-current {
+  display: inline-flex !important;
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+  margin-right: 1rem !important;
+  max-width: max-content !important;
+}
+
+/* Pagination controls group */
+.p-paginator-first,
+.p-paginator-prev,
+.p-paginator-pages,
+.p-paginator-next,
+.p-paginator-last {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Individual page buttons */
+.p-paginator-pages .p-paginator-page {
+  min-width: 2.5rem !important;
+  height: 2.5rem !important;
+  margin: 0 0.25rem !important;
+  border-radius: var(--border-radius) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Highlighted page */
+.p-paginator-pages .p-paginator-page.p-highlight {
+  background: var(--primary-color) !important;
+  color: var(--primary-color-text) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.4) !important;
+}
+
+/* Hover state for non-highlighted pages */
+.p-paginator-pages .p-paginator-page:not(.p-highlight):hover {
+  background: var(--surface-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Rows per page selector */
+.p-paginator-rpp-options {
+  flex: 0 0 auto !important;
+  min-width: 4rem !important;
+  margin-left: 1rem !important;
+  max-width: max-content !important;
+}
+
+/* Dark mode for pagination */
+[data-theme="dark"] .p-paginator {
+  background: var(--surface-section) !important;
+  color: var(--text-color) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Apply dark mode to all paginator elements */
+[data-theme="dark"] .p-paginator .p-paginator-current,
+[data-theme="dark"] .p-paginator .p-paginator-first,
+[data-theme="dark"] .p-paginator .p-paginator-prev,
+[data-theme="dark"] .p-paginator .p-paginator-pages,
+[data-theme="dark"] .p-paginator .p-paginator-next,
+[data-theme="dark"] .p-paginator .p-paginator-last,
+[data-theme="dark"] .p-paginator .p-dropdown-label,
+[data-theme="dark"] .p-paginator .p-dropdown-trigger,
+[data-theme="dark"] .p-paginator .p-dropdown-panel {
+  background: var(--surface-section) !important;
+  color: var(--text-color) !important;
+}
+
+/* Hover state in dark mode */
+[data-theme="dark"] .p-paginator .p-paginator-page:not(.p-highlight):hover,
+[data-theme="dark"] .p-paginator .p-paginator-first:hover,
+[data-theme="dark"] .p-paginator .p-paginator-prev:hover,
+[data-theme="dark"] .p-paginator .p-paginator-next:hover,
+[data-theme="dark"] .p-paginator .p-paginator-last:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Fix dropdown styling in dark mode */
+[data-theme="dark"] .p-paginator .p-dropdown {
+  background: var(--surface-section) !important;
+  border-color: var(--surface-border) !important;
+}
+
+/* Improved mobile responsive layout */
+@media screen and (max-width: 768px) {
+  .p-paginator {
+    padding: 1rem 0.75rem !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Group all elements properly for mobile */
+  .p-paginator > div {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Force current page indicator to have its own row in mobile */
+  .p-paginator .p-paginator-current {
+    width: 100% !important;
+    flex: 1 0 100% !important;
+    text-align: center !important;
+    margin: 0 0 0.5rem 0 !important;
+  }
+  
+  /* Center pagination controls in mobile */
+  .p-paginator .p-paginator-first,
+  .p-paginator .p-paginator-prev,
+  .p-paginator .p-paginator-pages,
+  .p-paginator .p-paginator-next,
+  .p-paginator .p-paginator-last {
+    margin: 0 0.125rem !important;
+  }
+  
+  /* Position rows-per-page dropdown in mobile */
+  .p-paginator .p-paginator-rpp-options {
+    margin: 0.5rem 0 0 0 !important;
+  }
+}
+
 /* Remove outline on focused elements */
 :focus {
   outline: none;
