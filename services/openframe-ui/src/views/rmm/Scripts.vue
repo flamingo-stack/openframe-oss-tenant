@@ -1,5 +1,5 @@
 <template>
-  <div class="rmm-scripts">
+  <div class="of-scripts-view">
     <ModuleHeader title="Scripts">
       <template #actions>
         <OFButton 
@@ -11,7 +11,7 @@
       </template>
     </ModuleHeader>
 
-    <div class="scripts-content">
+    <div class="of-scripts-content">
       <SearchBar v-model="filters['global'].value" placeholder="Search scripts..." />
 
       <ModuleTable 
@@ -63,25 +63,25 @@
               <OFButton 
                 icon="pi pi-play" 
                 class="p-button-text p-button-sm" 
-                v-tooltip.top="'Run Script'"
+                :aria-label="'Run Script'"
                 @click="runScript(data)" 
               />
               <OFButton 
                 icon="pi pi-eye" 
                 class="p-button-text p-button-sm" 
-                v-tooltip.top="'View Script'"
+                :aria-label="'View Script'"
                 @click="viewScript(data)" 
               />
               <OFButton 
                 icon="pi pi-pencil" 
                 class="p-button-text p-button-sm" 
-                v-tooltip.top="'Edit Script'"
+                :aria-label="'Edit Script'"
                 @click="editScript(data)" 
               />
               <OFButton 
                 icon="pi pi-trash" 
                 class="p-button-text p-button-sm p-button-danger" 
-                v-tooltip.top="'Delete Script'"
+                :aria-label="'Delete Script'"
                 @click="deleteScript(data)" 
               />
             </div>
@@ -91,16 +91,15 @@
     </div>
 
     <!-- Add/Edit Script Dialog -->
-    <Dialog 
-      v-model:visible="showAddScriptDialog" 
-      :style="{ width: '800px' }" 
-      :header="isEditMode ? 'Edit Script' : 'Add New Script'" 
-      :modal="true"
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFScriptDialog
+      v-model="showAddScriptDialog" 
+      :header="isEditMode ? 'Edit Script' : 'Add New Script'"
+      width="800px"
+      :confirmLabel="isEditMode ? 'Save' : 'Add'"
+      confirmIcon="pi pi-check"
+      :loading="submitting"
+      @confirm="saveScript"
+      @cancel="hideDialog"
     >
       <div class="of-form-group">
         <label for="name" class="of-form-label">Name</label>
@@ -154,37 +153,18 @@
           :error="submitted && !newScript.content ? 'Script content is required.' : ''"
         />
       </div>
-
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="Cancel" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="hideDialog"
-          />
-          <OFButton 
-            :label="isEditMode ? 'Save' : 'Add'" 
-            icon="pi pi-check" 
-            class="p-button-primary" 
-            @click="saveScript" 
-            :loading="submitting"
-          />
-        </div>
-      </template>
-    </Dialog>
+    </OFScriptDialog>
 
     <!-- Run Script Dialog -->
-    <Dialog 
-      v-model:visible="showRunScriptDialog" 
-      :style="{ width: '600px' }" 
-      header="Run Script" 
-      :modal="true"
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFScriptDialog
+      v-model="showRunScriptDialog" 
+      header="Run Script"
+      width="600px"
+      confirmLabel="Run"
+      confirmIcon="pi pi-play"
+      :loading="executing"
+      @confirm="executeScript"
+      @cancel="showRunScriptDialog = false"
     >
       <div class="of-form-group">
         <label for="devices" class="of-form-label">Target Devices</label>
@@ -198,63 +178,23 @@
           :error="runSubmitted && selectedDevices.length === 0 ? 'Select at least one device.' : ''"
         />
       </div>
-
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="Cancel" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="showRunScriptDialog = false"
-          />
-          <OFButton 
-            label="Run" 
-            icon="pi pi-play" 
-            class="p-button-primary" 
-            @click="executeScript" 
-            :loading="executing"
-          />
-        </div>
-      </template>
-    </Dialog>
+    </OFScriptDialog>
 
     <!-- Delete Script Confirmation -->
-    <Dialog 
-      v-model:visible="deleteScriptDialog" 
-      header="Confirm" 
-      :modal="true"
-      :draggable="false"
-      :style="{ width: '450px' }" 
-      class="p-dialog-custom"
-      :pt="{
-        root: { style: { position: 'relative', margin: '0 auto' } },
-        mask: { style: { alignItems: 'center', justifyContent: 'center' } }
-      }"
+    <OFConfirmationDialog
+      v-model="deleteScriptDialog" 
+      header="Confirm"
+      icon="pi pi-exclamation-triangle"
+      confirmLabel="Yes"
+      cancelLabel="No"
+      :loading="deleting"
+      @confirm="confirmDelete"
+      @cancel="deleteScriptDialog = false"
     >
-      <div class="confirmation-content">
-        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-        <span v-if="selectedScript">
-          Are you sure you want to delete <b>{{ selectedScript.name }}</b>?
-        </span>
-      </div>
-      <template #footer>
-        <div class="flex justify-content-end gap-2">
-          <OFButton 
-            label="No" 
-            icon="pi pi-times" 
-            class="p-button-text" 
-            @click="deleteScriptDialog = false"
-          />
-          <OFButton 
-            label="Yes" 
-            icon="pi pi-check" 
-            class="p-button-danger" 
-            @click="confirmDelete" 
-            :loading="deleting"
-          />
-        </div>
-      </template>
-    </Dialog>
+      <span v-if="selectedScript">
+        Are you sure you want to delete <b>{{ selectedScript.name }}</b>?
+      </span>
+    </OFConfirmationDialog>
   </div>
 </template>
 
@@ -271,13 +211,18 @@ import ModuleTable from '../../components/shared/ModuleTable.vue';
 import { 
   OFButton, 
   Column, 
-  Dialog, 
   InputText, 
   Dropdown, 
   MultiSelect, 
   Tag,
-  ScriptEditor 
+  ScriptEditor,
+  OFScriptDialog,
+  OFConfirmationDialog,
+  TooltipDirective
 } from "../../components/ui";
+
+// Register the tooltip directive
+const vTooltip = TooltipDirective;
 
 interface Script {
   id: string;
@@ -521,14 +466,14 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.rmm-scripts {
+.of-scripts-view {
   height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--surface-ground);
 }
 
-.scripts-content {
+.of-scripts-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -543,55 +488,14 @@ onMounted(async () => {
   justify-content: center;
 }
 
-:deep(.p-dialog-mask) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
+/* Dialog styles are now handled by OFScriptDialog and OFConfirmationDialog components */
 
-:deep(.p-dialog) {
-  margin: 0 auto !important;
-}
-
-:deep(.p-dialog-content) {
-  overflow-y: auto !important;
-  max-height: calc(90vh - 120px) !important;
-}
-
-.p-dialog-custom {
-  .p-dialog-header {
-    background: var(--surface-section);
-    color: var(--text-color);
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--surface-border);
-  }
-
-  .p-dialog-content {
-    background: var(--surface-section);
-    color: var(--text-color);
-    padding: 1.5rem;
-  }
-
-  .p-dialog-footer {
-    background: var(--surface-section);
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--surface-border);
-  }
-}
-
-.confirmation-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.script-icon {
+.of-script-icon {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
 
-.font-mono {
+.of-font-mono {
   font-family: monospace;
 }
-</style>              
+</style>                              

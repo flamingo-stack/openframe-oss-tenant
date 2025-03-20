@@ -1,16 +1,16 @@
 <template>
-  <div class="script-execution-history">
+  <div class="of-script-history">
     <div 
       v-if="visible" 
-      class="sidebar-mask active" 
+      class="of-sidebar-mask active" 
       @click="onVisibilityChange(false)"
     ></div>
     <div 
-      class="sidebar" 
+      class="of-sidebar" 
       :class="{ 'active': visible }"
     >
-      <div class="sidebar-header">
-        <h3 class="text-xl m-0">Script Execution History</h3>
+      <div class="of-sidebar-header">
+        <h3 class="of-text-xl m-0">Script Execution History</h3>
         <div class="flex gap-2">
           <OFButton 
             icon="pi pi-trash" 
@@ -27,36 +27,37 @@
         </div>
       </div>
 
-      <div class="sidebar-content">
-        <div v-for="execution in executions" :key="execution.id" class="execution-item">
+      <div class="of-sidebar-content">
+        <div v-for="execution in executions" :key="execution.id" class="of-execution-item">
           <div class="flex align-items-center justify-content-between mb-3">
             <div class="flex align-items-center gap-2">
               <i :class="getStatusIcon(execution.status)" :style="{ color: getStatusColor(execution.status) }" />
               <span class="font-medium">{{ execution.deviceName }}</span>
             </div>
-            <span class="text-sm text-color-secondary">{{ formatTimestamp(execution.timestamp) }}</span>
+            <span class="of-text-sm text-color-secondary">{{ formatTimestamp(execution.timestamp) }}</span>
           </div>
           
           <div class="of-form-group mb-3">
             <label>Command</label>
-            <div class="code-block">
+            <OFCodeBlock>
               <code>{{ execution.command }}</code>
-            </div>
+            </OFCodeBlock>
           </div>
           
           <div class="of-form-group">
             <label>Output</label>
-            <div class="code-block" :class="{ 'error': execution.status === 'error' }">
+            <OFCodeBlock :error="execution.status === 'error'">
               <pre>{{ execution.output || 'No output' }}</pre>
-            </div>
+            </OFCodeBlock>
           </div>
         </div>
 
-        <div v-if="executions.length === 0" class="empty-state">
-          <i class="pi pi-terminal mb-3" style="font-size: 2rem" />
-          <p class="text-lg font-medium m-0">No script executions yet</p>
-          <p class="text-sm text-color-secondary mt-2 mb-0">Run a command to see its execution history here.</p>
-        </div>
+        <OFEmptyState
+          v-if="executions.length === 0"
+          icon="pi pi-terminal"
+          title="No script executions yet"
+          message="Run a command to see its execution history here."
+        />
       </div>
     </div>
   </div>
@@ -65,7 +66,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import Sidebar from 'primevue/sidebar';
-import { OFButton } from '../../components/ui';
+import { OFButton, OFCodeBlock, OFEmptyState } from '../../components/ui';
 
 interface ScriptExecution {
   id: string;
@@ -172,8 +173,8 @@ defineExpose({
 </script>
 
 <style>
-.script-execution-history {
-  .sidebar-mask {
+.of-script-history {
+  .of-sidebar-mask {
     position: fixed;
     top: 0;
     left: 0;
@@ -188,7 +189,7 @@ defineExpose({
     }
   }
 
-  .sidebar {
+  .of-sidebar {
     position: fixed;
     top: 0;
     right: 0;
@@ -206,7 +207,7 @@ defineExpose({
     }
   }
 
-  .sidebar-header {
+  .of-sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -216,14 +217,14 @@ defineExpose({
     border-bottom: 1px solid var(--surface-border);
   }
 
-  .sidebar-content {
+  .of-sidebar-content {
     height: calc(100% - 72px);
     overflow-y: auto;
     padding: 1.5rem;
   }
 }
 
-.execution-item {
+.of-execution-item {
   background: var(--surface-card);
   border-radius: var(--border-radius);
   border: 1px solid var(--surface-border);
@@ -235,19 +236,7 @@ defineExpose({
   }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1.5rem;
-  text-align: center;
-  
-  i {
-    color: var(--text-color-secondary);
-    opacity: 0.5;
-  }
-}
+/* Empty state is now replaced by OFEmptyState component */
 
 .of-form-group {
   margin-bottom: 1.5rem;
@@ -259,29 +248,5 @@ defineExpose({
   }
 }
 
-.code-block {
-  background: var(--surface-ground);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  transition: all 0.2s;
-
-  code, pre {
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-all;
-    font-family: var(--font-family-monospace, monospace);
-    font-size: 0.875rem;
-  }
-
-  &.error {
-    background: var(--surface-ground);
-    border-color: var(--red-100);
-    color: var(--text-color);
-
-    code, pre {
-      color: var(--text-color);
-    }
-  }
-}
+/* Code block is now replaced by OFCodeBlock component */
 </style>    

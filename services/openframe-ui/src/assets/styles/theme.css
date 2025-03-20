@@ -474,6 +474,84 @@ h1.of-title,
   font-weight: 600;
   letter-spacing: 0.5px;
   background: none;
+} 
+
+/* Text size utilities */
+.of-text-xs {
+  font-size: var(--of-font-size-xs);
+}
+
+.of-text-sm {
+  font-size: var(--of-font-size-sm);
+}
+
+.of-text-md {
+  font-size: var(--of-font-size-md);
+}
+
+.of-text-lg {
+  font-size: var(--of-font-size-lg);
+}
+
+.of-text-xl {
+  font-size: var(--of-font-size-xl);
+}
+
+/* Form Inputs */
+.of-select {
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  background: var(--surface-card);
+  color: var(--text-color);
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 5rem;
+  outline: none;
+}
+
+.of-select:hover {
+  border-color: var(--of-primary);
+}
+
+.of-select:focus {
+  border-color: var(--of-primary);
+  box-shadow: 0 0 0 1px var(--of-primary);
+}
+
+/* Margin utilities */
+.of-my-0 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.of-mt-4 {
+  margin-top: 1rem;
+}
+
+/* Custom datatable styles */
+.of-datatable .p-datatable-wrapper {
+  border-radius: var(--border-radius);
+  background: var(--surface-card);
+}
+
+.of-datatable .p-datatable-header {
+  background: var(--surface-card);
+  padding: 1.5rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.of-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-card);
+  color: var(--text-color);
+  padding: 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  border: none;
+  border-bottom: 1px solid var(--surface-border);
 }
 
 .p-tooltip .p-tooltip-arrow {
@@ -488,4 +566,4 @@ h1.of-title,
 [data-theme="dark"] .p-tooltip .p-tooltip-text {
   color: var(--surface-0);
   background: none;
-} 
+}  
