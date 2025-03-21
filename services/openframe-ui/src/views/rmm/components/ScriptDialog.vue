@@ -332,7 +332,7 @@ const isViewMode = computed(() => {
 });
 
 const isFieldDisabled = computed(() => {
-    return isViewMode.value || (!props.isEditMode && props.initialData);
+    return Boolean(isViewMode.value || (!props.isEditMode && props.initialData));
 });
 </script>
 

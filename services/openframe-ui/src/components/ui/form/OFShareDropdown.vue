@@ -9,7 +9,7 @@
         :optionLabel="optionLabel"
         :optionValue="optionValue"
         :placeholder="placeholder"
-        :disabled="disabled"
+        :disabled="typeof disabled === 'boolean' ? disabled : Boolean(disabled)"
         :filter="true"
         :class="['of-share-dropdown', { 'p-invalid': error }]"
         @update:modelValue="$emit('update:modelValue', $event)"
@@ -49,8 +49,12 @@ const props = defineProps({
     default: 'Select an option'
   },
   disabled: {
-    type: Boolean,
-    default: false
+    type: [Boolean, Object],
+    default: false,
+    validator: (value) => {
+      // Convert any non-boolean value to boolean
+      return true;
+    }
   },
   label: {
     type: String,
