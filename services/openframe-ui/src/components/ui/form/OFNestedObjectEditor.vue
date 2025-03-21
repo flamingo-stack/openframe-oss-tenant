@@ -9,8 +9,8 @@
               :value="val"
               :isPropertyEditable="isPropertyEditable"
               :parentKey="parentKey"
-              @update:value="newVal => updateValue(key, newVal)"
-              @error="err => emit('error', err)"
+              @update:value="(newVal: Record<string | number, any>) => updateValue(key, newVal)"
+              @error="(err: Error) => emit('error', err)"
             />
           </template>
           <template v-else-if="getValueType(val) === 'Array'">
@@ -18,7 +18,7 @@
               <div v-for="(item, index) in getArrayItems(val)" :key="'item-' + key + '-' + index" class="of-array-input-row">
                 <InputText
                   :modelValue="item"
-                  @update:modelValue="newVal => updateArrayItem(key, index, newVal)"
+                  @update:modelValue="(newVal: string) => updateArrayItem(key, index, newVal)"
                   :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
                   class="w-full"
                 />
@@ -47,7 +47,7 @@
             <div class="of-switch-wrapper">
               <InputSwitch
                 :modelValue="val"
-                @update:modelValue="newVal => updateValue(key, newVal)"
+                @update:modelValue="(newVal: boolean) => updateValue(key, newVal)"
                 :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
                 class="of-settings-switch"
               />
@@ -56,7 +56,7 @@
           <template v-else-if="getValueType(val) === 'Number'">
             <InputNumber
               :modelValue="val"
-              @update:modelValue="newVal => updateValue(key, newVal)"
+              @update:modelValue="(newVal: number) => updateValue(key, newVal)"
               :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
               class="w-full"
             />
@@ -64,7 +64,7 @@
           <template v-else>
             <InputText
               :modelValue="String(val ?? '')"
-              @update:modelValue="newVal => updateValue(key, newVal || null)"
+              @update:modelValue="(newVal: string) => updateValue(key, newVal || null)"
               :disabled="isPropertyEditable && !isPropertyEditable(key, parentKey)"
               class="w-full"
             />
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, toRaw, computed, ref, defineAsyncComponent } from 'vue';
+import { toRef, computed, ref, defineAsyncComponent } from '@vue/runtime-core';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
@@ -107,7 +107,7 @@ const formatKey = (key: string | number): string => {
     .join(' ');
 };
 
-const localValue = ref<Record<string | number, any>>(toRaw(props.value));
+const localValue = ref<Record<string | number, any>>(toRef(props.value).value);
 
 const updateValue = (key: string | number, newValue: any) => {
   if (typeof localValue.value !== 'object') return;
@@ -128,7 +128,7 @@ const updateValue = (key: string | number, newValue: any) => {
 };
 
 const getArrayItems = (val: any) => {
-  const rawVal = toRaw(val);
+  const rawVal = toRef(val).value;
   return Array.isArray(rawVal) ? rawVal : [];
 };
 
