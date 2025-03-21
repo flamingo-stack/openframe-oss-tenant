@@ -548,7 +548,7 @@ const isFieldDisabled = computed(() => {
     padding: 0.75rem;
     border-bottom: 1px solid var(--surface-border);
     background: var(--surface-card);
-    margin-bottom: 0;
+    margin: 0;
 }
 
 :deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-container) {
@@ -561,9 +561,9 @@ const isFieldDisabled = computed(() => {
 }
 
 :deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter) {
-    padding: 0.5rem 2.5rem 0.5rem 0.75rem;
     height: 42px;
     width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem;
     background: var(--surface-section);
     font-size: 0.875rem;
     border: 1px solid var(--surface-border);
@@ -573,7 +573,7 @@ const isFieldDisabled = computed(() => {
 }
 
 :deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-icon) {
-    right: 0.75rem;
+    left: 0.75rem;
     color: var(--text-color-secondary);
     position: absolute;
     top: 50%;
@@ -586,7 +586,7 @@ const isFieldDisabled = computed(() => {
 :deep(.p-dropdown-panel .p-dropdown-items) {
     padding: 0.5rem 0;
     background: var(--surface-card);
-    margin-top: 0;
+    margin: 0;
 }
 
 :deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item) {
