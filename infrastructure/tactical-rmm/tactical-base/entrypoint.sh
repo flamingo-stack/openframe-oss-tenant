@@ -41,6 +41,10 @@ fi
 # nats server
 if [ "$1" = 'tactical-nats' ]; then
   tactical_init "nats"
+  if ! installNATs; then
+    echo "Failed to install NATS server"
+    exit 1
+  fi
   set_ready_status "nats"
-  /usr/bin/supervisord -c ${TACTICAL_DIR}/supervisor/supervisor.conf 
+  /usr/bin/supervisord -c ${TACTICAL_DIR}/supervisor/supervisor.conf
 fi

@@ -123,3 +123,10 @@ spec:
                 name: tactical-nginx
                 port:
                   number: 8080
+          # - path: /api
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: tactical-nginx
+          #       port:
+          #         number: 8000

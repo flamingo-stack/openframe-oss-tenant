@@ -129,7 +129,7 @@ function create_superuser_and_api_key() {
     API_KEY=$(cat ${TACTICAL_DIR}/api_key.txt)
 
     echo "Wrote Tactical RMM API key ${API_KEY} to ${TACTICAL_DIR}/api_key.txt"
-    
+
     redis-cli -h tactical-redis -p 6379 set "tactical_api_key" "${API_KEY}"
     echo "Set Tactical RMM API key ${API_KEY} in Redis"
 }
@@ -182,34 +182,55 @@ function tactical_init() {
 
 function installNATs() {
     echo "Installing NATS Server v2.10.22 specifically"
-    
+
     # Create directories if they don't exist
     mkdir -p /usr/local/bin
-    
+
     # Clean up any existing NATS installation
     rm -f /usr/local/bin/nats-server
-    
+
     # Download specific NATS version 2.10.22
-    wget https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz
-    
+    if ! wget https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz; then
+        echo "Failed to download NATS server"
+        return 1
+    fi
+
     # Extract the NATS binary
-    tar -xzf /tmp/nats.tar.gz -C /tmp
-    mv /tmp/nats-server-v2.10.22-linux-amd64/nats-server /usr/local/bin/
-    
-    # Make the binary executable
+    if ! tar -xzf /tmp/nats.tar.gz -C /tmp; then
+        echo "Failed to extract NATS server"
+        return 1
+    fi
+
+    # Move the binary and ensure it's executable
+    if ! mv /tmp/nats-server-v2.10.22-linux-amd64/nats-server /usr/local/bin/; then
+        echo "Failed to move NATS server binary"
+        return 1
+    fi
+
     chmod +x /usr/local/bin/nats-server
-    
+
     # Clean up downloaded files
     rm -rf /tmp/nats.tar.gz /tmp/nats-server-v2.10.22-linux-amd64
-    
+
     # Verify installation
+    if ! command -v nats-server &> /dev/null; then
+        echo "NATS server installation failed - binary not found in PATH"
+        return 1
+    fi
+
     echo "NATS Server version installed:"
-    /usr/local/bin/nats-server --version
+    nats-server --version
 
     # Download specific NATS API version 2.10.22
-    wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api
+    if ! wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api; then
+        echo "Failed to download NATS API"
+        return 1
+    fi
 
-    wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64
+    if ! wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64; then
+        echo "Failed to download NATS API ARM64"
+        return 1
+    fi
 
     # Install NATS API
     cp -rf ${TACTICAL_TMP_DIR}/nats-api /usr/local/bin/
@@ -217,6 +238,12 @@ function installNATs() {
 
     cp -rf ${TACTICAL_TMP_DIR}/nats-api-arm64 /usr/local/bin/
     chmod +x /usr/local/bin/nats-api-arm64
+
+    # Verify NATS API installation
+    if ! command -v nats-api &> /dev/null; then
+        echo "NATS API installation failed - binary not found in PATH"
+        return 1
+    fi
 
     getNATSFilesFromRedis
 }
