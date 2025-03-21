@@ -45,8 +45,7 @@
       </div>
 
       <!-- Script Execution Form -->
-      <div v-if="operationType === 'script'" class="of-bulk-form p-card p-p-4">
-        <h3>Bulk Script Execution</h3>
+      <div v-if="operationType === 'script'" class="of-bulk-form p-card p-4">
         
         <div class="of-form-group">
           <label for="bulkScript" class="of-form-label">Select Script</label>
@@ -137,7 +136,7 @@
           </div>
         </div>
         
-        <div class="of-form-group checkbox-group">
+        <div class="of-form-group checkbox-group mb-3">
           <div class="checkbox-container">
             <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
             <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
@@ -156,8 +155,7 @@
       </div>
 
       <!-- Command Execution Form -->
-      <div v-if="operationType === 'command'" class="of-bulk-form p-card p-p-4">
-        <h3>Bulk Command Execution</h3>
+      <div v-if="operationType === 'command'" class="of-bulk-form p-card p-4">
         
         <div class="of-form-group">
           <label for="bulkAgents" class="of-form-label">Target Agents</label>
@@ -225,7 +223,7 @@
           </small>
         </div>
         
-        <div class="of-form-group checkbox-group">
+        <div class="of-form-group checkbox-group mb-3">
           <div class="checkbox-container">
             <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
             <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
