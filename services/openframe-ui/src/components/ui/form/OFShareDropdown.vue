@@ -183,4 +183,3 @@ defineEmits(['update:modelValue']);
   font-size: 0.875rem;
 }
 </style>
-</template>
