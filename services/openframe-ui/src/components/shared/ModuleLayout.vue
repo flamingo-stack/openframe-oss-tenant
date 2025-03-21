@@ -16,7 +16,7 @@
 <style scoped>
 .module-layout {
   display: flex;
-  height: 95vh;
+  height: 90vh;
   width: 100%;
 }
 
