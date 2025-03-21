@@ -323,8 +323,8 @@ case "$1" in
       echo
       echo "Available options:"
       echo "  ingress-nginx    Deploy Ingress Nginx"
-      echo "  loki             Deploy Loki and Promtail"
       echo "  grafana          Deploy Grafana and Prometheus stack"
+      echo "  loki             Deploy Loki and Promtail"
       echo "  redis            Deploy Redis"
       echo "  efk              Deploy Elasticsearch, Fluentd, Kibana stack"
       echo "  kafka            Deploy Kafka"
