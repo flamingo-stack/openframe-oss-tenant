@@ -80,8 +80,8 @@ spec:
   selector:
     app: tactical-websockets
   ports:
-  - port: 8000
-    targetPort: 8000
+  - port: 8383
+    targetPort: 8383
 ---
 apiVersion: v1
 kind: Service
@@ -104,3 +104,53 @@ spec:
   ports:
   - port: 8000
     targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tactical-rmm
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-set-header-connection: "Upgrade"
+    nginx.ingress.kubernetes.io/proxy-set-header-upgrade: "$http_upgrade"
+
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    # nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    # nginx.ingress.kubernetes.io/proxy-set-header-host: "$host"
+    # nginx.ingress.kubernetes.io/proxy-set-header-x-real-ip: "$remote_addr"
+    # nginx.ingress.kubernetes.io/proxy-set-header-x-forwarded-for: "$proxy_add_x_forwarded_for"
+    # nginx.ingress.kubernetes.io/proxy-set-header-x-forwarded-proto: "$scheme"
+    # nginx.ingress.kubernetes.io/proxy-set-header-x-forwarded-host: "$host"
+    # nginx.ingress.kubernetes.io/proxy-set-header-x-forwarded-port: "$server_port"
+    # nginx.ingress.kubernetes.io/proxy-set-header-origin: "$http_origin"
+    # nginx.ingress.kubernetes.io/proxy-redirect: "off"
+    # nginx.ingress.kubernetes.io/proxy-cache-bypass: "$http_upgrade"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    # nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    # nginx.ingress.kubernetes.io/websocket-services: "tactical-nginx"
+spec:
+  rules:
+    - host: tactical-rmm.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tactical-nginx
+                port:
+                  number: 8080
+    - host: tactical-rmm-backend.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tactical-nginx
+                port:
+                  number: 8000

@@ -12,10 +12,10 @@ chown -R nginx:nginx /var/log/nginx
 chown -R nginx:nginx /var/run
 
 # Process main nginx.conf - only replace ${VAR} format
-envsubst '${NGINX_HOST_IP} ${NGINX_HOST_PORT} ${NATS_STD_BIND_HOST} ${NATS_WEBSOCKET_HOST}' < /tmp/nginx.conf > /etc/nginx/nginx.conf
+envsubst '${NATS_STANDARD_PORT} ${WEBSOCKET_PORT} ${WEBSOCKETS_BIND_HOST} ${RESOLVER} ${NGINX_HOST_IP} ${NGINX_HOST_PORT} ${NATS_STD_BIND_HOST} ${NATS_WEBSOCKET_HOST}' < /tmp/nginx.conf > /etc/nginx/nginx.conf
 
 # Process conf.d files - only replace ${VAR} format
-envsubst '${API_HOST} ${APP_HOST} ${NGINX_HOST_IP} ${NGINX_HOST_PORT} ${NATS_STD_BIND_HOST} ${NATS_WEBSOCKET_HOST}' < /tmp/conf.d/default.conf > /etc/nginx/conf.d/default.conf
+envsubst '${NATS_STANDARD_PORT} ${WEBSOCKET_PORT} ${WEBSOCKETS_BIND_HOST} ${RESOLVER} ${API_HOST} ${APP_HOST} ${NGINX_HOST_IP} ${NGINX_HOST_PORT} ${NATS_STD_BIND_HOST} ${NATS_WEBSOCKET_HOST}' < /tmp/conf.d/default.conf > /etc/nginx/conf.d/default.conf
 
 # Ensure nginx config is valid
 nginx -t

@@ -23,10 +23,10 @@ fi
 mkdir -p /etc/nginx/conf.d
 
 # Process main nginx.conf - only replace ${VAR} format
-envsubst '${MESH_HOST} ${MESH_PORT} ${MESH_NGINX_NAT_HOST}' < /tmp/nginx.conf > /etc/nginx/nginx.conf
+envsubst '${RESOLVER} ${MESH_HOST} ${MESH_PORT} ${MESH_NGINX_NAT_HOST}' < /tmp/nginx.conf > /etc/nginx/nginx.conf
 
 # Process conf.d files - only replace ${VAR} format
-envsubst '${MESH_HOST} ${MESH_PORT} ${MESH_NGINX_NAT_HOST}' < /tmp/conf.d/meshcentral.conf > /etc/nginx/conf.d/meshcentral.conf
+envsubst '${RESOLVER} ${MESH_HOST} ${MESH_PORT} ${MESH_NGINX_NAT_HOST}' < /tmp/conf.d/meshcentral.conf > /etc/nginx/conf.d/meshcentral.conf
 
 # Execute CMD
 exec "$@" 

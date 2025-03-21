@@ -78,48 +78,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tactical-frontend
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: tactical-frontend
-  template:
-    metadata:
-      labels:
-        app: tactical-frontend
-    spec:
-      imagePullSecrets:
-        - name: github-pat-secret
-      containers:
-      - name: frontend
-        image: ghcr.io/flamingo-cx/openframe-tactical-frontend:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: NODE_ENV
-          value: "development"
-        - name: API_HOST
-          value: "tactical-backend:8000"
-        - name: APP_HOST
-          value: "tactical-frontend:8080"
-        - name: PUBLIC_DIR
-          value: "/usr/share/nginx/html"
-        - name: TACTICAL_DIR
-          value: "/opt/tactical"
-        - name: TACTICAL_TMP_DIR
-          value: "/tmp/tactical"
-        volumeMounts:
-        - name: frontend-data
-          mountPath: /opt/tactical
-      volumes:
-      - name: frontend-data
-        persistentVolumeClaim:
-          claimName: tactical-frontend-data
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: tactical-nginx
 spec:
   replicas: 1
@@ -141,21 +99,31 @@ spec:
         - containerPort: 8000
         env:
         - name: NGINX_HOST_IP
-          value: "tactical-nginx"
+          value: "tactical-nginx.tactical-rmm.svc.cluster.local"
         - name: NGINX_HOST_PORT
           value: "8080"
         - name: API_HOST
-          value: "tactical-backend:8000"
+          value: "tactical-backend.tactical-rmm.svc.cluster.local:8000"
         - name: APP_HOST
-          value: "tactical-frontend:8080"
+          value: "tactical-frontend.tactical-rmm.svc.cluster.local:8080"
         - name: NATS_STD_BIND_HOST
-          value: tactical-nats.tactical-rmm.svc.cluster.local:9235
+          value: tactical-nats.tactical-rmm.svc.cluster.local
+        - name: NATS_STANDARD_PORT
+          value: "9235"
         - name: NATS_WEBSOCKET_HOST
-          value: tactical-websockets.tactical-rmm.svc.cluster.local:8383
+          value: tactical-websockets.tactical-rmm.svc.cluster.local
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         - name: TACTICAL_DIR
           value: "/opt/tactical"
         - name: TACTICAL_TMP_DIR
           value: "/tmp/tactical"
+        - name: RESOLVER
+          value: "kube-dns.kube-system.svc.cluster.local"
         volumeMounts:
         - name: nginx-data
           mountPath: /opt/tactical
@@ -179,6 +147,57 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: tactical-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-frontend
+  template:
+    metadata:
+      labels:
+        app: tactical-frontend
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: frontend
+        image: ghcr.io/flamingo-cx/openframe-tactical-frontend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "development"
+        - name: API_HOST
+          value: "tactical-backend:8000"
+          # value: "tactical-rmm-backend.192.168.100.100.nip.io"
+        - name: API_LOCALHOST_HOST
+          value: "tactical-rmm-backend.192.168.100.100.nip.io"
+        - name: APP_HOST
+          value: "tactical-frontend:8080"
+        - name: APP_LOCALHOST_HOST
+          value: "localhost:8080"
+        - name: PUBLIC_DIR
+          value: "/usr/share/nginx/html"
+        - name: TACTICAL_DIR
+          value: "/opt/tactical"
+        - name: TACTICAL_TMP_DIR
+          value: "/tmp/tactical"
+        - name: TRMM_PROTO
+          value: "http"
+        - name: WS_PROTO
+          value: "ws"
+        volumeMounts:
+        - name: frontend-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: frontend-data
+        persistentVolumeClaim:
+          claimName: tactical-frontend-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: tactical-backend
 spec:
   replicas: 1
@@ -193,6 +212,17 @@ spec:
       imagePullSecrets:
         - name: github-pat-secret
       initContainers:
+      - name: setup-fontconfig
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          mkdir -p /opt/tactical/.cache/fontconfig &&
+          mkdir -p /opt/tactical/.local/share/fontconfig &&
+          chown -R 1000:1000 /opt/tactical/.cache &&
+          chown -R 1000:1000 /opt/tactical/.local
+        ']
+        volumeMounts:
+        - name: backend-data
+          mountPath: /opt/tactical
       - name: wait-for-dependencies
         image: busybox:1.28
         command: ['sh', '-c', '
@@ -212,7 +242,16 @@ spec:
         args: ["tactical-backend"]
         ports:
         - containerPort: 8000
+        # resources:
+        #   requests:
+        #     memory: "512Mi"
+        #     cpu: "250m"
+        #   limits:
+        #     memory: "1Gi"
+        #     cpu: "500m"
         env:
+        # - name: DJANGO_SETTINGS_MODULE
+        #   value: "tacticalrmm.settings"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
@@ -236,7 +275,7 @@ spec:
         - name: SMTP_PASS
           value: "mesh-smtp-pass"
         - name: SMTP_TLS
-          value: "false"
+          value: "False"
         - name: TRMM_USER
           value: "tactical"
         - name: TRMM_PASS
@@ -281,17 +320,67 @@ spec:
           value: "tactical-nats"
         - name: NATS_STANDARD_PORT
           value: "9235"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
         - name: NATS_WEBSOCKET_PORT
           value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
+        # - name: UWSGI_UID
+        #   value: "1000"
+        # - name: UWSGI_GID
+        #   value: "1000"
+        # - name: UWSGI_CHEAP
+        #   value: "true"
+        # - name: UWSGI_PROCESSES
+        #   value: "2"
+        # - name: UWSGI_THREADS
+        #   value: "4"
+        # - name: UWSGI_HARAKIRI
+        #   value: "120"
+        # - name: UWSGI_MAX_REQUESTS
+        #   value: "1000"
+        # - name: UWSGI_BUFFER_SIZE
+        #   value: "32768"
+        - name: UWSGI_POST_BUFFERING
+          value: "4096"
+        - name: UWSGI_TIMEOUT
+          value: "60"
+        - name: UWSGI_SOCKET_TIMEOUT
+          value: "60"
+        - name: UWSGI_KEEPALIVE
+          value: "5"
+        - name: UWSGI_GRACEFUL_TIMEOUT
+          value: "30"
+        - name: XDG_CACHE_HOME
+          value: "/opt/tactical/.cache"
+        - name: XDG_DATA_HOME
+          value: "/opt/tactical/.local"
+        - name: HOME
+          value: "/opt/tactical"
         volumeMounts:
         - name: backend-data
           mountPath: /opt/tactical
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /core/health/
+            path: /
             port: 8000
           initialDelaySeconds: 30
           periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
       volumes:
       - name: backend-data
         persistentVolumeClaim:
@@ -347,8 +436,14 @@ spec:
           value: "tactical-nats"
         - name: NATS_STANDARD_PORT
           value: "9235"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
         - name: NATS_WEBSOCKET_PORT
           value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         volumeMounts:
         - name: nats-data
           mountPath: /opt/tactical
@@ -477,8 +572,6 @@ spec:
         image: ghcr.io/flamingo-cx/openframe-tactical-celery:latest
         args: ["tactical-celery"]
         env:
-        # - name: DJANGO_SETTINGS_MODULE
-        #   value: "tacticalrmm.settings"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
@@ -502,7 +595,7 @@ spec:
         - name: SMTP_PASS
           value: "mesh-smtp-pass"
         - name: SMTP_TLS
-          value: "false"
+          value: "False"
         - name: TRMM_USER
           value: "tactical"
         - name: TRMM_PASS
@@ -532,11 +625,12 @@ spec:
         - name: API_HOST
           value: "tactical-backend:8000"
         - name: API_LOCALHOST_HOST
-          value: "localhost:8000"
+          value: tactical-rmm-backend.192.168.100.100.nip.io
         - name: APP_HOST
           value: "tactical-frontend:8080"
         - name: APP_LOCALHOST_HOST
-          value: "localhost:8080"
+          # value: "localhost:8080"
+          value: "tactical-rmm.192.168.100.100.nip.io"
         - name: NATS_CONFIG
           value: "/opt/tactical/nats-rmm.conf"
         - name: NATS_API_CONFIG
@@ -551,8 +645,14 @@ spec:
           value: "tactical-nats"
         - name: NATS_STANDARD_PORT
           value: "9235"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
         - name: NATS_WEBSOCKET_PORT
           value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         volumeMounts:
         - name: celery-data
           mountPath: /opt/tactical
@@ -603,8 +703,6 @@ spec:
         image: ghcr.io/flamingo-cx/openframe-tactical-celerybeat:latest
         args: ["tactical-celerybeat"]
         env:
-        - name: TRMM_DISABLE_WEB_TERMINAL
-          value: "False"
         - name: POSTGRES_DB
           value: "tacticalrmm"
         - name: POSTGRES_USER
@@ -625,6 +723,14 @@ spec:
           value: "tactical-backend:8000"
         - name: APP_HOST
           value: "tactical-frontend:8080"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         volumeMounts:
         - name: celerybeat-data
           mountPath: /opt/tactical

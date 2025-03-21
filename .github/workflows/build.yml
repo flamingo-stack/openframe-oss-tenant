@@ -186,7 +186,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -230,7 +232,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -274,7 +278,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -318,7 +324,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -362,7 +370,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -406,7 +416,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -450,7 +462,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           { name: 'fleetmdm', path: './infrastructure/fleetmdm/' },
@@ -533,13 +547,25 @@ jobs:
             BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
             HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
 
-            # Check if there are any changes in the service path
-            if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}"; then
-              echo "No changes detected in ${{ matrix.service.path }}"
-              echo "changed=false" >> $GITHUB_OUTPUT
+            # For tactical services, also check shared folder
+            if [[ "${{ matrix.service.path }}" == *"tactical-base"* ]]; then
+              # Check both service path and shared folder
+              if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}" && git diff --quiet $BASE_SHA $HEAD_SHA -- "./infrastructure/tactical-rmm/shared/"; then
+                echo "No changes detected in ${{ matrix.service.path }} or shared folder"
+                echo "changed=false" >> $GITHUB_OUTPUT
+              else
+                echo "Changes detected in ${{ matrix.service.path }} or shared folder"
+                echo "changed=true" >> $GITHUB_OUTPUT
+              fi
             else
-              echo "Changes detected in ${{ matrix.service.path }}"
-              echo "changed=true" >> $GITHUB_OUTPUT
+              # For non-tactical services, check only service path
+              if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}"; then
+                echo "No changes detected in ${{ matrix.service.path }}"
+                echo "changed=false" >> $GITHUB_OUTPUT
+              else
+                echo "Changes detected in ${{ matrix.service.path }}"
+                echo "changed=true" >> $GITHUB_OUTPUT
+              fi
             fi
           else
             # For manual triggers, always build
@@ -579,6 +605,10 @@ jobs:
         if: steps.check_changes.outputs.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
+      - name: Set up QEMU
+        if: steps.check_changes.outputs.changed == 'true'
+        uses: docker/setup-qemu-action@v3
+
       - name: Debug Build Args
         run: echo '${{ toJson(matrix.service.build_args) }}'
 
@@ -592,6 +622,9 @@ jobs:
             exit 1
           fi
 
+          # Set the build context
+          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
+
           # Construct build arguments dynamically
           BUILD_ARGS=""
           for key in $(echo '${{ toJson(matrix.service.build_args) }}' | jq -r 'keys[]'); do
@@ -601,7 +634,7 @@ jobs:
 
           # Build and push the image with error handling
           if ! docker buildx build \
-            --platform linux/amd64 \
+            --platform linux/amd64,linux/arm64 \
             --push \
             --file "${{ matrix.service.path }}Dockerfile" \
             --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:latest" \
@@ -611,7 +644,7 @@ jobs:
             --cache-to "type=gha,mode=max" \
             --provenance=false \
             $BUILD_ARGS \
-            "${{ matrix.service.context || matrix.service.path }}"; then
+            "$BUILD_CONTEXT"; then
             echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
             exit 1
           fi

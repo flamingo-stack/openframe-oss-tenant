@@ -47,6 +47,11 @@ const navigationItems = [
     path: '/rmm/scripts'
   },
   {
+    label: 'Bulk Ops',
+    icon: 'pi pi-server',
+    path: '/rmm/bulkops'
+  },
+  {
     label: 'Automation',
     icon: 'pi pi-cog',
     path: '/rmm/automation'
@@ -142,4 +147,4 @@ const navigationItems = [
   overflow: hidden;
   background: var(--surface-ground);
 }
-</style> 
+</style>  
