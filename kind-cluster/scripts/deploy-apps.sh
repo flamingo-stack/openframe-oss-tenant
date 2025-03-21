@@ -102,7 +102,7 @@ case "$1" in
     # helm repo add kafbat-ui https://kafbat.github.io/helm-charts
     helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
       -n infrastructure --create-namespace \
-      --version 1.4.11 \
+      --version 1.4.12 \
       -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m
     ;;

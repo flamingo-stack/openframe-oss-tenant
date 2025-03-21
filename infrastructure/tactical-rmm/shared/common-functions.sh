@@ -257,7 +257,16 @@ function installNATs() {
     fi
 
     # Set capabilities for NATS server to allow binding to privileged ports
-    setcap 'cap_net_bind_service=+ep' /usr/local/bin/nats-server
+    if command -v setcap &> /dev/null; then
+        setcap 'cap_net_bind_service=+ep' /usr/local/bin/nats-server
+    else
+        echo "Warning: setcap command not found. NATS server may need to run as root to bind to privileged ports."
+    fi
+
+    # Ensure supervisor directories exist with correct permissions
+    mkdir -p /var/run
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/run
+    chmod 755 /var/run
 
     echo "NATS installation completed successfully"
 }
