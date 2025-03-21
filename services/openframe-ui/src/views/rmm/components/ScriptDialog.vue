@@ -545,23 +545,31 @@ const isFieldDisabled = computed(() => {
 
 /* Dropdown Filter Styling */
 :deep(.p-dropdown-panel .p-dropdown-header) {
-    padding: 0.5rem;
+    padding: 0.75rem;
     border-bottom: 1px solid var(--surface-border);
-    background: var(--surface-section);
+    background: var(--surface-card);
+    margin-bottom: 0;
 }
 
 :deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-container) {
     position: relative;
     margin: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    height: 42px;
 }
 
 :deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter) {
-    padding-right: 2.5rem;
+    padding: 0.5rem 2.5rem 0.5rem 0.75rem;
     height: 42px;
-    background: var(--surface-card);
+    width: 100%;
+    background: var(--surface-section);
     font-size: 0.875rem;
     border: 1px solid var(--surface-border);
     border-radius: 6px;
+    color: var(--text-color);
+    margin: 0;
 }
 
 :deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-icon) {
@@ -570,13 +578,39 @@ const isFieldDisabled = computed(() => {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
+    font-size: 1rem;
+    margin: 0;
+    z-index: 1;
 }
 
 :deep(.p-dropdown-panel .p-dropdown-items) {
     padding: 0.5rem 0;
+    background: var(--surface-card);
+    margin-top: 0;
 }
 
-:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item:first-child) {
-    border-top: none;
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item) {
+    padding: 0.75rem 1rem;
+    color: var(--text-color);
+    background: transparent;
+    transition: background-color 0.2s;
+    font-size: 0.875rem;
+    border-radius: 0;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover) {
+    background: var(--surface-hover);
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight) {
+    background: var(--surface-hover);
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-empty-message) {
+    padding: 0.75rem 1rem;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
 }
 </style>
