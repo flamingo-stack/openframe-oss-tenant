@@ -161,17 +161,23 @@ spec:
         - name: NODE_ENV
           value: "development"
         - name: API_HOST
-          # value:  /api # tactical-rmm.192.168.100.100.nip.io/api # "tactical-backend:8000"
-          # value: tactical-rmm.192.168.100.100.nip.io/api
           value: "tactical-backend:8000"
+        - name: API_LOCALHOST_HOST
+          value: "tactical-nginx:8000"
         - name: APP_HOST
           value: "tactical-frontend:8080"
+        - name: APP_LOCALHOST_HOST
+          value: "tactical-rmm.192.168.100.100.nip.io"
         - name: PUBLIC_DIR
           value: "/usr/share/nginx/html"
         - name: TACTICAL_DIR
           value: "/opt/tactical"
         - name: TACTICAL_TMP_DIR
           value: "/tmp/tactical"
+        - name: TRMM_PROTO
+          value: "http"
+        - name: WS_PROTO
+          value: "ws"
         volumeMounts:
         - name: frontend-data
           mountPath: /opt/tactical
@@ -598,7 +604,7 @@ spec:
         - name: API_HOST
           value: "tactical-backend:8000"
         - name: API_LOCALHOST_HOST
-          value: "localhost:8000"
+          value: "tactical-nginx:8000"
         - name: APP_HOST
           value: "tactical-frontend:8080"
         - name: APP_LOCALHOST_HOST
