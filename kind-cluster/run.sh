@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Function to check if a command exists
+check_command() {
+    if ! command -v "$1" &> /dev/null; then
+        echo "Error: $1 is not installed. Please install it first."
+        exit 1
+    fi
+}
+
+# Check required tools
+echo "Checking required tools..."
+check_command "kind"
+check_command "docker"
+check_command "helm"
+check_command "kubectl"
+
 sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
 sudo sysctl -p > /dev/null 2>&1
 
