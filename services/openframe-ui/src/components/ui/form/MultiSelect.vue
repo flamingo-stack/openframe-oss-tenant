@@ -19,10 +19,9 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import PrimeMultiSelect from 'primevue/multiselect';
 
-defineProps({
+const props = defineProps({
   id: {
     type: String,
     default: () => `multiselect-${Math.random().toString(36).substring(2, 9)}`

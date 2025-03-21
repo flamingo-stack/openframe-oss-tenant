@@ -18,10 +18,9 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import PrimeDropdown from 'primevue/dropdown';
 
-defineProps({
+const props = defineProps({
   id: {
     type: String,
     default: () => `dropdown-${Math.random().toString(36).substring(2, 9)}`
