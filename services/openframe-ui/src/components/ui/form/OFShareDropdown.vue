@@ -29,8 +29,9 @@ const props = defineProps({
     default: () => `share-dropdown-${Math.random().toString(36).substring(2, 9)}`
   },
   modelValue: {
-    type: [String, Number, Object],
-    required: true
+    type: [String, Number, Object, null],
+    required: true,
+    default: null
   },
   options: {
     type: Array,
