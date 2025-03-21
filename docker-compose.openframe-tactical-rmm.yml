@@ -188,7 +188,7 @@ services:
       args: *default-args
     platform: linux/amd64
     ports:
-      - "8080:8080"
+      - "8080:8080"  
       - "8000:8000"
     volumes:
       - tactical_nginx_data:/opt/tactical
@@ -213,6 +213,8 @@ services:
     depends_on:
       tactical-postgres:
         condition: service_healthy
+      # tactical-meshcentral:
+      #   condition: service_healthy
       tactical-redis:
         condition: service_healthy
       tactical-nginx:
@@ -342,5 +344,3 @@ volumes:
   tactical_celery_data:
   tactical_redis_data:
   tactical_postgres_data:
-
-
