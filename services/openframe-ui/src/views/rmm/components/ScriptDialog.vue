@@ -43,7 +43,7 @@
                             <label for="category" class="of-form-label">Category</label>
                             <Dropdown id="category" v-model="scriptData.category" :options="categoryOptions"
                                 optionLabel="label" optionValue="value" placeholder="Select category" filter
-                                :disabled="isFieldDisabled" />
+                                :disabled="isFieldDisabled" class="of-dropdown" />
                         </div>
 
                         <div class="of-form-group">
@@ -541,5 +541,42 @@ const isFieldDisabled = computed(() => {
 /* Remove any custom tag styling that might interfere */
 :deep(.p-tag.p-component) {
     border-radius: 2rem;
+}
+
+/* Dropdown Filter Styling */
+:deep(.p-dropdown-panel .p-dropdown-header) {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-section);
+}
+
+:deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-container) {
+    position: relative;
+    margin: 0;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter) {
+    padding-right: 2.5rem;
+    height: 42px;
+    background: var(--surface-card);
+    font-size: 0.875rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-icon) {
+    right: 0.75rem;
+    color: var(--text-color-secondary);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items) {
+    padding: 0.5rem 0;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item:first-child) {
+    border-top: none;
 }
 </style>
