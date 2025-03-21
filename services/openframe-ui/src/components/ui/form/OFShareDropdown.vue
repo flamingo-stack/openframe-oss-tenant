@@ -10,7 +10,7 @@
         :optionValue="optionValue"
         :placeholder="placeholder"
         :disabled="typeof disabled === 'boolean' ? disabled : Boolean(disabled)"
-        :filter="true"
+        :filter="false"
         :class="['of-share-dropdown', { 'p-invalid': error }]"
         @update:modelValue="$emit('update:modelValue', $event)"
       />
