@@ -162,8 +162,11 @@ function installNATs() {
     mkdir -p ${TACTICAL_DIR}/logs
     mkdir -p ${TACTICAL_DIR}/supervisor
     mkdir -p /var/log/supervisor
+    mkdir -p /var/run
     chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/log/supervisor
     chmod 755 /var/log/supervisor
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/run
+    chmod 755 /var/run
 
     # Clean up any existing NATS installation
     rm -f /usr/local/bin/nats-server
@@ -267,6 +270,11 @@ function installNATs() {
     mkdir -p /var/run
     chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/run
     chmod 755 /var/run
+
+    # Create supervisor socket directory with correct permissions
+    mkdir -p /var/run/supervisor
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/run/supervisor
+    chmod 755 /var/run/supervisor
 
     echo "NATS installation completed successfully"
 }
