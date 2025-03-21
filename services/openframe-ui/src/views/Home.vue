@@ -60,7 +60,7 @@
           
           <DataTable 
             :value="platforms" 
-            :paginator="true" 
+            :paginator="platforms.length > 0" 
             v-model:rows="rowsPerPage"
             :rowsPerPageOptions="[5,10,20]" 
             tableStyle="min-width: 50rem"
@@ -71,6 +71,13 @@
             filterDisplay="menu"
             :rowHover="true"
           >
+            <template #empty>
+              <div class="empty-state">
+                <i class="pi pi-box mb-3" style="font-size: 3rem; color: var(--text-color-secondary); opacity: 0.5;"></i>
+                <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0 0 0.5rem 0;">No Platforms Found</h3>
+                <p style="color: var(--text-color-secondary); margin: 0; line-height: 1.5;">Add a platform to get started.</p>
+              </div>
+            </template>
             <template #paginatorstart>
               <div class="custom-paginator">
                 <select v-model="rowsPerPage" class="rows-select">
@@ -348,4 +355,4 @@ const rowsPerPage = ref(10);
 :deep(.p-paginator-rpp-options) {
   display: none !important;
 }
-</style>  
+</style>        
