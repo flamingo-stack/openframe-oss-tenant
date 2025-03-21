@@ -5,7 +5,7 @@
       :loading="loading"
       v-model:filters="filters"
       filterDisplay="menu"
-      :paginator="true"
+      :paginator="items.length > 0"
       paginatorClass="of-paginator"
       :rows="10"
       :rowsPerPageOptions="[10, 20, 50]"
@@ -276,4 +276,4 @@ const filters = ref({
     }
   }
 }
-</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
