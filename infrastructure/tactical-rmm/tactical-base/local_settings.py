@@ -9,14 +9,17 @@ def get_env_var(key, default=''):
         return os.getenv(inner_key, default)
     return value
 
-SECRET_KEY = get_env_var('DJANGO_SEKRET', '9=w)banooqsbug+x-klraw4%yak9l#-l(67s!hcl^z@p*3ir8v')
+SECRET_KEY = get_env_var('DJANGO_SEKRET', '9=w)banooqsbug+x-klraw4%yak9l#-l(67s!hcl^z@p*3ir8v')  # https://djecrety.ir/
 
 DEBUG = True
+
 DOCKER_BUILD = True
+
 TRMM_PROTO = 'http'
 
 EXE_DIR = get_env_var('TACTICAL_DIR', '') + '/api/tacticalrmm/private/exe'
 LOG_DIR = get_env_var('TACTICAL_DIR', '') + '/api/tacticalrmm/private/log'
+
 SCRIPTS_DIR = get_env_var('TACTICAL_DIR', '') + '/community-scripts'
 
 ALLOWED_HOSTS = ['*']
@@ -69,11 +72,9 @@ MESH_TOKEN_KEY = 'disabled'
 MESH_DEVICE_GROUP = 'disabled'
 MESH_WS_URL = 'disabled'
 ADMIN_ENABLED = False
-
-# TRMM Settings
-TRMM_DISABLE_WEB_TERMINAL = get_env_var('TRMM_DISABLE_WEB_TERMINAL', 'false').lower() == 'true'
-TRMM_DISABLE_SERVER_SCRIPTS = get_env_var('TRMM_DISABLE_SERVER_SCRIPTS', 'false').lower() == 'true'
-TRMM_DISABLE_SSO = get_env_var('TRMM_DISABLE_SSO', 'false').lower() == 'true'
+TRMM_DISABLE_WEB_TERMINAL = get_env_var('TRMM_DISABLE_WEB_TERMINAL', 'False').lower() == 'true'
+TRMM_DISABLE_SERVER_SCRIPTS = get_env_var('TRMM_DISABLE_SERVER_SCRIPTS', 'False').lower() == 'true'
+TRMM_DISABLE_SSO = get_env_var('TRMM_DISABLE_SSO', 'False').lower() == 'true'
 TRMM_DISABLE_2FA = True
 
 # Disable SSL/TLS

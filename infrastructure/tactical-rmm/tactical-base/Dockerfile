@@ -77,8 +77,7 @@ RUN apt-get update && \
     supervisor \
     procps \
     curl \
-    python3-websockets \
-    libcap2-bin && \
+    python3-websockets && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \
