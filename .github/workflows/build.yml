@@ -604,6 +604,9 @@ jobs:
             exit 1
           fi
 
+          # Set the build context
+          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
+
           # Construct build arguments dynamically
           BUILD_ARGS=""
           for key in $(echo '${{ toJson(matrix.service.build_args) }}' | jq -r 'keys[]'); do
@@ -623,7 +626,7 @@ jobs:
             --cache-to "type=gha,mode=max" \
             --provenance=false \
             $BUILD_ARGS \
-            "${{ matrix.service.context || matrix.service.path }}"; then
+            "$BUILD_CONTEXT"; then
             echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
             exit 1
           fi
