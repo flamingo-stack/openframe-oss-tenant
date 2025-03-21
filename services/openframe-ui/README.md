@@ -24,6 +24,25 @@ OpenFrame UI is the front-end dashboard for managing integrated tools, visualizi
 • .env.* files: Store environment-specific settings (API URLs, client secrets, etc.).  
 • Tools can be dynamically loaded if your backend (GraphQL or REST) provides metadata.
 
+### Environment Setup
+Create a `.env` file in the project root with the following variables:
+
+```env
+VITE_API_URL=http://localhost:8090
+VITE_GATEWAY_URL=http://localhost:8100
+VITE_CLIENT_ID=your-client-id
+VITE_CLIENT_SECRET=your-client-secret
+VITE_GRAFANA_URL=http://localhost:3000
+```
+
+These environment variables are required for the application to function properly. Without them, the application will not initialize correctly and navigation features may not work.
+
+For local development, you can also run the application with environment variables directly:
+
+```bash
+PORT=5177 VITE_API_URL=http://localhost:8090 VITE_GATEWAY_URL=http://localhost:8100 VITE_CLIENT_ID=openframe_web_dashboard VITE_CLIENT_SECRET=prod_secret VITE_GRAFANA_URL=http://localhost:3000 npm run dev
+```
+
 ## Testing
 • npm run test – Runs unit tests (e.g., with Jest or Vitest).  
 • npm run e2e – (Optional) End-to-end tests with Cypress or similar.
