@@ -45,6 +45,18 @@ if [ "$1" = 'tactical-nats' ]; then
     echo "Failed to install NATS server"
     exit 1
   fi
+
+  # Ensure supervisor directories exist with correct permissions
+  mkdir -p /var/run/supervisor
+  mkdir -p /var/log/supervisor
+  chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/run/supervisor
+  chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/log/supervisor
+  chmod 755 /var/run/supervisor
+  chmod 755 /var/log/supervisor
+
+  # Remove any existing supervisor socket file
+  rm -f /var/run/supervisor/supervisor.sock
+
   set_ready_status "nats"
-  /usr/bin/supervisord -c ${TACTICAL_DIR}/supervisor/supervisor.conf
+  exec /usr/bin/supervisord -c ${TACTICAL_DIR}/supervisor/supervisor.conf
 fi
