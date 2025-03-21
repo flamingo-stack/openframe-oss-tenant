@@ -8,6 +8,12 @@
           @click="openAddScriptDialog"
           class="p-button-primary"
         />
+        <OFButton 
+          label="Bulk Execute" 
+          icon="pi pi-play"
+          @click="openBulkExecuteDialog"
+          class="p-button-primary ml-2"
+        />
       </template>
     </ModuleHeader>
 
@@ -168,6 +174,123 @@
         Are you sure you want to delete <b>{{ selectedScript.name }}</b>?
       </span>
     </OFConfirmationDialog>
+
+    <!-- Bulk Execute Dialog -->
+    <OFScriptDialog
+      v-model="showBulkExecuteDialog" 
+      header="Bulk Script Execution"
+      width="700px"
+      confirmLabel="Execute"
+      confirmIcon="pi pi-play"
+      :loading="bulkExecuting"
+      @confirm="executeBulkScript"
+      @cancel="showBulkExecuteDialog = false"
+    >
+      <div class="of-form-group">
+        <label for="bulkScript" class="of-form-label">Select Script</label>
+        <Dropdown
+          id="bulkScript"
+          v-model="bulkSelectedScript"
+          :options="getScriptOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a script"
+          class="w-full"
+          :class="{ 'p-invalid': bulkSubmitted && !bulkSelectedScript }"
+        />
+        <small class="p-error" v-if="bulkSubmitted && !bulkSelectedScript">
+          Script selection is required.
+        </small>
+      </div>
+      
+      <div class="of-form-group">
+        <label for="bulkAgents" class="of-form-label">Target Agents</label>
+        <MultiSelect
+          id="bulkAgents"
+          v-model="bulkSelectedAgents"
+          :options="devices"
+          optionLabel="hostname"
+          optionValue="id"
+          placeholder="Select target agents"
+          class="w-full"
+          :class="{ 'p-invalid': bulkSubmitted && bulkSelectedAgents.length === 0 }"
+        />
+        <small class="p-error" v-if="bulkSubmitted && bulkSelectedAgents.length === 0">
+          Select at least one agent.
+        </small>
+      </div>
+      
+      <div class="of-form-group">
+        <label class="of-form-label">OS Type</label>
+        <div class="p-formgroup-inline">
+          <div class="p-field-radiobutton">
+            <Dropdown
+              v-model="bulkOsType"
+              :options="[
+                { label: 'Windows', value: 'windows' },
+                { label: 'Linux', value: 'linux' },
+                { label: 'macOS', value: 'darwin' },
+                { label: 'All', value: 'all' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select OS type"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div class="of-form-group">
+        <label class="of-form-label">Script Arguments</label>
+        <div class="p-inputgroup">
+          <InputText
+            id="scriptArg"
+            placeholder="Add argument and press Enter"
+            @keydown.enter.prevent="addScriptArg($event.target.value); $event.target.value = ''"
+          />
+        </div>
+        <div v-if="bulkArgs.length > 0" class="p-mt-2">
+          <div v-for="(arg, index) in bulkArgs" :key="index" class="p-chip p-mr-2 p-mb-2">
+            {{ arg }}
+            <i class="pi pi-times p-chip-remove-icon" @click="removeScriptArg(index)"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="of-form-group">
+        <label class="of-form-label">Environment Variables</label>
+        <div class="p-inputgroup">
+          <InputText
+            id="envVar"
+            placeholder="KEY=VALUE format and press Enter"
+            @keydown.enter.prevent="addEnvVar($event.target.value); $event.target.value = ''"
+          />
+        </div>
+        <div v-if="bulkEnvVars.length > 0" class="p-mt-2">
+          <div v-for="(env, index) in bulkEnvVars" :key="index" class="p-chip p-mr-2 p-mb-2">
+            {{ env }}
+            <i class="pi pi-times p-chip-remove-icon" @click="removeEnvVar(index)"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="of-form-group">
+        <div class="p-field-checkbox">
+          <Checkbox v-model="bulkRunAsUser" :binary="true" id="runAsUser" />
+          <label for="runAsUser">Run As User</label>
+        </div>
+      </div>
+      
+      <div class="of-form-group">
+        <label for="timeout" class="of-form-label">Timeout (seconds)</label>
+        <InputText
+          id="timeout"
+          v-model.number="bulkTimeout"
+          type="number"
+          style="width: 150px"
+        />
+      </div>
+    </OFScriptDialog>
   </div>
 </template>
 
@@ -238,16 +361,26 @@ const scripts = ref<Script[]>([]);
 const devices = ref<Device[]>([]);
 const showAddScriptDialog = ref(false);
 const showRunScriptDialog = ref(false);
+const showBulkExecuteDialog = ref(false); // New ref for bulk execution dialog
 const deleteScriptDialog = ref(false);
 const submitted = ref(false);
 const runSubmitted = ref(false);
+const bulkSubmitted = ref(false); // New ref for bulk submission state
 const submitting = ref(false);
 const executing = ref(false);
+const bulkExecuting = ref(false); // New ref for bulk execution state
 const deleting = ref(false);
 const isEditMode = ref(false);
 
 const selectedScript = ref<Script | null>(null);
 const selectedDevices = ref<string[]>([]);
+const bulkSelectedAgents = ref<string[]>([]); // New ref for bulk selected agents
+const bulkSelectedScript = ref<number | null>(null); // New ref for bulk selected script
+const bulkArgs = ref<string[]>([]); // New ref for bulk script arguments
+const bulkEnvVars = ref<string[]>([]); // New ref for bulk environment variables
+const bulkOsType = ref<string>('windows'); // New ref for OS type
+const bulkRunAsUser = ref<boolean>(false); // New ref for run as user option
+const bulkTimeout = ref<number>(90); // New ref for timeout
 
 const openAddScriptDialog = () => {
   selectedScript.value = null;
@@ -256,6 +389,18 @@ const openAddScriptDialog = () => {
   nextTick(() => {
     showAddScriptDialog.value = true;
   });
+};
+
+const openBulkExecuteDialog = () => {
+  showBulkExecuteDialog.value = true;
+  bulkSelectedScript.value = null;
+  bulkSelectedAgents.value = [];
+  bulkArgs.value = [];
+  bulkEnvVars.value = [];
+  bulkOsType.value = 'windows';
+  bulkRunAsUser.value = false;
+  bulkTimeout.value = 90;
+  bulkSubmitted.value = false;
 };
 
 const newScript = ref({
@@ -448,6 +593,49 @@ const executeScript = async () => {
   }
 };
 
+const executeBulkScript = async () => {
+  bulkSubmitted.value = true;
+  
+  if (!bulkSelectedScript.value || bulkSelectedAgents.value.length === 0) return;
+  
+  try {
+    bulkExecuting.value = true;
+    
+    const payload = {
+      mode: "script",
+      target: "agents",
+      monType: "all",
+      osType: bulkOsType.value,
+      cmd: "",
+      shell: "cmd",
+      custom_shell: null,
+      custom_field: null,
+      collector_all_output: false,
+      save_to_agent_note: false,
+      patchMode: "scan",
+      offlineAgents: false,
+      client: null,
+      site: null,
+      agents: bulkSelectedAgents.value,
+      script: bulkSelectedScript.value,
+      timeout: bulkTimeout.value,
+      args: bulkArgs.value,
+      env_vars: bulkEnvVars.value,
+      run_as_user: bulkRunAsUser.value
+    };
+    
+    await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
+    
+    showBulkExecuteDialog.value = false;
+    toastService.showSuccess('Bulk script execution started');
+  } catch (error) {
+    console.error('Failed to execute bulk script:', error);
+    toastService.showError('Failed to execute bulk script');
+  } finally {
+    bulkExecuting.value = false;
+  }
+};
+
 const viewScript = async (script: Script) => {
   if (script.script_type !== 'builtin') {
     toastService.showError('Only community scripts can be viewed');
@@ -543,6 +731,33 @@ const validateScript = () => {
   }
   return true;
 };
+
+const addScriptArg = (value: string) => {
+  if (value && !bulkArgs.value.includes(value)) {
+    bulkArgs.value.push(value);
+  }
+};
+
+const removeScriptArg = (index: number) => {
+  bulkArgs.value.splice(index, 1);
+};
+
+const addEnvVar = (value: string) => {
+  if (value && !bulkEnvVars.value.includes(value) && value.includes('=')) {
+    bulkEnvVars.value.push(value);
+  }
+};
+
+const removeEnvVar = (index: number) => {
+  bulkEnvVars.value.splice(index, 1);
+};
+
+const getScriptOptions = computed(() => {
+  return scripts.value.map(script => ({
+    label: script.name,
+    value: parseInt(script.id)
+  }));
+});
 
 onMounted(async () => {
   await Promise.all([
@@ -743,4 +958,4 @@ onMounted(async () => {
 :deep(.description-cell) {
   max-width: 500px;
 }
-</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+</style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
