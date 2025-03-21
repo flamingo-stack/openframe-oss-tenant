@@ -202,19 +202,17 @@
           />
         </div>
         
-        <div class="of-form-group">
+        <div class="of-form-group script-editor">
           <label for="command" class="of-form-label">Command</label>
-          <Textarea
-            id="command"
-            v-model="command"
-            rows="5"
-            class="w-full"
-            placeholder="Enter command to execute"
-            :class="{ 'p-invalid': submitted && !command }"
-          />
-          <small class="p-error" v-if="submitted && !command">
-            Command is required.
-          </small>
+          <div class="of-script-editor-wrapper">
+            <ScriptEditor
+              id="command"
+              v-model="command"
+              class="script-editor"
+              :error="submitted && !command ? 'Command is required.' : ''"
+              placeholder="Enter command to execute"
+            />
+          </div>
         </div>
         
         <div class="of-form-group checkbox-group mb-3">
@@ -259,7 +257,8 @@ import {
   InputText, 
   Dropdown,
   MultiSelect,
-  Textarea
+  Textarea,
+  ScriptEditor
 } from "../../components/ui";
 import Button from 'primevue/button';
 import RadioButton from 'primevue/radiobutton';
@@ -729,5 +728,25 @@ onMounted(async () => {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+/* Script Editor styling */
+:deep(.monaco-editor-container) {
+  min-height: 180px;
+}
+
+.of-script-editor-wrapper {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 180px;
 }
 </style>
