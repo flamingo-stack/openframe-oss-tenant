@@ -160,6 +160,12 @@ const router = createRouter({
           meta: { title: 'RMM Scripts' }
         },
         {
+          path: 'bulkops',
+          name: 'rmm-bulkops',
+          component: () => import('../views/rmm/BulkOps.vue'),
+          meta: { title: 'RMM Bulk Operations' }
+        },
+        {
           path: 'automation',
           name: 'rmm-automation',
           component: RMMAutomation,
@@ -242,4 +248,4 @@ router.beforeEach(async (to, from, next) => {
   }
 });
 
-export default router 
+export default router  
