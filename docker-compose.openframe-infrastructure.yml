@@ -1,4 +1,5 @@
-name: openframe-infrastructure
+version: '3.8'
+x-name: openframe-infrastructure
 services:
   # MongoDB
   mongodb:
