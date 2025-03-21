@@ -265,11 +265,11 @@ import {
   InputText, 
   Dropdown,
   MultiSelect,
-  Checkbox,
-  RadioButton,
-  Button,
   Textarea
 } from "../../components/ui";
+import Button from 'primevue/button';
+import RadioButton from 'primevue/radiobutton';
+import Checkbox from 'primevue/checkbox';
 
 interface Script {
   id: string;
