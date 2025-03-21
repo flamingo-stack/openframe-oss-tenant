@@ -137,11 +137,9 @@
           </div>
         </div>
         
-        <div class="of-form-group checkbox-group">
-          <div class="checkbox-container">
-            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
-            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
-          </div>
+        <div class="of-form-group">
+          <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+          <label for="runAsUser" class="p-checkbox-label">Run As User (Windows only)</label>
         </div>
         
         <div class="of-form-group">
@@ -225,11 +223,9 @@
           </small>
         </div>
         
-        <div class="of-form-group checkbox-group">
-          <div class="checkbox-container">
-            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
-            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
-          </div>
+        <div class="of-form-group">
+          <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+          <label for="runAsUser" class="p-checkbox-label">Run As User (Windows only)</label>
         </div>
         
         <div class="of-form-group">
