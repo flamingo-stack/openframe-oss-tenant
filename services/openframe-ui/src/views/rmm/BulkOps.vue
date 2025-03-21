@@ -88,79 +88,60 @@
         
         <div class="of-form-group">
           <label class="of-form-label">OS Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <Dropdown
-                v-model="bulkOsType"
-                :options="[
-                  { label: 'Windows', value: 'windows' },
-                  { label: 'Linux', value: 'linux' },
-                  { label: 'macOS', value: 'darwin' },
-                  { label: 'All', value: 'all' }
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select OS type"
-              />
-            </div>
-          </div>
-        </div>
-        
-        <div class="of-form-group">
-          <label class="of-form-label">Script Arguments</label>
-          <div class="p-inputgroup">
-            <InputText
-              id="scriptArg"
-              v-model="newArg"
-              placeholder="Add argument and press Enter"
-              @keydown.enter.prevent="addScriptArg(newArg); newArg = ''"
-            />
-            <Button icon="pi pi-plus" @click="addScriptArg(newArg); newArg = ''" />
-          </div>
-          <div v-if="bulkArgs.length > 0" class="p-mt-2">
-            <div v-for="(arg, index) in bulkArgs" :key="index" class="p-chip p-mr-2 p-mb-2">
-              {{ arg }}
-              <i class="pi pi-times p-chip-remove-icon" @click="removeScriptArg(index)"></i>
-            </div>
-          </div>
-        </div>
-        
-        <div class="of-form-group">
-          <label class="of-form-label">Environment Variables</label>
-          <div class="p-inputgroup">
-            <InputText
-              id="envVar"
-              v-model="newEnvVar"
-              placeholder="KEY=VALUE format and press Enter"
-              @keydown.enter.prevent="addEnvVar(newEnvVar); newEnvVar = ''"
-            />
-            <Button icon="pi pi-plus" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
-          </div>
-          <div v-if="bulkEnvVars.length > 0" class="p-mt-2">
-            <div v-for="(env, index) in bulkEnvVars" :key="index" class="p-chip p-mr-2 p-mb-2">
-              {{ env }}
-              <i class="pi pi-times p-chip-remove-icon" @click="removeEnvVar(index)"></i>
-            </div>
-          </div>
-        </div>
-        
-        <div class="of-form-group">
-          <div class="p-field-checkbox">
-            <Checkbox v-model="bulkRunAsUser" :binary="true" id="runAsUser" />
-            <label for="runAsUser">Run As User</label>
-          </div>
-        </div>
-        
-        <div class="of-form-group">
-          <label for="timeout" class="of-form-label">Timeout (seconds)</label>
-          <InputText
-            id="timeout"
-            v-model.number="bulkTimeout"
-            type="number"
-            style="width: 150px"
+          <Dropdown
+            v-model="bulkOsType"
+            :options="[
+              { label: 'Windows', value: 'windows' },
+              { label: 'Linux', value: 'linux' },
+              { label: 'macOS', value: 'darwin' },
+              { label: 'All', value: 'all' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select OS type"
+            class="w-full"
           />
         </div>
+        
+        <div class="of-form-group p-mt-3">
+          <OFButton 
+            label="Configure Script" 
+            icon="pi pi-cog" 
+            class="p-button-secondary" 
+            @click="openScriptDialog"
+          />
+        </div>
+        
+        <div v-if="bulkArgs.length > 0 || bulkEnvVars.length > 0" class="of-form-group p-mt-3">
+          <div v-if="bulkArgs.length > 0" class="p-mb-2">
+            <label class="of-form-label">Script Arguments</label>
+            <div class="script-params-preview">
+              <div v-for="(arg, index) in bulkArgs" :key="`arg-${index}`" class="p-chip p-mr-2 p-mb-2">
+                {{ arg }}
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="bulkEnvVars.length > 0" class="p-mt-2">
+            <label class="of-form-label">Environment Variables</label>
+            <div class="script-params-preview">
+              <div v-for="(env, index) in bulkEnvVars" :key="`env-${index}`" class="p-chip p-mr-2 p-mb-2">
+                {{ env }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+      
+      <!-- Script Dialog -->
+      <ScriptDialog
+        v-model="scriptDialogVisible"
+        :isEditMode="false"
+        :submitting="false"
+        :initialData="scriptDialogData"
+        @confirm="handleScriptDialogConfirm"
+        @cancel="scriptDialogVisible = false"
+      />
 
       <!-- Command Execution Form -->
       <div v-if="operationType === 'command'" class="of-bulk-command-form p-card p-p-4">
@@ -185,22 +166,19 @@
         
         <div class="of-form-group">
           <label class="of-form-label">OS Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <Dropdown
-                v-model="bulkOsType"
-                :options="[
-                  { label: 'Windows', value: 'windows' },
-                  { label: 'Linux', value: 'linux' },
-                  { label: 'macOS', value: 'darwin' },
-                  { label: 'All', value: 'all' }
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select OS type"
-              />
-            </div>
-          </div>
+          <Dropdown
+            v-model="bulkOsType"
+            :options="[
+              { label: 'Windows', value: 'windows' },
+              { label: 'Linux', value: 'linux' },
+              { label: 'macOS', value: 'darwin' },
+              { label: 'All', value: 'all' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select OS type"
+            class="w-full"
+          />
         </div>
         
         <div class="of-form-group">
@@ -220,19 +198,18 @@
           />
         </div>
         
-        <div class="of-form-group">
-          <label for="command" class="of-form-label">Command</label>
-          <Textarea
-            id="command"
-            v-model="command"
-            rows="5"
-            class="w-full"
-            placeholder="Enter command to execute"
-            :class="{ 'p-invalid': submitted && !command }"
+        <div class="of-form-group p-mt-3">
+          <OFButton 
+            label="Configure Command" 
+            icon="pi pi-terminal" 
+            class="p-button-secondary" 
+            @click="openCommandDialog"
           />
-          <small class="p-error" v-if="submitted && !command">
-            Command is required.
-          </small>
+        </div>
+        
+        <div v-if="command" class="of-form-group p-mt-3">
+          <label class="of-form-label">Command to Execute</label>
+          <div class="command-preview">{{ command }}</div>
         </div>
         
         <div class="of-form-group">
@@ -252,6 +229,15 @@
           />
         </div>
       </div>
+      
+      <!-- Command Dialog -->
+      <CommandDialog
+        :visible="commandDialogVisible"
+        :lastCommand="commandDialogData"
+        @update:visible="commandDialogVisible = $event"
+        @run="handleCommandDialogRun"
+        @cancel="commandDialogVisible = false"
+      />
 
       <div class="of-bulk-ops-actions p-mt-4">
         <OFButton 
@@ -272,6 +258,8 @@ import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
 import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
+import ScriptDialog from './components/ScriptDialog.vue';
+import CommandDialog from '../../components/shared/CommandDialog.vue';
 import { 
   OFButton, 
   InputText, 
@@ -338,6 +326,31 @@ const newEnvVar = ref('');
 // Command execution state
 const shellType = ref<string>('cmd');
 const command = ref<string>('');
+
+// Dialog state
+const scriptDialogVisible = ref(false);
+const commandDialogVisible = ref(false);
+const scriptDialogData = ref({
+  id: null,
+  name: '',
+  description: '',
+  shell: 'powershell',
+  args: [] as string[],
+  category: null as string | null,
+  favorite: false,
+  default_timeout: 90,
+  syntax: '',
+  filename: null,
+  hidden: false,
+  supported_platforms: [] as string[],
+  run_as_user: false,
+  env_vars: [] as string[],
+  script_type: 'userdefined'
+});
+const commandDialogData = ref({
+  cmd: '',
+  output: ''
+});
 
 const scriptOptions = computed(() => {
   return scripts.value.map(script => ({
@@ -495,6 +508,61 @@ const resetForm = () => {
   newEnvVar.value = '';
 };
 
+// Script Dialog Methods
+const openScriptDialog = () => {
+  // Find the selected script if one is selected
+  if (bulkSelectedScript.value) {
+    const selectedScript = scripts.value.find(s => parseInt(s.id) === bulkSelectedScript.value);
+    if (selectedScript) {
+      scriptDialogData.value = {
+        id: parseInt(selectedScript.id),
+        name: selectedScript.name,
+        description: selectedScript.description,
+        shell: selectedScript.shell || 'powershell',
+        args: bulkArgs.value.length ? bulkArgs.value : selectedScript.args || [],
+        category: selectedScript.category,
+        favorite: false,
+        default_timeout: bulkTimeout.value || selectedScript.default_timeout || 90,
+        syntax: selectedScript.content || selectedScript.syntax || '',
+        filename: null,
+        hidden: false,
+        supported_platforms: selectedScript.supported_platforms || [],
+        run_as_user: bulkRunAsUser.value,
+        env_vars: bulkEnvVars.value.length ? bulkEnvVars.value : selectedScript.env_vars || [],
+        script_type: selectedScript.script_type || 'userdefined'
+      };
+    }
+  }
+  
+  scriptDialogVisible.value = true;
+};
+
+const handleScriptDialogConfirm = (data) => {
+  // Update bulk operation with script dialog data
+  bulkArgs.value = data.args || [];
+  bulkEnvVars.value = data.env_vars || [];
+  bulkRunAsUser.value = data.run_as_user;
+  bulkTimeout.value = data.default_timeout;
+  
+  scriptDialogVisible.value = false;
+};
+
+// Command Dialog Methods
+const openCommandDialog = () => {
+  commandDialogData.value = {
+    cmd: command.value,
+    output: ''
+  };
+  
+  commandDialogVisible.value = true;
+};
+
+const handleCommandDialogRun = async (commandStr) => {
+  command.value = commandStr;
+  commandDialogVisible.value = false;
+  return "Command prepared for bulk execution";
+};
+
 onMounted(async () => {
   await Promise.all([
     fetchScripts(),
@@ -605,5 +673,22 @@ onMounted(async () => {
 
 .operation-type-option.selected .operation-type-label {
   color: var(--text-color);
+}
+
+.command-preview {
+  padding: 0.75rem;
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.script-params-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 </style>
