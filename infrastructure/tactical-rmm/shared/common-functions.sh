@@ -161,6 +161,9 @@ function installNATs() {
     mkdir -p /usr/local/bin
     mkdir -p ${TACTICAL_DIR}/logs
     mkdir -p ${TACTICAL_DIR}/supervisor
+    mkdir -p /var/log/supervisor
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} /var/log/supervisor
+    chmod 755 /var/log/supervisor
 
     # Clean up any existing NATS installation
     rm -f /usr/local/bin/nats-server
@@ -248,10 +251,13 @@ function installNATs() {
     chmod 644 ${NATS_API_CONFIG}
 
     # Test NATS server configuration
-    if ! nats-server --config ${NATS_CONFIG} --check; then
+    if ! nats-server -c ${NATS_CONFIG} -t; then
         echo "NATS server configuration check failed"
         return 1
     fi
+
+    # Set capabilities for NATS server to allow binding to privileged ports
+    setcap 'cap_net_bind_service=+ep' /usr/local/bin/nats-server
 
     echo "NATS installation completed successfully"
 }
