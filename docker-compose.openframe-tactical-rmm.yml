@@ -23,6 +23,7 @@ x-environment: &default-environment
   # NGINX Configuration
   NGINX_HOST_IP: &nginx-host tactical-nginx
   NGINX_HOST_PORT: &nginx-port 8080
+  RESOLVER: &resolver 127.0.0.11
 
   # Tactical RMM Configuration
   TRMM_USER: &trmm-user tactical
@@ -86,7 +87,7 @@ x-args: &default-args
   # NGINX args
   NGINX_HOST_IP: *nginx-host
   NGINX_HOST_PORT: *nginx-port
-
+  RESOLVER: *resolver
   # Tactical RMM args
   TRMM_USER: *trmm-user
   TRMM_PASS: *trmm-pass
