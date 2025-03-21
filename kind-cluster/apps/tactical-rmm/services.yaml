@@ -104,3 +104,29 @@ spec:
   ports:
   - port: 8000
     targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tactical-rmm
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: tactical-rmm.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tactical-nginx
+                port:
+                  number: 8080
+          # - path: /api
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: tactical-nginx
+          #       port:
+          #         number: 8000

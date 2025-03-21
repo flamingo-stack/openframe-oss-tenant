@@ -533,13 +533,25 @@ jobs:
             BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
             HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
 
-            # Check if there are any changes in the service path
-            if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}"; then
-              echo "No changes detected in ${{ matrix.service.path }}"
-              echo "changed=false" >> $GITHUB_OUTPUT
+            # For tactical services, also check shared folder
+            if [[ "${{ matrix.service.path }}" == *"tactical-base"* ]]; then
+              # Check both service path and shared folder
+              if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}" && git diff --quiet $BASE_SHA $HEAD_SHA -- "./infrastructure/tactical-rmm/shared/"; then
+                echo "No changes detected in ${{ matrix.service.path }} or shared folder"
+                echo "changed=false" >> $GITHUB_OUTPUT
+              else
+                echo "Changes detected in ${{ matrix.service.path }} or shared folder"
+                echo "changed=true" >> $GITHUB_OUTPUT
+              fi
             else
-              echo "Changes detected in ${{ matrix.service.path }}"
-              echo "changed=true" >> $GITHUB_OUTPUT
+              # For non-tactical services, check only service path
+              if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}"; then
+                echo "No changes detected in ${{ matrix.service.path }}"
+                echo "changed=false" >> $GITHUB_OUTPUT
+              else
+                echo "Changes detected in ${{ matrix.service.path }}"
+                echo "changed=true" >> $GITHUB_OUTPUT
+              fi
             fi
           else
             # For manual triggers, always build
