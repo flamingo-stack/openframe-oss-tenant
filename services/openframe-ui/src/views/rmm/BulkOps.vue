@@ -8,26 +8,34 @@
 
     <div class="of-bulk-ops-content">
       <div class="of-bulk-ops-selection p-mb-4">
-        <div class="p-field">
+        <div class="of-form-group">
           <label class="of-form-label">Operation Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <RadioButton 
-                id="operationType_script" 
-                v-model="operationType" 
-                value="script" 
-                :class="{ 'p-invalid': submitted && !operationType }"
-              />
-              <label for="operationType_script">Script</label>
+          <div class="of-operation-options">
+            <div 
+              class="status-option" 
+              :class="{ active: operationType === 'script' }" 
+              @click="operationType = 'script'"
+            >
+              <div class="radio-button">
+                <div class="radio-inner"></div>
+              </div>
+              <div class="status-label">
+                <span class="status-title">Script</span>
+                <span class="status-description">Execute a predefined script</span>
+              </div>
             </div>
-            <div class="p-field-radiobutton p-ml-4">
-              <RadioButton 
-                id="operationType_command" 
-                v-model="operationType" 
-                value="command" 
-                :class="{ 'p-invalid': submitted && !operationType }"
-              />
-              <label for="operationType_command">Command</label>
+            <div 
+              class="status-option" 
+              :class="{ active: operationType === 'command' }" 
+              @click="operationType = 'command'"
+            >
+              <div class="radio-button">
+                <div class="radio-inner"></div>
+              </div>
+              <div class="status-label">
+                <span class="status-title">Command</span>
+                <span class="status-description">Execute a custom command</span>
+              </div>
             </div>
           </div>
           <small class="p-error" v-if="submitted && !operationType">
@@ -37,7 +45,7 @@
       </div>
 
       <!-- Script Execution Form -->
-      <div v-if="operationType === 'script'" class="of-bulk-script-form p-card p-p-4">
+      <div v-if="operationType === 'script'" class="of-bulk-form p-card p-p-4">
         <h3>Bulk Script Execution</h3>
         
         <div class="of-form-group">
@@ -103,7 +111,7 @@
               placeholder="Add argument and press Enter"
               @keydown.enter.prevent="addScriptArg(newArg); newArg = ''"
             />
-            <Button icon="pi pi-plus" @click="addScriptArg(newArg); newArg = ''" />
+            <OFButton icon="pi pi-plus" class="p-button-text" @click="addScriptArg(newArg); newArg = ''" />
           </div>
           <div v-if="bulkArgs.length > 0" class="p-mt-2">
             <div v-for="(arg, index) in bulkArgs" :key="index" class="p-chip p-mr-2 p-mb-2">
@@ -122,7 +130,7 @@
               placeholder="KEY=VALUE format and press Enter"
               @keydown.enter.prevent="addEnvVar(newEnvVar); newEnvVar = ''"
             />
-            <Button icon="pi pi-plus" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
+            <OFButton icon="pi pi-plus" class="p-button-text" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
           </div>
           <div v-if="bulkEnvVars.length > 0" class="p-mt-2">
             <div v-for="(env, index) in bulkEnvVars" :key="index" class="p-chip p-mr-2 p-mb-2">
@@ -151,7 +159,7 @@
       </div>
 
       <!-- Command Execution Form -->
-      <div v-if="operationType === 'command'" class="of-bulk-command-form p-card p-p-4">
+      <div v-if="operationType === 'command'" class="of-bulk-form p-card p-p-4">
         <h3>Bulk Command Execution</h3>
         
         <div class="of-form-group">
@@ -523,5 +531,105 @@ onMounted(async () => {
   margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
+}
+
+/* New styles for big push buttons (based on Policies.vue) */
+.of-operation-options {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-ground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  border: 1px solid transparent;
+}
+
+.status-option:hover {
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.status-option.active {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+}
+
+.radio-button {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--surface-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.status-option.active .radio-button {
+  border-color: var(--primary-color);
+}
+
+.radio-inner {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.status-option.active .radio-inner {
+  background: var(--primary-color);
+}
+
+.status-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-title {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.status-description {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+}
+
+/* Dark mode styles */
+:deep([data-theme="dark"]) {
+  .status-option.active {
+    background: var(--yellow-900);
+    border: 1px solid var(--yellow-500);
+  }
+
+  .status-option.active .radio-button {
+    border-color: var(--yellow-500);
+  }
+
+  .status-option.active .radio-inner {
+    background: var(--yellow-500);
+  }
+}
+
+.of-bulk-form {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 2px 1px -1px rgba(0,0,0,0.2),
+             0 1px 1px 0 rgba(0,0,0,0.14),
+             0 1px 3px 0 rgba(0,0,0,0.12);
+  margin-bottom: 1.5rem;
 }
 </style>
