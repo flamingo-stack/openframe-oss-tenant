@@ -20,9 +20,8 @@ sudo sysctl -p > /dev/null 2>&1
 
 # Below ip will be used for ingress
 export IP="${IP:-192.168.100.100}"
-
 export DOMAIN="${DOMAIN:-${IP}.nip.io}"
-# export HOSTS_FILE="/etc/hosts"
+
 
 case "$1" in
 u|up)
