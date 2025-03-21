@@ -84,22 +84,19 @@
         
         <div class="of-form-group">
           <label class="of-form-label">OS Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <Dropdown
-                v-model="bulkOsType"
-                :options="[
-                  { label: 'Windows', value: 'windows' },
-                  { label: 'Linux', value: 'linux' },
-                  { label: 'macOS', value: 'darwin' },
-                  { label: 'All', value: 'all' }
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select OS type"
-              />
-            </div>
-          </div>
+          <Dropdown
+            v-model="bulkOsType"
+            :options="[
+              { label: 'Windows', value: 'windows' },
+              { label: 'Linux', value: 'linux' },
+              { label: 'macOS', value: 'darwin' },
+              { label: 'All', value: 'all' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select OS type"
+            class="w-full"
+          />
         </div>
         
         <div class="of-form-group">
@@ -140,10 +137,10 @@
           </div>
         </div>
         
-        <div class="of-form-group">
-          <div class="p-field-checkbox">
-            <Checkbox v-model="bulkRunAsUser" :binary="true" id="runAsUser" />
-            <label for="runAsUser">Run As User</label>
+        <div class="of-form-group checkbox-group">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
           </div>
         </div>
         
@@ -181,22 +178,19 @@
         
         <div class="of-form-group">
           <label class="of-form-label">OS Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <Dropdown
-                v-model="bulkOsType"
-                :options="[
-                  { label: 'Windows', value: 'windows' },
-                  { label: 'Linux', value: 'linux' },
-                  { label: 'macOS', value: 'darwin' },
-                  { label: 'All', value: 'all' }
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select OS type"
-              />
-            </div>
-          </div>
+          <Dropdown
+            v-model="bulkOsType"
+            :options="[
+              { label: 'Windows', value: 'windows' },
+              { label: 'Linux', value: 'linux' },
+              { label: 'macOS', value: 'darwin' },
+              { label: 'All', value: 'all' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select OS type"
+            class="w-full"
+          />
         </div>
         
         <div class="of-form-group">
@@ -231,10 +225,10 @@
           </small>
         </div>
         
-        <div class="of-form-group">
-          <div class="p-field-checkbox">
-            <Checkbox v-model="bulkRunAsUser" :binary="true" id="runAsUser" />
-            <label for="runAsUser">Run As User</label>
+        <div class="of-form-group checkbox-group">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
           </div>
         </div>
         
@@ -631,5 +625,79 @@ onMounted(async () => {
              0 1px 1px 0 rgba(0,0,0,0.14),
              0 1px 3px 0 rgba(0,0,0,0.12);
   margin-bottom: 1.5rem;
+}
+
+/* Checkbox styling */
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-ground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.checkbox-option:hover {
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.checkbox-option.active {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+}
+
+.checkbox-button {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--surface-border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.checkbox-option.active .checkbox-button {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.checkbox-inner {
+  opacity: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.checkbox-option.active .checkbox-inner {
+  opacity: 1;
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* Dark mode support for checkboxes */
+:deep([data-theme="dark"]) {
+  .checkbox-option.active {
+    background: var(--yellow-900);
+    border: 1px solid var(--yellow-500);
+  }
+
+  .checkbox-option.active .checkbox-button {
+    border-color: var(--yellow-500);
+    background: var(--yellow-500);
+  }
+}
+
+/* Adjust OS type grid layout for better space utilization */
+.of-operation-options {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: grid;
 }
 </style>
