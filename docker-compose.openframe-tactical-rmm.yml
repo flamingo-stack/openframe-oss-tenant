@@ -60,6 +60,8 @@ x-environment: &default-environment
   NATS_API_CONFIG: &nats-api-config "/opt/tactical/nats-api.conf"
   NATS_CONFIG_CHECK_INTERVAL: &nats-config-check-interval 5
   NATS_STD_BIND_HOST: &nats-std-bind-host tactical-nats
+  WEBSOCKETS_BIND_HOST: &websocket-bind-host tactical-websockets
+  WEBSOCKET_PORT: &websocket-port 8383
   NATS_WS_BIND_HOST: &nats-ws-bind-host tactical-nats
   NATS_CONNECT_HOST: &nats-connect-host tactical-nats
   NATS_STANDARD_PORT: &nats-http-port 9235
@@ -127,6 +129,8 @@ x-args: &default-args
   NATS_WEBSOCKET_PORT: *nats-ws-port
   NATS_CONFIG: *nats-config
   NATS_API_CONFIG: *nats-api-config
+  WEBSOCKET_PORT: *websocket-port
+  WEBSOCKETS_BIND_HOST: *websocket-bind-host
 
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
@@ -184,7 +188,7 @@ services:
       args: *default-args
     platform: linux/amd64
     ports:
-      - "8080:8080"
+      - "8080:8080"  
       - "8000:8000"
     volumes:
       - tactical_nginx_data:/opt/tactical
@@ -209,6 +213,8 @@ services:
     depends_on:
       tactical-postgres:
         condition: service_healthy
+      # tactical-meshcentral:
+      #   condition: service_healthy
       tactical-redis:
         condition: service_healthy
       tactical-nginx:
@@ -338,5 +344,3 @@ volumes:
   tactical_celery_data:
   tactical_redis_data:
   tactical_postgres_data:
-
-
