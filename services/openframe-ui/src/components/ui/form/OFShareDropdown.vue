@@ -52,9 +52,8 @@ const props = defineProps({
   disabled: {
     type: [Boolean, Object],
     default: false,
-    validator: (value) => {
-      // Convert any non-boolean value to boolean
-      return true;
+    validator: (value: boolean | object): boolean => {
+      return typeof value === 'boolean' || typeof value === 'object';
     }
   },
   label: {
