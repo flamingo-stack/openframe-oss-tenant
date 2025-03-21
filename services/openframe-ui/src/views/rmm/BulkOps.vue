@@ -100,38 +100,32 @@
         
         <div class="of-form-group">
           <label class="of-form-label">Script Arguments</label>
-          <div class="p-inputgroup">
-            <InputText
-              id="scriptArg"
-              v-model="newArg"
-              placeholder="Add argument and press Enter"
-              @keydown.enter.prevent="addScriptArg(newArg); newArg = ''"
-            />
-            <OFButton icon="pi pi-plus" class="p-button-text" @click="addScriptArg(newArg); newArg = ''" />
-          </div>
-          <div v-if="bulkArgs.length > 0" class="p-mt-2">
-            <div v-for="(arg, index) in bulkArgs" :key="index" class="p-chip p-mr-2 p-mb-2">
-              {{ arg }}
-              <i class="pi pi-times p-chip-remove-icon" @click="removeScriptArg(index)"></i>
+          <div class="recipients-list">
+            <div v-for="(arg, index) in bulkArgs" :key="index" class="recipient-item">
+              <span>{{ arg }}</span>
+              <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                @click="removeScriptArg(index)" />
+            </div>
+            <div class="recipient-input">
+              <InputText v-model="newArg" class="w-full"
+                placeholder="Enter argument and press Enter" @keyup.enter="addScriptArg(newArg); newArg = ''" />
+              <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addScriptArg(newArg); newArg = ''" />
             </div>
           </div>
         </div>
         
         <div class="of-form-group">
           <label class="of-form-label">Environment Variables</label>
-          <div class="p-inputgroup">
-            <InputText
-              id="envVar"
-              v-model="newEnvVar"
-              placeholder="KEY=VALUE format and press Enter"
-              @keydown.enter.prevent="addEnvVar(newEnvVar); newEnvVar = ''"
-            />
-            <OFButton icon="pi pi-plus" class="p-button-text" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
-          </div>
-          <div v-if="bulkEnvVars.length > 0" class="p-mt-2">
-            <div v-for="(env, index) in bulkEnvVars" :key="index" class="p-chip p-mr-2 p-mb-2">
-              {{ env }}
-              <i class="pi pi-times p-chip-remove-icon" @click="removeEnvVar(index)"></i>
+          <div class="recipients-list">
+            <div v-for="(env, index) in bulkEnvVars" :key="index" class="recipient-item">
+              <span>{{ env }}</span>
+              <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                @click="removeEnvVar(index)" />
+            </div>
+            <div class="recipient-input">
+              <InputText v-model="newEnvVar" class="w-full"
+                placeholder="Enter key=value and press Enter" @keyup.enter="addEnvVar(newEnvVar); newEnvVar = ''" />
+              <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
             </div>
           </div>
         </div>
@@ -713,5 +707,27 @@ onMounted(async () => {
 .of-operation-options {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   display: grid;
+}
+
+/* Recipients list styling (for Script Arguments and Environment Variables) */
+.recipients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recipient-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+}
+
+.recipient-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 </style>
