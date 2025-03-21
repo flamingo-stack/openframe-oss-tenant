@@ -162,12 +162,13 @@ spec:
           value: "development"
         - name: API_HOST
           value: "tactical-backend:8000"
+          # value: "tactical-rmm-backend.192.168.100.100.nip.io"
         - name: API_LOCALHOST_HOST
-          value: "tactical-nginx:8000"
+          value: "tactical-rmm-backend.192.168.100.100.nip.io"
         - name: APP_HOST
           value: "tactical-frontend:8080"
         - name: APP_LOCALHOST_HOST
-          value: "tactical-rmm.192.168.100.100.nip.io"
+          value: "localhost:8080"
         - name: PUBLIC_DIR
           value: "/usr/share/nginx/html"
         - name: TACTICAL_DIR
@@ -604,11 +605,12 @@ spec:
         - name: API_HOST
           value: "tactical-backend:8000"
         - name: API_LOCALHOST_HOST
-          value: "tactical-nginx:8000"
+          value: tactical-rmm-backend.192.168.100.100.nip.io
         - name: APP_HOST
           value: "tactical-frontend:8080"
         - name: APP_LOCALHOST_HOST
-          value: "localhost:8080"
+          # value: "localhost:8080"
+          value: "tactical-rmm.192.168.100.100.nip.io"
         - name: NATS_CONFIG
           value: "/opt/tactical/nats-rmm.conf"
         - name: NATS_API_CONFIG
