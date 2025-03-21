@@ -69,7 +69,7 @@ register_tool() {
     echo "$json_payload" | jq '.'
 
     # Send the request
-    curl -X POST "http://localhost:8095/v1/tools/$tool_id" \
+    curl -X POST "http://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \
       -d "$json_payload" \
       --retry 5 \
@@ -478,13 +478,6 @@ register_tool \
 echo "Tactical RMM registered successfully!"
 
 echo "Integrated tools initialized successfully!"
-
-echo "Testing network connectivity..."
-./scripts/test-network.sh
-
-# Print final status
-echo -e "\nSystem Status:"
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep "openframe-"
 
 # Print Fleet credentials
 echo -e "\nFleet MDM Credentials:"

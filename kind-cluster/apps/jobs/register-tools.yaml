@@ -507,25 +507,6 @@ spec:
       - name: register-tools
         image: curlimages/curl:latest
         command: ["/bin/sh", "/scripts/register-tools.sh"]
-        env:
-        - name: FLEET_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: fleet-secrets
-              key: api-token
-        - name: MESHCENTRAL_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: meshcentral-secrets
-              key: api-token
-        - name: TACTICAL_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tactical-rmm-secrets
-              key: api-token
-        volumeMounts:
-        - name: scripts
-          mountPath: /scripts
         lifecycle:
           postStart:
             exec:
