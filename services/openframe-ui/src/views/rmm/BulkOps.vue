@@ -137,9 +137,11 @@
           </div>
         </div>
         
-        <div class="of-form-group">
-          <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
-          <label for="runAsUser" class="p-checkbox-label">Run As User (Windows only)</label>
+        <div class="of-form-group checkbox-group">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
+          </div>
         </div>
         
         <div class="of-form-group">
@@ -223,9 +225,11 @@
           </small>
         </div>
         
-        <div class="of-form-group">
-          <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
-          <label for="runAsUser" class="p-checkbox-label">Run As User (Windows only)</label>
+        <div class="of-form-group checkbox-group">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
+          </div>
         </div>
         
         <div class="of-form-group">
@@ -689,6 +693,22 @@ onMounted(async () => {
     border-color: var(--yellow-500);
     background: var(--yellow-500);
   }
+}
+
+/* Checkbox styling */
+.checkbox-group {
+  margin-bottom: 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-label {
+  margin: 0;
+  font-weight: normal;
 }
 
 /* Adjust OS type grid layout for better space utilization */
