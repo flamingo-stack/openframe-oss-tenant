@@ -186,7 +186,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -230,7 +232,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -274,7 +278,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -318,7 +324,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -362,7 +370,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -406,7 +416,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           {
@@ -450,7 +462,9 @@ jobs:
               NATS_WS_BIND_HOST: 'tactical-nats',
               NATS_CONNECT_HOST: 'tactical-nats',
               NATS_STANDARD_PORT: '9235',
-              NATS_WEBSOCKET_PORT: '4222'
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
           { name: 'fleetmdm', path: './infrastructure/fleetmdm/' },

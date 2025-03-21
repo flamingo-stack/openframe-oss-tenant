@@ -185,6 +185,7 @@ function installNATs() {
     
     # Create directories if they don't exist
     mkdir -p /usr/local/bin
+    mkdir -p ${TACTICAL_DIR}/logs
     
     # Clean up any existing NATS installation
     rm -f /usr/local/bin/nats-server

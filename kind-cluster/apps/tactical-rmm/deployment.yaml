@@ -107,9 +107,17 @@ spec:
         - name: APP_HOST
           value: "tactical-frontend.tactical-rmm.svc.cluster.local:8080"
         - name: NATS_STD_BIND_HOST
-          value: tactical-nats.tactical-rmm.svc.cluster.local:9235
+          value: tactical-nats.tactical-rmm.svc.cluster.local
+        - name: NATS_STANDARD_PORT
+          value: "9235"
         - name: NATS_WEBSOCKET_HOST
-          value: tactical-websockets.tactical-rmm.svc.cluster.local:8383
+          value: tactical-websockets.tactical-rmm.svc.cluster.local
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         - name: TACTICAL_DIR
           value: "/opt/tactical"
         - name: TACTICAL_TMP_DIR
@@ -312,8 +320,14 @@ spec:
           value: "tactical-nats"
         - name: NATS_STANDARD_PORT
           value: "9235"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
         - name: NATS_WEBSOCKET_PORT
           value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         # - name: UWSGI_UID
         #   value: "1000"
         # - name: UWSGI_GID
@@ -422,8 +436,14 @@ spec:
           value: "tactical-nats"
         - name: NATS_STANDARD_PORT
           value: "9235"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
         - name: NATS_WEBSOCKET_PORT
           value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         volumeMounts:
         - name: nats-data
           mountPath: /opt/tactical
@@ -625,8 +645,14 @@ spec:
           value: "tactical-nats"
         - name: NATS_STANDARD_PORT
           value: "9235"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
         - name: NATS_WEBSOCKET_PORT
           value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         volumeMounts:
         - name: celery-data
           mountPath: /opt/tactical
@@ -697,6 +723,14 @@ spec:
           value: "tactical-backend:8000"
         - name: APP_HOST
           value: "tactical-frontend:8080"
+        - name: NATS_WEBSOCKET_HOST
+          value: "tactical-websockets"
+        - name: NATS_WEBSOCKET_PORT
+          value: "4222"
+        - name: WEBSOCKET_PORT
+          value: "8383"
+        - name: WEBSOCKETS_BIND_HOST
+          value: "tactical-websockets"
         volumeMounts:
         - name: celerybeat-data
           mountPath: /opt/tactical
