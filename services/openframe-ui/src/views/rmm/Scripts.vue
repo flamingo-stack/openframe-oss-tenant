@@ -65,7 +65,7 @@
         <Column field="name" header="Name" sortable style="width: 25%">
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <span class="font-medium text-truncate" style="max-width: 300px">{{ data.name }}</span>
+              <span class="name-cell">{{ data.name }}</span>
             </div>
           </template>
         </Column>
@@ -79,7 +79,7 @@
 
         <Column field="description" header="Description" sortable style="width: 45%">
           <template #body="{ data }">
-            <span class="text-sm text-truncate" style="max-width: 500px">{{ data.description }}</span>
+            <span class="description-cell">{{ data.description }}</span>
           </template>
         </Column>
 
@@ -721,5 +721,26 @@ onMounted(async () => {
 
 :deep(.hidden) {
   display: none !important;
+}
+
+/* Table cell styles for name and description */
+:deep(.name-cell),
+:deep(.description-cell) {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  max-height: 3em; /* 2 lines * 1.5 line-height */
+  word-break: break-word;
+}
+
+:deep(.name-cell) {
+  max-width: 300px;
+}
+
+:deep(.description-cell) {
+  max-width: 500px;
 }
 </style>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
