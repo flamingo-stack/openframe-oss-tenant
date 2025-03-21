@@ -8,26 +8,38 @@
 
     <div class="of-bulk-ops-content">
       <div class="of-bulk-ops-selection p-mb-4">
-        <div class="p-field">
+        <div class="of-form-group">
           <label class="of-form-label">Operation Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
+          <div class="operation-type-container">
+            <div 
+              class="operation-type-option" 
+              :class="{ 'selected': operationType === 'script', 'p-invalid': submitted && !operationType }"
+              @click="operationType = 'script'"
+            >
               <RadioButton 
                 id="operationType_script" 
                 v-model="operationType" 
                 value="script" 
-                :class="{ 'p-invalid': submitted && !operationType }"
               />
-              <label for="operationType_script">Script</label>
+              <label for="operationType_script" class="operation-type-label">
+                <i class="pi pi-code operation-type-icon"></i>
+                <span>Script</span>
+              </label>
             </div>
-            <div class="p-field-radiobutton p-ml-4">
+            <div 
+              class="operation-type-option" 
+              :class="{ 'selected': operationType === 'command', 'p-invalid': submitted && !operationType }"
+              @click="operationType = 'command'"
+            >
               <RadioButton 
                 id="operationType_command" 
                 v-model="operationType" 
                 value="command" 
-                :class="{ 'p-invalid': submitted && !operationType }"
               />
-              <label for="operationType_command">Command</label>
+              <label for="operationType_command" class="operation-type-label">
+                <i class="pi pi-terminal operation-type-icon"></i>
+                <span>Command</span>
+              </label>
             </div>
           </div>
           <small class="p-error" v-if="submitted && !operationType">
@@ -523,5 +535,75 @@ onMounted(async () => {
   margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Operation Type Styles */
+.operation-type-container {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.operation-type-option {
+  display: flex;
+  align-items: center;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.operation-type-option:hover {
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.operation-type-option.selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.operation-type-option.selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--primary-color);
+}
+
+.operation-type-option.p-invalid {
+  border-color: var(--red-500);
+}
+
+.operation-type-label {
+  display: flex;
+  align-items: center;
+  margin-left: 0.75rem;
+  cursor: pointer;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.operation-type-icon {
+  margin-right: 0.75rem;
+  font-size: 1.5rem;
+  color: var(--text-color-secondary);
+}
+
+.operation-type-option.selected .operation-type-icon {
+  color: var(--primary-color);
+}
+
+.operation-type-option.selected .operation-type-label {
+  color: var(--text-color);
 }
 </style>
