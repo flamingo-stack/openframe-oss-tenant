@@ -159,12 +159,14 @@ function installNATs() {
 
     # Create directories if they don't exist
     mkdir -p /usr/local/bin
+    mkdir -p ${TACTICAL_DIR}/logs
+    mkdir -p ${TACTICAL_DIR}/supervisor
 
     # Clean up any existing NATS installation
     rm -f /usr/local/bin/nats-server
 
     # Download specific NATS version 2.10.22
-    if ! wget https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz; then
+    if ! wget -q https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz; then
         echo "Failed to download NATS server"
         return 1
     fi
@@ -196,12 +198,12 @@ function installNATs() {
     nats-server --version
 
     # Download specific NATS API version 2.10.22
-    if ! wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api; then
+    if ! wget -q https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api; then
         echo "Failed to download NATS API"
         return 1
     fi
 
-    if ! wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64; then
+    if ! wget -q https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64; then
         echo "Failed to download NATS API ARM64"
         return 1
     fi
@@ -219,7 +221,39 @@ function installNATs() {
         return 1
     fi
 
+    # Ensure NATS configuration directory exists
+    mkdir -p "$(dirname "${NATS_CONFIG}")"
+    mkdir -p "$(dirname "${NATS_API_CONFIG}")"
+
+    # Get NATS configuration from Redis
     getNATSFilesFromRedis
+
+    # Verify NATS configuration files exist and are readable
+    if [ ! -f "${NATS_CONFIG}" ]; then
+        echo "NATS configuration file not found at ${NATS_CONFIG}"
+        return 1
+    fi
+
+    if [ ! -f "${NATS_API_CONFIG}" ]; then
+        echo "NATS API configuration file not found at ${NATS_API_CONFIG}"
+        return 1
+    fi
+
+    # Set proper permissions
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${TACTICAL_DIR}/logs
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${TACTICAL_DIR}/supervisor
+    chown ${TACTICAL_USER}:${TACTICAL_USER} ${NATS_CONFIG}
+    chown ${TACTICAL_USER}:${TACTICAL_USER} ${NATS_API_CONFIG}
+    chmod 644 ${NATS_CONFIG}
+    chmod 644 ${NATS_API_CONFIG}
+
+    # Test NATS server configuration
+    if ! nats-server --config ${NATS_CONFIG} --check; then
+        echo "NATS server configuration check failed"
+        return 1
+    fi
+
+    echo "NATS installation completed successfully"
 }
 
 function tactical_init() {
