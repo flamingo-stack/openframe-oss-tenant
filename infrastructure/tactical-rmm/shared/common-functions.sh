@@ -16,7 +16,6 @@ export NATS_API_CONFIG
 PUBLIC_DIR=/usr/share/nginx/html
 export PUBLIC_DIR
 
-
 # Create necessary directories
 function create_directories() {
     echo "Creating necessary directories"
@@ -28,6 +27,16 @@ function create_directories() {
     mkdir -p ${TACTICAL_DIR}/supervisor
     mkdir -p ${TACTICAL_DIR}/logs
     mkdir -p ${TACTICAL_DIR}/temp
+}
+
+# Helper function to set ready status
+function set_ready_status() {
+    local service_name=$1
+    echo "Setting ready status for ${service_name}"
+    redis-cli -h tactical-redis -p 6379 set "tactical_${service_name}_ready" "True"
+    # Create directory if it doesn't exist
+    mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
+    echo "${service_name}" >${TACTICAL_READY_FILE}
 }
 
 # Copy and process custom code
@@ -57,16 +66,6 @@ function copy_custom_code() {
     envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
     envsubst <${CUSTOM_CODE_DIR}/supervisor.conf >${TACTICAL_DIR}/supervisor/supervisor.conf
     envsubst <${CUSTOM_CODE_DIR}/agent_listener.sh >${TACTICAL_DIR}/supervisor/agent_listener.sh
-}
-
-# Helper function to set ready status
-function set_ready_status() {
-    local service_name=$1
-    echo "Setting ready status for ${service_name}"
-    redis-cli -h tactical-redis -p 6379 set "tactical_${service_name}_ready" "True"
-    # Create directory if it doesn't exist
-    mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
-    echo "${service_name}" >${TACTICAL_READY_FILE}
 }
 
 function run_migrations() {
@@ -134,50 +133,25 @@ function create_superuser_and_api_key() {
     echo "Set Tactical RMM API key ${API_KEY} in Redis"
 }
 
-function tactical_init() {
+function getNATSFilesFromRedis() {
+    echo "Getting NATS files from Redis"
+    NATS_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_rmm_conf")
+    NATS_API_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_api_conf")
 
-    local service_name=$1
-    if [ -f "${TACTICAL_READY_FILE}" ]; then
-        echo "Tactical is already initialized"
-        return 0
-    fi
+    echo "NATS Configuration Content:\n ${NATS_CONFIG_CONTENT}"
+    echo "NATS API Configuration Content:\n ${NATS_API_CONFIG_CONTENT}"
 
-    # Clean up existing directories if they exist
-    rm -rf "${TACTICAL_DIR}/tmp" "${TACTICAL_DIR}/certs"
+    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
+    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
 
-    # copy container data to volume
-    rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
+    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
+    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
+}
 
-    mkdir -p ${TACTICAL_DIR}/tmp ${TACTICAL_DIR}/certs ${TACTICAL_DIR}/reporting/assets ${TACTICAL_DIR}/api/tacticalrmm/private/exe ${TACTICAL_DIR}/api/tacticalrmm/private/log
-    touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
-
-    # configure django settings
-    MESH_TOKEN=$(redis-cli -h tactical-redis -p 6379 get mesh_token)
-    export MESH_TOKEN
-    ADMINURL="admin"
-    export ADMINURL
-    DJANGO_SEKRET="tacticalrmm"
-    export DJANGO_SEKRET
-
-    copy_custom_code
-
-    if [ "$1" = 'backend' ]; then
-        # run migrations and init scripts
-        run_migrations
-
-        # create super user and API key
-        create_superuser_and_api_key
-    fi
-
-    if [ "$1" = 'nats' ]; then
-        installNATs
-    fi
-
-    # chown everything to tactical user
-    chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
-
-    # create install ready file
-    set_ready_status "init"
+function pushNATSFilesToRedis() {
+    echo "Pushing NATS files to Redis"
+    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
+    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
 }
 
 function installNATs() {
@@ -248,23 +222,47 @@ function installNATs() {
     getNATSFilesFromRedis
 }
 
-function pushNATSFilesToRedis() {
-    echo "Pushing NATS files to Redis"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
-}
+function tactical_init() {
+    local service_name=$1
+    if [ -f "${TACTICAL_READY_FILE}" ]; then
+        echo "Tactical is already initialized"
+        return 0
+    fi
 
-function getNATSFilesFromRedis() {
-    echo "Getting NATS files from Redis"
-    NATS_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_rmm_conf")
-    NATS_API_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_api_conf")
+    # Clean up existing directories if they exist
+    rm -rf "${TACTICAL_DIR}/tmp" "${TACTICAL_DIR}/certs"
 
-    echo "NATS Configuration Content:\n ${NATS_CONFIG_CONTENT}"
-    echo "NATS API Configuration Content:\n ${NATS_API_CONFIG_CONTENT}"
+    # copy container data to volume
+    rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
-    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
-    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
+    mkdir -p ${TACTICAL_DIR}/tmp ${TACTICAL_DIR}/certs ${TACTICAL_DIR}/reporting/assets ${TACTICAL_DIR}/api/tacticalrmm/private/exe ${TACTICAL_DIR}/api/tacticalrmm/private/log
+    touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
 
-    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
-    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
+    # configure django settings
+    MESH_TOKEN=$(redis-cli -h tactical-redis -p 6379 get mesh_token)
+    export MESH_TOKEN
+    ADMINURL="admin"
+    export ADMINURL
+    DJANGO_SEKRET="tacticalrmm"
+    export DJANGO_SEKRET
+
+    copy_custom_code
+
+    if [ "$1" = 'backend' ]; then
+        # run migrations and init scripts
+        run_migrations
+
+        # create super user and API key
+        create_superuser_and_api_key
+    fi
+
+    if [ "$1" = 'nats' ]; then
+        installNATs
+    fi
+
+    # chown everything to tactical user
+    chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
+
+    # create install ready file
+    set_ready_status "init"
 }
