@@ -40,10 +40,16 @@
                         </div>
 
                         <div class="of-form-group">
-                            <label for="category" class="of-form-label">Category</label>
-                            <Dropdown id="category" v-model="scriptData.category" :options="categoryOptions"
-                                optionLabel="label" optionValue="value" placeholder="Select category" filter
-                                :disabled="isFieldDisabled" class="of-dropdown" />
+                            <OFShareDropdown
+                                id="category"
+                                v-model="scriptData.category"
+                                :options="categoryOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select category"
+                                :disabled="isFieldDisabled"
+                                label="Category"
+                            />
                         </div>
 
                         <div class="of-form-group">
@@ -156,7 +162,8 @@ import {
     Dropdown,
     ScriptEditor,
     OFButton,
-    MultiSelect
+    MultiSelect,
+    OFShareDropdown
 } from "../../../components/ui";
 import Checkbox from 'primevue/checkbox';
 import InputNumber from 'primevue/inputnumber';
