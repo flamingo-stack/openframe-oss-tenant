@@ -40,10 +40,16 @@
                         </div>
 
                         <div class="of-form-group">
-                            <label for="category" class="of-form-label">Category</label>
-                            <Dropdown id="category" v-model="scriptData.category" :options="categoryOptions"
-                                optionLabel="label" optionValue="value" placeholder="Select category" filter
-                                :disabled="isFieldDisabled" />
+                            <OFShareDropdown
+                                id="category"
+                                v-model="scriptData.category"
+                                :options="categoryOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select category"
+                                :disabled="isFieldDisabled"
+                                label="Category"
+                            />
                         </div>
 
                         <div class="of-form-group">
@@ -156,7 +162,8 @@ import {
     Dropdown,
     ScriptEditor,
     OFButton,
-    MultiSelect
+    MultiSelect,
+    OFShareDropdown
 } from "../../../components/ui";
 import Checkbox from 'primevue/checkbox';
 import InputNumber from 'primevue/inputnumber';
@@ -325,7 +332,7 @@ const isViewMode = computed(() => {
 });
 
 const isFieldDisabled = computed(() => {
-    return isViewMode.value || (!props.isEditMode && props.initialData);
+    return Boolean(isViewMode.value || (!props.isEditMode && props.initialData));
 });
 </script>
 
@@ -541,5 +548,76 @@ const isFieldDisabled = computed(() => {
 /* Remove any custom tag styling that might interfere */
 :deep(.p-tag.p-component) {
     border-radius: 2rem;
+}
+
+/* Dropdown Filter Styling */
+:deep(.p-dropdown-panel .p-dropdown-header) {
+    padding: 0.75rem !important;
+    border-bottom: 1px solid var(--surface-border) !important;
+    background: var(--surface-card) !important;
+    margin: 0 !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-container) {
+    position: relative !important;
+    margin: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 42px !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter) {
+    height: 42px !important;
+    width: 100% !important;
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem !important;
+    background: var(--surface-section) !important;
+    font-size: 0.875rem !important;
+    border: 1px solid var(--surface-border) !important;
+    border-radius: 6px !important;
+    color: var(--text-color) !important;
+    margin: 0 !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-header .p-dropdown-filter-icon) {
+    left: 0.75rem !important;
+    color: var(--text-color-secondary) !important;
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 1rem !important;
+    margin: 0 !important;
+    z-index: 5 !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items) {
+    padding: 0.5rem 0 !important;
+    background: var(--surface-card) !important;
+    margin: 0 !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item) {
+    padding: 0.75rem 1rem !important;
+    color: var(--text-color) !important;
+    background: transparent !important;
+    transition: background-color 0.2s !important;
+    font-size: 0.875rem !important;
+    border-radius: 0 !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover) {
+    background: var(--surface-hover) !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight) {
+    background: var(--surface-hover) !important;
+    color: var(--text-color) !important;
+    font-weight: 500 !important;
+}
+
+:deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-empty-message) {
+    padding: 0.75rem 1rem !important;
+    color: var(--text-color-secondary) !important;
+    font-size: 0.875rem !important;
 }
 </style>
