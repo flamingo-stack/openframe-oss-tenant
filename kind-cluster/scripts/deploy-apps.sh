@@ -11,6 +11,7 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
 case "$1" in
   ingress-nginx)
     # INGRESS-NGINX
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx && \
     helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
       -n ingress-nginx --create-namespace \
       --version 4.12.0 \
@@ -19,6 +20,7 @@ case "$1" in
     ;;
   grafana)
     # GRAFANA (depends on Prometheus, Loki) + PROMETHEUS (depends on Loki)
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts && \
     helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
       -n monitoring --create-namespace \
       --version 69.8.2 \
@@ -35,6 +37,7 @@ case "$1" in
     kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests && \
     kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m
     # or
+    # helm repo add grafana https://grafana.github.io/helm-charts && \
     # helm upgrade --install loki grafana/loki-stack \
     #   --version 2.10.2 \
     #   -f ./kind-cluster/apps/infrastructure/loki/helm/loki-stack.yaml
@@ -49,6 +52,7 @@ case "$1" in
     ;;
   redis)
     # REDIS (no dependencies)
+    helm repo add bitnami https://charts.bitnami.com/bitnami && \
     helm upgrade -i openframe-redis bitnami/redis \
       -n infrastructure --create-namespace \
       --version 20.11.3 \
@@ -57,6 +61,7 @@ case "$1" in
 
     # REDIS EXPORTER (depends on Redis, Loki)
     # TODO: service montor enabled in redis chart directly, no need to istall this one
+    # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts && \
     # helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
     #   --version 6.9.0 \
     #   -f ./kind-cluster/apps/infrastructure/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
@@ -64,13 +69,14 @@ case "$1" in
     ;;
   efk)
     # EFK
-    # kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests
-
+    # kubectl apply -k ./kind-cluster/apps/infrastructure/logging/manifests && \
+    # helm repo add elastic https://helm.elastic.co && \
     # helm upgrade -i es elastic/elasticsearch \
     #   --version 8.5.1 \
     #   -f ./kind-cluster/apps/infrastructure/logging/helm/es.yaml
     # kubectl wait --for=condition=Ready pod -l release=es --timeout 20m
 
+    # helm repo add fluent https://fluent.github.io/helm-charts && \
     # helm upgrade -i fluent-bit fluent/fluent-bit \
     #   --version 0.48.8 \
     #   -f ./kind-cluster/apps/infrastructure/logging/helm/fluent-bit.yaml
@@ -89,8 +95,9 @@ case "$1" in
     # kubectl wait --for=condition=Ready pod -l release=kibana --timeout 20m
     ;;
   kafka)
-  # KAFKA (depends on Zookeeper, Loki)
-  # TODO: increase memory limit for kafka-controller
+    # KAFKA (depends on Zookeeper, Loki)
+    # TODO: increase memory limit for kafka-controller
+    helm repo add bitnami https://charts.bitnami.com/bitnami && \
     helm upgrade -i openframe-kafka bitnami/kafka \
       -n infrastructure --create-namespace \
       --version 31.5.0 \
@@ -99,7 +106,7 @@ case "$1" in
     ;;
   kafka-ui)
     # KAFKA UI (depends on Kafka, Loki)
-    # helm repo add kafbat-ui https://kafbat.github.io/helm-charts
+    helm repo add kafbat-ui https://kafbat.github.io/helm-charts && \
     helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
       -n infrastructure --create-namespace \
       --version 1.4.12 \
@@ -130,6 +137,7 @@ case "$1" in
     # kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml && \
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-cassandra --timeout 20m
 
+    helm repo add bitnami https://charts.bitnami.com/bitnami && \
     helm upgrade -i openframe-cassandra bitnami/cassandra \
       -n infrastructure --create-namespace \
       --version 12.2.1 \
