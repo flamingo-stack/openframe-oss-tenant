@@ -16,7 +16,6 @@ export NATS_API_CONFIG
 PUBLIC_DIR=/usr/share/nginx/html
 export PUBLIC_DIR
 
-
 # Create necessary directories
 function create_directories() {
     echo "Creating necessary directories"
@@ -28,6 +27,16 @@ function create_directories() {
     mkdir -p ${TACTICAL_DIR}/supervisor
     mkdir -p ${TACTICAL_DIR}/logs
     mkdir -p ${TACTICAL_DIR}/temp
+}
+
+# Helper function to set ready status
+function set_ready_status() {
+    local service_name=$1
+    echo "Setting ready status for ${service_name}"
+    redis-cli -h tactical-redis -p 6379 set "tactical_${service_name}_ready" "True"
+    # Create directory if it doesn't exist
+    mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
+    echo "${service_name}" >${TACTICAL_READY_FILE}
 }
 
 # Copy and process custom code
@@ -57,16 +66,6 @@ function copy_custom_code() {
     envsubst <${CUSTOM_CODE_DIR}/app.ini >${TACTICAL_DIR}/api/app.ini
     envsubst <${CUSTOM_CODE_DIR}/supervisor.conf >${TACTICAL_DIR}/supervisor/supervisor.conf
     envsubst <${CUSTOM_CODE_DIR}/agent_listener.sh >${TACTICAL_DIR}/supervisor/agent_listener.sh
-}
-
-# Helper function to set ready status
-function set_ready_status() {
-    local service_name=$1
-    echo "Setting ready status for ${service_name}"
-    redis-cli -h tactical-redis -p 6379 set "tactical_${service_name}_ready" "True"
-    # Create directory if it doesn't exist
-    mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
-    echo "${service_name}" >${TACTICAL_READY_FILE}
 }
 
 function run_migrations() {
@@ -134,8 +133,130 @@ function create_superuser_and_api_key() {
     echo "Set Tactical RMM API key ${API_KEY} in Redis"
 }
 
-function tactical_init() {
+function getNATSFilesFromRedis() {
+    echo "Getting NATS files from Redis"
+    NATS_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_rmm_conf")
+    NATS_API_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_api_conf")
 
+    echo "NATS Configuration Content:\n ${NATS_CONFIG_CONTENT}"
+    echo "NATS API Configuration Content:\n ${NATS_API_CONFIG_CONTENT}"
+
+    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
+    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
+
+    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
+    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
+}
+
+function pushNATSFilesToRedis() {
+    echo "Pushing NATS files to Redis"
+    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
+    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
+}
+
+function installNATs() {
+    echo "Installing NATS Server v2.10.22 specifically"
+
+    # Create directories if they don't exist
+    mkdir -p /usr/local/bin
+    mkdir -p ${TACTICAL_DIR}/logs
+    mkdir -p ${TACTICAL_DIR}/supervisor
+
+    # Clean up any existing NATS installation
+    rm -f /usr/local/bin/nats-server
+
+    # Download specific NATS version 2.10.22
+    if ! wget -q https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz; then
+        echo "Failed to download NATS server"
+        return 1
+    fi
+
+    # Extract the NATS binary
+    if ! tar -xzf /tmp/nats.tar.gz -C /tmp; then
+        echo "Failed to extract NATS server"
+        return 1
+    fi
+
+    # Move the binary and ensure it's executable
+    if ! mv /tmp/nats-server-v2.10.22-linux-amd64/nats-server /usr/local/bin/; then
+        echo "Failed to move NATS server binary"
+        return 1
+    fi
+
+    chmod +x /usr/local/bin/nats-server
+
+    # Clean up downloaded files
+    rm -rf /tmp/nats.tar.gz /tmp/nats-server-v2.10.22-linux-amd64
+
+    # Verify installation
+    if ! command -v nats-server &> /dev/null; then
+        echo "NATS server installation failed - binary not found in PATH"
+        return 1
+    fi
+
+    echo "NATS Server version installed:"
+    nats-server --version
+
+    # Download specific NATS API version 2.10.22
+    if ! wget -q https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api; then
+        echo "Failed to download NATS API"
+        return 1
+    fi
+
+    if ! wget -q https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64; then
+        echo "Failed to download NATS API ARM64"
+        return 1
+    fi
+
+    # Install NATS API
+    cp -rf ${TACTICAL_TMP_DIR}/nats-api /usr/local/bin/
+    chmod +x /usr/local/bin/nats-api
+
+    cp -rf ${TACTICAL_TMP_DIR}/nats-api-arm64 /usr/local/bin/
+    chmod +x /usr/local/bin/nats-api-arm64
+
+    # Verify NATS API installation
+    if ! command -v nats-api &> /dev/null; then
+        echo "NATS API installation failed - binary not found in PATH"
+        return 1
+    fi
+
+    # Ensure NATS configuration directory exists
+    mkdir -p "$(dirname "${NATS_CONFIG}")"
+    mkdir -p "$(dirname "${NATS_API_CONFIG}")"
+
+    # Get NATS configuration from Redis
+    getNATSFilesFromRedis
+
+    # Verify NATS configuration files exist and are readable
+    if [ ! -f "${NATS_CONFIG}" ]; then
+        echo "NATS configuration file not found at ${NATS_CONFIG}"
+        return 1
+    fi
+
+    if [ ! -f "${NATS_API_CONFIG}" ]; then
+        echo "NATS API configuration file not found at ${NATS_API_CONFIG}"
+        return 1
+    fi
+
+    # Set proper permissions
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${TACTICAL_DIR}/logs
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${TACTICAL_DIR}/supervisor
+    chown ${TACTICAL_USER}:${TACTICAL_USER} ${NATS_CONFIG}
+    chown ${TACTICAL_USER}:${TACTICAL_USER} ${NATS_API_CONFIG}
+    chmod 644 ${NATS_CONFIG}
+    chmod 644 ${NATS_API_CONFIG}
+
+    # Test NATS server configuration
+    if ! nats-server --config ${NATS_CONFIG} --check; then
+        echo "NATS server configuration check failed"
+        return 1
+    fi
+
+    echo "NATS installation completed successfully"
+}
+
+function tactical_init() {
     local service_name=$1
     if [ -f "${TACTICAL_READY_FILE}" ]; then
         echo "Tactical is already initialized"
@@ -178,93 +299,4 @@ function tactical_init() {
 
     # create install ready file
     set_ready_status "init"
-}
-
-function installNATs() {
-    echo "Installing NATS Server v2.10.22 specifically"
-
-    # Create directories if they don't exist
-    mkdir -p /usr/local/bin
-
-    # Clean up any existing NATS installation
-    rm -f /usr/local/bin/nats-server
-
-    # Download specific NATS version 2.10.22
-    if ! wget https://github.com/nats-io/nats-server/releases/download/v2.10.22/nats-server-v2.10.22-linux-amd64.tar.gz -O /tmp/nats.tar.gz; then
-        echo "Failed to download NATS server"
-        return 1
-    fi
-
-    # Extract the NATS binary
-    if ! tar -xzf /tmp/nats.tar.gz -C /tmp; then
-        echo "Failed to extract NATS server"
-        return 1
-    fi
-
-    # Move the binary and ensure it's executable
-    if ! mv /tmp/nats-server-v2.10.22-linux-amd64/nats-server /usr/local/bin/; then
-        echo "Failed to move NATS server binary"
-        return 1
-    fi
-
-    chmod +x /usr/local/bin/nats-server
-
-    # Clean up downloaded files
-    rm -rf /tmp/nats.tar.gz /tmp/nats-server-v2.10.22-linux-amd64
-
-    # Verify installation
-    if ! command -v nats-server &> /dev/null; then
-        echo "NATS server installation failed - binary not found in PATH"
-        return 1
-    fi
-
-    echo "NATS Server version installed:"
-    nats-server --version
-
-    # Download specific NATS API version 2.10.22
-    if ! wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_TMP_DIR}/nats-api; then
-        echo "Failed to download NATS API"
-        return 1
-    fi
-
-    if ! wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_TMP_DIR}/nats-api-arm64; then
-        echo "Failed to download NATS API ARM64"
-        return 1
-    fi
-
-    # Install NATS API
-    cp -rf ${TACTICAL_TMP_DIR}/nats-api /usr/local/bin/
-    chmod +x /usr/local/bin/nats-api
-
-    cp -rf ${TACTICAL_TMP_DIR}/nats-api-arm64 /usr/local/bin/
-    chmod +x /usr/local/bin/nats-api-arm64
-
-    # Verify NATS API installation
-    if ! command -v nats-api &> /dev/null; then
-        echo "NATS API installation failed - binary not found in PATH"
-        return 1
-    fi
-
-    getNATSFilesFromRedis
-}
-
-function pushNATSFilesToRedis() {
-    echo "Pushing NATS files to Redis"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
-}
-
-function getNATSFilesFromRedis() {
-    echo "Getting NATS files from Redis"
-    NATS_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_rmm_conf")
-    NATS_API_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_api_conf")
-
-    echo "NATS Configuration Content:\n ${NATS_CONFIG_CONTENT}"
-    echo "NATS API Configuration Content:\n ${NATS_API_CONFIG_CONTENT}"
-
-    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
-    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
-
-    echo "${NATS_CONFIG_CONTENT}" >"${NATS_CONFIG}"
-    echo "${NATS_API_CONFIG_CONTENT}" >"${NATS_API_CONFIG}"
 }
