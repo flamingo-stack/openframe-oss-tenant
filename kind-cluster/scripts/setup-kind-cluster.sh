@@ -19,7 +19,7 @@ elif [[ "$(uname)" == "Darwin" ]]; then
         echo "IP $IP is already added to the loopback interface."
     else
         # Add the IP address to the loopback interface on macOS
-        sudo ifconfig lo0 $IP netmask 255.255.255.0
+        sudo ifconfig lo0 alias $IP up
         echo "IP $IP added to the loopback interface."
     fi
 else
