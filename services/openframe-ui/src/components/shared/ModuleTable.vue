@@ -64,7 +64,7 @@ const filters = ref({
   background: var(--surface-ground);
   border-radius: var(--border-radius);
   padding: 1rem;
-  height: 100%;
+  /* height: 100%; */
   display: flex;
   flex-direction: column;
 }
