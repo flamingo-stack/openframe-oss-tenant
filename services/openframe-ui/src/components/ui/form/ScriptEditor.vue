@@ -13,6 +13,8 @@
 import { ref } from 'vue';
 import { onMounted, onBeforeUnmount, watch } from '@vue/runtime-core';
 import * as monaco from 'monaco-editor';
+import { useThemeStore } from '@/stores/themeStore';
+import { storeToRefs } from 'pinia';
 
 const props = defineProps({
   id: {
@@ -58,6 +60,9 @@ const emit = defineEmits(['update:modelValue']);
 const editorContainer = ref<HTMLElement | null>(null);
 let editor: any = null;
 
+const themeStore = useThemeStore();
+const { isDark } = storeToRefs(themeStore);
+
 onMounted(async () => {
   if (!editorContainer.value) return;
 
@@ -68,7 +73,7 @@ onMounted(async () => {
     editor = monaco.editor.create(editorContainer.value, {
       value: props.modelValue,
       language: 'powershell',
-      theme: 'vs-dark',
+      theme: isDark.value ? 'vs-dark' : 'vs',
       readOnly: props.disabled,
       automaticLayout: true,
       minimap: {
@@ -101,6 +106,12 @@ watch(() => props.modelValue, (newValue: string) => {
 watch(() => props.disabled, (newValue: boolean) => {
   if (editor) {
     editor.updateOptions({ readOnly: newValue });
+  }
+});
+
+watch(() => isDark.value, (newValue: boolean) => {
+  if (editor) {
+    monaco.editor.setTheme(newValue ? 'vs-dark' : 'vs');
   }
 });
 

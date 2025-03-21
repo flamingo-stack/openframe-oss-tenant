@@ -8,26 +8,34 @@
 
     <div class="of-bulk-ops-content">
       <div class="of-bulk-ops-selection p-mb-4">
-        <div class="p-field">
+        <div class="of-form-group">
           <label class="of-form-label">Operation Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <RadioButton 
-                id="operationType_script" 
-                v-model="operationType" 
-                value="script" 
-                :class="{ 'p-invalid': submitted && !operationType }"
-              />
-              <label for="operationType_script">Script</label>
+          <div class="of-operation-options">
+            <div 
+              class="status-option" 
+              :class="{ active: operationType === 'script' }" 
+              @click="operationType = 'script'"
+            >
+              <div class="radio-button">
+                <div class="radio-inner"></div>
+              </div>
+              <div class="status-label">
+                <span class="status-title">Script</span>
+                <span class="status-description">Execute a predefined script</span>
+              </div>
             </div>
-            <div class="p-field-radiobutton p-ml-4">
-              <RadioButton 
-                id="operationType_command" 
-                v-model="operationType" 
-                value="command" 
-                :class="{ 'p-invalid': submitted && !operationType }"
-              />
-              <label for="operationType_command">Command</label>
+            <div 
+              class="status-option" 
+              :class="{ active: operationType === 'command' }" 
+              @click="operationType = 'command'"
+            >
+              <div class="radio-button">
+                <div class="radio-inner"></div>
+              </div>
+              <div class="status-label">
+                <span class="status-title">Command</span>
+                <span class="status-description">Execute a custom command</span>
+              </div>
             </div>
           </div>
           <small class="p-error" v-if="submitted && !operationType">
@@ -37,8 +45,7 @@
       </div>
 
       <!-- Script Execution Form -->
-      <div v-if="operationType === 'script'" class="of-bulk-script-form p-card p-p-4">
-        <h3>Bulk Script Execution</h3>
+      <div v-if="operationType === 'script'" class="of-bulk-form p-card p-4">
         
         <div class="of-form-group">
           <label for="bulkScript" class="of-form-label">Select Script</label>
@@ -76,66 +83,57 @@
         
         <div class="of-form-group">
           <label class="of-form-label">OS Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <Dropdown
-                v-model="bulkOsType"
-                :options="[
-                  { label: 'Windows', value: 'windows' },
-                  { label: 'Linux', value: 'linux' },
-                  { label: 'macOS', value: 'darwin' },
-                  { label: 'All', value: 'all' }
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select OS type"
-              />
-            </div>
-          </div>
+          <Dropdown
+            v-model="bulkOsType"
+            :options="[
+              { label: 'Windows', value: 'windows' },
+              { label: 'Linux', value: 'linux' },
+              { label: 'macOS', value: 'darwin' },
+              { label: 'All', value: 'all' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select OS type"
+            class="w-full"
+          />
         </div>
         
         <div class="of-form-group">
           <label class="of-form-label">Script Arguments</label>
-          <div class="p-inputgroup">
-            <InputText
-              id="scriptArg"
-              v-model="newArg"
-              placeholder="Add argument and press Enter"
-              @keydown.enter.prevent="addScriptArg(newArg); newArg = ''"
-            />
-            <Button icon="pi pi-plus" @click="addScriptArg(newArg); newArg = ''" />
-          </div>
-          <div v-if="bulkArgs.length > 0" class="p-mt-2">
-            <div v-for="(arg, index) in bulkArgs" :key="index" class="p-chip p-mr-2 p-mb-2">
-              {{ arg }}
-              <i class="pi pi-times p-chip-remove-icon" @click="removeScriptArg(index)"></i>
+          <div class="recipients-list">
+            <div v-for="(arg, index) in bulkArgs" :key="index" class="recipient-item">
+              <span>{{ arg }}</span>
+              <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                @click="removeScriptArg(index)" />
+            </div>
+            <div class="recipient-input">
+              <InputText v-model="newArg" class="w-full"
+                placeholder="Enter argument and press Enter" @keyup.enter="addScriptArg(newArg); newArg = ''" />
+              <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addScriptArg(newArg); newArg = ''" />
             </div>
           </div>
         </div>
         
         <div class="of-form-group">
           <label class="of-form-label">Environment Variables</label>
-          <div class="p-inputgroup">
-            <InputText
-              id="envVar"
-              v-model="newEnvVar"
-              placeholder="KEY=VALUE format and press Enter"
-              @keydown.enter.prevent="addEnvVar(newEnvVar); newEnvVar = ''"
-            />
-            <Button icon="pi pi-plus" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
-          </div>
-          <div v-if="bulkEnvVars.length > 0" class="p-mt-2">
-            <div v-for="(env, index) in bulkEnvVars" :key="index" class="p-chip p-mr-2 p-mb-2">
-              {{ env }}
-              <i class="pi pi-times p-chip-remove-icon" @click="removeEnvVar(index)"></i>
+          <div class="recipients-list">
+            <div v-for="(env, index) in bulkEnvVars" :key="index" class="recipient-item">
+              <span>{{ env }}</span>
+              <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                @click="removeEnvVar(index)" />
+            </div>
+            <div class="recipient-input">
+              <InputText v-model="newEnvVar" class="w-full"
+                placeholder="Enter key=value and press Enter" @keyup.enter="addEnvVar(newEnvVar); newEnvVar = ''" />
+              <OFButton icon="pi pi-plus" class="p-button-text p-button-sm" @click="addEnvVar(newEnvVar); newEnvVar = ''" />
             </div>
           </div>
         </div>
         
-        <div class="of-form-group">
-          <div class="p-field-checkbox">
-            <Checkbox v-model="bulkRunAsUser" :binary="true" id="runAsUser" />
-            <label for="runAsUser">Run As User</label>
+        <div class="of-form-group checkbox-group mb-3">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
           </div>
         </div>
         
@@ -151,8 +149,7 @@
       </div>
 
       <!-- Command Execution Form -->
-      <div v-if="operationType === 'command'" class="of-bulk-command-form p-card p-p-4">
-        <h3>Bulk Command Execution</h3>
+      <div v-if="operationType === 'command'" class="of-bulk-form p-card p-4">
         
         <div class="of-form-group">
           <label for="bulkAgents" class="of-form-label">Target Agents</label>
@@ -173,22 +170,19 @@
         
         <div class="of-form-group">
           <label class="of-form-label">OS Type</label>
-          <div class="p-formgroup-inline">
-            <div class="p-field-radiobutton">
-              <Dropdown
-                v-model="bulkOsType"
-                :options="[
-                  { label: 'Windows', value: 'windows' },
-                  { label: 'Linux', value: 'linux' },
-                  { label: 'macOS', value: 'darwin' },
-                  { label: 'All', value: 'all' }
-                ]"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select OS type"
-              />
-            </div>
-          </div>
+          <Dropdown
+            v-model="bulkOsType"
+            :options="[
+              { label: 'Windows', value: 'windows' },
+              { label: 'Linux', value: 'linux' },
+              { label: 'macOS', value: 'darwin' },
+              { label: 'All', value: 'all' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select OS type"
+            class="w-full"
+          />
         </div>
         
         <div class="of-form-group">
@@ -208,25 +202,23 @@
           />
         </div>
         
-        <div class="of-form-group">
+        <div class="of-form-group script-editor">
           <label for="command" class="of-form-label">Command</label>
-          <Textarea
-            id="command"
-            v-model="command"
-            rows="5"
-            class="w-full"
-            placeholder="Enter command to execute"
-            :class="{ 'p-invalid': submitted && !command }"
-          />
-          <small class="p-error" v-if="submitted && !command">
-            Command is required.
-          </small>
+          <div class="of-script-editor-wrapper">
+            <ScriptEditor
+              id="command"
+              v-model="command"
+              class="script-editor"
+              :error="submitted && !command ? 'Command is required.' : ''"
+              placeholder="Enter command to execute"
+            />
+          </div>
         </div>
         
-        <div class="of-form-group">
-          <div class="p-field-checkbox">
-            <Checkbox v-model="bulkRunAsUser" :binary="true" id="runAsUser" />
-            <label for="runAsUser">Run As User</label>
+        <div class="of-form-group checkbox-group mb-3">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="bulkRunAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
           </div>
         </div>
         
@@ -265,7 +257,8 @@ import {
   InputText, 
   Dropdown,
   MultiSelect,
-  Textarea
+  Textarea,
+  ScriptEditor
 } from "../../components/ui";
 import Button from 'primevue/button';
 import RadioButton from 'primevue/radiobutton';
@@ -523,5 +516,237 @@ onMounted(async () => {
   margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
+}
+
+/* New styles for big push buttons (based on Policies.vue) */
+.of-operation-options {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-ground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  border: 1px solid transparent;
+}
+
+.status-option:hover {
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.status-option.active {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+}
+
+.radio-button {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--surface-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.status-option.active .radio-button {
+  border-color: var(--primary-color);
+}
+
+.radio-inner {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.status-option.active .radio-inner {
+  background: var(--primary-color);
+}
+
+.status-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-title {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.status-description {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+}
+
+/* Dark mode styles */
+:deep([data-theme="dark"]) {
+  .status-option.active {
+    background: var(--yellow-900);
+    border: 1px solid var(--yellow-500);
+  }
+
+  .status-option.active .radio-button {
+    border-color: var(--yellow-500);
+  }
+
+  .status-option.active .radio-inner {
+    background: var(--yellow-500);
+  }
+}
+
+.of-bulk-form {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 2px 1px -1px rgba(0,0,0,0.2),
+             0 1px 1px 0 rgba(0,0,0,0.14),
+             0 1px 3px 0 rgba(0,0,0,0.12);
+  margin-bottom: 1.5rem;
+}
+
+/* Checkbox styling */
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--surface-ground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.checkbox-option:hover {
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.checkbox-option.active {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+}
+
+.checkbox-button {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--surface-border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.checkbox-option.active .checkbox-button {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.checkbox-inner {
+  opacity: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.checkbox-option.active .checkbox-inner {
+  opacity: 1;
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* Dark mode support for checkboxes */
+:deep([data-theme="dark"]) {
+  .checkbox-option.active {
+    background: var(--yellow-900);
+    border: 1px solid var(--yellow-500);
+  }
+
+  .checkbox-option.active .checkbox-button {
+    border-color: var(--yellow-500);
+    background: var(--yellow-500);
+  }
+}
+
+/* Checkbox styling */
+.checkbox-group {
+  margin-bottom: 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-label {
+  margin: 0;
+  font-weight: normal;
+}
+
+/* Adjust OS type grid layout for better space utilization */
+.of-operation-options {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: grid;
+}
+
+/* Recipients list styling (for Script Arguments and Environment Variables) */
+.recipients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recipient-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+}
+
+.recipient-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Script Editor styling */
+:deep(.monaco-editor-container) {
+  min-height: 180px;
+}
+
+.of-script-editor-wrapper {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 180px;
 }
 </style>
