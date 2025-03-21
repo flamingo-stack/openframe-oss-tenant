@@ -7,6 +7,7 @@ x-environment: &default-environment
   MONGO_INITDB_DATABASE: &mongo-db meshcentral
   MONGODB_HOST: &mongo-host openframe-meshcentral-mongodb
   MONGODB_PORT: &mongo-port 27017
+  RESOLVER: &resolver 127.0.0.11
 
   # MeshCentral Configuration
   MESH_USER: &mesh-user mesh@openframe.io
@@ -53,7 +54,7 @@ x-args: &default-args
   MESH_WEBRTC_ENABLED: *mesh-webrtc
   MESH_TEMP_DIR: *mesh-temp-dir
   MESH_DIR: *mesh-dir
-
+  RESOLVER: *resolver
 
 # Default service configuration that all services will extend
 x-service-defaults: &service-defaults
