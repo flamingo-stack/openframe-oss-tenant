@@ -367,41 +367,79 @@ const fetchDevices = async () => {
     const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
     console.log('API Response:', response);
     
-    if (!response || (Array.isArray(response) && response.length === 0)) {
-      console.warn('No devices returned from the API');
+    // For testing purposes, always add a mock device in development mode
+    if (import.meta.env.DEV) {
+      console.log('Adding mock device for development');
+      const mockDevices = [{
+        id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+        hostname: 'Mock Device',
+        agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+        plat: 'darwin',
+        value: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+        label: 'Mock Device'
+      }];
       
-      // For testing purposes, add a mock device if no devices are returned
-      if (import.meta.env.DEV) {
-        console.log('Adding mock device for development');
-        const mockDevices = [{
-          id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-          hostname: 'Mock Device',
-          agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-          plat: 'darwin',
-          value: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-          label: 'Mock Device'
-        }];
+      // If we have real devices, add the mock device to the list
+      if (response && Array.isArray(response) && response.length > 0) {
+        const deviceList = Array.isArray(response) ? response : (response.data || []);
+        
+        // Map devices to include value and label properties for MultiSelect
+        const mappedDevices = deviceList.map(device => ({
+          ...device,
+          value: device.id || device.agent_id,
+          label: device.hostname
+        }));
+        
+        // Combine real devices with mock device
+        const combinedDevices = [...mappedDevices, ...mockDevices];
+        console.log('Setting devices.value to combined list:', combinedDevices);
+        devices.value = combinedDevices;
+        return combinedDevices;
+      } else {
+        // Just use mock devices if no real devices
+        console.log('No real devices, using mock devices only:', mockDevices);
         devices.value = mockDevices;
-        console.log('Mock devices added:', devices.value);
         return mockDevices;
       }
+    } else {
+      // Production mode - use only real devices
+      if (!response || (Array.isArray(response) && response.length === 0)) {
+        console.warn('No devices returned from the API in production mode');
+        devices.value = [];
+        return [];
+      }
+      
+      const deviceList = Array.isArray(response) ? response : (response.data || []);
+      
+      // Map devices to include value and label properties for MultiSelect
+      const mappedDevices = deviceList.map(device => ({
+        ...device,
+        value: device.id || device.agent_id,
+        label: device.hostname
+      }));
+      
+      console.log('Setting devices.value to:', mappedDevices);
+      devices.value = mappedDevices;
+      return deviceList;
     }
-    
-    const deviceList = Array.isArray(response) ? response : (response.data || []);
-    
-    // Map devices to include value and label properties for MultiSelect
-    const mappedDevices = deviceList.map(device => ({
-      ...device,
-      value: device.id || device.agent_id,
-      label: device.hostname
-    }));
-    
-    console.log('Setting devices.value to:', mappedDevices);
-    devices.value = mappedDevices;
-    return deviceList;
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
+    
+    // For testing purposes, add a mock device even on error in development mode
+    if (import.meta.env.DEV) {
+      const mockDevices = [{
+        id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+        hostname: 'Mock Device (Error Fallback)',
+        agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+        plat: 'darwin',
+        value: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+        label: 'Mock Device (Error Fallback)'
+      }];
+      devices.value = mockDevices;
+      return mockDevices;
+    }
+    
     devices.value = [];
     return [];
   } finally {
@@ -453,6 +491,12 @@ const executeBulkScript = async () => {
   try {
     executing.value = true;
     
+    // Filter out any null or undefined agent IDs
+    const validAgents = bulkSelectedAgents.value.filter(agent => agent !== null && agent !== undefined);
+    
+    console.log('Selected agents before filtering:', bulkSelectedAgents.value);
+    console.log('Valid agents after filtering:', validAgents);
+    
     const payload = {
       mode: "script",
       target: "agents",
@@ -468,7 +512,7 @@ const executeBulkScript = async () => {
       offlineAgents: false,
       client: null,
       site: null,
-      agents: bulkSelectedAgents.value,
+      agents: validAgents,
       script: bulkSelectedScript.value,
       timeout: bulkTimeout.value,
       args: bulkArgs.value,
@@ -492,6 +536,12 @@ const executeBulkCommand = async () => {
   try {
     executing.value = true;
     
+    // Filter out any null or undefined agent IDs
+    const validAgents = bulkSelectedAgents.value.filter(agent => agent !== null && agent !== undefined);
+    
+    console.log('Selected agents before filtering:', bulkSelectedAgents.value);
+    console.log('Valid agents after filtering:', validAgents);
+    
     const payload = {
       mode: "command",
       target: "agents",
@@ -507,7 +557,7 @@ const executeBulkCommand = async () => {
       offlineAgents: false,
       client: null,
       site: null,
-      agents: bulkSelectedAgents.value,
+      agents: validAgents,
       timeout: bulkTimeout.value,
       run_as_user: bulkRunAsUser.value
     };
