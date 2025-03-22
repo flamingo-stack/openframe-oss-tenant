@@ -16,9 +16,7 @@
     </template>
 
     <template v-else>
-      <section class="mb-4">
-        <h2>Command & Script History</h2>
-        <div class="tool-card">
+      <div class="tool-card">
           <div class="of-filters-container">
             <div class="of-filters-row">
               <div class="of-search-container">
@@ -92,7 +90,6 @@
           </Column>
         </ModuleTable>
           </div>
-        </section>
       </template>
     </div>
 
