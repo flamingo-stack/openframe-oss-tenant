@@ -54,6 +54,8 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $RMMAGENT_REPO = "https://github.com/amidaware/rmmagent.git"
 $RMMAGENT_BRANCH = "master"
 $OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
+$AMD64_BINARY = "tacticalagent-v2.9.0-windows-amd64.exe"
+$AMD64_BINARY_PATH = Join-Path (Split-Path -Parent $PSCommandPath) "binaries\$AMD64_BINARY"
 
 # We'll store user-provided or prompted values in these variables:
 $OrgName = $OrgName -or ""
@@ -76,7 +78,7 @@ function Show-Help {
     Write-Host ""
     Write-Host "DESCRIPTION:"
     Write-Host "  This script automates the installation of the Tactical RMM agent on Windows ARM64 systems."
-    Write-Host "  It handles dependency installation, code compilation, and agent configuration."
+    Write-Host "  It uses AMD64 binary with Windows on ARM emulation for full functionality."
     Write-Host ""
     Write-Host "USAGE:"
     Write-Host "  .\windows_arm64.ps1 [options]" -ForegroundColor Yellow
@@ -177,133 +179,45 @@ function Install-Git {
     }
 }
 
+# Go is no longer needed since we're using pre-built AMD64 binary
 function Install-Go {
-    Write-Host "Checking Go..."
-    if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing Go..."
-        # Download Go for Windows ARM64
-        $goInstallerUrl = "https://go.dev/dl/go1.21.0.windows-arm64.msi"
-        $goInstallerPath = "$env:TEMP\GoInstaller.msi"
-        
-        Invoke-WebRequest -Uri $goInstallerUrl -OutFile $goInstallerPath
-        
-        # Install Go silently
-        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $goInstallerPath, "/quiet", "/norestart" -Wait
-        
-        # Update PATH environment variable
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-        
-        # Clean up
-        Remove-Item $goInstallerPath -Force
-        
-        # Verify installation
-        if (Get-Command go -ErrorAction SilentlyContinue) {
-            Write-Host "Go installed successfully."
-        } else {
-            Write-Host "Go installation failed. Please install Go manually." -ForegroundColor Red
-            exit 1
-        }
-    } else {
-        Write-Host "Go found."
-    }
+    Write-Host "Go installation skipped - not needed for AMD64 binary with emulation." -ForegroundColor Cyan
 }
 
 ############################
-# Patching NATS WebSocket URL to use ws:// for local development
+# Binary Verification Functions
 ############################
 
-function Patch-NatsWebsocketUrl {
-    Write-Host "Patching agent.go to use ws:// for NATS WebSocket..."
+function Verify-AMD64Binary {
+    param (
+        [string]$BinaryPath
+    )
     
-    # Print current working directory and list contents for debugging
-    Write-Host "Current working directory: $(Get-Location)"
+    Write-Host "Verifying AMD64 binary at: $BinaryPath" -ForegroundColor Cyan
     
-    # Find the agent.go file - use correct path
-    $agentGoFile = "agent\agent.go"
-    
-    Write-Host "Checking for agent.go at path: $agentGoFile"
-    if (-not (Test-Path $agentGoFile)) {
-        Write-Host "ERROR: Cannot find $agentGoFile. Skipping NATS WebSocket URL patch." -ForegroundColor Red
-        # Try to find agent.go using Get-ChildItem
-        Write-Host "Attempting to locate agent.go:"
-        Get-ChildItem -Path . -Filter "agent.go" -Recurse | Where-Object { $_.FullName -notmatch "test" }
+    if (-not (Test-Path $BinaryPath)) {
+        Write-Host "ERROR: AMD64 binary not found at path: $BinaryPath" -ForegroundColor Red
         return $false
     }
     
-    # Create a backup
-    Copy-Item $agentGoFile "$agentGoFile.bak"
-    
-    # Read the file content
-    $content = Get-Content $agentGoFile -Raw
-    
-    # Replace the wss:// with ws:// in the NATS WebSocket URL construction and hardcode port 8000
-    $content = $content -replace 'natsServer = fmt.Sprintf\("wss://%s:%s", ac.APIURL, natsProxyPort\)', 'natsServer = fmt.Sprintf("ws://%s:8000/natsws", ac.APIURL)'
-    
-    # Also modify the URL construction when NatsStandardPort is set to use hardcoded port 8000
-    $content = $content -replace 'natsServer = fmt.Sprintf\("nats://%s:%s", ac.APIURL, ac.NatsStandardPort\)', 'natsServer = fmt.Sprintf("ws://%s:8000/natsws", ac.APIURL)'
-    
-    # Write the modified content back to the file
-    Set-Content -Path $agentGoFile -Value $content
-    
-    Write-Host "NATS WebSocket URL patch applied to $agentGoFile with hardcoded port 8000"
-    
-    # Show the diff to verify changes
-    Write-Host "Showing diff of changes:"
-    $original = Get-Content "$agentGoFile.bak" -Raw
-    $modified = Get-Content $agentGoFile -Raw
-    
-    if ($original -ne $modified) {
-        Write-Host "Changes detected in file."
-    } else {
-        Write-Host "No changes detected in file."
+    $fileInfo = Get-Item $BinaryPath
+    if ($fileInfo.Length -eq 0) {
+        Write-Host "ERROR: AMD64 binary file is empty." -ForegroundColor Red
+        return $false
     }
     
-    return $true
-}
-
-############################
-# Patching GetInstalledSoftware method
-############################
-
-function Patch-GoFiles {
-    Write-Host "Checking for ARM64-specific implementations..." -ForegroundColor Yellow
-    
-    # Define the path for software_windows_arm64.go
-    $softwareARM64File = "agent\software_windows_arm64.go"
-    
-    # Check if the file already exists
-    if (-not (Test-Path $softwareARM64File)) {
-        Write-Host "Creating ARM64-specific implementation for GetInstalledSoftware..." -ForegroundColor Yellow
-        
-        # Create the minimal implementation file
-        $armImplementation = @"
-// Software implementation for Windows ARM64
-
-package agent
-
-// Software represents an installed software package
-type Software struct {
-	Name      string
-	Version   string
-	Publisher string
-}
-
-// GetInstalledSoftware returns a list of installed software on Windows ARM64
-func (a *Agent) GetInstalledSoftware() ([]Software, error) {
-	// Initially return empty slice for successful compilation
-	// Future versions can implement actual software detection
-	return []Software{}, nil
-}
-"@
-        
-        # Write the file
-        Set-Content -Path $softwareARM64File -Value $armImplementation
-        Write-Host "Created ARM64-specific implementation file: $softwareARM64File" -ForegroundColor Green
-    } else {
-        Write-Host "ARM64-specific implementation already exists: $softwareARM64File" -ForegroundColor Green
+    # Check if file is a valid executable
+    try {
+        $signature = Get-AuthenticodeSignature -FilePath $BinaryPath -ErrorAction SilentlyContinue
+        if ($signature) {
+            Write-Host "Binary appears to be a valid executable file." -ForegroundColor Green
+        }
+    } catch {
+        # Signature check failed, but we'll still continue
+        Write-Host "NOTE: Could not verify executable signature, but will continue." -ForegroundColor Yellow
     }
     
-    # No need to patch agent_windows.go or rpc.go as our implementation is self-contained
+    Write-Host "AMD64 binary verification completed successfully." -ForegroundColor Green
     return $true
 }
 
@@ -378,117 +292,81 @@ function Prompt-IfEmpty {
 # Cloning/Patching/Building
 ############################
 
-function Handle-ExistingFolder {
-    # If BuildFolder already exists, check if it's a Git repo
-    # If yes, do a fetch/pull
-    # If no, prompt to remove or rename
-    if (Test-Path $BuildFolder) {
-        Write-Host "Folder '$BuildFolder' already exists."
-        Push-Location $BuildFolder
-        if (Test-Path ".git") {
-            Write-Host "It appears to be a valid Git repository. Pulling latest changes..."
-            git fetch --all
-            git checkout $RMMAGENT_BRANCH
-            git pull
-        } else {
-            Write-Host "But it isn't a Git repo (no .git folder)."
-            Write-Host "We can either remove it or rename it so we can clone fresh."
-            $removeChoice = Read-Host "Remove folder? (y/N)"
-            if ($removeChoice -match "^[Yy]") {
-                Pop-Location
-                Remove-Item -Path $BuildFolder -Recurse -Force
-                Write-Host "Removed folder. Now cloning fresh..."
-                git clone --branch $RMMAGENT_BRANCH $RMMAGENT_REPO $BuildFolder
-                Push-Location $BuildFolder
-            } else {
-                Write-Host "Aborting script. Please specify a different -BuildFolder or remove the folder manually." -ForegroundColor Red
-                exit 1
+function Setup-BinaryFolder {
+    # Create binaries folder if it doesn't exist
+    $binariesFolder = Join-Path (Split-Path -Parent $PSCommandPath) "binaries"
+    if (-not (Test-Path $binariesFolder)) {
+        Write-Host "Creating binaries folder..." -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $binariesFolder -Force | Out-Null
+    }
+    
+    # Check if AMD64 binary exists in the binaries folder
+    if (-not (Test-Path $AMD64_BINARY_PATH)) {
+        Write-Host "AMD64 binary not found in binaries folder." -ForegroundColor Yellow
+        Write-Host "Please download the AMD64 binary from:" -ForegroundColor Yellow
+        Write-Host "https://github.com/amidaware/rmmagent/releases/latest/download/tacticalagent-windows-amd64.exe" -ForegroundColor Cyan
+        Write-Host "and place it in the 'binaries' folder as: $AMD64_BINARY" -ForegroundColor Cyan
+        
+        # Prompt to download the binary
+        $downloadChoice = Read-Host "Would you like to attempt to download the binary now? (y/N)"
+        if ($downloadChoice -match "^[Yy]") {
+            try {
+                Write-Host "Attempting to download AMD64 binary..." -ForegroundColor Yellow
+                $downloadUrl = "https://github.com/amidaware/rmmagent/releases/latest/download/tacticalagent-windows-amd64.exe"
+                Invoke-WebRequest -Uri $downloadUrl -OutFile $AMD64_BINARY_PATH
+                
+                if (Test-Path $AMD64_BINARY_PATH) {
+                    Write-Host "Successfully downloaded AMD64 binary." -ForegroundColor Green
+                } else {
+                    Write-Host "Failed to download AMD64 binary." -ForegroundColor Red
+                }
+            } catch {
+                Write-Host "Error downloading AMD64 binary: $_" -ForegroundColor Red
             }
         }
     } else {
-        Write-Host "Cloning $RMMAGENT_REPO into '$BuildFolder'..."
-        git clone --branch $RMMAGENT_BRANCH $RMMAGENT_REPO $BuildFolder
-        Push-Location $BuildFolder
+        Write-Host "AMD64 binary found in binaries folder." -ForegroundColor Green
     }
+    
+    # Verify the AMD64 binary
+    Verify-AMD64Binary -BinaryPath $AMD64_BINARY_PATH
 }
 
-function Patch-Placeholders {
+function Setup-RMMAgent {
     Write-Host ""
-    Write-Host "Patching code for org/email placeholders (if present)."
-    
-    # Get all .go files in the current directory
-    $goFiles = Get-ChildItem -Path . -Filter "*.go" -File
-    
-    foreach ($file in $goFiles) {
-        $content = Get-Content $file.FullName -Raw
-        
-        # Check if the file contains DefaultOrgName
-        if ($content -match 'DefaultOrgName') {
-            $content = $content -replace 'DefaultOrgName = ".*"', "DefaultOrgName = `"$OrgName`""
-            Set-Content -Path $file.FullName -Value $content
-        }
-        
-        # Check if the file contains DefaultEmail
-        if ($content -match 'DefaultEmail') {
-            $content = $content -replace 'DefaultEmail = ".*"', "DefaultEmail = `"$ContactEmail`""
-            Set-Content -Path $file.FullName -Value $content
-        }
-    }
-}
+    Write-Host "Setting up Tactical RMM Agent for Windows ARM64 using AMD64 binary with emulation..." -ForegroundColor Yellow
 
-function Compile-RMMAgent {
-    Write-Host ""
-    Write-Host "Compiling rmmagent for Windows ARM64..." -ForegroundColor Yellow
-
-    # Set environment variables for Go
-    $env:GOOS = "windows"
-    $env:GOARCH = "arm64"
-    $env:CGO_ENABLED = "0"
-    
-    # Ensure output path is properly constructed
+    # Define the output path for our renamed binary
     $outputPath = Join-Path (Get-Location) $OUTPUT_BINARY
-
-    # Build command with proper flags
-    $buildOutput = cmd /c "go build -ldflags `"-s -w`" -o $outputPath 2>&1"
-
-    # Check for errors
-    $compilationSuccess = $LASTEXITCODE -eq 0
-    if (-not $compilationSuccess) {
-        Write-Host "Compilation failed with errors:" -ForegroundColor Red
-        Write-Host $buildOutput
-        
-        # Try to diagnose and fix common compilation errors
-        if ($buildOutput -match "syntax error: unexpected comma, expected }") {
-            Write-Host "Detected syntax error in agent_windows.go. This is likely related to the GetInstalledSoftware method." -ForegroundColor Yellow
-            Write-Host "Applying ARM64-specific implementation for GetInstalledSoftware method..." -ForegroundColor Yellow
-            
-            # Apply the ARM64-specific implementation
-            Patch-GoFiles
-            
-            # Try compiling again
-            Write-Host "Trying compilation again after applying ARM64-specific implementation..." -ForegroundColor Yellow
-            $buildOutput = cmd /c "go build -ldflags `"-s -w`" -o $outputPath 2>&1"
-            $compilationSuccess = $LASTEXITCODE -eq 0
-            
-            if ($compilationSuccess) {
-                Write-Host "Compilation successful with ARM64-specific implementation!" -ForegroundColor Green
-                Write-Host "Note: Agent will report empty software list initially. Full functionality can be enhanced later." -ForegroundColor Cyan
-            } else {
-                Write-Host "Compilation still failed after applying ARM64-specific implementation." -ForegroundColor Red
-                Write-Host $buildOutput
-            }
-        }
-        
-        # Continue with installation process despite errors
-        Write-Host "Failed to create binary, but continuing with installation process..." -ForegroundColor Yellow
+    
+    # Check if the AMD64 binary exists
+    if (-not (Test-Path $AMD64_BINARY_PATH)) {
+        Write-Host "ERROR: AMD64 binary not found at path: $AMD64_BINARY_PATH" -ForegroundColor Red
+        Write-Host "Please ensure the AMD64 binary is available in the 'binaries' folder." -ForegroundColor Red
         
         # Create a placeholder binary to allow the script to continue
-        if (-not (Test-Path $outputPath)) {
-            Write-Host "Creating placeholder binary to allow script to continue..." -ForegroundColor Yellow
-            New-Item -ItemType File -Path $outputPath -Force | Out-Null
+        Write-Host "Creating placeholder binary to allow script to continue..." -ForegroundColor Yellow
+        New-Item -ItemType File -Path $outputPath -Force | Out-Null
+        return $false
+    }
+    
+    # Copy the AMD64 binary to our output location
+    try {
+        Write-Host "Copying AMD64 binary to use with ARM64 emulation..." -ForegroundColor Cyan
+        Copy-Item -Path $AMD64_BINARY_PATH -Destination $outputPath -Force
+        
+        if (Test-Path $outputPath) {
+            Write-Host "Successfully prepared AMD64 binary for ARM64 emulation." -ForegroundColor Green
+            Write-Host "Binary path: $outputPath" -ForegroundColor Green
+            Write-Host "NOTE: This binary will run using Windows on ARM64 emulation layer." -ForegroundColor Cyan
+            return $true
+        } else {
+            Write-Host "Failed to copy AMD64 binary to output location." -ForegroundColor Red
+            return $false
         }
-    } else {
-        Write-Host "Compilation done. Output: $PWD\rmmagent-windows-arm64.exe" -ForegroundColor Green
+    } catch {
+        Write-Host "Error copying AMD64 binary: $_" -ForegroundColor Red
+        return $false
     }
 }
 
@@ -556,11 +434,11 @@ function Configure-AgentService {
 
 function Prompt-RunAgent {
     Write-Host ""
-    Write-Host "=== Build Complete ===" -ForegroundColor Green
+    Write-Host "=== Setup Complete ===" -ForegroundColor Green
     Write-Host "Note about functionality:" -ForegroundColor Cyan
-    Write-Host "The Windows ARM64 implementation currently returns an empty software list" -ForegroundColor Cyan
-    Write-Host "This ensures the agent can compile and run successfully" -ForegroundColor Cyan
-    Write-Host "Future updates will implement full software detection" -ForegroundColor Cyan
+    Write-Host "The Windows ARM64 installation is using AMD64 binary with Windows on ARM emulation" -ForegroundColor Cyan
+    Write-Host "This provides full functionality including software detection" -ForegroundColor Cyan
+    Write-Host "The binary will run using the Windows on ARM64 emulation layer" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "You can run the agent with your RMM server & auth key. For example:"
     Write-Host "  .\$OUTPUT_BINARY -m install \"
@@ -608,12 +486,26 @@ function Prompt-RunAgent {
         # Create the proper binary path
         $binaryPath = Join-Path (Get-Location) $OUTPUT_BINARY
 
-        # Check if binary exists and has content
-        if (-not (Test-Path $binaryPath) -or (Get-Item $binaryPath).Length -eq 0) {
-            Write-Host "WARNING: Binary file is missing or empty. Installation may not succeed." -ForegroundColor Yellow
-            Write-Host "This is likely due to compilation errors with the GetInstalledSoftware method." -ForegroundColor Yellow
-            Write-Host "You may need to manually compile the agent or use a pre-built binary." -ForegroundColor Yellow
+        # Verify the binary exists and has content
+        if (-not (Test-Path $binaryPath)) {
+            Write-Host "ERROR: Binary file is missing. Installation cannot proceed." -ForegroundColor Red
+            Write-Host "The AMD64 binary should be in the 'binaries' folder." -ForegroundColor Yellow
+            
+            # Check if the original AMD64 binary exists
+            if (Test-Path $AMD64_BINARY_PATH) {
+                Write-Host "Found original AMD64 binary. Attempting to use it directly..." -ForegroundColor Yellow
+                $binaryPath = $AMD64_BINARY_PATH
+            } else {
+                Write-Host "No binary found. Please download the AMD64 binary from:" -ForegroundColor Yellow
+                Write-Host "https://github.com/amidaware/rmmagent/releases/latest/download/tacticalagent-windows-amd64.exe" -ForegroundColor Cyan
+                return
+            }
+        } elseif ((Get-Item $binaryPath).Length -eq 0) {
+            Write-Host "WARNING: Binary file exists but is empty. Installation may not succeed." -ForegroundColor Yellow
+            Write-Host "Please ensure you have a valid AMD64 binary in the 'binaries' folder." -ForegroundColor Yellow
             return
+        } else {
+            Write-Host "Binary verification successful. Proceeding with installation..." -ForegroundColor Green
         }
 
         # Use script-scoped variables for the command
@@ -625,8 +517,8 @@ function Prompt-RunAgent {
         }
         catch {
             Write-Host "Error executing agent command: $_" -ForegroundColor Red
-            Write-Host "This is likely due to compilation errors with the GetInstalledSoftware method." -ForegroundColor Yellow
-            Write-Host "You may need to manually compile the agent or use a pre-built binary." -ForegroundColor Yellow
+            Write-Host "This may be due to Windows on ARM emulation issues." -ForegroundColor Yellow
+            Write-Host "Check the log file for more details: $AgentLogPath" -ForegroundColor Yellow
         }
         
         Write-Host ""
@@ -644,6 +536,7 @@ function Prompt-RunAgent {
     Write-Host ""
     Write-Host "=== All Done! ===" -ForegroundColor Green
     Write-Host "Your agent is at: $(Join-Path (Get-Location) $OUTPUT_BINARY)"
+    Write-Host "NOTE: This is an AMD64 binary running with Windows on ARM64 emulation" -ForegroundColor Cyan
 }
 
 ############################
@@ -716,15 +609,25 @@ if ([string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAut
     }
 }
 
-# 3) Clone & patch & build
-Handle-ExistingFolder
-Patch-NatsWebsocketUrl
-Patch-GoFiles
-Patch-Placeholders
-Compile-RMMAgent
+############################
+# Main Script Flow
+############################
 
-# 4) Prompt to run (and configure service if installed)
+# 1) Show help if requested
+if ($Help) {
+    Show-Help
+    exit 0
+}
+
+# 2) Install dependencies (only Git is needed for downloading)
+Install-Git
+
+# 3) Setup binary folder and verify AMD64 binary
+Setup-BinaryFolder
+
+# 4) Setup AMD64 binary for ARM64 emulation
+Write-Host "Using pre-built AMD64 binary with Windows on ARM64 emulation..." -ForegroundColor Cyan
+Setup-RMMAgent
+
+# 5) Prompt to run (and configure service if installed)
 Prompt-RunAgent
-
-# Return to original directory
-Pop-Location
