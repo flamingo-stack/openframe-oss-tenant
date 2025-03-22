@@ -144,7 +144,11 @@ public class IntegrationController {
                             headers.set(credentials.getApiKey().getKeyName(), credentials.getApiKey().getKey());
                             break;
                         case BEARER_TOKEN:
-                            headers.setBearerAuth(credentials.getApiKey().getKey());
+                            if (toolId.equals("tactical-rmm")) {
+                                headers.set("Authorization", "Token " + credentials.getApiKey().getKey());
+                            } else {
+                                headers.setBearerAuth(credentials.getApiKey().getKey());
+                            }
                             break;
                         }
                     });
