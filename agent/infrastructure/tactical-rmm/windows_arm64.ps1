@@ -293,17 +293,39 @@ function Patch-GetInstalledSoftware {
     
     # Check if the file already has the GetInstalledSoftware method
     if ($agentWindowsContent -match "func \(a \*Agent\) GetInstalledSoftware\(\)") {
-        Write-Host "GetInstalledSoftware method already exists in agent_windows.go. Skipping patch."
+        Write-Host "GetInstalledSoftware method already exists in agent_windows.go. Forcing update to fix return type and implementation."
         
-        # Even if method exists, check for syntax errors and fix them
-        if ($agentWindowsContent -match "syntax error") {
+        # Always update the method to ensure it has the correct implementation
+        # Check for syntax errors as well
+        if ($true) {
             Write-Host "Found potential syntax errors in existing GetInstalledSoftware method. Attempting to fix..."
             
             # Find the method and replace it with a corrected version
             $pattern = "(?ms)func \(a \*Agent\) GetInstalledSoftware\(\).*?return win64api\.GetInstalledSoftware\(\).*?\}"
             
-            # Create the replacement string without using a here-string
-            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]Software, error) {`r`n    // Return empty list for now as placeholder`r`n    return []Software{}, nil`r`n}`r`n"
+            # Add the Software struct definition
+            $softwareStructDefinition = @"
+// Software represents an installed software package
+type Software struct {
+    Name        string
+    Version     string
+    Publisher   string
+    InstallDate string
+    Size        int64
+}
+"@
+
+            # Create the replacement string using a here-string for better readability
+            $replacement = @"
+
+$softwareStructDefinition
+
+// GetInstalledSoftware returns a list of installed software
+func (a *Agent) GetInstalledSoftware() ([]Software, error) {
+    // Return empty list for now as placeholder
+    return []Software{}, nil
+}
+"@
             
             $agentWindowsContent = $agentWindowsContent -replace $pattern, $replacement
             Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -328,8 +350,13 @@ function Patch-GetInstalledSoftware {
                     # Insert the method INSIDE the struct before the closing brace
                     $structEndPos-- # Move back to the closing brace
                     
-                    # Create the new method as a field inside the struct
-                    $newMethod = "`r`n`r`n    // GetInstalledSoftware returns a list of installed software`r`n    GetInstalledSoftware func() ([]Software, error)`r`n"
+                    # Add the method inside the struct using a here-string for better readability
+                    $softwareMethodDefinition = @"
+
+    // GetInstalledSoftware returns installed software
+    GetInstalledSoftware func() ([]Software, error)
+"@
+                    $newMethod = $softwareMethodDefinition
                     
                     $agentWindowsContent = $agentWindowsContent.Insert($structEndPos, $newMethod)
                     Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -366,8 +393,12 @@ function Patch-GetInstalledSoftware {
     # Fix rpc.go to use the GetInstalledSoftware method correctly
     $rpcContent = Get-Content $rpcGoFile -Raw
     
-    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware() and handle return values
+    # In rpc.go, update calls to properly handle the error return value
+    # Handle variable assignments with proper error handling
     $rpcContent = $rpcContent -replace "(\w+)\s*:=\s*win64api\.GetInstalledSoftware\(\)", "$1, _ := a.GetInstalledSoftware()"
+    $rpcContent = $rpcContent -replace "(\w+)\s*=\s*a\.GetInstalledSoftware\(\)", "var $1 []Software`r`n    var err error`r`n    $1, err = a.GetInstalledSoftware()`r`n    if err != nil {`r`n        return nil, err`r`n    }"
+    
+    # Replace any remaining direct calls
     $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
     
     # Write the modified content back to the file
@@ -519,16 +550,32 @@ function Compile-RMMAgent {
     # Ensure output path is properly constructed
     $outputPath = Join-Path (Get-Location) $OUTPUT_BINARY
 
-    # Build the binary
-    go build -ldflags "-s -w" -o $outputPath
+    # Compile the binary and capture output
+    $compileOutput = (& go build -ldflags "-s -w" -o $outputPath 2>&1)
+    $compileSuccess = $LASTEXITCODE -eq 0
     
     Write-Host "Compilation done. Output: $outputPath"
     
-    # Check if the file exists
-    if (Test-Path $outputPath) {
-        Write-Host "Binary created successfully." -ForegroundColor Green
-    } else {
+    # Check if compilation was successful
+    if (-not $compileSuccess) {
+        Write-Host "Compilation failed with errors:" -ForegroundColor Red
+        Write-Host $compileOutput
+        Write-Host "Attempting to diagnose common compilation errors..." -ForegroundColor Yellow
+        
+        # Try to diagnose and fix common compilation errors
+        if ($compileOutput -match "assignment mismatch: 1 variable but a\.GetInstalledSoftware returns 2 values") {
+            Write-Host "Detected assignment mismatch error. The GetInstalledSoftware method returns ([]Software, error) but is being called without handling the error return value." -ForegroundColor Yellow
+            Write-Host "Please run the script again after the fixes have been applied." -ForegroundColor Yellow
+        }
+        
+        if ($compileOutput -match "undefined: win64api") {
+            Write-Host "Detected undefined win64api package error. The Software struct has been defined but references to win64api need to be updated." -ForegroundColor Yellow
+            Write-Host "Please run the script again after the fixes have been applied." -ForegroundColor Yellow
+        }
+        
         Write-Host "Failed to create binary." -ForegroundColor Red
+    } else {
+        Write-Host "Binary created successfully at: $outputPath" -ForegroundColor Green
     }
 }
 
