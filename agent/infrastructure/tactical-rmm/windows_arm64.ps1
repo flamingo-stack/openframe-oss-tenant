@@ -294,22 +294,43 @@ function Patch-GetInstalledSoftware {
     if ($agentWindowsContent -match "func \(a \*Agent\) GetInstalledSoftware\(\)") {
         Write-Host "GetInstalledSoftware method already exists in agent_windows.go. Skipping patch."
     } else {
-        # Add the GetInstalledSoftware method before the last closing brace
-        $lastBracePos = $agentWindowsContent.LastIndexOf("}")
-        if ($lastBracePos -gt 0) {
-            $newMethod = @"
+        # Find the Agent struct definition
+        $agentStructPos = $agentWindowsContent -match "type Agent struct {"
+        if ($agentStructPos) {
+            # Find an existing method of the Agent struct to insert our method after
+            $existingMethodPos = $agentWindowsContent -match "func \(a \*Agent\)"
+            if ($existingMethodPos) {
+                # Find the end of an existing method
+                $methodEndPos = $agentWindowsContent.IndexOf("}", $agentWindowsContent.IndexOf("func (a *Agent)"))
+                if ($methodEndPos -gt 0) {
+                    $newMethod = @"
 
 // GetInstalledSoftware returns a list of installed software
 func (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {
     return win64api.GetInstalledSoftware()
 }
-
 "@
-            $agentWindowsContent = $agentWindowsContent.Insert($lastBracePos, $newMethod)
-            Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-            Write-Host "Added GetInstalledSoftware method to agent_windows.go"
+                    $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
+                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
+                    Write-Host "Added GetInstalledSoftware method to agent_windows.go after existing method"
+                } else {
+                    Write-Host "ERROR: Could not find end of existing method in agent_windows.go" -ForegroundColor Red
+                }
+            } else {
+                # If no existing method found, add it at the end of the file
+                $newMethod = @"
+
+// GetInstalledSoftware returns a list of installed software
+func (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {
+    return win64api.GetInstalledSoftware()
+}
+"@
+                $agentWindowsContent += $newMethod
+                Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
+                Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go"
+            }
         } else {
-            Write-Host "ERROR: Could not find position to insert GetInstalledSoftware method in agent_windows.go" -ForegroundColor Red
+            Write-Host "ERROR: Could not find Agent struct definition in agent_windows.go" -ForegroundColor Red
         }
     }
     
