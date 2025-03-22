@@ -180,7 +180,7 @@ const showDialog = ref(false);
 const selectedHistoryItem = ref<HistoryEntry | null>(null);
 
 const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS },
   type: { value: null, matchMode: FilterMatchMode.EQUALS }
 });
 
