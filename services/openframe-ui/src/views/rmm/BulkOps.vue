@@ -388,8 +388,16 @@ const fetchDevices = async () => {
     }
     
     const deviceList = Array.isArray(response) ? response : (response.data || []);
-    console.log('Setting devices.value to:', deviceList);
-    devices.value = deviceList;
+    
+    // Map devices to include value and label properties for MultiSelect
+    const mappedDevices = deviceList.map(device => ({
+      ...device,
+      value: device.id || device.agent_id,
+      label: device.hostname
+    }));
+    
+    console.log('Setting devices.value to:', mappedDevices);
+    devices.value = mappedDevices;
     return deviceList;
   } catch (error) {
     console.error('Failed to fetch devices:', error);
