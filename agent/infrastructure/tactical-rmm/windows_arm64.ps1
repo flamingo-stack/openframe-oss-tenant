@@ -66,8 +66,8 @@ param (
     [switch]$Help
 )
 
-# Display help if requested
-if ($Help) {
+# Function to display help
+function Show-Help {
     Write-Host "=========================================================" -ForegroundColor Cyan
     Write-Host "  Tactical RMM Agent Installer for Windows ARM64" -ForegroundColor Cyan
     Write-Host "=========================================================" -ForegroundColor Cyan
@@ -108,6 +108,11 @@ if ($Help) {
     Write-Host "  - The script performs an aggressive uninstallation of any existing agent before installation"
     Write-Host ""
     exit 0
+}
+
+# Display help if requested or if no parameters provided
+if ($Help -or ($PSBoundParameters.Count -eq 0 -and $args.Count -eq 0)) {
+    Show-Help
 }
 
 # Assign parameters to variables
