@@ -363,83 +363,31 @@ const fetchDevices = async () => {
     loading.value = true;
     console.log('API URL:', `${API_URL}/agents/`);
     
-    // Try to fetch devices with additional parameters
+    // Fetch devices from the API
     const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
     console.log('API Response:', response);
     
-    // For testing purposes, always add a mock device in development mode
-    if (import.meta.env.DEV) {
-      console.log('Adding mock device for development');
-      const mockDevices = [{
-        id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        hostname: 'Mock Device',
-        agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        plat: 'darwin',
-        value: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        label: 'Mock Device'
-      }];
-      
-      // If we have real devices, add the mock device to the list
-      if (response && Array.isArray(response) && response.length > 0) {
-        const deviceList = Array.isArray(response) ? response : (response.data || []);
-        
-        // Map devices to include value and label properties for MultiSelect
-        const mappedDevices = deviceList.map(device => ({
-          ...device,
-          value: device.id || device.agent_id,
-          label: device.hostname
-        }));
-        
-        // Combine real devices with mock device
-        const combinedDevices = [...mappedDevices, ...mockDevices];
-        console.log('Setting devices.value to combined list:', combinedDevices);
-        devices.value = combinedDevices;
-        return combinedDevices;
-      } else {
-        // Just use mock devices if no real devices
-        console.log('No real devices, using mock devices only:', mockDevices);
-        devices.value = mockDevices;
-        return mockDevices;
-      }
-    } else {
-      // Production mode - use only real devices
-      if (!response || (Array.isArray(response) && response.length === 0)) {
-        console.warn('No devices returned from the API in production mode');
-        devices.value = [];
-        return [];
-      }
-      
-      const deviceList = Array.isArray(response) ? response : (response.data || []);
-      
-      // Map devices to include value and label properties for MultiSelect
-      const mappedDevices = deviceList.map(device => ({
-        ...device,
-        value: device.id || device.agent_id,
-        label: device.hostname
-      }));
-      
-      console.log('Setting devices.value to:', mappedDevices);
-      devices.value = mappedDevices;
-      return deviceList;
+    if (!response || (Array.isArray(response) && response.length === 0)) {
+      console.warn('No devices returned from the API');
+      devices.value = [];
+      return [];
     }
+    
+    const deviceList = Array.isArray(response) ? response : (response.data || []);
+    
+    // Map devices to include value and label properties for MultiSelect
+    const mappedDevices = deviceList.map(device => ({
+      ...device,
+      value: device.id || device.agent_id,
+      label: device.hostname
+    }));
+    
+    console.log('Setting devices.value to:', mappedDevices);
+    devices.value = mappedDevices;
+    return deviceList;
   } catch (error) {
     console.error('Failed to fetch devices:', error);
-    toastService.showError('Failed to fetch devices');
-    
-    // For testing purposes, add a mock device even on error in development mode
-    if (import.meta.env.DEV) {
-      const mockDevices = [{
-        id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        hostname: 'Mock Device (Error Fallback)',
-        agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        plat: 'darwin',
-        value: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        label: 'Mock Device (Error Fallback)'
-      }];
-      devices.value = mockDevices;
-      return mockDevices;
-    }
-    
+    toastService.showError(`Failed to fetch devices: ${error.message || 'Unknown error'}`);
     devices.value = [];
     return [];
   } finally {
@@ -522,18 +470,14 @@ const executeBulkScript = async () => {
     
     console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
     
-    // For development mode, use script ID 14 which is known to work based on the curl example
-    if (import.meta.env.DEV && payload.script) {
-      payload.script = 14;
-    }
-    
-    await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
+    const response = await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
-    toastService.showSuccess('Bulk script execution started');
+    toastService.showSuccess(response || 'Bulk script execution started');
   } catch (error) {
     console.error('Failed to execute bulk script:', error);
-    toastService.showError('Failed to execute bulk script');
+    const errorMessage = error.message || error.data || 'Failed to execute bulk script';
+    toastService.showError(errorMessage);
   } finally {
     executing.value = false;
   }
@@ -571,18 +515,14 @@ const executeBulkCommand = async () => {
     
     console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
     
-    // For development mode, use script ID 14 which is known to work based on the curl example
-    if (import.meta.env.DEV && payload.script) {
-      payload.script = 14;
-    }
-    
-    await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
+    const response = await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
-    toastService.showSuccess('Bulk command execution started');
+    toastService.showSuccess(response || 'Bulk command execution started');
   } catch (error) {
     console.error('Failed to execute bulk command:', error);
-    toastService.showError('Failed to execute bulk command');
+    const errorMessage = error.message || error.data || 'Failed to execute bulk command';
+    toastService.showError(errorMessage);
   } finally {
     executing.value = false;
   }
