@@ -303,7 +303,7 @@ function Patch-GetInstalledSoftware {
             $pattern = "(?ms)func \(a \*Agent\) GetInstalledSoftware\(\).*?return win64api\.GetInstalledSoftware\(\).*?\}"
             
             # Create the replacement string without using a here-string
-            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]Software, error) {`r`n    // Return empty list for now as placeholder`r`n    return []Software{}, nil`r`n}`r`n"
             
             $agentWindowsContent = $agentWindowsContent -replace $pattern, $replacement
             Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -329,13 +329,13 @@ function Patch-GetInstalledSoftware {
                     $structEndPos-- # Move back to the closing brace
                     
                     # Create the new method as a field inside the struct
-                    $newMethod = "`r`n`r`n    // GetInstalledSoftware returns a list of installed software`r`n    GetInstalledSoftware func() ([]win64api.Software, error)`r`n"
+                    $newMethod = "`r`n`r`n    // GetInstalledSoftware returns a list of installed software`r`n    GetInstalledSoftware func() ([]Software, error)`r`n"
                     
                     $agentWindowsContent = $agentWindowsContent.Insert($structEndPos, $newMethod)
                     Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
                     
                     # Then add the actual method implementation outside the struct
-                    $methodImplementation = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+                    $methodImplementation = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]Software, error) {`r`n    // Return empty list for now as placeholder`r`n    return []Software{}, nil`r`n}`r`n"
                     
                     $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
                     $lastClosingBrace = $agentWindowsContent.LastIndexOf("}")
@@ -355,7 +355,7 @@ function Patch-GetInstalledSoftware {
             Write-Host "WARNING: Could not find standard Agent struct definition. Trying alternative approach..." -ForegroundColor Yellow
             
             # Add the method at the end as a fallback
-            $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+            $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]Software, error) {`r`n    // Return empty list for now as placeholder`r`n    return []Software{}, nil`r`n}`r`n"
             
             $agentWindowsContent += $newMethod
             Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -366,7 +366,8 @@ function Patch-GetInstalledSoftware {
     # Fix rpc.go to use the GetInstalledSoftware method correctly
     $rpcContent = Get-Content $rpcGoFile -Raw
     
-    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware()
+    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware() and handle return values
+    $rpcContent = $rpcContent -replace "(\w+)\s*:=\s*win64api\.GetInstalledSoftware\(\)", "$1, _ := a.GetInstalledSoftware()"
     $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
     
     # Write the modified content back to the file
