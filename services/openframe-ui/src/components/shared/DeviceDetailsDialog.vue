@@ -171,25 +171,113 @@
   </Dialog>
   
   <!-- Results Dialog for displaying script execution history -->
-  <Dialog 
-    v-if="showHistoryDialog" 
-    :visible="showHistoryDialog"
-    @update:visible="showHistoryDialog = false"
+  <OFDialog
+    v-if="showHistoryDialog"
+    v-model="showHistoryDialog"
     :header="`History for ${displayDevice?.hostname}`"
-    :modal="true"
-    :draggable="false"
-    :style="{ width: '60vw', maxWidth: '800px' }"
-    class="p-dialog-custom"
+    width="60vw"
   >
-    <AgentHistory v-if="displayDevice" :agentId="displayDevice.agent_id" />
-  </Dialog>
+    <ModuleTable
+      :items="deviceHistory"
+      :loading="historyLoading"
+      :searchFields="['command', 'username', 'type', 'time', 'script_name']"
+      emptyTitle="No History Items"
+      emptyMessage="No history items are available for this device."
+      emptyHint="History items will appear here as commands and scripts are executed."
+    >
+      <Column field="time" header="Time" sortable>
+        <template #body="{ data }">
+          {{ formatTime(data.time) }}
+        </template>
+      </Column>
+      <Column field="type" header="Type" sortable>
+        <template #body="{ data }">
+          <Tag :value="formatType(data.type)" :severity="getTypeSeverity(data.type)" />
+        </template>
+      </Column>
+      <Column field="command" header="Command/Script" sortable>
+        <template #body="{ data }">
+          {{ data.script_name || data.command }}
+        </template>
+      </Column>
+      <Column field="username" header="User" sortable />
+      <Column header="Actions">
+        <template #body="{ data }">
+          <div class="flex gap-2 justify-content-end">
+            <OFButton
+              icon="pi pi-eye"
+              class="p-button-text p-button-sm"
+              v-tooltip.top="'View Output'"
+              @click="showOutputDialog(data)"
+            />
+          </div>
+        </template>
+      </Column>
+    </ModuleTable>
+  </OFDialog>
+  
+  <!-- Output Dialog -->
+  <OFDialog
+    v-if="selectedHistoryItem"
+    v-model="showOutputDialogVisible"
+    :header="getDialogTitle()"
+    width="60vw"
+  >
+    <div v-if="selectedHistoryItem.type === 'cmd_run'" class="mb-4">
+      <div class="of-form-group">
+        <label>Command</label>
+        <div class="code-block">
+          <code>{{ selectedHistoryItem.command }}</code>
+        </div>
+      </div>
+      <div class="of-form-group">
+        <label>Output</label>
+        <div class="code-block">
+          <pre>{{ selectedHistoryItem.results || 'No output' }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="selectedHistoryItem.type === 'script_run'" class="mb-4">
+      <div class="of-form-group">
+        <label>Script</label>
+        <div class="code-block">
+          <code>{{ selectedHistoryItem.script_name }}</code>
+        </div>
+      </div>
+      <div v-if="selectedHistoryItem.script_results" class="of-form-group">
+        <label>Output</label>
+        <div class="code-block">
+          <pre>{{ selectedHistoryItem.script_results.stdout || 'No stdout output' }}</pre>
+        </div>
+      </div>
+      <div v-if="selectedHistoryItem.script_results && selectedHistoryItem.script_results.stderr" class="of-form-group">
+        <label>Error</label>
+        <div class="code-block error">
+          <pre>{{ selectedHistoryItem.script_results.stderr }}</pre>
+        </div>
+      </div>
+      <div v-if="selectedHistoryItem.script_results" class="of-form-group">
+        <label>Execution Details</label>
+        <div class="execution-details">
+          <div class="detail-item">
+            <div class="detail-label">Exit Code</div>
+            <div class="detail-value">{{ selectedHistoryItem.script_results.retcode }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Execution Time</div>
+            <div class="detail-value">{{ selectedHistoryItem.script_results.execution_time.toFixed(2) }} sec</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </OFDialog>
 </template>
 
 <script setup lang="ts">
-import { ref } from '@vue/runtime-core';
-import { watch, computed } from '@vue/runtime-core';
+import { ref, watch, computed, onUnmounted } from '@vue/runtime-core';
 import Dialog from 'primevue/dialog';
-import { OFButton } from '../../components/ui';
+import { OFButton, OFDialog, Column } from '../../components/ui';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
 import Dropdown from 'primevue/dropdown';
@@ -199,7 +287,8 @@ import Checkbox from 'primevue/checkbox';
 import { restClient } from '../../apollo/apolloClient';
 import { ToastService } from '../../services/ToastService';
 import { ConfigService } from '../../config/config.service';
-import AgentHistory from './AgentHistory.vue';
+import ModuleTable from './ModuleTable.vue';
+import { HistoryEntry } from '../../types/rmm';
 
 interface Disk {
   free: string;
@@ -309,6 +398,12 @@ const emit = defineEmits<{
 
 const showEditDialog = ref(false);
 const showHistoryDialog = ref(false);
+const showOutputDialogVisible = ref(false);
+const selectedHistoryItem = ref<HistoryEntry | null>(null);
+const deviceHistory = ref<HistoryEntry[]>([]);
+const historyLoading = ref(false);
+const historyRefreshInterval = ref<number | null>(null);
+const previousDeviceHistory = ref<HistoryEntry[]>([]);
 const toastService = ToastService.getInstance();
 const loading = ref(false);
 const detailedDevice = ref<Device | null>(null);
@@ -444,6 +539,144 @@ const onDelete = () => {
   emit('delete');
   onClose();
 };
+
+// Format time for display
+const formatTime = (timestamp: string) => {
+  return new Date(timestamp).toLocaleString();
+};
+
+// Format type for display
+const formatType = (type: string) => {
+  return type === 'cmd_run' ? 'Command' : 'Script';
+};
+
+// Get severity for type tag
+const getTypeSeverity = (type: string) => {
+  return type === 'cmd_run' ? 'info' : 'success';
+};
+
+// Get dialog title based on history item type
+const getDialogTitle = () => {
+  if (!selectedHistoryItem.value) return 'Output Details';
+  
+  if (selectedHistoryItem.value.type === 'cmd_run') {
+    return 'Command Output';
+  } else {
+    return `Script Output: ${selectedHistoryItem.value.script_name}`;
+  }
+};
+
+// Show output dialog for a history item
+const showOutputDialog = (historyItem: HistoryEntry) => {
+  selectedHistoryItem.value = historyItem;
+  showOutputDialogVisible.value = true;
+};
+
+// Fetch history data for the device
+const fetchDeviceHistory = async () => {
+  if (!displayDevice?.agent_id) return;
+  
+  try {
+    historyLoading.value = true;
+    
+    // For local development, use mock data
+    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
+      const mockHistory: HistoryEntry[] = [
+        {
+          id: 1,
+          time: "2025-03-21T22:50:22.974500Z",
+          type: "cmd_run",
+          command: "echo \"dsaads\"",
+          username: "tactical",
+          results: "dsaads",
+          script_results: null,
+          collector_all_output: false,
+          save_to_agent_note: false,
+          agent: 1,
+          script: null,
+          custom_field: null
+        },
+        {
+          id: 2,
+          time: "2025-03-21T22:54:01.921251Z",
+          type: "script_run",
+          command: "",
+          username: "tactical",
+          results: null,
+          script_results: {
+            id: 2,
+            stderr: "usage: trmm4166938497 [-h] [--no-download] [--no-upload] [--single] [--bytes]\n                      [--share] [--simple] [--csv]\n                      [--csv-delimiter CSV_DELIMITER] [--csv-header] [--json]\n                      [--list] [--server SERVER] [--exclude EXCLUDE]\n                      [--mini MINI] [--source SOURCE] [--timeout TIMEOUT]\n                      [--secure] [--no-pre-allocate] [--version]\ntrmm4166938497: error: unrecognized arguments: dsadadas\n",
+            stdout: "",
+            retcode: 0,
+            execution_time: 0.371898875
+          },
+          script_name: "Network - Speed Test",
+          collector_all_output: false,
+          save_to_agent_note: false,
+          agent: 1,
+          script: 14,
+          custom_field: null
+        }
+      ];
+      
+      // Check if data has changed before updating
+      if (JSON.stringify(mockHistory) !== JSON.stringify(previousDeviceHistory.value)) {
+        deviceHistory.value = mockHistory;
+        previousDeviceHistory.value = JSON.parse(JSON.stringify(mockHistory));
+      }
+      
+      historyLoading.value = false;
+      return;
+    }
+    
+    const runtimeConfig = configService.getConfig();
+    const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+    const response = await restClient.get<HistoryEntry[]>(`${API_URL}/agents/${displayDevice.agent_id}/history/`);
+    const newHistory = Array.isArray(response) ? response : [];
+    
+    // Only update the UI if data has changed
+    if (JSON.stringify(newHistory) !== JSON.stringify(previousDeviceHistory.value)) {
+      deviceHistory.value = newHistory;
+      previousDeviceHistory.value = JSON.parse(JSON.stringify(newHistory));
+    }
+  } catch (error) {
+    console.error('Failed to fetch device history:', error);
+    toastService.showError('Failed to fetch device history');
+  } finally {
+    historyLoading.value = false;
+  }
+};
+
+// Set up the history refresh interval when the history dialog is opened
+watch(showHistoryDialog, (newValue) => {
+  if (newValue) {
+    // Fetch history immediately
+    fetchDeviceHistory();
+    
+    // Set up refresh interval
+    if (historyRefreshInterval.value) {
+      clearInterval(historyRefreshInterval.value);
+    }
+    
+    historyRefreshInterval.value = window.setInterval(() => {
+      fetchDeviceHistory();
+    }, 1000);
+  } else {
+    // Clean up interval when dialog is closed
+    if (historyRefreshInterval.value) {
+      clearInterval(historyRefreshInterval.value);
+      historyRefreshInterval.value = null;
+    }
+  }
+});
+
+// Clean up interval when component is unmounted
+onUnmounted(() => {
+  if (historyRefreshInterval.value) {
+    clearInterval(historyRefreshInterval.value);
+    historyRefreshInterval.value = null;
+  }
+});
 </script>
 
 <style scoped>
@@ -527,4 +760,68 @@ const onDelete = () => {
 :deep(.p-tag) {
   text-transform: capitalize;
 }
-</style>                
+
+.of-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.of-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.code-block {
+  background: var(--surface-ground);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.code-block code,
+.code-block pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: var(--font-family-monospace, monospace);
+  font-size: 0.875rem;
+}
+
+.code-block.error {
+  background: var(--surface-ground);
+  border-color: var(--red-100);
+  color: var(--text-color);
+}
+
+.code-block.error code,
+.code-block.error pre {
+  color: var(--text-color);
+}
+
+.execution-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+}
+
+.detail-item {
+  min-width: 150px;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+</style>                                    
