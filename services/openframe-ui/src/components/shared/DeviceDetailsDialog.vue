@@ -25,6 +25,12 @@
           </div>
           <div class="flex gap-2">
             <OFButton 
+              icon="pi pi-history" 
+              class="p-button-text p-button-sm" 
+              v-tooltip.top="'View History'"
+              @click="showHistoryDialog = true"
+            />
+            <OFButton 
               icon="pi pi-code" 
               class="p-button-text p-button-sm" 
               v-tooltip.top="'Run Command'"
@@ -163,6 +169,20 @@
       </div>
     </template>
   </Dialog>
+  
+  <!-- Results Dialog for displaying script execution history -->
+  <Dialog 
+    v-if="showHistoryDialog" 
+    :visible="showHistoryDialog"
+    @update:visible="showHistoryDialog = false"
+    :header="`History for ${displayDevice?.hostname}`"
+    :modal="true"
+    :draggable="false"
+    :style="{ width: '60vw', maxWidth: '800px' }"
+    class="p-dialog-custom"
+  >
+    <AgentHistory v-if="displayDevice" :agentId="displayDevice.agent_id" />
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -179,6 +199,7 @@ import Checkbox from 'primevue/checkbox';
 import { restClient } from '../../apollo/apolloClient';
 import { ToastService } from '../../services/ToastService';
 import { ConfigService } from '../../config/config.service';
+import AgentHistory from './AgentHistory.vue';
 
 interface Disk {
   free: string;
@@ -287,6 +308,7 @@ const emit = defineEmits<{
 }>();
 
 const showEditDialog = ref(false);
+const showHistoryDialog = ref(false);
 const toastService = ToastService.getInstance();
 const loading = ref(false);
 const detailedDevice = ref<Device | null>(null);
@@ -505,4 +527,4 @@ const onDelete = () => {
 :deep(.p-tag) {
   text-transform: capitalize;
 }
-</style>  
+</style>                
