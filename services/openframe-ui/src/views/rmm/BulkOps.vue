@@ -343,7 +343,7 @@ const fetchScripts = async () => {
 const fetchDevices = async () => {
   try {
     const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
-    devices.value = response.data || [];
+    devices.value = Array.isArray(response) ? response : (response.data || []);
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
@@ -400,7 +400,7 @@ const executeBulkScript = async () => {
       monType: "all",
       osType: bulkOsType.value,
       cmd: "",
-      shell: "cmd",
+      shell: bulkOsType.value === "darwin" ? "/bin/bash" : (bulkOsType.value === "linux" ? "/bin/bash" : "cmd"),
       custom_shell: null,
       custom_field: null,
       collector_all_output: false,
@@ -439,7 +439,7 @@ const executeBulkCommand = async () => {
       monType: "all",
       osType: bulkOsType.value,
       cmd: command.value,
-      shell: shellType.value,
+      shell: bulkOsType.value === "darwin" ? "/bin/bash" : (bulkOsType.value === "linux" ? "/bin/bash" : shellType.value),
       custom_shell: null,
       custom_field: null,
       collector_all_output: false,
