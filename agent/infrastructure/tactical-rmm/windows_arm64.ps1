@@ -302,7 +302,7 @@ function Patch-GetInstalledSoftware {
             $pattern = "(?ms)func \(a \*Agent\) GetInstalledSoftware\(\).*?return win64api\.GetInstalledSoftware\(\).*?\}"
             
             # Create the replacement string without using a here-string
-            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware()  {`r`n    return win64api\\.GetInstalledSoftware\(\)`r`n}`r`n"
             
             $agentWindowsContent = $agentWindowsContent -replace $pattern, $replacement
             Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -317,63 +317,18 @@ function Patch-GetInstalledSoftware {
                 $methodEndPos = $agentWindowsContent.IndexOf("}", $agentWindowsContent.IndexOf("func (a *Agent)"))
                 if ($methodEndPos -gt 0) {
                     # Create the new method string without using a here-string
-                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware()  {`r`n    return win64api\\.GetInstalledSoftware\(\)`r`n}`r`n"
                     
                     $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
                     Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
                     Write-Host "Added GetInstalledSoftware method to agent_windows.go after existing method"
                 } else {
                     Write-Host "ERROR: Could not find end of existing method in agent_windows.go" -ForegroundColor Red
-                    
-                    # Fallback: Add at the end of the file
-                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
-                    
-                    $agentWindowsContent += $newMethod
-                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go (fallback)"
                 }
             } else {
                 # If no existing method found, add it at the end of the file
-                $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+                $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware()  {`r`n    return win64api\\.GetInstalledSoftware\(\)`r`n}`r`n"
                 
-                $agentWindowsContent += $newMethod
-                Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go"
-            }
-        } else {
-            Write-Host "ERROR: Could not find Agent struct definition in agent_windows.go" -ForegroundColor Red
-        }
-    }
-    
-    # Fix rpc.go to use the GetInstalledSoftware method correctly
-    $rpcContent = Get-Content $rpcGoFile -Raw
-    
-    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware()
-    $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
-    
-    # Write the modified content back to the file
-    Set-Content -Path $rpcGoFile -Value $rpcContent
-    
-    Write-Host "GetInstalledSoftware patch applied to agent_windows.go and rpc.go"
-    
-    return $true
-}
-
-                    $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
-                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    Write-Host "Added GetInstalledSoftware method to agent_windows.go after existing method"
-                } else {
-                    Write-Host "ERROR: Could not find end of existing method in agent_windows.go" -ForegroundColor Red
-                }
-            } else {
-                # If no existing method found, add it at the end of the file
-                $newMethod = @"
-
-// GetInstalledSoftware returns a list of installed software
-func (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {
-    return win64api.GetInstalledSoftware()
-}
-"@
                 $agentWindowsContent += $newMethod
                 Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
                 Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go"
