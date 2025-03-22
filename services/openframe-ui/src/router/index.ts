@@ -20,6 +20,7 @@ import RMMDashboard from '../views/rmm/Dashboard.vue'
 import RMMDevices from '../views/rmm/Devices.vue'
 import RMMMonitoring from '../views/rmm/Monitoring.vue'
 import RMMScripts from '../views/rmm/Scripts.vue'
+import RMMHistory from '../views/rmm/History.vue'
 import RMMAutomation from '../views/rmm/Automation.vue'
 import RMMSettings from '../views/rmm/Settings.vue'
 import { AuthService } from '@/services/AuthService';
@@ -160,6 +161,12 @@ const router = createRouter({
           meta: { title: 'RMM Scripts' }
         },
         {
+          path: 'history',
+          name: 'rmm-history',
+          component: RMMHistory,
+          meta: { title: 'RMM History' }
+        },
+        {
           path: 'bulkops',
           name: 'rmm-bulkops',
           component: () => import('../views/rmm/BulkOps.vue'),
@@ -248,4 +255,4 @@ router.beforeEach(async (to, from, next) => {
   }
 });
 
-export default router  
+export default router    

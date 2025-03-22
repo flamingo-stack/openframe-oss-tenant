@@ -22,6 +22,12 @@
         class="p-datatable-sm"
         :emptyMessage="'No history records found'"
       >
+        <Column v-if="props.allAgentsMode" field="agent_hostname" header="Agent" :sortable="true">
+          <template #body="slotProps">
+            {{ slotProps.data.agent_hostname || `Agent ${slotProps.data.agent}` }}
+          </template>
+        </Column>
+        
         <Column field="time" header="Time" :sortable="true">
           <template #body="slotProps">
             {{ formatTimestamp(slotProps.data.time) }}
@@ -142,7 +148,8 @@ import Dialog from 'primevue/dialog';
 import Tag from 'primevue/tag';
 
 const props = defineProps<{
-  agentId: string;
+  agentId: string | null;
+  allAgentsMode?: boolean;
 }>();
 
 const historyItems = ref<HistoryEntry[]>([]);
@@ -162,9 +169,82 @@ const fetchHistory = async () => {
   error.value = null;
   
   try {
-    const response = await restClient.get<HistoryEntry[]>(
-      `${configService.getConfig().gatewayUrl}/tools/tactical-rmm/agents/${props.agentId}/history/`
-    );
+    // Use mock data for testing in local development
+    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
+      // Mock history data for testing
+      const mockHistory: HistoryEntry[] = [
+        {
+          id: 1,
+          time: "2025-03-21T22:50:22.974500Z",
+          type: "cmd_run",
+          command: "echo \"dsaads\"",
+          username: "tactical",
+          results: "dsaads",
+          script_results: null,
+          collector_all_output: false,
+          save_to_agent_note: false,
+          agent: 1,
+          agent_hostname: "test-device",
+          script: null,
+          custom_field: null
+        },
+        {
+          id: 2,
+          script_name: "Network - Speed Test",
+          time: "2025-03-21T22:54:01.921251Z",
+          type: "script_run",
+          command: "",
+          username: "tactical",
+          results: null,
+          script_results: {
+            id: 2,
+            stderr: "usage: trmm4166938497 [-h] [--no-download] [--no-upload] [--single] [--bytes]\n                      [--share] [--simple] [--csv]\n                      [--csv-delimiter CSV_DELIMITER] [--csv-header] [--json]\n                      [--list] [--server SERVER] [--exclude EXCLUDE]\n                      [--mini MINI] [--source SOURCE] [--timeout TIMEOUT]\n                      [--secure] [--no-pre-allocate] [--version]\ntrmm4166938497: error: unrecognized arguments: dsadadas\n",
+            stdout: "",
+            retcode: 0,
+            execution_time: 0.371898875
+          },
+          collector_all_output: false,
+          save_to_agent_note: false,
+          agent: 1,
+          agent_hostname: "test-device",
+          script: 14,
+          custom_field: null
+        },
+        {
+          id: 3,
+          script_name: "Network - Online check",
+          time: "2025-03-21T22:55:49.449106Z",
+          type: "script_run",
+          command: "",
+          username: "tactical",
+          results: null,
+          script_results: {
+            id: 3,
+            stderr: "",
+            stdout: "PING_HOSTNAME was not provided. Using 'localhost'\nPING_TIMEOUT was not provided. Using '5'\nSuccess!\nPING localhost (127.0.0.1): 56 data bytes\n64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.056 ms\n\n--- localhost ping statistics ---\n1 packets transmitted, 1 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 0.056/0.056/0.056/0.000 ms\n\n",
+            retcode: 1,
+            execution_time: 0.231158
+          },
+          collector_all_output: false,
+          save_to_agent_note: false,
+          agent: 1,
+          agent_hostname: "test-device",
+          script: 128,
+          custom_field: null
+        }
+      ];
+      
+      historyItems.value = mockHistory;
+      loading.value = false;
+      return;
+    }
+    
+    // Determine endpoint based on whether we have an agent ID
+    const endpoint = props.agentId 
+      ? `${configService.getConfig().gatewayUrl}/tools/tactical-rmm/agents/${props.agentId}/history/`
+      : `${configService.getConfig().gatewayUrl}/tools/tactical-rmm/agents/history/`;
+    
+    const response = await restClient.get<HistoryEntry[]>(endpoint);
     historyItems.value = response;
   } catch (err: any) {
     error.value = err.message || 'Failed to load history';
@@ -188,18 +268,12 @@ const showScriptResultsDialog = (results: ScriptResult) => {
   scriptResultsDialogVisible.value = true;
 };
 
-watch(() => props.agentId, (newValue) => {
-  if (newValue) {
-    fetchHistory();
-  } else {
-    historyItems.value = [];
-  }
+watch(() => props.agentId, () => {
+  fetchHistory();
 });
 
 onMounted(() => {
-  if (props.agentId) {
-    fetchHistory();
-  }
+  fetchHistory();
 });
 </script>
 

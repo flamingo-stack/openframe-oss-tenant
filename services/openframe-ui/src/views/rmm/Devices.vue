@@ -230,6 +230,42 @@ const getIPv4Addresses = (ips: string) => {
 const fetchDevices = async () => {
   try {
     loading.value = true;
+    
+    // Mock device for testing
+    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
+      // Use mock data for testing
+      const mockDevice = {
+        agent_id: "PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP",
+        hostname: "test-device",
+        plat: "linux",
+        operating_system: "Ubuntu 20.04",
+        status: "online",
+        last_seen: "2025-03-22T17:38:03.830312Z",
+        public_ip: "192.168.1.100",
+        local_ips: "192.168.1.100,127.0.0.1",
+        cpu_model: ["Intel Core i7"],
+        total_ram: 16,
+        logged_in_username: "tactical",
+        timezone: "UTC",
+        make_model: "Virtual Machine",
+        disks: [
+          {
+            free: "50 GB",
+            used: "50 GB",
+            total: "100 GB",
+            device: "/dev/sda1",
+            fstype: "ext4",
+            percent: 50
+          }
+        ],
+        physical_disks: ["/dev/sda 100GB"]
+      };
+      
+      devices.value = [mockDevice];
+      loading.value = false;
+      return;
+    }
+    
     const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
     devices.value = Array.isArray(response) ? response : [];
   } catch (error) {
