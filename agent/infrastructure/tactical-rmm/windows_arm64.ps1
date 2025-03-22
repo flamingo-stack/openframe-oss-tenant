@@ -61,7 +61,8 @@ $ContactEmail = $Email -or ""
 $RmmServerUrl = $RmmUrl -or ""
 $AgentAuthKey = $AuthKey -or ""
 $AgentLogPath = $LogPath -or ""
-$BuildFolder = $BuildFolder -or "rmmagent"  # default
+# Ensure BuildFolder has a default that's not the variable name itself
+$script:BuildFolder = if ($BuildFolder -eq $true -or [string]::IsNullOrEmpty($BuildFolder)) { "rmmagent" } else { $BuildFolder }
 $SkipRun = $SkipRun -or $false
 $ClientId = $ClientId -or ""
 $SiteId = $SiteId -or ""
@@ -302,7 +303,7 @@ function Patch-GetInstalledSoftware {
             $pattern = "(?ms)func \(a \*Agent\) GetInstalledSoftware\(\).*?return win64api\.GetInstalledSoftware\(\).*?\}"
             
             # Create the replacement string without using a here-string
-            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware()  {`r`n    return win64api\\.GetInstalledSoftware\(\)`r`n}`r`n"
+            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
             
             $agentWindowsContent = $agentWindowsContent -replace $pattern, $replacement
             Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -317,7 +318,7 @@ function Patch-GetInstalledSoftware {
                 $methodEndPos = $agentWindowsContent.IndexOf("}", $agentWindowsContent.IndexOf("func (a *Agent)"))
                 if ($methodEndPos -gt 0) {
                     # Create the new method string without using a here-string
-                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware()  {`r`n    return win64api\\.GetInstalledSoftware\(\)`r`n}`r`n"
+                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
                     
                     $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
                     Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -327,7 +328,7 @@ function Patch-GetInstalledSoftware {
                 }
             } else {
                 # If no existing method found, add it at the end of the file
-                $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware()  {`r`n    return win64api\\.GetInstalledSoftware\(\)`r`n}`r`n"
+                $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
                 
                 $agentWindowsContent += $newMethod
                 Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
@@ -404,7 +405,8 @@ function Prompt-IfEmpty {
     
     $currVal = Get-Variable -Name $VarName -ValueOnly -ErrorAction SilentlyContinue
     
-    if ([string]::IsNullOrEmpty($currVal)) {
+    # If value is True/False (boolean parameter) or null/empty, prompt for value
+    if ($currVal -eq $true -or $currVal -eq $false -or [string]::IsNullOrEmpty($currVal)) {
         if (-not [string]::IsNullOrEmpty($DefaultVal)) {
             $userInp = Read-Host "$PromptMsg [$DefaultVal]"
             if ([string]::IsNullOrEmpty($userInp)) {
@@ -413,6 +415,7 @@ function Prompt-IfEmpty {
         } else {
             $userInp = Read-Host "$PromptMsg"
         }
+        # Use script scope to ensure variables are available throughout the script
         Set-Variable -Name $VarName -Value $userInp -Scope Script
     }
 }
@@ -609,7 +612,8 @@ function Prompt-RunAgent {
             Write-Host "Using default log path: $AgentLogPath"
         }
         
-        $cmd = ".\$OUTPUT_BINARY -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$ClientId`" -site-id `"$SiteId`" -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh"
+        # Use script-scoped variables for the command
+        $cmd = ".\$OUTPUT_BINARY -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$script:ClientId`" -site-id `"$script:SiteId`" -agent-type `"$script:AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh"
         
         Write-Host "Running: $cmd"
         Invoke-Expression $cmd
@@ -655,13 +659,13 @@ function Prompt-AllInputs {
     if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentAuthKey)) {
         Prompt-IfEmpty -VarName "AgentAuthKey" -PromptMsg "Agent Auth Key (string from your RMM)"
     }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($ClientId)) {
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true) {
         Prompt-IfEmpty -VarName "ClientId" -PromptMsg "Client ID"
     }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId)) {
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true) {
         Prompt-IfEmpty -VarName "SiteId" -PromptMsg "Site ID"
     }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType)) {
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true) {
         Prompt-IfEmpty -VarName "AgentType" -PromptMsg "Agent type (server/workstation) [workstation]" -DefaultVal "workstation"
     }
     # Only prompt for log path if explicitly requested
