@@ -68,20 +68,45 @@ param (
 
 # Display help if requested
 if ($Help) {
-    Write-Host "Usage: .\windows_arm64.ps1 [options]"
-    Write-Host "Options:"
+    Write-Host "=========================================================" -ForegroundColor Cyan
+    Write-Host "  Tactical RMM Agent Installer for Windows ARM64" -ForegroundColor Cyan
+    Write-Host "=========================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "DESCRIPTION:"
+    Write-Host "  This script automates the installation of the Tactical RMM agent on Windows ARM64 systems."
+    Write-Host "  It handles dependency installation, code compilation, and agent configuration."
+    Write-Host ""
+    Write-Host "USAGE:"
+    Write-Host "  .\windows_arm64.ps1 [options]" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "OPTIONS:" -ForegroundColor Green
+    Write-Host "  -Help                      Display this help message"
     Write-Host "  -OrgName <NAME>            Organization name placeholder"
     Write-Host "  -Email <EMAIL>             Contact email placeholder"
-    Write-Host "  -RmmUrl <URL>              RMM server URL"
-    Write-Host "  -AuthKey <KEY>             Agent auth key"
-    Write-Host "  -ClientId <ID>             Client ID"
-    Write-Host "  -SiteId <ID>               Site ID"
+    Write-Host "  -RmmUrl <URL>              RMM server URL (e.g., http://localhost:8000)"
+    Write-Host "  -AuthKey <KEY>             Agent authentication key"
+    Write-Host "  -ClientId <ID>             Client ID for agent registration"
+    Write-Host "  -SiteId <ID>               Site ID for agent registration"
     Write-Host "  -AgentType <TYPE>          Agent type (server/workstation) [default: workstation]"
-    Write-Host "  -LogPath <PATH>            Agent log file path"
-    Write-Host "  -BuildFolder <FOLDER>      Where to clone and compile (default: rmmagent)"
-    Write-Host "  -SkipRun                   Skip final 'run agent' step"
+    Write-Host "  -LogPath <PATH>            Custom log file path for agent"
+    Write-Host "  -BuildFolder <FOLDER>      Directory to clone and compile agent [default: rmmagent]"
+    Write-Host "  -SkipRun                   Skip the final agent installation step"
     Write-Host ""
-    Write-Host "Any missing fields are prompted interactively."
+    Write-Host "EXAMPLES:" -ForegroundColor Green
+    Write-Host "  # Run in interactive mode (will prompt for all required values):"
+    Write-Host "  .\windows_arm64.ps1"
+    Write-Host ""
+    Write-Host "  # Provide all parameters for non-interactive installation:"
+    Write-Host "  .\windows_arm64.ps1 -OrgName 'MyCompany' -Email 'admin@example.com' -RmmUrl 'http://rmm.example.com' \"
+    Write-Host "                     -AuthKey 'your-auth-key' -ClientId '1' -SiteId '1' -AgentType 'workstation' \"
+    Write-Host "                     -LogPath 'C:\logs\tactical.log'"
+    Write-Host ""
+    Write-Host "NOTES:" -ForegroundColor Green
+    Write-Host "  - Requires administrator privileges"
+    Write-Host "  - Will install Git and Go if not already present"
+    Write-Host "  - Any missing required parameters will be prompted interactively"
+    Write-Host "  - The script performs an aggressive uninstallation of any existing agent before installation"
+    Write-Host ""
     exit 0
 }
 
