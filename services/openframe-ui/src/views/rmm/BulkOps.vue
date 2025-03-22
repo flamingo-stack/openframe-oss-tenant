@@ -476,7 +476,11 @@ const executeBulkScript = async () => {
     toastService.showSuccess(response || 'Bulk script execution started');
   } catch (error) {
     console.error('Failed to execute bulk script:', error);
-    const errorMessage = error.message || error.data || 'Failed to execute bulk script';
+    let errorMessage = error.message || error.data || 'Failed to execute bulk script';
+    // Remove quotes from error message if present
+    if (typeof errorMessage === 'string' && errorMessage.startsWith('"') && errorMessage.endsWith('"')) {
+      errorMessage = errorMessage.substring(1, errorMessage.length - 1);
+    }
     toastService.showError(errorMessage);
   } finally {
     executing.value = false;
@@ -521,7 +525,11 @@ const executeBulkCommand = async () => {
     toastService.showSuccess(response || 'Bulk command execution started');
   } catch (error) {
     console.error('Failed to execute bulk command:', error);
-    const errorMessage = error.message || error.data || 'Failed to execute bulk command';
+    let errorMessage = error.message || error.data || 'Failed to execute bulk command';
+    // Remove quotes from error message if present
+    if (typeof errorMessage === 'string' && errorMessage.startsWith('"') && errorMessage.endsWith('"')) {
+      errorMessage = errorMessage.substring(1, errorMessage.length - 1);
+    }
     toastService.showError(errorMessage);
   } finally {
     executing.value = false;
