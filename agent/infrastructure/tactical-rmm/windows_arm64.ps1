@@ -590,7 +590,8 @@ function Compile-RMMAgent {
         }
         
         if ($compileOutput -match "syntax error: unexpected comma, expected }") {
-            Write-Host "Detected syntax error in agent_windows.go. This is a known issue with the GetInstalledSoftware method." -ForegroundColor Yellow
+            Write-Host "Detected syntax error in agent_windows.go. Applying simplified implementation for GetInstalledSoftware method." -ForegroundColor Yellow
+            Write-Host "This will ensure compilation succeeds even with minimal functionality." -ForegroundColor Yellow
             Write-Host "Attempting to fix the syntax error by applying a correct implementation..." -ForegroundColor Yellow
             
             # Apply the fix using Fix-GetInstalledSoftwareMethod
@@ -606,7 +607,8 @@ function Compile-RMMAgent {
             $compileSuccess = $LASTEXITCODE -eq 0
             
             if ($compileSuccess) {
-                Write-Host "Compilation successful after applying fix!" -ForegroundColor Green
+                Write-Host "Compilation successful with simplified GetInstalledSoftware implementation!" -ForegroundColor Green
+                Write-Host "Note: Agent will report empty software list initially. Full functionality can be enhanced later." -ForegroundColor Cyan
             } else {
                 Write-Host "Compilation still failed after applying fix. Continuing with installation process..." -ForegroundColor Yellow
                 Write-Host $compileOutput
