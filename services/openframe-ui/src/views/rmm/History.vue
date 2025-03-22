@@ -44,7 +44,6 @@
         emptyMessage="No history items are available."
         emptyHint="History items will appear here as commands and scripts are executed."
         :filters="filters"
-        style="width: 100%"
       >
           <Column field="time" header="Time" sortable style="width: 15%">
             <template #body="{ data }">
@@ -181,7 +180,7 @@ const selectedHistoryItem = ref<HistoryEntry | null>(null);
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-  type: { value: null, matchMode: FilterMatchMode.EQUALS }
+  type: { value: '', matchMode: FilterMatchMode.EQUALS }
 });
 
 const typeOptions = [
@@ -383,9 +382,8 @@ onUnmounted(() => {
 .of-filters-row {
   display: flex;
   gap: 1rem;
-  align-items: center;
+  align-items: stretch;
   height: 42px;
-  margin-bottom: 1rem;
 }
 
 .of-search-container {
