@@ -128,6 +128,15 @@ $ContactEmail = $Email
 $RmmServerUrl = $RmmUrl
 $AgentAuthKey = $AuthKey
 $AgentLogPath = $LogPath
+# Ensure ClientId and SiteId are properly assigned from parameters
+if ($PSBoundParameters.ContainsKey('ClientId')) {
+    # ClientId parameter was explicitly provided
+    Write-Host "Using provided Client ID: $ClientId"
+}
+if ($PSBoundParameters.ContainsKey('SiteId')) {
+    # SiteId parameter was explicitly provided
+    Write-Host "Using provided Site ID: $SiteId"
+}
 if ($SkipRun) {
     $SkipRun = $true
 }
