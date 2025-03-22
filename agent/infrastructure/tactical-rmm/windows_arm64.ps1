@@ -403,6 +403,19 @@ func (a *Agent) GetInstalledSoftware() ([]Software, error) {
     # Line 338 in rpc.go
     $rpcContent = $rpcContent -replace "software\s*=\s*a\.GetInstalledSoftware\(\)", "software, _ = a.GetInstalledSoftware()"
     
+    # Fix agent_windows.go to handle assignment mismatch errors
+    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
+    
+    # Fix line 655 in agent_windows.go
+    $agentWindowsContent = $agentWindowsContent -replace "(\w+)\s*=\s*a\.GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
+    
+    # Additional patterns to catch more variations
+    $agentWindowsContent = $agentWindowsContent -replace "(\w+)\s*:=\s*a\.GetInstalledSoftware\(\)", "$1, _ := a.GetInstalledSoftware()"
+    $agentWindowsContent = $agentWindowsContent -replace "(\w+)\s*=\s*GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
+    
+    # Write the updated content back to agent_windows.go
+    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
+    
     # Replace any remaining direct calls
     $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
     
