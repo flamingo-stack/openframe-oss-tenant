@@ -241,3 +241,28 @@ export interface Task {
   status: string;
   completed: boolean;
 } 
+
+// History related interfaces
+export interface ScriptResult {
+  id: number;
+  stderr: string;
+  stdout: string;
+  retcode: number;
+  execution_time: number;
+}
+
+export interface HistoryEntry {
+  id: number;
+  time: string;
+  type: string;
+  command: string;
+  username: string;
+  results: string | null;
+  script_results: ScriptResult | null;
+  collector_all_output: boolean;
+  save_to_agent_note: boolean;
+  agent: number;
+  script: number | null;
+  script_name?: string;
+  custom_field: any | null;
+} 
