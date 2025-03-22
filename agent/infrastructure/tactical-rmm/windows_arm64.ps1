@@ -265,165 +265,45 @@ function Patch-NatsWebsocketUrl {
 # Patching GetInstalledSoftware method
 ############################
 
-function Patch-GetInstalledSoftware {
-    Write-Host "Patching agent_windows.go and rpc.go to fix GetInstalledSoftware method..."
+function Patch-GoFiles {
+    Write-Host "Checking for ARM64-specific implementations..." -ForegroundColor Yellow
     
-    # Find the agent_windows.go file
-    $agentWindowsGoFile = "agent\agent_windows.go"
-    $rpcGoFile = "agent\rpc.go"
+    # Define the path for software_windows_arm64.go
+    $softwareARM64File = "agent\software_windows_arm64.go"
     
-    Write-Host "Checking for agent_windows.go at path: $agentWindowsGoFile"
-    if (-not (Test-Path $agentWindowsGoFile)) {
-        Write-Host "ERROR: Cannot find $agentWindowsGoFile. Skipping GetInstalledSoftware patch." -ForegroundColor Red
-        return $false
-    }
-    
-    Write-Host "Checking for rpc.go at path: $rpcGoFile"
-    if (-not (Test-Path $rpcGoFile)) {
-        Write-Host "ERROR: Cannot find $rpcGoFile. Skipping GetInstalledSoftware patch." -ForegroundColor Red
-        return $false
-    }
-    
-    # Create backups
-    Copy-Item $agentWindowsGoFile "$agentWindowsGoFile.bak"
-    Copy-Item $rpcGoFile "$rpcGoFile.bak"
-    
-    # Add GetInstalledSoftware method to Agent struct in agent_windows.go
-    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
-    
-    # Check if the file already has the GetInstalledSoftware method
-    if ($agentWindowsContent -match "func \(a \*Agent\) GetInstalledSoftware\(\)") {
-        Write-Host "GetInstalledSoftware method already exists in agent_windows.go. Forcing update to fix return type and implementation."
+    # Check if the file already exists
+    if (-not (Test-Path $softwareARM64File)) {
+        Write-Host "Creating ARM64-specific implementation for GetInstalledSoftware..." -ForegroundColor Yellow
         
-        # Always update the method to ensure it has the correct implementation
-        # Check for syntax errors as well
-        if ($true) {
-            Write-Host "Found potential syntax errors in existing GetInstalledSoftware method. Attempting to fix..."
-            
-            # Find the method and replace it with a corrected version
-            $pattern = "(?ms)func \(a \*Agent\) GetInstalledSoftware\(\).*?return win64api\.GetInstalledSoftware\(\).*?\}"
-            
-            # Add the Software struct definition
-            $softwareStructDefinition = @"
+        # Create the minimal implementation file
+        $armImplementation = @"
+// Software implementation for Windows ARM64
+
+package agent
+
 // Software represents an installed software package
 type Software struct {
-    Name        string
-    Version     string
-    Publisher   string
-    InstallDate string
-    Size        int64
+	Name      string
+	Version   string
+	Publisher string
 }
-"@
 
-            # Create the replacement string using a here-string for better readability
-            $replacement = @"
-
-$softwareStructDefinition
-
-// GetInstalledSoftware returns a list of installed software
+// GetInstalledSoftware returns a list of installed software on Windows ARM64
 func (a *Agent) GetInstalledSoftware() ([]Software, error) {
-    // Return empty list for now as placeholder
-    return []Software{}, nil
+	// Initially return empty slice for successful compilation
+	// Future versions can implement actual software detection
+	return []Software{}, nil
 }
 "@
-            
-            $agentWindowsContent = $agentWindowsContent -replace $pattern, $replacement
-            Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-            Write-Host "Fixed syntax in existing GetInstalledSoftware method"
-        }
+        
+        # Write the file
+        Set-Content -Path $softwareARM64File -Value $armImplementation
+        Write-Host "Created ARM64-specific implementation file: $softwareARM64File" -ForegroundColor Green
     } else {
-        # Find the Agent struct definition - allow for different whitespace patterns
-        if ($agentWindowsContent -match "type\s+Agent\s+struct\s*{") {
-            # Find the actual Agent struct closing brace to insert our method INSIDE the struct
-            $structStartPos = $agentWindowsContent.IndexOf("{", $agentWindowsContent.IndexOf("type Agent struct"))
-            if ($structStartPos -gt 0) {
-                # Find the matching closing brace of the struct
-                $braceCount = 1
-                $structEndPos = $structStartPos + 1
-                while ($braceCount -gt 0 -and $structEndPos -lt $agentWindowsContent.Length) {
-                    if ($agentWindowsContent[$structEndPos] -eq '{') { $braceCount++ }
-                    if ($agentWindowsContent[$structEndPos] -eq '}') { $braceCount-- }
-                    $structEndPos++
-                }
-                
-                if ($braceCount -eq 0) {
-                    # Insert the method INSIDE the struct before the closing brace
-                    $structEndPos-- # Move back to the closing brace
-                    
-                    # Add the method inside the struct using a here-string for better readability
-                    $softwareMethodDefinition = @"
-
-    // GetInstalledSoftware returns installed software
-    GetInstalledSoftware func() ([]Software, error)
-"@
-                    $newMethod = $softwareMethodDefinition
-                    
-                    $agentWindowsContent = $agentWindowsContent.Insert($structEndPos, $newMethod)
-                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    
-                    # Then add the actual method implementation outside the struct
-                    $methodImplementation = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]Software, error) {`r`n    // Return empty list for now as placeholder`r`n    return []Software{}, nil`r`n}`r`n"
-                    
-                    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
-                    $lastClosingBrace = $agentWindowsContent.LastIndexOf("}")
-                    if ($lastClosingBrace -gt 0) {
-                        $agentWindowsContent = $agentWindowsContent.Insert($lastClosingBrace + 1, $methodImplementation)
-                        Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                        Write-Host "Added GetInstalledSoftware method to agent_windows.go as a field in the Agent struct and implemented the method" -ForegroundColor Green
-                    }
-                } else {
-                    Write-Host "ERROR: Could not find matching closing brace for Agent struct definition" -ForegroundColor Red
-                }
-            } else {
-                Write-Host "ERROR: Could not find opening brace for Agent struct definition" -ForegroundColor Red
-            }
-        } else {
-            # Try a different approach - look for other indicators of the Agent struct
-            Write-Host "WARNING: Could not find standard Agent struct definition. Trying alternative approach..." -ForegroundColor Yellow
-            
-            # Add the method at the end as a fallback
-            $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]Software, error) {`r`n    // Return empty list for now as placeholder`r`n    return []Software{}, nil`r`n}`r`n"
-            
-            $agentWindowsContent += $newMethod
-            Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-            Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go as fallback" -ForegroundColor Yellow
-        }
+        Write-Host "ARM64-specific implementation already exists: $softwareARM64File" -ForegroundColor Green
     }
     
-    # Fix rpc.go to use the GetInstalledSoftware method correctly
-    $rpcContent = Get-Content $rpcGoFile -Raw
-    
-    # In rpc.go, update calls to properly handle the error return value
-    # Handle all variable assignments with proper error handling
-    $rpcContent = $rpcContent -replace "(\w+)\s*:=\s*win64api\.GetInstalledSoftware\(\)", "$1, _ := a.GetInstalledSoftware()"
-    $rpcContent = $rpcContent -replace "(\w+)\s*=\s*win64api\.GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
-    $rpcContent = $rpcContent -replace "(\w+)\s*=\s*a\.GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
-    
-    # Find and fix specific line numbers from the error message
-    # Line 338 in rpc.go
-    $rpcContent = $rpcContent -replace "software\s*=\s*a\.GetInstalledSoftware\(\)", "software, _ = a.GetInstalledSoftware()"
-    
-    # Fix agent_windows.go to handle assignment mismatch errors
-    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
-    
-    # Fix line 655 in agent_windows.go
-    $agentWindowsContent = $agentWindowsContent -replace "(\w+)\s*=\s*a\.GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
-    
-    # Additional patterns to catch more variations
-    $agentWindowsContent = $agentWindowsContent -replace "(\w+)\s*:=\s*a\.GetInstalledSoftware\(\)", "$1, _ := a.GetInstalledSoftware()"
-    $agentWindowsContent = $agentWindowsContent -replace "(\w+)\s*=\s*GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
-    
-    # Write the updated content back to agent_windows.go
-    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-    
-    # Replace any remaining direct calls
-    $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
-    
-    # Write the modified content back to the file
-    Set-Content -Path $rpcGoFile -Value $rpcContent
-    
-    Write-Host "GetInstalledSoftware patch applied to agent_windows.go and rpc.go"
-    
+    # No need to patch agent_windows.go or rpc.go as our implementation is self-contained
     return $true
 }
 
@@ -558,63 +438,48 @@ function Patch-Placeholders {
 
 function Compile-RMMAgent {
     Write-Host ""
-    Write-Host "Compiling rmmagent for Windows ARM64..."
-    
-    # Set environment variables for Go build
-    $env:CGO_ENABLED = 0
+    Write-Host "Compiling rmmagent for Windows ARM64..." -ForegroundColor Yellow
+
+    # Set environment variables for Go
     $env:GOOS = "windows"
     $env:GOARCH = "arm64"
+    $env:CGO_ENABLED = "0"
     
     # Ensure output path is properly constructed
     $outputPath = Join-Path (Get-Location) $OUTPUT_BINARY
 
-    # Compile the binary and capture output
-    $compileOutput = (& go build -ldflags "-s -w" -o $outputPath 2>&1)
-    $compileSuccess = $LASTEXITCODE -eq 0
-    
-    Write-Host "Compilation done. Output: $outputPath"
-    
-    # Check if compilation was successful
-    if (-not $compileSuccess) {
+    # Build command with proper flags
+    $buildOutput = cmd /c "go build -ldflags `"-s -w`" -o $outputPath 2>&1"
+
+    # Check for errors
+    $compilationSuccess = $LASTEXITCODE -eq 0
+    if (-not $compilationSuccess) {
         Write-Host "Compilation failed with errors:" -ForegroundColor Red
-        Write-Host $compileOutput
-        Write-Host "Attempting to diagnose common compilation errors..." -ForegroundColor Yellow
+        Write-Host $buildOutput
         
         # Try to diagnose and fix common compilation errors
-        if ($compileOutput -match "assignment mismatch: 1 variable but a\.GetInstalledSoftware returns 2 values") {
-            Write-Host "Detected assignment mismatch error. The GetInstalledSoftware method returns ([]Software, error) but is being called without handling the error return value." -ForegroundColor Yellow
-        }
-        
-        if ($compileOutput -match "undefined: win64api") {
-            Write-Host "Detected undefined win64api package error. The Software struct has been defined but references to win64api need to be updated." -ForegroundColor Yellow
-        }
-        
-        if ($compileOutput -match "syntax error: unexpected comma, expected }") {
-            Write-Host "Detected syntax error in agent_windows.go. Applying simplified implementation for GetInstalledSoftware method." -ForegroundColor Yellow
-            Write-Host "This will ensure compilation succeeds even with minimal functionality." -ForegroundColor Yellow
-            Write-Host "Attempting to fix the syntax error by applying a correct implementation..." -ForegroundColor Yellow
+        if ($buildOutput -match "syntax error: unexpected comma, expected }") {
+            Write-Host "Detected syntax error in agent_windows.go. This is likely related to the GetInstalledSoftware method." -ForegroundColor Yellow
+            Write-Host "Applying ARM64-specific implementation for GetInstalledSoftware method..." -ForegroundColor Yellow
             
-            # Apply the fix using Fix-GetInstalledSoftwareMethod
-            . "$PSScriptRoot\Fix-GetInstalledSoftwareMethod.ps1"
-            Fix-GetInstalledSoftwareMethod
+            # Apply the ARM64-specific implementation
+            Patch-GoFiles
             
             # Try compiling again
-            Write-Host "Trying compilation again after applying fix..." -ForegroundColor Yellow
-            $env:CGO_ENABLED = 0
-            $env:GOOS = "windows"
-            $env:GOARCH = "arm64"
-            $compileOutput = (& go build -ldflags "-s -w" -o $outputPath 2>&1)
-            $compileSuccess = $LASTEXITCODE -eq 0
+            Write-Host "Trying compilation again after applying ARM64-specific implementation..." -ForegroundColor Yellow
+            $buildOutput = cmd /c "go build -ldflags `"-s -w`" -o $outputPath 2>&1"
+            $compilationSuccess = $LASTEXITCODE -eq 0
             
-            if ($compileSuccess) {
-                Write-Host "Compilation successful with simplified GetInstalledSoftware implementation!" -ForegroundColor Green
+            if ($compilationSuccess) {
+                Write-Host "Compilation successful with ARM64-specific implementation!" -ForegroundColor Green
                 Write-Host "Note: Agent will report empty software list initially. Full functionality can be enhanced later." -ForegroundColor Cyan
             } else {
-                Write-Host "Compilation still failed after applying fix. Continuing with installation process..." -ForegroundColor Yellow
-                Write-Host $compileOutput
+                Write-Host "Compilation still failed after applying ARM64-specific implementation." -ForegroundColor Red
+                Write-Host $buildOutput
             }
         }
         
+        # Continue with installation process despite errors
         Write-Host "Failed to create binary, but continuing with installation process..." -ForegroundColor Yellow
         
         # Create a placeholder binary to allow the script to continue
@@ -623,7 +488,7 @@ function Compile-RMMAgent {
             New-Item -ItemType File -Path $outputPath -Force | Out-Null
         }
     } else {
-        Write-Host "Binary created successfully at: $outputPath" -ForegroundColor Green
+        Write-Host "Compilation done. Output: $PWD\rmmagent-windows-arm64.exe" -ForegroundColor Green
     }
 }
 
@@ -692,6 +557,11 @@ function Configure-AgentService {
 function Prompt-RunAgent {
     Write-Host ""
     Write-Host "=== Build Complete ===" -ForegroundColor Green
+    Write-Host "Note about functionality:" -ForegroundColor Cyan
+    Write-Host "The Windows ARM64 implementation currently returns an empty software list" -ForegroundColor Cyan
+    Write-Host "This ensures the agent can compile and run successfully" -ForegroundColor Cyan
+    Write-Host "Future updates will implement full software detection" -ForegroundColor Cyan
+    Write-Host ""
     Write-Host "You can run the agent with your RMM server & auth key. For example:"
     Write-Host "  .\$OUTPUT_BINARY -m install \"
     Write-Host "     -api `"$RmmServerUrl`" \"
@@ -849,8 +719,7 @@ if ([string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAut
 # 3) Clone & patch & build
 Handle-ExistingFolder
 Patch-NatsWebsocketUrl
-. "$PSScriptRoot\Fix-GetInstalledSoftwareMethod.ps1"
-Fix-GetInstalledSoftwareMethod
+Patch-GoFiles
 Patch-Placeholders
 Compile-RMMAgent
 
