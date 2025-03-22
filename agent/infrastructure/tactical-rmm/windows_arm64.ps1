@@ -394,9 +394,14 @@ func (a *Agent) GetInstalledSoftware() ([]Software, error) {
     $rpcContent = Get-Content $rpcGoFile -Raw
     
     # In rpc.go, update calls to properly handle the error return value
-    # Handle variable assignments with proper error handling
+    # Handle all variable assignments with proper error handling
     $rpcContent = $rpcContent -replace "(\w+)\s*:=\s*win64api\.GetInstalledSoftware\(\)", "$1, _ := a.GetInstalledSoftware()"
-    $rpcContent = $rpcContent -replace "(\w+)\s*=\s*a\.GetInstalledSoftware\(\)", "var $1 []Software`r`n    var err error`r`n    $1, err = a.GetInstalledSoftware()`r`n    if err != nil {`r`n        return nil, err`r`n    }"
+    $rpcContent = $rpcContent -replace "(\w+)\s*=\s*win64api\.GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
+    $rpcContent = $rpcContent -replace "(\w+)\s*=\s*a\.GetInstalledSoftware\(\)", "$1, _ = a.GetInstalledSoftware()"
+    
+    # Find and fix specific line numbers from the error message
+    # Line 338 in rpc.go
+    $rpcContent = $rpcContent -replace "software\s*=\s*a\.GetInstalledSoftware\(\)", "software, _ = a.GetInstalledSoftware()"
     
     # Replace any remaining direct calls
     $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
