@@ -62,7 +62,7 @@ $RmmServerUrl = $RmmUrl -or ""
 $AgentAuthKey = $AuthKey -or ""
 $AgentLogPath = $LogPath -or ""
 # Ensure BuildFolder has a default that's not the variable name itself
-$script:BuildFolder = if ($BuildFolder -eq $true -or [string]::IsNullOrEmpty($BuildFolder)) { "rmmagent" } else { $BuildFolder }
+$script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder -eq "$true") { "rmmagent" } else { $BuildFolder }
 $SkipRun = $SkipRun -or $false
 $ClientId = $ClientId -or ""
 $SiteId = $SiteId -or ""
@@ -310,32 +310,56 @@ function Patch-GetInstalledSoftware {
             Write-Host "Fixed syntax in existing GetInstalledSoftware method"
         }
     } else {
-        # Find the Agent struct definition
-        if ($agentWindowsContent -match "type Agent struct {") {
-            # Find an existing method of the Agent struct to insert our method after
-            if ($agentWindowsContent -match "func \(a \*Agent\)") {
-                # Find the end of an existing method
-                $methodEndPos = $agentWindowsContent.IndexOf("}", $agentWindowsContent.IndexOf("func (a *Agent)"))
-                if ($methodEndPos -gt 0) {
-                    # Create the new method string without using a here-string
-                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+        # Find the Agent struct definition - allow for different whitespace patterns
+        if ($agentWindowsContent -match "type\s+Agent\s+struct\s*{") {
+            # Find the actual Agent struct closing brace to insert our method INSIDE the struct
+            $structStartPos = $agentWindowsContent.IndexOf("{", $agentWindowsContent.IndexOf("type Agent struct"))
+            if ($structStartPos -gt 0) {
+                # Find the matching closing brace of the struct
+                $braceCount = 1
+                $structEndPos = $structStartPos + 1
+                while ($braceCount -gt 0 -and $structEndPos -lt $agentWindowsContent.Length) {
+                    if ($agentWindowsContent[$structEndPos] -eq '{') { $braceCount++ }
+                    if ($agentWindowsContent[$structEndPos] -eq '}') { $braceCount-- }
+                    $structEndPos++
+                }
+                
+                if ($braceCount -eq 0) {
+                    # Insert the method INSIDE the struct before the closing brace
+                    $structEndPos-- # Move back to the closing brace
                     
-                    $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
+                    # Create the new method as a field inside the struct
+                    $newMethod = "`r`n`r`n    // GetInstalledSoftware returns a list of installed software`r`n    GetInstalledSoftware func() ([]win64api.Software, error)`r`n"
+                    
+                    $agentWindowsContent = $agentWindowsContent.Insert($structEndPos, $newMethod)
                     Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    Write-Host "Added GetInstalledSoftware method to agent_windows.go after existing method"
+                    
+                    # Then add the actual method implementation outside the struct
+                    $methodImplementation = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+                    
+                    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
+                    $lastClosingBrace = $agentWindowsContent.LastIndexOf("}")
+                    if ($lastClosingBrace -gt 0) {
+                        $agentWindowsContent = $agentWindowsContent.Insert($lastClosingBrace + 1, $methodImplementation)
+                        Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
+                        Write-Host "Added GetInstalledSoftware method to agent_windows.go as a field in the Agent struct and implemented the method" -ForegroundColor Green
+                    }
                 } else {
-                    Write-Host "ERROR: Could not find end of existing method in agent_windows.go" -ForegroundColor Red
+                    Write-Host "ERROR: Could not find matching closing brace for Agent struct definition" -ForegroundColor Red
                 }
             } else {
-                # If no existing method found, add it at the end of the file
-                $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
-                
-                $agentWindowsContent += $newMethod
-                Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go"
+                Write-Host "ERROR: Could not find opening brace for Agent struct definition" -ForegroundColor Red
             }
         } else {
-            Write-Host "ERROR: Could not find Agent struct definition in agent_windows.go" -ForegroundColor Red
+            # Try a different approach - look for other indicators of the Agent struct
+            Write-Host "WARNING: Could not find standard Agent struct definition. Trying alternative approach..." -ForegroundColor Yellow
+            
+            # Add the method at the end as a fallback
+            $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+            
+            $agentWindowsContent += $newMethod
+            Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
+            Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go as fallback" -ForegroundColor Yellow
         }
     }
     
@@ -491,13 +515,16 @@ function Compile-RMMAgent {
     $env:GOOS = "windows"
     $env:GOARCH = "arm64"
     
+    # Ensure output path is properly constructed
+    $outputPath = Join-Path (Get-Location) $OUTPUT_BINARY
+
     # Build the binary
-    go build -ldflags "-s -w" -o $OUTPUT_BINARY
+    go build -ldflags "-s -w" -o $outputPath
     
-    Write-Host "Compilation done. Output: $(Get-Location)\$OUTPUT_BINARY"
+    Write-Host "Compilation done. Output: $outputPath"
     
     # Check if the file exists
-    if (Test-Path $OUTPUT_BINARY) {
+    if (Test-Path $outputPath) {
         Write-Host "Binary created successfully." -ForegroundColor Green
     } else {
         Write-Host "Failed to create binary." -ForegroundColor Red
@@ -612,8 +639,11 @@ function Prompt-RunAgent {
             Write-Host "Using default log path: $AgentLogPath"
         }
         
+        # Create the proper binary path
+        $binaryPath = Join-Path (Get-Location) $OUTPUT_BINARY
+
         # Use script-scoped variables for the command
-        $cmd = ".\$OUTPUT_BINARY -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$script:ClientId`" -site-id `"$script:SiteId`" -agent-type `"$script:AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh"
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$script:ClientId`" -site-id `"$script:SiteId`" -agent-type `"$script:AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh"
         
         Write-Host "Running: $cmd"
         Invoke-Expression $cmd
@@ -632,7 +662,7 @@ function Prompt-RunAgent {
     
     Write-Host ""
     Write-Host "=== All Done! ===" -ForegroundColor Green
-    Write-Host "Your agent is at: $(Get-Location)\$OUTPUT_BINARY"
+    Write-Host "Your agent is at: $(Join-Path (Get-Location) $OUTPUT_BINARY)"
 }
 
 ############################
