@@ -1,5 +1,5 @@
 <template>
-  <div class="of-history-view">
+  <div class="of-rmm-view">
     <ModuleHeader title="History">
       <template #actions>
         <!-- No actions in header for this view -->
@@ -358,7 +358,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.of-history-view {
+.of-rmm-view {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -376,24 +376,26 @@ onUnmounted(() => {
 }
 
 .of-filters-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
 .of-filters-row {
   display: flex;
   gap: 1rem;
-  align-items: stretch;
-  height: 42px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .of-search-container {
   flex: 1;
-  height: 100%;
+  min-width: 300px;
 }
 
 .of-filter-item {
-  width: auto;
-  min-width: 180px;
+  min-width: 200px;
 }
 
 .of-history-container {

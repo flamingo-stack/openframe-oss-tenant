@@ -5,7 +5,7 @@
         <i class="pi pi-search"></i>
       </span>
       <InputText 
-        :value="modelValue"
+        :value="modelValue || ''"
         :placeholder="placeholder"
         @input="(e) => $emit('update:modelValue', (e.target as HTMLInputElement).value)"
       />
@@ -17,7 +17,7 @@
 import { InputText } from '../../components/ui';
 
 defineProps<{
-  modelValue: string;
+  modelValue: string | null;
   placeholder?: string;
 }>();
 
@@ -45,4 +45,4 @@ const handleKeyPress = (e: KeyboardEvent) => {
 .of-search-bar .p-inputgroup {
   box-shadow: var(--card-shadow);
 }
-</style>       
+</style>                            
