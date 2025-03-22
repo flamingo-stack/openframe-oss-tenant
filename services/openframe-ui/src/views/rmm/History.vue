@@ -35,40 +35,41 @@
         </div>
       </div>
 
-      <div class="of-history-container">
-        <ModuleTable
-          :items="historyItems"
-          :loading="loading"
-          :searchFields="['command', 'username', 'type', 'time', 'script_name']"
-          emptyTitle="No History Items"
-          emptyMessage="No history items are available."
-          emptyHint="History items will appear here as commands and scripts are executed."
-          :filters="filters"
-        >
-          <Column field="time" header="Time" sortable>
+      <ModuleTable
+        :items="historyItems"
+        :loading="loading"
+        :searchFields="['command', 'username', 'type', 'time', 'script_name']"
+        emptyIcon="pi pi-history"
+        emptyTitle="No History Items"
+        emptyMessage="No history items are available."
+        emptyHint="History items will appear here as commands and scripts are executed."
+        :filters="filters"
+        style="width: 100%"
+      >
+          <Column field="time" header="Time" sortable style="width: 15%">
             <template #body="{ data }">
               {{ formatTime(data.time) }}
             </template>
           </Column>
-          <Column field="type" header="Type" sortable>
+          <Column field="type" header="Type" sortable style="width: 10%">
             <template #body="{ data }">
               <Tag :value="formatType(data.type)" :severity="getTypeSeverity(data.type)" />
             </template>
           </Column>
-          <Column field="command" header="Command/Script" sortable>
+          <Column field="command" header="Command/Script" sortable style="width: 40%">
             <template #body="{ data }">
               {{ data.script_name || data.command }}
             </template>
           </Column>
-          <Column field="username" header="User" sortable />
-          <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable>
+          <Column field="username" header="User" sortable style="width: 10%" />
+          <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 15%">
             <template #body="{ data }">
               {{ getAgentHostname(data.agent) }}
             </template>
           </Column>
-          <Column header="Actions">
+          <Column header="Actions" :exportable="false" style="width: 10%">
             <template #body="{ data }">
-              <div class="flex gap-2 justify-content-end">
+              <div class="flex gap-2 justify-content-center">
                 <OFButton
                   icon="pi pi-eye"
                   class="p-button-text p-button-sm"
@@ -79,7 +80,6 @@
             </template>
           </Column>
         </ModuleTable>
-      </div>
     </div>
 
     <!-- Output Dialog -->
@@ -360,15 +360,20 @@ onUnmounted(() => {
 
 <style scoped>
 .of-history-view {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  background: var(--surface-ground);
 }
 
 .of-history-content {
   flex: 1;
-  padding: 1rem;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  min-height: 0;
+  background: var(--surface-ground);
 }
 
 .of-filters-container {
@@ -377,22 +382,24 @@ onUnmounted(() => {
 
 .of-filters-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
+  height: 42px;
+  margin-bottom: 1rem;
 }
 
 .of-search-container {
   flex: 1;
-  min-width: 200px;
+  height: 100%;
 }
 
 .of-filter-item {
-  width: 200px;
+  width: auto;
+  min-width: 180px;
 }
 
 .of-history-container {
-  height: calc(100% - 70px);
+  flex: 1;
 }
 
 .of-form-group {
