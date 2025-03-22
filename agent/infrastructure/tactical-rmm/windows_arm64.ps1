@@ -22,32 +22,6 @@
 #   - Administrator privileges for installing dependencies and services
 #
 
-# Ensure script is running with administrator privileges
-if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "This script requires administrator privileges. Please restart as administrator." -ForegroundColor Red
-    exit 1
-}
-
-############################
-# Default / Config
-############################
-
-$RMMAGENT_REPO = "https://github.com/amidaware/rmmagent.git"
-$RMMAGENT_BRANCH = "master"
-$OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
-
-# We'll store user-provided or prompted values in these variables:
-$OrgName = ""
-$ContactEmail = ""
-$RmmServerUrl = ""
-$AgentAuthKey = ""
-$AgentLogPath = ""
-$BuildFolder = "rmmagent"  # default
-$SkipRun = $false
-$ClientId = ""
-$SiteId = ""
-$AgentType = "workstation"  # default
-
 ############################
 # Parse Script Arguments
 ############################
@@ -66,6 +40,32 @@ param (
     [switch]$Help,
     [switch]$Interactive
 )
+
+# Ensure script is running with administrator privileges
+if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "This script requires administrator privileges. Please restart as administrator." -ForegroundColor Red
+    exit 1
+}
+
+############################
+# Default / Config
+############################
+
+$RMMAGENT_REPO = "https://github.com/amidaware/rmmagent.git"
+$RMMAGENT_BRANCH = "master"
+$OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
+
+# We'll store user-provided or prompted values in these variables:
+$OrgName = $OrgName -or ""
+$ContactEmail = $Email -or ""
+$RmmServerUrl = $RmmUrl -or ""
+$AgentAuthKey = $AuthKey -or ""
+$AgentLogPath = $LogPath -or ""
+$BuildFolder = $BuildFolder -or "rmmagent"  # default
+$SkipRun = $SkipRun -or $false
+$ClientId = $ClientId -or ""
+$SiteId = $SiteId -or ""
+$AgentType = $AgentType -or "workstation"  # default
 
 # Function to display help
 function Show-Help {
@@ -556,19 +556,36 @@ Write-Host ""
 Write-Host "=== Checking user inputs ===" -ForegroundColor Cyan
 
 function Prompt-AllInputs {
-    Prompt-IfEmpty -VarName "RmmServerUrl" -PromptMsg "RMM Server URL (e.g. https://rmm.myorg.com)"
-    Prompt-IfEmpty -VarName "AgentAuthKey" -PromptMsg "Agent Auth Key (string from your RMM)"
-    Prompt-IfEmpty -VarName "ClientId" -PromptMsg "Client ID"
-    Prompt-IfEmpty -VarName "SiteId" -PromptMsg "Site ID"
-    Prompt-IfEmpty -VarName "AgentType" -PromptMsg "Agent type (server/workstation) [workstation]" -DefaultVal "workstation"
+    # Only prompt for values if they weren't provided as parameters or if in interactive mode
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($RmmServerUrl)) {
+        Prompt-IfEmpty -VarName "RmmServerUrl" -PromptMsg "RMM Server URL (e.g. https://rmm.myorg.com)"
+    }
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentAuthKey)) {
+        Prompt-IfEmpty -VarName "AgentAuthKey" -PromptMsg "Agent Auth Key (string from your RMM)"
+    }
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($ClientId)) {
+        Prompt-IfEmpty -VarName "ClientId" -PromptMsg "Client ID"
+    }
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId)) {
+        Prompt-IfEmpty -VarName "SiteId" -PromptMsg "Site ID"
+    }
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType)) {
+        Prompt-IfEmpty -VarName "AgentType" -PromptMsg "Agent type (server/workstation) [workstation]" -DefaultVal "workstation"
+    }
     # Only prompt for log path if explicitly requested
-    if (-not [string]::IsNullOrEmpty($AgentLogPath)) {
+    if ($InteractiveMode -or (-not [string]::IsNullOrEmpty($AgentLogPath) -and [string]::IsNullOrEmpty($AgentLogPath))) {
         Prompt-IfEmpty -VarName "AgentLogPath" -PromptMsg "Agent log path"
     }
-    Prompt-IfEmpty -VarName "BuildFolder" -PromptMsg "Destination build folder" -DefaultVal "rmmagent"
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($BuildFolder)) {
+        Prompt-IfEmpty -VarName "BuildFolder" -PromptMsg "Destination build folder" -DefaultVal "rmmagent"
+    }
 }
 
-Prompt-AllInputs
+# Only run prompts if in interactive mode or missing required parameters
+if ($InteractiveMode -or [string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAuthKey) -or 
+    [string]::IsNullOrEmpty($ClientId) -or [string]::IsNullOrEmpty($SiteId)) {
+    Prompt-AllInputs
+}
 
 # Only show final values and proceed prompt if we're missing required parameters
 if ([string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAuthKey) -or 
