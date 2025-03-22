@@ -75,7 +75,16 @@
             placeholder="Select target agents"
             class="w-full"
             :class="{ 'p-invalid': submitted && bulkSelectedAgents.length === 0 }"
-          />
+            :disabled="loading"
+            :filter="true"
+          >
+            <template #emptyfilter>
+              <div class="p-text-center">No matching agents found</div>
+            </template>
+            <template #empty>
+              <div class="p-text-center">No agents available</div>
+            </template>
+          </MultiSelect>
           <small class="p-error" v-if="submitted && bulkSelectedAgents.length === 0">
             Select at least one agent.
           </small>
@@ -162,7 +171,16 @@
             placeholder="Select target agents"
             class="w-full"
             :class="{ 'p-invalid': submitted && bulkSelectedAgents.length === 0 }"
-          />
+            :disabled="loading"
+            :filter="true"
+          >
+            <template #emptyfilter>
+              <div class="p-text-center">No matching agents found</div>
+            </template>
+            <template #empty>
+              <div class="p-text-center">No agents available</div>
+            </template>
+          </MultiSelect>
           <small class="p-error" v-if="submitted && bulkSelectedAgents.length === 0">
             Select at least one agent.
           </small>
@@ -342,11 +360,44 @@ const fetchScripts = async () => {
 
 const fetchDevices = async () => {
   try {
-    const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
-    devices.value = Array.isArray(response) ? response : (response.data || []);
+    loading.value = true;
+    console.log('API URL:', `${API_URL}/agents/`);
+    
+    // Try to fetch devices with additional parameters
+    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
+    console.log('API Response:', response);
+    
+    if (!response || (Array.isArray(response) && response.length === 0)) {
+      console.warn('No devices returned from the API');
+      
+      // For testing purposes, add a mock device if no devices are returned
+      if (import.meta.env.DEV) {
+        console.log('Adding mock device for development');
+        const mockDevices = [{
+          id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+          hostname: 'Mock Device',
+          agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+          plat: 'darwin',
+          value: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
+          label: 'Mock Device'
+        }];
+        devices.value = mockDevices;
+        console.log('Mock devices added:', devices.value);
+        return mockDevices;
+      }
+    }
+    
+    const deviceList = Array.isArray(response) ? response : (response.data || []);
+    console.log('Setting devices.value to:', deviceList);
+    devices.value = deviceList;
+    return deviceList;
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
+    devices.value = [];
+    return [];
+  } finally {
+    loading.value = false;
   }
 };
 
