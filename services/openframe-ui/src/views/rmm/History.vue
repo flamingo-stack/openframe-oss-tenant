@@ -1,41 +1,53 @@
 <template>
-  <div class="of-rmm-view">
-    <ModuleHeader title="History">
-      <template #actions>
-        <!-- No actions in header for this view -->
-      </template>
-    </ModuleHeader>
+  <div class="monitoring-page">
+    <div class="of-mdm-header">
+      <h1 class="of-title">History</h1>
+    </div>
 
-    <div class="of-history-content">
-      <div class="of-filters-container">
-        <div class="of-filters-row">
-          <div class="of-search-container">
-            <SearchBar v-model="filters.global.value" placeholder="Search history..." />
-          </div>
-          <div class="of-filter-item">
-            <Dropdown
-              v-model="selectedAgent"
-              :options="agentOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="All Agents"
-              class="w-full"
-            />
-          </div>
-          <div class="of-filter-item">
-            <Dropdown
-              v-model="filters.type.value"
-              :options="typeOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="All Types"
-              class="w-full"
-            />
-          </div>
-        </div>
+    <!-- Add loading state -->
+    <div v-if="loading" class="loading-spinner">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    </div>
+
+    <template v-else-if="error">
+      <div class="error-message">
+        {{ error.message }}
       </div>
+    </template>
 
-      <ModuleTable
+    <template v-else>
+      <section class="mb-4">
+        <h2>Command & Script History</h2>
+        <div class="tool-card">
+          <div class="of-filters-container">
+            <div class="of-filters-row">
+              <div class="of-search-container">
+                <SearchBar v-model="filters.global.value" placeholder="Search history..." />
+              </div>
+              <div class="of-filter-item">
+                <Dropdown
+                  v-model="selectedAgent"
+                  :options="agentOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="All Agents"
+                  class="w-full"
+                />
+              </div>
+              <div class="of-filter-item">
+                <Dropdown
+                  v-model="filters.type.value"
+                  :options="typeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="All Types"
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <ModuleTable
         :items="historyItems"
         :loading="loading"
         :searchFields="['command', 'username', 'type', 'time', 'script_name']"
@@ -79,6 +91,9 @@
             </template>
           </Column>
         </ModuleTable>
+          </div>
+        </section>
+      </template>
     </div>
 
     <!-- Output Dialog -->
@@ -137,7 +152,6 @@
         </div>
       </div>
     </OFDialog>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -146,7 +160,6 @@ import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
 import { ToastService } from "../../services/ToastService";
-import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import ModuleTable from "../../components/shared/ModuleTable.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import { 
@@ -170,6 +183,7 @@ const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
+const error = ref<Error | null>(null);
 const devices = ref<Device[]>([]);
 const selectedAgent = ref<string | null>(null);
 const historyItems = ref<HistoryEntry[]>([]);
@@ -358,21 +372,50 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.of-rmm-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-ground);
+.monitoring-page {
+  padding: 2rem;
 }
 
-.of-history-content {
-  flex: 1;
+.of-mdm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.of-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+section {
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: var(--primary-color);
+}
+
+.error-message {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem;
-  min-height: 0;
-  background: var(--surface-ground);
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-color-secondary);
 }
 
 .of-filters-container {
@@ -464,5 +507,12 @@ onUnmounted(() => {
 .detail-value {
   font-weight: 600;
   font-size: 0.875rem;
+}
+
+.tool-card {
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  height: 100%;
 }
 </style>
