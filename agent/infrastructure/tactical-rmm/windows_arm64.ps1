@@ -261,6 +261,73 @@ function Patch-NatsWebsocketUrl {
 }
 
 ############################
+# Patching GetInstalledSoftware method
+############################
+
+function Patch-GetInstalledSoftware {
+    Write-Host "Patching agent_windows.go and rpc.go to fix GetInstalledSoftware method..."
+    
+    # Find the agent_windows.go file
+    $agentWindowsGoFile = "agent\agent_windows.go"
+    $rpcGoFile = "agent\rpc.go"
+    
+    Write-Host "Checking for agent_windows.go at path: $agentWindowsGoFile"
+    if (-not (Test-Path $agentWindowsGoFile)) {
+        Write-Host "ERROR: Cannot find $agentWindowsGoFile. Skipping GetInstalledSoftware patch." -ForegroundColor Red
+        return $false
+    }
+    
+    Write-Host "Checking for rpc.go at path: $rpcGoFile"
+    if (-not (Test-Path $rpcGoFile)) {
+        Write-Host "ERROR: Cannot find $rpcGoFile. Skipping GetInstalledSoftware patch." -ForegroundColor Red
+        return $false
+    }
+    
+    # Create backups
+    Copy-Item $agentWindowsGoFile "$agentWindowsGoFile.bak"
+    Copy-Item $rpcGoFile "$rpcGoFile.bak"
+    
+    # Add GetInstalledSoftware method to Agent struct in agent_windows.go
+    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
+    
+    # Check if the file already has the GetInstalledSoftware method
+    if ($agentWindowsContent -match "func \(a \*Agent\) GetInstalledSoftware\(\)") {
+        Write-Host "GetInstalledSoftware method already exists in agent_windows.go. Skipping patch."
+    } else {
+        # Add the GetInstalledSoftware method before the last closing brace
+        $lastBracePos = $agentWindowsContent.LastIndexOf("}")
+        if ($lastBracePos -gt 0) {
+            $newMethod = @"
+
+// GetInstalledSoftware returns a list of installed software
+func (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {
+    return win64api.GetInstalledSoftware()
+}
+
+"@
+            $agentWindowsContent = $agentWindowsContent.Insert($lastBracePos, $newMethod)
+            Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
+            Write-Host "Added GetInstalledSoftware method to agent_windows.go"
+        } else {
+            Write-Host "ERROR: Could not find position to insert GetInstalledSoftware method in agent_windows.go" -ForegroundColor Red
+        }
+    }
+    
+    # Fix rpc.go to use the GetInstalledSoftware method correctly
+    $rpcContent = Get-Content $rpcGoFile -Raw
+    
+    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware()
+    $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
+    
+    # Write the modified content back to the file
+    Set-Content -Path $rpcGoFile -Value $rpcContent
+    
+    Write-Host "GetInstalledSoftware patch applied to agent_windows.go and rpc.go"
+    
+    return $true
+}
+
+############################
 # Aggressive Uninstallation
 ############################
 
@@ -612,6 +679,7 @@ if ([string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAut
 # 3) Clone & patch & build
 Handle-ExistingFolder
 Patch-NatsWebsocketUrl
+Patch-GetInstalledSoftware
 Patch-Placeholders
 Compile-RMMAgent
 
