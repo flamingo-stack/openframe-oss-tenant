@@ -300,7 +300,8 @@ const fetchDeviceDetails = async () => {
     const response = await restClient.get(`${configService.getConfig().gatewayUrl}/tools/tactical-rmm/agents/${props.device.agent_id}/`) as Device;
     detailedDevice.value = response;
   } catch (err: any) {
-    toastService.showError(err.message);
+    const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch device details';
+    toastService.showError(errorMsg);
   } finally {
     loading.value = false;
   }
@@ -505,4 +506,4 @@ const onDelete = () => {
 :deep(.p-tag) {
   text-transform: capitalize;
 }
-</style>  
+</style>    

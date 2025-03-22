@@ -232,9 +232,16 @@ const fetchDevices = async () => {
     loading.value = true;
     const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
     devices.value = Array.isArray(response) ? response : [];
+    
+    // Filter out mock devices
+    devices.value = devices.value.filter(device => 
+      !device.hostname?.toLowerCase().includes('mock') && 
+      !device.agent_id?.toLowerCase().includes('mock')
+    );
   } catch (error) {
     console.error('Failed to fetch devices:', error);
-    toastService.showError('Failed to fetch devices');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch devices';
+    toastService.showError(errorMsg);
   } finally {
     loading.value = false;
   }
@@ -292,10 +299,13 @@ const executeCommand = async (cmd: string) => {
       });
     }
 
-    toastService.showSuccess('Command executed successfully');
+    // Show success message with response details if available
+    toastService.showSuccess(response ? `Command executed successfully: ${response}` : 'Command executed successfully');
   } catch (error) {
     console.error('Failed to execute command:', error);
-    toastService.showError('Failed to execute command');
+    // Extract error message from API response if available
+    const errorMsg = error.response?.data?.message || (error instanceof Error ? error.message : 'Failed to execute command');
+    toastService.showError(errorMsg);
 
     // Update execution history with error status
     if (executionHistoryRef.value && executionId) {
@@ -342,13 +352,14 @@ const confirmDelete = async () => {
 
   try {
     deleting.value = true;
-    await restClient.delete(`${API_URL}/agents/${selectedDevice.value.agent_id}/`);
+    const response = await restClient.delete(`${API_URL}/agents/${selectedDevice.value.agent_id}/`);
     await fetchDevices();
     deleteDeviceDialog.value = false;
-    toastService.showSuccess('Device deleted successfully');
+    toastService.showSuccess(response?.message || 'Device deleted successfully');
   } catch (error) {
     console.error('Failed to delete device:', error);
-    toastService.showError('Failed to delete device');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete device';
+    toastService.showError(errorMsg);
   } finally {
     deleting.value = false;
   }

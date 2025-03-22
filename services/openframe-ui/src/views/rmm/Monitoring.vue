@@ -306,7 +306,8 @@ const fetchMonitors = async () => {
     monitors.value = response.data || [];
   } catch (error) {
     console.error('Failed to fetch monitors:', error);
-    toastService.showError('Failed to fetch monitors');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch monitors';
+    toastService.showError(errorMsg);
   } finally {
     loading.value = false;
   }
@@ -342,7 +343,8 @@ const saveMonitor = async () => {
     toastService.showSuccess(`Monitor ${isEditMode.value ? 'updated' : 'created'} successfully`);
   } catch (error) {
     console.error('Failed to save monitor:', error);
-    toastService.showError(`Failed to ${isEditMode.value ? 'update' : 'create'} monitor`);
+    const errorMsg = error.response?.data?.message || error.message || `Failed to ${isEditMode.value ? 'update' : 'create'} monitor`;
+    toastService.showError(errorMsg);
   } finally {
     submitting.value = false;
   }
@@ -370,7 +372,8 @@ const deleteMonitor = async (monitor: Monitor) => {
     toastService.showSuccess('Monitor deleted successfully');
   } catch (error) {
     console.error('Failed to delete monitor:', error);
-    toastService.showError('Failed to delete monitor');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete monitor';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -382,8 +385,9 @@ const confirmDelete = async () => {
     await deleteMonitor(selectedMonitor.value);
   } catch (error) {
     console.error('Failed to delete monitor:', error);
-    toastService.showError('Failed to delete monitor');
-  } finally {
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete monitor';
+    toastService.showError(errorMsg);
+  }finally {
     deleting.value = false;
   }
 };
@@ -487,4 +491,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>                
+</style>                                                                                                

@@ -407,7 +407,8 @@ const fetchTasks = async () => {
     tasks.value = response;
   } catch (error) {
     console.error('Failed to fetch tasks:', error);
-    toastService.showError('Failed to fetch automation tasks');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch automation tasks';
+    toastService.showError(errorMsg);
   } finally {
     loading.value = false;
   }
@@ -419,7 +420,8 @@ const fetchDevices = async () => {
     devices.value = response.data || [];
   } catch (error: any) {
     console.error('Error fetching devices:', error);
-    toastService.showError('Failed to fetch devices');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch devices';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -429,7 +431,8 @@ const fetchScripts = async () => {
     scripts.value = response.data || [];
   } catch (error: any) {
     console.error('Error fetching scripts:', error);
-    toastService.showError('Failed to fetch scripts');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch scripts';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -465,7 +468,8 @@ const saveTask = async () => {
     toastService.showSuccess(`Task ${isEditMode.value ? 'updated' : 'created'} successfully`);
   } catch (error) {
     console.error('Failed to save task:', error);
-    toastService.showError(`Failed to ${isEditMode.value ? 'update' : 'create'} task`);
+    const errorMsg = error.response?.data?.message || error.message || `Failed to ${isEditMode.value ? 'update' : 'create'} task`;
+    toastService.showError(errorMsg);
   } finally {
     submitting.value = false;
   }
@@ -478,7 +482,8 @@ const runTask = async (task: Task) => {
     toastService.showSuccess('Task execution started');
   } catch (error) {
     console.error('Failed to run task:', error);
-    toastService.showError('Failed to run task');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to run task';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -504,7 +509,8 @@ const deleteTask = async (task: Task) => {
     toastService.showSuccess('Task deleted successfully');
   } catch (error) {
     console.error('Failed to delete task:', error);
-    toastService.showError('Failed to delete task');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete task';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -516,7 +522,8 @@ const confirmDelete = async () => {
     await deleteTask(selectedTask.value);
   } catch (error: any) {
     console.error('Error deleting task:', error);
-    toastService.showError('Failed to delete task');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to delete task';
+    toastService.showError(errorMsg);
   } finally {
     deleting.value = false;
   }
@@ -617,4 +624,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>             
+</style>                                                                                                                                                                                      

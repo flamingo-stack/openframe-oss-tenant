@@ -334,7 +334,8 @@ const fetchScripts = async () => {
     scripts.value = response || [];
   } catch (error) {
     console.error('Failed to fetch scripts:', error);
-    toastService.showError('Failed to fetch scripts');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch scripts';
+    toastService.showError(errorMsg);
   } finally {
     loading.value = false;
   }
@@ -346,7 +347,8 @@ const fetchDevices = async () => {
     devices.value = response.data || [];
   } catch (error) {
     console.error('Failed to fetch devices:', error);
-    toastService.showError('Failed to fetch devices');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch devices';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -423,7 +425,8 @@ const executeBulkScript = async () => {
     toastService.showSuccess('Bulk script execution started');
   } catch (error) {
     console.error('Failed to execute bulk script:', error);
-    toastService.showError('Failed to execute bulk script');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to execute bulk script';
+    toastService.showError(errorMsg);
   } finally {
     executing.value = false;
   }
@@ -459,7 +462,8 @@ const executeBulkCommand = async () => {
     toastService.showSuccess('Bulk command execution started');
   } catch (error) {
     console.error('Failed to execute bulk command:', error);
-    toastService.showError('Failed to execute bulk command');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to execute bulk command';
+    toastService.showError(errorMsg);
   } finally {
     executing.value = false;
   }

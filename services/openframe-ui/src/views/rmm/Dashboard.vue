@@ -241,7 +241,8 @@ const fetchDeviceStats = async () => {
     };
   } catch (error) {
     console.error('Failed to fetch device stats:', error);
-    toastService.showError('Failed to fetch device stats');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch device stats';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -263,7 +264,8 @@ const fetchMonitoringStats = async () => {
     };
   } catch (error) {
     console.error('Failed to fetch monitoring stats:', error);
-    toastService.showError('Failed to fetch monitoring stats');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch monitoring stats';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -283,7 +285,8 @@ const fetchAutomationStats = async () => {
     };
   } catch (error) {
     console.error('Failed to fetch automation stats:', error);
-    toastService.showError('Failed to fetch automation stats');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch automation stats';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -303,7 +306,8 @@ const fetchRecentAlerts = async () => {
     recentAlerts.value = response.alerts || [];
   } catch (error) {
     console.error('Failed to fetch recent alerts:', error);
-    toastService.showError('Failed to fetch recent alerts');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch recent alerts';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -317,7 +321,8 @@ const fetchDashboardData = async () => {
     ]);
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
-    toastService.showError('Failed to fetch dashboard data');
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch dashboard data';
+    toastService.showError(errorMsg);
   }
 };
 
@@ -583,4 +588,4 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 }
-</style> 
+</style>          
