@@ -591,7 +591,26 @@ function Compile-RMMAgent {
         
         if ($compileOutput -match "syntax error: unexpected comma, expected }") {
             Write-Host "Detected syntax error in agent_windows.go. This is a known issue with the GetInstalledSoftware method." -ForegroundColor Yellow
-            Write-Host "We're continuing with the installation process despite this error." -ForegroundColor Yellow
+            Write-Host "Attempting to fix the syntax error by applying a correct implementation..." -ForegroundColor Yellow
+            
+            # Apply the fix using Fix-GetInstalledSoftwareMethod
+            . "$PSScriptRoot\Fix-GetInstalledSoftwareMethod.ps1"
+            Fix-GetInstalledSoftwareMethod
+            
+            # Try compiling again
+            Write-Host "Trying compilation again after applying fix..." -ForegroundColor Yellow
+            $env:CGO_ENABLED = 0
+            $env:GOOS = "windows"
+            $env:GOARCH = "arm64"
+            $compileOutput = (& go build -ldflags "-s -w" -o $outputPath 2>&1)
+            $compileSuccess = $LASTEXITCODE -eq 0
+            
+            if ($compileSuccess) {
+                Write-Host "Compilation successful after applying fix!" -ForegroundColor Green
+            } else {
+                Write-Host "Compilation still failed after applying fix. Continuing with installation process..." -ForegroundColor Yellow
+                Write-Host $compileOutput
+            }
         }
         
         Write-Host "Failed to create binary, but continuing with installation process..." -ForegroundColor Yellow
@@ -828,8 +847,8 @@ if ([string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAut
 # 3) Clone & patch & build
 Handle-ExistingFolder
 Patch-NatsWebsocketUrl
-. "$PSScriptRoot\Skip-GetInstalledSoftware.ps1"
-Skip-GetInstalledSoftware
+. "$PSScriptRoot\Fix-GetInstalledSoftwareMethod.ps1"
+Fix-GetInstalledSoftwareMethod
 Patch-Placeholders
 Compile-RMMAgent
 
