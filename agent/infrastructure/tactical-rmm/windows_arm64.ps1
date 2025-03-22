@@ -63,7 +63,8 @@ param (
     [string]$LogPath,
     [string]$BuildFolder = "rmmagent",
     [switch]$SkipRun,
-    [switch]$Help
+    [switch]$Help,
+    [switch]$Interactive
 )
 
 # Function to display help
@@ -81,6 +82,7 @@ function Show-Help {
     Write-Host ""
     Write-Host "OPTIONS:" -ForegroundColor Green
     Write-Host "  -Help                      Display this help message"
+    Write-Host "  -Interactive               Run in interactive mode (will prompt for missing values)"
     Write-Host "  -OrgName <NAME>            Organization name placeholder"
     Write-Host "  -Email <EMAIL>             Contact email placeholder"
     Write-Host "  -RmmUrl <URL>              RMM server URL (e.g., http://localhost:8000)"
@@ -93,8 +95,11 @@ function Show-Help {
     Write-Host "  -SkipRun                   Skip the final agent installation step"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Green
-    Write-Host "  # Run in interactive mode (will prompt for all required values):"
+    Write-Host "  # Display help documentation:"
     Write-Host "  .\windows_arm64.ps1"
+    Write-Host ""
+    Write-Host "  # Run in interactive mode (will prompt for all required values):"
+    Write-Host "  .\windows_arm64.ps1 -Interactive"
     Write-Host ""
     Write-Host "  # Provide all parameters for non-interactive installation:"
     Write-Host "  .\windows_arm64.ps1 -OrgName 'MyCompany' -Email 'admin@example.com' -RmmUrl 'http://rmm.example.com' \"
@@ -114,6 +119,9 @@ function Show-Help {
 if ($Help -or ($PSBoundParameters.Count -eq 0 -and $args.Count -eq 0)) {
     Show-Help
 }
+
+# Set interactive mode flag
+$InteractiveMode = $Interactive -or ($PSBoundParameters.Count -eq 1 -and $Interactive)
 
 # Assign parameters to variables
 $ContactEmail = $Email
