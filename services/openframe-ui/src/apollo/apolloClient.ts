@@ -224,7 +224,7 @@ export const restClient = {
       const token = localStorage.getItem('access_token');
       const defaultHeaders = {
         'Accept': '*/*',
-        'Authorization': token ? (url.includes('/tools/tactical-rmm/') ? `Token ${token}` : `Bearer ${token}`) : ''
+        'Authorization': token ? `Bearer ${token}` : ''
       };
 
       const headers = {
