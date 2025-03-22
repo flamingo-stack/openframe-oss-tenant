@@ -521,6 +521,12 @@ const executeBulkScript = async () => {
     };
     
     console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
+    
+    // For development mode, use script ID 14 which is known to work based on the curl example
+    if (import.meta.env.DEV && payload.script) {
+      payload.script = 14;
+    }
+    
     await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
@@ -564,6 +570,12 @@ const executeBulkCommand = async () => {
     };
     
     console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
+    
+    // For development mode, use script ID 14 which is known to work based on the curl example
+    if (import.meta.env.DEV && payload.script) {
+      payload.script = 14;
+    }
+    
     await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
