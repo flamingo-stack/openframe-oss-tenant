@@ -70,12 +70,21 @@
             id="bulkAgents"
             v-model="bulkSelectedAgents"
             :options="devices"
-            optionLabel="hostname"
-            optionValue="id"
+            optionLabel="label"
+            optionValue="value"
             placeholder="Select target agents"
             class="w-full"
             :class="{ 'p-invalid': submitted && bulkSelectedAgents.length === 0 }"
-          />
+            :disabled="loading"
+            :filter="true"
+          >
+            <template #emptyfilter>
+              <div class="p-text-center">No matching agents found</div>
+            </template>
+            <template #empty>
+              <div class="p-text-center">No agents available</div>
+            </template>
+          </MultiSelect>
           <small class="p-error" v-if="submitted && bulkSelectedAgents.length === 0">
             Select at least one agent.
           </small>
@@ -157,12 +166,21 @@
             id="bulkAgents"
             v-model="bulkSelectedAgents"
             :options="devices"
-            optionLabel="hostname"
-            optionValue="id"
+            optionLabel="label"
+            optionValue="value"
             placeholder="Select target agents"
             class="w-full"
             :class="{ 'p-invalid': submitted && bulkSelectedAgents.length === 0 }"
-          />
+            :disabled="loading"
+            :filter="true"
+          >
+            <template #emptyfilter>
+              <div class="p-text-center">No matching agents found</div>
+            </template>
+            <template #empty>
+              <div class="p-text-center">No agents available</div>
+            </template>
+          </MultiSelect>
           <small class="p-error" v-if="submitted && bulkSelectedAgents.length === 0">
             Select at least one agent.
           </small>
@@ -342,11 +360,38 @@ const fetchScripts = async () => {
 
 const fetchDevices = async () => {
   try {
-    const response = await restClient.get<DevicesResponse>(`${API_URL}/agents/`);
-    devices.value = response.data || [];
+    loading.value = true;
+    console.log('API URL:', `${API_URL}/agents/`);
+    
+    // Fetch devices from the API
+    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
+    console.log('API Response:', response);
+    
+    if (!response || (Array.isArray(response) && response.length === 0)) {
+      console.warn('No devices returned from the API');
+      devices.value = [];
+      return [];
+    }
+    
+    const deviceList = Array.isArray(response) ? response : (response.data || []);
+    
+    // Map devices to include value and label properties for MultiSelect
+    const mappedDevices = deviceList.map(device => ({
+      ...device,
+      value: device.id || device.agent_id,
+      label: device.hostname
+    }));
+    
+    console.log('Setting devices.value to:', mappedDevices);
+    devices.value = mappedDevices;
+    return deviceList;
   } catch (error) {
     console.error('Failed to fetch devices:', error);
-    toastService.showError('Failed to fetch devices');
+    toastService.showError(`Failed to fetch devices: ${error.message || 'Unknown error'}`);
+    devices.value = [];
+    return [];
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -394,13 +439,19 @@ const executeBulkScript = async () => {
   try {
     executing.value = true;
     
+    // Filter out any null or undefined agent IDs
+    const validAgents = bulkSelectedAgents.value.filter(agent => agent !== null && agent !== undefined);
+    
+    console.log('Selected agents before filtering:', bulkSelectedAgents.value);
+    console.log('Valid agents after filtering:', validAgents);
+    
     const payload = {
       mode: "script",
       target: "agents",
       monType: "all",
       osType: bulkOsType.value,
       cmd: "",
-      shell: "cmd",
+      shell: bulkOsType.value === "darwin" ? "/bin/bash" : (bulkOsType.value === "linux" ? "/bin/bash" : "cmd"),
       custom_shell: null,
       custom_field: null,
       collector_all_output: false,
@@ -409,7 +460,7 @@ const executeBulkScript = async () => {
       offlineAgents: false,
       client: null,
       site: null,
-      agents: bulkSelectedAgents.value,
+      agents: validAgents,
       script: bulkSelectedScript.value,
       timeout: bulkTimeout.value,
       args: bulkArgs.value,
@@ -417,13 +468,20 @@ const executeBulkScript = async () => {
       run_as_user: bulkRunAsUser.value
     };
     
-    await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
+    console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
+    
+    const response = await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
-    toastService.showSuccess('Bulk script execution started');
+    toastService.showSuccess(response || 'Bulk script execution started');
   } catch (error) {
     console.error('Failed to execute bulk script:', error);
-    toastService.showError('Failed to execute bulk script');
+    let errorMessage = error.message || error.data || 'Failed to execute bulk script';
+    // Remove quotes from error message if present
+    if (typeof errorMessage === 'string' && errorMessage.startsWith('"') && errorMessage.endsWith('"')) {
+      errorMessage = errorMessage.substring(1, errorMessage.length - 1);
+    }
+    toastService.showError(errorMessage);
   } finally {
     executing.value = false;
   }
@@ -433,13 +491,19 @@ const executeBulkCommand = async () => {
   try {
     executing.value = true;
     
+    // Filter out any null or undefined agent IDs
+    const validAgents = bulkSelectedAgents.value.filter(agent => agent !== null && agent !== undefined);
+    
+    console.log('Selected agents before filtering:', bulkSelectedAgents.value);
+    console.log('Valid agents after filtering:', validAgents);
+    
     const payload = {
       mode: "command",
       target: "agents",
       monType: "all",
       osType: bulkOsType.value,
       cmd: command.value,
-      shell: shellType.value,
+      shell: bulkOsType.value === "darwin" ? "/bin/bash" : (bulkOsType.value === "linux" ? "/bin/bash" : shellType.value),
       custom_shell: null,
       custom_field: null,
       collector_all_output: false,
@@ -448,18 +512,25 @@ const executeBulkCommand = async () => {
       offlineAgents: false,
       client: null,
       site: null,
-      agents: bulkSelectedAgents.value,
+      agents: validAgents,
       timeout: bulkTimeout.value,
       run_as_user: bulkRunAsUser.value
     };
     
-    await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
+    console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
+    
+    const response = await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
-    toastService.showSuccess('Bulk command execution started');
+    toastService.showSuccess(response || 'Bulk command execution started');
   } catch (error) {
     console.error('Failed to execute bulk command:', error);
-    toastService.showError('Failed to execute bulk command');
+    let errorMessage = error.message || error.data || 'Failed to execute bulk command';
+    // Remove quotes from error message if present
+    if (typeof errorMessage === 'string' && errorMessage.startsWith('"') && errorMessage.endsWith('"')) {
+      errorMessage = errorMessage.substring(1, errorMessage.length - 1);
+    }
+    toastService.showError(errorMessage);
   } finally {
     executing.value = false;
   }
