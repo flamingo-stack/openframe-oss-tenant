@@ -70,8 +70,8 @@
             id="bulkAgents"
             v-model="bulkSelectedAgents"
             :options="devices"
-            optionLabel="hostname"
-            optionValue="id"
+            optionLabel="label"
+            optionValue="value"
             placeholder="Select target agents"
             class="w-full"
             :class="{ 'p-invalid': submitted && bulkSelectedAgents.length === 0 }"
@@ -166,8 +166,8 @@
             id="bulkAgents"
             v-model="bulkSelectedAgents"
             :options="devices"
-            optionLabel="hostname"
-            optionValue="id"
+            optionLabel="label"
+            optionValue="value"
             placeholder="Select target agents"
             class="w-full"
             :class="{ 'p-invalid': submitted && bulkSelectedAgents.length === 0 }"
@@ -520,6 +520,7 @@ const executeBulkScript = async () => {
       run_as_user: bulkRunAsUser.value
     };
     
+    console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
     await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
@@ -562,6 +563,7 @@ const executeBulkCommand = async () => {
       run_as_user: bulkRunAsUser.value
     };
     
+    console.log('Bulk Script Payload:', JSON.stringify(payload, null, 2));
     await restClient.post(`${API_URL}/agents/actions/bulk/`, payload);
     
     resetForm();
