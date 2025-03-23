@@ -7,6 +7,10 @@
 #   - Clone, patch, compile rmmagent for Windows ARM64
 #   - Prompt to run agent or skip
 #   - After install, configure the Windows service to use the custom log path (if provided)
+#   - Automatically configures the agent to use ws:// protocol instead of wss:// for WebSockets
+#   - Sets environment variables and registry settings for WebSocket protocol override
+#   - Uses binary patching as a fallback method to ensure proper WebSocket connectivity
+#   - Allows connection to development/local RMM servers using port 8000
 #
 # Usage Examples:
 #   1) Interactive mode:
@@ -222,6 +226,104 @@ function Install-Git {
 # Go is no longer needed since we're using pre-built AMD64 binary
 function Install-Go {
     Write-Host "Go installation skipped - not needed for AMD64 binary with emulation." -ForegroundColor Cyan
+}
+
+############################
+# WebSocket Protocol Functions
+############################
+
+function Set-WebSocketProtocolEnvironment {
+    Write-Host "Setting environment variables to override WebSocket protocol to ws://..." -ForegroundColor Yellow
+    
+    # Set environment variables that will be inherited by the agent process
+    [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_MODE", "ws", "Process")
+    [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PORT", "8000", "Process")
+    [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natsws", "Process")
+    
+    # Also set for the system to ensure persistence across processes
+    [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_MODE", "ws", "Machine")
+    [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PORT", "8000", "Machine")
+    [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natsws", "Machine")
+    
+    Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
+}
+
+function Patch-WebSocketProtocol {
+    param (
+        [string]$BinaryPath
+    )
+    
+    Write-Host "Attempting to patch WebSocket protocol in binary at $BinaryPath..." -ForegroundColor Yellow
+    
+    try {
+        # Read the binary file as bytes
+        $bytes = [System.IO.File]::ReadAllBytes($BinaryPath)
+        
+        # Look for wss:// pattern and replace with ws:// (with padding to maintain size)
+        $wssPattern = [System.Text.Encoding]::ASCII.GetBytes("wss://")
+        $wsPattern = [System.Text.Encoding]::ASCII.GetBytes("ws:// ")
+        
+        # Find and replace all occurrences
+        $replaced = $false
+        for ($i = 0; $i -lt $bytes.Length - $wssPattern.Length; $i++) {
+            $match = $true
+            for ($j = 0; $j -lt $wssPattern.Length; $j++) {
+                if ($bytes[$i + $j] -ne $wssPattern[$j]) {
+                    $match = $false
+                    break
+                }
+            }
+            
+            if ($match) {
+                Write-Host "Found wss:// pattern at offset $i, replacing with ws://" -ForegroundColor Green
+                for ($j = 0; $j -lt $wsPattern.Length; $j++) {
+                    $bytes[$i + $j] = $wsPattern[$j]
+                }
+                $replaced = $true
+            }
+        }
+        
+        if ($replaced) {
+            # Backup the original file
+            Copy-Item -Path $BinaryPath -Destination "$BinaryPath.backup" -Force
+            
+            # Write the modified bytes back to the file
+            [System.IO.File]::WriteAllBytes($BinaryPath, $bytes)
+            Write-Host "Binary patched successfully. Original backup saved as $BinaryPath.backup" -ForegroundColor Green
+        } else {
+            Write-Host "No wss:// patterns found in the binary." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "Error patching binary: $_" -ForegroundColor Red
+        return $false
+    }
+    
+    return $true
+}
+
+function Set-WebSocketRegistrySettings {
+    Write-Host "Setting WebSocket protocol registry settings..." -ForegroundColor Yellow
+    
+    try {
+        # Create or update registry keys for Tactical RMM agent
+        $regPath = "HKLM:\SOFTWARE\TacticalRMM"
+        
+        # Create the key if it doesn't exist
+        if (-not (Test-Path $regPath)) {
+            New-Item -Path $regPath -Force | Out-Null
+        }
+        
+        # Set registry values
+        New-ItemProperty -Path $regPath -Name "WebSocketProtocol" -Value "ws" -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $regPath -Name "WebSocketPort" -Value "8000" -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $regPath -Name "WebSocketPath" -Value "/natsws" -PropertyType String -Force | Out-Null
+        
+        Write-Host "Registry settings configured successfully" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Error setting registry values: $_" -ForegroundColor Red
+        return $false
+    }
 }
 
 ############################
@@ -881,6 +983,22 @@ function Prompt-RunAgent {
                 Write-Host "Step 2: Waiting 5 seconds before agent configuration..." -ForegroundColor Cyan
                 Start-Sleep -Seconds 5
                 
+                # Apply WebSocket protocol modifications before running the agent
+                Write-Host "Preparing WebSocket protocol modifications..." -ForegroundColor Cyan
+                
+                # Set environment variables
+                Set-WebSocketProtocolEnvironment
+                
+                # Set registry settings
+                Set-WebSocketRegistrySettings
+                
+                # Patch the binary as a fallback method
+                if (Test-Path "C:\Program Files\TacticalAgent\tacticalrmm.exe") {
+                    Patch-WebSocketProtocol -BinaryPath "C:\Program Files\TacticalAgent\tacticalrmm.exe"
+                }
+                
+                Write-Host "WebSocket protocol modifications applied, proceeding with agent installation..." -ForegroundColor Cyan
+                
                 # Step 3: Run the agent installation command with exact flags from user
                 $agentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
                 # Use the exact format provided by the user (matching the format they specified)
@@ -923,6 +1041,9 @@ function Prompt-RunAgent {
                 
                 if ($ProxyServer) {
                     $agentArgs += " -proxy `"$ProxyServer`""
+                } else {
+                    # Add WebSocket proxy setting for protocol override if no custom proxy is specified
+                    $agentArgs += " -proxy `"http://localhost:8000/natsws`""
                 }
                 
                 # Add required parameters
