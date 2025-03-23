@@ -2,8 +2,8 @@
   <div class="of-scripts-view">
     <ModuleHeader title="Events">
       <template #actions>
-        <OFButton icon="pi pi-refresh" class="p-button-text" @click="togglePolling(!autoPollingEnabled)" 
-          v-tooltip.left="autoPollingEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'" />
+        <OFButton icon="pi pi-sync" class="p-button-text p-button-sm" @click="togglePolling(!autoPollingEnabled)" 
+          v-tooltip.top="autoPollingEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'" />
       </template>
     </ModuleHeader>
 
@@ -78,12 +78,12 @@
         </Column>
         <Column header="Actions" style="width: 10%">
           <template #body="{ data }">
-            <div class="action-buttons">
-              <OFButton
-                icon="pi pi-eye"
-                class="p-button-text p-button-rounded"
-                @click="viewDetails(data)"
-                v-tooltip.left="'View Details'"
+            <div class="flex gap-2 justify-content-center">
+              <OFButton 
+                icon="pi pi-eye" 
+                class="p-button-text p-button-sm" 
+                v-tooltip.top="'View Details'" 
+                @click="viewDetails(data)" 
               />
             </div>
           </template>
@@ -227,8 +227,5 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.action-buttons {
-  display: flex;
-  justify-content: center;
-}
+
 </style>
