@@ -1705,8 +1705,8 @@ Write-Host "Checking and installing dependencies if needed..."
 Install-Git
 Install-Go
 
-# Perform aggressive uninstallation before proceeding
-Uninstall-AggressivelyTacticalRMM
+# Perform uninstallation before proceeding
+Uninstall-TacticalRMM
 
 # 2) Prompt for missing fields
 Write-Host ""
