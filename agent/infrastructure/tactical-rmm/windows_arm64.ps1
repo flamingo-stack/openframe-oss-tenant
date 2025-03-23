@@ -52,11 +52,11 @@ $AMD64_BINARY = "tacticalagent-v2.9.0-windows-amd64.exe"
 $AMD64_BINARY_PATH = Join-Path (Split-Path -Parent $PSCommandPath) "binaries\$AMD64_BINARY"
 
 # We'll store user-provided or prompted values in these variables:
-$OrgName = $OrgName -or ""
-$ContactEmail = $Email -or ""
-$RmmServerUrl = $RmmUrl -or ""
-$AgentAuthKey = $AuthKey -or ""
-$AgentLogPath = $LogPath -or ""
+$script:OrgName = if ([string]::IsNullOrEmpty($OrgName) -or $OrgName -eq $true -or $OrgName -eq "True") { "" } else { $OrgName }
+$script:ContactEmail = if ([string]::IsNullOrEmpty($Email) -or $Email -eq $true -or $Email -eq "True") { "" } else { $Email }
+$script:RmmServerUrl = if ([string]::IsNullOrEmpty($RmmUrl) -or $RmmUrl -eq $true -or $RmmUrl -eq "True") { "" } else { $RmmUrl }
+$script:AgentAuthKey = if ([string]::IsNullOrEmpty($AuthKey) -or $AuthKey -eq $true -or $AuthKey -eq "True") { "" } else { $AuthKey }
+$script:AgentLogPath = if ([string]::IsNullOrEmpty($LogPath) -or $LogPath -eq $true -or $LogPath -eq "True") { "" } else { $LogPath }
 # Ensure BuildFolder has a default that's not the variable name itself
 $script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder -eq "$true") { "rmmagent" } else { $BuildFolder }
 $SkipRun = $SkipRun -or $false
@@ -353,18 +353,21 @@ function Prompt-IfEmpty {
         [switch]$Silent = $false
     )
     
-    $currVal = Get-Variable -Name $VarName -ValueOnly -ErrorAction SilentlyContinue
+    # Extract the variable name without the script: prefix if present
+    $actualVarName = $VarName -replace "^script:", ""
+    
+    $currVal = Get-Variable -Name $actualVarName -ValueOnly -ErrorAction SilentlyContinue
     
     # If value is empty or null, use default or prompt for value
     # Don't use boolean comparison for string parameters
-    if ([string]::IsNullOrEmpty($currVal)) {
+    if ([string]::IsNullOrEmpty($currVal) -or $currVal -eq $true -or $currVal -eq "True") {
         if ($Silent) {
             # In silent mode, always use default value without prompting
             if (-not [string]::IsNullOrEmpty($DefaultVal)) {
-                Set-Variable -Name $VarName -Value $DefaultVal -Scope Script
-                Write-Host "Using default value for ${VarName}: ${DefaultVal}" -ForegroundColor Yellow
+                Set-Variable -Name $actualVarName -Value $DefaultVal -Scope Script
+                Write-Host "Using default value for ${actualVarName}: ${DefaultVal}" -ForegroundColor Yellow
             } else {
-                Write-Host "ERROR: ${VarName} is required in non-interactive mode" -ForegroundColor Red
+                Write-Host "ERROR: ${actualVarName} is required in non-interactive mode" -ForegroundColor Red
                 exit 1
             }
         } else {
@@ -379,12 +382,13 @@ function Prompt-IfEmpty {
             }
             
             # Update the variable with the new value
-            Set-Variable -Name $VarName -Value $promptValue -Scope Script
+            Set-Variable -Name $actualVarName -Value $promptValue -Scope Script
         }
     } else {
         # Value already exists, display it
-        Write-Host "Using provided ${VarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
+        Write-Host "Using provided ${actualVarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
     }
+}
 }
 
 ############################
@@ -530,22 +534,22 @@ if (-not (Test-AgentExecutable -Path $binaryPath)) {
 }
 
 # Prompt for missing values if not provided
-Prompt-IfEmpty -VarName "OrgName" -PromptMsg "Enter organization name" -DefaultVal "OpenFrame"
-Prompt-IfEmpty -VarName "ContactEmail" -PromptMsg "Enter contact email" -DefaultVal "admin@openframe.io"
-Prompt-IfEmpty -VarName "RmmServerUrl" -PromptMsg "Enter RMM server URL" -DefaultVal "http://localhost:8000"
-Prompt-IfEmpty -VarName "AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
-Prompt-IfEmpty -VarName "ClientId" -PromptMsg "Enter client ID" -DefaultVal "1"
-Prompt-IfEmpty -VarName "SiteId" -PromptMsg "Enter site ID" -DefaultVal "1"
-Prompt-IfEmpty -VarName "AgentType" -PromptMsg "Enter agent type" -DefaultVal "workstation"
-Prompt-IfEmpty -VarName "AgentLogPath" -PromptMsg "Enter log path" -DefaultVal "C:\logs\tactical.log"
+Prompt-IfEmpty -VarName "script:OrgName" -PromptMsg "Enter organization name" -DefaultVal "OpenFrame"
+Prompt-IfEmpty -VarName "script:ContactEmail" -PromptMsg "Enter contact email" -DefaultVal "admin@openframe.io"
+Prompt-IfEmpty -VarName "script:RmmServerUrl" -PromptMsg "Enter RMM server URL" -DefaultVal "http://localhost:8000"
+Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
+Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID" -DefaultVal "1"
+Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID" -DefaultVal "1"
+Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type" -DefaultVal "workstation"
+Prompt-IfEmpty -VarName "script:AgentLogPath" -PromptMsg "Enter log path" -DefaultVal "C:\logs\tactical.log"
 
 # Display parameters for installation
 Write-Host "Using parameters for installation:" -ForegroundColor Cyan
-Write-Host "  - Client ID: ${ClientId} (type: $(${ClientId}.GetType().Name))" -ForegroundColor White
-Write-Host "  - Site ID: ${SiteId} (type: $(${SiteId}.GetType().Name))" -ForegroundColor White
-Write-Host "  - Agent Type: '${AgentType}' (type: $(${AgentType}.GetType().Name))" -ForegroundColor White
-Write-Host "  - RMM URL: ${RmmServerUrl}" -ForegroundColor White
-Write-Host "  - Log Path: ${AgentLogPath}" -ForegroundColor White
+Write-Host "  - Client ID: ${script:ClientId} (type: $(${script:ClientId}.GetType().Name))" -ForegroundColor White
+Write-Host "  - Site ID: ${script:SiteId} (type: $(${script:SiteId}.GetType().Name))" -ForegroundColor White
+Write-Host "  - Agent Type: '${script:AgentType}' (type: $(${script:AgentType}.GetType().Name))" -ForegroundColor White
+Write-Host "  - RMM URL: '${script:RmmServerUrl}'" -ForegroundColor White
+Write-Host "  - Log Path: '${script:AgentLogPath}'" -ForegroundColor White
 
 # Follow exact 3-step flow as requested by user
 Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
@@ -562,17 +566,19 @@ if ($tacticalInstalled) {
 # 3. Install from binary
 Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
 # Apply WebSocket protocol modifications for non-HTTPS URLs
-if ($RmmServerUrl -match "^http://") {
+if (-not [string]::IsNullOrEmpty($script:RmmServerUrl) -and $script:RmmServerUrl -match "^http://") {
     Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
-    Set-WebSocketProtocolEnvironment -RmmUrl $RmmServerUrl
-    Set-WebSocketRegistrySettings -RmmUrl $RmmServerUrl
+    Set-WebSocketProtocolEnvironment -RmmUrl $script:RmmServerUrl
+    Set-WebSocketRegistrySettings -RmmUrl $script:RmmServerUrl
 }
 
 # Ensure log directory exists
-$logDir = Split-Path -Parent $AgentLogPath
-if (-not (Test-Path $logDir)) {
-    Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
-    New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
+    $logDir = Split-Path -Parent $script:AgentLogPath
+    if (-not (Test-Path $logDir)) {
+        Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
 }
 
 # Install the agent
@@ -580,10 +586,23 @@ Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESS
 Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
 
 # Configure the agent with parameters
-$programFilesPath = "$env:ProgramFiles"
+$programFilesPath = "${env:ProgramFiles}"
 $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
 if (Test-Path $installedAgentPath) {
-    $agentConfigArgs = "-m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent"
+    # Build agent configuration arguments with proper validation
+    $agentConfigArgs = "-m install"
+    if (-not [string]::IsNullOrEmpty($script:RmmServerUrl)) {
+        $agentConfigArgs += " -api `"$script:RmmServerUrl`""
+    }
+    if (-not [string]::IsNullOrEmpty($script:AgentAuthKey)) {
+        $agentConfigArgs += " -auth `"$script:AgentAuthKey`""
+    }
+    $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -log `"DEBUG`""
+    if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
+        $agentConfigArgs += " -logto `"$script:AgentLogPath`""
+    }
+    $agentConfigArgs += " -nomesh -silent"
+    
     Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
     Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
     Write-Host "Installation completed successfully!" -ForegroundColor Green
