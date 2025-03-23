@@ -68,19 +68,18 @@
             {{ data.script_name || data.command }}
           </template>
         </Column>
-        <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 15%">
+        <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 25%">
           <template #body="{ data }">
-            <div class="flex">
+            <div class="flex align-items-center">
               <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2" :style="{
                 color: data.agent_info?.plat === 'windows' ? '#0078d7' : 
                        data.agent_info?.plat === 'darwin' ? '#999' : 
                        data.agent_info?.plat === 'linux' ? '#f8991d' : '',
-                fontSize: '1.2rem',
-                marginTop: '2px'
+                fontSize: '1.2rem'
               }"></i>
               <div class="flex flex-column">
                 <div>{{ getAgentHostname(data.agent) }}</div>
-                <div class="text-xs text-color-secondary">
+                <div class="text-xs text-color-secondary mt-1">
                   {{ data.agent_info ? (data.agent_info.os || data.agent_info.operating_system || 'Unknown OS') : '' }}
                 </div>
               </div>
