@@ -102,6 +102,25 @@
             <code>{{ selectedHistoryItem.command }}</code>
           </div>
         </div>
+        
+        <!-- Add agent info section -->
+        <div v-if="selectedHistoryItem.agent_info" class="agent-info mb-3">
+          <div class="flex flex-column gap-2">
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-desktop mr-1"></i>
+              <span class="text-sm font-medium">{{ selectedHistoryItem.agent_info.platform || selectedHistoryItem.agent_info.plat || 'Unknown Platform' }}</span>
+            </div>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-server mr-1"></i>
+              <span class="text-sm">OS: <span class="font-medium">{{ selectedHistoryItem.agent_info.os || selectedHistoryItem.agent_info.operating_system || 'Unknown' }}</span></span>
+            </div>
+            <div class="flex align-items-center gap-2">
+              <i :class="selectedHistoryItem.agent_info.status === 'online' ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-red-500'" class="mr-1"></i>
+              <span class="text-sm">Status: <span class="font-medium">{{ selectedHistoryItem.agent_info.status || 'Unknown' }}</span></span>
+            </div>
+          </div>
+        </div>
+        
         <div class="of-form-group">
           <label>Output</label>
           <div class="code-block">
@@ -117,6 +136,25 @@
             <code>{{ selectedHistoryItem.script_name }}</code>
           </div>
         </div>
+        
+        <!-- Add agent info section -->
+        <div v-if="selectedHistoryItem.agent_info" class="agent-info mb-3">
+          <div class="flex flex-column gap-2">
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-desktop mr-1"></i>
+              <span class="text-sm font-medium">{{ selectedHistoryItem.agent_info.platform || selectedHistoryItem.agent_info.plat || 'Unknown Platform' }}</span>
+            </div>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-server mr-1"></i>
+              <span class="text-sm">OS: <span class="font-medium">{{ selectedHistoryItem.agent_info.os || selectedHistoryItem.agent_info.operating_system || 'Unknown' }}</span></span>
+            </div>
+            <div class="flex align-items-center gap-2">
+              <i :class="selectedHistoryItem.agent_info.status === 'online' ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-red-500'" class="mr-1"></i>
+              <span class="text-sm">Status: <span class="font-medium">{{ selectedHistoryItem.agent_info.status || 'Unknown' }}</span></span>
+            </div>
+          </div>
+        </div>
+        
         <div v-if="selectedHistoryItem.script_results" class="of-form-group">
           <label>Output</label>
           <div class="code-block">
@@ -233,6 +271,15 @@ const getAgentHostname = (agentId: number) => {
 
 const showOutputDialog = (historyItem: HistoryEntry) => {
   selectedHistoryItem.value = historyItem;
+  
+  // If we don't have agent info, try to add it
+  if (!historyItem.agent_info && window.location.hostname === 'localhost') {
+    selectedHistoryItem.value = { 
+      ...historyItem, 
+      agent_info: getMockAgentInfo(historyItem.agent) 
+    };
+  }
+  
   showDialog.value = true;
 };
 
@@ -275,21 +322,45 @@ const fetchHistory = async () => {
   try {
     loading.value = true;
     
-    // Choose the right endpoint based on whether we're showing a single agent or all agents
-    const endpoint = selectedAgent.value
-      ? `${API_URL}/agents/${selectedAgent.value}/history/`
-      : `${API_URL}/agents/history/`; // Assumes an endpoint exists for all agents' history
+    let newHistory: HistoryEntry[] = [];
     
-    const response = await restClient.get<HistoryEntry[]>(endpoint);
-    const newHistory = Array.isArray(response) ? response : [];
+    // Check for mock data in localStorage when in development mode
+    if (window.location.hostname === 'localhost') {
+      const storedHistory = localStorage.getItem('events-history');
+      if (storedHistory) {
+        try {
+          console.log('Loading mock history from localStorage');
+          newHistory = JSON.parse(storedHistory);
+        } catch (e) {
+          console.error('Failed to parse mock history from localStorage:', e);
+        }
+      }
+    }
+    
+    // If no mock data or not in development mode, fetch from API
+    if (newHistory.length === 0) {
+      // Choose the right endpoint based on whether we're showing a single agent or all agents
+      const endpoint = selectedAgent.value
+        ? `${API_URL}/agents/${selectedAgent.value}/history/`
+        : `${API_URL}/agents/history/`; // Assumes an endpoint exists for all agents' history
+      
+      const response = await restClient.get<HistoryEntry[]>(endpoint);
+      newHistory = Array.isArray(response) ? response : [];
+    }
     
     // Sort history items by time in descending order (most recent first)
     newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    
+    // Enhance history with agent information if not already present
+    if (!newHistory.some(item => item.agent_info)) {
+      newHistory = await enhanceHistoryWithAgentInfo(newHistory);
+    }
     
     // Only update the UI if data has changed
     if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
       historyItems.value = newHistory;
       previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
+      console.log('Updated history items:', historyItems.value);
     }
   } catch (error) {
     console.error('Failed to fetch history:', error);
@@ -329,6 +400,88 @@ onMounted(() => {
     setupRefreshInterval();
   }
 });
+
+// Add function to enhance history items with agent information
+const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
+  try {
+    // If we already have devices loaded, use them
+    if (devices.value.length > 0) {
+      const agents = await fetchAgentDetails();
+      
+      // Map agent details to history items
+      return history.map(item => {
+        const deviceId = item.agent.toString();
+        const device = devices.value.find(d => d.id === deviceId);
+        
+        if (device) {
+          const agentInfo = agents.find(a => a.agent_id === device.agent_id);
+          if (agentInfo) {
+            return { ...item, agent_info: agentInfo };
+          }
+        }
+        
+        // If no agent info found, add mock data for local development
+        if (window.location.hostname === 'localhost') {
+          return { 
+            ...item, 
+            agent_info: getMockAgentInfo(item.agent) 
+          };
+        }
+        
+        return item;
+      });
+    }
+    
+    return history;
+  } catch (error) {
+    console.error('Failed to enhance history with agent info:', error);
+    
+    // For local development, add mock data
+    if (window.location.hostname === 'localhost') {
+      return history.map(item => ({ 
+        ...item, 
+        agent_info: getMockAgentInfo(item.agent) 
+      }));
+    }
+    
+    return history;
+  }
+};
+
+// Function to fetch agent details
+const fetchAgentDetails = async () => {
+  try {
+    const response = await restClient.get(`${API_URL}/agents/`);
+    return Array.isArray(response) ? response : [];
+  } catch (error) {
+    console.error('Failed to fetch agent details:', error);
+    return [];
+  }
+};
+
+// Function to generate mock agent data for local development
+const getMockAgentInfo = (agentId: number) => {
+  // Different mock data based on agent ID for variety
+  const mockPlatforms = ['Windows', 'Linux', 'macOS'];
+  const mockOSVersions = [
+    'Windows 10 Pro 21H2', 
+    'Ubuntu 22.04 LTS', 
+    'macOS 12.5 Monterey'
+  ];
+  const mockStatuses = ['online', 'offline'];
+  
+  // Use agent ID to deterministically pick mock data
+  const index = agentId % 3;
+  const statusIndex = agentId % 2;
+  
+  return {
+    platform: mockPlatforms[index],
+    plat: mockPlatforms[index].toLowerCase(),
+    os: mockOSVersions[index],
+    operating_system: mockOSVersions[index],
+    status: mockStatuses[statusIndex]
+  };
+};
 
 // Clean up interval when component is unmounted
 onUnmounted(() => {
@@ -603,6 +756,15 @@ onUnmounted(() => {
   font-weight: bold !important;
   box-shadow: 0 0 0 2px var(--of-primary) !important;
   transform: scale(1.05) !important;
+}
+
+.agent-info {
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  border-left: 3px solid var(--primary-color);
+  margin-bottom: 1rem;
 }
 </style>
 

@@ -265,4 +265,5 @@ export interface HistoryEntry {
   script: number | null;
   script_name?: string;
   custom_field: any | null;
-} 
+  agent_info?: any; // Add agent_info field to store API data
+}  
