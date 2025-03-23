@@ -295,8 +295,6 @@ function Install-FromBinary {
         [string]$LogPath = $AgentLogPath
     )
     
-    Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
-    
     # Verify binary exists
     if (-not (Test-Path $BinaryPath)) {
         Write-Host "ERROR: Binary not found at $BinaryPath" -ForegroundColor Red
@@ -509,18 +507,49 @@ Write-Host "  - Agent Type: '$AgentType' (type: $($AgentType.GetType().Name))" -
 Write-Host "  - RMM URL: $RmmServerUrl" -ForegroundColor White
 Write-Host "  - Log Path: $AgentLogPath" -ForegroundColor White
 
-# 1. Check if tactical already installed
+# Follow exact 3-step flow as requested by user
+Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
 $tacticalInstalled = Check-TacticalInstalled
 
 # 2. If yes, uninstall
 if ($tacticalInstalled) {
+    Write-Host "=== STEP 2: Tactical RMM is already installed. Uninstalling... ===" -ForegroundColor Yellow
     Uninstall-TacticalRMM
 } else {
     Write-Host "=== STEP 2: Tactical RMM is not installed. Skipping uninstallation. ===" -ForegroundColor Green
 }
 
 # 3. Install from binary
-Install-FromBinary -BinaryPath $binaryPath -RmmUrl $RmmServerUrl -AuthKey $AgentAuthKey -ClientId $script:ClientId -SiteId $script:SiteId -AgentType $script:AgentType -LogPath $AgentLogPath
+Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
+# Apply WebSocket protocol modifications for non-HTTPS URLs
+if ($RmmServerUrl -match "^http://") {
+    Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
+    Set-WebSocketProtocolEnvironment -RmmUrl $RmmServerUrl
+    Set-WebSocketRegistrySettings -RmmUrl $RmmServerUrl
+}
+
+# Ensure log directory exists
+$logDir = Split-Path -Parent $AgentLogPath
+if (-not (Test-Path $logDir)) {
+    Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
+    New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+}
+
+# Install the agent
+Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+
+# Configure the agent with parameters
+$programFilesPath = "$env:ProgramFiles"
+$installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+if (Test-Path $installedAgentPath) {
+    $agentConfigArgs = "-m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent"
+    Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
+    Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
+    Write-Host "Installation completed successfully!" -ForegroundColor Green
+} else {
+    Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "=== All Done! ===" -ForegroundColor Green
