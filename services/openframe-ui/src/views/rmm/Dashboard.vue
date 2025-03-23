@@ -3,7 +3,7 @@
     <div class="dashboard-grid">
       <!-- Device Statistics -->
       <div class="dashboard-card device-stats">
-        <h3><i class="pi pi-monitor"></i> Device Overview</h3>
+        <h3><i class="pi pi-mobile"></i> Device Overview</h3>
         <template v-if="deviceStats.total > 0">
           <div class="stats-grid">
             <div class="stat-item">
@@ -11,11 +11,11 @@
               <span class="stat-label">Total Devices</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value success">{{ deviceStats.online }}</span>
+              <span class="stat-value">{{ deviceStats.online }}</span>
               <span class="stat-label">Online</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value danger">{{ deviceStats.offline }}</span>
+              <span class="stat-value">{{ deviceStats.offline }}</span>
               <span class="stat-label">Offline</span>
             </div>
           </div>
@@ -38,10 +38,9 @@
           </div>
         </template>
         <div v-else class="empty-state">
-          <i class="pi pi-desktop empty-icon"></i>
+          <i class="pi pi-mobile empty-icon"></i>
           <h3>No Devices Found</h3>
           <p>There are no devices enrolled in RMM yet.</p>
-          <p class="hint">Add devices to start monitoring them.</p>
         </div>
       </div>
 
@@ -403,18 +402,6 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
-.stat-value.success {
-  color: var(--green-500);
-}
-
-.stat-value.warning {
-  color: var(--yellow-500);
-}
-
-.stat-value.danger {
-  color: var(--red-500);
-}
-
 .stat-label {
   font-size: 0.875rem;
   color: var(--text-color-secondary);
@@ -585,4 +572,4 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 }
-</style>      
+</style>            
