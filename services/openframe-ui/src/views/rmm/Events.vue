@@ -37,10 +37,8 @@
               class="w-full"
             />
           </div>
-          <div class="of-filter-item">
-                </div>
-              </div>
-          </div>
+        </div>
+      </div>
       <ModuleTable 
         :items="historyItems" 
         :loading="loading"
