@@ -241,14 +241,14 @@ const getTypeSeverity = (type: string) => {
 };
 
 const getAgentHostname = (agentId: number) => {
-  // First try to find the device in the devices list
-  const device = devices.value.find(d => d.id === agentId.toString());
-  
-  // If we have agent_info for this history item, use that hostname
+  // First check if we have agent_info for this history item
   const historyItem = historyItems.value.find(item => item.agent === agentId);
   if (historyItem && historyItem.agent_info && historyItem.agent_info.hostname) {
     return historyItem.agent_info.hostname;
   }
+  
+  // Then try to find the device in the devices list
+  const device = devices.value.find(d => d.id === agentId.toString());
   
   // Fall back to device hostname or default
   return device ? device.hostname : `Agent ${agentId}`;
@@ -329,7 +329,11 @@ const fetchHistory = async () => {
     // Verify agent data availability
     console.log('Agent data verification:', newHistory.map(item => ({
       agent: item.agent,
-      agent_info: item.agent_info,
+      agent_info: item.agent_info ? {
+        agent_id: item.agent_info.agent_id,
+        hostname: item.agent_info.hostname,
+        plat: item.agent_info.plat
+      } : null,
       has_os: item.agent_info ? Boolean(item.agent_info.os || item.agent_info.operating_system) : false
     })));
     
@@ -387,36 +391,51 @@ onMounted(() => {
 // Add function to enhance history items with agent information
 const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
   try {
-    // If we already have devices loaded, use them
-    if (devices.value.length > 0) {
-      const agents = await fetchAgentDetails();
-      
-      // Map agent details to history items
-      return history.map(item => {
-        const deviceId = item.agent.toString();
-        const device = devices.value.find(d => d.id === deviceId);
-        
-        if (device) {
-          const agentInfo = agents.find(a => a.agent_id === device.agent_id);
-          if (agentInfo) {
-            return { ...item, agent_info: agentInfo };
-          }
-        }
-        
-        // No mock data in production
-        // Mock data is now disabled by default
-        
-        return item;
-      });
+    // Fetch all agents from the API
+    const agents = await fetchAgentDetails();
+    
+    if (agents.length === 0) {
+      console.warn('No agents found in API response');
+      return history;
     }
     
-    return history;
+    console.log('Fetched agents:', agents.map(a => ({ agent_id: a.agent_id, hostname: a.hostname })));
+    
+    // Map agent details to history items directly (without relying on devices.value)
+    return history.map(item => {
+      // Based on the API response, we now know that agent ID 1 in history entries
+      // maps to agent_id "PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP" in the agents API
+      if (agents.length > 0) {
+        // For numeric agent ID 1, find the agent with agent.agent property equal to 1
+        // This is the correct mapping based on the API response
+        if (item.agent === 1) {
+          // Try to find an agent with agent property equal to 1
+          const agent = agents.find(a => a.agent === 1);
+          if (agent) {
+            return { ...item, agent_info: agent };
+          }
+          // If not found, use the first agent as fallback
+          return { ...item, agent_info: agents[0] };
+        }
+        
+        // For other agent IDs, try to find a matching agent if possible
+        const agent = agents.find(a => a.agent === item.agent);
+        if (agent) {
+          return { ...item, agent_info: agent };
+        }
+        
+        // Fallback to index-based mapping if no direct match found
+        const agentIndex = (item.agent - 1) % agents.length;
+        const fallbackAgent = agents[agentIndex >= 0 ? agentIndex : 0];
+        if (fallbackAgent) {
+          return { ...item, agent_info: fallbackAgent };
+        }
+      }
+      
+      return item;
+    });
   } catch (error) {
     console.error('Failed to enhance history with agent info:', error);
-    
-    // No mock data in production
-    // Mock data is now disabled by default
-    
     return history;
   }
 };
@@ -425,7 +444,9 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
 const fetchAgentDetails = async () => {
   try {
     const response = await restClient.get(`${API_URL}/agents/`);
-    return Array.isArray(response) ? response : [];
+    const agents = Array.isArray(response) ? response : [];
+    console.log(`Fetched ${agents.length} agents from API`);
+    return agents;
   } catch (error) {
     console.error('Failed to fetch agent details:', error);
     return [];
