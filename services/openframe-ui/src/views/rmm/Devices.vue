@@ -263,7 +263,8 @@ const executeCommand = async (cmd: string) => {
       deviceName: selectedDevice.value.hostname,
       command: cmd,
       output: 'Executing command...',
-      status: 'pending'
+      status: 'pending',
+      agent_id: selectedDevice.value.agent_id
     });
   }
 

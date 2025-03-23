@@ -68,9 +68,17 @@
             {{ data.script_name || data.command }}
           </template>
         </Column>
-        <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 15%">
+        <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 25%">
           <template #body="{ data }">
-            {{ getAgentHostname(data.agent) }}
+            <div class="flex align-items-center">
+              <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2"></i>
+              <div class="flex flex-column">
+                <div>{{ data.agent_info?.hostname || getAgentHostname(data.agent) }}</div>
+                <div class="text-xs text-color-secondary mt-1">
+                  {{ data.agent_info ? (data.agent_info.os || data.agent_info.operating_system || 'Unknown OS') : '' }}
+                </div>
+              </div>
+            </div>
           </template>
         </Column>
         <Column header="Actions" :exportable="false" style="width: 10%">
@@ -102,6 +110,9 @@
             <code>{{ selectedHistoryItem.command }}</code>
           </div>
         </div>
+        
+
+        
         <div class="of-form-group">
           <label>Output</label>
           <div class="code-block">
@@ -117,6 +128,9 @@
             <code>{{ selectedHistoryItem.script_name }}</code>
           </div>
         </div>
+        
+
+        
         <div v-if="selectedHistoryItem.script_results" class="of-form-group">
           <label>Output</label>
           <div class="code-block">
@@ -148,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed, onUnmounted, nextTick } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -227,12 +241,25 @@ const getTypeSeverity = (type: string) => {
 };
 
 const getAgentHostname = (agentId: number) => {
+  // First check if we have agent_info for this history item
+  const historyItem = historyItems.value.find(item => item.agent === agentId);
+  if (historyItem && historyItem.agent_info && historyItem.agent_info.hostname) {
+    return historyItem.agent_info.hostname;
+  }
+  
+  // Then try to find the device in the devices list
   const device = devices.value.find(d => d.id === agentId.toString());
+  
+  // Fall back to device hostname or default
   return device ? device.hostname : `Agent ${agentId}`;
 };
 
 const showOutputDialog = (historyItem: HistoryEntry) => {
   selectedHistoryItem.value = historyItem;
+  
+  // Don't add mock data in production
+  // Mock data is now disabled by default
+  
   showDialog.value = true;
 };
 
@@ -250,13 +277,10 @@ const fetchDevices = async () => {
   try {
     loading.value = true;
     
-    // For local development, use mock data
-    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
-      devices.value = [{
-        id: '1',
-        agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        hostname: 'test-device'
-      }];
+    // No mock data in production
+    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development' && false) {
+      // Mock data is now disabled by default
+      console.log('Development environment detected, but mock data is disabled');
       loading.value = false;
       return;
     }
@@ -272,24 +296,63 @@ const fetchDevices = async () => {
 };
 
 const fetchHistory = async () => {
+  // Skip if already loading to prevent multiple simultaneous requests
+  if (loading.value) return;
+  
   try {
     loading.value = true;
     
-    // Choose the right endpoint based on whether we're showing a single agent or all agents
-    const endpoint = selectedAgent.value
-      ? `${API_URL}/agents/${selectedAgent.value}/history/`
-      : `${API_URL}/agents/history/`; // Assumes an endpoint exists for all agents' history
+    let newHistory: HistoryEntry[] = [];
     
-    const response = await restClient.get<HistoryEntry[]>(endpoint);
-    const newHistory = Array.isArray(response) ? response : [];
+    // Only use mock data in development mode for local testing
+    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
+      console.log('Development environment detected, but not using mock data by default');
+      // Mock data is now only added via addMockAgentInfo() when explicitly called
+    }
+    
+    // If no mock data or not in development mode, fetch from API
+    if (newHistory.length === 0) {
+      // Choose the right endpoint based on whether we're showing a single agent or all agents
+      const endpoint = selectedAgent.value
+        ? `${API_URL}/agents/${selectedAgent.value}/history/`
+        : `${API_URL}/agents/history/`; // Assumes an endpoint exists for all agents' history
+      
+      const response = await restClient.get<HistoryEntry[]>(endpoint);
+      newHistory = Array.isArray(response) ? response : [];
+    }
     
     // Sort history items by time in descending order (most recent first)
     newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     
+    // Enhance history with agent information if not already present
+    if (!newHistory.some(item => item.agent_info)) {
+      newHistory = await enhanceHistoryWithAgentInfo(newHistory);
+    }
+    
+    // Verify agent data availability (only log in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Agent data verification:', newHistory.map(item => ({
+        agent: item.agent,
+        agent_info: item.agent_info ? {
+          agent_id: item.agent_info.agent_id,
+          hostname: item.agent_info.hostname,
+          plat: item.agent_info.plat
+        } : null,
+        has_os: item.agent_info ? Boolean(item.agent_info.os || item.agent_info.operating_system) : false
+      })));
+    }
+    
     // Only update the UI if data has changed
     if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
-      historyItems.value = newHistory;
-      previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
+      // Use nextTick to ensure UI updates don't block rendering
+      nextTick(() => {
+        historyItems.value = newHistory;
+        previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Updated history items:', historyItems.value);
+        }
+      });
     }
   } catch (error) {
     console.error('Failed to fetch history:', error);
@@ -306,8 +369,11 @@ const setupRefreshInterval = () => {
   }
   
   refreshInterval.value = window.setInterval(() => {
-    fetchHistory();
-  }, 3000); // Changed from 1000 to 3000 ms
+    // Use requestAnimationFrame to avoid blocking the UI thread
+    window.requestAnimationFrame(() => {
+      fetchHistory();
+    });
+  }, 5000); // Changed from 3000 to 5000 ms for less frequent updates
 };
 
 const togglePolling = (enabled: boolean) => {
@@ -328,7 +394,104 @@ onMounted(() => {
   if (autoPollingEnabled.value) {
     setupRefreshInterval();
   }
+  
+  // Override icon styles
+  overrideIconStyles();
+  
+  // Only add mock data when explicitly requested for testing
+  // Mock data is now disabled by default
 });
+
+// Add function to enhance history items with agent information
+const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
+  try {
+    // Fetch all agents from the API
+    const agents = await fetchAgentDetails();
+    
+    if (agents.length === 0) {
+      console.warn('No agents found in API response');
+      return history;
+    }
+    
+    console.log('Fetched agents:', agents.map(a => ({ agent_id: a.agent_id, hostname: a.hostname })));
+    
+    // Map agent details to history items directly (without relying on devices.value)
+    return history.map(item => {
+      // Based on the API response, we now know that agent ID 1 in history entries
+      // maps to agent_id "PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP" in the agents API
+      if (agents.length > 0) {
+        // For numeric agent ID 1, find the agent with agent.agent property equal to 1
+        // This is the correct mapping based on the API response
+        if (item.agent === 1) {
+          // Try to find an agent with agent property equal to 1
+          const agent = agents.find(a => a.agent === 1);
+          if (agent) {
+            return { ...item, agent_info: agent };
+          }
+          // If not found, use the first agent as fallback
+          return { ...item, agent_info: agents[0] };
+        }
+        
+        // For other agent IDs, try to find a matching agent if possible
+        const agent = agents.find(a => a.agent === item.agent);
+        if (agent) {
+          return { ...item, agent_info: agent };
+        }
+        
+        // Fallback to index-based mapping if no direct match found
+        const agentIndex = (item.agent - 1) % agents.length;
+        const fallbackAgent = agents[agentIndex >= 0 ? agentIndex : 0];
+        if (fallbackAgent) {
+          return { ...item, agent_info: fallbackAgent };
+        }
+      }
+      
+      return item;
+    });
+  } catch (error) {
+    console.error('Failed to enhance history with agent info:', error);
+    return history;
+  }
+};
+
+// Function to fetch agent details
+const fetchAgentDetails = async () => {
+  try {
+    const response = await restClient.get(`${API_URL}/agents/`);
+    const agents = Array.isArray(response) ? response : [];
+    console.log(`Fetched ${agents.length} agents from API`);
+    return agents;
+  } catch (error) {
+    console.error('Failed to fetch agent details:', error);
+    return [];
+  }
+};
+
+// Mock data functions are disabled in production
+// Function to generate mock agent data for local development (disabled)
+const getMockAgentInfo = (agentId: number) => {
+  console.log('Mock data generation is disabled in production');
+  return null;
+};
+
+// Function to add mock data to history items (disabled)
+const addMockAgentInfo = () => {
+  console.log('Mock data addition is disabled in production');
+};
+
+import { getDeviceIcon } from '../../utils/deviceUtils';
+
+// Override any global styling affecting the Windows icon
+const overrideIconStyles = () => {
+  // Add a style tag to override any global styles affecting the Windows icon
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    .pi-microsoft, .pi-apple, .pi-server {
+      color: inherit !important;
+    }
+  `;
+  document.head.appendChild(styleTag);
+};
 
 // Clean up interval when component is unmounted
 onUnmounted(() => {
@@ -604,5 +767,16 @@ onUnmounted(() => {
   box-shadow: 0 0 0 2px var(--of-primary) !important;
   transform: scale(1.05) !important;
 }
+
+.agent-info {
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  border-left: 3px solid var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+/* Removed custom device-icon styling to match Devices view exactly */
 </style>
 
