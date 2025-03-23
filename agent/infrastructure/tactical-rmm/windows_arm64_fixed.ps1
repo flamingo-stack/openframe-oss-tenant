@@ -364,7 +364,7 @@ function Prompt-IfEmpty {
             # In silent mode, always use default value without prompting
             if (-not [string]::IsNullOrEmpty($DefaultVal)) {
                 Set-Variable -Name $VarName -Value $DefaultVal -Scope Script
-                Write-Host "Using default value for $VarName: $DefaultVal" -ForegroundColor Yellow
+                Write-Host "Using default value for ${VarName}: ${DefaultVal}" -ForegroundColor Yellow
             } else {
                 Write-Host "ERROR: $VarName is required in non-interactive mode" -ForegroundColor Red
                 exit 1
@@ -385,7 +385,7 @@ function Prompt-IfEmpty {
         }
     } else {
         # Value already exists, display it
-        Write-Host "Using provided $VarName: '$currVal' (type: $($currVal.GetType().Name))" -ForegroundColor Green
+        Write-Host "Using provided ${VarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
     }
 }
 

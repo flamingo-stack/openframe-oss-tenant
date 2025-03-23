@@ -169,7 +169,7 @@ function Set-WebSocketRegistrySettings {
         Write-Host "Registry settings configured successfully" -ForegroundColor Green
         return $true
     } catch {
-        Write-Host "Error setting registry keys: $_" -ForegroundColor Red
+        Write-Host "Error setting registry keys: ${_}" -ForegroundColor Red
         return $false
     }
 }
@@ -186,7 +186,7 @@ function Check-TacticalInstalled {
     $tacticalService = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
     
     # Check for Tactical RMM executable in Program Files
-    $programFilesPath = "$env:ProgramFiles"
+    $programFilesPath = "${env:ProgramFiles}"
     $programFilesX86Path = "${env:ProgramFiles(x86)}"
     
     $tacticalExePath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
@@ -230,11 +230,11 @@ function Uninstall-TacticalRMM {
             Write-Host "Service stopped." -ForegroundColor Green
         }
     } catch {
-        Write-Host "Warning: Could not stop service: $_" -ForegroundColor Yellow
+        Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
     }
     
     # Check for uninstaller in Program Files
-    $programFilesPath = "$env:ProgramFiles"
+    $programFilesPath = "${env:ProgramFiles}"
     $programFilesX86Path = "${env:ProgramFiles(x86)}"
     
     $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
@@ -263,7 +263,7 @@ function Uninstall-TacticalRMM {
                 Write-Host "Service removed." -ForegroundColor Green
             }
         } catch {
-            Write-Host "Warning: Could not remove service: $_" -ForegroundColor Yellow
+            Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
         }
         
         # Try to remove directories
@@ -278,7 +278,7 @@ function Uninstall-TacticalRMM {
                 Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
             }
         } catch {
-            Write-Host "Warning: Could not remove directories: $_" -ForegroundColor Yellow
+            Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
         }
     }
 }
@@ -322,7 +322,7 @@ function Install-FromBinary {
         Start-Process -FilePath $BinaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
         
         # Configure the agent with parameters
-        $programFilesPath = "$env:ProgramFiles"
+        $programFilesPath = "${env:ProgramFiles}"
         $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
         if (Test-Path $installedAgentPath) {
             $agentConfigArgs = "-m install -api `"$RmmUrl`" -auth `"$AuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$LogPath`" -nomesh -silent"
@@ -336,7 +336,7 @@ function Install-FromBinary {
         Write-Host "Installation completed successfully!" -ForegroundColor Green
         return $true
     } catch {
-        Write-Host "Error during installation: $_" -ForegroundColor Red
+        Write-Host "Error during installation: ${_}" -ForegroundColor Red
         return $false
     }
 }
@@ -362,9 +362,9 @@ function Prompt-IfEmpty {
             # In silent mode, always use default value without prompting
             if (-not [string]::IsNullOrEmpty($DefaultVal)) {
                 Set-Variable -Name $VarName -Value $DefaultVal -Scope Script
-                Write-Host "Using default value for $VarName: $DefaultVal" -ForegroundColor Yellow
+                Write-Host "Using default value for ${VarName}: ${DefaultVal}" -ForegroundColor Yellow
             } else {
-                Write-Host "ERROR: $VarName is required in non-interactive mode" -ForegroundColor Red
+                Write-Host "ERROR: ${VarName} is required in non-interactive mode" -ForegroundColor Red
                 exit 1
             }
         } else {
@@ -375,7 +375,7 @@ function Prompt-IfEmpty {
             # If user didn't provide a value, use default
             if ([string]::IsNullOrEmpty($promptValue) -and -not [string]::IsNullOrEmpty($DefaultVal)) {
                 $promptValue = $DefaultVal
-                Write-Host "Using default value: $DefaultVal" -ForegroundColor Yellow
+                Write-Host "Using default value: ${DefaultVal}" -ForegroundColor Yellow
             }
             
             # Update the variable with the new value
@@ -383,7 +383,7 @@ function Prompt-IfEmpty {
         }
     } else {
         # Value already exists, display it
-        Write-Host "Using provided $VarName: '$currVal' (type: $($currVal.GetType().Name))" -ForegroundColor Green
+        Write-Host "Using provided ${VarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
     }
 }
 
@@ -452,7 +452,7 @@ if (-not (Test-Path $binaryPath)) {
                     }
                 }
             } catch {
-                Write-Host "Error downloading from $url: $_" -ForegroundColor Yellow
+                Write-Host "Error downloading from ${url}: ${_}" -ForegroundColor Yellow
                 # Continue to next URL
             }
         }
@@ -461,7 +461,7 @@ if (-not (Test-Path $binaryPath)) {
             throw "Failed to download a valid binary from any of the available URLs"
         }
     } catch {
-        Write-Host "Error downloading AMD64 binary: $_" -ForegroundColor Red
+        Write-Host "Error downloading AMD64 binary: ${_}" -ForegroundColor Red
         
         # Fallback: Check if we have a local copy in the script directory
         $localCopyPath = Join-Path $PSScriptRoot "tacticalagent-windows-amd64.exe"
@@ -501,11 +501,11 @@ Prompt-IfEmpty -VarName "AgentLogPath" -PromptMsg "Enter log path" -DefaultVal "
 
 # Display parameters for installation
 Write-Host "Using parameters for installation:" -ForegroundColor Cyan
-Write-Host "  - Client ID: $ClientId (type: $($ClientId.GetType().Name))" -ForegroundColor White
-Write-Host "  - Site ID: $SiteId (type: $($SiteId.GetType().Name))" -ForegroundColor White
-Write-Host "  - Agent Type: '$AgentType' (type: $($AgentType.GetType().Name))" -ForegroundColor White
-Write-Host "  - RMM URL: $RmmServerUrl" -ForegroundColor White
-Write-Host "  - Log Path: $AgentLogPath" -ForegroundColor White
+Write-Host "  - Client ID: ${ClientId} (type: $(${ClientId}.GetType().Name))" -ForegroundColor White
+Write-Host "  - Site ID: ${SiteId} (type: $(${SiteId}.GetType().Name))" -ForegroundColor White
+Write-Host "  - Agent Type: '${AgentType}' (type: $(${AgentType}.GetType().Name))" -ForegroundColor White
+Write-Host "  - RMM URL: ${RmmServerUrl}" -ForegroundColor White
+Write-Host "  - Log Path: ${AgentLogPath}" -ForegroundColor White
 
 # Follow exact 3-step flow as requested by user
 Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
