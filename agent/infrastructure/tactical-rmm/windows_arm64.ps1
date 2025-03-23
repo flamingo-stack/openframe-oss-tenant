@@ -208,13 +208,32 @@ function Verify-AMD64Binary {
     
     # Check if file is a valid executable
     try {
-        $signature = Get-AuthenticodeSignature -FilePath $BinaryPath -ErrorAction SilentlyContinue
-        if ($signature) {
+        $bytes = [System.IO.File]::ReadAllBytes($BinaryPath)
+        $isPE = $bytes.Length -gt 2 -and $bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A  # "MZ" header for PE files
+        
+        if ($isPE) {
             Write-Host "Binary appears to be a valid executable file." -ForegroundColor Green
+            Write-Host "Binary size: $([Math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: Binary does not appear to be a valid executable (missing MZ header)." -ForegroundColor Yellow
+            Write-Host "The file may be corrupted or incomplete." -ForegroundColor Yellow
+            return $false
+        }
+        
+        # Try signature check as additional verification
+        try {
+            $signature = Get-AuthenticodeSignature -FilePath $BinaryPath -ErrorAction SilentlyContinue
+            if ($signature) {
+                Write-Host "Binary has a valid signature." -ForegroundColor Green
+            }
+        } catch {
+            # Signature check failed, but we'll still continue if the PE header is valid
+            Write-Host "NOTE: Could not verify executable signature, but will continue." -ForegroundColor Yellow
         }
     } catch {
-        # Signature check failed, but we'll still continue
-        Write-Host "NOTE: Could not verify executable signature, but will continue." -ForegroundColor Yellow
+        # File read failed
+        Write-Host "ERROR: Failed to verify binary integrity: $_" -ForegroundColor Red
+        return $false
     }
     
     Write-Host "AMD64 binary verification completed successfully." -ForegroundColor Green
@@ -304,7 +323,7 @@ function Setup-BinaryFolder {
     if (-not (Test-Path $AMD64_BINARY_PATH)) {
         Write-Host "AMD64 binary not found in binaries folder." -ForegroundColor Yellow
         Write-Host "Please download the AMD64 binary from:" -ForegroundColor Yellow
-        Write-Host "https://github.com/amidaware/rmmagent/releases/latest/download/tacticalagent-windows-amd64.exe" -ForegroundColor Cyan
+        Write-Host "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe" -ForegroundColor Cyan
         Write-Host "and place it in the 'binaries' folder as: $AMD64_BINARY" -ForegroundColor Cyan
         
         # Prompt to download the binary
@@ -312,16 +331,46 @@ function Setup-BinaryFolder {
         if ($downloadChoice -match "^[Yy]") {
             try {
                 Write-Host "Attempting to download AMD64 binary..." -ForegroundColor Yellow
+                
+                # Set TLS 1.2 for secure downloads
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                
+                # Primary download URL
                 $downloadUrl = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
-                Invoke-WebRequest -Uri $downloadUrl -OutFile $AMD64_BINARY_PATH
+                
+                # Try primary download
+                try {
+                    Invoke-WebRequest -Uri $downloadUrl -OutFile $AMD64_BINARY_PATH -TimeoutSec 30
+                } catch {
+                    Write-Host "Primary download failed, trying alternative URL..." -ForegroundColor Yellow
+                    
+                    # Alternative download URL (latest)
+                    $altDownloadUrl = "https://github.com/amidaware/rmmagent/releases/latest/download/tacticalagent-windows-amd64.exe"
+                    try {
+                        Invoke-WebRequest -Uri $altDownloadUrl -OutFile $AMD64_BINARY_PATH -TimeoutSec 30
+                    } catch {
+                        throw "Both primary and alternative downloads failed. Please download manually."
+                    }
+                }
                 
                 if (Test-Path $AMD64_BINARY_PATH) {
-                    Write-Host "Successfully downloaded AMD64 binary." -ForegroundColor Green
+                    $fileInfo = Get-Item $AMD64_BINARY_PATH
+                    if ($fileInfo.Length -gt 0) {
+                        Write-Host "Successfully downloaded AMD64 binary ($([Math]::Round($fileInfo.Length / 1MB, 2)) MB)." -ForegroundColor Green
+                    } else {
+                        Write-Host "Downloaded file exists but is empty. Download may have failed." -ForegroundColor Red
+                        throw "Downloaded file is empty"
+                    }
                 } else {
                     Write-Host "Failed to download AMD64 binary." -ForegroundColor Red
+                    throw "Download failed - file not created"
                 }
             } catch {
                 Write-Host "Error downloading AMD64 binary: $_" -ForegroundColor Red
+                Write-Host "Alternative download methods:" -ForegroundColor Yellow
+                Write-Host "1. Use a web browser to download the file directly" -ForegroundColor Cyan
+                Write-Host "2. Use curl.exe or wget.exe if available" -ForegroundColor Cyan
+                Write-Host "3. Try again with a different network connection" -ForegroundColor Cyan
             }
         }
     } else {
@@ -329,7 +378,7 @@ function Setup-BinaryFolder {
     }
     
     # Verify the AMD64 binary
-    Verify-AMD64Binary -BinaryPath $AMD64_BINARY_PATH
+    return Verify-AMD64Binary -BinaryPath $AMD64_BINARY_PATH
 }
 
 function Setup-RMMAgent {
@@ -339,15 +388,69 @@ function Setup-RMMAgent {
     # Define the output path for our renamed binary
     $outputPath = Join-Path (Get-Location) $OUTPUT_BINARY
     
-    # Check if the AMD64 binary exists
-    if (-not (Test-Path $AMD64_BINARY_PATH)) {
-        Write-Host "ERROR: AMD64 binary not found at path: $AMD64_BINARY_PATH" -ForegroundColor Red
+    # Check if the AMD64 binary exists and has content
+    $binaryExists = Test-Path $AMD64_BINARY_PATH
+    $binaryHasContent = $false
+    
+    if ($binaryExists) {
+        $fileInfo = Get-Item $AMD64_BINARY_PATH
+        $binaryHasContent = $fileInfo.Length -gt 0
+    }
+    
+    if (-not $binaryExists -or -not $binaryHasContent) {
+        Write-Host "ERROR: AMD64 binary not found or is empty at path: $AMD64_BINARY_PATH" -ForegroundColor Red
         Write-Host "Please ensure the AMD64 binary is available in the 'binaries' folder." -ForegroundColor Red
         
+        # Provide alternative download instructions
+        Write-Host "Alternative ways to get the AMD64 binary:" -ForegroundColor Yellow
+        Write-Host "1. Download directly from: https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe" -ForegroundColor Cyan
+        Write-Host "2. Visit https://github.com/amidaware/rmmagent/releases and download the latest Windows AMD64 binary" -ForegroundColor Cyan
+        Write-Host "3. Use curl.exe or wget.exe if available on your system" -ForegroundColor Cyan
+        
+        # Prompt for manual download
+        $manualDownloadChoice = Read-Host "Would you like to try a manual download now? (y/N)"
+        if ($manualDownloadChoice -match "^[Yy]") {
+            try {
+                # Create binaries folder if it doesn't exist
+                $binariesFolder = Join-Path (Split-Path -Parent $PSCommandPath) "binaries"
+                if (-not (Test-Path $binariesFolder)) {
+                    New-Item -ItemType Directory -Path $binariesFolder -Force | Out-Null
+                }
+                
+                Write-Host "Attempting manual download using alternative method..." -ForegroundColor Yellow
+                
+                # Try using System.Net.WebClient as an alternative to Invoke-WebRequest
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add("User-Agent", "PowerShell Script")
+                $downloadUrl = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
+                
+                try {
+                    $webClient.DownloadFile($downloadUrl, $AMD64_BINARY_PATH)
+                    
+                    if (Test-Path $AMD64_BINARY_PATH) {
+                        $fileInfo = Get-Item $AMD64_BINARY_PATH
+                        if ($fileInfo.Length -gt 0) {
+                            Write-Host "Successfully downloaded AMD64 binary using alternative method." -ForegroundColor Green
+                            $binaryExists = $true
+                            $binaryHasContent = $true
+                        }
+                    }
+                } catch {
+                    Write-Host "Alternative download method failed: $_" -ForegroundColor Red
+                }
+            } catch {
+                Write-Host "Manual download attempt failed: $_" -ForegroundColor Red
+            }
+        }
+        
         # Create a placeholder binary to allow the script to continue
-        Write-Host "Creating placeholder binary to allow script to continue..." -ForegroundColor Yellow
-        New-Item -ItemType File -Path $outputPath -Force | Out-Null
-        return $false
+        if (-not $binaryExists -or -not $binaryHasContent) {
+            Write-Host "Creating placeholder binary to allow script to continue..." -ForegroundColor Yellow
+            New-Item -ItemType File -Path $outputPath -Force | Out-Null
+            Write-Host "WARNING: Binary file exists but is empty. Installation may not succeed." -ForegroundColor Red
+            Write-Host "Please ensure you have a valid AMD64 binary in the 'binaries' folder." -ForegroundColor Red
+            return $false
+        }
     }
     
     # Copy the AMD64 binary to our output location
@@ -356,10 +459,17 @@ function Setup-RMMAgent {
         Copy-Item -Path $AMD64_BINARY_PATH -Destination $outputPath -Force
         
         if (Test-Path $outputPath) {
-            Write-Host "Successfully prepared AMD64 binary for ARM64 emulation." -ForegroundColor Green
-            Write-Host "Binary path: $outputPath" -ForegroundColor Green
-            Write-Host "NOTE: This binary will run using Windows on ARM64 emulation layer." -ForegroundColor Cyan
-            return $true
+            $outputFileInfo = Get-Item $outputPath
+            if ($outputFileInfo.Length -gt 0) {
+                Write-Host "Successfully prepared AMD64 binary for ARM64 emulation." -ForegroundColor Green
+                Write-Host "Binary path: $outputPath" -ForegroundColor Green
+                Write-Host "Binary size: $([Math]::Round($outputFileInfo.Length / 1MB, 2)) MB" -ForegroundColor Green
+                Write-Host "NOTE: This binary will run using Windows on ARM64 emulation layer." -ForegroundColor Cyan
+                return $true
+            } else {
+                Write-Host "WARNING: Output binary file exists but is empty. Installation may not succeed." -ForegroundColor Red
+                return $false
+            }
         } else {
             Write-Host "Failed to copy AMD64 binary to output location." -ForegroundColor Red
             return $false
