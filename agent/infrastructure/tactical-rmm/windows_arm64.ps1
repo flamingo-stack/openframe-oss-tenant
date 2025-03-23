@@ -2,19 +2,16 @@
 # windows_arm64.ps1
 #
 # Purpose:
-#   - Install dependencies (Git, Go) on Windows ARM64
-#   - Accept script args or prompt for org name, email, RMM URL, agent key, log path, build folder
-#   - Clone, patch, compile rmmagent for Windows ARM64
-#   - Prompt to run agent or skip
-#   - After install, configure the Windows service to use the custom log path (if provided)
+#   - Install Tactical RMM agent on Windows ARM64
+#   - Uses AMD64 binary with Windows on ARM64 emulation
+#   - Simple flow: check if installed, uninstall if yes, install from binary
+#   - Automatically configures the agent to use ws:// protocol instead of wss:// for WebSockets
 #
 # Usage Examples:
 #   1) Interactive mode:
 #      .\windows_arm64.ps1
-#   2) Provide some or all args:
-#      .\windows_arm64.ps1 -OrgName "OpenFrame" -RmmUrl "http://localhost:8000" ...
-#   3) Non-interactive (all args):
-#      .\windows_arm64.ps1 -OrgName "MyOrg" ... -SkipRun
+#   2) Provide all args:
+#      .\windows_arm64.ps1 -OrgName "OpenFrame" -RmmUrl "http://localhost:8000" -AuthKey "your-key" -ClientId "1" -SiteId "1"
 #
 # Requirements:
 #   - Windows ARM64
@@ -31,14 +28,11 @@ param (
     [string]$Email,
     [string]$RmmUrl,
     [string]$AuthKey,
-    [string]$ClientId,
-    [string]$SiteId,
-    [string]$AgentType,
+    [string]$ClientId = "1",
+    [string]$SiteId = "1",
+    [string]$AgentType = "workstation",
     [string]$LogPath,
-    [string]$BuildFolder = "rmmagent",
-    [switch]$SkipRun,
-    [switch]$Help,
-    [switch]$Interactive
+    [switch]$Help
 )
 
 # Ensure script is running with administrator privileges
@@ -54,292 +48,297 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $RMMAGENT_REPO = "https://github.com/amidaware/rmmagent.git"
 $RMMAGENT_BRANCH = "master"
 $OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
+$AMD64_BINARY = "tacticalagent-v2.9.0-windows-amd64.exe"
+$AMD64_BINARY_PATH = Join-Path (Split-Path -Parent $PSCommandPath) "binaries\$AMD64_BINARY"
 
 # We'll store user-provided or prompted values in these variables:
-$OrgName = $OrgName -or ""
-$ContactEmail = $Email -or ""
-$RmmServerUrl = $RmmUrl -or ""
-$AgentAuthKey = $AuthKey -or ""
-$AgentLogPath = $LogPath -or ""
-$BuildFolder = $BuildFolder -or "rmmagent"  # default
+$script:OrgName = if ([string]::IsNullOrEmpty($OrgName) -or $OrgName -eq $true -or $OrgName -eq "True") { "" } else { $OrgName }
+$script:ContactEmail = if ([string]::IsNullOrEmpty($Email) -or $Email -eq $true -or $Email -eq "True") { "" } else { $Email }
+$script:RmmServerUrl = if ([string]::IsNullOrEmpty($RmmUrl) -or $RmmUrl -eq $true -or $RmmUrl -eq "True") { "" } else { $RmmUrl }
+$script:AgentAuthKey = if ([string]::IsNullOrEmpty($AuthKey) -or $AuthKey -eq $true -or $AuthKey -eq "True") { "" } else { $AuthKey }
+$script:AgentLogPath = if ([string]::IsNullOrEmpty($LogPath) -or $LogPath -eq $true -or $LogPath -eq "True") { "" } else { $LogPath }
+# Ensure BuildFolder has a default that's not the variable name itself
+$script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder -eq "$true") { "rmmagent" } else { $BuildFolder }
 $SkipRun = $SkipRun -or $false
-$ClientId = $ClientId -or ""
-$SiteId = $SiteId -or ""
-$AgentType = $AgentType -or "workstation"  # default
+
+# Initialize parameters with defaults if not provided
+# Parse ClientId and SiteId as integers since that's what the agent expects
+# Use proper integer parsing with TryParse for ClientId
+$tempClientId = 1
+if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
+    $tempValue = 0
+    if ([int]::TryParse($ClientId, [ref]$tempValue)) {
+        $tempClientId = $tempValue
+    }
+}
+[int]$script:ClientId = $tempClientId
+
+# Use proper integer parsing with TryParse for SiteId
+$tempSiteId = 1
+if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
+    $tempValue = 0
+    if ([int]::TryParse($SiteId, [ref]$tempValue)) {
+        $tempSiteId = $tempValue
+    }
+}
+[int]$script:SiteId = $tempSiteId
+[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "workstation" } else { "$AgentType" }
+
+# Ensure AgentType has a default value
+if ([string]::IsNullOrEmpty($AgentType)) {
+    $AgentType = "workstation"
+}
 
 # Function to display help
 function Show-Help {
     Write-Host "=========================================================" -ForegroundColor Cyan
-    Write-Host "  Tactical RMM Agent Installer for Windows ARM64" -ForegroundColor Cyan
+    Write-Host "Windows ARM64 Tactical RMM Agent Installer" -ForegroundColor Cyan
     Write-Host "=========================================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "DESCRIPTION:"
-    Write-Host "  This script automates the installation of the Tactical RMM agent on Windows ARM64 systems."
-    Write-Host "  It handles dependency installation, code compilation, and agent configuration."
+    Write-Host "This script installs the Tactical RMM agent on Windows ARM64 systems."
+    Write-Host "It uses the AMD64 binary with Windows on ARM64 emulation."
     Write-Host ""
-    Write-Host "USAGE:"
-    Write-Host "  .\windows_arm64.ps1 [options]" -ForegroundColor Yellow
+    Write-Host "Usage:" -ForegroundColor Yellow
+    Write-Host "  .\windows_arm64.ps1 [parameters]"
     Write-Host ""
-    Write-Host "OPTIONS:" -ForegroundColor Green
-    Write-Host "  -Help                      Display this help message"
-    Write-Host "  -Interactive               Run in interactive mode (will prompt for missing values)"
-    Write-Host "  -OrgName <NAME>            Organization name placeholder"
-    Write-Host "  -Email <EMAIL>             Contact email placeholder"
-    Write-Host "  -RmmUrl <URL>              RMM server URL (e.g., http://localhost:8000)"
-    Write-Host "  -AuthKey <KEY>             Agent authentication key"
-    Write-Host "  -ClientId <ID>             Client ID for agent registration"
-    Write-Host "  -SiteId <ID>               Site ID for agent registration"
-    Write-Host "  -AgentType <TYPE>          Agent type (server/workstation) [default: workstation]"
-    Write-Host "  -LogPath <PATH>            Custom log file path for agent"
-    Write-Host "  -BuildFolder <FOLDER>      Directory to clone and compile agent [default: rmmagent]"
-    Write-Host "  -SkipRun                   Skip the final agent installation step"
+    Write-Host "Parameters:" -ForegroundColor Yellow
+    Write-Host "  -OrgName        Organization name"
+    Write-Host "  -Email          Contact email"
+    Write-Host "  -RmmUrl         URL of the RMM server"
+    Write-Host "  -AuthKey        Authentication key for the RMM server"
+    Write-Host "  -ClientId       Client ID (default: 1)"
+    Write-Host "  -SiteId         Site ID (default: 1)"
+    Write-Host "  -AgentType      Agent type (default: workstation)"
+    Write-Host "  -LogPath        Log file path (default: C:\logs\tactical.log)"
+    Write-Host "  -Help           Display this help message"
     Write-Host ""
-    Write-Host "EXAMPLES:" -ForegroundColor Green
-    Write-Host "  # Display help documentation:"
+    Write-Host "Examples:" -ForegroundColor Yellow
+    Write-Host "  # Interactive mode (will prompt for missing values):"
     Write-Host "  .\windows_arm64.ps1"
     Write-Host ""
-    Write-Host "  # Run in interactive mode (will prompt for all required values):"
-    Write-Host "  .\windows_arm64.ps1 -Interactive"
+    Write-Host "  # Non-interactive mode with all parameters:"
+    Write-Host "  .\windows_arm64.ps1 -OrgName 'OpenFrame' -Email 'admin@example.com' -RmmUrl 'http://rmm.example.com' -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'workstation'"
     Write-Host ""
-    Write-Host "  # Provide all parameters for non-interactive installation:"
-    Write-Host "  .\windows_arm64.ps1 -OrgName 'MyCompany' -Email 'admin@example.com' -RmmUrl 'http://rmm.example.com' \"
-    Write-Host "                     -AuthKey 'your-auth-key' -ClientId '1' -SiteId '1' -AgentType 'workstation' \"
-    Write-Host "                     -LogPath 'C:\logs\tactical.log'"
-    Write-Host ""
-    Write-Host "NOTES:" -ForegroundColor Green
-    Write-Host "  - Requires administrator privileges"
-    Write-Host "  - Will install Git and Go if not already present"
-    Write-Host "  - Any missing required parameters will be prompted interactively"
-    Write-Host "  - The script performs an aggressive uninstallation of any existing agent before installation"
-    Write-Host ""
+    Write-Host "Note: This script requires administrator privileges." -ForegroundColor Red
+    Write-Host "=========================================================" -ForegroundColor Cyan
     exit 0
 }
 
-# Display help if requested or if no parameters provided
-if ($Help -or ($PSBoundParameters.Count -eq 0 -and $args.Count -eq 0)) {
+# Show help if requested or if no parameters provided
+if ($Help) {
     Show-Help
 }
 
-# Set interactive mode flag
-$InteractiveMode = $Interactive -or ($PSBoundParameters.Count -eq 1 -and $Interactive)
-
-# Assign parameters to variables
-$ContactEmail = $Email
-$RmmServerUrl = $RmmUrl
-$AgentAuthKey = $AuthKey
-$AgentLogPath = $LogPath
-# Ensure ClientId and SiteId are properly assigned from parameters
-if ($PSBoundParameters.ContainsKey('ClientId')) {
-    # ClientId parameter was explicitly provided
-    Write-Host "Using provided Client ID: $ClientId"
-}
-if ($PSBoundParameters.ContainsKey('SiteId')) {
-    # SiteId parameter was explicitly provided
-    Write-Host "Using provided Site ID: $SiteId"
-}
-if ($SkipRun) {
-    $SkipRun = $true
-}
-
 ############################
-# Install Dependencies
+# WebSocket Protocol Functions
 ############################
 
-function Install-Git {
-    Write-Host "Checking Git..."
-    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing Git..."
-        # Download Git for Windows
-        $gitInstallerUrl = "https://github.com/git-for-windows/git/releases/download/v2.41.0.windows.1/Git-2.41.0-64-bit.exe"
-        $gitInstallerPath = "$env:TEMP\GitInstaller.exe"
-        
-        Invoke-WebRequest -Uri $gitInstallerUrl -OutFile $gitInstallerPath
-        
-        # Install Git silently
-        Start-Process -FilePath $gitInstallerPath -ArgumentList "/VERYSILENT /NORESTART /NOCANCEL" -Wait
-        
-        # Update PATH environment variable
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-        
-        # Clean up
-        Remove-Item $gitInstallerPath -Force
-        
-        # Verify installation
-        if (Get-Command git -ErrorAction SilentlyContinue) {
-            Write-Host "Git installed successfully."
-        } else {
-            Write-Host "Git installation failed. Please install Git manually." -ForegroundColor Red
-            exit 1
-        }
-    } else {
-        Write-Host "Git found."
-    }
+function Set-WebSocketProtocolEnvironment {
+    param (
+        [string]$RmmUrl
+    )
+    
+    Write-Host "Setting environment variables to override WebSocket protocol to ws://..." -ForegroundColor Yellow
+    
+    # Set environment variables to override WebSocket protocol
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", "ws", [System.EnvironmentVariableTarget]::Process)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", "ws", [System.EnvironmentVariableTarget]::User)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", "ws", [System.EnvironmentVariableTarget]::Machine)
+    
+    Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
+    return $true
 }
 
-function Install-Go {
-    Write-Host "Checking Go..."
-    if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing Go..."
-        # Download Go for Windows ARM64
-        $goInstallerUrl = "https://go.dev/dl/go1.21.0.windows-arm64.msi"
-        $goInstallerPath = "$env:TEMP\GoInstaller.msi"
-        
-        Invoke-WebRequest -Uri $goInstallerUrl -OutFile $goInstallerPath
-        
-        # Install Go silently
-        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $goInstallerPath, "/quiet", "/norestart" -Wait
-        
-        # Update PATH environment variable
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-        
-        # Clean up
-        Remove-Item $goInstallerPath -Force
-        
-        # Verify installation
-        if (Get-Command go -ErrorAction SilentlyContinue) {
-            Write-Host "Go installed successfully."
-        } else {
-            Write-Host "Go installation failed. Please install Go manually." -ForegroundColor Red
-            exit 1
+function Set-WebSocketRegistrySettings {
+    param (
+        [string]$RmmUrl
+    )
+    
+    Write-Host "Setting WebSocket protocol registry settings..." -ForegroundColor Yellow
+    
+    # Create registry keys to override WebSocket protocol
+    try {
+        # Create HKLM:\SOFTWARE\TacticalRMM if it doesn't exist
+        if (-not (Test-Path "HKLM:\SOFTWARE\TacticalRMM")) {
+            New-Item -Path "HKLM:\SOFTWARE\TacticalRMM" -Force | Out-Null
         }
-    } else {
-        Write-Host "Go found."
+        
+        # Set registry values
+        New-ItemProperty -Path "HKLM:\SOFTWARE\TacticalRMM" -Name "NatsWsScheme" -Value "ws" -PropertyType String -Force | Out-Null
+        
+        Write-Host "Registry settings configured successfully" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Error setting registry keys: ${_}" -ForegroundColor Red
+        return $false
     }
 }
 
 ############################
-# Patching NATS WebSocket URL to use ws:// for local development
+# Installation Functions
 ############################
 
-function Patch-NatsWebsocketUrl {
-    Write-Host "Patching agent.go to use ws:// for NATS WebSocket..."
+# 1. Check if Tactical RMM is already installed
+function Check-TacticalInstalled {
+    Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
     
-    # Print current working directory and list contents for debugging
-    Write-Host "Current working directory: $(Get-Location)"
+    # Check for Tactical RMM service
+    $tacticalService = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
     
-    # Find the agent.go file - use correct path
-    $agentGoFile = "agent\agent.go"
+    # Check for Tactical RMM executable in Program Files
+    $programFilesPath = "${env:ProgramFiles}"
+    $programFilesX86Path = "${env:ProgramFiles(x86)}"
     
-    Write-Host "Checking for agent.go at path: $agentGoFile"
-    if (-not (Test-Path $agentGoFile)) {
-        Write-Host "ERROR: Cannot find $agentGoFile. Skipping NATS WebSocket URL patch." -ForegroundColor Red
-        # Try to find agent.go using Get-ChildItem
-        Write-Host "Attempting to locate agent.go:"
-        Get-ChildItem -Path . -Filter "agent.go" -Recurse | Where-Object { $_.FullName -notmatch "test" }
+    $tacticalExePath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+    $tacticalExeX86Path = "$programFilesX86Path\TacticalAgent\tacticalrmm.exe"
+    
+    $tacticalExeExists = Test-Path $tacticalExePath
+    $tacticalExeX86Exists = Test-Path $tacticalExeX86Path
+    
+    if ($tacticalService -or $tacticalExeExists -or $tacticalExeX86Exists) {
+        Write-Host "Tactical RMM is already installed." -ForegroundColor Yellow
+        
+        if ($tacticalService) {
+            Write-Host "Found Tactical RMM service." -ForegroundColor Yellow
+        }
+        
+        if ($tacticalExeExists) {
+            Write-Host "Found Tactical RMM executable at: $tacticalExePath" -ForegroundColor Yellow
+        }
+        
+        if ($tacticalExeX86Exists) {
+            Write-Host "Found Tactical RMM executable at: $tacticalExeX86Path" -ForegroundColor Yellow
+        }
+        
+        return $true
+    } else {
+        Write-Host "Tactical RMM is not installed." -ForegroundColor Green
+        return $false
+    }
+}
+
+# 2. Uninstall if already installed
+function Uninstall-TacticalRMM {
+    Write-Host "=== STEP 2: Uninstalling existing Tactical RMM agent ===" -ForegroundColor Cyan
+    
+    # Try to stop the service first
+    try {
+        $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+        if ($service) {
+            Write-Host "Stopping Tactical RMM service..." -ForegroundColor Yellow
+            Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
+            Write-Host "Service stopped." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
+    }
+    
+    # Check for uninstaller in Program Files
+    $programFilesPath = "${env:ProgramFiles}"
+    $programFilesX86Path = "${env:ProgramFiles(x86)}"
+    
+    $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
+    $uninstallerX86Path = "$programFilesX86Path\TacticalAgent\unins000.exe"
+    
+    $uninstallerExists = Test-Path $uninstallerPath
+    $uninstallerX86Exists = Test-Path $uninstallerX86Path
+    
+    if ($uninstallerExists) {
+        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
+        Write-Host "Uninstallation completed." -ForegroundColor Green
+    } elseif ($uninstallerX86Exists) {
+        Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait
+        Write-Host "Uninstallation completed." -ForegroundColor Green
+    } else {
+        Write-Host "No uninstaller found. Attempting manual cleanup..." -ForegroundColor Yellow
+        
+        # Try to remove service
+        try {
+            $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+            if ($service) {
+                Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
+                & sc.exe delete "tacticalrmm"
+                Write-Host "Service removed." -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
+        }
+        
+        # Try to remove directories
+        try {
+            if (Test-Path "$programFilesPath\TacticalAgent") {
+                Write-Host "Removing $programFilesPath\TacticalAgent directory..." -ForegroundColor Yellow
+                Remove-Item -Path "$programFilesPath\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            
+            if (Test-Path "$programFilesX86Path\TacticalAgent") {
+                Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
+                Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
+        }
+    }
+}
+
+# 3. Install from binary
+function Install-FromBinary {
+    param (
+        [string]$BinaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe",
+        [string]$RmmUrl = $RmmServerUrl,
+        [string]$AuthKey = $AgentAuthKey,
+        [int]$ClientId = $script:ClientId,
+        [int]$SiteId = $script:SiteId,
+        [string]$AgentType = $script:AgentType,
+        [string]$LogPath = $AgentLogPath
+    )
+    
+    # Verify binary exists
+    if (-not (Test-Path $BinaryPath)) {
+        Write-Host "ERROR: Binary not found at $BinaryPath" -ForegroundColor Red
+        Write-Host "Please ensure the binary exists in the script directory." -ForegroundColor Yellow
         return $false
     }
     
-    # Create a backup
-    Copy-Item $agentGoFile "$agentGoFile.bak"
-    
-    # Read the file content
-    $content = Get-Content $agentGoFile -Raw
-    
-    # Replace the wss:// with ws:// in the NATS WebSocket URL construction and hardcode port 8000
-    $content = $content -replace 'natsServer = fmt.Sprintf\("wss://%s:%s", ac.APIURL, natsProxyPort\)', 'natsServer = fmt.Sprintf("ws://%s:8000/natsws", ac.APIURL)'
-    
-    # Also modify the URL construction when NatsStandardPort is set to use hardcoded port 8000
-    $content = $content -replace 'natsServer = fmt.Sprintf\("nats://%s:%s", ac.APIURL, ac.NatsStandardPort\)', 'natsServer = fmt.Sprintf("ws://%s:8000/natsws", ac.APIURL)'
-    
-    # Write the modified content back to the file
-    Set-Content -Path $agentGoFile -Value $content
-    
-    Write-Host "NATS WebSocket URL patch applied to $agentGoFile with hardcoded port 8000"
-    
-    # Show the diff to verify changes
-    Write-Host "Showing diff of changes:"
-    $original = Get-Content "$agentGoFile.bak" -Raw
-    $modified = Get-Content $agentGoFile -Raw
-    
-    if ($original -ne $modified) {
-        Write-Host "Changes detected in file."
-    } else {
-        Write-Host "No changes detected in file."
+    # Apply WebSocket protocol modifications for non-HTTPS URLs
+    if ($RmmUrl -match "^http://") {
+        Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
+        Set-WebSocketProtocolEnvironment -RmmUrl $RmmUrl
+        Set-WebSocketRegistrySettings -RmmUrl $RmmUrl
     }
     
-    return $true
-}
-
-############################
-# Patching GetInstalledSoftware method
-############################
-
-"@
-                    $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
-                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    Write-Host "Added GetInstalledSoftware method to agent_windows.go after existing method"
-                } else {
-                    Write-Host "ERROR: Could not find end of existing method in agent_windows.go" -ForegroundColor Red
-                }
-            } else {
-                # If no existing method found, add it at the end of the file
-                $newMethod = @"
-
-// GetInstalledSoftware returns a list of installed software
-func (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {
-    return win64api.GetInstalledSoftware()
-}
-"@
-                $agentWindowsContent += $newMethod
-                Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go"
-            }
+    # Ensure log directory exists
+    $logDir = Split-Path -Parent $LogPath
+    if (-not (Test-Path $logDir)) {
+        Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+    
+    # Install the agent
+    try {
+        Write-Host "Running binary installation: & `"$BinaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+        Start-Process -FilePath $BinaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+        
+        # Configure the agent with parameters
+        $programFilesPath = "${env:ProgramFiles}"
+        $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+        if (Test-Path $installedAgentPath) {
+            $agentConfigArgs = "-m install -api `"$RmmUrl`" -auth `"$AuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$LogPath`" -nomesh -silent"
+            Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
+            Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
         } else {
-            Write-Host "ERROR: Could not find Agent struct definition in agent_windows.go" -ForegroundColor Red
+            Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
+            return $false
         }
+        
+        Write-Host "Installation completed successfully!" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Error during installation: ${_}" -ForegroundColor Red
+        return $false
     }
-    
-    # Fix rpc.go to use the GetInstalledSoftware method correctly
-    $rpcContent = Get-Content $rpcGoFile -Raw
-    
-    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware()
-    $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
-    
-    # Write the modified content back to the file
-    Set-Content -Path $rpcGoFile -Value $rpcContent
-    
-    Write-Host "GetInstalledSoftware patch applied to agent_windows.go and rpc.go"
-    
-    return $true
-}
-
-############################
-# Aggressive Uninstallation
-############################
-
-function Uninstall-AggressivelyTacticalRMM {
-    Write-Host ""
-    Write-Host "=== Performing Aggressive Uninstallation ===" -ForegroundColor Yellow
-    Write-Host "This will remove all components of the Tactical RMM agent..."
-    
-    # 1. Stop and remove services
-    Write-Host "Stopping and removing services..."
-    Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
-    $service = Get-WmiObject -Class Win32_Service -Filter "Name='tacticalrmm'"
-    if ($service) {
-        $service.delete()
-    }
-    
-    # 2. Remove Tactical Agent files and directories
-    Write-Host "Removing Tactical Agent files..."
-    Remove-Item -Path "C:\Program Files\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "C:\ProgramData\TacticalRMM" -Recurse -Force -ErrorAction SilentlyContinue
-    
-    # 3. Clean up any logs
-    Write-Host "Cleaning up logs..."
-    Remove-Item -Path "C:\Windows\Temp\tacticalrmm*.log" -Force -ErrorAction SilentlyContinue
-    
-    # 4. Remove registry entries
-    Write-Host "Removing registry entries..."
-    Remove-Item -Path "HKLM:\SOFTWARE\TacticalRMM" -Recurse -Force -ErrorAction SilentlyContinue
-    
-    # 5. Additional cleanup for any other remnants
-    Write-Host "Performing additional cleanup..."
-    # Search for and remove any other files containing 'tactical' in common locations
-    Get-ChildItem -Path "C:\Program Files" -Filter "*tactical*" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-    
-    Write-Host "Aggressive uninstallation completed. System is ready for fresh installation." -ForegroundColor Green
-    Write-Host ""
 }
 
 ############################
@@ -350,411 +349,278 @@ function Prompt-IfEmpty {
     param (
         [string]$VarName,
         [string]$PromptMsg,
-        [string]$DefaultVal = ""
+        [string]$DefaultVal = "",
+        [switch]$Silent = $false
     )
     
-    $currVal = Get-Variable -Name $VarName -ValueOnly -ErrorAction SilentlyContinue
+    # Extract the variable name without the script: prefix if present
+    $actualVarName = $VarName -replace "^script:", ""
     
-    if ([string]::IsNullOrEmpty($currVal)) {
-        if (-not [string]::IsNullOrEmpty($DefaultVal)) {
-            $userInp = Read-Host "$PromptMsg [$DefaultVal]"
-            if ([string]::IsNullOrEmpty($userInp)) {
-                $userInp = $DefaultVal
-            }
-        } else {
-            $userInp = Read-Host "$PromptMsg"
-        }
-        Set-Variable -Name $VarName -Value $userInp -Scope Script
-    }
-}
-
-############################
-# Cloning/Patching/Building
-############################
-
-function Handle-ExistingFolder {
-    # If BuildFolder already exists, check if it's a Git repo
-    # If yes, do a fetch/pull
-    # If no, prompt to remove or rename
-    if (Test-Path $BuildFolder) {
-        Write-Host "Folder '$BuildFolder' already exists."
-        Push-Location $BuildFolder
-        if (Test-Path ".git") {
-            Write-Host "It appears to be a valid Git repository. Pulling latest changes..."
-            git fetch --all
-            git checkout $RMMAGENT_BRANCH
-            git pull
-        } else {
-            Write-Host "But it isn't a Git repo (no .git folder)."
-            Write-Host "We can either remove it or rename it so we can clone fresh."
-            $removeChoice = Read-Host "Remove folder? (y/N)"
-            if ($removeChoice -match "^[Yy]") {
-                Pop-Location
-                Remove-Item -Path $BuildFolder -Recurse -Force
-                Write-Host "Removed folder. Now cloning fresh..."
-                git clone --branch $RMMAGENT_BRANCH $RMMAGENT_REPO $BuildFolder
-                Push-Location $BuildFolder
+    $currVal = Get-Variable -Name $actualVarName -ValueOnly -ErrorAction SilentlyContinue
+    
+    # If value is empty or null, use default or prompt for value
+    # Don't use boolean comparison for string parameters
+    if ([string]::IsNullOrEmpty($currVal) -or $currVal -eq $true -or $currVal -eq "True") {
+        if ($Silent) {
+            # In silent mode, always use default value without prompting
+            if (-not [string]::IsNullOrEmpty($DefaultVal)) {
+                Set-Variable -Name $actualVarName -Value $DefaultVal -Scope Script
+                Write-Host "Using default value for ${actualVarName}: ${DefaultVal}" -ForegroundColor Yellow
             } else {
-                Write-Host "Aborting script. Please specify a different -BuildFolder or remove the folder manually." -ForegroundColor Red
+                Write-Host "ERROR: ${actualVarName} is required in non-interactive mode" -ForegroundColor Red
                 exit 1
             }
-        }
-    } else {
-        Write-Host "Cloning $RMMAGENT_REPO into '$BuildFolder'..."
-        git clone --branch $RMMAGENT_BRANCH $RMMAGENT_REPO $BuildFolder
-        Push-Location $BuildFolder
-    }
-}
-
-function Patch-Placeholders {
-    Write-Host ""
-    Write-Host "Patching code for org/email placeholders (if present)."
-    
-    # Get all .go files in the current directory
-    $goFiles = Get-ChildItem -Path . -Filter "*.go" -File
-    
-    foreach ($file in $goFiles) {
-        $content = Get-Content $file.FullName -Raw
-        
-        # Check if the file contains DefaultOrgName
-        if ($content -match 'DefaultOrgName') {
-            $content = $content -replace 'DefaultOrgName = ".*"', "DefaultOrgName = `"$OrgName`""
-            Set-Content -Path $file.FullName -Value $content
-        }
-        
-        # Check if the file contains DefaultEmail
-        if ($content -match 'DefaultEmail') {
-            $content = $content -replace 'DefaultEmail = ".*"', "DefaultEmail = `"$ContactEmail`""
-            Set-Content -Path $file.FullName -Value $content
-        }
-    }
-}
-
-function Compile-RMMAgent {
-    Write-Host ""
-    Write-Host "Compiling rmmagent for Windows ARM64..."
-    
-    # Set environment variables for Go build
-    $env:CGO_ENABLED = 0
-    $env:GOOS = "windows"
-    $env:GOARCH = "arm64"
-    
-    # Build the binary
-    go build -ldflags "-s -w" -o $OUTPUT_BINARY
-    
-    Write-Host "Compilation done. Output: $(Get-Location)\$OUTPUT_BINARY"
-    
-    # Check if the file exists
-    if (Test-Path $OUTPUT_BINARY) {
-        Write-Host "Binary created successfully." -ForegroundColor Green
-    } else {
-        Write-Host "Failed to create binary." -ForegroundColor Red
-    }
-}
-
-############################
-# Configure Windows Service with Logging
-############################
-
-function Configure-AgentService {
-    param (
-        [string]$LogPath
-    )
-    
-    Write-Host ""
-    Write-Host "Configuring Windows service for detailed logging"
-    
-    # Default to a standard log path if none provided
-    if ([string]::IsNullOrEmpty($LogPath)) {
-        $LogPath = "C:\Windows\Temp\tacticalrmm.log"
-        Write-Host "No custom log path specified, using default: $LogPath"
-    }
-    
-    # Check if the service exists
-    $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-    
-    if ($service) {
-        Write-Host "Updating tacticalrmm service with enhanced logging..."
-        
-        # Stop the service
-        Stop-Service -Name "tacticalrmm" -Force
-        
-        # Get the current service path
-        $serviceWMI = Get-WmiObject -Class Win32_Service -Filter "Name='tacticalrmm'"
-        $currentPath = $serviceWMI.PathName
-        
-        # Add or update logging parameters
-        if ($currentPath -match "-log") {
-            # Service already has logging parameters, update them
-            $newPath = $currentPath -replace "-log\s+\S+\s+-logto\s+\S+", "-log DEBUG -logto `"$LogPath`""
         } else {
-            # Add logging parameters
-            $newPath = $currentPath + " -log DEBUG -logto `"$LogPath`""
-        }
-        
-        # Update the service
-        $result = $serviceWMI.Change($null, $null, $null, $null, $null, $null, $newPath)
-        
-        if ($result.ReturnValue -eq 0) {
-            Write-Host "Service updated successfully." -ForegroundColor Green
-        } else {
-            Write-Host "Failed to update service. Return code: $($result.ReturnValue)" -ForegroundColor Red
-        }
-        
-        # Start the service
-        Start-Service -Name "tacticalrmm"
-        
-        Write-Host "TacticalRMM logging configured to use: $LogPath"
-    } else {
-        Write-Host "Warning: tacticalrmm service not found. Agent may not be installed yet." -ForegroundColor Yellow
-    }
-}
-
-############################
-# Prompt to run
-############################
-
-function Prompt-RunAgent {
-    Write-Host ""
-    Write-Host "=== Build Complete ===" -ForegroundColor Green
-    Write-Host "You can run the agent with your RMM server & auth key. For example:"
-    Write-Host "  .\$OUTPUT_BINARY -m install \"
-    Write-Host "     -api `"$RmmServerUrl`" \"
-    Write-Host "     -auth `"$AgentAuthKey`" \"
-    Write-Host "     -client-id <ID> -site-id <ID> -agent-type <server|workstation> \"
-    Write-Host "     -log `"DEBUG`" -logto `"$AgentLogPath`""
-    Write-Host ""
-    
-    if ($SkipRun) {
-        Write-Host "Skipping final run (-SkipRun)."
-        return
-    }
-    
-    # If all required parameters are provided, run automatically
-    if (-not [string]::IsNullOrEmpty($RmmServerUrl) -and -not [string]::IsNullOrEmpty($AgentAuthKey) -and 
-        -not [string]::IsNullOrEmpty($ClientId) -and -not [string]::IsNullOrEmpty($SiteId)) {
-        Write-Host "All required parameters provided, proceeding with installation..."
-        $runNow = "y"
-    } else {
-        $runNow = Read-Host "Do you want to run the agent install command now? (y/N)"
-    }
-    
-    if ($runNow -match "^[Yy]") {
-        # Only prompt for values if they weren't provided as arguments
-        if ([string]::IsNullOrEmpty($ClientId)) {
-            $ClientId = Read-Host "Enter client-id"
-        }
-        if ([string]::IsNullOrEmpty($SiteId)) {
-            $SiteId = Read-Host "Enter site-id"
-        }
-        if ([string]::IsNullOrEmpty($AgentType)) {
-            $AgentType = Read-Host "Agent type (server/workstation) [workstation]"
-            if ([string]::IsNullOrEmpty($AgentType)) {
-                $AgentType = "workstation"
+            # In interactive mode, prompt for value
+            $promptDefault = if (-not [string]::IsNullOrEmpty($DefaultVal)) { " (default: $DefaultVal)" } else { "" }
+            $promptValue = Read-Host "$PromptMsg$promptDefault"
+            
+            # If user didn't provide a value, use default
+            if ([string]::IsNullOrEmpty($promptValue) -and -not [string]::IsNullOrEmpty($DefaultVal)) {
+                $promptValue = $DefaultVal
+                Write-Host "Using default value: ${DefaultVal}" -ForegroundColor Yellow
             }
+            
+            # Update the variable with the new value
+            Set-Variable -Name $actualVarName -Value $promptValue -Scope Script
         }
-        
-        # If no log path was specified, create a default one
-        if ([string]::IsNullOrEmpty($AgentLogPath)) {
-            $AgentLogPath = "C:\Windows\Temp\tacticalrmm.log"
-            Write-Host "Using default log path: $AgentLogPath"
-        }
-        
-        $cmd = ".\$OUTPUT_BINARY -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$ClientId`" -site-id `"$SiteId`" -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh"
-        
-        Write-Host "Running: $cmd"
-        Invoke-Expression $cmd
-        
-        Write-Host ""
-        Write-Host "Agent started with maximum verbosity! Logs will be written to: $AgentLogPath"
-        Write-Host "To monitor the log in real-time, run: Get-Content -Path $AgentLogPath -Wait"
-        
-        # After successful install, configure the service with the custom log path
-        Configure-AgentService -LogPath $AgentLogPath
-        
-        Write-Host ""
-        Write-Host "You can monitor the agent logs with this command:"
-        Write-Host "  Get-Content -Path $AgentLogPath -Wait              # For tactical agent"
+    } else {
+        # Value already exists, display it
+        Write-Host "Using provided ${actualVarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
     }
-    
-    Write-Host ""
-    Write-Host "=== All Done! ===" -ForegroundColor Green
-    Write-Host "Your agent is at: $(Get-Location)\$OUTPUT_BINARY"
 }
 
 ############################
 # Main Script Flow
 ############################
 
-# 1) Install dependencies
-Write-Host "Checking and installing dependencies if needed..."
-Install-Git
-Install-Go
+# Verify binary exists
+$binaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe"
+$alternativePath = "$PSScriptRoot\binaries\tacticalagent-v2.9.0-windows-amd64.exe"
 
-# Perform aggressive uninstallation before proceeding
-Uninstall-AggressivelyTacticalRMM
-
-# 2) Prompt for missing fields
-Write-Host ""
-Write-Host "=== Checking user inputs ===" -ForegroundColor Cyan
-
-function Prompt-AllInputs {
-    # Only prompt for values if they weren't provided as parameters or if in interactive mode
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($RmmServerUrl)) {
-        Prompt-IfEmpty -VarName "RmmServerUrl" -PromptMsg "RMM Server URL (e.g. https://rmm.myorg.com)"
-    }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentAuthKey)) {
-        Prompt-IfEmpty -VarName "AgentAuthKey" -PromptMsg "Agent Auth Key (string from your RMM)"
-    }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($ClientId)) {
-        Prompt-IfEmpty -VarName "ClientId" -PromptMsg "Client ID"
-    }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId)) {
-        Prompt-IfEmpty -VarName "SiteId" -PromptMsg "Site ID"
-    }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType)) {
-        Prompt-IfEmpty -VarName "AgentType" -PromptMsg "Agent type (server/workstation) [workstation]" -DefaultVal "workstation"
-    }
-    # Only prompt for log path if explicitly requested
-    if ($InteractiveMode -or (-not [string]::IsNullOrEmpty($AgentLogPath) -and [string]::IsNullOrEmpty($AgentLogPath))) {
-        Prompt-IfEmpty -VarName "AgentLogPath" -PromptMsg "Agent log path"
-    }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($BuildFolder)) {
-        Prompt-IfEmpty -VarName "BuildFolder" -PromptMsg "Destination build folder" -DefaultVal "rmmagent"
-    }
+if (-not (Test-Path $binaryPath) -and (Test-Path $alternativePath)) {
+    Write-Host "Binary not found at $binaryPath, using alternative path: $alternativePath" -ForegroundColor Yellow
+    Copy-Item $alternativePath $binaryPath
+    Write-Host "Copied alternative binary to $binaryPath" -ForegroundColor Green
 }
 
-# Only run prompts if in interactive mode or missing required parameters
-if ($InteractiveMode -or [string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAuthKey) -or 
-    [string]::IsNullOrEmpty($ClientId) -or [string]::IsNullOrEmpty($SiteId)) {
-    Prompt-AllInputs
-}
-
-# Only show final values and proceed prompt if we're missing required parameters
-if ([string]::IsNullOrEmpty($RmmServerUrl) -or [string]::IsNullOrEmpty($AgentAuthKey) -or 
-    [string]::IsNullOrEmpty($ClientId) -or [string]::IsNullOrEmpty($SiteId)) {
-    Write-Host ""
-    Write-Host "== Final values ==" -ForegroundColor Cyan
-    # Only display values that are actually set
-    if (-not [string]::IsNullOrEmpty($RmmServerUrl)) { Write-Host " RMM URL         : $RmmServerUrl" }
-    if (-not [string]::IsNullOrEmpty($AgentAuthKey)) { Write-Host " Auth Key        : $AgentAuthKey" }
-    if (-not [string]::IsNullOrEmpty($ClientId)) { Write-Host " Client ID       : $ClientId" }
-    if (-not [string]::IsNullOrEmpty($SiteId)) { Write-Host " Site ID         : $SiteId" }
-    if (-not [string]::IsNullOrEmpty($AgentType)) { Write-Host " Agent Type      : $AgentType" }
-    if (-not [string]::IsNullOrEmpty($AgentLogPath)) { Write-Host " Log Path        : $AgentLogPath" }
-    if (-not [string]::IsNullOrEmpty($BuildFolder)) { Write-Host " Build Folder    : $BuildFolder" }
-    if ($SkipRun) { Write-Host " skip-run        : $SkipRun" }
-    Write-Host ""
+if (-not (Test-Path $binaryPath)) {
+    Write-Host "AMD64 binary not found. Downloading..." -ForegroundColor Yellow
     
-    # Only show the proceed prompt if we're not in skip-run mode
-    if (-not $SkipRun) {
-        Read-Host "Press Enter to proceed, or Ctrl+C to cancel"
-    }
-}
-
-# 3) Clone & patch & build
-Handle-ExistingFolder
-Patch-NatsWebsocketUrl
-Patch-GetInstalledSoftware
-Patch-Placeholders
-Compile-RMMAgent
-
-# 4) Prompt to run (and configure service if installed)
-Prompt-RunAgent
-
-# Return to original directory
-Pop-Location
-function Patch-GetInstalledSoftware {
-    Write-Host "Patching agent_windows.go and rpc.go to fix GetInstalledSoftware method..."
-    
-    # Find the agent_windows.go file
-    $agentWindowsGoFile = "agent\agent_windows.go"
-    $rpcGoFile = "agent\rpc.go"
-    
-    Write-Host "Checking for agent_windows.go at path: $agentWindowsGoFile"
-    if (-not (Test-Path $agentWindowsGoFile)) {
-        Write-Host "ERROR: Cannot find $agentWindowsGoFile. Skipping GetInstalledSoftware patch." -ForegroundColor Red
-        return $false
+    # Create binaries directory if it doesn't exist
+    $binariesDir = Join-Path $PSScriptRoot "binaries"
+    if (-not (Test-Path $binariesDir)) {
+        New-Item -Path $binariesDir -ItemType Directory -Force | Out-Null
     }
     
-    Write-Host "Checking for rpc.go at path: $rpcGoFile"
-    if (-not (Test-Path $rpcGoFile)) {
-        Write-Host "ERROR: Cannot find $rpcGoFile. Skipping GetInstalledSoftware patch." -ForegroundColor Red
-        return $false
-    }
+    # Download the binary from GitHub releases
+    $downloadUrl = "https://github.com/amidaware/tacticalrmm/releases/latest/download/tacticalagent-windows-amd64.exe"
+    $downloadPath = Join-Path $binariesDir $AMD64_BINARY
     
-    # Create backups
-    Copy-Item $agentWindowsGoFile "$agentWindowsGoFile.bak"
-    Copy-Item $rpcGoFile "$rpcGoFile.bak"
+    Write-Host "Downloading from: $downloadUrl" -ForegroundColor Cyan
     
-    # Add GetInstalledSoftware method to Agent struct in agent_windows.go
-    $agentWindowsContent = Get-Content $agentWindowsGoFile -Raw
-    
-    # Check if the file already has the GetInstalledSoftware method
-    if ($agentWindowsContent -match "func \(a \*Agent\) GetInstalledSoftware\(\)") {
-        Write-Host "GetInstalledSoftware method already exists in agent_windows.go. Skipping patch."
+    try {
+        # Use TLS 1.2 for HTTPS connections
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         
-        # Even if method exists, check for syntax errors and fix them
-        if ($agentWindowsContent -match "syntax error") {
-            Write-Host "Found potential syntax errors in existing GetInstalledSoftware method. Attempting to fix..."
-            
-            # Find the method and replace it with a corrected version
-            $pattern = "(?ms)func \(a \*Agent\) GetInstalledSoftware\(\).*?return win64api\.GetInstalledSoftware\(\).*?\}"
-            
-            # Create the replacement string without using a here-string
-            $replacement = "`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
-            
-            $agentWindowsContent = $agentWindowsContent -replace $pattern, $replacement
-            Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-            Write-Host "Fixed syntax in existing GetInstalledSoftware method"
-        }
-    } else {
-        # Find the Agent struct definition
-        if ($agentWindowsContent -match "type Agent struct {") {
-            # Find an existing method of the Agent struct to insert our method after
-            if ($agentWindowsContent -match "func \(a \*Agent\)") {
-                # Find the end of an existing method
-                $methodEndPos = $agentWindowsContent.IndexOf("}", $agentWindowsContent.IndexOf("func (a *Agent)"))
-                if ($methodEndPos -gt 0) {
-                    # Create the new method string without using a here-string
-                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
-                    
-                    $agentWindowsContent = $agentWindowsContent.Insert($methodEndPos + 1, $newMethod)
-                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    Write-Host "Added GetInstalledSoftware method to agent_windows.go after existing method"
-                } else {
-                    Write-Host "ERROR: Could not find end of existing method in agent_windows.go" -ForegroundColor Red
-                    
-                    # Fallback: Add at the end of the file
-                    $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
-                    
-                    $agentWindowsContent += $newMethod
-                    Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                    Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go (fallback)"
-                }
-            } else {
-                # If no existing method found, add it at the end of the file
-                $newMethod = "`r`n`r`n// GetInstalledSoftware returns a list of installed software`r`nfunc (a *Agent) GetInstalledSoftware() ([]win64api.Software, error) {`r`n    return win64api.GetInstalledSoftware()`r`n}`r`n"
+        # Create a WebClient with proper headers to avoid getting HTML content
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("User-Agent", "PowerShell/5.1")
+        $webClient.Headers.Add("Accept", "application/octet-stream")
+        
+        # Alternative download URLs to try
+        $downloadUrls = @(
+            "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.8.0/tacticalagent-v2.8.0-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.7.0/tacticalagent-v2.7.0-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.6.2/tacticalagent-v2.6.2-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.6.1/tacticalagent-v2.6.1-windows-amd64.exe"
+        )
+        
+        $downloadSuccess = $false
+        foreach ($url in $downloadUrls) {
+            try {
+                Write-Host "Attempting download from: $url" -ForegroundColor Cyan
+                $webClient.DownloadFile($url, $downloadPath)
                 
-                $agentWindowsContent += $newMethod
-                Set-Content -Path $agentWindowsGoFile -Value $agentWindowsContent
-                Write-Host "Added GetInstalledSoftware method to the end of agent_windows.go"
+                if (Test-Path $downloadPath) {
+                    $fileInfo = Get-Item $downloadPath
+                    if ($fileInfo.Length -gt 1000000) { # Check if file is at least 1MB
+                        Write-Host "Successfully downloaded AMD64 binary to $downloadPath (Size: $($fileInfo.Length) bytes)" -ForegroundColor Green
+                        Copy-Item $downloadPath $binaryPath
+                        Write-Host "Copied AMD64 binary to $binaryPath" -ForegroundColor Green
+                        $downloadSuccess = $true
+                        break
+                    } else {
+                        Write-Host "Downloaded file is too small, likely not a valid executable. Trying next URL..." -ForegroundColor Yellow
+                        Remove-Item $downloadPath -Force
+                    }
+                }
+            } catch {
+                Write-Host "Error downloading from ${url}: ${_}" -ForegroundColor Yellow
+                # Continue to next URL
             }
+        }
+        
+        if (-not $downloadSuccess) {
+            throw "Failed to download a valid binary from any of the available URLs"
+        }
+    } catch {
+        Write-Host "Error downloading AMD64 binary: ${_}" -ForegroundColor Red
+        
+        # Fallback: Check if we have a local copy in the script directory
+        $localCopyPath = Join-Path $PSScriptRoot "tacticalagent-windows-amd64.exe"
+        if (Test-Path $localCopyPath) {
+            Write-Host "Found local copy of AMD64 binary at $localCopyPath" -ForegroundColor Yellow
+            Copy-Item $localCopyPath $binaryPath
+            Write-Host "Using local copy of AMD64 binary" -ForegroundColor Green
         } else {
-            Write-Host "ERROR: Could not find Agent struct definition in agent_windows.go" -ForegroundColor Red
+            Write-Host "No local copy found. Please download the Tactical RMM agent binary manually and place it in the script directory." -ForegroundColor Red
+            exit 1
         }
     }
-    
-    # Fix rpc.go to use the GetInstalledSoftware method correctly
-    $rpcContent = Get-Content $rpcGoFile -Raw
-    
-    # Replace any direct calls to win64api.GetInstalledSoftware() with a.GetInstalledSoftware()
-    $rpcContent = $rpcContent -replace "win64api\.GetInstalledSoftware\(\)", "a.GetInstalledSoftware()"
-    
-    # Write the modified content back to the file
-    Set-Content -Path $rpcGoFile -Value $rpcContent
-    
-    Write-Host "GetInstalledSoftware patch applied to agent_windows.go and rpc.go"
-    
-    return $true
 }
+
+############################
+# Agent Executable Verification Function
+############################
+
+function Test-AgentExecutable {
+    param (
+        [string]$Path
+    )
+    
+    if (-not (Test-Path $Path)) {
+        Write-Host "ERROR: Agent executable not found at $Path" -ForegroundColor Red
+        return $false
+    }
+    
+    try {
+        $fileInfo = Get-Item $Path
+        if ($fileInfo.Length -eq 0) {
+            Write-Host "ERROR: Agent executable file is empty" -ForegroundColor Red
+            return $false
+        }
+        
+        # Check if file is locked or in use
+        try {
+            $fileStream = [System.IO.File]::Open($Path, 'Open', 'Read', 'None')
+            $fileStream.Close()
+            $fileStream.Dispose()
+        } catch {
+            Write-Host "WARNING: Agent executable file is locked or in use: ${_}" -ForegroundColor Yellow
+            # Don't return false here as the file might be locked by a valid process
+        }
+        
+        Write-Host "Agent executable verified at $Path" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "ERROR: Failed to verify agent executable: ${_}" -ForegroundColor Red
+        return $false
+    }
+}
+
+# Verify the binary exists and is valid
+if (-not (Test-Path $binaryPath)) {
+    Write-Host "ERROR: Binary not found at $binaryPath after download attempt" -ForegroundColor Red
+    exit 1
+}
+
+# Use the Test-AgentExecutable function to verify the binary
+if (-not (Test-AgentExecutable -Path $binaryPath)) {
+    Write-Host "ERROR: Binary verification failed" -ForegroundColor Red
+    exit 1
+}
+
+# Prompt for missing values if not provided
+Prompt-IfEmpty -VarName "script:OrgName" -PromptMsg "Enter organization name" -DefaultVal "OpenFrame"
+Prompt-IfEmpty -VarName "script:ContactEmail" -PromptMsg "Enter contact email" -DefaultVal "admin@openframe.io"
+Prompt-IfEmpty -VarName "script:RmmServerUrl" -PromptMsg "Enter RMM server URL" -DefaultVal "http://localhost:8000"
+Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
+Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID" -DefaultVal "1"
+Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID" -DefaultVal "1"
+Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type" -DefaultVal "workstation"
+# Make LogPath optional - only prompt if explicitly requested
+if (-not [string]::IsNullOrEmpty($LogPath)) {
+    Prompt-IfEmpty -VarName "script:AgentLogPath" -PromptMsg "Enter log path" -DefaultVal ""
+}
+
+# Display parameters for installation
+Write-Host "Using parameters for installation:" -ForegroundColor Cyan
+Write-Host "  - Client ID: ${script:ClientId} (type: $(${script:ClientId}.GetType().Name))" -ForegroundColor White
+Write-Host "  - Site ID: ${script:SiteId} (type: $(${script:SiteId}.GetType().Name))" -ForegroundColor White
+Write-Host "  - Agent Type: '${script:AgentType}' (type: $(${script:AgentType}.GetType().Name))" -ForegroundColor White
+Write-Host "  - RMM URL: '${script:RmmServerUrl}'" -ForegroundColor White
+if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
+    Write-Host "  - Log Path: '${script:AgentLogPath}'" -ForegroundColor White
+} else {
+    Write-Host "  - Log Path: Using agent default" -ForegroundColor White
+}
+
+# Follow exact 3-step flow as requested by user
+Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
+$tacticalInstalled = Check-TacticalInstalled
+
+# 2. If yes, uninstall
+if ($tacticalInstalled) {
+    Write-Host "=== STEP 2: Tactical RMM is already installed. Uninstalling... ===" -ForegroundColor Yellow
+    Uninstall-TacticalRMM
+} else {
+    Write-Host "=== STEP 2: Tactical RMM is not installed. Skipping uninstallation. ===" -ForegroundColor Green
+}
+
+# 3. Install from binary
+Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
+# Apply WebSocket protocol modifications for non-HTTPS URLs
+if (-not [string]::IsNullOrEmpty($script:RmmServerUrl) -and $script:RmmServerUrl -match "^http://") {
+    Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
+    Set-WebSocketProtocolEnvironment -RmmUrl $script:RmmServerUrl
+    Set-WebSocketRegistrySettings -RmmUrl $script:RmmServerUrl
+}
+
+# Ensure log directory exists
+if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
+    $logDir = Split-Path -Parent $script:AgentLogPath
+    if (-not (Test-Path $logDir)) {
+        Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+}
+
+# Install the agent
+Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+
+# Configure the agent with parameters
+$programFilesPath = "${env:ProgramFiles}"
+$installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+if (Test-Path $installedAgentPath) {
+    # Build agent configuration arguments with proper validation
+    $agentConfigArgs = "-m install"
+    if (-not [string]::IsNullOrEmpty($script:RmmServerUrl)) {
+        $agentConfigArgs += " -api `"$script:RmmServerUrl`""
+    }
+    if (-not [string]::IsNullOrEmpty($script:AgentAuthKey)) {
+        $agentConfigArgs += " -auth `"$script:AgentAuthKey`""
+    }
+    $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -log `"DEBUG`""
+    # Only add LogPath if explicitly provided
+    if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
+        $agentConfigArgs += " -logto `"$script:AgentLogPath`""
+        Write-Host "Using custom log path: $script:AgentLogPath" -ForegroundColor Cyan
+    } else {
+        Write-Host "Using agent default log path" -ForegroundColor Cyan
+    }
+    $agentConfigArgs += " -nomesh -silent"
+    
+    Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
+    Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
+    Write-Host "Installation completed successfully!" -ForegroundColor Green
+} else {
+    Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "=== All Done! ===" -ForegroundColor Green
+Write-Host "Your agent is at: $binaryPath" -ForegroundColor Cyan
+Write-Host "NOTE: This is an AMD64 binary running with Windows on ARM64 emulation" -ForegroundColor Yellow
