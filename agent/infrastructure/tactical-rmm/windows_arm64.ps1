@@ -69,10 +69,10 @@ $script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder
 $SkipRun = $SkipRun -or $false
 
 # Initialize parameters with defaults if not provided
-# Use [string] type to ensure parameters are treated as strings, not booleans
-[string]$ClientId = $ClientId -or ""
-[string]$SiteId = $SiteId -or ""
-[string]$AgentType = $AgentType -or "workstation"  # default
+# Use explicit string casting to ensure parameters are treated as strings, not booleans
+[string]$script:ClientId = if ($ClientId -eq $true) { "" } else { "$ClientId" }
+[string]$script:SiteId = if ($SiteId -eq $true) { "" } else { "$SiteId" }
+[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true) { "workstation" } else { "$AgentType" }
 
 # Ensure AgentType has a default value
 if ([string]::IsNullOrEmpty($AgentType)) {
@@ -646,29 +646,29 @@ function Prompt-RunAgent {
         # Add silent installation flags to prevent UI prompts
         
         # Ensure parameters are passed correctly without being converted to "True" literals
-        # Use explicit string values to prevent boolean conversion
-        [string]$clientIdParam = "$ClientId"
-        [string]$siteIdParam = "$SiteId"
-        [string]$agentTypeParam = "$AgentType"
+        # Use explicit string values to prevent boolean conversion and provide defaults
+        [string]$clientIdParam = if ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True") { "1" } else { "$ClientId" }
+        [string]$siteIdParam = if ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True") { "1" } else { "$SiteId" }
+        [string]$agentTypeParam = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "workstation" } else { "$AgentType" }
         
         Write-Host "Using parameters for installation:" -ForegroundColor Green
         Write-Host "  - Client ID: '$clientIdParam'" -ForegroundColor Green
         Write-Host "  - Site ID: '$siteIdParam'" -ForegroundColor Green
         Write-Host "  - Agent Type: '$agentTypeParam'" -ForegroundColor Green
         
-        # Build command with explicit parameter values
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type $agentTypeParam -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
+        # Build command with explicit parameter values and proper quoting
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$clientIdParam`" -site-id `"$siteIdParam`" -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
         
         Write-Host "Running: $cmd"
         try {
-            # Build argument list with explicit parameter values
+            # Build argument list with explicit parameter values and proper quoting
             $argList = @(
                 "-m", "install",
                 "-api", "$RmmServerUrl",
                 "-auth", "$AgentAuthKey",
-                "-client-id", "$clientIdParam",
-                "-site-id", "$siteIdParam",
-                "-agent-type", "$agentTypeParam",
+                "-client-id", $clientIdParam,
+                "-site-id", $siteIdParam,
+                "-agent-type", $agentTypeParam,
                 "-log", "DEBUG",
                 "-logto", "$AgentLogPath",
                 "-nomesh", "-silent", "-quiet"
