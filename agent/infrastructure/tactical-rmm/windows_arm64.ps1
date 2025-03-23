@@ -19,18 +19,99 @@
 #   - Administrator privileges for installing dependencies and services
 #
 
-############################
-# Parse Script Arguments
-############################
-
+[CmdletBinding(
+    SupportsShouldProcess = $true,
+    DefaultParameterSetName = 'Interactive'
+)]
 param (
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        Position = 0,
+        HelpMessage = 'Hostname or IP of the RMM server'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        Mandatory = $true,
+        HelpMessage = 'Hostname or IP of the RMM server'
+    )]
+    [ValidateNotNullOrEmpty()]
     [string]$RmmHost,
-    [int]$RmmPort,
-    [switch]$Secure = $false,
+
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        Position = 1,
+        HelpMessage = 'Port number for the RMM server'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        Mandatory = $true,
+        HelpMessage = 'Port number for the RMM server'
+    )]
+    [ValidateRange(1, 65535)]
+    [int]$RmmPort = 8000,
+
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        HelpMessage = 'Use HTTPS/WSS for secure connection'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        HelpMessage = 'Use HTTPS/WSS for secure connection'
+    )]
+    [switch]$Secure,
+
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        HelpMessage = 'Authentication key for the RMM server'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        Mandatory = $true,
+        HelpMessage = 'Authentication key for the RMM server'
+    )]
+    [ValidateNotNullOrEmpty()]
     [string]$AuthKey,
+
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        HelpMessage = 'Client ID for the agent'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        Mandatory = $true,
+        HelpMessage = 'Client ID for the agent'
+    )]
+    [ValidateNotNullOrEmpty()]
     [string]$ClientId,
+
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        HelpMessage = 'Site ID for the agent'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        Mandatory = $true,
+        HelpMessage = 'Site ID for the agent'
+    )]
+    [ValidateNotNullOrEmpty()]
     [string]$SiteId,
+
+    [Parameter(
+        ParameterSetName = 'Interactive',
+        HelpMessage = 'Type of agent (workstation/server)'
+    )]
+    [Parameter(
+        ParameterSetName = 'NonInteractive',
+        Mandatory = $true,
+        HelpMessage = 'Type of agent (workstation/server)'
+    )]
+    [ValidateNotNullOrEmpty()]
     [string]$AgentType,
+
+    [Parameter(
+        ParameterSetName = 'Help',
+        HelpMessage = 'Display help message'
+    )]
     [switch]$Help
 )
 
@@ -79,6 +160,9 @@ if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq
 
 # Function to display help
 function Show-Help {
+    [CmdletBinding()]
+    param()
+    
     Write-Host "=========================================================" -ForegroundColor Cyan
     Write-Host "Windows ARM64 Tactical RMM Agent Installer" -ForegroundColor Cyan
     Write-Host "=========================================================" -ForegroundColor Cyan
@@ -91,12 +175,12 @@ function Show-Help {
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
     Write-Host "  -RmmHost        Hostname or IP of the RMM server"
-    Write-Host "  -RmmPort        Port number for the RMM server"
-    Write-Host "  -Secure         Use HTTPS/WSS for secure connection (default: false)"
+    Write-Host "  -RmmPort        Port number for the RMM server (default: 8000)"
+    Write-Host "  -Secure         Use HTTPS/WSS for secure connection"
     Write-Host "  -AuthKey        Authentication key for the RMM server"
-    Write-Host "  -ClientId       Client ID (required)"
-    Write-Host "  -SiteId         Site ID (required)"
-    Write-Host "  -AgentType      Agent type (required)"
+    Write-Host "  -ClientId       Client ID"
+    Write-Host "  -SiteId         Site ID"
+    Write-Host "  -AgentType      Agent type (workstation/server)"
     Write-Host "  -Help           Display this help message"
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Yellow
@@ -104,7 +188,7 @@ function Show-Help {
     Write-Host "  .\windows_arm64.ps1"
     Write-Host ""
     Write-Host "  # Non-interactive mode with all parameters:"
-    Write-Host "  .\windows_arm64.ps1 -RmmHost 'rmm.example.com' -RmmPort 8000 -Secure -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'server'"
+    Write-Host "  .\windows_arm64.ps1 -RmmHost 'rmm.example.com' -RmmPort 8000 -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'server'"
     Write-Host ""
     Write-Host "Note: This script requires administrator privileges." -ForegroundColor Red
     Write-Host "=========================================================" -ForegroundColor Cyan
