@@ -281,11 +281,17 @@ function Uninstall-TacticalRMM {
             Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
             Write-Host "Service stopped." -ForegroundColor Green
             # Wait for service to fully stop
-            Start-Sleep -Seconds 2
+            Start-Sleep -Seconds 5
         }
     } catch {
         Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
     }
+    
+    # Kill any running tactical processes
+    Write-Host "Terminating any running Tactical RMM processes..." -ForegroundColor Yellow
+    Get-Process -Name "tacticalrmm" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process -Name "meshagent" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 3
     
     # Check for uninstaller and agent executable in Program Files
     $programFilesPath = "${env:ProgramFiles}"
@@ -301,12 +307,12 @@ function Uninstall-TacticalRMM {
         Write-Host "Running agent uninstall command: & `"$agentPath`" -m uninstall -silent" -ForegroundColor Yellow
         Start-Process -FilePath $agentPath -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
         Write-Host "Agent uninstall command completed." -ForegroundColor Green
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 10
     } elseif (Test-Path $agentX86Path) {
         Write-Host "Running agent uninstall command: & `"$agentX86Path`" -m uninstall -silent" -ForegroundColor Yellow
         Start-Process -FilePath $agentX86Path -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
         Write-Host "Agent uninstall command completed." -ForegroundColor Green
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 10
     }
     
     # Then run the uninstaller if available
@@ -314,12 +320,12 @@ function Uninstall-TacticalRMM {
         Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
         Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
         Write-Host "Uninstaller completed." -ForegroundColor Green
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 10
     } elseif (Test-Path $uninstallerX86Path) {
         Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
         Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
         Write-Host "Uninstaller completed." -ForegroundColor Green
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 10
     }
     
     # Finally, attempt manual cleanup
@@ -332,7 +338,7 @@ function Uninstall-TacticalRMM {
             Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
             & sc.exe delete "tacticalrmm"
             Write-Host "Service removed." -ForegroundColor Green
-            Start-Sleep -Seconds 2
+            Start-Sleep -Seconds 5
         }
     } catch {
         Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
@@ -349,6 +355,16 @@ function Uninstall-TacticalRMM {
             Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
             Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
         }
+        
+        if (Test-Path "$programFilesPath\Mesh Agent") {
+            Write-Host "Removing $programFilesPath\Mesh Agent directory..." -ForegroundColor Yellow
+            Remove-Item -Path "$programFilesPath\Mesh Agent" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        
+        if (Test-Path "$programFilesX86Path\Mesh Agent") {
+            Write-Host "Removing $programFilesX86Path\Mesh Agent directory..." -ForegroundColor Yellow
+            Remove-Item -Path "$programFilesX86Path\Mesh Agent" -Recurse -Force -ErrorAction SilentlyContinue
+        }
     } catch {
         Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
     }
@@ -363,13 +379,16 @@ function Uninstall-TacticalRMM {
         $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
         $programFilesExists = Test-Path "$programFilesPath\TacticalAgent"
         $programFilesX86Exists = Test-Path "$programFilesX86Path\TacticalAgent"
+        $meshExists = (Test-Path "$programFilesPath\Mesh Agent") -or (Test-Path "$programFilesX86Path\Mesh Agent")
+        $processes = Get-Process -Name "tacticalrmm" -ErrorAction SilentlyContinue
+        $meshProcesses = Get-Process -Name "meshagent" -ErrorAction SilentlyContinue
 
-        if (-not $service -and -not $programFilesExists -and -not $programFilesX86Exists) {
+        if (-not $service -and -not $programFilesExists -and -not $programFilesX86Exists -and -not $meshExists -and -not $processes -and -not $meshProcesses) {
             $uninstallComplete = $true
             Write-Host "Uninstallation verified successfully." -ForegroundColor Green
         } else {
             Write-Host "Uninstallation verification attempt $attempt of $maxAttempts..." -ForegroundColor Yellow
-            Start-Sleep -Seconds 2
+            Start-Sleep -Seconds 5
             $attempt++
         }
     }
@@ -377,6 +396,10 @@ function Uninstall-TacticalRMM {
     if (-not $uninstallComplete) {
         Write-Host "Warning: Could not verify complete uninstallation. Some components may still be present." -ForegroundColor Yellow
     }
+    
+    # Final wait after uninstallation
+    Write-Host "Waiting for system to stabilize after uninstallation..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 10
 }
 
 function Show-Help {
@@ -551,10 +574,37 @@ try {
     Set-WebSocketProtocolEnvironment -Secure $script:Secure
     Set-WebSocketRegistrySettings -Secure $script:Secure
 
+    # Create temporary directory for installation
+    $tempDir = "c:\ProgramData\TacticalRMM\temp"
+    if (-not (Test-Path $tempDir)) {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    }
+
+    # Copy binary to temp directory
+    $tempBinaryPath = Join-Path $tempDir "trmminstall.exe"
+    Write-Host "Copying installer to temporary location: $tempBinaryPath" -ForegroundColor Yellow
+    Copy-Item -Path $script:binaryPath -Destination $tempBinaryPath -Force
+
+    # Add random sleep time for multiple installations
+    $randomSleepTime = Get-Random -Minimum 1 -Maximum 3
+    Write-Host "Waiting $randomSleepTime seconds before installation..." -ForegroundColor Yellow
+    Start-Sleep -Seconds $randomSleepTime
+
     # Install the agent
-    Write-Host "Running binary installation: & `"$script:binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
-    Start-Process -FilePath $script:binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+    Write-Host "Running binary installation: & `"$tempBinaryPath`" /VERYSILENT /SUPPRESSMSGBOXES --silent --nomesh" -ForegroundColor Cyan
+    $proc = Start-Process -FilePath $tempBinaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES --silent --nomesh" -Wait -NoNewWindow -PassThru
+    
+    if ($proc.ExitCode -ne 0) {
+        Write-Warning "Installer exited with status code $($proc.ExitCode)"
+    }
+    
     Start-Sleep -Seconds 5  # Wait for installation to complete
+
+    # Clean up temporary files
+    Write-Host "Cleaning up temporary files..." -ForegroundColor Yellow
+    if (Test-Path $tempBinaryPath) {
+        Remove-Item -Path $tempBinaryPath -Force
+    }
 
     # Configure the agent with parameters
     $programFilesPath = "${env:ProgramFiles}"
@@ -563,12 +613,12 @@ try {
         # Build agent configuration arguments with proper validation
         $agentConfigArgs = "-m install"
         if (-not [string]::IsNullOrEmpty($script:RmmServerUrl)) {
-            $agentConfigArgs += " -api `"$script:RmmServerUrl`""
+            $agentConfigArgs += " -api $script:RmmServerUrl"
         }
         if (-not [string]::IsNullOrEmpty($script:AgentAuthKey)) {
-            $agentConfigArgs += " -auth `"$script:AgentAuthKey`""
+            $agentConfigArgs += " -auth $script:AgentAuthKey"
         }
-        $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -nomesh -silent"
+        $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type $script:AgentType -nomesh -silent -log debug"
         
         Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
         Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
