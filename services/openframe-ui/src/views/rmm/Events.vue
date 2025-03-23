@@ -9,7 +9,7 @@
             'p-button-sm', 
             autoPollingEnabled ? 'p-button-warning' : 'p-button-text'
           ]"
-          :style="autoPollingEnabled ? 'background-color: #FFD700 !important; border-color: #FFD700 !important; color: black !important; font-weight: bold !important;' : ''"
+          :style="autoPollingEnabled ? 'background-color: var(--of-primary) !important; border-color: var(--of-primary) !important; color: black !important; font-weight: bold !important;' : ''"
           @click="togglePolling(!autoPollingEnabled)" 
           v-tooltip.top="autoPollingEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'" />
       </template>
@@ -589,11 +589,11 @@ onUnmounted(() => {
 }
 
 .custom-yellow-button {
-  background-color: #FFD700 !important;
-  border-color: #FFD700 !important;
+  background-color: var(--of-primary) !important;
+  border-color: var(--of-primary) !important;
   color: black !important;
   font-weight: bold !important;
-  box-shadow: 0 0 0 2px #FFD700 !important;
+  box-shadow: 0 0 0 2px var(--of-primary) !important;
   transform: scale(1.05) !important;
 }
 </style>
