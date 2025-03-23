@@ -1,6 +1,7 @@
 <template>
   <div class="mdm-profiles">
     <ModuleHeader title="Profiles">
+      <template #subtitle>Manage device configuration profiles</template>
       <template #actions>
         <OFButton 
           label="Create Profile" 
@@ -470,4 +471,4 @@ onMounted(async () => {
     }
   }
 }
-</style>        
+</style>                

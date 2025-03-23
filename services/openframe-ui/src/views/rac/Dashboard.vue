@@ -1,6 +1,7 @@
 <template>
   <div class="rac-dashboard">
     <ModuleHeader title="Dashboard">
+      <template #subtitle>Overview of remote device status and activity</template>
     </ModuleHeader>
     
     <div class="dashboard-grid">

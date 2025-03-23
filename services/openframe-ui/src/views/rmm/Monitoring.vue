@@ -1,6 +1,7 @@
 <template>
   <div class="of-monitoring">
     <ModuleHeader title="Monitoring">
+      <template #subtitle>Monitor device metrics and set up alerts</template>
       <template #actions>
         <OFButton 
           label="Add Monitor" 
@@ -487,4 +488,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>                
+</style>                                

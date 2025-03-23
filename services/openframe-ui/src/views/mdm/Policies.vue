@@ -1,6 +1,7 @@
 <template>
   <div class="mdm-policies">
     <ModuleHeader title="Policies">
+      <template #subtitle>Define and enforce device compliance policies</template>
       <template #actions>
         <OFButton 
           label="Create Policy" 
@@ -761,4 +762,4 @@ onMounted(async () => {
     }
   }
 }
-</style>                           
+</style>                                                      

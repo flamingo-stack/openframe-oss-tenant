@@ -1,6 +1,7 @@
 <template>
   <div class="remote-connection">
     <ModuleHeader title="Remote Connection">
+      <template #subtitle>Establish remote connections to devices</template>
     </ModuleHeader>
     
     <div class="connection-content" v-if="!selectedDeviceId">

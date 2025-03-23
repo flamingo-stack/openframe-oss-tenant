@@ -1,6 +1,7 @@
 <template>
   <div class="file-transfer">
     <ModuleHeader title="File Transfer">
+      <template #subtitle>Transfer files between local and remote devices</template>
     </ModuleHeader>
     
     <div class="transfer-content" v-if="!selectedDeviceId">

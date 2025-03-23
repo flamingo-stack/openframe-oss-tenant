@@ -1,6 +1,7 @@
 <template>
   <div class="rac-settings">
     <ModuleHeader title="Settings">
+      <template #subtitle>Configure remote access and control settings</template>
     </ModuleHeader>
     
     <div class="settings-content">
