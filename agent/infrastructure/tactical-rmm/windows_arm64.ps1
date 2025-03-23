@@ -122,43 +122,200 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 ############################
-# Default / Config
+# Functions
 ############################
 
-$OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
-$AMD64_BINARY = "tacticalagent-v2.9.0-windows-amd64.exe"
-$AMD64_BINARY_PATH = Join-Path (Split-Path -Parent $PSCommandPath) "binaries\$AMD64_BINARY"
-
-# We'll store user-provided or prompted values in these variables:
-$script:RmmHost = if ([string]::IsNullOrEmpty($RmmHost) -or $RmmHost -eq $true -or $RmmHost -eq "True") { "" } else { $RmmHost }
-$script:RmmPort = if ($RmmPort -eq 0) { 8000 } else { $RmmPort }
-$script:Secure = $Secure
-$script:AgentAuthKey = if ([string]::IsNullOrEmpty($AuthKey) -or $AuthKey -eq $true -or $AuthKey -eq "True") { "" } else { $AuthKey }
-
-# Initialize parameters with defaults if not provided
-# Parse ClientId and SiteId as integers since that's what the agent expects
-# Use proper integer parsing with TryParse for ClientId
-$tempClientId = 0
-if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
-    $tempValue = 0
-    if ([int]::TryParse($ClientId, [ref]$tempValue)) {
-        $tempClientId = $tempValue
+function Prompt-IfEmpty {
+    param (
+        [string]$VarName,
+        [string]$PromptMsg,
+        [string]$DefaultVal = "",
+        [switch]$Silent = $false
+    )
+    
+    # Extract the variable name without the script: prefix if present
+    $actualVarName = $VarName -replace "^script:", ""
+    
+    $currVal = Get-Variable -Name $actualVarName -ValueOnly -ErrorAction SilentlyContinue
+    
+    # If value is empty or null, use default or prompt for value
+    # Don't use boolean comparison for string parameters
+    if ([string]::IsNullOrEmpty($currVal) -or $currVal -eq $true -or $currVal -eq "True") {
+        if ($Silent) {
+            # In silent mode, always use default value without prompting
+            if (-not [string]::IsNullOrEmpty($DefaultVal)) {
+                Set-Variable -Name $actualVarName -Value $DefaultVal -Scope Script
+                Write-Host "Using default value for ${actualVarName}: ${DefaultVal}" -ForegroundColor Yellow
+            } else {
+                Write-Host "ERROR: ${actualVarName} is required in non-interactive mode" -ForegroundColor Red
+                exit 1
+            }
+        } else {
+            # In interactive mode, prompt for value
+            $promptDefault = if (-not [string]::IsNullOrEmpty($DefaultVal)) { " (default: $DefaultVal)" } else { "" }
+            $promptValue = Read-Host "$PromptMsg$promptDefault"
+            
+            # If user didn't provide a value, use default
+            if ([string]::IsNullOrEmpty($promptValue) -and -not [string]::IsNullOrEmpty($DefaultVal)) {
+                $promptValue = $DefaultVal
+                Write-Host "Using default value: ${DefaultVal}" -ForegroundColor Yellow
+            }
+            
+            # Update the variable with the new value
+            Set-Variable -Name $actualVarName -Value $promptValue -Scope Script
+        }
+    } else {
+        # Value already exists, display it
+        Write-Host "Using provided ${actualVarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
     }
 }
-[int]$script:ClientId = $tempClientId
 
-# Use proper integer parsing with TryParse for SiteId
-$tempSiteId = 0
-if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
-    $tempValue = 0
-    if ([int]::TryParse($SiteId, [ref]$tempValue)) {
-        $tempSiteId = $tempValue
+function Set-WebSocketProtocolEnvironment {
+    param (
+        [bool]$Secure
+    )
+    
+    $protocol = if ($Secure) { "wss" } else { "ws" }
+    Write-Host "Setting environment variables to use WebSocket protocol ${protocol}://..." -ForegroundColor Yellow
+    
+    # Set environment variables to override WebSocket protocol
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Process)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::User)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Machine)
+    
+    Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
+    return $true
+}
+
+function Set-WebSocketRegistrySettings {
+    param (
+        [bool]$Secure
+    )
+    
+    $protocol = if ($Secure) { "wss" } else { "ws" }
+    Write-Host "Setting WebSocket protocol registry settings..." -ForegroundColor Yellow
+    
+    # Create registry keys to override WebSocket protocol
+    try {
+        # Create HKLM:\SOFTWARE\TacticalRMM if it doesn't exist
+        if (-not (Test-Path "HKLM:\SOFTWARE\TacticalRMM")) {
+            New-Item -Path "HKLM:\SOFTWARE\TacticalRMM" -Force | Out-Null
+        }
+        
+        # Set registry values
+        New-ItemProperty -Path "HKLM:\SOFTWARE\TacticalRMM" -Name "NatsWsScheme" -Value $protocol -PropertyType String -Force | Out-Null
+        
+        Write-Host "Registry settings configured successfully" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Error setting registry keys: ${_}" -ForegroundColor Red
+        return $false
     }
 }
-[int]$script:SiteId = $tempSiteId
-[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "" } else { "$AgentType" }
 
-# Function to display help
+function Check-TacticalInstalled {
+    Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
+    
+    # Check for Tactical RMM service
+    $tacticalService = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+    
+    # Check for Tactical RMM executable in Program Files
+    $programFilesPath = "${env:ProgramFiles}"
+    $programFilesX86Path = "${env:ProgramFiles(x86)}"
+    
+    $tacticalExePath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+    $tacticalExeX86Path = "$programFilesX86Path\TacticalAgent\tacticalrmm.exe"
+    
+    $tacticalExeExists = Test-Path $tacticalExePath
+    $tacticalExeX86Exists = Test-Path $tacticalExeX86Path
+    
+    if ($tacticalService -or $tacticalExeExists -or $tacticalExeX86Exists) {
+        Write-Host "Tactical RMM is already installed." -ForegroundColor Yellow
+        
+        if ($tacticalService) {
+            Write-Host "Found Tactical RMM service." -ForegroundColor Yellow
+        }
+        
+        if ($tacticalExeExists) {
+            Write-Host "Found Tactical RMM executable at: $tacticalExePath" -ForegroundColor Yellow
+        }
+        
+        if ($tacticalExeX86Exists) {
+            Write-Host "Found Tactical RMM executable at: $tacticalExeX86Path" -ForegroundColor Yellow
+        }
+        
+        return $true
+    } else {
+        Write-Host "Tactical RMM is not installed." -ForegroundColor Green
+        return $false
+    }
+}
+
+function Uninstall-TacticalRMM {
+    Write-Host "=== STEP 2: Uninstalling existing Tactical RMM agent ===" -ForegroundColor Cyan
+    
+    # Try to stop the service first
+    try {
+        $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+        if ($service) {
+            Write-Host "Stopping Tactical RMM service..." -ForegroundColor Yellow
+            Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
+            Write-Host "Service stopped." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
+    }
+    
+    # Check for uninstaller in Program Files
+    $programFilesPath = "${env:ProgramFiles}"
+    $programFilesX86Path = "${env:ProgramFiles(x86)}"
+    
+    $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
+    $uninstallerX86Path = "$programFilesX86Path\TacticalAgent\unins000.exe"
+    
+    $uninstallerExists = Test-Path $uninstallerPath
+    $uninstallerX86Exists = Test-Path $uninstallerX86Path
+    
+    if ($uninstallerExists) {
+        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
+        Write-Host "Uninstallation completed." -ForegroundColor Green
+    } elseif ($uninstallerX86Exists) {
+        Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait
+        Write-Host "Uninstallation completed." -ForegroundColor Green
+    } else {
+        Write-Host "No uninstaller found. Attempting manual cleanup..." -ForegroundColor Yellow
+        
+        # Try to remove service
+        try {
+            $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+            if ($service) {
+                Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
+                & sc.exe delete "tacticalrmm"
+                Write-Host "Service removed." -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
+        }
+        
+        # Try to remove directories
+        try {
+            if (Test-Path "$programFilesPath\TacticalAgent") {
+                Write-Host "Removing $programFilesPath\TacticalAgent directory..." -ForegroundColor Yellow
+                Remove-Item -Path "$programFilesPath\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            
+            if (Test-Path "$programFilesX86Path\TacticalAgent") {
+                Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
+                Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
+        }
+    }
+}
+
 function Show-Help {
     [CmdletBinding()]
     param()
@@ -195,6 +352,43 @@ function Show-Help {
     Write-Host "=========================================================" -ForegroundColor Cyan
     exit 0
 }
+
+############################
+# Default / Config
+############################
+
+$OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
+$AMD64_BINARY = "tacticalagent-v2.9.0-windows-amd64.exe"
+$AMD64_BINARY_PATH = Join-Path (Split-Path -Parent $PSCommandPath) "binaries\$AMD64_BINARY"
+
+# We'll store user-provided or prompted values in these variables:
+$script:RmmHost = if ([string]::IsNullOrEmpty($RmmHost) -or $RmmHost -eq $true -or $RmmHost -eq "True") { "" } else { $RmmHost }
+$script:RmmPort = if ($RmmPort -eq 0) { 8000 } else { $RmmPort }
+$script:Secure = $Secure
+$script:AgentAuthKey = if ([string]::IsNullOrEmpty($AuthKey) -or $AuthKey -eq $true -or $AuthKey -eq "True") { "" } else { $AuthKey }
+
+# Initialize parameters with defaults if not provided
+# Parse ClientId and SiteId as integers since that's what the agent expects
+# Use proper integer parsing with TryParse for ClientId
+$tempClientId = 0
+if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
+    $tempValue = 0
+    if ([int]::TryParse($ClientId, [ref]$tempValue)) {
+        $tempClientId = $tempValue
+    }
+}
+[int]$script:ClientId = $tempClientId
+
+# Use proper integer parsing with TryParse for SiteId
+$tempSiteId = 0
+if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
+    $tempValue = 0
+    if ([int]::TryParse($SiteId, [ref]$tempValue)) {
+        $tempSiteId = $tempValue
+    }
+}
+[int]$script:SiteId = $tempSiteId
+[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "" } else { "$AgentType" }
 
 # Show help if requested
 if ($Help) {
@@ -307,209 +501,4 @@ try {
     Write-Error "An error occurred: $_"
     Write-Host "Use -Help to display usage information." -ForegroundColor Yellow
     exit 1
-}
-
-############################
-# WebSocket Protocol Functions
-############################
-
-function Set-WebSocketProtocolEnvironment {
-    param (
-        [bool]$Secure
-    )
-    
-    $protocol = if ($Secure) { "wss" } else { "ws" }
-    Write-Host "Setting environment variables to use WebSocket protocol ${protocol}://..." -ForegroundColor Yellow
-    
-    # Set environment variables to override WebSocket protocol
-    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Process)
-    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::User)
-    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Machine)
-    
-    Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
-    return $true
-}
-
-function Set-WebSocketRegistrySettings {
-    param (
-        [bool]$Secure
-    )
-    
-    $protocol = if ($Secure) { "wss" } else { "ws" }
-    Write-Host "Setting WebSocket protocol registry settings..." -ForegroundColor Yellow
-    
-    # Create registry keys to override WebSocket protocol
-    try {
-        # Create HKLM:\SOFTWARE\TacticalRMM if it doesn't exist
-        if (-not (Test-Path "HKLM:\SOFTWARE\TacticalRMM")) {
-            New-Item -Path "HKLM:\SOFTWARE\TacticalRMM" -Force | Out-Null
-        }
-        
-        # Set registry values
-        New-ItemProperty -Path "HKLM:\SOFTWARE\TacticalRMM" -Name "NatsWsScheme" -Value $protocol -PropertyType String -Force | Out-Null
-        
-        Write-Host "Registry settings configured successfully" -ForegroundColor Green
-        return $true
-    } catch {
-        Write-Host "Error setting registry keys: ${_}" -ForegroundColor Red
-        return $false
-    }
-}
-
-############################
-# Installation Functions
-############################
-
-# 1. Check if Tactical RMM is already installed
-function Check-TacticalInstalled {
-    Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
-    
-    # Check for Tactical RMM service
-    $tacticalService = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-    
-    # Check for Tactical RMM executable in Program Files
-    $programFilesPath = "${env:ProgramFiles}"
-    $programFilesX86Path = "${env:ProgramFiles(x86)}"
-    
-    $tacticalExePath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
-    $tacticalExeX86Path = "$programFilesX86Path\TacticalAgent\tacticalrmm.exe"
-    
-    $tacticalExeExists = Test-Path $tacticalExePath
-    $tacticalExeX86Exists = Test-Path $tacticalExeX86Path
-    
-    if ($tacticalService -or $tacticalExeExists -or $tacticalExeX86Exists) {
-        Write-Host "Tactical RMM is already installed." -ForegroundColor Yellow
-        
-        if ($tacticalService) {
-            Write-Host "Found Tactical RMM service." -ForegroundColor Yellow
-        }
-        
-        if ($tacticalExeExists) {
-            Write-Host "Found Tactical RMM executable at: $tacticalExePath" -ForegroundColor Yellow
-        }
-        
-        if ($tacticalExeX86Exists) {
-            Write-Host "Found Tactical RMM executable at: $tacticalExeX86Path" -ForegroundColor Yellow
-        }
-        
-        return $true
-    } else {
-        Write-Host "Tactical RMM is not installed." -ForegroundColor Green
-        return $false
-    }
-}
-
-# 2. Uninstall if already installed
-function Uninstall-TacticalRMM {
-    Write-Host "=== STEP 2: Uninstalling existing Tactical RMM agent ===" -ForegroundColor Cyan
-    
-    # Try to stop the service first
-    try {
-        $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-        if ($service) {
-            Write-Host "Stopping Tactical RMM service..." -ForegroundColor Yellow
-            Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
-            Write-Host "Service stopped." -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
-    }
-    
-    # Check for uninstaller in Program Files
-    $programFilesPath = "${env:ProgramFiles}"
-    $programFilesX86Path = "${env:ProgramFiles(x86)}"
-    
-    $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
-    $uninstallerX86Path = "$programFilesX86Path\TacticalAgent\unins000.exe"
-    
-    $uninstallerExists = Test-Path $uninstallerPath
-    $uninstallerX86Exists = Test-Path $uninstallerX86Path
-    
-    if ($uninstallerExists) {
-        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
-        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
-        Write-Host "Uninstallation completed." -ForegroundColor Green
-    } elseif ($uninstallerX86Exists) {
-        Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
-        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait
-        Write-Host "Uninstallation completed." -ForegroundColor Green
-    } else {
-        Write-Host "No uninstaller found. Attempting manual cleanup..." -ForegroundColor Yellow
-        
-        # Try to remove service
-        try {
-            $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-            if ($service) {
-                Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
-                & sc.exe delete "tacticalrmm"
-                Write-Host "Service removed." -ForegroundColor Green
-            }
-        } catch {
-            Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
-        }
-        
-        # Try to remove directories
-        try {
-            if (Test-Path "$programFilesPath\TacticalAgent") {
-                Write-Host "Removing $programFilesPath\TacticalAgent directory..." -ForegroundColor Yellow
-                Remove-Item -Path "$programFilesPath\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            
-            if (Test-Path "$programFilesX86Path\TacticalAgent") {
-                Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
-                Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
-            }
-        } catch {
-            Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
-        }
-    }
-}
-
-############################
-# Prompting for missing inputs
-############################
-
-function Prompt-IfEmpty {
-    param (
-        [string]$VarName,
-        [string]$PromptMsg,
-        [string]$DefaultVal = "",
-        [switch]$Silent = $false
-    )
-    
-    # Extract the variable name without the script: prefix if present
-    $actualVarName = $VarName -replace "^script:", ""
-    
-    $currVal = Get-Variable -Name $actualVarName -ValueOnly -ErrorAction SilentlyContinue
-    
-    # If value is empty or null, use default or prompt for value
-    # Don't use boolean comparison for string parameters
-    if ([string]::IsNullOrEmpty($currVal) -or $currVal -eq $true -or $currVal -eq "True") {
-        if ($Silent) {
-            # In silent mode, always use default value without prompting
-            if (-not [string]::IsNullOrEmpty($DefaultVal)) {
-                Set-Variable -Name $actualVarName -Value $DefaultVal -Scope Script
-                Write-Host "Using default value for ${actualVarName}: ${DefaultVal}" -ForegroundColor Yellow
-            } else {
-                Write-Host "ERROR: ${actualVarName} is required in non-interactive mode" -ForegroundColor Red
-                exit 1
-            }
-        } else {
-            # In interactive mode, prompt for value
-            $promptDefault = if (-not [string]::IsNullOrEmpty($DefaultVal)) { " (default: $DefaultVal)" } else { "" }
-            $promptValue = Read-Host "$PromptMsg$promptDefault"
-            
-            # If user didn't provide a value, use default
-            if ([string]::IsNullOrEmpty($promptValue) -and -not [string]::IsNullOrEmpty($DefaultVal)) {
-                $promptValue = $DefaultVal
-                Write-Host "Using default value: ${DefaultVal}" -ForegroundColor Yellow
-            }
-            
-            # Update the variable with the new value
-            Set-Variable -Name $actualVarName -Value $promptValue -Scope Script
-        }
-    } else {
-        # Value already exists, display it
-        Write-Host "Using provided ${actualVarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
-    }
 }
