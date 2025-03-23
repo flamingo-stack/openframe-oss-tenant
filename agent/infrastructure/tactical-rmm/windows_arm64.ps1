@@ -1100,8 +1100,8 @@ function Prompt-RunAgent {
                     $agentArgs += " -silent"
                 }
                 
-                # Add other flags but NOT -nostart
-                $agentArgs += " -quiet -noprompt -accepteula -debug"  # Add debug flag for more verbose output
+                # Only add supported flags based on usage output
+                # -debug is not in usage output, so removing it as well
                 
                 if ($LogLevel) {
                     $agentArgs += " -log $LogLevel"
@@ -1133,11 +1133,44 @@ function Prompt-RunAgent {
                 # No longer adding default proxy parameter as it's not needed
                 # WebSocket protocol is handled by environment variables and registry settings
                 
-                # Add required parameters
-                $agentArgs += " --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
+                # Rebuild the arguments string with only supported flags based on usage output
+                $agentArgs = "-m install -nomesh -silent"
+                
+                if ($LogLevel) {
+                    $agentArgs += " -log $LogLevel"
+                }
+                
+                if ($LogPath) {
+                    $agentArgs += " -logto `"$LogPath`""
+                }
+                
+                if ($LocalMeshPath) {
+                    $agentArgs += " -local-mesh `"$LocalMeshPath`""
+                }
+                
+                if ($MeshDir) {
+                    $agentArgs += " -meshdir `"$MeshDir`""
+                }
+                
+                if ($CertPath) {
+                    $agentArgs += " -cert `"$CertPath`""
+                }
+                
+                if ($AgentDescription) {
+                    $agentArgs += " -desc `"$AgentDescription`""
+                }
+                
+                if ($ProxyServer) {
+                    $agentArgs += " -proxy `"$ProxyServer`""
+                }
+                
+                # Add required parameters with correct parameter format (single dash)
+                # Based on usage output, all parameters should use single dash
+                $agentArgs += " -api $RmmServerUrl -client-id $ClientId -site-id $SiteId -agent-type $AgentType -auth $AgentAuthKey"
                 $agentCmd = "& `"$agentPath`" $agentArgs"
                 
-                Write-Host "Step 3: Running agent configuration: $agentCmd" -ForegroundColor Cyan
+                # Update the display command to show only supported flags
+                Write-Host "Step 3: Running agent configuration: & `"$agentPath`" $agentArgs" -ForegroundColor Cyan
                 
                 # Set up process for agent configuration
                 $agentProcess = New-Object System.Diagnostics.Process
