@@ -330,6 +330,13 @@ const fetchHistory = async () => {
       newHistory = await enhanceHistoryWithAgentInfo(newHistory);
     }
     
+    // Verify agent data availability
+    console.log('Agent data verification:', newHistory.map(item => ({
+      agent: item.agent,
+      agent_info: item.agent_info,
+      has_os: item.agent_info ? Boolean(item.agent_info.os || item.agent_info.operating_system) : false
+    })));
+    
     // Only update the UI if data has changed
     if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
       historyItems.value = newHistory;
