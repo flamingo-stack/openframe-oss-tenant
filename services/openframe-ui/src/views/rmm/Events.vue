@@ -70,12 +70,18 @@
         </Column>
         <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 15%">
           <template #body="{ data }">
-            <div class="flex flex-column">
-              <span>{{ getAgentHostname(data.agent) }}</span>
-              <span v-if="data.agent_info" class="text-xs text-color-secondary flex align-items-center gap-1">
-                <i class="pi pi-server"></i>
-                {{ data.agent_info.os || data.agent_info.operating_system || 'Unknown OS' }}
-              </span>
+            <div>
+              <div class="flex align-items-center">
+                <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2" :style="{
+                  color: data.agent_info?.plat === 'windows' ? '#0078d7' : 
+                         data.agent_info?.plat === 'darwin' ? '#999' : 
+                         data.agent_info?.plat === 'linux' ? '#f8991d' : ''
+                }"></i>
+                <span>{{ getAgentHostname(data.agent) }}</span>
+              </div>
+              <div class="text-xs text-color-secondary">
+                {{ data.agent_info ? (data.agent_info.os || data.agent_info.operating_system || 'Unknown OS') : '' }}
+              </div>
             </div>
           </template>
         </Column>
@@ -443,7 +449,7 @@ const fetchAgentDetails = async () => {
 // Function to generate mock agent data for local development
 const getMockAgentInfo = (agentId: number) => {
   // Different mock data based on agent ID for variety
-  const mockPlatforms = ['Windows', 'Linux', 'macOS'];
+  const mockPlatforms = ['windows', 'linux', 'darwin']; // Ensure lowercase for icon mapping
   const mockOSVersions = [
     'Windows 10 Pro 21H2', 
     'Ubuntu 22.04 LTS', 
@@ -455,13 +461,26 @@ const getMockAgentInfo = (agentId: number) => {
   const index = agentId % 3;
   const statusIndex = agentId % 2;
   
-  return {
-    platform: mockPlatforms[index],
-    plat: mockPlatforms[index].toLowerCase(),
+  // Create mock data with consistent platform values
+  const mockData = {
+    platform: mockPlatforms[index].charAt(0).toUpperCase() + mockPlatforms[index].slice(1),
+    plat: mockPlatforms[index].toLowerCase(), // Ensure lowercase for icon mapping
     os: mockOSVersions[index],
     operating_system: mockOSVersions[index],
     status: mockStatuses[statusIndex]
   };
+  
+  return mockData;
+};
+
+// Use the same getDeviceIcon function as in Devices.vue
+const getDeviceIcon = (platform: string) => {
+  const iconMap: Record<string, string> = {
+    windows: 'pi pi-microsoft',
+    darwin: 'pi pi-apple',
+    linux: 'pi pi-server'
+  };
+  return iconMap[platform?.toLowerCase()] || 'pi pi-desktop';
 };
 
 // Clean up interval when component is unmounted
