@@ -1169,14 +1169,28 @@ function Prompt-RunAgent {
                 $agentArgs += " -api $RmmServerUrl -client-id $ClientId -site-id $SiteId -agent-type $AgentType -auth $AgentAuthKey"
                 $agentCmd = "& `"$agentPath`" $agentArgs"
                 
-                # Check for existing installation
-                $uninstallerPath = "C:\Program Files\TacticalAgent\unins000.exe"
+                # Check for existing installation using environment variables
+                $programFilesPath = "$env:ProgramFiles"
+                $programFilesX86Path = "${env:ProgramFiles(x86)}"
+                
+                # Check both potential installation paths
+                $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
+                $uninstallerPathX86 = "$programFilesX86Path\TacticalAgent\unins000.exe"
+                
+                # Check if uninstaller exists in either location
                 if (Test-Path $uninstallerPath) {
-                    Write-Host "Existing Tactical RMM agent installation found. Uninstalling..." -ForegroundColor Yellow
-                    
+                    $actualUninstallerPath = $uninstallerPath
+                    Write-Host "Existing Tactical RMM agent installation found at $programFilesPath. Uninstalling..." -ForegroundColor Yellow
+                } elseif (Test-Path $uninstallerPathX86) {
+                    $actualUninstallerPath = $uninstallerPathX86
+                    Write-Host "Existing Tactical RMM agent installation found at $programFilesX86Path. Uninstalling..." -ForegroundColor Yellow
+                }
+                
+                # Run uninstaller if found
+                if ($actualUninstallerPath) {
                     # Run the uninstaller
-                    Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Cyan
-                    $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -NoNewWindow -Wait -PassThru
+                    Write-Host "Running uninstaller: $actualUninstallerPath /VERYSILENT" -ForegroundColor Cyan
+                    $uninstallProcess = Start-Process -FilePath $actualUninstallerPath -ArgumentList "/VERYSILENT" -NoNewWindow -Wait -PassThru
                     
                     if ($uninstallProcess.ExitCode -eq 0) {
                         Write-Host "Uninstallation completed successfully. Waiting 10 seconds before reinstalling..." -ForegroundColor Green
@@ -1245,40 +1259,43 @@ function Prompt-RunAgent {
                     Write-Host "===================================" -ForegroundColor Cyan
                 }
                 
-                # Verify the installed agent executable exists
-                $installedAgentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
-                $agentExecutableExists = Test-AgentExecutable -Path $installedAgentPath
+                # IMPORTANT: After uninstallation, we must use the ORIGINAL binary (not the now-deleted installed one)
+                # Step 3: Run the original binary with installation parameters
+                $agentConfigArgs = "-m install -nomesh -silent -log debug -logto `"$AgentLogPath`" -api $RmmServerUrl -client-id $ClientId -site-id $SiteId -agent-type $AgentType -auth $AgentAuthKey"
+                
+                Write-Host "Step 3: Running agent installation with original binary: & `"$agentPath`" $agentConfigArgs" -ForegroundColor Cyan
+                
+                try {
+                    # Run the ORIGINAL binary with installation parameters
+                    $agentConfigProcess = Start-Process -FilePath $agentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait -PassThru
+                    
+                    if ($agentConfigProcess.ExitCode -eq 0) {
+                        Write-Host "Agent installation completed successfully" -ForegroundColor Green
+                    } else {
+                        Write-Host "Agent installation FAILED with error code: $($agentConfigProcess.ExitCode)" -ForegroundColor Red
+                        
+                        # Check for common errors
+                        if ($agentConfigProcess.ExitCode -eq 1) {
+                            Write-Host "ERROR: Agent installation failed. This may be due to authentication issues." -ForegroundColor Red
+                        } elseif ($agentConfigProcess.ExitCode -eq 2) {
+                            Write-Host "ERROR: Agent installation failed. This may be due to WebSocket connection issues." -ForegroundColor Red
+                        }
+                    }
+                } catch {
+                    Write-Host "Error executing agent installation: $_" -ForegroundColor Red
+                    Write-Host "Please check permissions and file access rights." -ForegroundColor Yellow
+                }
+                
+                # Now verify the service was installed correctly
+                $programFilesPath = "$env:ProgramFiles"
+                $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+                $agentExecutableExists = Test-Path $installedAgentPath
                 
                 if ($agentExecutableExists) {
                     Write-Host "Agent executable verified at $installedAgentPath" -ForegroundColor Green
-                    
-                    # Step 3: Configure the installed agent with the provided parameters
-                    $agentConfigArgs = "-m install -nomesh -silent -log debug -logto `"$AgentLogPath`" -api $RmmServerUrl -client-id $ClientId -site-id $SiteId -agent-type $AgentType -auth $AgentAuthKey"
-                    
-                    Write-Host "Step 3: Running agent configuration: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
-                    
-                    try {
-                        # Run the installed agent with configuration parameters
-                        $agentConfigProcess = Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait -PassThru
-                        
-                        if ($agentConfigProcess.ExitCode -eq 0) {
-                            Write-Host "Agent configuration completed successfully" -ForegroundColor Green
-                        } else {
-                            Write-Host "Agent configuration FAILED with error code: $($agentConfigProcess.ExitCode)" -ForegroundColor Red
-                            
-                            # Check for common errors
-                            if ($agentConfigProcess.ExitCode -eq 1) {
-                                Write-Host "ERROR: Agent configuration failed. This may be due to authentication issues." -ForegroundColor Red
-                            } elseif ($agentConfigProcess.ExitCode -eq 2) {
-                                Write-Host "ERROR: Agent configuration failed. This may be due to WebSocket connection issues." -ForegroundColor Red
-                            }
-                        }
-                    } catch {
-                        Write-Host "Error executing agent configuration: $_" -ForegroundColor Red
-                    }
                 } else {
-                    Write-Host "ERROR: Agent executable not found at $installedAgentPath after installation" -ForegroundColor Red
-                    Write-Host "Installation may have failed or the executable was not created properly" -ForegroundColor Red
+                    Write-Host "WARNING: Agent executable not found at expected location after installation" -ForegroundColor Yellow
+                    Write-Host "Installation may have used a different path or encountered issues" -ForegroundColor Yellow
                 }
                 
                 # Wait for service to appear (it might take a moment after process completes)
