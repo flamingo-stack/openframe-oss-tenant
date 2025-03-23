@@ -52,6 +52,8 @@
         emptyMessage="No history items are available."
         emptyHint="History items will appear here as commands and scripts are executed."
         :filters="filters"
+        sortField="time"
+        sortOrder="-1"
       >
         <Column field="time" header="Execution Time" sortable style="width: 15%">
           <template #body="{ data }">
