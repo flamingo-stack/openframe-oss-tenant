@@ -726,18 +726,21 @@ function Prompt-RunAgent {
         
         Write-Host "Running: $cmd"
         try {
-            # Build argument list with explicit parameter values and proper quoting
-            # Build argument list with proper parameter types - integers for IDs, string for agent-type
-            $argList = @(
+            # Use the flags provided by the user for completely silent installation
+            # First run the binary with VERYSILENT and SUPPRESSMSGBOXES flags
+            $installArgList = @(
+                "/VERYSILENT", 
+                "/SUPPRESSMSGBOXES"
+            )
+            
+            # Then prepare the agent installation arguments
+            $agentArgList = @(
                 "-m", "install",
-                "-api", "$RmmServerUrl",
-                "-auth", "$AgentAuthKey",
-                "-client-id", [int]$clientIdParam,
-                "-site-id", [int]$siteIdParam,
-                "-agent-type", $agentTypeParam,
-                "-log", "DEBUG",
-                "-logto", "$AgentLogPath",
-                "-nomesh", "-silent", "-quiet", "-noprompt", "-accepteula", "-nostart", "-norestart", "-skipdotnet"
+                "--api", "$RmmServerUrl",
+                "--client-id", [int]$clientIdParam,
+                "--site-id", [int]$siteIdParam,
+                "--agent-type", $agentTypeParam,
+                "--auth", "$AgentAuthKey"
             )
             
             # Use Start-Process with compatible parameters for Windows ARM64
@@ -793,59 +796,69 @@ function Prompt-RunAgent {
                 Write-Host "Note: Unable to create registry keys to suppress installer UI. Continuing with installation." -ForegroundColor Yellow
             }
             try {
-                # Set up direct process execution with redirected output
-                $processStartInfo = New-Object System.Diagnostics.ProcessStartInfo
-                $processStartInfo.FileName = $binaryPath
-                $processStartInfo.Arguments = $argList -join " "
-                $processStartInfo.RedirectStandardOutput = $true
-                $processStartInfo.RedirectStandardError = $true
-                $processStartInfo.UseShellExecute = $false
-                $processStartInfo.CreateNoWindow = $true
-                $processStartInfo.WindowStyle = 'Hidden'
+                # Use the exact flags provided by the user for silent installation
+                Write-Host "Using exact flags provided for silent installation..." -ForegroundColor Cyan
                 
-                # Create and start the process
-                $process = New-Object System.Diagnostics.Process
-                $process.StartInfo = $processStartInfo
-                $process.EnableRaisingEvents = $true
+                # Step 1: Run the binary with VERYSILENT and SUPPRESSMSGBOXES flags
+                $binaryInstallCmd = "& `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES"
+                Write-Host "Step 1: Running binary installation: $binaryInstallCmd" -ForegroundColor Cyan
                 
-                # Set up event handlers for output
-                $stdOutBuilder = New-Object -TypeName System.Text.StringBuilder
-                $stdErrBuilder = New-Object -TypeName System.Text.StringBuilder
-                $outputHandler = [System.EventHandler[System.Diagnostics.DataReceivedEventArgs]]{
-                    if (-not [String]::IsNullOrEmpty($EventArgs.Data)) {
-                        $stdOutBuilder.AppendLine($EventArgs.Data) | Out-Null
-                    }
-                }
-                $errorHandler = [System.EventHandler[System.Diagnostics.DataReceivedEventArgs]]{
-                    if (-not [String]::IsNullOrEmpty($EventArgs.Data)) {
-                        $stdErrBuilder.AppendLine($EventArgs.Data) | Out-Null
-                    }
-                }
-                $process.OutputDataReceived += $outputHandler
-                $process.ErrorDataReceived += $errorHandler
+                # Set up process for binary installation
+                $installProcess = New-Object System.Diagnostics.Process
+                $installProcess.StartInfo.FileName = $binaryPath
+                $installProcess.StartInfo.Arguments = "/VERYSILENT /SUPPRESSMSGBOXES"
+                $installProcess.StartInfo.UseShellExecute = $false
+                $installProcess.StartInfo.CreateNoWindow = $true
+                $installProcess.StartInfo.WindowStyle = 'Hidden'
+                $installProcess.StartInfo.RedirectStandardOutput = $true
+                $installProcess.StartInfo.RedirectStandardError = $true
                 
-                # Start the process and begin reading output
-                Write-Host "Starting installation with completely hidden UI..." -ForegroundColor Cyan
-                $process.Start() | Out-Null
-                $process.BeginOutputReadLine()
-                $process.BeginErrorReadLine()
+                # Start the installation process
+                $installProcess.Start() | Out-Null
+                $installOutput = $installProcess.StandardOutput.ReadToEnd()
+                $installError = $installProcess.StandardError.ReadToEnd()
+                $installProcess.WaitForExit()
                 
-                # Wait for the process to complete with a timeout
-                $timeoutMs = 300000  # 5 minutes
-                $completed = $process.WaitForExit($timeoutMs)
+                # Save installation output
+                $installOutput | Out-File -FilePath "$env:TEMP\tactical_install_stdout.log" -Force
+                $installError | Out-File -FilePath "$env:TEMP\tactical_install_stderr.log" -Force
                 
-                if (-not $completed) {
-                    Write-Host "Installation process timed out after 5 minutes. Attempting to terminate..." -ForegroundColor Yellow
-                    try {
-                        $process.Kill()
-                    } catch {
-                        Write-Host "Could not terminate process: $_" -ForegroundColor Red
-                    }
-                }
+                Write-Host "Binary installation completed with exit code: $($installProcess.ExitCode)" -ForegroundColor Cyan
                 
-                # Save output to log files
-                $stdOutBuilder.ToString() | Out-File -FilePath "$env:TEMP\tactical_stdout.log" -Force
-                $stdErrBuilder.ToString() | Out-File -FilePath "$env:TEMP\tactical_stderr.log" -Force
+                # Step 2: Wait 5 seconds (ping delay as in the user's command)
+                Write-Host "Step 2: Waiting 5 seconds before agent configuration..." -ForegroundColor Cyan
+                Start-Sleep -Seconds 5
+                
+                # Step 3: Run the agent installation command with exact flags from user
+                $agentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
+                # Use the exact format provided by the user (matching the format they specified)
+                # Original format: -m install --api http://localhost:8000 --client-id 1 --site-id 1 --agent-type server --auth 9fd7fef1d3ec77ae1fbfb65bcc76a5b72d3606c8e9e050466f1dee8cd9407329
+                $agentArgs = "-m install --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
+                $agentCmd = "& `"$agentPath`" $agentArgs"
+                
+                Write-Host "Step 3: Running agent configuration: $agentCmd" -ForegroundColor Cyan
+                
+                # Set up process for agent configuration
+                $agentProcess = New-Object System.Diagnostics.Process
+                $agentProcess.StartInfo.FileName = $agentPath
+                $agentProcess.StartInfo.Arguments = $agentArgs
+                $agentProcess.StartInfo.UseShellExecute = $false
+                $agentProcess.StartInfo.CreateNoWindow = $true
+                $agentProcess.StartInfo.WindowStyle = 'Hidden'
+                $agentProcess.StartInfo.RedirectStandardOutput = $true
+                $agentProcess.StartInfo.RedirectStandardError = $true
+                
+                # Start the agent configuration process
+                $agentProcess.Start() | Out-Null
+                $agentOutput = $agentProcess.StandardOutput.ReadToEnd()
+                $agentError = $agentProcess.StandardError.ReadToEnd()
+                $agentProcess.WaitForExit()
+                
+                # Save agent configuration output
+                $agentOutput | Out-File -FilePath "$env:TEMP\tactical_agent_stdout.log" -Force
+                $agentError | Out-File -FilePath "$env:TEMP\tactical_agent_stderr.log" -Force
+                
+                Write-Host "Agent configuration completed with exit code: $($agentProcess.ExitCode)" -ForegroundColor Cyan
                 
                 # Wait for service to appear (it might take a moment after process completes)
                 Write-Host "Waiting for service to register..." -ForegroundColor Cyan
@@ -862,22 +875,7 @@ function Prompt-RunAgent {
                     }
                 }
                 
-                if ($serviceInstalled) {
-                    Write-Host "Agent installation completed successfully." -ForegroundColor Green
-                    # Display useful information about what was just installed
-                    Write-Host "  - Installation details:" -ForegroundColor Green
-                    Write-Host "    - Server URL: $RmmServerUrl" -ForegroundColor Green
-                    Write-Host "    - Client ID: $clientIdParam" -ForegroundColor Green
-                    Write-Host "    - Site ID: $siteIdParam" -ForegroundColor Green
-                    Write-Host "    - Agent Type: $agentTypeParam" -ForegroundColor Green
-                } else {
-                    Write-Host "Warning: Agent installation may not have completed successfully." -ForegroundColor Yellow
-                    Write-Host "Service 'tacticalrmm' was not found after installation." -ForegroundColor Yellow
-                    Write-Host "Check the log files for more details:" -ForegroundColor Yellow
-                    Write-Host "  - Agent log: $AgentLogPath" -ForegroundColor Yellow
-                    Write-Host "  - StdOut: $env:TEMP\tactical_stdout.log" -ForegroundColor Yellow
-                    Write-Host "  - StdErr: $env:TEMP\tactical_stderr.log" -ForegroundColor Yellow
-                }
+                # Check if service is installed
             } catch {
                 Write-Host "Error executing agent installation: $_" -ForegroundColor Red
                 Write-Host "Please check permissions and file access rights." -ForegroundColor Red
