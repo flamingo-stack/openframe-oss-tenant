@@ -3,7 +3,7 @@
     <div class="dashboard-grid">
       <!-- Device Statistics -->
       <div class="dashboard-card device-stats">
-        <h3><i class="pi pi-desktop"></i> Device Overview</h3>
+        <h3><i class="pi pi-monitor"></i> Device Overview</h3>
         <template v-if="deviceStats.total > 0">
           <div class="stats-grid">
             <div class="stat-item">
@@ -449,19 +449,21 @@ onMounted(async () => {
 }
 
 .progress-fill.high {
-  background: var(--green-500);
+  background: var(--primary-color);
 }
 
 .progress-fill.medium {
-  background: var(--yellow-500);
+  background: var(--primary-color);
+  opacity: 0.8;
 }
 
 .progress-fill.low {
-  background: var(--red-500);
+  background: var(--primary-color);
+  opacity: 0.6;
 }
 
 .compliance-label {
-  color: var(--surface-0);
+  color: var(--primary-color-text);
   font-weight: 600;
   font-size: 0.9rem;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
@@ -583,4 +585,4 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 }
-</style> 
+</style>      
