@@ -68,23 +68,15 @@ $AgentLogPath = $LogPath -or ""
 $script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder -eq "$true") { "rmmagent" } else { $BuildFolder }
 $SkipRun = $SkipRun -or $false
 
-# Fix parameter values to prevent "True" literals
-if ($ClientId -eq $true) {
-    Write-Host "ERROR: ClientId parameter cannot be 'True'. Please provide a numeric ID." -ForegroundColor Red
-    exit 1
-}
-if ($SiteId -eq $true) {
-    Write-Host "ERROR: SiteId parameter cannot be 'True'. Please provide a numeric ID." -ForegroundColor Red
-    exit 1
-}
-if ($AgentType -eq $true) {
-    Write-Host "Setting default agent type: workstation" -ForegroundColor Yellow
-    $AgentType = "workstation"
-}
-
+# Initialize parameters with defaults if not provided
 $ClientId = $ClientId -or ""
 $SiteId = $SiteId -or ""
 $AgentType = $AgentType -or "workstation"  # default
+
+# Ensure AgentType has a default value
+if ([string]::IsNullOrEmpty($AgentType)) {
+    $AgentType = "workstation"
+}
 
 # Function to display help
 function Show-Help {
@@ -593,38 +585,14 @@ function Prompt-RunAgent {
     }
     
     if ($runNow -match "^[Yy]") {
-        # Fix parameter values to prevent "True" literals
-        if ($ClientId -eq $true) {
-            Write-Host "ERROR: ClientId parameter cannot be 'True'. Please provide a numeric ID." -ForegroundColor Red
-            exit 1
+        # If no log path was specified, create a default one
+        if ([string]::IsNullOrEmpty($AgentLogPath)) {
+            $AgentLogPath = "C:\Windows\Temp\tacticalrmm.log"
+            Write-Host "Using default log path: $AgentLogPath"
         }
         
-        if ($SiteId -eq $true) {
-            Write-Host "ERROR: SiteId parameter cannot be 'True'. Please provide a numeric ID." -ForegroundColor Red
-            exit 1
-        }
-        
-        if ($AgentType -eq $true) {
-            Write-Host "Setting default agent type: workstation" -ForegroundColor Yellow
-            $AgentType = "workstation"
-        }
-        
-        # Only prompt for values in interactive mode
-        if ($InteractiveMode) {
-            if ([string]::IsNullOrEmpty($ClientId)) {
-                $ClientId = Read-Host "Enter client-id"
-            }
-            if ([string]::IsNullOrEmpty($SiteId)) {
-                $SiteId = Read-Host "Enter site-id"
-            }
-            if ([string]::IsNullOrEmpty($AgentType)) {
-                $AgentType = Read-Host "Agent type (server/workstation) [workstation]"
-                if ([string]::IsNullOrEmpty($AgentType)) {
-                    $AgentType = "workstation"
-                }
-            }
-        } else {
-            # In non-interactive mode, ensure we have all required values
+        # In non-interactive mode, ensure we have all required values
+        if (-not $InteractiveMode) {
             if ([string]::IsNullOrEmpty($ClientId)) {
                 Write-Host "ERROR: ClientId is required in non-interactive mode" -ForegroundColor Red
                 exit 1
@@ -637,28 +605,6 @@ function Prompt-RunAgent {
                 $AgentType = "workstation"
                 Write-Host "Using default agent type: $AgentType" -ForegroundColor Yellow
             }
-        }
-        
-        # If no log path was specified, create a default one
-        if ([string]::IsNullOrEmpty($AgentLogPath)) {
-            $AgentLogPath = "C:\Windows\Temp\tacticalrmm.log"
-            Write-Host "Using default log path: $AgentLogPath"
-        }
-        
-        # Fix parameter values to prevent "True" literals
-        if ($ClientId -eq $true) {
-            Write-Host "ERROR: ClientId parameter cannot be 'True'. Please provide a numeric ID." -ForegroundColor Red
-            exit 1
-        }
-        
-        if ($SiteId -eq $true) {
-            Write-Host "ERROR: SiteId parameter cannot be 'True'. Please provide a numeric ID." -ForegroundColor Red
-            exit 1
-        }
-        
-        if ($AgentType -eq $true) {
-            Write-Host "Setting default agent type: workstation" -ForegroundColor Yellow
-            $AgentType = "workstation"
         }
         
         # Create the proper binary path
@@ -709,6 +655,8 @@ function Prompt-RunAgent {
             
             if ($process.ExitCode -ne 0) {
                 Write-Host "Warning: Agent installation process exited with code $($process.ExitCode)" -ForegroundColor Yellow
+                Write-Host "Check the log file for more details: $AgentLogPath" -ForegroundColor Yellow
+                # Don't exit here to allow for cleanup and logging
             } else {
                 Write-Host "Agent installation completed successfully." -ForegroundColor Green
             }
@@ -761,31 +709,36 @@ function Prompt-AllInputs {
     if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentAuthKey)) {
         Prompt-IfEmpty -VarName "AgentAuthKey" -PromptMsg "Agent Auth Key (string from your RMM)"
     }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true) {
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($ClientId)) {
         if ($InteractiveMode) {
             Prompt-IfEmpty -VarName "ClientId" -PromptMsg "Client ID"
         } else {
-            Write-Host "ERROR: Client ID parameter is required and cannot be 'True'" -ForegroundColor Red
+            Write-Host "ERROR: ClientId is required in non-interactive mode" -ForegroundColor Red
             exit 1
         }
     }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true) {
+    Write-Host "Using provided Client ID: $ClientId" -ForegroundColor Green
+    
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId)) {
         if ($InteractiveMode) {
             Prompt-IfEmpty -VarName "SiteId" -PromptMsg "Site ID"
         } else {
-            Write-Host "ERROR: Site ID parameter is required and cannot be 'True'" -ForegroundColor Red
+            Write-Host "ERROR: SiteId is required in non-interactive mode" -ForegroundColor Red
             exit 1
         }
     }
-    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true) {
+    Write-Host "Using provided Site ID: $SiteId" -ForegroundColor Green
+    
+    if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType)) {
         if ($InteractiveMode) {
             Prompt-IfEmpty -VarName "AgentType" -PromptMsg "Agent type (server/workstation) [workstation]" -DefaultVal "workstation"
         } else {
-            # Set default value for AgentType if it's not provided or is 'True'
+            # Set default value for AgentType if it's not provided
             $AgentType = "workstation"
             Write-Host "Using default agent type: $AgentType" -ForegroundColor Yellow
         }
     }
+    Write-Host "Using agent type: $AgentType" -ForegroundColor Green
     # Only prompt for log path if explicitly requested
     if ($InteractiveMode -or (-not [string]::IsNullOrEmpty($AgentLogPath) -and [string]::IsNullOrEmpty($AgentLogPath))) {
         Prompt-IfEmpty -VarName "AgentLogPath" -PromptMsg "Agent log path"
