@@ -420,75 +420,8 @@ if ($Help) {
     Show-Help
 }
 
-# Create binaries directory if it doesn't exist
-$binariesDir = Join-Path $PSScriptRoot "binaries"
-if (-not (Test-Path $binariesDir)) {
-    New-Item -ItemType Directory -Path $binariesDir -Force | Out-Null
-}
-
-# Define available versions and their URLs
-$agentVersions = @{
-    "2.9.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
-    "2.8.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.8.0/tacticalagent-v2.8.0-windows-amd64.exe"
-    "2.7.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.7.0/tacticalagent-v2.7.0-windows-amd64.exe"
-    "2.6.2" = "https://github.com/amidaware/rmmagent/releases/download/v2.6.2/tacticalagent-v2.6.2-windows-amd64.exe"
-    "2.6.1" = "https://github.com/amidaware/rmmagent/releases/download/v2.6.1/tacticalagent-v2.6.1-windows-amd64.exe"
-}
-
-# Function to download binary
-function Download-AgentBinary {
-    param (
-        [string]$Version,
-        [string]$Url
-    )
-    
-    $fileName = "tacticalagent-v${Version}-windows-amd64.exe"
-    $outputPath = Join-Path $binariesDir $fileName
-    
-    Write-Host "Downloading Tactical RMM agent version ${Version}..." -ForegroundColor Yellow
-    try {
-        Invoke-WebRequest -Uri $Url -OutFile $outputPath
-        Write-Host "Download completed successfully." -ForegroundColor Green
-        return $outputPath
-    } catch {
-        Write-Host "Failed to download version ${Version}: ${_}" -ForegroundColor Red
-        return $null
-    }
-}
-
-# Try to download the latest version first
-$latestVersion = $agentVersions.Keys | Sort-Object -Descending | Select-Object -First 1
-$latestUrl = $agentVersions[$latestVersion]
-$binaryPath = Download-AgentBinary -Version $latestVersion -Url $latestUrl
-
-# If latest version fails, try previous versions
-if (-not $binaryPath) {
-    foreach ($version in ($agentVersions.Keys | Sort-Object -Descending | Select-Object -Skip 1)) {
-        $url = $agentVersions[$version]
-        $binaryPath = Download-AgentBinary -Version $version -Url $url
-        if ($binaryPath) { break }
-    }
-}
-
-# If all downloads fail, exit
-if (-not $binaryPath) {
-    Write-Error "Failed to download any version of the Tactical RMM agent."
-    Write-Host "Please check your internet connection and try again." -ForegroundColor Yellow
-    exit 1
-}
-
-# Update the binary path variable for use in the rest of the script
-$script:binaryPath = $binaryPath
-
 # Main script flow
 try {
-    # Verify binary exists (now using the downloaded binary)
-    if (-not (Test-Path $script:binaryPath)) {
-        Write-Error "Binary not found at $script:binaryPath"
-        Write-Host "Please ensure the binary exists in the binaries directory." -ForegroundColor Yellow
-        exit 1
-    }
-
     # Check for required parameters in non-interactive mode
     if ($PSCmdlet.ParameterSetName -eq 'NonInteractive') {
         $missingParams = @()
@@ -529,20 +462,69 @@ try {
     Write-Host "  - Secure Connection: $($script:Secure)" -ForegroundColor White
     Write-Host "  - Full RMM URL: '${script:RmmServerUrl}'" -ForegroundColor White
 
-    # Follow exact 3-step flow as requested by user
-    Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
+    # STEP 1: Check for and uninstall any existing installation
+    Write-Host "=== STEP 1: Checking for and removing any existing installation ===" -ForegroundColor Cyan
     $tacticalInstalled = Check-TacticalInstalled
 
-    # 2. If yes, uninstall
     if ($tacticalInstalled) {
-        Write-Host "=== STEP 2: Tactical RMM is already installed. Uninstalling... ===" -ForegroundColor Yellow
+        Write-Host "Found existing installation. Proceeding with uninstallation..." -ForegroundColor Yellow
         Uninstall-TacticalRMM
+        # Add extra verification and wait after uninstallation
+        Start-Sleep -Seconds 5
+        $tacticalInstalled = Check-TacticalInstalled
+        if ($tacticalInstalled) {
+            Write-Error "Failed to completely remove existing installation. Please try again."
+            exit 1
+        }
     } else {
-        Write-Host "=== STEP 2: Tactical RMM is not installed. Skipping uninstallation. ===" -ForegroundColor Green
+        Write-Host "No existing installation found. Proceeding with fresh installation..." -ForegroundColor Green
     }
 
-    # 3. Install from binary
-    Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
+    # STEP 2: Download and prepare new binary
+    Write-Host "=== STEP 2: Downloading and preparing new binary ===" -ForegroundColor Cyan
+    
+    # Create binaries directory if it doesn't exist
+    $binariesDir = Join-Path $PSScriptRoot "binaries"
+    if (-not (Test-Path $binariesDir)) {
+        New-Item -ItemType Directory -Path $binariesDir -Force | Out-Null
+    }
+
+    # Define available versions and their URLs
+    $agentVersions = @{
+        "2.9.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
+        "2.8.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.8.0/tacticalagent-v2.8.0-windows-amd64.exe"
+        "2.7.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.7.0/tacticalagent-v2.7.0-windows-amd64.exe"
+        "2.6.2" = "https://github.com/amidaware/rmmagent/releases/download/v2.6.2/tacticalagent-v2.6.2-windows-amd64.exe"
+        "2.6.1" = "https://github.com/amidaware/rmmagent/releases/download/v2.6.1/tacticalagent-v2.6.1-windows-amd64.exe"
+    }
+
+    # Try to download the latest version first
+    $latestVersion = $agentVersions.Keys | Sort-Object -Descending | Select-Object -First 1
+    $latestUrl = $agentVersions[$latestVersion]
+    $binaryPath = Download-AgentBinary -Version $latestVersion -Url $latestUrl
+
+    # If latest version fails, try previous versions
+    if (-not $binaryPath) {
+        foreach ($version in ($agentVersions.Keys | Sort-Object -Descending | Select-Object -Skip 1)) {
+            $url = $agentVersions[$version]
+            $binaryPath = Download-AgentBinary -Version $version -Url $url
+            if ($binaryPath) { break }
+        }
+    }
+
+    # If all downloads fail, exit
+    if (-not $binaryPath) {
+        Write-Error "Failed to download any version of the Tactical RMM agent."
+        Write-Host "Please check your internet connection and try again." -ForegroundColor Yellow
+        exit 1
+    }
+
+    # Update the binary path variable for use in the rest of the script
+    $script:binaryPath = $binaryPath
+
+    # STEP 3: Install and configure new agent
+    Write-Host "=== STEP 3: Installing and configuring new agent ===" -ForegroundColor Cyan
+    
     # Apply WebSocket protocol modifications based on secure flag
     $connectionType = if ($script:Secure) { "secure" } else { "non-secure" }
     Write-Host "Setting WebSocket protocol for ${connectionType} connection..." -ForegroundColor Yellow
