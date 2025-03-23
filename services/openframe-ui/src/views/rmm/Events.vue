@@ -46,7 +46,7 @@
       <ModuleTable 
         :items="historyItems" 
         :loading="loading"
-        :searchFields="['command', 'username', 'type', 'time', 'script_name']"
+        :searchFields="['command', 'username', 'type', 'time', 'script_name', 'execution_time']"
         emptyIcon="pi pi-history"
         emptyTitle="No History Items"
         emptyMessage="No history items are available."
@@ -58,12 +58,19 @@
             {{ formatTime(data.time) }}
           </template>
         </Column>
+        <Column field="execution_time" header="Execution Time" sortable style="width: 10%">
+          <template #body="{ data }">
+            {{ data.script_results && data.script_results.execution_time ? 
+               `${data.script_results.execution_time.toFixed(2)} sec` : 
+               '-' }}
+          </template>
+        </Column>
         <Column field="type" header="Type" sortable style="width: 10%">
           <template #body="{ data }">
             <Tag :value="formatType(data.type)" :severity="getTypeSeverity(data.type)" />
           </template>
         </Column>
-        <Column field="command" header="Command/Script" sortable style="width: 50%">
+        <Column field="command" header="Command/Script" sortable style="width: 45%">
           <template #body="{ data }">
             {{ data.script_name || data.command }}
           </template>
@@ -211,6 +218,11 @@ const agentOptions = computed(() => {
 
 const formatTime = (timestamp: string) => {
   return new Date(timestamp).toLocaleString();
+};
+
+const formatExecutionTime = (timestamp: string) => {
+  const date = new Date(timestamp);
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
 };
 
 const formatType = (type: string) => {
