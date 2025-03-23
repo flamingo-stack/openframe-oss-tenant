@@ -33,7 +33,7 @@
             <div class="flex align-items-center gap-2">
               <i :class="getStatusIcon(execution.status)" :style="{ color: getStatusColor(execution.status) }" />
               <span class="font-medium">{{ execution.deviceName }}</span>
-              <span v-if="execution.agent_info" class="text-sm text-color-secondary">({{ execution.agent_info.plat || 'Unknown Platform' }})</span>
+              <span v-if="execution.agent_info" class="text-sm text-color-secondary">({{ execution.agent_info.platform || execution.agent_info.plat || 'Unknown Platform' }})</span>
             </div>
             <span class="text-sm text-color-secondary">{{ formatTimestamp(execution.timestamp) }}</span>
           </div>
@@ -41,7 +41,7 @@
           <!-- Add agent info section when available -->
           <div v-if="execution.agent_info" class="agent-info mb-3">
             <div class="flex align-items-center gap-2">
-              <span class="text-sm">OS: <span class="font-medium">{{ execution.agent_info.operating_system || 'Unknown' }}</span></span>
+              <span class="text-sm">OS: <span class="font-medium">{{ execution.agent_info.os || execution.agent_info.operating_system || 'Unknown' }}</span></span>
               <span class="text-sm">Status: <span class="font-medium">{{ execution.agent_info.status || 'Unknown' }}</span></span>
             </div>
           </div>
@@ -197,8 +197,11 @@ const fetchAgentInfo = async () => {
     
     if (!agentIds.size) return;
     
+    console.log('Fetching agent info for IDs:', Array.from(agentIds));
+    
     // Fetch agent information
     const response = await restClient.get(`${API_URL}/agents/`);
+    console.log('Agent API response:', response);
     const agents = Array.isArray(response) ? response : [];
     
     // Update executions with agent info
@@ -206,11 +209,16 @@ const fetchAgentInfo = async () => {
       if (exec.agent_id) {
         const agentInfo = agents.find(a => a.agent_id === exec.agent_id);
         if (agentInfo) {
+          console.log('Matched agent info for', exec.deviceName, ':', agentInfo);
           return { ...exec, agent_info: agentInfo };
+        } else {
+          console.log('No matching agent found for ID:', exec.agent_id);
         }
       }
       return exec;
     });
+    
+    console.log('Updated executions with agent info:', executions.value);
   } catch (error) {
     console.error('Failed to fetch agent information:', error);
     toastService.showError('Failed to fetch agent information');
@@ -349,5 +357,7 @@ defineExpose({
   border-radius: var(--border-radius);
   padding: 0.75rem;
   font-size: 0.875rem;
+  border-left: 3px solid var(--primary-color);
+  margin-bottom: 1rem;
 }
-</style>                                                                
+</style>                                                                                        
