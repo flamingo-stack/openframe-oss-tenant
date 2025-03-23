@@ -81,8 +81,8 @@ param (
         Mandatory = $true,
         HelpMessage = 'Client ID for the agent'
     )]
-    [ValidateNotNullOrEmpty()]
-    [string]$ClientId,
+    [ValidateRange(1, [int]::MaxValue)]
+    [int]$ClientId,
 
     [Parameter(
         ParameterSetName = 'Interactive',
@@ -93,8 +93,8 @@ param (
         Mandatory = $true,
         HelpMessage = 'Site ID for the agent'
     )]
-    [ValidateNotNullOrEmpty()]
-    [string]$SiteId,
+    [ValidateRange(1, [int]::MaxValue)]
+    [int]$SiteId,
 
     [Parameter(
         ParameterSetName = 'Interactive',
@@ -139,8 +139,7 @@ function Prompt-IfEmpty {
     $currVal = Get-Variable -Name $actualVarName -ValueOnly -ErrorAction SilentlyContinue
     
     # If value is empty or null, use default or prompt for value
-    # Don't use boolean comparison for string parameters
-    if ([string]::IsNullOrEmpty($currVal) -or $currVal -eq $true -or $currVal -eq "True") {
+    if ([string]::IsNullOrEmpty($currVal)) {
         if ($Silent) {
             # In silent mode, always use default value without prompting
             if (-not [string]::IsNullOrEmpty($DefaultVal)) {
@@ -368,26 +367,8 @@ $script:Secure = $Secure
 $script:AgentAuthKey = if ([string]::IsNullOrEmpty($AuthKey) -or $AuthKey -eq $true -or $AuthKey -eq "True") { "" } else { $AuthKey }
 
 # Initialize parameters with defaults if not provided
-# Parse ClientId and SiteId as integers since that's what the agent expects
-# Use proper integer parsing with TryParse for ClientId
-$tempClientId = 0
-if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
-    $tempValue = 0
-    if ([int]::TryParse($ClientId, [ref]$tempValue)) {
-        $tempClientId = $tempValue
-    }
-}
-[int]$script:ClientId = $tempClientId
-
-# Use proper integer parsing with TryParse for SiteId
-$tempSiteId = 0
-if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
-    $tempValue = 0
-    if ([int]::TryParse($SiteId, [ref]$tempValue)) {
-        $tempSiteId = $tempValue
-    }
-}
-[int]$script:SiteId = $tempSiteId
+$script:ClientId = $ClientId
+$script:SiteId = $SiteId
 [string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "" } else { "$AgentType" }
 
 # Show help if requested
