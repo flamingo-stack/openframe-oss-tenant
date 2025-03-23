@@ -404,8 +404,90 @@ if (-not (Test-Path $binaryPath) -and (Test-Path $alternativePath)) {
 }
 
 if (-not (Test-Path $binaryPath)) {
-    Write-Host "ERROR: Binary not found at $binaryPath" -ForegroundColor Red
-    Write-Host "Please ensure the binary exists in the script directory or in the binaries subfolder." -ForegroundColor Yellow
+    Write-Host "AMD64 binary not found. Downloading..." -ForegroundColor Yellow
+    
+    # Create binaries directory if it doesn't exist
+    $binariesDir = Join-Path $PSScriptRoot "binaries"
+    if (-not (Test-Path $binariesDir)) {
+        New-Item -Path $binariesDir -ItemType Directory -Force | Out-Null
+    }
+    
+    # Download the binary from GitHub releases
+    $downloadUrl = "https://github.com/amidaware/tacticalrmm/releases/latest/download/tacticalagent-windows-amd64.exe"
+    $downloadPath = Join-Path $binariesDir $AMD64_BINARY
+    
+    Write-Host "Downloading from: $downloadUrl" -ForegroundColor Cyan
+    
+    try {
+        # Use TLS 1.2 for HTTPS connections
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        
+        # Create a WebClient with proper headers to avoid getting HTML content
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("User-Agent", "PowerShell/5.1")
+        $webClient.Headers.Add("Accept", "application/octet-stream")
+        
+        # Alternative download URLs to try
+        $downloadUrls = @(
+            "https://github.com/amidaware/tacticalrmm/releases/latest/download/tacticalagent-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/latest/download/rmmagent-windows-amd64.exe",
+            "https://github.com/amidaware/tacticalrmm/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
+        )
+        
+        $downloadSuccess = $false
+        foreach ($url in $downloadUrls) {
+            try {
+                Write-Host "Attempting download from: $url" -ForegroundColor Cyan
+                $webClient.DownloadFile($url, $downloadPath)
+                
+                if (Test-Path $downloadPath) {
+                    $fileInfo = Get-Item $downloadPath
+                    if ($fileInfo.Length -gt 1000000) { # Check if file is at least 1MB
+                        Write-Host "Successfully downloaded AMD64 binary to $downloadPath (Size: $($fileInfo.Length) bytes)" -ForegroundColor Green
+                        Copy-Item $downloadPath $binaryPath
+                        Write-Host "Copied AMD64 binary to $binaryPath" -ForegroundColor Green
+                        $downloadSuccess = $true
+                        break
+                    } else {
+                        Write-Host "Downloaded file is too small, likely not a valid executable. Trying next URL..." -ForegroundColor Yellow
+                        Remove-Item $downloadPath -Force
+                    }
+                }
+            } catch {
+                Write-Host "Error downloading from $url: $_" -ForegroundColor Yellow
+                # Continue to next URL
+            }
+        }
+        
+        if (-not $downloadSuccess) {
+            throw "Failed to download a valid binary from any of the available URLs"
+        }
+    } catch {
+        Write-Host "Error downloading AMD64 binary: $_" -ForegroundColor Red
+        
+        # Fallback: Check if we have a local copy in the script directory
+        $localCopyPath = Join-Path $PSScriptRoot "tacticalagent-windows-amd64.exe"
+        if (Test-Path $localCopyPath) {
+            Write-Host "Found local copy of AMD64 binary at $localCopyPath" -ForegroundColor Yellow
+            Copy-Item $localCopyPath $binaryPath
+            Write-Host "Using local copy of AMD64 binary" -ForegroundColor Green
+        } else {
+            Write-Host "No local copy found. Please download the Tactical RMM agent binary manually and place it in the script directory." -ForegroundColor Red
+            exit 1
+        }
+    }
+}
+
+# Verify the binary exists and is valid
+if (-not (Test-Path $binaryPath)) {
+    Write-Host "ERROR: Binary not found at $binaryPath after download attempt" -ForegroundColor Red
+    exit 1
+}
+
+# Check if file is empty or too small to be a valid executable
+$fileInfo = Get-Item $binaryPath
+if ($fileInfo.Length -lt 1000000) { # Assuming a valid executable is at least 1MB
+    Write-Host "ERROR: Binary file appears to be invalid (too small)" -ForegroundColor Red
     exit 1
 }
 
