@@ -30,9 +30,6 @@
 # Parse Script Arguments
 ############################
 
-# Include agent executable verification function
-. "$PSScriptRoot\Test-AgentExecutable.ps1"
-
 param (
     [string]$OrgName,
     [string]$Email,
@@ -40,21 +37,24 @@ param (
     [string]$AuthKey,
     [string]$ClientId,
     [string]$SiteId,
-    [string]$AgentType = "workstation",
-    [string]$LogPath = "C:\logs\tactical.log",
-    [string]$BuildFolder = "rmmagent",
-    [switch]$SkipRun,
-    [switch]$Help,
-    [switch]$Interactive,
-    [switch]$Silent = $true,
-    [string]$LocalMeshPath,
-    [string]$MeshDir,
-    [string]$CertPath,
-    [string]$AgentDescription,
-    [string]$ProxyServer,
-    [switch]$NoMesh = $true,
+    [string]$AgentType = "workstation"
+    [string]$LogPath = "C:\logs\tactical.log"
+    [string]$BuildFolder = "rmmagent"
+    [switch]$SkipRun
+    [switch]$Help
+    [switch]$Interactive
+    [switch]$Silent = $true
+    [string]$LocalMeshPath
+    [string]$MeshDir
+    [string]$CertPath
+    [string]$AgentDescription
+    [string]$ProxyServer
+    [switch]$NoMesh = $true
     [string]$LogLevel = "debug"
 )
+
+# Include agent executable verification function
+. "$PSScriptRoot\Test-AgentExecutable.ps1"
 
 # Set global silent installation flag - true if Silent switch is provided or any parameters are provided
 $script:SilentInstall = $Silent -or ($PSBoundParameters.Count -gt 0)
