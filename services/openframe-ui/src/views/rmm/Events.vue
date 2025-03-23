@@ -52,8 +52,6 @@
         emptyMessage="No history items are available."
         emptyHint="History items will appear here as commands and scripts are executed."
         :filters="filters"
-        sortField="time"
-        sortOrder="-1"
       >
         <Column field="time" header="Execution Time" sortable style="width: 15%">
           <template #body="{ data }">
@@ -284,6 +282,9 @@ const fetchHistory = async () => {
     
     const response = await restClient.get<HistoryEntry[]>(endpoint);
     const newHistory = Array.isArray(response) ? response : [];
+    
+    // Sort history items by time in descending order (most recent first)
+    newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     
     // Only update the UI if data has changed
     if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
