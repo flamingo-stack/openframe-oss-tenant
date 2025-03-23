@@ -260,6 +260,8 @@ function Uninstall-TacticalRMM {
             Write-Host "Stopping Tactical RMM service..." -ForegroundColor Yellow
             Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
             Write-Host "Service stopped." -ForegroundColor Green
+            # Wait for service to fully stop
+            Start-Sleep -Seconds 2
         }
     } catch {
         Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
@@ -279,10 +281,14 @@ function Uninstall-TacticalRMM {
         Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
         Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
         Write-Host "Uninstallation completed." -ForegroundColor Green
+        # Wait for uninstaller to complete
+        Start-Sleep -Seconds 5
     } elseif ($uninstallerX86Exists) {
         Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
         Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait
         Write-Host "Uninstallation completed." -ForegroundColor Green
+        # Wait for uninstaller to complete
+        Start-Sleep -Seconds 5
     } else {
         Write-Host "No uninstaller found. Attempting manual cleanup..." -ForegroundColor Yellow
         
@@ -293,6 +299,8 @@ function Uninstall-TacticalRMM {
                 Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
                 & sc.exe delete "tacticalrmm"
                 Write-Host "Service removed." -ForegroundColor Green
+                # Wait for service removal to complete
+                Start-Sleep -Seconds 2
             }
         } catch {
             Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
@@ -312,6 +320,31 @@ function Uninstall-TacticalRMM {
         } catch {
             Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
         }
+    }
+
+    # Verify uninstallation
+    Write-Host "Verifying uninstallation..." -ForegroundColor Yellow
+    $maxAttempts = 3
+    $attempt = 1
+    $uninstallComplete = $false
+
+    while (-not $uninstallComplete -and $attempt -le $maxAttempts) {
+        $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+        $programFilesExists = Test-Path "$programFilesPath\TacticalAgent"
+        $programFilesX86Exists = Test-Path "$programFilesX86Path\TacticalAgent"
+
+        if (-not $service -and -not $programFilesExists -and -not $programFilesX86Exists) {
+            $uninstallComplete = $true
+            Write-Host "Uninstallation verified successfully." -ForegroundColor Green
+        } else {
+            Write-Host "Uninstallation verification attempt $attempt of $maxAttempts..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 2
+            $attempt++
+        }
+    }
+
+    if (-not $uninstallComplete) {
+        Write-Host "Warning: Could not verify complete uninstallation. Some components may still be present." -ForegroundColor Yellow
     }
 }
 
