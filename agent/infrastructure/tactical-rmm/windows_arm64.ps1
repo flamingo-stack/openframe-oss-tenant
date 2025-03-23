@@ -31,7 +31,7 @@ param (
     [string]$ClientId = "1",
     [string]$SiteId = "1",
     [string]$AgentType = "workstation",
-    [string]$LogPath = "C:\logs\tactical.log",
+    [string]$LogPath,
     [switch]$Help
 )
 
@@ -540,7 +540,10 @@ Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" 
 Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID" -DefaultVal "1"
 Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID" -DefaultVal "1"
 Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type" -DefaultVal "workstation"
-Prompt-IfEmpty -VarName "script:AgentLogPath" -PromptMsg "Enter log path" -DefaultVal "C:\logs\tactical.log"
+# Make LogPath optional - only prompt if explicitly requested
+if (-not [string]::IsNullOrEmpty($LogPath)) {
+    Prompt-IfEmpty -VarName "script:AgentLogPath" -PromptMsg "Enter log path" -DefaultVal ""
+}
 
 # Display parameters for installation
 Write-Host "Using parameters for installation:" -ForegroundColor Cyan
@@ -548,7 +551,11 @@ Write-Host "  - Client ID: ${script:ClientId} (type: $(${script:ClientId}.GetTyp
 Write-Host "  - Site ID: ${script:SiteId} (type: $(${script:SiteId}.GetType().Name))" -ForegroundColor White
 Write-Host "  - Agent Type: '${script:AgentType}' (type: $(${script:AgentType}.GetType().Name))" -ForegroundColor White
 Write-Host "  - RMM URL: '${script:RmmServerUrl}'" -ForegroundColor White
-Write-Host "  - Log Path: '${script:AgentLogPath}'" -ForegroundColor White
+if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
+    Write-Host "  - Log Path: '${script:AgentLogPath}'" -ForegroundColor White
+} else {
+    Write-Host "  - Log Path: Using agent default" -ForegroundColor White
+}
 
 # Follow exact 3-step flow as requested by user
 Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
@@ -597,8 +604,12 @@ if (Test-Path $installedAgentPath) {
         $agentConfigArgs += " -auth `"$script:AgentAuthKey`""
     }
     $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -log `"DEBUG`""
+    # Only add LogPath if explicitly provided
     if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
         $agentConfigArgs += " -logto `"$script:AgentLogPath`""
+        Write-Host "Using custom log path: $script:AgentLogPath" -ForegroundColor Cyan
+    } else {
+        Write-Host "Using agent default log path" -ForegroundColor Cyan
     }
     $agentConfigArgs += " -nomesh -silent"
     
