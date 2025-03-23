@@ -421,13 +421,15 @@ try {
         }
     }
 
-    # Prompt for missing values if not provided
-    Prompt-IfEmpty -VarName "script:RmmHost" -PromptMsg "Enter RMM server hostname or IP" -DefaultVal "localhost"
-    Prompt-IfEmpty -VarName "script:RmmPort" -PromptMsg "Enter RMM server port" -DefaultVal "8000"
-    Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
-    Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID"
-    Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID"
-    Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type"
+    # Only prompt for values if we're in interactive mode and values are missing
+    if ($PSCmdlet.ParameterSetName -eq 'Interactive') {
+        Prompt-IfEmpty -VarName "script:RmmHost" -PromptMsg "Enter RMM server hostname or IP" -DefaultVal "localhost"
+        Prompt-IfEmpty -VarName "script:RmmPort" -PromptMsg "Enter RMM server port" -DefaultVal "8000"
+        Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
+        Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID"
+        Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID"
+        Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type"
+    }
 
     # Construct the full RMM URL based on parameters
     $protocol = if ($script:Secure) { "https" } else { "http" }
