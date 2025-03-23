@@ -585,4 +585,5 @@ onUnmounted(() => {
 :deep(.description-cell) {
   max-width: 500px;
 }
+</style>
 
