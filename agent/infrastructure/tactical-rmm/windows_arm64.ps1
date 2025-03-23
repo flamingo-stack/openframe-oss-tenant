@@ -115,7 +115,7 @@ function Show-Help {
 }
 
 # Show help if requested or if no parameters provided
-if ($Help) {
+if ($Help -or $args.Count -eq 0) {
     Show-Help
 }
 
@@ -129,7 +129,7 @@ function Set-WebSocketProtocolEnvironment {
     )
     
     $protocol = if ($Secure) { "wss" } else { "ws" }
-    Write-Host "Setting environment variables to use WebSocket protocol $protocol://..." -ForegroundColor Yellow
+    Write-Host "Setting environment variables to use WebSocket protocol ${protocol}://..." -ForegroundColor Yellow
     
     # Set environment variables to override WebSocket protocol
     [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Process)
@@ -377,7 +377,8 @@ if ($tacticalInstalled) {
 # 3. Install from binary
 Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
 # Apply WebSocket protocol modifications based on secure flag
-Write-Host "Setting WebSocket protocol for ${if ($script:Secure) { "secure" } else { "non-secure" }} connection..." -ForegroundColor Yellow
+$connectionType = if ($script:Secure) { "secure" } else { "non-secure" }
+Write-Host "Setting WebSocket protocol for ${connectionType} connection..." -ForegroundColor Yellow
 Set-WebSocketProtocolEnvironment -Secure $script:Secure
 Set-WebSocketRegistrySettings -Secure $script:Secure
 
