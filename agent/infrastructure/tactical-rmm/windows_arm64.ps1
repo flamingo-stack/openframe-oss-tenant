@@ -69,10 +69,27 @@ $script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder
 $SkipRun = $SkipRun -or $false
 
 # Initialize parameters with defaults if not provided
-# Use explicit string casting to ensure parameters are treated as strings, not booleans
-[string]$script:ClientId = if ($ClientId -eq $true) { "" } else { "$ClientId" }
-[string]$script:SiteId = if ($SiteId -eq $true) { "" } else { "$SiteId" }
-[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true) { "workstation" } else { "$AgentType" }
+# Parse ClientId and SiteId as integers since that's what the agent expects
+# Use proper integer parsing with TryParse for ClientId
+$tempClientId = 1
+if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
+    $tempValue = 0
+    if ([int]::TryParse($ClientId, [ref]$tempValue)) {
+        $tempClientId = $tempValue
+    }
+}
+[int]$script:ClientId = $tempClientId
+
+# Use proper integer parsing with TryParse for SiteId
+$tempSiteId = 1
+if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
+    $tempValue = 0
+    if ([int]::TryParse($SiteId, [ref]$tempValue)) {
+        $tempSiteId = $tempValue
+    }
+}
+[int]$script:SiteId = $tempSiteId
+[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "workstation" } else { "$AgentType" }
 
 # Ensure AgentType has a default value
 if ([string]::IsNullOrEmpty($AgentType)) {
@@ -647,49 +664,83 @@ function Prompt-RunAgent {
         
         # Ensure parameters are passed correctly without being converted to "True" literals
         # Use explicit string values to prevent boolean conversion and provide defaults
-        [string]$clientIdParam = if ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True") { "1" } else { "$ClientId" }
-        [string]$siteIdParam = if ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True") { "1" } else { "$SiteId" }
+        # ClientId and SiteId must be integers, not strings, for the agent installation command
+        # Use proper integer parsing with TryParse
+        $clientIdParam = 1
+        if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
+            $tempValue = 0
+            if ([int]::TryParse($ClientId, [ref]$tempValue)) {
+                $clientIdParam = $tempValue
+            }
+        }
+        [int]$clientIdParam = $clientIdParam
+
+        $siteIdParam = 1
+        if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
+            $tempValue = 0
+            if ([int]::TryParse($SiteId, [ref]$tempValue)) {
+                $siteIdParam = $tempValue
+            }
+        }
+        [int]$siteIdParam = $siteIdParam
+
         [string]$agentTypeParam = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "workstation" } else { "$AgentType" }
         
         Write-Host "Using parameters for installation:" -ForegroundColor Green
-        Write-Host "  - Client ID: '$clientIdParam'" -ForegroundColor Green
-        Write-Host "  - Site ID: '$siteIdParam'" -ForegroundColor Green
-        Write-Host "  - Agent Type: '$agentTypeParam'" -ForegroundColor Green
+        Write-Host "  - Client ID: $clientIdParam (type: $($clientIdParam.GetType().Name))" -ForegroundColor Green
+        Write-Host "  - Site ID: $siteIdParam (type: $($siteIdParam.GetType().Name))" -ForegroundColor Green
+        Write-Host "  - Agent Type: '$agentTypeParam' (type: $($agentTypeParam.GetType().Name))" -ForegroundColor Green
         
-        # Build command with explicit parameter values and proper quoting
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$clientIdParam`" -site-id `"$siteIdParam`" -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
+        # Build command with explicit parameter values - no quotes for integer parameters
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
         
         Write-Host "Running: $cmd"
         try {
             # Build argument list with explicit parameter values and proper quoting
+            # Build argument list with proper parameter types - integers for IDs, string for agent-type
             $argList = @(
                 "-m", "install",
                 "-api", "$RmmServerUrl",
                 "-auth", "$AgentAuthKey",
-                "-client-id", $clientIdParam,
-                "-site-id", $siteIdParam,
+                "-client-id", [int]$clientIdParam,
+                "-site-id", [int]$siteIdParam,
                 "-agent-type", $agentTypeParam,
                 "-log", "DEBUG",
                 "-logto", "$AgentLogPath",
                 "-nomesh", "-silent", "-quiet"
             )
             
-            # Use Start-Process with WindowStyle Hidden to prevent UI prompts
+            # Use Start-Process with maximum silence parameters to prevent any UI prompts
             $processParams = @{
                 FilePath = $binaryPath
                 ArgumentList = $argList
-                WindowStyle = 'Hidden'
+                NoNewWindow = $true
                 Wait = $true
                 PassThru = $true
+                RedirectStandardOutput = "$env:TEMP\tactical_stdout.log"
+                RedirectStandardError = "$env:TEMP\tactical_stderr.log"
             }
-            $process = Start-Process @processParams
-            
-            if ($process.ExitCode -ne 0) {
-                Write-Host "Warning: Agent installation process exited with code $($process.ExitCode)" -ForegroundColor Yellow
-                Write-Host "Check the log file for more details: $AgentLogPath" -ForegroundColor Yellow
-                # Don't exit here to allow for cleanup and logging
-            } else {
-                Write-Host "Agent installation completed successfully." -ForegroundColor Green
+            try {
+                $process = Start-Process @processParams
+                
+                if ($process.ExitCode -ne 0) {
+                    Write-Host "Warning: Agent installation process exited with code $($process.ExitCode)" -ForegroundColor Yellow
+                    Write-Host "Check the log files for more details:" -ForegroundColor Yellow
+                    Write-Host "  - Agent log: $AgentLogPath" -ForegroundColor Yellow
+                    Write-Host "  - StdOut: $env:TEMP\tactical_stdout.log" -ForegroundColor Yellow
+                    Write-Host "  - StdErr: $env:TEMP\tactical_stderr.log" -ForegroundColor Yellow
+                } else {
+                    Write-Host "Agent installation completed successfully." -ForegroundColor Green
+                    # Display useful information about what was just installed
+                    Write-Host "  - Installation details:" -ForegroundColor Green
+                    Write-Host "    - Server URL: $RmmServerUrl" -ForegroundColor Green
+                    Write-Host "    - Client ID: $clientIdParam" -ForegroundColor Green
+                    Write-Host "    - Site ID: $siteIdParam" -ForegroundColor Green
+                    Write-Host "    - Agent Type: $agentTypeParam" -ForegroundColor Green
+                }
+            } catch {
+                Write-Host "Error executing agent installation: $_" -ForegroundColor Red
+                Write-Host "Please check permissions and file access rights." -ForegroundColor Red
             }
         }
         catch {
