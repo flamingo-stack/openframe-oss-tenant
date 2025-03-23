@@ -5,13 +5,11 @@
       <template #actions>
         <OFButton 
           icon="pi pi-sync" 
-          class="p-button-sm"
-          :style="{
-            backgroundColor: autoPollingEnabled ? '#FFD700' : '',
-            borderColor: autoPollingEnabled ? '#FFD700' : '',
-            color: autoPollingEnabled ? '#000000' : '',
-            fontWeight: autoPollingEnabled ? 'bold' : ''
-          }"
+          :class="[
+            'p-button-sm', 
+            autoPollingEnabled ? 'p-button-warning' : 'p-button-text'
+          ]"
+          :style="autoPollingEnabled ? 'background-color: #FFD700 !important; border-color: #FFD700 !important; color: black !important; font-weight: bold !important;' : ''"
           @click="togglePolling(!autoPollingEnabled)" 
           v-tooltip.top="autoPollingEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'" />
       </template>
@@ -588,6 +586,15 @@ onUnmounted(() => {
 
 :deep(.description-cell) {
   max-width: 500px;
+}
+
+.custom-yellow-button {
+  background-color: #FFD700 !important;
+  border-color: #FFD700 !important;
+  color: black !important;
+  font-weight: bold !important;
+  box-shadow: 0 0 0 2px #FFD700 !important;
+  transform: scale(1.05) !important;
 }
 </style>
 
