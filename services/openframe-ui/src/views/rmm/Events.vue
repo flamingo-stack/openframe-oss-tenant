@@ -70,7 +70,13 @@
         </Column>
         <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 15%">
           <template #body="{ data }">
-            {{ getAgentHostname(data.agent) }}
+            <div class="flex flex-column">
+              <span>{{ getAgentHostname(data.agent) }}</span>
+              <span v-if="data.agent_info" class="text-xs text-color-secondary flex align-items-center gap-1">
+                <i class="pi pi-server"></i>
+                {{ data.agent_info.os || data.agent_info.operating_system || 'Unknown OS' }}
+              </span>
+            </div>
           </template>
         </Column>
         <Column header="Actions" :exportable="false" style="width: 10%">
@@ -103,23 +109,7 @@
           </div>
         </div>
         
-        <!-- Add agent info section -->
-        <div v-if="selectedHistoryItem.agent_info" class="agent-info mb-3">
-          <div class="flex flex-column gap-2">
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-desktop mr-1"></i>
-              <span class="text-sm font-medium">{{ selectedHistoryItem.agent_info.platform || selectedHistoryItem.agent_info.plat || 'Unknown Platform' }}</span>
-            </div>
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-server mr-1"></i>
-              <span class="text-sm">OS: <span class="font-medium">{{ selectedHistoryItem.agent_info.os || selectedHistoryItem.agent_info.operating_system || 'Unknown' }}</span></span>
-            </div>
-            <div class="flex align-items-center gap-2">
-              <i :class="selectedHistoryItem.agent_info.status === 'online' ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-red-500'" class="mr-1"></i>
-              <span class="text-sm">Status: <span class="font-medium">{{ selectedHistoryItem.agent_info.status || 'Unknown' }}</span></span>
-            </div>
-          </div>
-        </div>
+
         
         <div class="of-form-group">
           <label>Output</label>
@@ -137,23 +127,7 @@
           </div>
         </div>
         
-        <!-- Add agent info section -->
-        <div v-if="selectedHistoryItem.agent_info" class="agent-info mb-3">
-          <div class="flex flex-column gap-2">
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-desktop mr-1"></i>
-              <span class="text-sm font-medium">{{ selectedHistoryItem.agent_info.platform || selectedHistoryItem.agent_info.plat || 'Unknown Platform' }}</span>
-            </div>
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-server mr-1"></i>
-              <span class="text-sm">OS: <span class="font-medium">{{ selectedHistoryItem.agent_info.os || selectedHistoryItem.agent_info.operating_system || 'Unknown' }}</span></span>
-            </div>
-            <div class="flex align-items-center gap-2">
-              <i :class="selectedHistoryItem.agent_info.status === 'online' ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-red-500'" class="mr-1"></i>
-              <span class="text-sm">Status: <span class="font-medium">{{ selectedHistoryItem.agent_info.status || 'Unknown' }}</span></span>
-            </div>
-          </div>
-        </div>
+
         
         <div v-if="selectedHistoryItem.script_results" class="of-form-group">
           <label>Output</label>
