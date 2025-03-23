@@ -28,11 +28,8 @@ param (
     [int]$RmmPort,
     [switch]$Secure = $false,
     [string]$AuthKey,
-    [Parameter(Mandatory=$true)]
     [string]$ClientId,
-    [Parameter(Mandatory=$true)]
     [string]$SiteId,
-    [Parameter(Mandatory=$true)]
     [string]$AgentType,
     [switch]$Help
 )
@@ -117,6 +114,14 @@ function Show-Help {
 # Show help if requested or if no parameters provided
 if ($Help -or $args.Count -eq 0) {
     Show-Help
+    exit 0
+}
+
+# Check for required parameters
+if ([string]::IsNullOrEmpty($ClientId) -or [string]::IsNullOrEmpty($SiteId) -or [string]::IsNullOrEmpty($AgentType)) {
+    Write-Host "Error: ClientId, SiteId, and AgentType are required parameters." -ForegroundColor Red
+    Write-Host "Use -Help to display usage information." -ForegroundColor Yellow
+    exit 1
 }
 
 ############################
