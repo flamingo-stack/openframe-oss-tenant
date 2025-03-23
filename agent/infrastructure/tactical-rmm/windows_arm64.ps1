@@ -30,6 +30,9 @@
 # Parse Script Arguments
 ############################
 
+# Include agent executable verification function
+. "$PSScriptRoot\Test-AgentExecutable.ps1"
+
 param (
     [string]$OrgName,
     [string]$Email,
@@ -244,12 +247,12 @@ function Set-WebSocketProtocolEnvironment {
         # Set environment variables that will be inherited by the agent process
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_MODE", "ws", "Process")
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PORT", "8000", "Process")
-        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natws", "Process")
+        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natsws", "Process")
         
         # Also set for the system to ensure persistence across processes
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_MODE", "ws", "Machine")
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PORT", "8000", "Machine")
-        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natws", "Machine")
+        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natsws", "Machine")
         
         Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
         return $true
@@ -1042,16 +1045,51 @@ function Prompt-RunAgent {
                     }
                     
                     Write-Host "WebSocket protocol modifications applied, proceeding with agent installation..." -ForegroundColor Cyan
+                    
+                    # Display WebSocket configuration for troubleshooting
+                    Write-Host "===== WebSocket Configuration =====" -ForegroundColor Cyan
+                    Write-Host "Environment Variables:" -ForegroundColor Yellow
+                    Write-Host "  TACTICAL_WEBSOCKET_MODE = $([Environment]::GetEnvironmentVariable('TACTICAL_WEBSOCKET_MODE', 'Process'))" -ForegroundColor Yellow
+                    Write-Host "  TACTICAL_WEBSOCKET_PORT = $([Environment]::GetEnvironmentVariable('TACTICAL_WEBSOCKET_PORT', 'Process'))" -ForegroundColor Yellow
+                    Write-Host "  TACTICAL_WEBSOCKET_PATH = $([Environment]::GetEnvironmentVariable('TACTICAL_WEBSOCKET_PATH', 'Process'))" -ForegroundColor Yellow
+                    
+                    Write-Host "Registry Settings:" -ForegroundColor Yellow
+                    try {
+                        $regValues = Get-ItemProperty -Path "HKLM:\SOFTWARE\TacticalRMM" -ErrorAction SilentlyContinue
+                        if ($regValues) {
+                            Write-Host "  WebSocketProtocol = $($regValues.WebSocketProtocol)" -ForegroundColor Yellow
+                            Write-Host "  WebSocketPort = $($regValues.WebSocketPort)" -ForegroundColor Yellow
+                            Write-Host "  WebSocketPath = $($regValues.WebSocketPath)" -ForegroundColor Yellow
+                        } else {
+                            Write-Host "  Registry key not found" -ForegroundColor Yellow
+                        }
+                    } catch {
+                        Write-Host "  Error reading registry: $_" -ForegroundColor Yellow
+                    }
+                    Write-Host "===================================" -ForegroundColor Cyan
                 } else {
                     Write-Host "HTTPS RMM URL detected. Skipping WebSocket protocol modifications." -ForegroundColor Cyan
                 }
                 
                 # Step 3: Run the agent installation command with exact flags from user
                 $agentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
+                
+                # Verify agent executable exists and is accessible
+                if (-not (Test-AgentExecutable -Path $agentPath)) {
+                    Write-Host "ERROR: Cannot proceed with agent configuration due to agent executable issues" -ForegroundColor Red
+                    Write-Host "Possible solutions:" -ForegroundColor Yellow
+                    Write-Host "1. Check if the binary installation step completed successfully" -ForegroundColor Yellow
+                    Write-Host "2. Verify the agent was extracted to C:\Program Files\TacticalAgent\" -ForegroundColor Yellow
+                    Write-Host "3. Check if any antivirus is blocking access to the executable" -ForegroundColor Yellow
+                    continue
+                }
                 # Use the exact format provided by the user (matching the format they specified)
                 # Original format: -m install --api http://localhost:8000 --client-id 1 --site-id 1 --agent-type server --auth 9fd7fef1d3ec77ae1fbfb65bcc76a5b72d3606c8e9e050466f1dee8cd9407329
                 # Build agent arguments with all optional flags EXCEPT -nostart
                 $agentArgs = "-m install"
+                
+                # Note: The -m parameter uses a single dash, while API and client parameters use double dashes
+                # This is the expected format according to the tactical-rmm documentation
                 
                 # Add optional flags based on parameters
                 if ($NoMesh) {
@@ -1063,7 +1101,7 @@ function Prompt-RunAgent {
                 }
                 
                 # Add other flags but NOT -nostart
-                $agentArgs += " -quiet -noprompt -accepteula"
+                $agentArgs += " -quiet -noprompt -accepteula -debug"  # Add debug flag for more verbose output
                 
                 if ($LogLevel) {
                     $agentArgs += " -log $LogLevel"
@@ -1123,9 +1161,28 @@ function Prompt-RunAgent {
                 
                 Write-Host "Agent configuration completed with exit code: $($agentProcess.ExitCode)" -ForegroundColor Cyan
                 
+                # Save detailed error information
+                if ($agentProcess.ExitCode -ne 0) {
+                    Write-Host "Agent configuration FAILED with error code: $($agentProcess.ExitCode)" -ForegroundColor Red
+                    Write-Host "===== Agent Configuration Stdout =====" -ForegroundColor Yellow
+                    $agentOutput
+                    Write-Host "===== Agent Configuration Stderr =====" -ForegroundColor Yellow
+                    $agentError
+                    Write-Host "===== End Agent Configuration Error =====" -ForegroundColor Yellow
+                    
+                    # Check if common errors are present in the output
+                    if ($agentOutput -match "WebSocket|connection failed|cannot connect") {
+                        Write-Host "ERROR: WebSocket connection issue detected. Check WebSocket settings and server connectivity." -ForegroundColor Red
+                    }
+                    if ($agentOutput -match "auth|authentication|authorization") {
+                        Write-Host "ERROR: Authentication issue detected. Verify your auth key is correct." -ForegroundColor Red
+                    }
+                    Write-Host "Check the log files for more detailed information." -ForegroundColor Yellow
+                }
+                
                 # Wait for service to appear (it might take a moment after process completes)
                 Write-Host "Waiting for service to register..." -ForegroundColor Cyan
-                $maxRetries = 10
+                $maxRetries = 20  # Increase max retries to allow more time for service registration
                 $retryCount = 0
                 $serviceInstalled = $false
                 
