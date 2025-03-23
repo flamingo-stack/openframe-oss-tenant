@@ -1700,17 +1700,19 @@ function Prompt-RunAgent {
 # Main Script Flow
 ############################
 
-# 1) Install dependencies
-Write-Host "Checking and installing dependencies if needed..."
-Install-Git
-Install-Go
+# 1. Check if Tactical RMM is already installed
+$tacticalInstalled = Check-TacticalInstalled
 
-# Perform uninstallation before proceeding
-Uninstall-TacticalRMM
+# 2. If yes, uninstall
+if ($tacticalInstalled) {
+    Uninstall-TacticalRMM
+} else {
+    Write-Host "No existing installation found, skipping uninstallation." -ForegroundColor Green
+}
 
-# 2) Prompt for missing fields
+# 3. Directly move to install from binary
 Write-Host ""
-Write-Host "=== Checking user inputs ===" -ForegroundColor Cyan
+Write-Host "=== INSTALLATION STEP 3: Installing from binary ===" -ForegroundColor Cyan
 
 function Prompt-AllInputs {
     # Only prompt for values if they weren't provided as parameters or if in interactive mode
@@ -1823,24 +1825,45 @@ if ($InteractiveMode) {
 }
 
 ############################
-# Main Script Flow
+# Install from Binary
 ############################
 
-# 1) Show help if requested
-if ($Help) {
-    Show-Help
-    exit 0
+# Verify binary exists
+$binaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe"
+$alternativePath = "$PSScriptRoot\binaries\tacticalagent-v2.9.0-windows-amd64.exe"
+
+if (-not (Test-Path $binaryPath) -and (Test-Path $alternativePath)) {
+    Write-Host "Binary not found at $binaryPath, using alternative path: $alternativePath" -ForegroundColor Yellow
+    Copy-Item $alternativePath $binaryPath
+    Write-Host "Copied alternative binary to $binaryPath" -ForegroundColor Green
 }
 
-# 2) Install dependencies (only Git is needed for downloading)
-Install-Git
+if (-not (Test-Path $binaryPath)) {
+    Write-Host "ERROR: Binary not found at $binaryPath" -ForegroundColor Red
+    Write-Host "Please ensure the binary exists in the script directory or in the binaries subfolder." -ForegroundColor Yellow
+    exit 1
+}
 
-# 3) Setup binary folder and verify AMD64 binary
-Setup-BinaryFolder
+# Install the binary
+Write-Host "Running binary installation: & `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`"" -ForegroundColor Cyan
 
-# 4) Setup AMD64 binary for ARM64 emulation
-Write-Host "Using pre-built AMD64 binary with Windows on ARM64 emulation..." -ForegroundColor Cyan
-Setup-RMMAgent
+# Apply WebSocket protocol modifications for non-HTTPS URLs
+if ($RmmServerUrl -match "^http://") {
+    Set-WebSocketProtocolEnvironment -RmmUrl $RmmServerUrl
+    Set-WebSocketRegistrySettings -RmmUrl $RmmServerUrl
+}
 
-# 5) Prompt to run (and configure service if installed)
+# Install the agent
+try {
+    Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+    Write-Host "Binary installation completed successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "Error during installation: $_" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host ""
+Write-Host "=== All Done! ===" -ForegroundColor Green
+Write-Host "Your agent is at: $binaryPath" -ForegroundColor Cyan
+Write-Host "NOTE: This is an AMD64 binary running with Windows on ARM64 emulation" -ForegroundColor Yellow
 Prompt-RunAgent
