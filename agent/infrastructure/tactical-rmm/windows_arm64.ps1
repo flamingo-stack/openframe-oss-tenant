@@ -427,9 +427,11 @@ if (-not (Test-Path $binaryPath)) {
         
         # Alternative download URLs to try
         $downloadUrls = @(
-            "https://github.com/amidaware/tacticalrmm/releases/latest/download/tacticalagent-windows-amd64.exe",
-            "https://github.com/amidaware/rmmagent/releases/latest/download/rmmagent-windows-amd64.exe",
-            "https://github.com/amidaware/tacticalrmm/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
+            "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.8.0/tacticalagent-v2.8.0-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.7.0/tacticalagent-v2.7.0-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.6.2/tacticalagent-v2.6.2-windows-amd64.exe",
+            "https://github.com/amidaware/rmmagent/releases/download/v2.6.1/tacticalagent-v2.6.1-windows-amd64.exe"
         )
         
         $downloadSuccess = $false
