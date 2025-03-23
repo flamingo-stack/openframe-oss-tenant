@@ -257,13 +257,8 @@ const getAgentHostname = (agentId: number) => {
 const showOutputDialog = (historyItem: HistoryEntry) => {
   selectedHistoryItem.value = historyItem;
   
-  // If we don't have agent info, try to add it
-  if (!historyItem.agent_info && window.location.hostname === 'localhost') {
-    selectedHistoryItem.value = { 
-      ...historyItem, 
-      agent_info: getMockAgentInfo(historyItem.agent) 
-    };
-  }
+  // Don't add mock data in production
+  // Mock data is now disabled by default
   
   showDialog.value = true;
 };
@@ -282,13 +277,10 @@ const fetchDevices = async () => {
   try {
     loading.value = true;
     
-    // For local development, use mock data
-    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
-      devices.value = [{
-        id: '1',
-        agent_id: 'PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP',
-        hostname: 'test-device'
-      }];
+    // No mock data in production
+    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development' && false) {
+      // Mock data is now disabled by default
+      console.log('Development environment detected, but mock data is disabled');
       loading.value = false;
       return;
     }
@@ -309,46 +301,10 @@ const fetchHistory = async () => {
     
     let newHistory: HistoryEntry[] = [];
     
-    // Always create default mock data in development mode
-    if (window.location.hostname === 'localhost') {
-      console.log('Creating default mock data for development');
-      newHistory = [
-        {
-          id: 1,
-          agent: 1,
-          time: "2025-03-23T07:09:30.000Z",
-          command: "ls -la",
-          script_name: null,
-          type: "command",
-          agent_info: {
-            hostname: "Mac.attlocal.net",
-            plat: "darwin",
-            operating_system: "Darwin 15.4 arm64 24.4.0",
-            status: "online"
-          }
-        },
-        {
-          id: 2,
-          agent: 2,
-          time: "2025-03-23T06:09:30.000Z",
-          command: null,
-          script_name: "Test Script",
-          type: "script",
-          agent_info: {
-            hostname: "DESKTOP-057QV01",
-            plat: "windows",
-            operating_system: "Windows 10 Pro",
-            status: "overdue"
-          }
-        }
-      ];
-      console.log('Created mock data:', newHistory);
-      
-      // Skip API call in development mode
-      loading.value = false;
-      historyItems.value = newHistory;
-      previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
-      return;
+    // Only use mock data in development mode for local testing
+    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
+      console.log('Development environment detected, but not using mock data by default');
+      // Mock data is now only added via addMockAgentInfo() when explicitly called
     }
     
     // If no mock data or not in development mode, fetch from API
@@ -424,12 +380,8 @@ onMounted(() => {
   // Override icon styles
   overrideIconStyles();
   
-  // Add mock data immediately for testing
-  if (window.location.hostname === 'localhost') {
-    setTimeout(() => {
-      addMockAgentInfo();
-    }, 500);
-  }
+  // Only add mock data when explicitly requested for testing
+  // Mock data is now disabled by default
 });
 
 // Add function to enhance history items with agent information
@@ -451,13 +403,8 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
           }
         }
         
-        // If no agent info found, add mock data for local development
-        if (window.location.hostname === 'localhost') {
-          return { 
-            ...item, 
-            agent_info: getMockAgentInfo(item.agent) 
-          };
-        }
+        // No mock data in production
+        // Mock data is now disabled by default
         
         return item;
       });
@@ -467,13 +414,8 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
   } catch (error) {
     console.error('Failed to enhance history with agent info:', error);
     
-    // For local development, add mock data
-    if (window.location.hostname === 'localhost') {
-      return history.map(item => ({ 
-        ...item, 
-        agent_info: getMockAgentInfo(item.agent) 
-      }));
-    }
+    // No mock data in production
+    // Mock data is now disabled by default
     
     return history;
   }
@@ -490,81 +432,16 @@ const fetchAgentDetails = async () => {
   }
 };
 
-// Function to generate mock agent data for local development
+// Mock data functions are disabled in production
+// Function to generate mock agent data for local development (disabled)
 const getMockAgentInfo = (agentId: number) => {
-  // Real agent data from API
-  const realAgents = [
-    {
-      hostname: "Mac.attlocal.net",
-      plat: "darwin",
-      operating_system: "Darwin 15.4 arm64 24.4.0",
-      status: "online"
-    },
-    {
-      hostname: "DESKTOP-057QV01",
-      plat: "windows",
-      operating_system: "Windows 10 Pro",
-      status: "overdue"
-    }
-  ];
-  
-  // Use agent ID to pick from real agent data
-  const index = agentId % realAgents.length;
-  const agent = realAgents[index];
-  
-  // Create mock data with real values
-  const mockData = {
-    platform: agent.plat.charAt(0).toUpperCase() + agent.plat.slice(1),
-    plat: agent.plat.toLowerCase(), // Ensure lowercase for icon mapping
-    os: agent.operating_system,
-    operating_system: agent.operating_system,
-    status: agent.status,
-    hostname: agent.hostname
-  };
-  
-  console.log('Generated mock agent data for ID', agentId, ':', mockData);
-  return mockData;
+  console.log('Mock data generation is disabled in production');
+  return null;
 };
 
-// Function to add mock data to history items
+// Function to add mock data to history items (disabled)
 const addMockAgentInfo = () => {
-  console.log('Adding mock agent info to history items');
-  
-  if (historyItems.value.length === 0) {
-    // Create default mock data if no history items exist
-    historyItems.value = [
-      {
-        id: 1,
-        agent: 1,
-        time: "2025-03-23T07:09:30.000Z",
-        command: "ls -la",
-        script_name: null,
-        type: "cmd_run",
-        agent_info: getMockAgentInfo(1)
-      },
-      {
-        id: 2,
-        agent: 2,
-        time: "2025-03-23T06:09:30.000Z",
-        command: null,
-        script_name: "Test Script",
-        type: "script_run",
-        agent_info: getMockAgentInfo(2)
-      }
-    ];
-    console.log('Created mock history items:', historyItems.value);
-  } else {
-    // Add agent_info to existing history items
-    historyItems.value = historyItems.value.map(item => {
-      if (!item.agent_info) {
-        return {
-          ...item,
-          agent_info: getMockAgentInfo(item.agent)
-        };
-      }
-      return item;
-    });
-  }
+  console.log('Mock data addition is disabled in production');
 };
 
 // Import and use the shared getDeviceIcon function
