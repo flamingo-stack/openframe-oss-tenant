@@ -34,13 +34,19 @@ param (
     [string]$ClientId,
     [string]$SiteId,
     [string]$AgentType = "workstation",
-    [string]$LogPath = "C:\Windows\Temp\tacticalrmm.log",
+    [string]$LogPath = "C:\logs\tactical.log",
     [string]$BuildFolder = "rmmagent",
     [switch]$SkipRun,
     [switch]$Help,
     [switch]$Interactive,
-    [switch]$Silent = $true
-
+    [switch]$Silent = $true,
+    [string]$LocalMeshPath,
+    [string]$MeshDir,
+    [string]$CertPath,
+    [string]$AgentDescription,
+    [string]$ProxyServer,
+    [switch]$NoMesh = $true,
+    [string]$LogLevel = "debug"
 )
 
 # Set global silent installation flag - true if Silent switch is provided or any parameters are provided
@@ -659,8 +665,22 @@ function Prompt-RunAgent {
     if ($runNow -match "^[Yy]") {
         # If no log path was specified, create a default one
         if ([string]::IsNullOrEmpty($AgentLogPath)) {
-            $AgentLogPath = "C:\Windows\Temp\tacticalrmm.log"
+            $AgentLogPath = "C:\logs\tactical.log"
             Write-Host "Using default log path: $AgentLogPath"
+        }
+        
+        # Ensure log directory exists
+        $logDirectory = Split-Path -Path $AgentLogPath -Parent
+        if (-not (Test-Path -Path $logDirectory)) {
+            try {
+                Write-Host "Creating log directory: $logDirectory" -ForegroundColor Yellow
+                New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+                Write-Host "Created log directory: $logDirectory" -ForegroundColor Green
+            } catch {
+                Write-Host "WARNING: Could not create log directory $logDirectory. Using TEMP directory instead." -ForegroundColor Red
+                $AgentLogPath = Join-Path $env:TEMP "tactical.log"
+                Write-Host "Log path changed to: $AgentLogPath" -ForegroundColor Yellow
+            }
         }
         
         # In non-interactive mode, ensure we have all required values
@@ -865,8 +885,48 @@ function Prompt-RunAgent {
                 $agentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
                 # Use the exact format provided by the user (matching the format they specified)
                 # Original format: -m install --api http://localhost:8000 --client-id 1 --site-id 1 --agent-type server --auth 9fd7fef1d3ec77ae1fbfb65bcc76a5b72d3606c8e9e050466f1dee8cd9407329
-                # Added --nomesh flag as requested by user
-                $agentArgs = "-m install --nomesh --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
+                # Build agent arguments with all optional flags
+                $agentArgs = "-m install"
+                
+                # Add optional flags based on parameters
+                if ($NoMesh) {
+                    $agentArgs += " --nomesh"
+                }
+                
+                if ($Silent) {
+                    $agentArgs += " -silent"
+                }
+                
+                if ($LogLevel) {
+                    $agentArgs += " -log $LogLevel"
+                }
+                
+                if ($LogPath) {
+                    $agentArgs += " -logto `"$AgentLogPath`""
+                }
+                
+                if ($LocalMeshPath) {
+                    $agentArgs += " -local-mesh `"$LocalMeshPath`""
+                }
+                
+                if ($MeshDir) {
+                    $agentArgs += " -meshdir `"$MeshDir`""
+                }
+                
+                if ($CertPath) {
+                    $agentArgs += " -cert `"$CertPath`""
+                }
+                
+                if ($AgentDescription) {
+                    $agentArgs += " -desc `"$AgentDescription`""
+                }
+                
+                if ($ProxyServer) {
+                    $agentArgs += " -proxy `"$ProxyServer`""
+                }
+                
+                # Add required parameters
+                $agentArgs += " --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
                 $agentCmd = "& `"$agentPath`" $agentArgs"
                 
                 Write-Host "Step 3: Running agent configuration: $agentCmd" -ForegroundColor Cyan
