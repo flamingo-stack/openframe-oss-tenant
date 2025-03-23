@@ -40,7 +40,11 @@ param (
     [switch]$Help,
     [switch]$Interactive,
     [switch]$Silent = $true
+
 )
+
+# Set global silent installation flag - true if Silent switch is provided or any parameters are provided
+$script:SilentInstall = $Silent -or ($PSBoundParameters.Count -gt 0)
 
 # Ensure script is running with administrator privileges
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -317,21 +321,35 @@ function Prompt-IfEmpty {
     param (
         [string]$VarName,
         [string]$PromptMsg,
-        [string]$DefaultVal = ""
+        [string]$DefaultVal = "",
+        [switch]$Silent = $false
     )
     
     $currVal = Get-Variable -Name $VarName -ValueOnly -ErrorAction SilentlyContinue
     
-    # If value is empty or null, prompt for value
+    # If value is empty or null, use default or prompt for value
     # Don't use boolean comparison for string parameters
     if ([string]::IsNullOrEmpty($currVal)) {
-        if (-not [string]::IsNullOrEmpty($DefaultVal)) {
-            $userInp = Read-Host "$PromptMsg [$DefaultVal]"
-            if ([string]::IsNullOrEmpty($userInp)) {
+        if ($Silent -or $script:SilentInstall) {
+            # In silent mode, always use default value without prompting
+            if (-not [string]::IsNullOrEmpty($DefaultVal)) {
                 $userInp = $DefaultVal
+                Write-Host "Using default value for $VarName: '$DefaultVal'" -ForegroundColor Cyan
+            } else {
+                # If no default and silent mode, use empty string
+                $userInp = ""
+                Write-Host "WARNING: No default value for $VarName in silent mode. Using empty string." -ForegroundColor Yellow
             }
         } else {
-            $userInp = Read-Host "$PromptMsg"
+            # Interactive mode - prompt user
+            if (-not [string]::IsNullOrEmpty($DefaultVal)) {
+                $userInp = Read-Host "$PromptMsg [$DefaultVal]"
+                if ([string]::IsNullOrEmpty($userInp)) {
+                    $userInp = $DefaultVal
+                }
+            } else {
+                $userInp = Read-Host "$PromptMsg"
+            }
         }
         # Use script scope to ensure variables are available throughout the script
         Set-Variable -Name $VarName -Value $userInp -Scope Script
@@ -438,40 +456,39 @@ function Setup-RMMAgent {
         Write-Host "2. Visit https://github.com/amidaware/rmmagent/releases and download the latest Windows AMD64 binary" -ForegroundColor Cyan
         Write-Host "3. Use curl.exe or wget.exe if available on your system" -ForegroundColor Cyan
         
-        # Prompt for manual download
-        $manualDownloadChoice = Read-Host "Would you like to try a manual download now? (y/N)"
-        if ($manualDownloadChoice -match "^[Yy]") {
+        # Automatic download without prompting for silent installation
+        try {
+            # Create binaries folder if it doesn't exist
+            $binariesFolder = Join-Path (Split-Path -Parent $PSCommandPath) "binaries"
+            if (-not (Test-Path $binariesFolder)) {
+                New-Item -ItemType Directory -Path $binariesFolder -Force | Out-Null
+            }
+            
+            Write-Host "Attempting automatic download using alternative method..." -ForegroundColor Yellow
+            
+            # Try using System.Net.WebClient as an alternative to Invoke-WebRequest
+            $webClient = New-Object System.Net.WebClient
+            $webClient.Headers.Add("User-Agent", "PowerShell Script")
+            $downloadUrl = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
+            
             try {
-                # Create binaries folder if it doesn't exist
-                $binariesFolder = Join-Path (Split-Path -Parent $PSCommandPath) "binaries"
-                if (-not (Test-Path $binariesFolder)) {
-                    New-Item -ItemType Directory -Path $binariesFolder -Force | Out-Null
-                }
+                $webClient.DownloadFile($downloadUrl, $AMD64_BINARY_PATH)
                 
-                Write-Host "Attempting manual download using alternative method..." -ForegroundColor Yellow
-                
-                # Try using System.Net.WebClient as an alternative to Invoke-WebRequest
-                $webClient = New-Object System.Net.WebClient
-                $webClient.Headers.Add("User-Agent", "PowerShell Script")
-                $downloadUrl = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
-                
-                try {
-                    $webClient.DownloadFile($downloadUrl, $AMD64_BINARY_PATH)
-                    
-                    if (Test-Path $AMD64_BINARY_PATH) {
-                        $fileInfo = Get-Item $AMD64_BINARY_PATH
-                        if ($fileInfo.Length -gt 0) {
-                            Write-Host "Successfully downloaded AMD64 binary using alternative method." -ForegroundColor Green
-                            $binaryExists = $true
-                            $binaryHasContent = $true
-                        }
+                if (Test-Path $AMD64_BINARY_PATH) {
+                    $fileInfo = Get-Item $AMD64_BINARY_PATH
+                    if ($fileInfo.Length -gt 0) {
+                        Write-Host "Successfully downloaded AMD64 binary using alternative method." -ForegroundColor Green
+                        $binaryExists = $true
+                        $binaryHasContent = $true
                     }
-                } catch {
-                    Write-Host "Alternative download method failed: $_" -ForegroundColor Red
                 }
             } catch {
-                Write-Host "Manual download attempt failed: $_" -ForegroundColor Red
+                Write-Host "Alternative download method failed: $_" -ForegroundColor Red
+                Write-Host "Will continue with installation process using any available binary." -ForegroundColor Yellow
             }
+        } catch {
+            Write-Host "Automatic download attempt failed: $_" -ForegroundColor Red
+            Write-Host "Will continue with installation process using any available binary." -ForegroundColor Yellow
         }
         
         # Create a placeholder binary to allow the script to continue
@@ -594,12 +611,12 @@ function Prompt-RunAgent {
         return
     }
     
-    # Always run automatically in non-interactive mode
-    if (-not [string]::IsNullOrEmpty($RmmServerUrl) -and -not [string]::IsNullOrEmpty($AgentAuthKey)) {
+    # Always run automatically in silent or non-interactive mode
+    if ($script:SilentInstall -or (-not [string]::IsNullOrEmpty($RmmServerUrl) -and -not [string]::IsNullOrEmpty($AgentAuthKey))) {
         Write-Host "Required server parameters provided, proceeding with installation..." -ForegroundColor Green
         $runNow = "y"
     } else {
-        if ($InteractiveMode) {
+        if ($Interactive) {
             $runNow = Read-Host "Do you want to run the agent install command now? (y/N)"
         } else {
             Write-Host "ERROR: RmmServerUrl and AgentAuthKey are required parameters" -ForegroundColor Red
@@ -615,16 +632,28 @@ function Prompt-RunAgent {
         }
         
         # In non-interactive mode, ensure we have all required values
-        if (-not $InteractiveMode) {
-            if ([string]::IsNullOrEmpty($ClientId)) {
-                Write-Host "ERROR: ClientId is required in non-interactive mode" -ForegroundColor Red
-                exit 1
+        if (-not $Interactive) {
+            if ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True") {
+                if ($script:SilentInstall) {
+                    # Use default value in silent mode
+                    $ClientId = "1"
+                    Write-Host "Using default ClientId: $ClientId" -ForegroundColor Yellow
+                } else {
+                    Write-Host "ERROR: ClientId is required in non-interactive mode" -ForegroundColor Red
+                    exit 1
+                }
             }
-            if ([string]::IsNullOrEmpty($SiteId)) {
-                Write-Host "ERROR: SiteId is required in non-interactive mode" -ForegroundColor Red
-                exit 1
+            if ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True") {
+                if ($script:SilentInstall) {
+                    # Use default value in silent mode
+                    $SiteId = "1"
+                    Write-Host "Using default SiteId: $SiteId" -ForegroundColor Yellow
+                } else {
+                    Write-Host "ERROR: SiteId is required in non-interactive mode" -ForegroundColor Red
+                    exit 1
+                }
             }
-            if ([string]::IsNullOrEmpty($AgentType)) {
+            if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") {
                 $AgentType = "workstation"
                 Write-Host "Using default agent type: $AgentType" -ForegroundColor Yellow
             }
@@ -692,7 +721,8 @@ function Prompt-RunAgent {
         Write-Host "  - Agent Type: '$agentTypeParam' (type: $($agentTypeParam.GetType().Name))" -ForegroundColor Green
         
         # Build command with explicit parameter values - no quotes for integer parameters
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
+        # Add all available silent installation flags based on Tactical RMM documentation
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet -noprompt -accepteula"
         
         Write-Host "Running: $cmd"
         try {
@@ -707,7 +737,7 @@ function Prompt-RunAgent {
                 "-agent-type", $agentTypeParam,
                 "-log", "DEBUG",
                 "-logto", "$AgentLogPath",
-                "-nomesh", "-silent", "-quiet"
+                "-nomesh", "-silent", "-quiet", "-noprompt", "-accepteula"
             )
             
             # Use Start-Process with maximum silence parameters to prevent any UI prompts
@@ -719,6 +749,21 @@ function Prompt-RunAgent {
                 PassThru = $true
                 RedirectStandardOutput = "$env:TEMP\tactical_stdout.log"
                 RedirectStandardError = "$env:TEMP\tactical_stderr.log"
+                WindowStyle = 'Hidden'  # Hide any window that might appear
+                CreateNoWindow = $true  # Ensure no window is created
+            }
+            
+            # Set environment variables to suppress UI prompts
+            $env:POWERSHELL_WINDOW_VISIBLE = $false
+            $env:POWERSHELL_WINDOW_STYLE = 'Hidden'
+            
+            # Suppress any Windows error dialogs
+            [System.Environment]::SetEnvironmentVariable('SuppressAeDebugger', '1', 'Process')
+            [System.Environment]::SetEnvironmentVariable('POWERSHELL_WINDOW_VISIBLE', 'false', 'Process')
+            
+            # Disable Windows Error Reporting UI
+            if (-not [System.Environment]::GetEnvironmentVariable('WerModeTest', 'Process')) {
+                [System.Environment]::SetEnvironmentVariable('WerModeTest', '1', 'Process')
             }
             try {
                 $process = Start-Process @processParams
