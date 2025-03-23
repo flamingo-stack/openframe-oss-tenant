@@ -761,34 +761,6 @@ if ($tacticalInstalled) {
 
 # 3. Install from binary
 Install-FromBinary
-    Write-Host "Stopping and removing services..."
-    Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
-    $service = Get-WmiObject -Class Win32_Service -Filter "Name='tacticalrmm'"
-    if ($service) {
-        $service.delete()
-    }
-    
-    # 2. Remove Tactical Agent files and directories
-    Write-Host "Removing Tactical Agent files..."
-    Remove-Item -Path "C:\Program Files\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "C:\ProgramData\TacticalRMM" -Recurse -Force -ErrorAction SilentlyContinue
-    
-    # 3. Clean up any logs
-    Write-Host "Cleaning up logs..."
-    Remove-Item -Path "C:\Windows\Temp\tacticalrmm*.log" -Force -ErrorAction SilentlyContinue
-    
-    # 4. Remove registry entries
-    Write-Host "Removing registry entries..."
-    Remove-Item -Path "HKLM:\SOFTWARE\TacticalRMM" -Recurse -Force -ErrorAction SilentlyContinue
-    
-    # 5. Additional cleanup for any other remnants
-    Write-Host "Performing additional cleanup..."
-    # Search for and remove any other files containing 'tactical' in common locations
-    Get-ChildItem -Path "C:\Program Files" -Filter "*tactical*" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-    
-    Write-Host "Aggressive uninstallation completed. System is ready for fresh installation." -ForegroundColor Green
-    Write-Host ""
-}
 
 ############################
 # Prompting for missing inputs
