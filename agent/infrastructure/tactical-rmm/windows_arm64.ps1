@@ -267,59 +267,70 @@ function Uninstall-TacticalRMM {
         Write-Host "Warning: Could not stop service: ${_}" -ForegroundColor Yellow
     }
     
-    # Check for uninstaller in Program Files
+    # Check for uninstaller and agent executable in Program Files
     $programFilesPath = "${env:ProgramFiles}"
     $programFilesX86Path = "${env:ProgramFiles(x86)}"
     
     $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
     $uninstallerX86Path = "$programFilesX86Path\TacticalAgent\unins000.exe"
+    $agentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+    $agentX86Path = "$programFilesX86Path\TacticalAgent\tacticalrmm.exe"
     
-    $uninstallerExists = Test-Path $uninstallerPath
-    $uninstallerX86Exists = Test-Path $uninstallerX86Path
+    # First try to run the agent's uninstall command if available
+    if (Test-Path $agentPath) {
+        Write-Host "Running agent uninstall command: & `"$agentPath`" -m uninstall -silent" -ForegroundColor Yellow
+        Start-Process -FilePath $agentPath -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
+        Write-Host "Agent uninstall command completed." -ForegroundColor Green
+        Start-Sleep -Seconds 5
+    } elseif (Test-Path $agentX86Path) {
+        Write-Host "Running agent uninstall command: & `"$agentX86Path`" -m uninstall -silent" -ForegroundColor Yellow
+        Start-Process -FilePath $agentX86Path -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
+        Write-Host "Agent uninstall command completed." -ForegroundColor Green
+        Start-Sleep -Seconds 5
+    }
     
-    if ($uninstallerExists) {
+    # Then run the uninstaller if available
+    if (Test-Path $uninstallerPath) {
         Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
-        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
-        Write-Host "Uninstallation completed." -ForegroundColor Green
-        # Wait for uninstaller to complete
+        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
+        Write-Host "Uninstaller completed." -ForegroundColor Green
         Start-Sleep -Seconds 5
-    } elseif ($uninstallerX86Exists) {
+    } elseif (Test-Path $uninstallerX86Path) {
         Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
-        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait
-        Write-Host "Uninstallation completed." -ForegroundColor Green
-        # Wait for uninstaller to complete
+        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
+        Write-Host "Uninstaller completed." -ForegroundColor Green
         Start-Sleep -Seconds 5
-    } else {
-        Write-Host "No uninstaller found. Attempting manual cleanup..." -ForegroundColor Yellow
-        
-        # Try to remove service
-        try {
-            $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-            if ($service) {
-                Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
-                & sc.exe delete "tacticalrmm"
-                Write-Host "Service removed." -ForegroundColor Green
-                # Wait for service removal to complete
-                Start-Sleep -Seconds 2
-            }
-        } catch {
-            Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
+    }
+    
+    # Finally, attempt manual cleanup
+    Write-Host "Performing final cleanup..." -ForegroundColor Yellow
+    
+    # Try to remove service
+    try {
+        $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+        if ($service) {
+            Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
+            & sc.exe delete "tacticalrmm"
+            Write-Host "Service removed." -ForegroundColor Green
+            Start-Sleep -Seconds 2
+        }
+    } catch {
+        Write-Host "Warning: Could not remove service: ${_}" -ForegroundColor Yellow
+    }
+    
+    # Try to remove directories
+    try {
+        if (Test-Path "$programFilesPath\TacticalAgent") {
+            Write-Host "Removing $programFilesPath\TacticalAgent directory..." -ForegroundColor Yellow
+            Remove-Item -Path "$programFilesPath\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
         }
         
-        # Try to remove directories
-        try {
-            if (Test-Path "$programFilesPath\TacticalAgent") {
-                Write-Host "Removing $programFilesPath\TacticalAgent directory..." -ForegroundColor Yellow
-                Remove-Item -Path "$programFilesPath\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            
-            if (Test-Path "$programFilesX86Path\TacticalAgent") {
-                Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
-                Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
-            }
-        } catch {
-            Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
+        if (Test-Path "$programFilesX86Path\TacticalAgent") {
+            Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
+            Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
         }
+    } catch {
+        Write-Host "Warning: Could not remove directories: ${_}" -ForegroundColor Yellow
     }
 
     # Verify uninstallation
@@ -482,6 +493,7 @@ try {
     # Install the agent
     Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
     Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+    Start-Sleep -Seconds 5  # Wait for installation to complete
 
     # Configure the agent with parameters
     $programFilesPath = "${env:ProgramFiles}"
@@ -499,6 +511,7 @@ try {
         
         Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
         Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
+        Start-Sleep -Seconds 5  # Wait for configuration to complete
         Write-Host "Installation completed successfully!" -ForegroundColor Green
     } else {
         Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
