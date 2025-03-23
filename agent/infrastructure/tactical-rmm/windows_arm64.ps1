@@ -6,9 +6,6 @@
 #   - Uses AMD64 binary with Windows on ARM64 emulation
 #   - Simple flow: check if installed, uninstall if yes, install from binary
 #   - Automatically configures the agent to use ws:// protocol instead of wss:// for WebSockets
-#   - Sets environment variables and registry settings for WebSocket protocol override
-#   - Uses binary patching as a fallback method to ensure proper WebSocket connectivity
-#   - Allows connection to development/local RMM servers using port 8000
 #
 # Usage Examples:
 #   1) Interactive mode:
@@ -525,7 +522,7 @@ function Uninstall-TacticalRMM {
 }
 
 # 3. Install from binary
-function Install-FromBinary {
+function Install-TacticalRMMAgent {
     Write-Host "=== INSTALLATION STEP: Installing from binary ===" -ForegroundColor Cyan
     
     # Ensure we have the binary
@@ -561,92 +558,17 @@ function Install-FromBinary {
         New-Item -Path $logDir -ItemType Directory -Force | Out-Null
     }
     
-    # First step: Run binary installation with VERYSILENT flag
-    Write-Host "Step 1: Running binary installation: & `"$agentPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
-    $binaryProcess = New-Object System.Diagnostics.Process
-    $binaryProcess.StartInfo.FileName = $agentPath
-    $binaryProcess.StartInfo.Arguments = "/VERYSILENT /SUPPRESSMSGBOXES"
-    $binaryProcess.StartInfo.UseShellExecute = $false
-    $binaryProcess.StartInfo.CreateNoWindow = $true
-    $binaryProcess.StartInfo.WindowStyle = 'Hidden'
-    $binaryProcess.StartInfo.RedirectStandardOutput = $true
-    $binaryProcess.StartInfo.RedirectStandardError = $true
-    
-    # Start the binary installation process
-    $binaryProcess.Start() | Out-Null
-    $binaryOutput = $binaryProcess.StandardOutput.ReadToEnd()
-    $binaryError = $binaryProcess.StandardError.ReadToEnd()
-    $binaryProcess.WaitForExit()
-    
-    Write-Host "Binary installation completed with exit code: $($binaryProcess.ExitCode)" -ForegroundColor Cyan
-    
-    # Wait a few seconds for installation to complete
-    Write-Host "Step 2: Waiting 5 seconds before agent configuration..." -ForegroundColor Cyan
-    Start-Sleep -Seconds 5
-    
-    # Check WebSocket URL protocol for modifications
-    Write-Host "Checking RMM URL protocol for WebSocket modifications..." -ForegroundColor Cyan
-    if ($RmmUrl -match "^http://") {
-        Write-Host "Non-HTTPS RMM URL detected. Applying WebSocket protocol modifications..." -ForegroundColor Yellow
-        Set-WebSocketProtocolEnvironment -RmmUrl $RmmUrl
-        Set-WebSocketRegistrySettings -RmmUrl $RmmUrl
-        
-        # Patch the installed binary if it exists
-        $installedBinaryPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
-        if (Test-Path $installedBinaryPath) {
-            Patch-WebSocketProtocol -BinaryPath $installedBinaryPath -RmmUrl $RmmUrl
-        }
-        
-        Write-Host "WebSocket protocol modifications applied, proceeding with agent installation..." -ForegroundColor Green
-        
-        # Display WebSocket configuration
-        Write-Host "===== WebSocket Configuration =====" -ForegroundColor Cyan
-        Write-Host "Environment Variables:" -ForegroundColor White
-        Write-Host "  TACTICAL_WEBSOCKET_MODE = ws" -ForegroundColor White
-        Write-Host "  TACTICAL_WEBSOCKET_PORT = 8000" -ForegroundColor White
-        Write-Host "  TACTICAL_WEBSOCKET_PATH = /natsws" -ForegroundColor White
-        Write-Host "Registry Settings:" -ForegroundColor White
-        Write-Host "  WebSocketProtocol = ws" -ForegroundColor White
-        Write-Host "  WebSocketPort = 8000" -ForegroundColor White
-        Write-Host "  WebSocketPath = /natsws" -ForegroundColor White
-        Write-Host "===================================" -ForegroundColor Cyan
-    }
-    
-    # Verify the installed agent executable
-    $programFilesPath = "$env:ProgramFiles"
-    $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
-    if (Test-Path $installedAgentPath) {
-        Write-Host "Agent executable verified at $installedAgentPath" -ForegroundColor Green
-    } else {
-        Write-Host "WARNING: Agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
-    }
-    
-    # Check for existing installation
-    $existingInstallation = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-    if ($existingInstallation) {
-        Write-Host "Existing Tactical RMM agent installation found. Uninstalling..." -ForegroundColor Yellow
-        
-        # Run uninstaller
-        $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
-        if (Test-Path $uninstallerPath) {
-            Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
-            Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
-            Write-Host "Uninstallation completed successfully. Waiting 10 seconds before reinstalling..." -ForegroundColor Green
-            Start-Sleep -Seconds 10
-        }
-    }
-    
-    # Step 3: Run the original binary with installation parameters
-    Write-Host "Step 3: Running binary installation: & `"$agentPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+    # Run binary installation with VERYSILENT flag
+    Write-Host "Running binary installation: & `"$agentPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
     
     try {
         # Run the binary with installation parameters
-        $agentConfigProcess = Start-Process -FilePath $agentPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -NoNewWindow -Wait -PassThru
+        $agentProcess = Start-Process -FilePath $agentPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -NoNewWindow -Wait -PassThru
         
-        if ($agentConfigProcess.ExitCode -eq 0) {
+        if ($agentProcess.ExitCode -eq 0) {
             Write-Host "Binary installation completed successfully" -ForegroundColor Green
         } else {
-            Write-Host "Binary installation FAILED with error code: $($agentConfigProcess.ExitCode)" -ForegroundColor Red
+            Write-Host "Binary installation FAILED with error code: $($agentProcess.ExitCode)" -ForegroundColor Red
             return $false
         }
     } catch {
@@ -655,7 +577,8 @@ function Install-FromBinary {
         return $false
     }
     
-    # Step 4: Configure the agent with parameters
+    # Configure the agent with parameters
+    $programFilesPath = "$env:ProgramFiles"
     $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
     $agentConfigArgs = "-m install -api `"$RmmUrl`" -auth `"$AuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$LogPath`" -nomesh -silent"
     
@@ -680,25 +603,12 @@ function Install-FromBinary {
     Write-Host "Agent started with maximum verbosity! Logs will be written to: $LogPath" -ForegroundColor Green
     Write-Host "To monitor the log in real-time, run: Get-Content -Path $LogPath -Wait" -ForegroundColor Cyan
     
-    # Configure Windows service for detailed logging
-    Write-Host ""
-    Write-Host "Configuring Windows service for detailed logging" -ForegroundColor Cyan
-    $tacticalService = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
-    if (-not $tacticalService) {
-        Write-Host "Warning: tacticalrmm service not found. Agent may not be installed yet." -ForegroundColor Yellow
-    }
-    
     # Check if log file exists
     if (-not (Test-Path $LogPath)) {
         Write-Host "Note: Specified log path '$LogPath' not found." -ForegroundColor Yellow
         Write-Host "The agent may be using the default log location: C:\Program Files\TacticalAgent\tactical.log" -ForegroundColor Yellow
         Write-Host "Try: Get-Content -Path `"C:\Program Files\TacticalAgent\tactical.log`" -Wait" -ForegroundColor Cyan
     }
-    
-    # Display monitoring commands
-    Write-Host ""
-    Write-Host "You can monitor the agent logs with this command:" -ForegroundColor Cyan
-    Write-Host "  Get-Content -Path $LogPath -Wait              # For tactical agent" -ForegroundColor White
     
     Write-Host ""
     Write-Host "=== All Done! ===" -ForegroundColor Green
@@ -1825,7 +1735,7 @@ if ($InteractiveMode) {
 }
 
 ############################
-# Install from Binary
+# Main Script Flow - Following User's Exact 3-Step Process
 ############################
 
 # Verify binary exists
@@ -1844,19 +1754,95 @@ if (-not (Test-Path $binaryPath)) {
     exit 1
 }
 
-# Install the binary
-Write-Host "Running binary installation: & `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`"" -ForegroundColor Cyan
+# 1. Check if tactical already installed
+Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
+$programFilesPath = "$env:ProgramFiles"
+$programFilesX86Path = "${env:ProgramFiles(x86)}"
+$tacticalExePath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+$tacticalExeX86Path = "$programFilesX86Path\TacticalAgent\tacticalrmm.exe"
+$tacticalService = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+
+$isInstalled = (Test-Path $tacticalExePath) -or (Test-Path $tacticalExeX86Path) -or $tacticalService
+
+if ($isInstalled) {
+    # 2. If yes, uninstall
+    Write-Host "=== STEP 2: Tactical RMM is already installed. Uninstalling... ===" -ForegroundColor Yellow
+    
+    # Try to stop the service first
+    if ($tacticalService) {
+        Write-Host "Stopping Tactical RMM service..." -ForegroundColor Yellow
+        Stop-Service -Name "tacticalrmm" -Force -ErrorAction SilentlyContinue
+    }
+    
+    # Check for uninstaller
+    $uninstallerPath = "$programFilesPath\TacticalAgent\unins000.exe"
+    $uninstallerX86Path = "$programFilesX86Path\TacticalAgent\unins000.exe"
+    
+    if (Test-Path $uninstallerPath) {
+        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait
+    } elseif (Test-Path $uninstallerX86Path) {
+        Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait
+    } else {
+        Write-Host "No uninstaller found. Attempting manual cleanup..." -ForegroundColor Yellow
+        
+        # Try to remove service
+        if ($tacticalService) {
+            Write-Host "Removing Tactical RMM service..." -ForegroundColor Yellow
+            & sc.exe delete "tacticalrmm"
+        }
+        
+        # Try to remove directories
+        if (Test-Path "$programFilesPath\TacticalAgent") {
+            Write-Host "Removing $programFilesPath\TacticalAgent directory..." -ForegroundColor Yellow
+            Remove-Item -Path "$programFilesPath\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        
+        if (Test-Path "$programFilesX86Path\TacticalAgent") {
+            Write-Host "Removing $programFilesX86Path\TacticalAgent directory..." -ForegroundColor Yellow
+            Remove-Item -Path "$programFilesX86Path\TacticalAgent" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    Write-Host "Uninstallation completed." -ForegroundColor Green
+} else {
+    Write-Host "=== STEP 2: Tactical RMM is not installed. Skipping uninstallation. ===" -ForegroundColor Green
+}
+
+# 3. Install from binary
+Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
 
 # Apply WebSocket protocol modifications for non-HTTPS URLs
 if ($RmmServerUrl -match "^http://") {
+    Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
     Set-WebSocketProtocolEnvironment -RmmUrl $RmmServerUrl
     Set-WebSocketRegistrySettings -RmmUrl $RmmServerUrl
 }
 
+# Ensure log directory exists
+$logDir = Split-Path -Parent $AgentLogPath
+if (-not (Test-Path $logDir)) {
+    Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
+    New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+}
+
 # Install the agent
 try {
+    Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
     Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
-    Write-Host "Binary installation completed successfully!" -ForegroundColor Green
+    
+    # Configure the agent with parameters
+    $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+    if (Test-Path $installedAgentPath) {
+        $agentConfigArgs = "-m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent"
+        Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
+        Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
+    } else {
+        Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
+    }
+    
+    Write-Host "Installation completed successfully!" -ForegroundColor Green
 } catch {
     Write-Host "Error during installation: $_" -ForegroundColor Red
     exit 1
@@ -1866,4 +1852,3 @@ Write-Host ""
 Write-Host "=== All Done! ===" -ForegroundColor Green
 Write-Host "Your agent is at: $binaryPath" -ForegroundColor Cyan
 Write-Host "NOTE: This is an AMD64 binary running with Windows on ARM64 emulation" -ForegroundColor Yellow
-Prompt-RunAgent
