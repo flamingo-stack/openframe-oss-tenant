@@ -669,12 +669,71 @@ if ($tacticalInstalled) {
     Uninstall-TacticalRMM
 }
 
-# 3. Install from binary
-Install-FromBinary
+# Define the Install-FromBinary function first before calling it
+function Install-FromBinary {
+    param (
+        [string]$BinaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe",
+        [string]$RmmUrl = $RmmServerUrl,
+        [string]$AuthKey = $AgentAuthKey,
+        [int]$ClientId = $script:ClientId,
+        [int]$SiteId = $script:SiteId,
+        [string]$AgentType = $script:AgentType,
+        [string]$LogPath = $AgentLogPath
+    )
+    
+    Write-Host "=== INSTALLATION STEP 3: Installing from binary ===" -ForegroundColor Cyan
+    
+    # Verify binary exists
+    if (-not (Test-Path $BinaryPath)) {
+        Write-Host "ERROR: Binary not found at $BinaryPath" -ForegroundColor Red
+        Write-Host "Please ensure the binary exists in the script directory." -ForegroundColor Yellow
+        return $false
+    }
+    
+    # Apply WebSocket protocol modifications for non-HTTPS URLs
+    if ($RmmUrl -match "^http://") {
+        Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
+        Set-WebSocketProtocolEnvironment -RmmUrl $RmmUrl
+        Set-WebSocketRegistrySettings -RmmUrl $RmmUrl
+    }
+    
+    # Ensure log directory exists
+    $logDir = Split-Path -Parent $LogPath
+    if (-not (Test-Path $logDir)) {
+        Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+    
+    # Install the agent
+    try {
+        Write-Host "Running binary installation: & `"$BinaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+        Start-Process -FilePath $BinaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+        
+        # Configure the agent with parameters
+        $programFilesPath = "$env:ProgramFiles"
+        $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
+        if (Test-Path $installedAgentPath) {
+            $agentConfigArgs = "-m install -api `"$RmmUrl`" -auth `"$AuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$LogPath`" -nomesh -silent"
+            Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
+            Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
+        } else {
+            Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
+            return $false
+        }
+        
+        Write-Host "Installation completed successfully!" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Error during installation: $_" -ForegroundColor Red
+        return $false
+    }
+}
 
 ############################
 # Prompting for missing inputs
 ############################
+
+# Function call moved to end of script
 
 function Prompt-IfEmpty {
     param (
