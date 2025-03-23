@@ -125,6 +125,26 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # Functions
 ############################
 
+function Download-AgentBinary {
+    param (
+        [string]$Version,
+        [string]$Url
+    )
+    
+    $fileName = "tacticalagent-v${Version}-windows-amd64.exe"
+    $outputPath = Join-Path $binariesDir $fileName
+    
+    Write-Host "Downloading Tactical RMM agent version ${Version}..." -ForegroundColor Yellow
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $outputPath
+        Write-Host "Download completed successfully." -ForegroundColor Green
+        return $outputPath
+    } catch {
+        Write-Host "Failed to download version ${Version}: ${_}" -ForegroundColor Red
+        return $null
+    }
+}
+
 function Prompt-IfEmpty {
     param (
         [string]$VarName,
