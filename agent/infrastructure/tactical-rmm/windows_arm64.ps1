@@ -143,11 +143,15 @@ $AgentLogPath = $LogPath
 # Ensure ClientId and SiteId are properly assigned from parameters
 if ($PSBoundParameters.ContainsKey('ClientId')) {
     # ClientId parameter was explicitly provided - ensure it's treated as a string
-    Write-Host "Using provided Client ID: $ClientId" -ForegroundColor Green
+    Write-Host "Using provided Client ID: '$ClientId' (type: $($ClientId.GetType().Name))" -ForegroundColor Green
 }
 if ($PSBoundParameters.ContainsKey('SiteId')) {
     # SiteId parameter was explicitly provided - ensure it's treated as a string
-    Write-Host "Using provided Site ID: $SiteId" -ForegroundColor Green
+    Write-Host "Using provided Site ID: '$SiteId' (type: $($SiteId.GetType().Name))" -ForegroundColor Green
+}
+if ($PSBoundParameters.ContainsKey('AgentType')) {
+    # AgentType parameter was explicitly provided - ensure it's treated as a string
+    Write-Host "Using provided Agent Type: '$AgentType' (type: $($AgentType.GetType().Name))" -ForegroundColor Green
 }
 if ($SkipRun) {
     $SkipRun = $true
@@ -640,18 +644,43 @@ function Prompt-RunAgent {
 
         # Use script-scoped variables for the command
         # Add silent installation flags to prevent UI prompts
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$ClientId`" -site-id `"$SiteId`" -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
+        
+        # Ensure parameters are passed correctly without being converted to "True" literals
+        # Use explicit string values to prevent boolean conversion
+        [string]$clientIdParam = "$ClientId"
+        [string]$siteIdParam = "$SiteId"
+        [string]$agentTypeParam = "$AgentType"
+        
+        Write-Host "Using parameters for installation:" -ForegroundColor Green
+        Write-Host "  - Client ID: '$clientIdParam'" -ForegroundColor Green
+        Write-Host "  - Site ID: '$siteIdParam'" -ForegroundColor Green
+        Write-Host "  - Agent Type: '$agentTypeParam'" -ForegroundColor Green
+        
+        # Build command with explicit parameter values
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type $agentTypeParam -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
         
         Write-Host "Running: $cmd"
         try {
-            # Use Start-Process with -NoNewWindow to prevent UI prompts
+            # Build argument list with explicit parameter values
+            $argList = @(
+                "-m", "install",
+                "-api", "$RmmServerUrl",
+                "-auth", "$AgentAuthKey",
+                "-client-id", "$clientIdParam",
+                "-site-id", "$siteIdParam",
+                "-agent-type", "$agentTypeParam",
+                "-log", "DEBUG",
+                "-logto", "$AgentLogPath",
+                "-nomesh", "-silent", "-quiet"
+            )
+            
+            # Use Start-Process with WindowStyle Hidden to prevent UI prompts
             $processParams = @{
                 FilePath = $binaryPath
-                ArgumentList = "-m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$ClientId`" -site-id `"$SiteId`" -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
-                NoNewWindow = $true
+                ArgumentList = $argList
+                WindowStyle = 'Hidden'
                 Wait = $true
                 PassThru = $true
-                WindowStyle = 'Hidden'
             }
             $process = Start-Process @processParams
             
