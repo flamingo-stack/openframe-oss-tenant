@@ -71,14 +71,9 @@
         <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 25%">
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2" :style="{
-                color: data.agent_info?.plat === 'windows' ? '#0078d7' : 
-                       data.agent_info?.plat === 'darwin' ? '#999' : 
-                       data.agent_info?.plat === 'linux' ? '#f8991d' : '',
-                fontSize: '1.2rem'
-              }"></i>
+              <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2"></i>
               <div class="flex flex-column">
-                <div>{{ getAgentHostname(data.agent) }}</div>
+                <div>{{ data.agent_info?.hostname || getAgentHostname(data.agent) }}</div>
                 <div class="text-xs text-color-secondary mt-1">
                   {{ data.agent_info ? (data.agent_info.os || data.agent_info.operating_system || 'Unknown OS') : '' }}
                 </div>
@@ -246,7 +241,16 @@ const getTypeSeverity = (type: string) => {
 };
 
 const getAgentHostname = (agentId: number) => {
+  // First try to find the device in the devices list
   const device = devices.value.find(d => d.id === agentId.toString());
+  
+  // If we have agent_info for this history item, use that hostname
+  const historyItem = historyItems.value.find(item => item.agent === agentId);
+  if (historyItem && historyItem.agent_info && historyItem.agent_info.hostname) {
+    return historyItem.agent_info.hostname;
+  }
+  
+  // Fall back to device hostname or default
   return device ? device.hostname : `Agent ${agentId}`;
 };
 
@@ -305,17 +309,46 @@ const fetchHistory = async () => {
     
     let newHistory: HistoryEntry[] = [];
     
-    // Check for mock data in localStorage when in development mode
+    // Always create default mock data in development mode
     if (window.location.hostname === 'localhost') {
-      const storedHistory = localStorage.getItem('events-history');
-      if (storedHistory) {
-        try {
-          console.log('Loading mock history from localStorage');
-          newHistory = JSON.parse(storedHistory);
-        } catch (e) {
-          console.error('Failed to parse mock history from localStorage:', e);
+      console.log('Creating default mock data for development');
+      newHistory = [
+        {
+          id: 1,
+          agent: 1,
+          time: "2025-03-23T07:09:30.000Z",
+          command: "ls -la",
+          script_name: null,
+          type: "command",
+          agent_info: {
+            hostname: "Mac.attlocal.net",
+            plat: "darwin",
+            operating_system: "Darwin 15.4 arm64 24.4.0",
+            status: "online"
+          }
+        },
+        {
+          id: 2,
+          agent: 2,
+          time: "2025-03-23T06:09:30.000Z",
+          command: null,
+          script_name: "Test Script",
+          type: "script",
+          agent_info: {
+            hostname: "DESKTOP-057QV01",
+            plat: "windows",
+            operating_system: "Windows 10 Pro",
+            status: "overdue"
+          }
         }
-      }
+      ];
+      console.log('Created mock data:', newHistory);
+      
+      // Skip API call in development mode
+      loading.value = false;
+      historyItems.value = newHistory;
+      previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
+      return;
     }
     
     // If no mock data or not in development mode, fetch from API
@@ -449,40 +482,63 @@ const fetchAgentDetails = async () => {
 
 // Function to generate mock agent data for local development
 const getMockAgentInfo = (agentId: number) => {
-  // Different mock data based on agent ID for variety
-  const mockPlatforms = ['windows', 'linux', 'darwin']; // Ensure lowercase for icon mapping
-  const mockOSVersions = [
-    'Windows 10 Pro 21H2', 
-    'Ubuntu 22.04 LTS', 
-    'macOS 12.5 Monterey'
+  // Real agent data from API
+  const realAgents = [
+    {
+      hostname: "Mac.attlocal.net",
+      plat: "darwin",
+      operating_system: "Darwin 15.4 arm64 24.4.0",
+      status: "online"
+    },
+    {
+      hostname: "DESKTOP-057QV01",
+      plat: "windows",
+      operating_system: "Windows 10 Pro",
+      status: "overdue"
+    }
   ];
-  const mockStatuses = ['online', 'offline'];
   
-  // Use agent ID to deterministically pick mock data
-  const index = agentId % 3;
-  const statusIndex = agentId % 2;
+  // Use agent ID to pick from real agent data
+  const index = agentId % realAgents.length;
+  const agent = realAgents[index];
   
-  // Create mock data with consistent platform values
+  // Create mock data with real values
   const mockData = {
-    platform: mockPlatforms[index].charAt(0).toUpperCase() + mockPlatforms[index].slice(1),
-    plat: mockPlatforms[index].toLowerCase(), // Ensure lowercase for icon mapping
-    os: mockOSVersions[index],
-    operating_system: mockOSVersions[index],
-    status: mockStatuses[statusIndex]
+    platform: agent.plat.charAt(0).toUpperCase() + agent.plat.slice(1),
+    plat: agent.plat.toLowerCase(), // Ensure lowercase for icon mapping
+    os: agent.operating_system,
+    operating_system: agent.operating_system,
+    status: agent.status,
+    hostname: agent.hostname
   };
   
+  console.log('Generated mock agent data for ID', agentId, ':', mockData);
   return mockData;
 };
 
-// Use the same getDeviceIcon function as in Devices.vue
-const getDeviceIcon = (platform: string) => {
-  const iconMap: Record<string, string> = {
-    windows: 'pi pi-microsoft',
-    darwin: 'pi pi-apple',
-    linux: 'pi pi-server'
-  };
-  return iconMap[platform?.toLowerCase()] || 'pi pi-desktop';
+// Import and use the shared getDeviceIcon function
+import { getDeviceIcon } from '../../utils/deviceUtils';
+
+// Override any global styling affecting the Windows icon
+const overrideIconStyles = () => {
+  // Add a style tag to override any global styles affecting the Windows icon
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    .pi-microsoft, .pi-apple, .pi-server {
+      color: inherit !important;
+    }
+  `;
+  document.head.appendChild(styleTag);
 };
+
+// Call the override function when component is mounted
+onMounted(() => {
+  loadHistory();
+  // Add mock data immediately for testing
+  addMockAgentInfo();
+  // Override icon styles
+  overrideIconStyles();
+});
 
 // Clean up interval when component is unmounted
 onUnmounted(() => {
@@ -767,5 +823,7 @@ onUnmounted(() => {
   border-left: 3px solid var(--primary-color);
   margin-bottom: 1rem;
 }
+
+/* Removed custom device-icon styling to match Devices view exactly */
 </style>
 
