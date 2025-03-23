@@ -504,6 +504,38 @@ function Setup-RMMAgent {
     # Copy the AMD64 binary to our output location
     try {
         Write-Host "Copying AMD64 binary to use with ARM64 emulation..." -ForegroundColor Cyan
+        
+        # Kill any processes that might be using the binary file
+        try {
+            Write-Host "Checking for processes using the binary file..." -ForegroundColor Yellow
+            $processesUsingFile = Get-Process | Where-Object { 
+                try { 
+                    $_.Modules | Where-Object { $_.FileName -eq $outputPath } 
+                } catch { 
+                    $false 
+                } 
+            }
+            
+            if ($processesUsingFile) {
+                Write-Host "Found processes using the binary file. Attempting to terminate them..." -ForegroundColor Yellow
+                $processesUsingFile | ForEach-Object {
+                    Write-Host "Terminating process: $($_.Name) (ID: $($_.Id))" -ForegroundColor Yellow
+                    try {
+                        Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+                        Write-Host "Successfully terminated process: $($_.Name) (ID: $($_.Id))" -ForegroundColor Green
+                    } catch {
+                        Write-Host "Failed to terminate process: $($_.Name) (ID: $($_.Id)) - $_" -ForegroundColor Red
+                    }
+                }
+                # Give processes time to fully terminate
+                Start-Sleep -Seconds 2
+            } else {
+                Write-Host "No processes found using the binary file." -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "Error checking for processes using the binary file: $_" -ForegroundColor Red
+        }
+        
         Copy-Item -Path $AMD64_BINARY_PATH -Destination $outputPath -Force
         
         if (Test-Path $outputPath) {
@@ -833,7 +865,8 @@ function Prompt-RunAgent {
                 $agentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
                 # Use the exact format provided by the user (matching the format they specified)
                 # Original format: -m install --api http://localhost:8000 --client-id 1 --site-id 1 --agent-type server --auth 9fd7fef1d3ec77ae1fbfb65bcc76a5b72d3606c8e9e050466f1dee8cd9407329
-                $agentArgs = "-m install --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
+                # Added --nomesh flag as requested by user
+                $agentArgs = "-m install --nomesh --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
                 $agentCmd = "& `"$agentPath`" $agentArgs"
                 
                 Write-Host "Step 3: Running agent configuration: $agentCmd" -ForegroundColor Cyan
