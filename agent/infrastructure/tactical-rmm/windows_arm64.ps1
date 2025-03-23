@@ -1076,10 +1076,9 @@ function Prompt-RunAgent {
                 
                 if ($ProxyServer) {
                     $agentArgs += " -proxy `"$ProxyServer`""
-                } else {
-                    # Add WebSocket proxy setting for protocol override if no custom proxy is specified
-                    $agentArgs += " -proxy `"http://localhost:8000/natsws`""
                 }
+                # No longer adding default proxy parameter as it's not needed
+                # WebSocket protocol is handled by environment variables and registry settings
                 
                 # Add required parameters
                 $agentArgs += " --api $RmmServerUrl --client-id $clientIdParam --site-id $siteIdParam --agent-type $agentTypeParam --auth $AgentAuthKey"
