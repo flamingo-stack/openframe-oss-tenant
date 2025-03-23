@@ -10,6 +10,7 @@
     "strict": true,
     "jsx": "preserve",
     "baseUrl": ".",
+    "types": ["@vue/runtime-core"],
     "paths": {
       "@/*": ["./src/*"]
     }
