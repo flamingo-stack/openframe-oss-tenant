@@ -1,6 +1,7 @@
 <template>
   <div class="rmm-devices">
     <ModuleHeader title="Devices">
+      <template #subtitle>View and manage connected devices</template>
       <template #actions>
         <OFButton icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
           v-tooltip.left="'Script Execution History'" />

@@ -1,6 +1,7 @@
 <template>
   <div class="mdm-queries">
     <ModuleHeader title="Queries">
+      <template #subtitle>Create and run queries for device information</template>
       <template #actions>
         <OFButton 
           label="Create Query" 
@@ -583,4 +584,4 @@ onMounted(async () => {
     }
   }
 }
-</style>             
+</style>                          

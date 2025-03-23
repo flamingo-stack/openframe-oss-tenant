@@ -1,6 +1,7 @@
 <template>
   <div class="rac-devices">
     <ModuleHeader title="Devices">
+      <template #subtitle>Connect to and control remote devices</template>
       <template #actions>
         <OFButton 
           icon="pi pi-refresh" 

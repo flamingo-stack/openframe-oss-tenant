@@ -1,6 +1,7 @@
 <template>
   <div class="mdm-devices">
     <ModuleHeader title="Devices">
+      <template #subtitle>Manage and monitor mobile devices</template>
       <template #actions>
         <OFButton 
           label="Add Device" 
@@ -251,4 +252,4 @@ onMounted(() => {
   min-width: 75px;
   justify-content: center;
 }
-</style>    
+</style>        

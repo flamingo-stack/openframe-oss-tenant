@@ -1,6 +1,7 @@
 <template>
   <div class="of-bulk-ops-view">
     <ModuleHeader title="Bulk Operations">
+      <template #subtitle>Perform operations on multiple devices at once</template>
       <template #actions>
         <!-- No actions in header for this view -->
       </template>
