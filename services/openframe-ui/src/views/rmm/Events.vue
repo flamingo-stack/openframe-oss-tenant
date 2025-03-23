@@ -53,16 +53,9 @@
         emptyHint="History items will appear here as commands and scripts are executed."
         :filters="filters"
       >
-        <Column field="time" header="Time" sortable style="width: 15%">
+        <Column field="time" header="Execution Time" sortable style="width: 15%">
           <template #body="{ data }">
             {{ formatTime(data.time) }}
-          </template>
-        </Column>
-        <Column field="execution_time" header="Execution Time" sortable style="width: 10%">
-          <template #body="{ data }">
-            {{ data.script_results && data.script_results.execution_time ? 
-               `${data.script_results.execution_time.toFixed(2)} sec` : 
-               '-' }}
           </template>
         </Column>
         <Column field="type" header="Type" sortable style="width: 10%">
@@ -222,7 +215,7 @@ const formatTime = (timestamp: string) => {
 
 const formatExecutionTime = (timestamp: string) => {
   const date = new Date(timestamp);
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+  return date.toLocaleTimeString();
 };
 
 const formatType = (type: string) => {
