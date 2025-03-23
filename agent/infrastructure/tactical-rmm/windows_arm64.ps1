@@ -312,7 +312,7 @@ function Setup-BinaryFolder {
         if ($downloadChoice -match "^[Yy]") {
             try {
                 Write-Host "Attempting to download AMD64 binary..." -ForegroundColor Yellow
-                $downloadUrl = "https://github.com/amidaware/rmmagent/releases/latest/download/tacticalagent-windows-amd64.exe"
+                $downloadUrl = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
                 Invoke-WebRequest -Uri $downloadUrl -OutFile $AMD64_BINARY_PATH
                 
                 if (Test-Path $AMD64_BINARY_PATH) {
