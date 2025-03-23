@@ -334,11 +334,11 @@ function Prompt-IfEmpty {
             # In silent mode, always use default value without prompting
             if (-not [string]::IsNullOrEmpty($DefaultVal)) {
                 $userInp = $DefaultVal
-                Write-Host "Using default value for $VarName: '$DefaultVal'" -ForegroundColor Cyan
+                Write-Host "Using default value for ${VarName}: '$DefaultVal'" -ForegroundColor Cyan
             } else {
                 # If no default and silent mode, use empty string
                 $userInp = ""
-                Write-Host "WARNING: No default value for $VarName in silent mode. Using empty string." -ForegroundColor Yellow
+                Write-Host "WARNING: No default value for ${VarName} in silent mode. Using empty string." -ForegroundColor Yellow
             }
         } else {
             # Interactive mode - prompt user
@@ -637,7 +637,7 @@ function Prompt-RunAgent {
                 if ($script:SilentInstall) {
                     # Use default value in silent mode
                     $ClientId = "1"
-                    Write-Host "Using default ClientId: $ClientId" -ForegroundColor Yellow
+                    Write-Host "Using default ClientId: ${ClientId}" -ForegroundColor Yellow
                 } else {
                     Write-Host "ERROR: ClientId is required in non-interactive mode" -ForegroundColor Red
                     exit 1
@@ -647,7 +647,7 @@ function Prompt-RunAgent {
                 if ($script:SilentInstall) {
                     # Use default value in silent mode
                     $SiteId = "1"
-                    Write-Host "Using default SiteId: $SiteId" -ForegroundColor Yellow
+                    Write-Host "Using default SiteId: ${SiteId}" -ForegroundColor Yellow
                 } else {
                     Write-Host "ERROR: SiteId is required in non-interactive mode" -ForegroundColor Red
                     exit 1
