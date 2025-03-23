@@ -271,6 +271,7 @@ import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
 import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
+import { useRouter } from 'vue-router';
 import { 
   OFButton, 
   InputText, 
@@ -315,6 +316,7 @@ const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
+const router = useRouter();
 
 // Shared state
 const loading = ref(true);
@@ -475,6 +477,9 @@ const executeBulkScript = async () => {
     
     resetForm();
     toastService.showSuccess(response || 'Bulk script execution started');
+    setTimeout(() => {
+      router.push('/rmm/events');
+    }, 2000);
   } catch (error) {
     console.error('Failed to execute bulk script:', error);
     let errorMessage = error.message || error.data || 'Failed to execute bulk script';
@@ -524,6 +529,9 @@ const executeBulkCommand = async () => {
     
     resetForm();
     toastService.showSuccess(response || 'Bulk command execution started');
+    setTimeout(() => {
+      router.push('/rmm/events');
+    }, 2000);
   } catch (error) {
     console.error('Failed to execute bulk command:', error);
     let errorMessage = error.message || error.data || 'Failed to execute bulk command';
