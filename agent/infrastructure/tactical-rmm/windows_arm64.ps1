@@ -389,7 +389,6 @@ function Prompt-IfEmpty {
         Write-Host "Using provided ${actualVarName}: '${currVal}' (type: $(${currVal}.GetType().Name))" -ForegroundColor Green
     }
 }
-}
 
 ############################
 # Main Script Flow
