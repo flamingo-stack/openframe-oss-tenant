@@ -424,10 +424,6 @@ try {
     # Prompt for missing values if not provided
     Prompt-IfEmpty -VarName "script:RmmHost" -PromptMsg "Enter RMM server hostname or IP" -DefaultVal "localhost"
     Prompt-IfEmpty -VarName "script:RmmPort" -PromptMsg "Enter RMM server port" -DefaultVal "8000"
-    if (-not $script:Secure) {
-        $securePrompt = Read-Host "Use secure connection (HTTPS/WSS)? (Y/N)"
-        $script:Secure = $securePrompt -eq "Y" -or $securePrompt -eq "y"
-    }
     Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
     Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID"
     Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID"
