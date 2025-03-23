@@ -37,19 +37,19 @@ param (
     [string]$AuthKey,
     [string]$ClientId,
     [string]$SiteId,
-    [string]$AgentType = "workstation"
-    [string]$LogPath = "C:\logs\tactical.log"
-    [string]$BuildFolder = "rmmagent"
-    [switch]$SkipRun
-    [switch]$Help
-    [switch]$Interactive
-    [switch]$Silent = $true
-    [string]$LocalMeshPath
-    [string]$MeshDir
-    [string]$CertPath
-    [string]$AgentDescription
-    [string]$ProxyServer
-    [switch]$NoMesh = $true
+    [string]$AgentType = "workstation",
+    [string]$LogPath = "C:\logs\tactical.log",
+    [string]$BuildFolder = "rmmagent",
+    [switch]$SkipRun,
+    [switch]$Help,
+    [switch]$Interactive,
+    [switch]$Silent = $true,
+    [string]$LocalMeshPath,
+    [string]$MeshDir,
+    [string]$CertPath,
+    [string]$AgentDescription,
+    [string]$ProxyServer,
+    [switch]$NoMesh = $true,
     [string]$LogLevel = "debug"
 )
 
