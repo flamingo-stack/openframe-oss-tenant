@@ -69,9 +69,10 @@ $script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder
 $SkipRun = $SkipRun -or $false
 
 # Initialize parameters with defaults if not provided
-$ClientId = $ClientId -or ""
-$SiteId = $SiteId -or ""
-$AgentType = $AgentType -or "workstation"  # default
+# Use [string] type to ensure parameters are treated as strings, not booleans
+[string]$ClientId = $ClientId -or ""
+[string]$SiteId = $SiteId -or ""
+[string]$AgentType = $AgentType -or "workstation"  # default
 
 # Ensure AgentType has a default value
 if ([string]::IsNullOrEmpty($AgentType)) {
@@ -141,12 +142,12 @@ $AgentAuthKey = $AuthKey
 $AgentLogPath = $LogPath
 # Ensure ClientId and SiteId are properly assigned from parameters
 if ($PSBoundParameters.ContainsKey('ClientId')) {
-    # ClientId parameter was explicitly provided
-    Write-Host "Using provided Client ID: $ClientId"
+    # ClientId parameter was explicitly provided - ensure it's treated as a string
+    Write-Host "Using provided Client ID: $ClientId" -ForegroundColor Green
 }
 if ($PSBoundParameters.ContainsKey('SiteId')) {
-    # SiteId parameter was explicitly provided
-    Write-Host "Using provided Site ID: $SiteId"
+    # SiteId parameter was explicitly provided - ensure it's treated as a string
+    Write-Host "Using provided Site ID: $SiteId" -ForegroundColor Green
 }
 if ($SkipRun) {
     $SkipRun = $true
@@ -300,8 +301,9 @@ function Prompt-IfEmpty {
     
     $currVal = Get-Variable -Name $VarName -ValueOnly -ErrorAction SilentlyContinue
     
-    # If value is True/False (boolean parameter) or null/empty, prompt for value
-    if ($currVal -eq $true -or $currVal -eq $false -or [string]::IsNullOrEmpty($currVal)) {
+    # If value is empty or null, prompt for value
+    # Don't use boolean comparison for string parameters
+    if ([string]::IsNullOrEmpty($currVal)) {
         if (-not [string]::IsNullOrEmpty($DefaultVal)) {
             $userInp = Read-Host "$PromptMsg [$DefaultVal]"
             if ([string]::IsNullOrEmpty($userInp)) {
@@ -638,14 +640,14 @@ function Prompt-RunAgent {
 
         # Use script-scoped variables for the command
         # Add silent installation flags to prevent UI prompts
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $ClientId -site-id $SiteId -agent-type $AgentType -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$ClientId`" -site-id `"$SiteId`" -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
         
         Write-Host "Running: $cmd"
         try {
             # Use Start-Process with -NoNewWindow to prevent UI prompts
             $processParams = @{
                 FilePath = $binaryPath
-                ArgumentList = "-m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $ClientId -site-id $SiteId -agent-type $AgentType -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
+                ArgumentList = "-m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id `"$ClientId`" -site-id `"$SiteId`" -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet"
                 NoNewWindow = $true
                 Wait = $true
                 PassThru = $true
@@ -717,7 +719,8 @@ function Prompt-AllInputs {
             exit 1
         }
     }
-    Write-Host "Using provided Client ID: $ClientId" -ForegroundColor Green
+    # Display the ClientId value as provided by the user, not as a boolean conversion
+    Write-Host "Using provided Client ID: '$ClientId'" -ForegroundColor Green
     
     if ($InteractiveMode -or [string]::IsNullOrEmpty($SiteId)) {
         if ($InteractiveMode) {
@@ -727,7 +730,8 @@ function Prompt-AllInputs {
             exit 1
         }
     }
-    Write-Host "Using provided Site ID: $SiteId" -ForegroundColor Green
+    # Display the SiteId value as provided by the user, not as a boolean conversion
+    Write-Host "Using provided Site ID: '$SiteId'" -ForegroundColor Green
     
     if ($InteractiveMode -or [string]::IsNullOrEmpty($AgentType)) {
         if ($InteractiveMode) {
@@ -779,17 +783,17 @@ if ($InteractiveMode) {
         Write-Host "ERROR: AgentAuthKey is required in non-interactive mode" -ForegroundColor Red
         exit 1
     }
-    if ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true) {
-        Write-Host "ERROR: ClientId is required in non-interactive mode and cannot be 'True'" -ForegroundColor Red
+    if ([string]::IsNullOrEmpty($ClientId)) {
+        Write-Host "ERROR: ClientId is required in non-interactive mode" -ForegroundColor Red
         exit 1
     }
-    if ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true) {
-        Write-Host "ERROR: SiteId is required in non-interactive mode and cannot be 'True'" -ForegroundColor Red
+    if ([string]::IsNullOrEmpty($SiteId)) {
+        Write-Host "ERROR: SiteId is required in non-interactive mode" -ForegroundColor Red
         exit 1
     }
     
     # Set default values for optional parameters
-    if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true) {
+    if ([string]::IsNullOrEmpty($AgentType)) {
         $AgentType = "workstation"
         Write-Host "Using default agent type: $AgentType" -ForegroundColor Yellow
     }
