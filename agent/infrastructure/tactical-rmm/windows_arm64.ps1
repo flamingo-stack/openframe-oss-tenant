@@ -793,26 +793,74 @@ function Prompt-RunAgent {
                 Write-Host "Note: Unable to create registry keys to suppress installer UI. Continuing with installation." -ForegroundColor Yellow
             }
             try {
-                # Create a job to run the process in the background to prevent UI dialogs
-                $jobName = "TacticalRMMInstall"
-                $scriptBlock = {
-                    param($filePath, $argList)
-                    & $filePath @argList
+                # Set up direct process execution with redirected output
+                $processStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+                $processStartInfo.FileName = $binaryPath
+                $processStartInfo.Arguments = $argList -join " "
+                $processStartInfo.RedirectStandardOutput = $true
+                $processStartInfo.RedirectStandardError = $true
+                $processStartInfo.UseShellExecute = $false
+                $processStartInfo.CreateNoWindow = $true
+                $processStartInfo.WindowStyle = 'Hidden'
+                
+                # Create and start the process
+                $process = New-Object System.Diagnostics.Process
+                $process.StartInfo = $processStartInfo
+                $process.EnableRaisingEvents = $true
+                
+                # Set up event handlers for output
+                $stdOutBuilder = New-Object -TypeName System.Text.StringBuilder
+                $stdErrBuilder = New-Object -TypeName System.Text.StringBuilder
+                $outputHandler = [System.EventHandler[System.Diagnostics.DataReceivedEventArgs]]{
+                    if (-not [String]::IsNullOrEmpty($EventArgs.Data)) {
+                        $stdOutBuilder.AppendLine($EventArgs.Data) | Out-Null
+                    }
+                }
+                $errorHandler = [System.EventHandler[System.Diagnostics.DataReceivedEventArgs]]{
+                    if (-not [String]::IsNullOrEmpty($EventArgs.Data)) {
+                        $stdErrBuilder.AppendLine($EventArgs.Data) | Out-Null
+                    }
+                }
+                $process.OutputDataReceived += $outputHandler
+                $process.ErrorDataReceived += $errorHandler
+                
+                # Start the process and begin reading output
+                Write-Host "Starting installation with completely hidden UI..." -ForegroundColor Cyan
+                $process.Start() | Out-Null
+                $process.BeginOutputReadLine()
+                $process.BeginErrorReadLine()
+                
+                # Wait for the process to complete with a timeout
+                $timeoutMs = 300000  # 5 minutes
+                $completed = $process.WaitForExit($timeoutMs)
+                
+                if (-not $completed) {
+                    Write-Host "Installation process timed out after 5 minutes. Attempting to terminate..." -ForegroundColor Yellow
+                    try {
+                        $process.Kill()
+                    } catch {
+                        Write-Host "Could not terminate process: $_" -ForegroundColor Red
+                    }
                 }
                 
-                # Start the job with the installation command
-                Start-Job -Name $jobName -ScriptBlock $scriptBlock -ArgumentList $binaryPath, $argList | Out-Null
+                # Save output to log files
+                $stdOutBuilder.ToString() | Out-File -FilePath "$env:TEMP\tactical_stdout.log" -Force
+                $stdErrBuilder.ToString() | Out-File -FilePath "$env:TEMP\tactical_stderr.log" -Force
                 
-                # Wait for the job to complete
-                Write-Host "Installation running in background job to prevent UI dialogs..." -ForegroundColor Cyan
-                Wait-Job -Name $jobName -Timeout 300 | Out-Null
+                # Wait for service to appear (it might take a moment after process completes)
+                Write-Host "Waiting for service to register..." -ForegroundColor Cyan
+                $maxRetries = 10
+                $retryCount = 0
+                $serviceInstalled = $false
                 
-                # Get the job results
-                $jobResult = Receive-Job -Name $jobName
-                Remove-Job -Name $jobName -Force
-                
-                # Check if the service was installed successfully
-                $serviceInstalled = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+                while ($retryCount -lt $maxRetries -and -not $serviceInstalled) {
+                    $serviceInstalled = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+                    if (-not $serviceInstalled) {
+                        Write-Host "Service not found yet, waiting 5 seconds... (Attempt $($retryCount+1)/$maxRetries)" -ForegroundColor Yellow
+                        Start-Sleep -Seconds 5
+                        $retryCount++
+                    }
+                }
                 
                 if ($serviceInstalled) {
                     Write-Host "Agent installation completed successfully." -ForegroundColor Green
@@ -827,6 +875,8 @@ function Prompt-RunAgent {
                     Write-Host "Service 'tacticalrmm' was not found after installation." -ForegroundColor Yellow
                     Write-Host "Check the log files for more details:" -ForegroundColor Yellow
                     Write-Host "  - Agent log: $AgentLogPath" -ForegroundColor Yellow
+                    Write-Host "  - StdOut: $env:TEMP\tactical_stdout.log" -ForegroundColor Yellow
+                    Write-Host "  - StdErr: $env:TEMP\tactical_stderr.log" -ForegroundColor Yellow
                 }
             } catch {
                 Write-Host "Error executing agent installation: $_" -ForegroundColor Red
