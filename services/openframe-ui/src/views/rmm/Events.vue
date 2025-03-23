@@ -420,6 +420,16 @@ onMounted(() => {
   if (autoPollingEnabled.value) {
     setupRefreshInterval();
   }
+  
+  // Override icon styles
+  overrideIconStyles();
+  
+  // Add mock data immediately for testing
+  if (window.location.hostname === 'localhost') {
+    setTimeout(() => {
+      addMockAgentInfo();
+    }, 500);
+  }
 });
 
 // Add function to enhance history items with agent information
@@ -516,6 +526,47 @@ const getMockAgentInfo = (agentId: number) => {
   return mockData;
 };
 
+// Function to add mock data to history items
+const addMockAgentInfo = () => {
+  console.log('Adding mock agent info to history items');
+  
+  if (historyItems.value.length === 0) {
+    // Create default mock data if no history items exist
+    historyItems.value = [
+      {
+        id: 1,
+        agent: 1,
+        time: "2025-03-23T07:09:30.000Z",
+        command: "ls -la",
+        script_name: null,
+        type: "cmd_run",
+        agent_info: getMockAgentInfo(1)
+      },
+      {
+        id: 2,
+        agent: 2,
+        time: "2025-03-23T06:09:30.000Z",
+        command: null,
+        script_name: "Test Script",
+        type: "script_run",
+        agent_info: getMockAgentInfo(2)
+      }
+    ];
+    console.log('Created mock history items:', historyItems.value);
+  } else {
+    // Add agent_info to existing history items
+    historyItems.value = historyItems.value.map(item => {
+      if (!item.agent_info) {
+        return {
+          ...item,
+          agent_info: getMockAgentInfo(item.agent)
+        };
+      }
+      return item;
+    });
+  }
+};
+
 // Import and use the shared getDeviceIcon function
 import { getDeviceIcon } from '../../utils/deviceUtils';
 
@@ -530,15 +581,6 @@ const overrideIconStyles = () => {
   `;
   document.head.appendChild(styleTag);
 };
-
-// Call the override function when component is mounted
-onMounted(() => {
-  loadHistory();
-  // Add mock data immediately for testing
-  addMockAgentInfo();
-  // Override icon styles
-  overrideIconStyles();
-});
 
 // Clean up interval when component is unmounted
 onUnmounted(() => {
