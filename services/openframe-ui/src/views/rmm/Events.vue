@@ -5,7 +5,7 @@
       <template #actions>
         <OFButton 
           icon="pi pi-sync" 
-          :class="['p-button-sm', autoPollingEnabled ? 'p-button-success' : 'p-button-text']" 
+          :class="['p-button-sm', autoPollingEnabled ? 'p-button-warning' : 'p-button-text']" 
           @click="togglePolling(!autoPollingEnabled)" 
           v-tooltip.top="autoPollingEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'" />
       </template>
