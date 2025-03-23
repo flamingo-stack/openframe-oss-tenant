@@ -11,7 +11,7 @@
 #   1) Interactive mode:
 #      .\windows_arm64.ps1
 #   2) Provide all args:
-#      .\windows_arm64.ps1 -OrgName "OpenFrame" -RmmUrl "http://localhost:8000" -AuthKey "your-key" -ClientId "1" -SiteId "1"
+#      .\windows_arm64.ps1 -RmmHost "rmm.example.com" -RmmPort 8000 -Secure -AuthKey "your-key" -ClientId "1" -SiteId "1" -AgentType "server"
 #
 # Requirements:
 #   - Windows ARM64
@@ -24,14 +24,16 @@
 ############################
 
 param (
-    [string]$OrgName,
-    [string]$Email,
-    [string]$RmmUrl,
+    [string]$RmmHost,
+    [int]$RmmPort,
+    [switch]$Secure = $false,
     [string]$AuthKey,
-    [string]$ClientId = "1",
-    [string]$SiteId = "1",
-    [string]$AgentType = "workstation",
-    [string]$LogPath,
+    [Parameter(Mandatory=$true)]
+    [string]$ClientId,
+    [Parameter(Mandatory=$true)]
+    [string]$SiteId,
+    [Parameter(Mandatory=$true)]
+    [string]$AgentType,
     [switch]$Help
 )
 
@@ -45,26 +47,20 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # Default / Config
 ############################
 
-$RMMAGENT_REPO = "https://github.com/amidaware/rmmagent.git"
-$RMMAGENT_BRANCH = "master"
 $OUTPUT_BINARY = "rmmagent-windows-arm64.exe"
 $AMD64_BINARY = "tacticalagent-v2.9.0-windows-amd64.exe"
 $AMD64_BINARY_PATH = Join-Path (Split-Path -Parent $PSCommandPath) "binaries\$AMD64_BINARY"
 
 # We'll store user-provided or prompted values in these variables:
-$script:OrgName = if ([string]::IsNullOrEmpty($OrgName) -or $OrgName -eq $true -or $OrgName -eq "True") { "" } else { $OrgName }
-$script:ContactEmail = if ([string]::IsNullOrEmpty($Email) -or $Email -eq $true -or $Email -eq "True") { "" } else { $Email }
-$script:RmmServerUrl = if ([string]::IsNullOrEmpty($RmmUrl) -or $RmmUrl -eq $true -or $RmmUrl -eq "True") { "" } else { $RmmUrl }
+$script:RmmHost = if ([string]::IsNullOrEmpty($RmmHost) -or $RmmHost -eq $true -or $RmmHost -eq "True") { "" } else { $RmmHost }
+$script:RmmPort = if ($RmmPort -eq 0) { 8000 } else { $RmmPort }
+$script:Secure = $Secure
 $script:AgentAuthKey = if ([string]::IsNullOrEmpty($AuthKey) -or $AuthKey -eq $true -or $AuthKey -eq "True") { "" } else { $AuthKey }
-$script:AgentLogPath = if ([string]::IsNullOrEmpty($LogPath) -or $LogPath -eq $true -or $LogPath -eq "True") { "" } else { $LogPath }
-# Ensure BuildFolder has a default that's not the variable name itself
-$script:BuildFolder = if ([string]::IsNullOrEmpty($BuildFolder) -or $BuildFolder -eq "$true") { "rmmagent" } else { $BuildFolder }
-$SkipRun = $SkipRun -or $false
 
 # Initialize parameters with defaults if not provided
 # Parse ClientId and SiteId as integers since that's what the agent expects
 # Use proper integer parsing with TryParse for ClientId
-$tempClientId = 1
+$tempClientId = 0
 if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $ClientId -eq "True")) {
     $tempValue = 0
     if ([int]::TryParse($ClientId, [ref]$tempValue)) {
@@ -74,7 +70,7 @@ if (-not ([string]::IsNullOrEmpty($ClientId) -or $ClientId -eq $true -or $Client
 [int]$script:ClientId = $tempClientId
 
 # Use proper integer parsing with TryParse for SiteId
-$tempSiteId = 1
+$tempSiteId = 0
 if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq "True")) {
     $tempValue = 0
     if ([int]::TryParse($SiteId, [ref]$tempValue)) {
@@ -82,12 +78,7 @@ if (-not ([string]::IsNullOrEmpty($SiteId) -or $SiteId -eq $true -or $SiteId -eq
     }
 }
 [int]$script:SiteId = $tempSiteId
-[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "workstation" } else { "$AgentType" }
-
-# Ensure AgentType has a default value
-if ([string]::IsNullOrEmpty($AgentType)) {
-    $AgentType = "workstation"
-}
+[string]$script:AgentType = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "" } else { "$AgentType" }
 
 # Function to display help
 function Show-Help {
@@ -102,14 +93,13 @@ function Show-Help {
     Write-Host "  .\windows_arm64.ps1 [parameters]"
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
-    Write-Host "  -OrgName        Organization name"
-    Write-Host "  -Email          Contact email"
-    Write-Host "  -RmmUrl         URL of the RMM server"
+    Write-Host "  -RmmHost        Hostname or IP of the RMM server"
+    Write-Host "  -RmmPort        Port number for the RMM server"
+    Write-Host "  -Secure         Use HTTPS/WSS for secure connection (default: false)"
     Write-Host "  -AuthKey        Authentication key for the RMM server"
-    Write-Host "  -ClientId       Client ID (default: 1)"
-    Write-Host "  -SiteId         Site ID (default: 1)"
-    Write-Host "  -AgentType      Agent type (default: workstation)"
-    Write-Host "  -LogPath        Log file path (default: C:\logs\tactical.log)"
+    Write-Host "  -ClientId       Client ID (required)"
+    Write-Host "  -SiteId         Site ID (required)"
+    Write-Host "  -AgentType      Agent type (required)"
     Write-Host "  -Help           Display this help message"
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Yellow
@@ -117,7 +107,7 @@ function Show-Help {
     Write-Host "  .\windows_arm64.ps1"
     Write-Host ""
     Write-Host "  # Non-interactive mode with all parameters:"
-    Write-Host "  .\windows_arm64.ps1 -OrgName 'OpenFrame' -Email 'admin@example.com' -RmmUrl 'http://rmm.example.com' -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'workstation'"
+    Write-Host "  .\windows_arm64.ps1 -RmmHost 'rmm.example.com' -RmmPort 8000 -Secure -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'server'"
     Write-Host ""
     Write-Host "Note: This script requires administrator privileges." -ForegroundColor Red
     Write-Host "=========================================================" -ForegroundColor Cyan
@@ -135,15 +125,16 @@ if ($Help) {
 
 function Set-WebSocketProtocolEnvironment {
     param (
-        [string]$RmmUrl
+        [bool]$Secure
     )
     
-    Write-Host "Setting environment variables to override WebSocket protocol to ws://..." -ForegroundColor Yellow
+    $protocol = if ($Secure) { "wss" } else { "ws" }
+    Write-Host "Setting environment variables to use WebSocket protocol $protocol://..." -ForegroundColor Yellow
     
     # Set environment variables to override WebSocket protocol
-    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", "ws", [System.EnvironmentVariableTarget]::Process)
-    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", "ws", [System.EnvironmentVariableTarget]::User)
-    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", "ws", [System.EnvironmentVariableTarget]::Machine)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Process)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::User)
+    [Environment]::SetEnvironmentVariable("NATS_WS_SCHEME", $protocol, [System.EnvironmentVariableTarget]::Machine)
     
     Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
     return $true
@@ -151,9 +142,10 @@ function Set-WebSocketProtocolEnvironment {
 
 function Set-WebSocketRegistrySettings {
     param (
-        [string]$RmmUrl
+        [bool]$Secure
     )
     
+    $protocol = if ($Secure) { "wss" } else { "ws" }
     Write-Host "Setting WebSocket protocol registry settings..." -ForegroundColor Yellow
     
     # Create registry keys to override WebSocket protocol
@@ -164,7 +156,7 @@ function Set-WebSocketRegistrySettings {
         }
         
         # Set registry values
-        New-ItemProperty -Path "HKLM:\SOFTWARE\TacticalRMM" -Name "NatsWsScheme" -Value "ws" -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path "HKLM:\SOFTWARE\TacticalRMM" -Name "NatsWsScheme" -Value $protocol -PropertyType String -Force | Out-Null
         
         Write-Host "Registry settings configured successfully" -ForegroundColor Green
         return $true
@@ -283,64 +275,6 @@ function Uninstall-TacticalRMM {
     }
 }
 
-# 3. Install from binary
-function Install-FromBinary {
-    param (
-        [string]$BinaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe",
-        [string]$RmmUrl = $RmmServerUrl,
-        [string]$AuthKey = $AgentAuthKey,
-        [int]$ClientId = $script:ClientId,
-        [int]$SiteId = $script:SiteId,
-        [string]$AgentType = $script:AgentType,
-        [string]$LogPath = $AgentLogPath
-    )
-    
-    # Verify binary exists
-    if (-not (Test-Path $BinaryPath)) {
-        Write-Host "ERROR: Binary not found at $BinaryPath" -ForegroundColor Red
-        Write-Host "Please ensure the binary exists in the script directory." -ForegroundColor Yellow
-        return $false
-    }
-    
-    # Apply WebSocket protocol modifications for non-HTTPS URLs
-    if ($RmmUrl -match "^http://") {
-        Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
-        Set-WebSocketProtocolEnvironment -RmmUrl $RmmUrl
-        Set-WebSocketRegistrySettings -RmmUrl $RmmUrl
-    }
-    
-    # Ensure log directory exists
-    $logDir = Split-Path -Parent $LogPath
-    if (-not (Test-Path $logDir)) {
-        Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
-        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
-    }
-    
-    # Install the agent
-    try {
-        Write-Host "Running binary installation: & `"$BinaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
-        Start-Process -FilePath $BinaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
-        
-        # Configure the agent with parameters
-        $programFilesPath = "${env:ProgramFiles}"
-        $installedAgentPath = "$programFilesPath\TacticalAgent\tacticalrmm.exe"
-        if (Test-Path $installedAgentPath) {
-            $agentConfigArgs = "-m install -api `"$RmmUrl`" -auth `"$AuthKey`" -client-id $ClientId -site-id $SiteId -agent-type `"$AgentType`" -log `"DEBUG`" -logto `"$LogPath`" -nomesh -silent"
-            Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
-            Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
-        } else {
-            Write-Host "WARNING: Installed agent executable not found at expected location: $installedAgentPath" -ForegroundColor Yellow
-            return $false
-        }
-        
-        Write-Host "Installation completed successfully!" -ForegroundColor Green
-        return $true
-    } catch {
-        Write-Host "Error during installation: ${_}" -ForegroundColor Red
-        return $false
-    }
-}
-
 ############################
 # Prompting for missing inputs
 ############################
@@ -396,166 +330,37 @@ function Prompt-IfEmpty {
 
 # Verify binary exists
 $binaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe"
-$alternativePath = "$PSScriptRoot\binaries\tacticalagent-v2.9.0-windows-amd64.exe"
-
-if (-not (Test-Path $binaryPath) -and (Test-Path $alternativePath)) {
-    Write-Host "Binary not found at $binaryPath, using alternative path: $alternativePath" -ForegroundColor Yellow
-    Copy-Item $alternativePath $binaryPath
-    Write-Host "Copied alternative binary to $binaryPath" -ForegroundColor Green
-}
-
 if (-not (Test-Path $binaryPath)) {
-    Write-Host "AMD64 binary not found. Downloading..." -ForegroundColor Yellow
-    
-    # Create binaries directory if it doesn't exist
-    $binariesDir = Join-Path $PSScriptRoot "binaries"
-    if (-not (Test-Path $binariesDir)) {
-        New-Item -Path $binariesDir -ItemType Directory -Force | Out-Null
-    }
-    
-    # Download the binary from GitHub releases
-    $downloadUrl = "https://github.com/amidaware/tacticalrmm/releases/latest/download/tacticalagent-windows-amd64.exe"
-    $downloadPath = Join-Path $binariesDir $AMD64_BINARY
-    
-    Write-Host "Downloading from: $downloadUrl" -ForegroundColor Cyan
-    
-    try {
-        # Use TLS 1.2 for HTTPS connections
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        
-        # Create a WebClient with proper headers to avoid getting HTML content
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("User-Agent", "PowerShell/5.1")
-        $webClient.Headers.Add("Accept", "application/octet-stream")
-        
-        # Alternative download URLs to try
-        $downloadUrls = @(
-            "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe",
-            "https://github.com/amidaware/rmmagent/releases/download/v2.8.0/tacticalagent-v2.8.0-windows-amd64.exe",
-            "https://github.com/amidaware/rmmagent/releases/download/v2.7.0/tacticalagent-v2.7.0-windows-amd64.exe",
-            "https://github.com/amidaware/rmmagent/releases/download/v2.6.2/tacticalagent-v2.6.2-windows-amd64.exe",
-            "https://github.com/amidaware/rmmagent/releases/download/v2.6.1/tacticalagent-v2.6.1-windows-amd64.exe"
-        )
-        
-        $downloadSuccess = $false
-        foreach ($url in $downloadUrls) {
-            try {
-                Write-Host "Attempting download from: $url" -ForegroundColor Cyan
-                $webClient.DownloadFile($url, $downloadPath)
-                
-                if (Test-Path $downloadPath) {
-                    $fileInfo = Get-Item $downloadPath
-                    if ($fileInfo.Length -gt 1000000) { # Check if file is at least 1MB
-                        Write-Host "Successfully downloaded AMD64 binary to $downloadPath (Size: $($fileInfo.Length) bytes)" -ForegroundColor Green
-                        Copy-Item $downloadPath $binaryPath
-                        Write-Host "Copied AMD64 binary to $binaryPath" -ForegroundColor Green
-                        $downloadSuccess = $true
-                        break
-                    } else {
-                        Write-Host "Downloaded file is too small, likely not a valid executable. Trying next URL..." -ForegroundColor Yellow
-                        Remove-Item $downloadPath -Force
-                    }
-                }
-            } catch {
-                Write-Host "Error downloading from ${url}: ${_}" -ForegroundColor Yellow
-                # Continue to next URL
-            }
-        }
-        
-        if (-not $downloadSuccess) {
-            throw "Failed to download a valid binary from any of the available URLs"
-        }
-    } catch {
-        Write-Host "Error downloading AMD64 binary: ${_}" -ForegroundColor Red
-        
-        # Fallback: Check if we have a local copy in the script directory
-        $localCopyPath = Join-Path $PSScriptRoot "tacticalagent-windows-amd64.exe"
-        if (Test-Path $localCopyPath) {
-            Write-Host "Found local copy of AMD64 binary at $localCopyPath" -ForegroundColor Yellow
-            Copy-Item $localCopyPath $binaryPath
-            Write-Host "Using local copy of AMD64 binary" -ForegroundColor Green
-        } else {
-            Write-Host "No local copy found. Please download the Tactical RMM agent binary manually and place it in the script directory." -ForegroundColor Red
-            exit 1
-        }
-    }
-}
-
-############################
-# Agent Executable Verification Function
-############################
-
-function Test-AgentExecutable {
-    param (
-        [string]$Path
-    )
-    
-    if (-not (Test-Path $Path)) {
-        Write-Host "ERROR: Agent executable not found at $Path" -ForegroundColor Red
-        return $false
-    }
-    
-    try {
-        $fileInfo = Get-Item $Path
-        if ($fileInfo.Length -eq 0) {
-            Write-Host "ERROR: Agent executable file is empty" -ForegroundColor Red
-            return $false
-        }
-        
-        # Check if file is locked or in use
-        try {
-            $fileStream = [System.IO.File]::Open($Path, 'Open', 'Read', 'None')
-            $fileStream.Close()
-            $fileStream.Dispose()
-        } catch {
-            Write-Host "WARNING: Agent executable file is locked or in use: ${_}" -ForegroundColor Yellow
-            # Don't return false here as the file might be locked by a valid process
-        }
-        
-        Write-Host "Agent executable verified at $Path" -ForegroundColor Green
-        return $true
-    } catch {
-        Write-Host "ERROR: Failed to verify agent executable: ${_}" -ForegroundColor Red
-        return $false
-    }
-}
-
-# Verify the binary exists and is valid
-if (-not (Test-Path $binaryPath)) {
-    Write-Host "ERROR: Binary not found at $binaryPath after download attempt" -ForegroundColor Red
-    exit 1
-}
-
-# Use the Test-AgentExecutable function to verify the binary
-if (-not (Test-AgentExecutable -Path $binaryPath)) {
-    Write-Host "ERROR: Binary verification failed" -ForegroundColor Red
+    Write-Host "ERROR: Binary not found at $binaryPath" -ForegroundColor Red
+    Write-Host "Please ensure the binary exists in the script directory." -ForegroundColor Yellow
     exit 1
 }
 
 # Prompt for missing values if not provided
-Prompt-IfEmpty -VarName "script:OrgName" -PromptMsg "Enter organization name" -DefaultVal "OpenFrame"
-Prompt-IfEmpty -VarName "script:ContactEmail" -PromptMsg "Enter contact email" -DefaultVal "admin@openframe.io"
-Prompt-IfEmpty -VarName "script:RmmServerUrl" -PromptMsg "Enter RMM server URL" -DefaultVal "http://localhost:8000"
-Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
-Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID" -DefaultVal "1"
-Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID" -DefaultVal "1"
-Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type" -DefaultVal "workstation"
-# Make LogPath optional - only prompt if explicitly requested
-if (-not [string]::IsNullOrEmpty($LogPath)) {
-    Prompt-IfEmpty -VarName "script:AgentLogPath" -PromptMsg "Enter log path" -DefaultVal ""
+Prompt-IfEmpty -VarName "script:RmmHost" -PromptMsg "Enter RMM server hostname or IP" -DefaultVal "localhost"
+Prompt-IfEmpty -VarName "script:RmmPort" -PromptMsg "Enter RMM server port" -DefaultVal "8000"
+if (-not $script:Secure) {
+    $securePrompt = Read-Host "Use secure connection (HTTPS/WSS)? (Y/N)"
+    $script:Secure = $securePrompt -eq "Y" -or $securePrompt -eq "y"
 }
+Prompt-IfEmpty -VarName "script:AgentAuthKey" -PromptMsg "Enter agent auth key" -DefaultVal ""
+Prompt-IfEmpty -VarName "script:ClientId" -PromptMsg "Enter client ID"
+Prompt-IfEmpty -VarName "script:SiteId" -PromptMsg "Enter site ID"
+Prompt-IfEmpty -VarName "script:AgentType" -PromptMsg "Enter agent type"
+
+# Construct the full RMM URL based on parameters
+$protocol = if ($script:Secure) { "https" } else { "http" }
+$script:RmmServerUrl = "${protocol}://${script:RmmHost}:${script:RmmPort}"
 
 # Display parameters for installation
 Write-Host "Using parameters for installation:" -ForegroundColor Cyan
-Write-Host "  - Client ID: ${script:ClientId} (type: $(${script:ClientId}.GetType().Name))" -ForegroundColor White
-Write-Host "  - Site ID: ${script:SiteId} (type: $(${script:SiteId}.GetType().Name))" -ForegroundColor White
-Write-Host "  - Agent Type: '${script:AgentType}' (type: $(${script:AgentType}.GetType().Name))" -ForegroundColor White
-Write-Host "  - RMM URL: '${script:RmmServerUrl}'" -ForegroundColor White
-if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
-    Write-Host "  - Log Path: '${script:AgentLogPath}'" -ForegroundColor White
-} else {
-    Write-Host "  - Log Path: Using agent default" -ForegroundColor White
-}
+Write-Host "  - Client ID: ${script:ClientId}" -ForegroundColor White
+Write-Host "  - Site ID: ${script:SiteId}" -ForegroundColor White
+Write-Host "  - Agent Type: '${script:AgentType}'" -ForegroundColor White
+Write-Host "  - RMM Host: '${script:RmmHost}'" -ForegroundColor White
+Write-Host "  - RMM Port: ${script:RmmPort}" -ForegroundColor White
+Write-Host "  - Secure Connection: $($script:Secure)" -ForegroundColor White
+Write-Host "  - Full RMM URL: '${script:RmmServerUrl}'" -ForegroundColor White
 
 # Follow exact 3-step flow as requested by user
 Write-Host "=== STEP 1: Checking if Tactical RMM is already installed ===" -ForegroundColor Cyan
@@ -571,21 +376,10 @@ if ($tacticalInstalled) {
 
 # 3. Install from binary
 Write-Host "=== STEP 3: Installing from binary ===" -ForegroundColor Cyan
-# Apply WebSocket protocol modifications for non-HTTPS URLs
-if (-not [string]::IsNullOrEmpty($script:RmmServerUrl) -and $script:RmmServerUrl -match "^http://") {
-    Write-Host "Setting WebSocket protocol for non-HTTPS URL..." -ForegroundColor Yellow
-    Set-WebSocketProtocolEnvironment -RmmUrl $script:RmmServerUrl
-    Set-WebSocketRegistrySettings -RmmUrl $script:RmmServerUrl
-}
-
-# Ensure log directory exists
-if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
-    $logDir = Split-Path -Parent $script:AgentLogPath
-    if (-not (Test-Path $logDir)) {
-        Write-Host "Creating log directory: $logDir" -ForegroundColor Yellow
-        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
-    }
-}
+# Apply WebSocket protocol modifications based on secure flag
+Write-Host "Setting WebSocket protocol for ${if ($script:Secure) { "secure" } else { "non-secure" }} connection..." -ForegroundColor Yellow
+Set-WebSocketProtocolEnvironment -Secure $script:Secure
+Set-WebSocketRegistrySettings -Secure $script:Secure
 
 # Install the agent
 Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
@@ -603,15 +397,7 @@ if (Test-Path $installedAgentPath) {
     if (-not [string]::IsNullOrEmpty($script:AgentAuthKey)) {
         $agentConfigArgs += " -auth `"$script:AgentAuthKey`""
     }
-    $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -log `"DEBUG`""
-    # Only add LogPath if explicitly provided
-    if (-not [string]::IsNullOrEmpty($script:AgentLogPath)) {
-        $agentConfigArgs += " -logto `"$script:AgentLogPath`""
-        Write-Host "Using custom log path: $script:AgentLogPath" -ForegroundColor Cyan
-    } else {
-        Write-Host "Using agent default log path" -ForegroundColor Cyan
-    }
-    $agentConfigArgs += " -nomesh -silent"
+    $agentConfigArgs += " -client-id $script:ClientId -site-id $script:SiteId -agent-type `"$script:AgentType`" -nomesh -silent"
     
     Write-Host "Configuring agent: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
     Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait
