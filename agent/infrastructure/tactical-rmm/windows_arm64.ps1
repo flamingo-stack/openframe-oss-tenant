@@ -1169,6 +1169,24 @@ function Prompt-RunAgent {
                 $agentArgs += " -api $RmmServerUrl -client-id $ClientId -site-id $SiteId -agent-type $AgentType -auth $AgentAuthKey"
                 $agentCmd = "& `"$agentPath`" $agentArgs"
                 
+                # Check for existing installation
+                $uninstallerPath = "C:\Program Files\TacticalAgent\unins000.exe"
+                if (Test-Path $uninstallerPath) {
+                    Write-Host "Existing Tactical RMM agent installation found. Uninstalling..." -ForegroundColor Yellow
+                    
+                    # Run the uninstaller
+                    Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Cyan
+                    $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -NoNewWindow -Wait -PassThru
+                    
+                    if ($uninstallProcess.ExitCode -eq 0) {
+                        Write-Host "Uninstallation completed successfully. Waiting 10 seconds before reinstalling..." -ForegroundColor Green
+                        Start-Sleep -Seconds 10
+                    } else {
+                        Write-Host "Uninstallation FAILED with error code: $($uninstallProcess.ExitCode)" -ForegroundColor Red
+                        Write-Host "Continuing with installation attempt..." -ForegroundColor Yellow
+                    }
+                }
+                
                 # Update the display command to show only supported flags
                 Write-Host "Step 3: Running agent configuration: & `"$agentPath`" $agentArgs" -ForegroundColor Cyan
                 
@@ -1203,11 +1221,41 @@ function Prompt-RunAgent {
                     $agentError
                     Write-Host "===== End Agent Configuration Error =====" -ForegroundColor Yellow
                     
+                    # Check for existing installation error
+                    if ($agentError -match "Existing installation found and must be removed") {
+                        Write-Host "Existing installation detected. Attempting to uninstall..." -ForegroundColor Yellow
+                        
+                        # Extract uninstaller path from error message if possible
+                        $uninstallerMatch = $agentError | Select-String -Pattern '"(.*?unins000\.exe)"'
+                        $uninstallerPath = if ($uninstallerMatch) { $uninstallerMatch.Matches.Groups[1].Value } else { "C:\Program Files\TacticalAgent\unins000.exe" }
+                        
+                        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Cyan
+                        
+                        # Run the uninstaller
+                        $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -NoNewWindow -Wait -PassThru
+                        
+                        if ($uninstallProcess.ExitCode -eq 0) {
+                            Write-Host "Uninstallation completed successfully. Waiting 10 seconds before reinstalling..." -ForegroundColor Green
+                            Start-Sleep -Seconds 10
+                            
+                            # Try installing again
+                            Write-Host "Attempting to reinstall agent..." -ForegroundColor Cyan
+                            $reinstallProcess = Start-Process -FilePath $agentPath -ArgumentList $agentArgs -NoNewWindow -Wait -PassThru
+                            
+                            if ($reinstallProcess.ExitCode -eq 0) {
+                                Write-Host "Agent reinstallation completed successfully" -ForegroundColor Green
+                            } else {
+                                Write-Host "Agent reinstallation FAILED with error code: $($reinstallProcess.ExitCode)" -ForegroundColor Red
+                            }
+                        } else {
+                            Write-Host "Uninstallation FAILED with error code: $($uninstallProcess.ExitCode)" -ForegroundColor Red
+                        }
+                    }
                     # Check if common errors are present in the output
-                    if ($agentOutput -match "WebSocket|connection failed|cannot connect") {
+                    elseif ($agentOutput -match "WebSocket|connection failed|cannot connect") {
                         Write-Host "ERROR: WebSocket connection issue detected. Check WebSocket settings and server connectivity." -ForegroundColor Red
                     }
-                    if ($agentOutput -match "auth|authentication|authorization") {
+                    elseif ($agentOutput -match "auth|authentication|authorization") {
                         Write-Host "ERROR: Authentication issue detected. Verify your auth key is correct." -ForegroundColor Red
                     }
                     Write-Host "Check the log files for more detailed information." -ForegroundColor Yellow
