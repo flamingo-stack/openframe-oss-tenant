@@ -1188,77 +1188,97 @@ function Prompt-RunAgent {
                 }
                 
                 # Update the display command to show only supported flags
-                Write-Host "Step 3: Running agent configuration: & `"$agentPath`" $agentArgs" -ForegroundColor Cyan
+                Write-Host "Step 3: Running binary installation: & `"$agentPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
                 
-                # Set up process for agent configuration
-                $agentProcess = New-Object System.Diagnostics.Process
-                $agentProcess.StartInfo.FileName = $agentPath
-                $agentProcess.StartInfo.Arguments = $agentArgs
-                $agentProcess.StartInfo.UseShellExecute = $false
-                $agentProcess.StartInfo.CreateNoWindow = $true
-                $agentProcess.StartInfo.WindowStyle = 'Hidden'
-                $agentProcess.StartInfo.RedirectStandardOutput = $true
-                $agentProcess.StartInfo.RedirectStandardError = $true
+                # First step: Run binary installation with VERYSILENT flag
+                Write-Host "Step 1: Running binary installation: & `"$agentPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+                $binaryProcess = New-Object System.Diagnostics.Process
+                $binaryProcess.StartInfo.FileName = $agentPath
+                $binaryProcess.StartInfo.Arguments = "/VERYSILENT /SUPPRESSMSGBOXES"
+                $binaryProcess.StartInfo.UseShellExecute = $false
+                $binaryProcess.StartInfo.CreateNoWindow = $true
+                $binaryProcess.StartInfo.WindowStyle = 'Hidden'
+                $binaryProcess.StartInfo.RedirectStandardOutput = $true
+                $binaryProcess.StartInfo.RedirectStandardError = $true
                 
-                # Start the agent configuration process
-                $agentProcess.Start() | Out-Null
-                $agentOutput = $agentProcess.StandardOutput.ReadToEnd()
-                $agentError = $agentProcess.StandardError.ReadToEnd()
-                $agentProcess.WaitForExit()
+                # Start the binary installation process
+                $binaryProcess.Start() | Out-Null
+                $binaryOutput = $binaryProcess.StandardOutput.ReadToEnd()
+                $binaryError = $binaryProcess.StandardError.ReadToEnd()
+                $binaryProcess.WaitForExit()
                 
-                # Save agent configuration output
-                $agentOutput | Out-File -FilePath "$env:TEMP\tactical_agent_stdout.log" -Force
-                $agentError | Out-File -FilePath "$env:TEMP\tactical_agent_stderr.log" -Force
+                Write-Host "Binary installation completed with exit code: $($binaryProcess.ExitCode)" -ForegroundColor Cyan
                 
-                Write-Host "Agent configuration completed with exit code: $($agentProcess.ExitCode)" -ForegroundColor Cyan
+                # Wait a few seconds for installation to complete
+                Write-Host "Step 2: Waiting 5 seconds before agent configuration..." -ForegroundColor Cyan
+                Start-Sleep -Seconds 5
                 
-                # Save detailed error information
-                if ($agentProcess.ExitCode -ne 0) {
-                    Write-Host "Agent configuration FAILED with error code: $($agentProcess.ExitCode)" -ForegroundColor Red
-                    Write-Host "===== Agent Configuration Stdout =====" -ForegroundColor Yellow
-                    $agentOutput
-                    Write-Host "===== Agent Configuration Stderr =====" -ForegroundColor Yellow
-                    $agentError
-                    Write-Host "===== End Agent Configuration Error =====" -ForegroundColor Yellow
+                # Save binary installation output
+                $binaryOutput | Out-File -FilePath "$env:TEMP\tactical_binary_stdout.log" -Force
+                $binaryError | Out-File -FilePath "$env:TEMP\tactical_binary_stderr.log" -Force
+                
+                # Check WebSocket URL protocol for modifications
+                Write-Host "Checking RMM URL protocol for WebSocket modifications..." -ForegroundColor Cyan
+                if ($RmmServerUrl -match "^http://") {
+                    Write-Host "Non-HTTPS RMM URL detected. Applying WebSocket protocol modifications..." -ForegroundColor Yellow
+                    Set-WebSocketProtocolEnvironment -RmmUrl $RmmServerUrl
+                    Set-WebSocketRegistrySettings -RmmUrl $RmmServerUrl
                     
-                    # Check for existing installation error
-                    if ($agentError -match "Existing installation found and must be removed") {
-                        Write-Host "Existing installation detected. Attempting to uninstall..." -ForegroundColor Yellow
+                    # Patch the installed binary if it exists
+                    $installedBinaryPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
+                    if (Test-Path $installedBinaryPath) {
+                        Patch-WebSocketProtocol -BinaryPath $installedBinaryPath -RmmUrl $RmmServerUrl
+                    }
+                    
+                    Write-Host "WebSocket protocol modifications applied, proceeding with agent installation..." -ForegroundColor Green
+                    
+                    # Display WebSocket configuration
+                    Write-Host "===== WebSocket Configuration =====" -ForegroundColor Cyan
+                    Write-Host "Environment Variables:" -ForegroundColor Yellow
+                    Write-Host "  TACTICAL_WEBSOCKET_MODE = ws" -ForegroundColor White
+                    Write-Host "  TACTICAL_WEBSOCKET_PORT = 8000" -ForegroundColor White
+                    Write-Host "  TACTICAL_WEBSOCKET_PATH = /natsws" -ForegroundColor White
+                    Write-Host "Registry Settings:" -ForegroundColor Yellow
+                    Write-Host "  WebSocketProtocol = ws" -ForegroundColor White
+                    Write-Host "  WebSocketPort = 8000" -ForegroundColor White
+                    Write-Host "  WebSocketPath = /natsws" -ForegroundColor White
+                    Write-Host "===================================" -ForegroundColor Cyan
+                }
+                
+                # Verify the installed agent executable exists
+                $installedAgentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
+                $agentExecutableExists = Test-AgentExecutable -Path $installedAgentPath
+                
+                if ($agentExecutableExists) {
+                    Write-Host "Agent executable verified at $installedAgentPath" -ForegroundColor Green
+                    
+                    # Step 3: Configure the installed agent with the provided parameters
+                    $agentConfigArgs = "-m install -nomesh -silent -log debug -logto `"$AgentLogPath`" -api $RmmServerUrl -client-id $ClientId -site-id $SiteId -agent-type $AgentType -auth $AgentAuthKey"
+                    
+                    Write-Host "Step 3: Running agent configuration: & `"$installedAgentPath`" $agentConfigArgs" -ForegroundColor Cyan
+                    
+                    try {
+                        # Run the installed agent with configuration parameters
+                        $agentConfigProcess = Start-Process -FilePath $installedAgentPath -ArgumentList $agentConfigArgs -NoNewWindow -Wait -PassThru
                         
-                        # Extract uninstaller path from error message if possible
-                        $uninstallerMatch = $agentError | Select-String -Pattern '"(.*?unins000\.exe)"'
-                        $uninstallerPath = if ($uninstallerMatch) { $uninstallerMatch.Matches.Groups[1].Value } else { "C:\Program Files\TacticalAgent\unins000.exe" }
-                        
-                        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Cyan
-                        
-                        # Run the uninstaller
-                        $uninstallProcess = Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -NoNewWindow -Wait -PassThru
-                        
-                        if ($uninstallProcess.ExitCode -eq 0) {
-                            Write-Host "Uninstallation completed successfully. Waiting 10 seconds before reinstalling..." -ForegroundColor Green
-                            Start-Sleep -Seconds 10
-                            
-                            # Try installing again
-                            Write-Host "Attempting to reinstall agent..." -ForegroundColor Cyan
-                            $reinstallProcess = Start-Process -FilePath $agentPath -ArgumentList $agentArgs -NoNewWindow -Wait -PassThru
-                            
-                            if ($reinstallProcess.ExitCode -eq 0) {
-                                Write-Host "Agent reinstallation completed successfully" -ForegroundColor Green
-                            } else {
-                                Write-Host "Agent reinstallation FAILED with error code: $($reinstallProcess.ExitCode)" -ForegroundColor Red
-                            }
+                        if ($agentConfigProcess.ExitCode -eq 0) {
+                            Write-Host "Agent configuration completed successfully" -ForegroundColor Green
                         } else {
-                            Write-Host "Uninstallation FAILED with error code: $($uninstallProcess.ExitCode)" -ForegroundColor Red
+                            Write-Host "Agent configuration FAILED with error code: $($agentConfigProcess.ExitCode)" -ForegroundColor Red
+                            
+                            # Check for common errors
+                            if ($agentConfigProcess.ExitCode -eq 1) {
+                                Write-Host "ERROR: Agent configuration failed. This may be due to authentication issues." -ForegroundColor Red
+                            } elseif ($agentConfigProcess.ExitCode -eq 2) {
+                                Write-Host "ERROR: Agent configuration failed. This may be due to WebSocket connection issues." -ForegroundColor Red
+                            }
                         }
+                    } catch {
+                        Write-Host "Error executing agent configuration: $_" -ForegroundColor Red
                     }
-                    # Check if common errors are present in the output
-                    elseif ($agentOutput -match "WebSocket|connection failed|cannot connect") {
-                        Write-Host "ERROR: WebSocket connection issue detected. Check WebSocket settings and server connectivity." -ForegroundColor Red
-                    }
-                    elseif ($agentOutput -match "auth|authentication|authorization") {
-                        Write-Host "ERROR: Authentication issue detected. Verify your auth key is correct." -ForegroundColor Red
-                    }
-                    Write-Host "Check the log files for more detailed information." -ForegroundColor Yellow
+                } else {
+                    Write-Host "ERROR: Agent executable not found at $installedAgentPath after installation" -ForegroundColor Red
+                    Write-Host "Installation may have failed or the executable was not created properly" -ForegroundColor Red
                 }
                 
                 # Wait for service to appear (it might take a moment after process completes)
@@ -1286,7 +1306,32 @@ function Prompt-RunAgent {
                     Write-Host "This is not necessarily an error if the service is already running." -ForegroundColor Yellow
                 }
                 
-                # Check if service is installed
+                # Display agent logs information
+                Write-Host "Agent started with maximum verbosity! Logs will be written to: $AgentLogPath" -ForegroundColor Green
+                Write-Host "To monitor the log in real-time, run: Get-Content -Path $AgentLogPath -Wait" -ForegroundColor Cyan
+                
+                # Configure Windows service for detailed logging
+                try {
+                    $service = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+                    if ($service) {
+                        Write-Host "Configuring Windows service for detailed logging" -ForegroundColor Cyan
+                    } else {
+                        Write-Host "Warning: tacticalrmm service not found. Agent may not be installed yet." -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "Warning: Could not configure service logging: $_" -ForegroundColor Yellow
+                }
+                
+                # Check if log path exists
+                if (-not (Test-Path $AgentLogPath)) {
+                    Write-Host "Note: Specified log path '$AgentLogPath' not found." -ForegroundColor Yellow
+                    Write-Host "The agent may be using the default log location: C:\Program Files\TacticalAgent\tactical.log" -ForegroundColor Yellow
+                    Write-Host "Try: Get-Content -Path `"C:\Program Files\TacticalAgent\tactical.log`" -Wait" -ForegroundColor Cyan
+                }
+                
+                # Provide log monitoring commands
+                Write-Host "You can monitor the agent logs with this command:" -ForegroundColor Cyan
+                Write-Host "  Get-Content -Path $AgentLogPath -Wait              # For tactical agent" -ForegroundColor White
             } catch {
                 Write-Host "Error executing agent installation: $_" -ForegroundColor Red
                 Write-Host "Please check permissions and file access rights." -ForegroundColor Red
