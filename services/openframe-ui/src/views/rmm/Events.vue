@@ -296,6 +296,9 @@ const fetchDevices = async () => {
 };
 
 const fetchHistory = async () => {
+  // Skip if already loading to prevent multiple simultaneous requests
+  if (loading.value) return;
+  
   try {
     loading.value = true;
     
@@ -326,22 +329,30 @@ const fetchHistory = async () => {
       newHistory = await enhanceHistoryWithAgentInfo(newHistory);
     }
     
-    // Verify agent data availability
-    console.log('Agent data verification:', newHistory.map(item => ({
-      agent: item.agent,
-      agent_info: item.agent_info ? {
-        agent_id: item.agent_info.agent_id,
-        hostname: item.agent_info.hostname,
-        plat: item.agent_info.plat
-      } : null,
-      has_os: item.agent_info ? Boolean(item.agent_info.os || item.agent_info.operating_system) : false
-    })));
+    // Verify agent data availability (only log in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Agent data verification:', newHistory.map(item => ({
+        agent: item.agent,
+        agent_info: item.agent_info ? {
+          agent_id: item.agent_info.agent_id,
+          hostname: item.agent_info.hostname,
+          plat: item.agent_info.plat
+        } : null,
+        has_os: item.agent_info ? Boolean(item.agent_info.os || item.agent_info.operating_system) : false
+      })));
+    }
     
     // Only update the UI if data has changed
     if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
-      historyItems.value = newHistory;
-      previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
-      console.log('Updated history items:', historyItems.value);
+      // Use nextTick to ensure UI updates don't block rendering
+      nextTick(() => {
+        historyItems.value = newHistory;
+        previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Updated history items:', historyItems.value);
+        }
+      });
     }
   } catch (error) {
     console.error('Failed to fetch history:', error);
@@ -358,8 +369,11 @@ const setupRefreshInterval = () => {
   }
   
   refreshInterval.value = window.setInterval(() => {
-    fetchHistory();
-  }, 3000); // Changed from 1000 to 3000 ms
+    // Use requestAnimationFrame to avoid blocking the UI thread
+    window.requestAnimationFrame(() => {
+      fetchHistory();
+    });
+  }, 5000); // Changed from 3000 to 5000 ms for less frequent updates
 };
 
 const togglePolling = (enabled: boolean) => {
