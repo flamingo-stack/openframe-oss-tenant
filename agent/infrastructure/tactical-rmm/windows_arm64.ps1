@@ -244,12 +244,12 @@ function Set-WebSocketProtocolEnvironment {
         # Set environment variables that will be inherited by the agent process
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_MODE", "ws", "Process")
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PORT", "8000", "Process")
-        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natsws", "Process")
+        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natws", "Process")
         
         # Also set for the system to ensure persistence across processes
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_MODE", "ws", "Machine")
         [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PORT", "8000", "Machine")
-        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natsws", "Machine")
+        [Environment]::SetEnvironmentVariable("TACTICAL_WEBSOCKET_PATH", "/natws", "Machine")
         
         Write-Host "WebSocket protocol environment variables set successfully" -ForegroundColor Green
         return $true
@@ -897,14 +897,26 @@ function Prompt-RunAgent {
 
         [string]$agentTypeParam = if ([string]::IsNullOrEmpty($AgentType) -or $AgentType -eq $true -or $AgentType -eq "True") { "workstation" } else { "$AgentType" }
         
+        # Ensure log directory exists before agent installation
+        $logDirectory = Split-Path -Path $AgentLogPath -Parent
+        if (-not (Test-Path -Path $logDirectory)) {
+            try {
+                Write-Host "Creating log directory: $logDirectory" -ForegroundColor Cyan
+                New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+                Write-Host "Log directory created successfully: $logDirectory" -ForegroundColor Green
+            } catch {
+                Write-Host "ERROR: Failed to create log directory: $_" -ForegroundColor Red
+            }
+        }
+        
         Write-Host "Using parameters for installation:" -ForegroundColor Green
         Write-Host "  - Client ID: $clientIdParam (type: $($clientIdParam.GetType().Name))" -ForegroundColor Green
         Write-Host "  - Site ID: $siteIdParam (type: $($siteIdParam.GetType().Name))" -ForegroundColor Green
         Write-Host "  - Agent Type: '$agentTypeParam' (type: $($agentTypeParam.GetType().Name))" -ForegroundColor Green
         
         # Build command with explicit parameter values - no quotes for integer parameters
-        # Add all available silent installation flags based on Tactical RMM documentation
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet -noprompt -accepteula -nostart -norestart"
+        # Add silent installation flags but REMOVE -nostart flag to ensure service starts
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet -noprompt -accepteula -norestart"
         
         Write-Host "Running: $cmd"
         try {
@@ -1038,7 +1050,7 @@ function Prompt-RunAgent {
                 $agentPath = "C:\Program Files\TacticalAgent\tacticalrmm.exe"
                 # Use the exact format provided by the user (matching the format they specified)
                 # Original format: -m install --api http://localhost:8000 --client-id 1 --site-id 1 --agent-type server --auth 9fd7fef1d3ec77ae1fbfb65bcc76a5b72d3606c8e9e050466f1dee8cd9407329
-                # Build agent arguments with all optional flags
+                # Build agent arguments with all optional flags EXCEPT -nostart
                 $agentArgs = "-m install"
                 
                 # Add optional flags based on parameters
@@ -1049,6 +1061,9 @@ function Prompt-RunAgent {
                 if ($Silent) {
                     $agentArgs += " -silent"
                 }
+                
+                # Add other flags but NOT -nostart
+                $agentArgs += " -quiet -noprompt -accepteula"
                 
                 if ($LogLevel) {
                     $agentArgs += " -log $LogLevel"
@@ -1123,6 +1138,16 @@ function Prompt-RunAgent {
                     }
                 }
                 
+                # After installation is complete, explicitly try to start the service
+                try {
+                    Write-Host "Explicitly starting tacticalrmm service..." -ForegroundColor Cyan
+                    Start-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+                    Write-Host "Service start command issued." -ForegroundColor Green
+                } catch {
+                    Write-Host "Note: Could not explicitly start service: $_" -ForegroundColor Yellow
+                    Write-Host "This is not necessarily an error if the service is already running." -ForegroundColor Yellow
+                }
+                
                 # Check if service is installed
             } catch {
                 Write-Host "Error executing agent installation: $_" -ForegroundColor Red
@@ -1141,6 +1166,14 @@ function Prompt-RunAgent {
         
         # After successful install, configure the service with the custom log path
         Configure-AgentService -LogPath $AgentLogPath
+        
+        # Provide fallback log location information if the specified log path doesn't exist
+        if (-not (Test-Path -Path $AgentLogPath)) {
+            $fallbackLogPath = "C:\Program Files\TacticalAgent\tactical.log"
+            Write-Host "Note: Specified log path '$AgentLogPath' not found." -ForegroundColor Yellow
+            Write-Host "The agent may be using the default log location: $fallbackLogPath" -ForegroundColor Yellow
+            Write-Host "Try: Get-Content -Path `"$fallbackLogPath`" -Wait" -ForegroundColor Cyan
+        }
         
         Write-Host ""
         Write-Host "You can monitor the agent logs with this command:"
