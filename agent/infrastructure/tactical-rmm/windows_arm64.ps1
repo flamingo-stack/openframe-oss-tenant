@@ -722,7 +722,7 @@ function Prompt-RunAgent {
         
         # Build command with explicit parameter values - no quotes for integer parameters
         # Add all available silent installation flags based on Tactical RMM documentation
-        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet -noprompt -accepteula"
+        $cmd = "& `"$binaryPath`" -m install -api `"$RmmServerUrl`" -auth `"$AgentAuthKey`" -client-id $clientIdParam -site-id $siteIdParam -agent-type `"$agentTypeParam`" -log `"DEBUG`" -logto `"$AgentLogPath`" -nomesh -silent -quiet -noprompt -accepteula -nostart -norestart"
         
         Write-Host "Running: $cmd"
         try {
@@ -737,7 +737,7 @@ function Prompt-RunAgent {
                 "-agent-type", $agentTypeParam,
                 "-log", "DEBUG",
                 "-logto", "$AgentLogPath",
-                "-nomesh", "-silent", "-quiet", "-noprompt", "-accepteula"
+                "-nomesh", "-silent", "-quiet", "-noprompt", "-accepteula", "-nostart", "-norestart", "-skipdotnet"
             )
             
             # Use Start-Process with compatible parameters for Windows ARM64
@@ -762,16 +762,59 @@ function Prompt-RunAgent {
             if (-not [System.Environment]::GetEnvironmentVariable('WerModeTest', 'Process')) {
                 [System.Environment]::SetEnvironmentVariable('WerModeTest', '1', 'Process')
             }
+            
+            # Additional environment variables to suppress UI
+            $env:DOTNET_CLI_UI_LANGUAGE = 'en'
+            $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 'true'
+            $env:DOTNET_NOLOGO = 'true'
+            $env:TACTICAL_SILENT = 'true'
+            $env:TACTICAL_NOPROMPT = 'true'
+            $env:TACTICAL_ACCEPTEULA = 'true'
+            
+            # Create registry keys to suppress installer UI
             try {
-                $process = Start-Process @processParams
+                # Create registry keys to suppress MSI UI
+                New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Force -ErrorAction SilentlyContinue | Out-Null
+                New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Name "EnableUserControl" -Value 0 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Name "DisableUserInstalls" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
                 
-                if ($process.ExitCode -ne 0) {
-                    Write-Host "Warning: Agent installation process exited with code $($process.ExitCode)" -ForegroundColor Yellow
-                    Write-Host "Check the log files for more details:" -ForegroundColor Yellow
-                    Write-Host "  - Agent log: $AgentLogPath" -ForegroundColor Yellow
-                    Write-Host "  - StdOut: $env:TEMP\tactical_stdout.log" -ForegroundColor Yellow
-                    Write-Host "  - StdErr: $env:TEMP\tactical_stderr.log" -ForegroundColor Yellow
-                } else {
+                # Suppress Tactical RMM UI dialogs
+                New-Item -Path "HKCU:\Software\Policies\TacticalRMM" -Force -ErrorAction SilentlyContinue | Out-Null
+                New-ItemProperty -Path "HKCU:\Software\Policies\TacticalRMM" -Name "SilentInstall" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                New-ItemProperty -Path "HKCU:\Software\Policies\TacticalRMM" -Name "NoPrompt" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                New-ItemProperty -Path "HKCU:\Software\Policies\TacticalRMM" -Name "AcceptEULA" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                
+                # Suppress Windows Installer UI
+                New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Name "UILevel" -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                
+                # Disable Windows Installer UI globally
+                [System.Environment]::SetEnvironmentVariable('WINDOWS_INSTALLER_UI_LEVEL', '2', 'Process')
+            } catch {
+                Write-Host "Note: Unable to create registry keys to suppress installer UI. Continuing with installation." -ForegroundColor Yellow
+            }
+            try {
+                # Create a job to run the process in the background to prevent UI dialogs
+                $jobName = "TacticalRMMInstall"
+                $scriptBlock = {
+                    param($filePath, $argList)
+                    & $filePath @argList
+                }
+                
+                # Start the job with the installation command
+                Start-Job -Name $jobName -ScriptBlock $scriptBlock -ArgumentList $binaryPath, $argList | Out-Null
+                
+                # Wait for the job to complete
+                Write-Host "Installation running in background job to prevent UI dialogs..." -ForegroundColor Cyan
+                Wait-Job -Name $jobName -Timeout 300 | Out-Null
+                
+                # Get the job results
+                $jobResult = Receive-Job -Name $jobName
+                Remove-Job -Name $jobName -Force
+                
+                # Check if the service was installed successfully
+                $serviceInstalled = Get-Service -Name "tacticalrmm" -ErrorAction SilentlyContinue
+                
+                if ($serviceInstalled) {
                     Write-Host "Agent installation completed successfully." -ForegroundColor Green
                     # Display useful information about what was just installed
                     Write-Host "  - Installation details:" -ForegroundColor Green
@@ -779,6 +822,11 @@ function Prompt-RunAgent {
                     Write-Host "    - Client ID: $clientIdParam" -ForegroundColor Green
                     Write-Host "    - Site ID: $siteIdParam" -ForegroundColor Green
                     Write-Host "    - Agent Type: $agentTypeParam" -ForegroundColor Green
+                } else {
+                    Write-Host "Warning: Agent installation may not have completed successfully." -ForegroundColor Yellow
+                    Write-Host "Service 'tacticalrmm' was not found after installation." -ForegroundColor Yellow
+                    Write-Host "Check the log files for more details:" -ForegroundColor Yellow
+                    Write-Host "  - Agent log: $AgentLogPath" -ForegroundColor Yellow
                 }
             } catch {
                 Write-Host "Error executing agent installation: $_" -ForegroundColor Red
