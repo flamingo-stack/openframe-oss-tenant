@@ -23,6 +23,12 @@ import RMMScripts from '../views/rmm/Scripts.vue'
 import RMMEvents from '../views/rmm/Events.vue'
 import RMMAutomation from '../views/rmm/Automation.vue'
 import RMMSettings from '../views/rmm/Settings.vue'
+import RACLayout from '../views/rac/RACLayout.vue'
+import RACDashboard from '../views/rac/Dashboard.vue'
+import RACDevices from '../views/rac/Devices.vue'
+import RACRemoteConnection from '../views/rac/RemoteConnection.vue'
+import RACFileTransfer from '../views/rac/FileTransfer.vue'
+import RACSettings from '../views/rac/Settings.vue'
 import { AuthService } from '@/services/AuthService';
 import { useAuthStore } from '@/stores/auth';
 
@@ -199,6 +205,61 @@ const router = createRouter({
       ]
     },
     {
+      path: '/rac',
+      component: RACLayout,
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          redirect: '/rac/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'rac-dashboard',
+          component: RACDashboard,
+          meta: { title: 'RAC Dashboard' }
+        },
+        {
+          path: 'devices',
+          name: 'rac-devices',
+          component: RACDevices,
+          meta: { title: 'RAC Devices' }
+        },
+        {
+          path: 'remote-connection',
+          name: 'rac-remote-connection',
+          component: RACRemoteConnection,
+          meta: { title: 'RAC Remote Connection' }
+        },
+        {
+          path: 'remote-connection/:id',
+          name: 'rac-remote-connection-device',
+          component: RACRemoteConnection,
+          meta: { title: 'RAC Remote Connection' },
+          props: true
+        },
+        {
+          path: 'file-transfer',
+          name: 'rac-file-transfer',
+          component: RACFileTransfer,
+          meta: { title: 'RAC File Transfer' }
+        },
+        {
+          path: 'file-transfer/:id',
+          name: 'rac-file-transfer-device',
+          component: RACFileTransfer,
+          meta: { title: 'RAC File Transfer' },
+          props: true
+        },
+        {
+          path: 'settings',
+          name: 'rac-settings',
+          component: RACSettings,
+          meta: { title: 'RAC Settings' }
+        }
+      ]
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: SettingsView,
@@ -256,4 +317,4 @@ router.beforeEach(async (to, from, next) => {
   }
 });
 
-export default router                    
+export default router                                                                                

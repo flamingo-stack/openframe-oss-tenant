@@ -174,6 +174,11 @@ const menuItems: MenuItem[] = [
         path: '/rmm'
       },
       {
+        label: 'Remote Access and Control',
+        icon: 'pi pi-desktop',
+        path: '/rac'
+      },
+      {
         label: 'Mobile Device Management',
         icon: 'pi pi-mobile',
         path: '/mdm'
@@ -478,4 +483,4 @@ const handleLogout = () => {
   color: var(--surface-900);
   font-weight: 600;
 }
-</style>  
+</style>    
