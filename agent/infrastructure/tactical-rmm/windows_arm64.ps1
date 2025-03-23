@@ -478,16 +478,54 @@ if (-not (Test-Path $binaryPath)) {
     }
 }
 
+############################
+# Agent Executable Verification Function
+############################
+
+function Test-AgentExecutable {
+    param (
+        [string]$Path
+    )
+    
+    if (-not (Test-Path $Path)) {
+        Write-Host "ERROR: Agent executable not found at $Path" -ForegroundColor Red
+        return $false
+    }
+    
+    try {
+        $fileInfo = Get-Item $Path
+        if ($fileInfo.Length -eq 0) {
+            Write-Host "ERROR: Agent executable file is empty" -ForegroundColor Red
+            return $false
+        }
+        
+        # Check if file is locked or in use
+        try {
+            $fileStream = [System.IO.File]::Open($Path, 'Open', 'Read', 'None')
+            $fileStream.Close()
+            $fileStream.Dispose()
+        } catch {
+            Write-Host "WARNING: Agent executable file is locked or in use: ${_}" -ForegroundColor Yellow
+            # Don't return false here as the file might be locked by a valid process
+        }
+        
+        Write-Host "Agent executable verified at $Path" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "ERROR: Failed to verify agent executable: ${_}" -ForegroundColor Red
+        return $false
+    }
+}
+
 # Verify the binary exists and is valid
 if (-not (Test-Path $binaryPath)) {
     Write-Host "ERROR: Binary not found at $binaryPath after download attempt" -ForegroundColor Red
     exit 1
 }
 
-# Check if file is empty or too small to be a valid executable
-$fileInfo = Get-Item $binaryPath
-if ($fileInfo.Length -lt 1000000) { # Assuming a valid executable is at least 1MB
-    Write-Host "ERROR: Binary file appears to be invalid (too small)" -ForegroundColor Red
+# Use the Test-AgentExecutable function to verify the binary
+if (-not (Test-AgentExecutable -Path $binaryPath)) {
+    Write-Host "ERROR: Binary verification failed" -ForegroundColor Red
     exit 1
 }
 
