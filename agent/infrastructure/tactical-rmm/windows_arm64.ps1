@@ -420,13 +420,72 @@ if ($Help) {
     Show-Help
 }
 
+# Create binaries directory if it doesn't exist
+$binariesDir = Join-Path $PSScriptRoot "binaries"
+if (-not (Test-Path $binariesDir)) {
+    New-Item -ItemType Directory -Path $binariesDir -Force | Out-Null
+}
+
+# Define available versions and their URLs
+$agentVersions = @{
+    "2.9.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.9.0/tacticalagent-v2.9.0-windows-amd64.exe"
+    "2.8.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.8.0/tacticalagent-v2.8.0-windows-amd64.exe"
+    "2.7.0" = "https://github.com/amidaware/rmmagent/releases/download/v2.7.0/tacticalagent-v2.7.0-windows-amd64.exe"
+    "2.6.2" = "https://github.com/amidaware/rmmagent/releases/download/v2.6.2/tacticalagent-v2.6.2-windows-amd64.exe"
+    "2.6.1" = "https://github.com/amidaware/rmmagent/releases/download/v2.6.1/tacticalagent-v2.6.1-windows-amd64.exe"
+}
+
+# Function to download binary
+function Download-AgentBinary {
+    param (
+        [string]$Version,
+        [string]$Url
+    )
+    
+    $fileName = "tacticalagent-v${Version}-windows-amd64.exe"
+    $outputPath = Join-Path $binariesDir $fileName
+    
+    Write-Host "Downloading Tactical RMM agent version ${Version}..." -ForegroundColor Yellow
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $outputPath
+        Write-Host "Download completed successfully." -ForegroundColor Green
+        return $outputPath
+    } catch {
+        Write-Host "Failed to download version ${Version}: ${_}" -ForegroundColor Red
+        return $null
+    }
+}
+
+# Try to download the latest version first
+$latestVersion = $agentVersions.Keys | Sort-Object -Descending | Select-Object -First 1
+$latestUrl = $agentVersions[$latestVersion]
+$binaryPath = Download-AgentBinary -Version $latestVersion -Url $latestUrl
+
+# If latest version fails, try previous versions
+if (-not $binaryPath) {
+    foreach ($version in ($agentVersions.Keys | Sort-Object -Descending | Select-Object -Skip 1)) {
+        $url = $agentVersions[$version]
+        $binaryPath = Download-AgentBinary -Version $version -Url $url
+        if ($binaryPath) { break }
+    }
+}
+
+# If all downloads fail, exit
+if (-not $binaryPath) {
+    Write-Error "Failed to download any version of the Tactical RMM agent."
+    Write-Host "Please check your internet connection and try again." -ForegroundColor Yellow
+    exit 1
+}
+
+# Update the binary path variable for use in the rest of the script
+$script:binaryPath = $binaryPath
+
 # Main script flow
 try {
-    # Verify binary exists
-    $binaryPath = "$PSScriptRoot\rmmagent-windows-arm64.exe"
-    if (-not (Test-Path $binaryPath)) {
-        Write-Error "Binary not found at $binaryPath"
-        Write-Host "Please ensure the binary exists in the script directory." -ForegroundColor Yellow
+    # Verify binary exists (now using the downloaded binary)
+    if (-not (Test-Path $script:binaryPath)) {
+        Write-Error "Binary not found at $script:binaryPath"
+        Write-Host "Please ensure the binary exists in the binaries directory." -ForegroundColor Yellow
         exit 1
     }
 
@@ -491,8 +550,8 @@ try {
     Set-WebSocketRegistrySettings -Secure $script:Secure
 
     # Install the agent
-    Write-Host "Running binary installation: & `"$binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
-    Start-Process -FilePath $binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
+    Write-Host "Running binary installation: & `"$script:binaryPath`" /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Cyan
+    Start-Process -FilePath $script:binaryPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
     Start-Sleep -Seconds 5  # Wait for installation to complete
 
     # Configure the agent with parameters
@@ -519,7 +578,7 @@ try {
 
     Write-Host ""
     Write-Host "=== All Done! ===" -ForegroundColor Green
-    Write-Host "Your agent is at: $binaryPath" -ForegroundColor Cyan
+    Write-Host "Your agent is at: $script:binaryPath" -ForegroundColor Cyan
     Write-Host "NOTE: This is an AMD64 binary running with Windows on ARM64 emulation" -ForegroundColor Yellow
 
 } catch {
