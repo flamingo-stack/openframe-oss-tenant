@@ -740,17 +740,14 @@ function Prompt-RunAgent {
                 "-nomesh", "-silent", "-quiet", "-noprompt", "-accepteula"
             )
             
-            # Use Start-Process with maximum silence parameters to prevent any UI prompts
+            # Use Start-Process with compatible parameters for Windows ARM64
             $processParams = @{
                 FilePath = $binaryPath
                 ArgumentList = $argList
-                NoNewWindow = $true
                 Wait = $true
                 PassThru = $true
-                RedirectStandardOutput = "$env:TEMP\tactical_stdout.log"
-                RedirectStandardError = "$env:TEMP\tactical_stderr.log"
-                WindowStyle = 'Hidden'  # Hide any window that might appear
-                CreateNoWindow = $true  # Ensure no window is created
+                # Use only parameters that are compatible with all PowerShell versions
+                # NoNewWindow and WindowStyle can cause issues on some PowerShell versions
             }
             
             # Set environment variables to suppress UI prompts
