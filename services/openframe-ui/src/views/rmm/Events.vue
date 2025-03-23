@@ -70,17 +70,19 @@
         </Column>
         <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 15%">
           <template #body="{ data }">
-            <div>
-              <div class="flex align-items-center">
-                <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2" :style="{
-                  color: data.agent_info?.plat === 'windows' ? '#0078d7' : 
-                         data.agent_info?.plat === 'darwin' ? '#999' : 
-                         data.agent_info?.plat === 'linux' ? '#f8991d' : ''
-                }"></i>
-                <span>{{ getAgentHostname(data.agent) }}</span>
-              </div>
-              <div class="text-xs text-color-secondary">
-                {{ data.agent_info ? (data.agent_info.os || data.agent_info.operating_system || 'Unknown OS') : '' }}
+            <div class="flex">
+              <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2" :style="{
+                color: data.agent_info?.plat === 'windows' ? '#0078d7' : 
+                       data.agent_info?.plat === 'darwin' ? '#999' : 
+                       data.agent_info?.plat === 'linux' ? '#f8991d' : '',
+                fontSize: '1.2rem',
+                marginTop: '2px'
+              }"></i>
+              <div class="flex flex-column">
+                <div>{{ getAgentHostname(data.agent) }}</div>
+                <div class="text-xs text-color-secondary">
+                  {{ data.agent_info ? (data.agent_info.os || data.agent_info.operating_system || 'Unknown OS') : '' }}
+                </div>
               </div>
             </div>
           </template>
