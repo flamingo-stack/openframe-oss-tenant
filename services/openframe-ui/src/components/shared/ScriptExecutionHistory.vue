@@ -33,8 +33,17 @@
             <div class="flex align-items-center gap-2">
               <i :class="getStatusIcon(execution.status)" :style="{ color: getStatusColor(execution.status) }" />
               <span class="font-medium">{{ execution.deviceName }}</span>
+              <span v-if="execution.agent_info" class="text-sm text-color-secondary">({{ execution.agent_info.plat || 'Unknown Platform' }})</span>
             </div>
             <span class="text-sm text-color-secondary">{{ formatTimestamp(execution.timestamp) }}</span>
+          </div>
+          
+          <!-- Add agent info section when available -->
+          <div v-if="execution.agent_info" class="agent-info mb-3">
+            <div class="flex align-items-center gap-2">
+              <span class="text-sm">OS: <span class="font-medium">{{ execution.agent_info.operating_system || 'Unknown' }}</span></span>
+              <span class="text-sm">Status: <span class="font-medium">{{ execution.agent_info.status || 'Unknown' }}</span></span>
+            </div>
           </div>
           
           <div class="of-form-group mb-3">
@@ -66,6 +75,9 @@
 import { ref, onMounted } from 'vue';
 import Sidebar from 'primevue/sidebar';
 import { OFButton } from '../../components/ui';
+import { restClient } from "../../apollo/apolloClient";
+import { ConfigService } from "../../config/config.service";
+import { ToastService } from "../../services/ToastService";
 
 interface ScriptExecution {
   id: string;
@@ -74,6 +86,8 @@ interface ScriptExecution {
   output: string;
   status: 'success' | 'error' | 'pending';
   timestamp: number;
+  agent_id?: string;  // Add agent_id field
+  agent_info?: any;   // Add agent_info field to store API data
 }
 
 const props = defineProps<{
@@ -88,8 +102,14 @@ const executions = ref<ScriptExecution[]>([]);
 const STORAGE_KEY = 'script-execution-history';
 const MAX_HISTORY_ITEMS = 50;
 
+const configService = ConfigService.getInstance();
+const runtimeConfig = configService.getConfig();
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+const toastService = ToastService.getInstance();
+
 const onVisibilityChange = (value: boolean) => {
   emit('update:visible', value);
+  if (value) fetchAgentInfo();
 };
 
 const getStatusIcon = (status: string) => {
@@ -142,6 +162,12 @@ const addExecution = (execution: Omit<ScriptExecution, 'id' | 'timestamp'>) => {
 
   executions.value = [newExecution, ...executions.value.slice(0, MAX_HISTORY_ITEMS - 1)];
   saveHistory();
+  
+  // Fetch agent info when a new execution is added
+  if (props.visible && execution.agent_id) {
+    fetchAgentInfo();
+  }
+  
   return newExecution.id;
 };
 
@@ -156,6 +182,39 @@ const updateExecution = (id: string, updates: Partial<ScriptExecution>) => {
 const clearHistory = () => {
   executions.value = [];
   saveHistory();
+};
+
+const fetchAgentInfo = async () => {
+  // Skip if no executions or not visible
+  if (!executions.value.length || !props.visible) return;
+  
+  try {
+    // Build a set of unique agent IDs to fetch
+    const agentIds = new Set();
+    executions.value.forEach(exec => {
+      if (exec.agent_id) agentIds.add(exec.agent_id);
+    });
+    
+    if (!agentIds.size) return;
+    
+    // Fetch agent information
+    const response = await restClient.get(`${API_URL}/agents/`);
+    const agents = Array.isArray(response) ? response : [];
+    
+    // Update executions with agent info
+    executions.value = executions.value.map(exec => {
+      if (exec.agent_id) {
+        const agentInfo = agents.find(a => a.agent_id === exec.agent_id);
+        if (agentInfo) {
+          return { ...exec, agent_info: agentInfo };
+        }
+      }
+      return exec;
+    });
+  } catch (error) {
+    console.error('Failed to fetch agent information:', error);
+    toastService.showError('Failed to fetch agent information');
+  }
 };
 
 // Load history on mount
@@ -284,4 +343,11 @@ defineExpose({
     }
   }
 }
-</style>    
+
+.agent-info {
+  background: var(--surface-ground);
+  border-radius: var(--border-radius);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+</style>                                                                
