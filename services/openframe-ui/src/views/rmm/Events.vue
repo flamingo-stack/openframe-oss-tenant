@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed, onUnmounted, nextTick } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -479,7 +479,6 @@ const addMockAgentInfo = () => {
   console.log('Mock data addition is disabled in production');
 };
 
-// Import and use the shared getDeviceIcon function
 import { getDeviceIcon } from '../../utils/deviceUtils';
 
 // Override any global styling affecting the Windows icon
