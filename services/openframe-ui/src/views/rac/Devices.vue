@@ -1,7 +1,7 @@
 <template>
   <div class="rac-devices">
-    <ModuleHeader title="Devices">
-      <template #subtitle>Connect to and control remote devices</template>
+    <ModuleHeader title="RAC Devices">
+      <template #subtitle>Remote Access and Control Devices</template>
       <template #actions>
         <OFButton 
           icon="pi pi-refresh" 
@@ -16,7 +16,7 @@
       <div class="filters-container">
         <div class="filters-row">
           <div class="search-container">
-            <SearchBar v-model="filters['global'].value" placeholder="Search devices..." />
+            <SearchBar v-model="filters['global'].value || ''" placeholder="Search devices..." />
           </div>
         </div>
       </div>
@@ -24,7 +24,7 @@
       <ModuleTable 
         :items="devices" 
         :loading="loading"
-        :searchFields="['hostname', 'platform', 'status']"
+        :searchFields="['hostname', 'plat', 'operating_system', 'status']"
         emptyIcon="pi pi-desktop"
         emptyTitle="No Devices Found"
         emptyMessage="Add your first device to start remote management."
@@ -32,16 +32,22 @@
       >
         <Column field="hostname" header="Hostname" sortable>
           <template #body="{ data }">
-            <div class="flex align-items-center">
-              <i :class="getDeviceIcon(data.platform)" class="mr-2"></i>
+            <div class="device-name-cell">
+              <i :class="getDeviceIcon(data.plat)" class="mr-2"></i>
               <span>{{ data.hostname }}</span>
             </div>
           </template>
         </Column>
 
-        <Column field="platform" header="Platform" sortable>
+        <Column field="plat" header="Platform" sortable>
           <template #body="{ data }">
-            <Tag :value="formatPlatform(data.platform)" :severity="getPlatformSeverity(data.platform)" />
+            <Tag :value="formatPlatform(data.plat)" :severity="getPlatformSeverity(data.plat)" />
+          </template>
+        </Column>
+
+        <Column field="operating_system" header="Operating System" sortable>
+          <template #body="{ data }">
+            <span>{{ data.operating_system }}</span>
           </template>
         </Column>
 
@@ -51,9 +57,9 @@
           </template>
         </Column>
 
-        <Column field="lastSeen" header="Last Seen" sortable>
+        <Column field="last_seen" header="Last Seen" sortable>
           <template #body="{ data }">
-            <span class="text-sm">{{ formatTimestamp(data.lastSeen) }}</span>
+            <span class="text-sm">{{ formatTimestamp(data.last_seen) }}</span>
           </template>
         </Column>
 
@@ -87,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
+import { ref, onMounted } from "vue";
 import { useRouter } from 'vue-router';
 import { OFButton } from '../../components/ui';
 import Column from 'primevue/column';
@@ -99,14 +105,8 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-
-interface Device {
-  id: string;
-  hostname: string;
-  platform: string;
-  status: string;
-  lastSeen: string;
-}
+import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
+import type { Device } from '../../types/rac';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
@@ -121,32 +121,7 @@ const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
-const formatPlatform = (platform: string) => {
-  const platformMap: Record<string, string> = {
-    darwin: 'macOS',
-    windows: 'Windows',
-    linux: 'Linux'
-  };
-  return platformMap[platform] || platform;
-};
-
-const getDeviceIcon = (platform: string) => {
-  const iconMap: Record<string, string> = {
-    windows: 'pi pi-microsoft',
-    darwin: 'pi pi-apple',
-    linux: 'pi pi-server'
-  };
-  return iconMap[platform] || 'pi pi-desktop';
-};
-
-const getPlatformSeverity = (platform: string) => {
-  const severityMap: Record<string, string> = {
-    darwin: 'info',
-    windows: 'warning',
-    linux: 'success'
-  };
-  return severityMap[platform] || 'info';
-};
+// Using imported utility functions from deviceUtils.ts
 
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
@@ -171,29 +146,38 @@ const fetchDevices = async () => {
       {
         id: '1',
         hostname: 'desktop-001',
-        platform: 'windows',
+        plat: 'windows',
+        operating_system: 'Windows 10 Pro',
         status: 'online',
-        lastSeen: new Date().toISOString()
+        last_seen: new Date().toISOString(),
+        public_ip: '192.168.1.100',
+        local_ips: ['10.0.0.1']
       },
       {
         id: '2',
         hostname: 'laptop-002',
-        platform: 'darwin',
+        plat: 'darwin',
+        operating_system: 'macOS 12.6',
         status: 'offline',
-        lastSeen: new Date(Date.now() - 86400000).toISOString()
+        last_seen: new Date(Date.now() - 86400000).toISOString(),
+        public_ip: '192.168.1.101',
+        local_ips: ['10.0.0.2']
       },
       {
         id: '3',
         hostname: 'server-001',
-        platform: 'linux',
+        plat: 'linux',
+        operating_system: 'Ubuntu 22.04 LTS',
         status: 'online',
-        lastSeen: new Date().toISOString()
+        last_seen: new Date().toISOString(),
+        public_ip: '192.168.1.102',
+        local_ips: ['10.0.0.3']
       }
     ];
     
     // In a real implementation, this would be:
-    // const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
-    // devices.value = Array.isArray(response) ? response : [];
+    // const response = await restClient.get<DeviceResponse>(`${API_URL}/devices/`);
+    // devices.value = response?.data || [];
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
@@ -202,17 +186,34 @@ const fetchDevices = async () => {
   }
 };
 
+const formatTimestamp = (timestamp: string) => {
+  return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
+};
+
+const getStatusSeverity = (status: string) => {
+  const severityMap: Record<string, string> = {
+    online: 'success',
+    offline: 'danger',
+    idle: 'warning',
+    unknown: 'info'
+  };
+  return severityMap[status.toLowerCase()] || 'info';
+};
+
 const remoteConnect = (device: Device) => {
   router.push(`/rac/remote-connection/${device.id}`);
+  toastService.showInfo(`Connecting to ${device.hostname}...`);
 };
 
 const fileTransfer = (device: Device) => {
   router.push(`/rac/file-transfer/${device.id}`);
+  toastService.showInfo(`Opening file transfer for ${device.hostname}...`);
 };
 
 const viewDevice = (device: Device) => {
-  // Implement view device details
+  // In a real implementation, this would open a device details dialog
   console.log('View device:', device);
+  toastService.showInfo(`Viewing details for ${device.hostname}`);
 };
 
 onMounted(async () => {
@@ -238,6 +239,35 @@ onMounted(async () => {
   background: var(--surface-ground);
 }
 
+.filters-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-container {
+  flex: 1;
+  min-width: 250px;
+}
+
+.device-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.device-name-cell i {
+  font-size: 1.2rem;
+}
+
 :deep(.p-tag) {
   min-width: 75px;
   justify-content: center;
@@ -246,5 +276,36 @@ onMounted(async () => {
 :deep(.p-datatable) {
   background: var(--surface-card);
   border-radius: var(--border-radius);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  background: var(--surface-card);
+  color: var(--text-color-secondary);
+  padding: 1rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+  border-bottom: 2px solid var(--surface-border);
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr) {
+  background: var(--surface-card);
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr:hover) {
+  background: var(--surface-hover);
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 1.25rem 1.5rem;
+  border: none;
+  color: var(--text-color);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 </style>
