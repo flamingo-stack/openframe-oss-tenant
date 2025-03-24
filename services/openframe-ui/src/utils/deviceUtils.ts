@@ -49,28 +49,34 @@ export const getTaskIcon = (type: string): string => {
 
 /**
  * Returns the formatted platform name
- * @param platform The device platform (windows, darwin, linux)
+ * @param platform The device platform (windows, darwin, linux, ios, ipados, chrome)
  * @returns The formatted platform name
  */
 export const formatPlatform = (platform: string): string => {
   const platformMap: Record<string, string> = {
     darwin: 'macOS',
     windows: 'Windows',
-    linux: 'Linux'
+    linux: 'Linux',
+    ios: 'iOS',
+    ipados: 'iPadOS',
+    chrome: 'Chrome OS'
   };
   return platformMap[platform] || platform;
 };
 
 /**
  * Returns the severity class for a platform tag
- * @param platform The device platform (windows, darwin, linux)
+ * @param platform The device platform (windows, darwin, linux, ios, ipados, chrome)
  * @returns The severity class for the platform
  */
 export const getPlatformSeverity = (platform: string): string => {
   const severityMap: Record<string, string> = {
     darwin: 'info',
     windows: 'warning',
-    linux: 'success'
+    linux: 'success',
+    ios: 'info',
+    ipados: 'info',
+    chrome: 'warning'
   };
   return severityMap[platform] || 'info';
 };

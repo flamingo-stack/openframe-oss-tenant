@@ -103,7 +103,7 @@ import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
-import { getDeviceIcon } from '../../utils/deviceUtils';
+import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 
 interface FleetResponse {
   hosts: any[];
@@ -126,29 +126,7 @@ const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
-const formatPlatform = (platform: string) => {
-  const platformMap: Record<string, string> = {
-    darwin: 'macOS',
-    windows: 'Windows',
-    linux: 'Linux',
-    ios: 'iOS',
-    ipados: 'iPadOS',
-    chrome: 'Chrome OS'
-  };
-  return platformMap[platform] || platform;
-};
 
-const getPlatformSeverity = (platform: string) => {
-  const severityMap: Record<string, string> = {
-    darwin: 'info',
-    windows: 'warning',
-    linux: 'success',
-    ios: 'info',
-    ipados: 'info',
-    chrome: 'warning'
-  };
-  return severityMap[platform] || 'info';
-};
 
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
@@ -253,4 +231,4 @@ onMounted(() => {
   min-width: 75px;
   justify-content: center;
 }
-</style>                                
+</style>                                                                
