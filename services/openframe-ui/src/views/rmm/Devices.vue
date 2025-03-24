@@ -165,8 +165,6 @@ const filters = ref({
 const showExecutionHistory = ref(false);
 const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
 
-import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
-
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
     online: 'success',

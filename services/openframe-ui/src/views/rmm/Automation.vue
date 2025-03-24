@@ -362,8 +362,6 @@ const formatTaskType = (type: string) => {
   return typeMap[type] || type;
 };
 
-import { getTaskIcon } from '../../utils/deviceUtils';
-
 const getTaskTypeSeverity = (type: string) => {
   const severityMap: Record<string, string> = {
     maintenance: 'info',
@@ -610,4 +608,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>                                                    
+</style>                                                                              

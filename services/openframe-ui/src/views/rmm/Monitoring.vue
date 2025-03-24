@@ -265,8 +265,6 @@ const formatMonitorType = (type: string) => {
   return typeMap[type] || type;
 };
 
-import { getMonitorIcon } from '../../utils/deviceUtils';
-
 const getMonitorTypeSeverity = (type: string) => {
   const severityMap: Record<string, string> = {
     cpu: 'info',
@@ -480,4 +478,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>                                                                                                                                
+</style>                                                                                                                                                                                                
