@@ -4,7 +4,7 @@
       <template #subtitle>View system and device event history</template>
       <template #actions>
         <OFButton 
-          v-if="process.env.NODE_ENV === 'development'"
+          v-if="isDevelopment"
           icon="pi pi-database" 
           :class="[
             'p-button-sm', 
@@ -303,7 +303,7 @@ const fetchDevices = async () => {
     loading.value = true;
     
     // No mock data in production
-    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development' && false) {
+    if (isDevelopment.value && false) {
       // Mock data is now disabled by default
       console.log('Development environment detected, but mock data is disabled');
       loading.value = false;
@@ -330,7 +330,7 @@ const fetchHistory = async () => {
     let newHistory: HistoryEntry[] = [];
     
     // Only use mock data in development mode for local testing
-    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development' && useMockData.value) {
+    if (isDevelopment.value && useMockData.value) {
       console.log('Development environment detected, using mock data');
       // If mock data is enabled, generate it
       newHistory = getMockHistoryData();
@@ -359,7 +359,7 @@ const fetchHistory = async () => {
     }
     
     // Verify agent data availability (only log in development)
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevelopment.value) {
       console.log('Agent data verification:', newHistory.map(item => ({
         agent: item.agent,
         agent_info: item.agent_info ? {
@@ -378,7 +378,7 @@ const fetchHistory = async () => {
         historyItems.value = newHistory;
         previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
         
-        if (process.env.NODE_ENV === 'development') {
+        if (isDevelopment.value) {
           console.log('Updated history items:', historyItems.value);
         }
       });
@@ -474,7 +474,7 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
       if (!item.agent_info) {
         // For testing only - don't do this in production as it would make too many requests
         // This would be a fallback for testing with mock data
-        if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
+        if (isDevelopment.value) {
           // In a real implementation, we would need to fetch the agent details here
           // but for now, we'll use any available agent as a fallback
           if (agents.length > 0) {
@@ -521,9 +521,24 @@ const fetchAgentDetails = async () => {
 };
 
 // Mock data functions are disabled in production by default
+// Development environment detection
+const isDevelopment = ref(window.location.hostname === 'localhost' && import.meta.env.MODE === 'development');
+const useMockData = ref(false);
+
+// Function to toggle mock data for testing (only in development)
+const toggleMockData = () => {
+  if (isDevelopment.value) {
+    useMockData.value = !useMockData.value;
+    console.log(`Mock data ${useMockData.value ? 'enabled' : 'disabled'}`);
+    fetchHistory();
+  } else {
+    console.warn('Mock data toggle is only available in development mode');
+  }
+};
+
 // Function to generate mock agent data for local development
 const getMockAgentInfo = (agentId: number) => {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevelopment.value) {
     console.log('Mock data generation is disabled in production');
     return null;
   }
@@ -539,7 +554,7 @@ const getMockAgentInfo = (agentId: number) => {
 
 // Function to add mock data to history items
 const addMockAgentInfo = () => {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevelopment.value) {
     console.log('Mock data addition is disabled in production');
     return;
   }
@@ -553,7 +568,7 @@ const addMockAgentInfo = () => {
 
 // Function to generate mock history data for local development
 const getMockHistoryData = () => {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevelopment.value) {
     console.log('Mock data generation is disabled in production');
     return [];
   }
