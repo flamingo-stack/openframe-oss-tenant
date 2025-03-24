@@ -323,54 +323,7 @@ const fetchHistory = async () => {
   try {
     loading.value = true;
     
-    // For local development, use mock data
-    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
-      const mockHistory: HistoryEntry[] = [
-        {
-          id: 1,
-          time: new Date().toISOString(),
-          type: "cmd_run",
-          command: "echo \"Hello World\"",
-          username: "tactical",
-          results: "Hello World",
-          script_results: null,
-          agent: 1,
-          agent_info: {
-            hostname: "test-device",
-            operating_system: "Windows 10",
-            plat: "windows"
-          }
-        },
-        {
-          id: 2,
-          time: new Date(Date.now() - 3600000).toISOString(),
-          type: "script_run",
-          command: "",
-          username: "tactical",
-          results: null,
-          script_results: {
-            stdout: "CPU: 25%, Memory: 4.2GB/8GB",
-            stderr: "",
-            retcode: 0,
-            execution_time: 0.5
-          },
-          script_name: "System - Get Resource Usage",
-          agent: 2,
-          agent_info: {
-            hostname: "server-01",
-            operating_system: "Ubuntu 22.04",
-            plat: "linux"
-          }
-        }
-      ];
-      
-      // Always update with mock data in development
-      historyItems.value = mockHistory;
-      previousHistoryItems.value = [...mockHistory];
-      
-      loading.value = false;
-      return;
-    }
+    // No mock data - always fetch real data from API
     
     // Choose the right endpoint based on whether we're showing a single agent or all agents
     const endpoint = selectedAgent.value
@@ -535,65 +488,19 @@ const setupWatchers = () => {
 };
 
 onMounted(() => {
-  // Initialize with direct mock data for local development
-  if (window.location.hostname === 'localhost' && window.location.port === '5177') {
-    console.log('Loading mock data...');
-    // Initialize filters first to avoid watcher errors
-    filters.value = {
-      global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-      type: { value: null, matchMode: FilterMatchMode.EQUALS }
-    };
-    
-    // Set up watchers before loading data
-    setupWatchers();
-    
-    // Create mock data directly - ONLY FOR LOCAL DEVELOPMENT TESTING
-    // This mock data will not be used in production
-    const mockHistory: HistoryEntry[] = [
-      {
-        id: 1,
-        time: new Date().toISOString(),
-        type: "cmd_run",
-        command: "echo \"Hello World\"",
-        username: "tactical",
-        results: "Hello World",
-        script_results: null,
-        agent: 1,
-        agent_info: {
-          hostname: "test-device",
-          operating_system: "Windows 10",
-          plat: "windows"
-        }
-      },
-      {
-        id: 2,
-        time: new Date(Date.now() - 3600000).toISOString(),
-        type: "script_run",
-        command: "",
-        username: "tactical",
-        results: null,
-        script_results: {
-          stdout: "CPU: 25%, Memory: 4.2GB/8GB",
-          stderr: "",
-          retcode: 0,
-          execution_time: 0.5
-        },
-        script_name: "System - Get Resource Usage",
-        agent: 2,
-        agent_info: {
-          hostname: "server-01",
-          operating_system: "Ubuntu 22.04",
-          plat: "linux"
-        }
-      }
-    ];
-    
-    // Update the UI with mock data
-    historyItems.value = mockHistory;
-    previousHistoryItems.value = [...mockHistory];
-    console.log('Mock data loaded:', mockHistory.length, 'items');
-    loading.value = false;
-  } else {
+  // Initialize filters and set up watchers
+  filters.value = {
+    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    type: { value: null, matchMode: FilterMatchMode.EQUALS }
+  };
+  
+  // Set up watchers for filter changes
+  setupWatchers();
+  
+  // Fetch real data
+  fetchDevices();
+  fetchHistory();</old_str>
+
     // For production, fetch real data
     fetchDevices();
     fetchHistory();
