@@ -164,32 +164,7 @@ const filters = ref({
 const showExecutionHistory = ref(false);
 const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
 
-const formatPlatform = (platform: string) => {
-  const platformMap: Record<string, string> = {
-    darwin: 'macOS',
-    windows: 'Windows',
-    linux: 'Linux'
-  };
-  return platformMap[platform] || platform;
-};
-
-const getDeviceIcon = (platform: string) => {
-  const iconMap: Record<string, string> = {
-    windows: 'pi pi-microsoft',
-    darwin: 'pi pi-apple',
-    linux: 'pi pi-server'
-  };
-  return iconMap[platform] || 'pi pi-desktop';
-};
-
-const getPlatformSeverity = (platform: string) => {
-  const severityMap: Record<string, string> = {
-    darwin: 'info',
-    windows: 'warning',
-    linux: 'success'
-  };
-  return severityMap[platform] || 'info';
-};
+import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {

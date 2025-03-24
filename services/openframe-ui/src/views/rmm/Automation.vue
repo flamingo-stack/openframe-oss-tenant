@@ -361,15 +361,7 @@ const formatTaskType = (type: string) => {
   return typeMap[type] || type;
 };
 
-const getTaskIcon = (type: string) => {
-  const iconMap: Record<string, string> = {
-    maintenance: 'pi pi-wrench',
-    backup: 'pi pi-database',
-    update: 'pi pi-refresh',
-    custom: 'pi pi-cog'
-  };
-  return iconMap[type] || 'pi pi-clock';
-};
+import { getTaskIcon } from '../../utils/deviceUtils';
 
 const getTaskTypeSeverity = (type: string) => {
   const severityMap: Record<string, string> = {
@@ -617,4 +609,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>             
+</style>                          

@@ -30,7 +30,7 @@
         <Column field="hostname" header="Hostname" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
-              <i class="pi pi-desktop mr-2"></i>
+              <i :class="getDeviceIcon(data.platform)" class="mr-2"></i>
               <span>{{ data.display_name || data.hostname }}</span>
             </div>
           </template>
@@ -103,6 +103,7 @@ import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import { getDeviceIcon } from '../../utils/deviceUtils';
 
 interface FleetResponse {
   hosts: any[];
@@ -252,4 +253,4 @@ onMounted(() => {
   min-width: 75px;
   justify-content: center;
 }
-</style>        
+</style>                                
