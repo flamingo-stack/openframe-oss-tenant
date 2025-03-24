@@ -614,10 +614,8 @@ const getMockHistoryData = () => {
 };
 
 // Function to toggle mock data for testing (only in development)
-const useMockData = ref(false);
-
 const toggleMockData = () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (isDevelopment.value) {
     useMockData.value = !useMockData.value;
     
     if (useMockData.value) {
