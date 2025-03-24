@@ -22,6 +22,7 @@
     "@vuelidate/validators": "^2.0.4",
     "axios": "^1.6.2",
     "chart.js": "^4.4.1",
+    "crypto-js": "^4.2.0",
     "express": "^4.21.2",
     "graphql": "^16.8.0",
     "graphql-tag": "^2.12.6",
