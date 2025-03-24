@@ -15,6 +15,23 @@
     <div class="grid">
       <div class="col-12">
         <div class="of-form-group">
+          <label for="shellType" class="of-form-label">Shell Type</label>
+          <Dropdown
+            id="shellType"
+            v-model="shellType"
+            :options="[
+              { label: 'CMD', value: 'cmd' },
+              { label: 'PowerShell', value: 'powershell' },
+              { label: 'Bash', value: 'bash' }
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select shell type"
+            class="w-full"
+          />
+        </div>
+
+        <div class="of-form-group">
           <label for="command">Command</label>
           <ScriptEditor 
             id="command" 
@@ -23,6 +40,23 @@
             required
             :error="submitted && !command ? 'Command is required.' : ''"
             helperText="The command will be executed on the selected device. Make sure to use the correct syntax for the target platform."
+          />
+        </div>
+
+        <div class="of-form-group checkbox-group mb-3">
+          <div class="checkbox-container">
+            <Checkbox id="runAsUser" v-model="runAsUser" :binary="true" />
+            <label for="runAsUser" class="checkbox-label">Run As User (Windows only)</label>
+          </div>
+        </div>
+
+        <div class="of-form-group">
+          <label for="timeout" class="of-form-label">Timeout (seconds)</label>
+          <InputText
+            id="timeout"
+            v-model.number="timeout"
+            type="number"
+            style="width: 150px"
           />
         </div>
 
@@ -54,16 +88,18 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Dialog, OFButton, ScriptEditor } from '../../components/ui';
+import { Dialog, OFButton, ScriptEditor, Dropdown, InputText } from '../../components/ui';
+import Checkbox from 'primevue/checkbox';
 
 const props = defineProps<{
   visible: boolean;
   lastCommand?: { cmd: string; output: string } | null;
+  devicePlatform?: string;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
-  (e: 'run', command: string): Promise<string>;
+  (e: 'run', command: string, shellType: string, timeout: number, runAsUser: boolean): Promise<string>;
   (e: 'update:output', output: string): void;
   (e: 'cancel'): void;
 }>();
@@ -71,6 +107,9 @@ const emit = defineEmits<{
 const command = ref('');
 const output = ref('');
 const submitted = ref(false);
+const shellType = ref('cmd');
+const timeout = ref(30);
+const runAsUser = ref(false);
 
 watch(() => props.visible, (newValue) => {
   if (!newValue) {
@@ -79,6 +118,15 @@ watch(() => props.visible, (newValue) => {
     // If dialog is opened and we have a last command, show it
     command.value = props.lastCommand.cmd;
     output.value = props.lastCommand.output;
+  }
+  
+  // If device platform is provided, set appropriate shell type
+  if (props.devicePlatform) {
+    if (props.devicePlatform === 'windows') {
+      shellType.value = 'cmd';
+    } else if (props.devicePlatform === 'darwin' || props.devicePlatform === 'linux') {
+      shellType.value = 'bash';
+    }
   }
 });
 
@@ -99,7 +147,7 @@ const onRun = async () => {
     .join(' ');
   
   try {
-    await emit('run', normalizedCommand);
+    await emit('run', normalizedCommand, shellType.value, timeout.value, runAsUser.value);
   } catch (error: any) {
     const errorMessage = `Error: ${error?.message || 'Unknown error'}`;
     output.value = errorMessage;
@@ -117,6 +165,7 @@ const resetForm = () => {
   command.value = '';
   output.value = '';
   submitted.value = false;
+  // Don't reset shellType, timeout, and runAsUser since they're preferences
 };
 </script>
 
@@ -206,4 +255,18 @@ const resetForm = () => {
   font-size: 0.875rem;
   line-height: 1.4;
 }
-</style>           
+
+.checkbox-group {
+  margin-bottom: 1rem;
+  
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    .checkbox-label {
+      margin-bottom: 0;
+    }
+  }
+}
+</style>                                                                                        

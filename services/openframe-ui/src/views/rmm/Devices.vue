@@ -74,6 +74,7 @@
       v-model:visible="showRunCommandDialog"
       :loading="executing"
       :lastCommand="lastCommand"
+      :devicePlatform="selectedDevice?.plat"
       @run="executeCommand"
       @update:output="updateCommandOutput"
       @cancel="showRunCommandDialog = false"
@@ -252,7 +253,7 @@ const runCommand = (device: Device) => {
   showRunCommandDialog.value = true;
 };
 
-const executeCommand = async (cmd: string) => {
+const executeCommand = async (cmd: string, shell: string, timeout: number, runAsUser: boolean) => {
   if (!selectedDevice.value) return;
 
   let executionId: string | undefined;
@@ -274,12 +275,21 @@ const executeCommand = async (cmd: string) => {
 
   try {
     executing.value = true;
+    
+    // Determine shell based on platform and shell type
+    let shellPath = '/bin/bash';
+    if (selectedDevice.value.plat === 'windows') {
+      shellPath = shell === 'powershell' ? 'powershell' : 'cmd';
+    } else if (selectedDevice.value.plat === 'darwin' || selectedDevice.value.plat === 'linux') {
+      shellPath = '/bin/bash';
+    }
+    
     const response = await restClient.post<string>(`${API_URL}/agents/${selectedDevice.value.agent_id}/cmd/`, {
-      shell: "/bin/bash",
+      shell: shellPath,
       cmd: cmd,
-      timeout: 30,
+      timeout: timeout,
       custom_shell: null,
-      run_as_user: false
+      run_as_user: runAsUser
     });
 
     lastCommand.value = {
@@ -295,10 +305,12 @@ const executeCommand = async (cmd: string) => {
       });
     }
 
-    toastService.showSuccess('Command executed successfully');
+    toastService.showSuccess(response || 'Command executed successfully');
   } catch (error) {
     console.error('Failed to execute command:', error);
-    toastService.showError('Failed to execute command');
+    const errorMessage = error instanceof Error ? error.message : 
+                        (error.data || 'Failed to execute command');
+    toastService.showError(errorMessage);
 
     // Update execution history with error status
     if (executionHistoryRef.value && executionId) {
