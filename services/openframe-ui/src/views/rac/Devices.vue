@@ -16,7 +16,7 @@
       <div class="filters-container">
         <div class="filters-row">
           <div class="search-container">
-            <SearchBar v-model="filters['global'].value || ''" placeholder="Search devices..." />
+            <SearchBar v-model="filters['global'].value" placeholder="Search devices..." />
           </div>
         </div>
       </div>
