@@ -55,7 +55,7 @@
       </div>
       <ModuleTable 
         :items="historyItems" 
-        :loading="loading"
+        :loading="historyLoading"
         :searchFields="['command', 'username', 'type', 'time', 'script_name', 'execution_time']"
         emptyIcon="pi pi-history"
         emptyTitle="No History Items"
@@ -201,7 +201,11 @@ const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
 const toastService = ToastService.getInstance();
 
-const loading = ref(true);
+// Development environment detection - moved to top of script
+const isDevelopment = ref(window.location.hostname === 'localhost' && import.meta.env.MODE === 'development');
+
+const historyLoading = ref(true);
+const devicesLoading = ref(true);
 const error = ref<Error | null>(null);
 const devices = ref<Device[]>([]);
 const selectedAgent = ref<string | null>(null);
@@ -235,19 +239,9 @@ const agentOptions = computed(() => {
 });
 
 // Add watchers for filter changes to trigger history fetch
-// Watch for changes to selectedAgent and refresh history
-watch(selectedAgent, (newValue, oldValue) => {
-  if (newValue !== oldValue) {
-    fetchHistory();
-  }
-});
+// Individual watchers removed in favor of a single combined watcher at the end of the script
 
-// Watch for changes to the type filter and refresh history
-watch(() => filters.value.type.value, (newValue, oldValue) => {
-  if (newValue !== oldValue) {
-    fetchHistory();
-  }
-});
+// We'll set up the immediate watcher after all functions are defined
 
 const formatTime = (timestamp: string) => {
   return new Date(timestamp).toLocaleString();
@@ -301,13 +295,13 @@ const getDialogTitle = () => {
 
 const fetchDevices = async () => {
   try {
-    loading.value = true;
+    devicesLoading.value = true;
     
     // No mock data in production
     if (isDevelopment.value && false) {
       // Mock data is now disabled by default
       console.log('Development environment detected, but mock data is disabled');
-      loading.value = false;
+      devicesLoading.value = false;
       return;
     }
     
@@ -317,16 +311,13 @@ const fetchDevices = async () => {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
   } finally {
-    loading.value = false;
+    devicesLoading.value = false;
   }
 };
 
 const fetchHistory = async () => {
-  // Skip if already loading to prevent multiple simultaneous requests
-  if (loading.value) return;
-  
   try {
-    loading.value = true;
+    historyLoading.value = true;
     
     let newHistory: HistoryEntry[] = [];
     
@@ -334,7 +325,7 @@ const fetchHistory = async () => {
     if (isDevelopment.value && useMockData.value) {
       console.log('Development environment detected, using mock data');
       // If mock data is enabled, generate it
-      newHistory = getMockHistoryData();
+      newHistory = generateMockHistoryData();
     } else {
       console.log('Using real data from API');
       // Otherwise use real data
@@ -388,7 +379,7 @@ const fetchHistory = async () => {
     console.error('Failed to fetch history:', error);
     toastService.showError('Failed to fetch history');
   } finally {
-    loading.value = false;
+    historyLoading.value = false;
   }
 };
 
@@ -417,9 +408,16 @@ const togglePolling = (enabled: boolean) => {
   }
 };
 
-onMounted(() => {
-  fetchDevices();
-  fetchHistory();
+onMounted(async () => {
+  try {
+    // First fetch history immediately on mount
+    await fetchHistory();
+    
+    // Then fetch devices after history returns
+    await fetchDevices();
+  } catch (error) {
+    console.error('Error during initial data fetch:', error);
+  }
   
   if (autoPollingEnabled.value) {
     setupRefreshInterval();
@@ -431,6 +429,8 @@ onMounted(() => {
   // Only add mock data when explicitly requested for testing
   // Mock data is now disabled by default
 });
+
+// We'll move the immediate watcher to the end of the script after all functions are defined
 
 // Add function to enhance history items with agent information
 const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
@@ -522,8 +522,6 @@ const fetchAgentDetails = async () => {
 };
 
 // Mock data functions are disabled in production by default
-// Development environment detection
-const isDevelopment = ref(window.location.hostname === 'localhost' && import.meta.env.MODE === 'development');
 
 // Function to toggle mock data for testing (only in development)
 const toggleMockData = () => {
@@ -535,6 +533,8 @@ const toggleMockData = () => {
     console.warn('Mock data toggle is only available in development mode');
   }
 };
+
+// Using the existing getMockHistoryData function defined elsewhere in the file
 
 // Function to generate mock agent data for local development
 const getMockAgentInfo = (agentId: number) => {
@@ -567,7 +567,8 @@ const addMockAgentInfo = () => {
 };
 
 // Function to generate mock history data for local development
-const getMockHistoryData = () => {
+// Renamed to avoid duplicate declaration
+const generateMockHistoryData = () => {
   if (!isDevelopment.value) {
     console.log('Mock data generation is disabled in production');
     return [];
@@ -637,6 +638,14 @@ onUnmounted(() => {
     refreshInterval.value = null;
   }
 });
+
+// Set up watcher at the very end of the script after all functions are defined
+// Removed immediate: true to prevent duplicate calls on mount
+watch([selectedAgent, () => filters.value.type.value, () => filters.value.global.value], 
+  () => {
+    fetchHistory();
+  }
+);
 </script>
 
 <style scoped>
