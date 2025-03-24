@@ -170,7 +170,7 @@ const menuItems: MenuItem[] = [
     children: [
       {
         label: 'Remote Monitoring & Management',
-        icon: 'pi pi-desktop',
+        icon: 'pi pi-server',
         path: '/rmm'
       },
       {
@@ -185,7 +185,7 @@ const menuItems: MenuItem[] = [
       },
       {
         label: 'Infrastructure',
-        icon: 'pi pi-cog',
+        icon: 'pi pi-sitemap',
         path: '/tools'
       },
       {
@@ -483,4 +483,4 @@ const handleLogout = () => {
   color: var(--surface-900);
   font-weight: 600;
 }
-</style>    
+</style>                        

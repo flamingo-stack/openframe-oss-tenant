@@ -23,25 +23,47 @@ export const getDeviceIcon = (platform: string): string => {
  */
 export const getIntegratedToolIcon = (toolType: string): string => {
   const iconMap: Record<string, string> = {
-    AUTHENTIK: 'pi pi-shield',
+    // Authentication & Identity
+    AUTHENTIK: 'pi pi-id-card',
+    KEYCLOAK: 'pi pi-shield',
+    
+    // Device Management
     FLEET: 'pi pi-mobile',
     RUSTDESK: 'pi pi-desktop',
+    MESHCENTRAL: 'pi pi-sitemap',
+    TACTICAL_RMM: 'pi pi-cog',
+    
+    // Monitoring & Observability
     GRAFANA: 'pi pi-chart-line',
-    LOKI: 'pi pi-database',
+    LOKI: 'pi pi-file',
     PROMETHEUS: 'pi pi-chart-bar',
-    KAFKA: 'pi pi-bolt',
-    MONGO_EXPRESS: 'pi pi-server',
-    MONGODB: 'pi pi-database',
-    NIFI: 'pi pi-sitemap',
-    PINOT: 'pi pi-chart-pie',
     KIBANA: 'pi pi-search',
+    
+    // Messaging & Streaming
+    KAFKA: 'pi pi-send',
+    NIFI: 'pi pi-sort-alt',
+    
+    // Databases
+    MONGO_EXPRESS: 'pi pi-database',
+    MONGODB: 'pi pi-circle',
     REDIS: 'pi pi-bolt',
-    CASSANDRA: 'pi pi-database',
+    CASSANDRA: 'pi pi-server',
+    MYSQL: 'pi pi-table',
+    POSTGRESQL: 'pi pi-database',
+    PINOT: 'pi pi-filter',
+    
+    // Infrastructure
     ZOOKEEPER: 'pi pi-cog',
-    MESHCENTRAL: 'pi pi-globe',
-    TACTICAL_RMM: 'pi pi-desktop',
-    MYSQL: 'pi pi-database',
-    POSTGRESQL: 'pi pi-database'
+    KUBERNETES: 'pi pi-sitemap',
+    DOCKER: 'pi pi-box',
+    
+    // Network
+    TRAEFIK: 'pi pi-share-alt',
+    NGINX: 'pi pi-globe',
+    
+    // Security
+    VAULT: 'pi pi-lock',
+    WAZUH: 'pi pi-shield'
   };
   return iconMap[toolType] || 'pi pi-cog';
 };
