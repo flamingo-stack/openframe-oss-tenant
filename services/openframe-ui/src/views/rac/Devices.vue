@@ -186,19 +186,7 @@ const fetchDevices = async () => {
   }
 };
 
-const formatTimestamp = (timestamp: string) => {
-  return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
-};
-
-const getStatusSeverity = (status: string) => {
-  const severityMap: Record<string, string> = {
-    online: 'success',
-    offline: 'danger',
-    idle: 'warning',
-    unknown: 'info'
-  };
-  return severityMap[status.toLowerCase()] || 'info';
-};
+// Using the existing formatTimestamp and getStatusSeverity functions
 
 const remoteConnect = (device: Device) => {
   router.push(`/rac/remote-connection/${device.id}`);
