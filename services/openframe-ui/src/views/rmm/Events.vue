@@ -257,9 +257,6 @@ const getAgentHostname = (agentId: number) => {
 const showOutputDialog = (historyItem: HistoryEntry) => {
   selectedHistoryItem.value = historyItem;
   
-  // Don't add mock data in production
-  // Mock data is now disabled by default
-  
   showDialog.value = true;
 };
 
@@ -323,7 +320,7 @@ const fetchHistory = async () => {
   try {
     loading.value = true;
     
-    // No mock data - always fetch real data from API
+    // Always fetch real data from API
     
     // Choose the right endpoint based on whether we're showing a single agent or all agents
     const endpoint = selectedAgent.value
@@ -499,15 +496,7 @@ onMounted(() => {
   
   // Fetch real data
   fetchDevices();
-  fetchHistory();</old_str>
-
-    // For production, fetch real data
-    fetchDevices();
-    fetchHistory();
-    
-    // Set up watchers after data is loaded
-    setupWatchers();
-  }
+  fetchHistory();
   
   if (autoPollingEnabled.value) {
     setupRefreshInterval();
@@ -573,83 +562,14 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
   }
 };
 
-// Add a function to load mock data for testing
-const loadMockData = () => {
-  console.log('Loading mock data...');
-  historyItems.value = [
-    {
-      id: 1,
-      agent: 1,
-      time: new Date().toISOString(),
-      type: 'cmd_run',
-      command: 'ls -la /var/log',
-      results: 'total 1024\ndrwxr-xr-x 10 root root 4096 Mar 15 12:34 .\ndrwxr-xr-x 14 root root 4096 Mar 10 09:12 ..',
-      username: 'admin',
-      agent_info: {
-        agent_id: 'agent1',
-        hostname: 'test-server-1',
-        plat: 'linux',
-        os: 'Ubuntu 20.04',
-        agent: 1
-      }
-    },
-    {
-      id: 2,
-      agent: 2,
-      time: new Date(Date.now() - 3600000).toISOString(),
-      type: 'script_run',
-      script_name: 'system_info.sh',
-      script_results: {
-        stdout: 'CPU: Intel Core i7\nMemory: 16GB\nDisk: 500GB SSD',
-        stderr: '',
-        retcode: 0,
-        execution_time: 1.25
-      },
-      username: 'admin',
-      agent_info: {
-        agent_id: 'agent2',
-        hostname: 'test-server-2',
-        plat: 'windows',
-        os: 'Windows Server 2019',
-        agent: 2
-      }
-    }
-  ];
-};
+
 
 // Function to override icon styles
 const overrideIconStyles = () => {
   // No implementation needed
 };
 
-// Mock data functions are disabled in production
-// This function is only used for local development testing
-const getMockAgentInfo = (agentId: number) => {
-  if (process.env.NODE_ENV !== 'development') {
-    console.log('Mock data generation is disabled in production');
-    return null;
-  }
-  
-  if (agentId === 1) {
-    return {
-      agent_id: 'agent1',
-      hostname: 'test-server-1',
-      plat: 'linux',
-      os: 'Ubuntu 20.04',
-      agent: 1
-    };
-  } else if (agentId === 2) {
-    return {
-      agent_id: 'agent2',
-      hostname: 'test-server-2',
-      plat: 'windows',
-      os: 'Windows Server 2019',
-      agent: 2
-    };
-  }
-  
-  return null;
-};
+
 
 // Function to fetch agent details
 const fetchAgentDetails = async () => {
