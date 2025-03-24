@@ -211,6 +211,7 @@ const refreshInterval = ref<number | null>(null);
 const showDialog = ref(false);
 const selectedHistoryItem = ref<HistoryEntry | null>(null);
 const autoPollingEnabled = ref(true); // Default to enabled
+const useMockData = ref(false); // For mock data toggle
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -523,7 +524,6 @@ const fetchAgentDetails = async () => {
 // Mock data functions are disabled in production by default
 // Development environment detection
 const isDevelopment = ref(window.location.hostname === 'localhost' && import.meta.env.MODE === 'development');
-const useMockData = ref(false);
 
 // Function to toggle mock data for testing (only in development)
 const toggleMockData = () => {
