@@ -436,17 +436,11 @@ watch(selectedAgent, () => {
   fetchHistory();
 });
 
-// Watch for changes in type filter and fetch history when it changes
-watch(() => filters.type.value, () => {
-  console.log('Type filter changed, fetching history');
+// Watch for changes in filters
+watch(filters, () => {
+  console.log('Filters changed, fetching history');
   fetchHistory();
-});
-
-// Watch for changes in global filter and fetch history when it changes
-watch(() => filters.global.value, () => {
-  console.log('Global filter changed, fetching history');
-  fetchHistory();
-});
+}, { deep: true });
 
 // Add function to enhance history items with agent information
 const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
