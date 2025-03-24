@@ -115,7 +115,7 @@ function Install-Git {
         $gitInstaller = "$env:TEMP\git_installer.exe"
         
         Invoke-WebRequest -Uri $gitUrl -OutFile $gitInstaller
-        Start-Process $gitInstaller -Wait -ArgumentList '/VERYSILENT /NORESTART'
+        Start-Process $gitInstaller -Wait -ArgumentList '/VERYSILENT /NORESTART /SUPPRESSMSGBOXES'
         Remove-Item $gitInstaller
     } else {
         Write-Host "Git is already installed." -ForegroundColor Green
@@ -271,7 +271,10 @@ function Install-Agent {
         "-agent-type", "`"$AgentType`"",
         "-log", "`"DEBUG`"",
         "-logto", "`"$LogPath`"",
-        "-nomesh"
+        "-nomesh",
+        "/VERYSILENT",
+        "/SUPPRESSMSGBOXES",
+        "-silent"
     )
     
     Write-ColorMessage "Running agent installation with parameters..." "Yellow"
@@ -512,26 +515,26 @@ function Uninstall-TacticalRMM {
     
     # First try to run the agent's uninstall command if available
     if (Test-Path $agentPath) {
-        Write-Host "Running agent uninstall command: & `"$agentPath`" -m uninstall -silent" -ForegroundColor Yellow
-        Start-Process -FilePath $agentPath -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
+        Write-Host "Running agent uninstall command: & `"$agentPath`" -m uninstall -silent /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Yellow
+        Start-Process -FilePath $agentPath -ArgumentList "-m uninstall -silent /VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
         Write-Host "Agent uninstall command completed." -ForegroundColor Green
         Start-Sleep -Seconds 10
     } elseif (Test-Path $agentX86Path) {
-        Write-Host "Running agent uninstall command: & `"$agentX86Path`" -m uninstall -silent" -ForegroundColor Yellow
-        Start-Process -FilePath $agentX86Path -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
+        Write-Host "Running agent uninstall command: & `"$agentX86Path`" -m uninstall -silent /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Yellow
+        Start-Process -FilePath $agentX86Path -ArgumentList "-m uninstall -silent /VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
         Write-Host "Agent uninstall command completed." -ForegroundColor Green
         Start-Sleep -Seconds 10
     }
     
     # Then run the uninstaller if available
     if (Test-Path $uninstallerPath) {
-        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT" -ForegroundColor Yellow
-        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
+        Write-Host "Running uninstaller: $uninstallerPath /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
         Write-Host "Uninstaller completed." -ForegroundColor Green
         Start-Sleep -Seconds 10
     } elseif (Test-Path $uninstallerX86Path) {
-        Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT" -ForegroundColor Yellow
-        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
+        Write-Host "Running uninstaller: $uninstallerX86Path /VERYSILENT /SUPPRESSMSGBOXES" -ForegroundColor Yellow
+        Start-Process -FilePath $uninstallerX86Path -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
         Write-Host "Uninstaller completed." -ForegroundColor Green
         Start-Sleep -Seconds 10
     }
@@ -638,9 +641,9 @@ function Remove-TacticalRMMCompletely {
     if (Test-Path $agentExe) {
         Write-Host "Found agent executable at: $agentExe" -ForegroundColor Yellow
         Write-Host "Running uninstall command..." -ForegroundColor Yellow
-        Write-Host "Executing command: Start-Process -FilePath '$agentExe' -ArgumentList '-m uninstall -silent' -Wait -NoNewWindow" -ForegroundColor Blue
+        Write-Host "Executing command: Start-Process -FilePath '$agentExe' -ArgumentList '-m uninstall -silent /VERYSILENT /SUPPRESSMSGBOXES' -Wait -NoNewWindow" -ForegroundColor Blue
         try {
-            Start-Process -FilePath $agentExe -ArgumentList "-m uninstall -silent" -Wait -NoNewWindow
+            Start-Process -FilePath $agentExe -ArgumentList "-m uninstall -silent /VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
             Write-Host "Uninstall command completed." -ForegroundColor Green
             Start-Sleep -Seconds 10  # Wait for uninstall to complete
         } catch {
@@ -738,9 +741,9 @@ function Remove-TacticalRMMCompletely {
     $uninstallerPath = "${env:ProgramFiles}\TacticalAgent\unins000.exe"
     if (Test-Path $uninstallerPath) {
         Write-Host "Running Tactical RMM uninstaller..." -ForegroundColor Yellow
-        Write-Host "Executing command: Start-Process -FilePath '$uninstallerPath' -ArgumentList '/VERYSILENT' -Wait -NoNewWindow" -ForegroundColor Blue
+        Write-Host "Executing command: Start-Process -FilePath '$uninstallerPath' -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES' -Wait -NoNewWindow" -ForegroundColor Blue
         try {
-            Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT" -Wait -NoNewWindow
+            Start-Process -FilePath $uninstallerPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait -NoNewWindow
             Write-Host "Uninstaller completed." -ForegroundColor Green
             Start-Sleep -Seconds 10  # Wait for uninstaller to complete
         } catch {
@@ -813,7 +816,7 @@ function Remove-TacticalRMMCompletely {
     # Clean registry entries
     Write-Host "Cleaning registry entries..." -ForegroundColor Yellow
     
-    # Then remove other registry entries
+        # Then remove other registry entries
     $registryPaths = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\*",
         "HKLM:\SYSTEM\CurrentControlSet\Services\tacticalrmm",
@@ -1167,8 +1170,8 @@ try {
         # Validate required parameters
         if ([string]::IsNullOrEmpty($AuthKey)) {
             Write-ColorMessage "Error: AuthKey is required" "Red"
-            exit 1
-        }
+        exit 1
+    }
 
         Write-ColorMessage "Installing agent with parameters:" "Yellow"
         Write-ColorMessage "RMM URL: $RmmServerUrl" "Yellow"
