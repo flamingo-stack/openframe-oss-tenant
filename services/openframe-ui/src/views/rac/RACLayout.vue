@@ -38,12 +38,12 @@ const navigationItems = [
   },
   {
     label: 'Remote Connection',
-    icon: 'pi pi-desktop',
+    icon: 'pi pi-link',
     path: '/rac/remote-connection'
   },
   {
     label: 'File Transfer',
-    icon: 'pi pi-file',
+    icon: 'pi pi-file-export',
     path: '/rac/file-transfer'
   },
   {
