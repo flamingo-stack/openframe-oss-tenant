@@ -38,7 +38,7 @@ const navigationItems = [
   },
   {
     label: 'Remote Connection',
-    icon: 'pi pi-desktop-alt',
+    icon: 'pi pi-link',
     path: '/rac/remote-connection'
   },
   {
