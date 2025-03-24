@@ -78,7 +78,7 @@
             {{ data.script_name || data.command }}
           </template>
         </Column>
-        <Column v-if="selectedAgent === null" field="agent" header="Agent" sortable style="width: 25%">
+        <Column field="agent" header="Agent" sortable style="width: 25%">
           <template #body="{ data }">
             <div class="flex align-items-center">
               <i :class="getDeviceIcon(data.agent_info?.plat)" class="mr-2"></i>
@@ -345,10 +345,8 @@ const fetchHistory = async () => {
     // Sort history items by time in descending order (most recent first)
     newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     
-    // Enhance history with agent information if not already present
-    if (!newHistory.some(item => item.agent_info)) {
-      newHistory = await enhanceHistoryWithAgentInfo(newHistory);
-    }
+    // Enhance history with agent information
+    newHistory = await enhanceHistoryWithAgentInfo(newHistory);
     
     // Verify agent data availability (only log in development)
     if (isDevelopment.value) {
@@ -432,31 +430,59 @@ onMounted(async () => {
 
 // We'll move the immediate watcher to the end of the script after all functions are defined
 
+// Watch for changes in selected agent and fetch history when it changes
+watch(selectedAgent, () => {
+  console.log('Selected agent changed, fetching history');
+  fetchHistory();
+});
+
+// Watch for changes in type filter and fetch history when it changes
+watch(() => filters.type.value, () => {
+  console.log('Type filter changed, fetching history');
+  fetchHistory();
+});
+
+// Watch for changes in global filter and fetch history when it changes
+watch(() => filters.global.value, () => {
+  console.log('Global filter changed, fetching history');
+  fetchHistory();
+});
+
 // Add function to enhance history items with agent information
 const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
   try {
-    // Fetch all agents from the API
-    const agents = await fetchAgentDetails();
+    // Step 1: Process the history entries to get agent IDs
+    const uniqueAgentIds = Array.from(new Set(history.map(item => item.agent)));
+    console.log('Unique agent IDs from history:', uniqueAgentIds);
     
-    if (agents.length === 0) {
-      console.warn('No agents found in API response');
-      return history;
-    }
+    // Step 2: Fetch the list of all agents
+    const agentResponse = await restClient.get(`${API_URL}/agents/`);
+    const agentList = Array.isArray(agentResponse) ? agentResponse : [];
+    console.log('Fetched agents:', agentList.length);
     
-    console.log('Fetched agents:', agents.map(a => ({ agent_id: a.agent_id, hostname: a.hostname })));
+    // Step 3: Fetch detailed information for each agent to get the numeric ID
+    const agentsWithDetails = await Promise.all(
+      agentList.map(async (agent) => {
+        try {
+          // Get detailed agent info which should include the numeric ID
+          const detailResponse = await restClient.get(`${API_URL}/agents/${agent.agent_id}/`);
+          return { ...agent, ...detailResponse };
+        } catch (detailError) {
+          console.error(`Failed to fetch details for agent ${agent.agent_id}:`, detailError);
+          return agent;
+        }
+      })
+    );
     
-    // Create a mapping of agent records for efficient lookup
+    // Step 4: Create a mapping of agents by numeric ID for efficient lookup
     const agentMap = new Map();
-    
-    // First, try to identify agents by their numeric ID (if available)
-    for (const agent of agents) {
-      // Check if the agent has a numeric ID field (from detailed agent info)
+    for (const agent of agentsWithDetails) {
       if (agent.id !== undefined) {
         agentMap.set(agent.id, agent);
       }
     }
     
-    // Map agent details to history items
+    // Step 5: Map agent details to history items using the numeric ID
     return history.map(item => {
       const numericAgentId = item.agent;
       
@@ -465,25 +491,8 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
         return { ...item, agent_info: agentMap.get(numericAgentId) };
       }
       
-      // If no direct match found in map, try finding by agent property
-      const agentByProperty = agents.find(a => a.agent === numericAgentId);
-      if (agentByProperty) {
-        return { ...item, agent_info: agentByProperty };
-      }
-      
-      // If no direct match found in map, try fetching detailed info for this specific agent
-      if (!item.agent_info) {
-        // For testing only - don't do this in production as it would make too many requests
-        // This would be a fallback for testing with mock data
-        if (isDevelopment.value) {
-          // In a real implementation, we would need to fetch the agent details here
-          // but for now, we'll use any available agent as a fallback
-          if (agents.length > 0) {
-            return { ...item, agent_info: agents[0] };
-          }
-        }
-      }
-      
+      // If no direct match found, log warning and return original item
+      console.warn(`No agent found with numeric ID ${numericAgentId}`);
       return item;
     });
   } catch (error) {
