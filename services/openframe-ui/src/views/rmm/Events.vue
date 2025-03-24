@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, computed, onUnmounted, nextTick, watch } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -189,6 +189,7 @@ interface Device {
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
+console.log('API URL:', API_URL);
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
@@ -202,6 +203,7 @@ const showDialog = ref(false);
 const selectedHistoryItem = ref<HistoryEntry | null>(null);
 const autoPollingEnabled = ref(true); // Default to enabled
 
+// Initialize filters with default values
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
   type: { value: null as string | null, matchMode: FilterMatchMode.EQUALS }
@@ -296,37 +298,148 @@ const fetchDevices = async () => {
 };
 
 const fetchHistory = async () => {
+  console.log('fetchHistory called');
   // Skip if already loading to prevent multiple simultaneous requests
-  if (loading.value) return;
+  if (loading.value) {
+    console.log('Already loading, skipping fetchHistory');
+    return;
+  }
   
   try {
     loading.value = true;
+    console.log('Setting loading to true');
     
     let newHistory: HistoryEntry[] = [];
     
-    // Only use mock data in development mode for local testing
-    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
-      console.log('Development environment detected, but not using mock data by default');
-      // Mock data is now only added via addMockAgentInfo() when explicitly called
-    }
-    
-    // If no mock data or not in development mode, fetch from API
-    if (newHistory.length === 0) {
-      // Choose the right endpoint based on whether we're showing a single agent or all agents
-      const endpoint = selectedAgent.value
-        ? `${API_URL}/agents/${selectedAgent.value}/history/`
-        : `${API_URL}/agents/history/`; // Assumes an endpoint exists for all agents' history
-      
-      const response = await restClient.get<HistoryEntry[]>(endpoint);
-      newHistory = Array.isArray(response) ? response : [];
-    }
-    
-    // Sort history items by time in descending order (most recent first)
-    newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    
-    // Enhance history with agent information if not already present
-    if (!newHistory.some(item => item.agent_info)) {
-      newHistory = await enhanceHistoryWithAgentInfo(newHistory);
+    try {
+      // For development/testing, use mock data to ensure UI works properly
+      if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
+        console.log('Using mock data for local development');
+        // Create mock history data similar to what's in History.vue
+        const mockHistory: HistoryEntry[] = [
+          {
+            id: 1,
+            time: new Date().toISOString(),
+            type: "cmd_run",
+            command: "dir",
+            status: "success",
+            username: "system",
+            sync: true,
+            timeout: 30,
+            retcode: 0,
+            stdout: "Directory listing output",
+            stderr: "",
+            execution_time: 0.5,
+            agent: 1,
+            agent_info: {
+              id: 1,
+              hostname: "test-server-1",
+              operating_system: "Windows 10 Pro",
+              plat: "windows",
+              version: "10.0.19042",
+              total_ram: 16384,
+              used_ram: 8192,
+              disks: [],
+              boot_time: new Date().getTime() / 1000 - 86400,
+              logged_in_username: "admin",
+              last_seen: new Date().toISOString(),
+              status: "online",
+              monitoring_type: "server",
+              description: "Test server",
+              mesh_node_id: "",
+              overdue_email_alert: false,
+              overdue_text_alert: false,
+              overdue_dashboard_alert: true,
+              offline_time: 4,
+              overdue_time: 300,
+              check_interval: 60,
+              needs_reboot: false,
+              choco_installed: true,
+              wmi_detail: {},
+              services: [],
+              patches_last_installed: null,
+              time_zone: "UTC",
+              maintenance_mode: false,
+              block_policy_inheritance: false
+            }
+          },
+          {
+            id: 2,
+            time: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+            type: "script_run",
+            command: "Network Speed Test",
+            status: "success",
+            username: "admin",
+            sync: true,
+            timeout: 120,
+            retcode: 0,
+            stdout: "Download: 95.5 Mbps\nUpload: 35.2 Mbps\nPing: 15ms",
+            stderr: "",
+            execution_time: 10.2,
+            agent: 2,
+            script_name: "Network - Speed Test",
+            agent_info: {
+              id: 2,
+              hostname: "test-server-2",
+              operating_system: "Ubuntu 20.04",
+              plat: "linux",
+              version: "20.04",
+              total_ram: 8192,
+              used_ram: 4096,
+              disks: [],
+              boot_time: new Date().getTime() / 1000 - 172800,
+              logged_in_username: "ubuntu",
+              last_seen: new Date().toISOString(),
+              status: "online",
+              monitoring_type: "workstation",
+              description: "Test Linux server",
+              mesh_node_id: "",
+              overdue_email_alert: false,
+              overdue_text_alert: false,
+              overdue_dashboard_alert: true,
+              offline_time: 4,
+              overdue_time: 300,
+              check_interval: 60,
+              needs_reboot: false,
+              choco_installed: false,
+              wmi_detail: {},
+              services: [],
+              patches_last_installed: null,
+              time_zone: "UTC",
+              maintenance_mode: false,
+              block_policy_inheritance: false
+            }
+          }
+        ];
+        
+        newHistory = mockHistory;
+      } else {
+        // In production, fetch from API
+        // Choose the right endpoint based on whether we're showing a single agent or all agents
+        const endpoint = selectedAgent.value
+          ? `${API_URL}/agents/${selectedAgent.value}/history/`
+          : `${API_URL}/agents/history/`; // Endpoint for all agents' history
+        
+        console.log('Fetching history from endpoint:', endpoint);
+        const response = await restClient.get<HistoryEntry[]>(endpoint);
+        console.log('API response received:', response ? 'data received' : 'no data');
+        
+        newHistory = Array.isArray(response) ? response : [];
+        console.log('History items count:', newHistory.length);
+        
+        // Sort history items by time in descending order (most recent first)
+        newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        
+        // Only fetch agent info if needed
+        if (newHistory.length > 0 && !newHistory.some(item => item.agent_info)) {
+          console.log('Enhancing history with agent info');
+          newHistory = await enhanceHistoryWithAgentInfo(newHistory);
+        }
+      }
+    } catch (apiError) {
+      console.error('API error fetching history:', apiError);
+      // Continue with empty history rather than crashing
+      newHistory = [];
     }
     
     // Verify agent data availability (only log in development)
@@ -342,18 +455,45 @@ const fetchHistory = async () => {
       })));
     }
     
-    // Only update the UI if data has changed
-    if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
+        // Use simpler approach to check if data has changed
+    let dataChanged = false;
+    
+    // Check if lengths are different
+    if (previousHistoryItems.value.length !== newHistory.length) {
+      dataChanged = true;
+    } 
+    // Check first and last items if both arrays have items
+    else if (newHistory.length > 0 && previousHistoryItems.value.length > 0) {
+      try {
+        const firstItemChanged = JSON.stringify(newHistory[0]) !== JSON.stringify(previousHistoryItems.value[0]);
+        const lastItemChanged = JSON.stringify(newHistory[newHistory.length-1]) !== JSON.stringify(previousHistoryItems.value[previousHistoryItems.value.length-1]);
+        dataChanged = firstItemChanged || lastItemChanged;
+      } catch (e) {
+        // If there's an error in comparison, assume data changed
+        console.warn('Error comparing history items:', e);
+        dataChanged = true;
+      }
+    }
+    // If one array has items and the other doesn't, data has changed
+    else if ((newHistory.length > 0 && previousHistoryItems.value.length === 0) || 
+             (newHistory.length === 0 && previousHistoryItems.value.length > 0)) {
+      dataChanged = true;
+    }
+    
+    if (dataChanged) {
       // Use nextTick to ensure UI updates don't block rendering
       nextTick(() => {
         historyItems.value = newHistory;
         previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('Updated history items:', historyItems.value);
+          console.log('Updated history items:', historyItems.value.length);
         }
       });
     }
+    
+    // Always set loading to false to ensure UI updates
+    loading.value = false;
   } catch (error) {
     console.error('Failed to fetch history:', error);
     toastService.showError('Failed to fetch history');
@@ -371,7 +511,9 @@ const setupRefreshInterval = () => {
   refreshInterval.value = window.setInterval(() => {
     // Use requestAnimationFrame to avoid blocking the UI thread
     window.requestAnimationFrame(() => {
-      fetchHistory();
+      if (autoPollingEnabled.value) {
+        fetchHistory();
+      }
     });
   }, 5000); // Changed from 3000 to 5000 ms for less frequent updates
 };
@@ -400,6 +542,38 @@ onMounted(() => {
   
   // Only add mock data when explicitly requested for testing
   // Mock data is now disabled by default
+});
+
+// Set up watchers for filter changes
+const setupWatchers = () => {
+  // Watch for agent selection changes
+  watch(selectedAgent, () => {
+    fetchHistory();
+  });
+
+  // Watch filters object directly with deep option to catch all changes
+  watch(filters, () => {
+    console.log('Filters changed, fetching history');
+    fetchHistory();
+  }, { deep: true });
+};
+
+// Call setupWatchers in onMounted
+onMounted(() => {
+  fetchDevices();
+  fetchHistory();
+  
+  if (autoPollingEnabled.value) {
+    setupRefreshInterval();
+  }
+  
+  // Override icon styles
+  overrideIconStyles();
+  
+  // Set up watchers for filter changes after a short delay to ensure component is fully mounted
+  setTimeout(() => {
+    setupWatchers();
+  }, 100);
 });
 
 // Add function to enhance history items with agent information
