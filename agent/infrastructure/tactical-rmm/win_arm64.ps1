@@ -1122,9 +1122,6 @@ try {
     # Clone repository
     Clone-Repository -RepoUrl "https://github.com/amidaware/rmmagent.git" -Branch "master" -Folder $BuildFolder
 
-    # Set location to the build folder
-    Set-Location $BuildFolder
-
     # Patch NATS WebSocket URL with the RMM server URL
     Patch-NatsWebsocketUrl -RmmUrl $RmmServerUrl
 
