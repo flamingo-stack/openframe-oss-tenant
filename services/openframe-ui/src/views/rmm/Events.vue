@@ -525,17 +525,6 @@ const fetchAgentDetails = async () => {
 // Development environment detection
 const isDevelopment = ref(window.location.hostname === 'localhost' && import.meta.env.MODE === 'development');
 
-// Function to toggle mock data for testing (only in development)
-const toggleMockData = () => {
-  if (isDevelopment.value) {
-    useMockData.value = !useMockData.value;
-    console.log(`Mock data ${useMockData.value ? 'enabled' : 'disabled'}`);
-    fetchHistory();
-  } else {
-    console.warn('Mock data toggle is only available in development mode');
-  }
-};
-
 // Function to generate mock agent data for local development
 const getMockAgentInfo = (agentId: number) => {
   if (!isDevelopment.value) {
