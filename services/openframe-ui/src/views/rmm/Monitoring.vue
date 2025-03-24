@@ -196,6 +196,7 @@ import {
   OFScriptDialog,
   OFConfirmationDialog
 } from '../../components/ui';
+import { getMonitorIcon } from '../../utils/deviceUtils';
 
 interface Monitor {
   id: string;
@@ -479,4 +480,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>                                                                
+</style>                                                                                                                                

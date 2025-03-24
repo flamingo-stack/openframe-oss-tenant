@@ -267,6 +267,7 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import { getTaskIcon } from '../../utils/deviceUtils';
 // Import from our new UI component library
 import { 
   OFButton, 
@@ -609,4 +610,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>                          
+</style>                                                    

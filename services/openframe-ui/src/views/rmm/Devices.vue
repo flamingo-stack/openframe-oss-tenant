@@ -138,6 +138,7 @@ import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
 import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
+import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
