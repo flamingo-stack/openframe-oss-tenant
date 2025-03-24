@@ -4,6 +4,16 @@
       <template #subtitle>View system and device event history</template>
       <template #actions>
         <OFButton 
+          v-if="process.env.NODE_ENV === 'development'"
+          icon="pi pi-database" 
+          :class="[
+            'p-button-sm', 
+            useMockData ? 'p-button-success' : 'p-button-text'
+          ]"
+          @click="toggleMockData" 
+          v-tooltip.top="useMockData ? 'Disable Mock Data' : 'Enable Mock Data'"
+          style="margin-right: 0.5rem;" />
+        <OFButton 
           icon="pi pi-sync" 
           :class="[
             'p-button-sm', 
@@ -162,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, computed, onUnmounted, nextTick, watch } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -221,6 +231,21 @@ const agentOptions = computed(() => {
       value: device.agent_id
     }))
   ];
+});
+
+// Add watchers for filter changes to trigger history fetch
+// Watch for changes to selectedAgent and refresh history
+watch(selectedAgent, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    fetchHistory();
+  }
+});
+
+// Watch for changes to the type filter and refresh history
+watch(() => filters.value.type.value, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    fetchHistory();
+  }
 });
 
 const formatTime = (timestamp: string) => {
@@ -305,9 +330,13 @@ const fetchHistory = async () => {
     let newHistory: HistoryEntry[] = [];
     
     // Only use mock data in development mode for local testing
-    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
-      console.log('Development environment detected, but not using mock data by default');
-      // Mock data is now only added via addMockAgentInfo() when explicitly called
+    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development' && useMockData.value) {
+      console.log('Development environment detected, using mock data');
+      // If mock data is enabled, generate it
+      newHistory = getMockHistoryData();
+    } else {
+      console.log('Using real data from API');
+      // Otherwise use real data
     }
     
     // If no mock data or not in development mode, fetch from API
@@ -415,34 +444,42 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
     
     console.log('Fetched agents:', agents.map(a => ({ agent_id: a.agent_id, hostname: a.hostname })));
     
-    // Map agent details to history items directly (without relying on devices.value)
+    // Create a mapping of agent records for efficient lookup
+    const agentMap = new Map();
+    
+    // First, try to identify agents by their numeric ID (if available)
+    for (const agent of agents) {
+      // Check if the agent has a numeric ID field (from detailed agent info)
+      if (agent.id !== undefined) {
+        agentMap.set(agent.id, agent);
+      }
+    }
+    
+    // Map agent details to history items
     return history.map(item => {
-      // Based on the API response, we now know that agent ID 1 in history entries
-      // maps to agent_id "PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP" in the agents API
-      if (agents.length > 0) {
-        // For numeric agent ID 1, find the agent with agent.agent property equal to 1
-        // This is the correct mapping based on the API response
-        if (item.agent === 1) {
-          // Try to find an agent with agent property equal to 1
-          const agent = agents.find(a => a.agent === 1);
-          if (agent) {
-            return { ...item, agent_info: agent };
+      const numericAgentId = item.agent;
+      
+      // Look for a direct match in our agent map
+      if (agentMap.has(numericAgentId)) {
+        return { ...item, agent_info: agentMap.get(numericAgentId) };
+      }
+      
+      // If no direct match found in map, try finding by agent property
+      const agentByProperty = agents.find(a => a.agent === numericAgentId);
+      if (agentByProperty) {
+        return { ...item, agent_info: agentByProperty };
+      }
+      
+      // If no direct match found in map, try fetching detailed info for this specific agent
+      if (!item.agent_info) {
+        // For testing only - don't do this in production as it would make too many requests
+        // This would be a fallback for testing with mock data
+        if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
+          // In a real implementation, we would need to fetch the agent details here
+          // but for now, we'll use any available agent as a fallback
+          if (agents.length > 0) {
+            return { ...item, agent_info: agents[0] };
           }
-          // If not found, use the first agent as fallback
-          return { ...item, agent_info: agents[0] };
-        }
-        
-        // For other agent IDs, try to find a matching agent if possible
-        const agent = agents.find(a => a.agent === item.agent);
-        if (agent) {
-          return { ...item, agent_info: agent };
-        }
-        
-        // Fallback to index-based mapping if no direct match found
-        const agentIndex = (item.agent - 1) % agents.length;
-        const fallbackAgent = agents[agentIndex >= 0 ? agentIndex : 0];
-        if (fallbackAgent) {
-          return { ...item, agent_info: fallbackAgent };
         }
       }
       
@@ -457,26 +494,130 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
 // Function to fetch agent details
 const fetchAgentDetails = async () => {
   try {
+    // Get the list of all agents
     const response = await restClient.get(`${API_URL}/agents/`);
-    const agents = Array.isArray(response) ? response : [];
-    console.log(`Fetched ${agents.length} agents from API`);
-    return agents;
+    const agentList = Array.isArray(response) ? response : [];
+    
+    // For each agent, fetch detailed information that includes the numeric ID
+    const agentsWithDetails = await Promise.all(
+      agentList.map(async (agent) => {
+        try {
+          // Get detailed agent info which should include the numeric ID
+          const detailResponse = await restClient.get(`${API_URL}/agents/${agent.agent_id}/`);
+          return { ...agent, ...detailResponse };
+        } catch (detailError) {
+          console.error(`Failed to fetch details for agent ${agent.agent_id}:`, detailError);
+          return agent;
+        }
+      })
+    );
+    
+    console.log(`Fetched ${agentsWithDetails.length} agents with details from API`);
+    return agentsWithDetails;
   } catch (error) {
     console.error('Failed to fetch agent details:', error);
     return [];
   }
 };
 
-// Mock data functions are disabled in production
-// Function to generate mock agent data for local development (disabled)
+// Mock data functions are disabled in production by default
+// Function to generate mock agent data for local development
 const getMockAgentInfo = (agentId: number) => {
-  console.log('Mock data generation is disabled in production');
-  return null;
+  if (process.env.NODE_ENV !== 'development') {
+    console.log('Mock data generation is disabled in production');
+    return null;
+  }
+  
+  return {
+    agent_id: `MOCK_AGENT_${agentId}`,
+    hostname: `mock-host-${agentId}`,
+    plat: ['windows', 'linux', 'darwin'][agentId % 3],
+    os: ['Windows 10', 'Ubuntu 20.04', 'macOS 12.0'][agentId % 3],
+    id: agentId // This is the numeric ID that should match history entries
+  };
 };
 
-// Function to add mock data to history items (disabled)
+// Function to add mock data to history items
 const addMockAgentInfo = () => {
-  console.log('Mock data addition is disabled in production');
+  if (process.env.NODE_ENV !== 'development') {
+    console.log('Mock data addition is disabled in production');
+    return;
+  }
+  
+  historyItems.value.forEach(item => {
+    if (!item.agent_info) {
+      item.agent_info = getMockAgentInfo(item.agent);
+    }
+  });
+};
+
+// Function to generate mock history data for local development
+const getMockHistoryData = () => {
+  if (process.env.NODE_ENV !== 'development') {
+    console.log('Mock data generation is disabled in production');
+    return [];
+  }
+  
+  // Return mock history data array for testing
+  return [
+    {
+      id: 1,
+      time: new Date().toISOString(),
+      type: 'cmd_run',
+      command: 'dir /s',
+      username: 'admin',
+      results: 'Directory listing...',
+      script_results: null,
+      collector_all_output: true,
+      save_to_agent_note: false,
+      agent: 1,
+      script: null,
+      agent_info: getMockAgentInfo(1)
+    },
+    {
+      id: 2,
+      time: new Date(Date.now() - 3600000).toISOString(),
+      type: 'script_run',
+      command: '',
+      username: 'admin',
+      results: null,
+      script_results: {
+        id: 1,
+        stderr: '',
+        stdout: 'Script executed successfully',
+        retcode: 0,
+        execution_time: 1.25
+      },
+      collector_all_output: true,
+      save_to_agent_note: false,
+      agent: 2,
+      script: 1,
+      script_name: 'System Check',
+      agent_info: getMockAgentInfo(2)
+    }
+  ];
+};
+
+// Function to toggle mock data for testing (only in development)
+const useMockData = ref(false);
+
+const toggleMockData = () => {
+  if (process.env.NODE_ENV === 'development') {
+    useMockData.value = !useMockData.value;
+    
+    if (useMockData.value) {
+      // Add mock data when enabled in development
+      addMockAgentInfo();
+    } else {
+      // Refresh with real data
+      fetchHistory();
+    }
+    
+    // Log the current state
+    console.log(`Mock data ${useMockData.value ? 'enabled' : 'disabled'}`);
+  } else {
+    console.warn('Mock data toggle is only available in development mode');
+  }
 };
 
 import { getDeviceIcon } from '../../utils/deviceUtils';
