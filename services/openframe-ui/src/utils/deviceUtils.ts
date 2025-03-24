@@ -17,6 +17,36 @@ export const getDeviceIcon = (platform: string): string => {
 };
 
 /**
+ * Returns the appropriate icon class based on integrated tool type
+ * @param toolType The integrated tool type
+ * @returns The PrimeIcon class for the integrated tool
+ */
+export const getIntegratedToolIcon = (toolType: string): string => {
+  const iconMap: Record<string, string> = {
+    AUTHENTIK: 'pi pi-shield',
+    FLEET: 'pi pi-mobile',
+    RUSTDESK: 'pi pi-desktop',
+    GRAFANA: 'pi pi-chart-line',
+    LOKI: 'pi pi-database',
+    PROMETHEUS: 'pi pi-chart-bar',
+    KAFKA: 'pi pi-bolt',
+    MONGO_EXPRESS: 'pi pi-server',
+    MONGODB: 'pi pi-database',
+    NIFI: 'pi pi-sitemap',
+    PINOT: 'pi pi-chart-pie',
+    KIBANA: 'pi pi-search',
+    REDIS: 'pi pi-bolt',
+    CASSANDRA: 'pi pi-database',
+    ZOOKEEPER: 'pi pi-cog',
+    MESHCENTRAL: 'pi pi-globe',
+    TACTICAL_RMM: 'pi pi-desktop',
+    MYSQL: 'pi pi-database',
+    POSTGRESQL: 'pi pi-database'
+  };
+  return iconMap[toolType] || 'pi pi-cog';
+};
+
+/**
  * Returns the appropriate icon class based on monitor type
  * @param type The monitor type (cpu, memory, disk, network, service)
  * @returns The PrimeIcon class for the monitor type
