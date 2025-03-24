@@ -182,18 +182,18 @@ const menuItems: MenuItem[] = [
         label: 'Mobile Device Management',
         icon: 'pi pi-mobile',
         path: '/mdm'
-      },
-      {
-        label: 'Infrastructure',
-        icon: 'pi pi-sitemap',
-        path: '/tools'
-      },
-      {
-        label: 'Monitoring',
-        icon: 'pi pi-chart-line',
-        path: '/monitoring'
       }
     ]
+  },
+  {
+    label: 'Infrastructure',
+    icon: 'pi pi-sitemap',
+    path: '/tools'
+  },
+  {
+    label: 'Monitoring',
+    icon: 'pi pi-chart-line',
+    path: '/monitoring'
   },
   {
     label: 'Settings',
@@ -483,4 +483,4 @@ const handleLogout = () => {
   color: var(--surface-900);
   font-weight: 600;
 }
-</style>                        
+</style>                                
