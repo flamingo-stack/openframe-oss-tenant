@@ -46,9 +46,6 @@ param(
     [string]$AgentType = "workstation",
     
     [Parameter(Mandatory=$false)]
-    [string]$LogPath = "C:\ProgramData\TacticalRMM\logs\agent.log",
-    
-    [Parameter(Mandatory=$false)]
     [string]$BuildFolder = "rmmagent",
     
     [Parameter(Mandatory=$false)]
@@ -360,8 +357,7 @@ function Install-Agent {
         [string]$AuthKey,
         [string]$ClientId,
         [string]$SiteId,
-        [string]$AgentType,
-        [string]$LogPath
+        [string]$AgentType
     )
     
     Write-ColorMessage "Installing agent..." "Yellow"
@@ -411,7 +407,6 @@ function Install-Agent {
         "-site-id", "`"$SiteId`"",
         "-agent-type", "`"$AgentType`"",
         "-log", "`"DEBUG`"",
-        "-logto", "`"$LogPath`"",
         "-nomesh",
         "/VERYSILENT",
         "/SUPPRESSMSGBOXES",
@@ -493,14 +488,6 @@ function Install-Agent {
         
         if (-not $serviceStarted) {
             Write-ColorMessage "Error: Service failed to start after $maxStartAttempts seconds" "Red"
-            # Get service logs
-            if (Test-Path $LogPath) {
-                Write-ColorMessage "Last 10 lines of service log:" "Yellow"
-                Write-ColorMessage "Executing command: Get-Content -Path '$LogPath' -Tail 10" "Blue"
-                Get-Content -Path $LogPath -Tail 10 | ForEach-Object {
-                    Write-ColorMessage $_ "Yellow"
-                }
-            }
             exit 1
         }
         
@@ -1084,7 +1071,7 @@ function Remove-TacticalRMMCompletely {
     
     # Final wait
     Write-Host "Waiting for system to stabilize..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 10
+    Start-Sleep -Seconds 3
 }
 
 function Show-Help {
@@ -1136,57 +1123,8 @@ function Remove-ExistingBuildFolder {
     }
 }
 
-function Create-LogFile {
-    param(
-        [string]$LogPath
-    )
-    
-    Write-ColorMessage "Creating log file and directory..." "Yellow"
-    
-    # Create the log directory if it doesn't exist
-    $logDir = Split-Path -Parent $LogPath
-    if (-not (Test-Path $logDir)) {
-        Write-ColorMessage "Creating log directory: $logDir" "Yellow"
-        Write-ColorMessage "Executing command: New-Item -ItemType Directory -Path '$logDir' -Force" "Blue"
-        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-        Write-ColorMessage "Log directory created successfully." "Green"
-    }
-    
-    # Create an empty log file if it doesn't exist
-    if (-not (Test-Path $LogPath)) {
-        Write-ColorMessage "Creating empty log file: $LogPath" "Yellow"
-        Write-ColorMessage "Executing command: New-Item -ItemType File -Path '$LogPath' -Force" "Blue"
-        New-Item -ItemType File -Path $LogPath -Force | Out-Null
-        Write-ColorMessage "Log file created successfully." "Green"
-    } else {
-        Write-ColorMessage "Log file already exists: $LogPath" "Yellow"
-    }
-    
-    # Verify file permissions
-    try {
-        Write-ColorMessage "Executing command: Get-Acl '$LogPath'" "Blue"
-        $acl = Get-Acl $LogPath
-        Write-ColorMessage "Current file permissions:" "Yellow"
-        $acl.Access | ForEach-Object {
-            Write-ColorMessage "  $($_.IdentityReference): $($_.FileSystemRights)" "Yellow"
-        }
-    } catch {
-        Write-ColorMessage "Warning: Could not check file permissions: $_" "Yellow"
-    }
-
-    # Test write access to the log file
-    try {
-        Write-ColorMessage "Testing write access to log file..." "Yellow"
-        Write-ColorMessage "Executing command: Add-Content -Path '$LogPath' -Value 'Test write access'" "Blue"
-        Add-Content -Path $LogPath -Value "Test write access"
-        Write-ColorMessage "Write access test successful." "Green"
-    } catch {
-        Write-ColorMessage "Warning: Could not write to log file: $_" "Yellow"
-    }
-}
-
-function Patch-Placeholders {
-    Write-ColorMessage "Patching code for org/email placeholders (if present)..." "Yellow"
+function Patch-AgentCode {
+    Write-ColorMessage "Patching agent code..." "Yellow"
     
     # Get all .go files in the current directory
     $goFiles = Get-ChildItem -Path . -Filter "*.go" -File
@@ -1209,6 +1147,40 @@ function Patch-Placeholders {
             Write-ColorMessage "Found DefaultEmail in $($file.Name)" "Yellow"
             $content = $content -replace 'DefaultEmail = ".*"', "DefaultEmail = `"$ContactEmail`""
             Write-ColorMessage "Replaced DefaultEmail with: $ContactEmail" "Green"
+        }
+
+        # If this is main.go, patch the log level
+        if ($file.Name -eq "main.go") {
+            Write-ColorMessage "Found main.go, checking for log level configuration..." "Yellow"
+            
+            # Pattern to match the entire setupLogging function
+            $setupLoggingPattern = 'func setupLogging\(level, to \*string\) \{[\s\S]*?ll, err := logrus\.ParseLevel\(\*level\)[\s\S]*?if err != nil \{[\s\S]*?ll = logrus\.InfoLevel[\s\S]*?\}[\s\S]*?log\.SetLevel\(ll\)'
+            
+            $setupLoggingMatches = [regex]::Matches($content, $setupLoggingPattern)
+            if ($setupLoggingMatches.Count -gt 0) {
+                Write-Host "`nFound setupLogging function in main.go:" -ForegroundColor Yellow
+                foreach ($match in $setupLoggingMatches) {
+                    $lineNumber = [regex]::Matches($content.Substring(0, $match.Index), "`n").Count + 1
+                    Write-Host "Starting at Line $lineNumber" -ForegroundColor Yellow
+                    Write-Host $match.Value -ForegroundColor Yellow
+                }
+                
+                # New setupLogging implementation that directly sets debug level
+                $newSetupLogging = @'
+func setupLogging(level, to *string) {
+    // Always set debug level
+    log.SetLevel(logrus.DebugLevel)
+'@
+                
+                Write-Host "`nReplacing with:" -ForegroundColor Yellow
+                Write-Host $newSetupLogging -ForegroundColor Green
+                
+                $content = $content -replace $setupLoggingPattern, $newSetupLogging
+                Write-Host "`nSetupLogging function updated to always use DEBUG level" -ForegroundColor Green
+            }
+
+            # Keep the rest of the setupLogging function (output configuration) unchanged
+            Write-ColorMessage "Log level patching completed" "Green"
         }
         
         # Write the modified content back to the file
@@ -1269,11 +1241,8 @@ try {
     # Patch NATS WebSocket URL with the RMM server URL
     Patch-NatsWebsocketUrl -RmmUrl $RmmServerUrl
 
-    # Patch placeholders for org name and contact email
-    Patch-Placeholders
-
-    # Create log file and directory
-    Create-LogFile -LogPath $LogPath
+    # Patch agent code (org name, email, and log level)
+    Patch-AgentCode
 
     # Compile agent
     Compile-Agent
@@ -1311,8 +1280,8 @@ try {
         # Validate required parameters
         if ([string]::IsNullOrEmpty($AuthKey)) {
             Write-ColorMessage "Error: AuthKey is required" "Red"
-        exit 1
-    }
+            exit 1
+        }
 
         Write-ColorMessage "Installing agent with parameters:" "Yellow"
         Write-ColorMessage "RMM URL: $RmmServerUrl" "Yellow"
@@ -1320,14 +1289,23 @@ try {
         Write-ColorMessage "Client ID: $ClientId" "Yellow"
         Write-ColorMessage "Site ID: $SiteId" "Yellow"
         Write-ColorMessage "Agent Type: $AgentType" "Yellow"
-        Write-ColorMessage "Log Path: $LogPath" "Yellow"
         
         # Pass the parameters directly to Install-Agent
-        Install-Agent -RmmUrl $RmmServerUrl -AuthKey $AuthKey -ClientId $ClientId -SiteId $SiteId -AgentType $AgentType -LogPath $LogPath
+        Install-Agent -RmmUrl $RmmServerUrl -AuthKey $AuthKey -ClientId $ClientId -SiteId $SiteId -AgentType $AgentType
     }
 
     Write-ColorMessage "`nInstallation completed successfully!" "Green"
     Write-ColorMessage "Agent binary location: $targetBinary" "Green"
+    
+    # Add log monitoring instructions
+    $agentLogPath = Join-Path $env:ProgramFiles "TacticalAgent\agent.log"
+    Write-ColorMessage "`nTo monitor the agent log in real-time, run one of these commands in PowerShell:" "Yellow"
+    Write-ColorMessage "Option 1 (PowerShell):" "Blue"
+    Write-ColorMessage "    Get-Content -Path '$agentLogPath' -Wait" "White"
+    Write-ColorMessage "Option 2 (PowerShell, last 50 lines):" "Blue"
+    Write-ColorMessage "    Get-Content -Path '$agentLogPath' -Tail 50 -Wait" "White"
+    Write-ColorMessage "Option 3 (Command Prompt):" "Blue"
+    Write-ColorMessage "    type '$agentLogPath'" "White"
 }
 catch {
     Write-ColorMessage "`nInstallation Failed:" "Red"
