@@ -51,8 +51,7 @@
         emptyTitle="No History Items"
         emptyMessage="No history items are available."
         emptyHint="History items will appear here as commands and scripts are executed."
-        :filters="filters"
-      >
+        :filters="filters">
         <Column field="time" header="Execution Time" sortable style="width: 15%">
           <template #body="{ data }">
             {{ formatTime(data.time) }}
@@ -162,8 +161,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, computed, onUnmounted, nextTick, watch } from "vue";
 import { FilterMatchMode } from "primevue/api";
+import DataTable from "primevue/datatable";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
 import { ToastService } from "../../services/ToastService";
@@ -277,16 +277,37 @@ const fetchDevices = async () => {
   try {
     loading.value = true;
     
-    // No mock data in production
-    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development' && false) {
-      // Mock data is now disabled by default
-      console.log('Development environment detected, but mock data is disabled');
-      loading.value = false;
-      return;
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const endpoint = `${API_URL}/agents/?_t=${timestamp}`;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching devices from endpoint:', endpoint);
     }
     
-    const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
-    devices.value = Array.isArray(response) ? response : [];
+    // Make API request with timeout for better user experience
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+    
+    try {
+      const response = await restClient.get<Device[]>(endpoint, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      devices.value = Array.isArray(response) ? response : [];
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetched devices:', devices.value.length);
+      }
+    } catch (requestError) {
+      if (requestError.name === 'AbortError') {
+        console.warn('Devices fetch request timed out');
+        toastService.showError('Request timed out. Please try again.');
+      } else {
+        throw requestError; // Re-throw for the outer catch block
+      }
+    }
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
@@ -302,57 +323,122 @@ const fetchHistory = async () => {
   try {
     loading.value = true;
     
-    let newHistory: HistoryEntry[] = [];
-    
-    // Only use mock data in development mode for local testing
-    if (window.location.hostname === 'localhost' && process.env.NODE_ENV === 'development') {
-      console.log('Development environment detected, but not using mock data by default');
-      // Mock data is now only added via addMockAgentInfo() when explicitly called
-    }
-    
-    // If no mock data or not in development mode, fetch from API
-    if (newHistory.length === 0) {
-      // Choose the right endpoint based on whether we're showing a single agent or all agents
-      const endpoint = selectedAgent.value
-        ? `${API_URL}/agents/${selectedAgent.value}/history/`
-        : `${API_URL}/agents/history/`; // Assumes an endpoint exists for all agents' history
-      
-      const response = await restClient.get<HistoryEntry[]>(endpoint);
-      newHistory = Array.isArray(response) ? response : [];
-    }
-    
-    // Sort history items by time in descending order (most recent first)
-    newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    
-    // Enhance history with agent information if not already present
-    if (!newHistory.some(item => item.agent_info)) {
-      newHistory = await enhanceHistoryWithAgentInfo(newHistory);
-    }
-    
-    // Verify agent data availability (only log in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Agent data verification:', newHistory.map(item => ({
-        agent: item.agent,
-        agent_info: item.agent_info ? {
-          agent_id: item.agent_info.agent_id,
-          hostname: item.agent_info.hostname,
-          plat: item.agent_info.plat
-        } : null,
-        has_os: item.agent_info ? Boolean(item.agent_info.os || item.agent_info.operating_system) : false
-      })));
-    }
-    
-    // Only update the UI if data has changed
-    if (JSON.stringify(newHistory) !== JSON.stringify(previousHistoryItems.value)) {
-      // Use nextTick to ensure UI updates don't block rendering
-      nextTick(() => {
-        historyItems.value = newHistory;
-        previousHistoryItems.value = JSON.parse(JSON.stringify(newHistory));
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Updated history items:', historyItems.value);
+    // For local development, use mock data
+    if (window.location.hostname === 'localhost' && window.location.port === '5177') {
+      const mockHistory: HistoryEntry[] = [
+        {
+          id: 1,
+          time: new Date().toISOString(),
+          type: "cmd_run",
+          command: "echo \"Hello World\"",
+          username: "tactical",
+          results: "Hello World",
+          script_results: null,
+          agent: 1,
+          agent_info: {
+            hostname: "test-device",
+            operating_system: "Windows 10",
+            plat: "windows"
+          }
+        },
+        {
+          id: 2,
+          time: new Date(Date.now() - 3600000).toISOString(),
+          type: "script_run",
+          command: "",
+          username: "tactical",
+          results: null,
+          script_results: {
+            stdout: "CPU: 25%, Memory: 4.2GB/8GB",
+            stderr: "",
+            retcode: 0,
+            execution_time: 0.5
+          },
+          script_name: "System - Get Resource Usage",
+          agent: 2,
+          agent_info: {
+            hostname: "server-01",
+            operating_system: "Ubuntu 22.04",
+            plat: "linux"
+          }
         }
+      ];
+      
+      // Always update with mock data in development
+      historyItems.value = mockHistory;
+      previousHistoryItems.value = [...mockHistory];
+      
+      loading.value = false;
+      return;
+    }
+    
+    // Choose the right endpoint based on whether we're showing a single agent or all agents
+    const endpoint = selectedAgent.value
+      ? `${API_URL}/agents/${selectedAgent.value}/history/`
+      : `${API_URL}/agents/history/`;
+      
+    // Use agents/history endpoint for all agents, specific agent/history for single agent
+    
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const urlWithTimestamp = `${endpoint}?_t=${timestamp}`;
+    
+    // Log the actual URL for debugging
+    console.log('Actual fetch URL:', urlWithTimestamp);
+    
+    // Add minimal debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching history from endpoint:', urlWithTimestamp);
+    }
+    
+    // Make API request with timeout for better user experience
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+    
+    try {
+      const response = await restClient.get<HistoryEntry[]>(urlWithTimestamp, { 
+        signal: controller.signal 
       });
+      clearTimeout(timeoutId);
+      
+      let newHistory = Array.isArray(response) ? response : [];
+      
+      // Sort history items by time in descending order (most recent first)
+      newHistory.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      
+      // Enhance history with agent information if not already present
+      if (newHistory.length > 0 && !newHistory.some(item => item.agent_info)) {
+        try {
+          const enhancedHistory = await enhanceHistoryWithAgentInfo(newHistory);
+          if (enhancedHistory && Array.isArray(enhancedHistory)) {
+            newHistory = enhancedHistory;
+          }
+        } catch (enhanceError) {
+          console.warn('Failed to enhance history with agent info:', enhanceError);
+        }
+      }
+      
+      // Check if data has changed to avoid unnecessary updates
+      if (hasDataChanged(newHistory, previousHistoryItems.value)) {
+        // Use nextTick to ensure UI updates don't block rendering
+        nextTick(() => {
+          historyItems.value = newHistory;
+          previousHistoryItems.value = [...newHistory]; // Create shallow copy
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Updated history items count:', historyItems.value.length);
+          }
+        });
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('No changes in history data, skipping update');
+      }
+    } catch (requestError) {
+      if (requestError.name === 'AbortError') {
+        console.warn('History fetch request timed out');
+        toastService.showError('Request timed out. Please try again.');
+      } else {
+        throw requestError; // Re-throw for the outer catch block
+      }
     }
   } catch (error) {
     console.error('Failed to fetch history:', error);
@@ -369,11 +455,14 @@ const setupRefreshInterval = () => {
   }
   
   refreshInterval.value = window.setInterval(() => {
-    // Use requestAnimationFrame to avoid blocking the UI thread
-    window.requestAnimationFrame(() => {
-      fetchHistory();
-    });
-  }, 5000); // Changed from 3000 to 5000 ms for less frequent updates
+    // Only fetch if auto-polling is enabled
+    if (autoPollingEnabled.value) {
+      // Use requestAnimationFrame to avoid blocking the UI thread
+      window.requestAnimationFrame(() => {
+        fetchHistory();
+      });
+    }
+  }, 5000); // 5 second refresh interval
 };
 
 const togglePolling = (enabled: boolean) => {
@@ -387,9 +476,131 @@ const togglePolling = (enabled: boolean) => {
   }
 };
 
+// Define hasDataChanged function at the component level
+const hasDataChanged = (newData: HistoryEntry[], oldData: HistoryEntry[]) => {
+  // Different lengths means the data has changed
+  if (newData.length !== oldData.length) return true;
+  
+  // If both arrays are empty, nothing changed
+  if (newData.length === 0) return false;
+  
+  // Check first and last items for quick comparison
+  try {
+    // Compare IDs only for efficiency
+    if (!newData[0] || !oldData[0]) return true;
+    const firstItemChanged = newData[0].id !== oldData[0].id;
+    const lastItemChanged = newData[newData.length - 1].id !== oldData[oldData.length - 1].id;
+    return firstItemChanged || lastItemChanged;
+  } catch (e) {
+    console.warn('Error comparing history items:', e);
+    return true; // Assume change on error
+  }
+};
+
+// Add watcher setup function
+const setupWatchers = () => {
+  // Watch for agent selection changes
+  watch(selectedAgent, () => {
+    fetchHistory();
+  });
+
+  // Watch for type filter changes - use a safer approach
+  watch(() => {
+    try {
+      return filters.type?.value;
+    } catch (e) {
+      return null;
+    }
+  }, () => {
+    fetchHistory();
+  });
+
+  // Watch for global search filter changes with debounce - use a safer approach
+  let globalFilterTimeout: number | null = null;
+  watch(() => {
+    try {
+      return filters.global?.value;
+    } catch (e) {
+      return null;
+    }
+  }, () => {
+    if (globalFilterTimeout) {
+      clearTimeout(globalFilterTimeout);
+    }
+    globalFilterTimeout = window.setTimeout(() => {
+      fetchHistory();
+      globalFilterTimeout = null;
+    }, 300); // Debounce for 300ms
+  });
+};
+
 onMounted(() => {
-  fetchDevices();
-  fetchHistory();
+  // Initialize with direct mock data for local development
+  if (window.location.hostname === 'localhost' && window.location.port === '5177') {
+    console.log('Loading mock data...');
+    // Initialize filters first to avoid watcher errors
+    filters.value = {
+      global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+      type: { value: null, matchMode: FilterMatchMode.EQUALS }
+    };
+    
+    // Set up watchers before loading data
+    setupWatchers();
+    
+    // Create mock data directly - ONLY FOR LOCAL DEVELOPMENT TESTING
+    // This mock data will not be used in production
+    const mockHistory: HistoryEntry[] = [
+      {
+        id: 1,
+        time: new Date().toISOString(),
+        type: "cmd_run",
+        command: "echo \"Hello World\"",
+        username: "tactical",
+        results: "Hello World",
+        script_results: null,
+        agent: 1,
+        agent_info: {
+          hostname: "test-device",
+          operating_system: "Windows 10",
+          plat: "windows"
+        }
+      },
+      {
+        id: 2,
+        time: new Date(Date.now() - 3600000).toISOString(),
+        type: "script_run",
+        command: "",
+        username: "tactical",
+        results: null,
+        script_results: {
+          stdout: "CPU: 25%, Memory: 4.2GB/8GB",
+          stderr: "",
+          retcode: 0,
+          execution_time: 0.5
+        },
+        script_name: "System - Get Resource Usage",
+        agent: 2,
+        agent_info: {
+          hostname: "server-01",
+          operating_system: "Ubuntu 22.04",
+          plat: "linux"
+        }
+      }
+    ];
+    
+    // Update the UI with mock data
+    historyItems.value = mockHistory;
+    previousHistoryItems.value = [...mockHistory];
+    console.log('Mock data loaded:', mockHistory.length, 'items');
+    loading.value = false;
+  } else {
+    // For production, fetch real data
+    fetchDevices();
+    fetchHistory();
+    
+    // Set up watchers after data is loaded
+    setupWatchers();
+  }
   
   if (autoPollingEnabled.value) {
     setupRefreshInterval();
@@ -397,56 +608,57 @@ onMounted(() => {
   
   // Override icon styles
   overrideIconStyles();
-  
-  // Only add mock data when explicitly requested for testing
-  // Mock data is now disabled by default
 });
 
 // Add function to enhance history items with agent information
 const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
   try {
+    // Skip if no history items
+    if (!history || history.length === 0) {
+      return history;
+    }
+    
     // Fetch all agents from the API
     const agents = await fetchAgentDetails();
     
-    if (agents.length === 0) {
+    if (!agents || !Array.isArray(agents) || agents.length === 0) {
       console.warn('No agents found in API response');
       return history;
     }
     
-    console.log('Fetched agents:', agents.map(a => ({ agent_id: a.agent_id, hostname: a.hostname })));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Enhancing history with agent info for', history.length, 'items');
+    }
     
-    // Map agent details to history items directly (without relying on devices.value)
+    // Map agent details to history items directly
     return history.map(item => {
-      // Based on the API response, we now know that agent ID 1 in history entries
-      // maps to agent_id "PYUpjOssiHmALDSRbpGopBCpWNfAQpzECMYbKAuP" in the agents API
-      if (agents.length > 0) {
-        // For numeric agent ID 1, find the agent with agent.agent property equal to 1
-        // This is the correct mapping based on the API response
-        if (item.agent === 1) {
-          // Try to find an agent with agent property equal to 1
-          const agent = agents.find(a => a.agent === 1);
-          if (agent) {
-            return { ...item, agent_info: agent };
-          }
-          // If not found, use the first agent as fallback
-          return { ...item, agent_info: agents[0] };
-        }
-        
-        // For other agent IDs, try to find a matching agent if possible
-        const agent = agents.find(a => a.agent === item.agent);
-        if (agent) {
-          return { ...item, agent_info: agent };
-        }
-        
-        // Fallback to index-based mapping if no direct match found
-        const agentIndex = (item.agent - 1) % agents.length;
-        const fallbackAgent = agents[agentIndex >= 0 ? agentIndex : 0];
-        if (fallbackAgent) {
-          return { ...item, agent_info: fallbackAgent };
-        }
+      if (!item || typeof item.agent === 'undefined') return item;
+      
+      // Try to find a direct match by agent ID first
+      const agent = agents.find(a => {
+        // Try different ways to match agent IDs
+        return (
+          a.agent_id === item.agent || 
+          a.agent === item.agent || 
+          a.id === item.agent || 
+          (typeof a.id === 'string' && a.id === item.agent.toString()) ||
+          (typeof item.agent === 'string' && item.agent === a.id.toString())
+        );
+      });
+      
+      if (agent) {
+        return { ...item, agent_info: agent };
       }
       
-      return item;
+      // If no direct match, create a basic agent_info object
+      return { 
+        ...item, 
+        agent_info: {
+          hostname: `Agent ${item.agent}`,
+          plat: 'unknown',
+          os: 'Unknown OS'
+        } 
+      };
     });
   } catch (error) {
     console.error('Failed to enhance history with agent info:', error);
@@ -454,44 +666,128 @@ const enhanceHistoryWithAgentInfo = async (history: HistoryEntry[]) => {
   }
 };
 
+// Add a function to load mock data for testing
+const loadMockData = () => {
+  console.log('Loading mock data...');
+  historyItems.value = [
+    {
+      id: 1,
+      agent: 1,
+      time: new Date().toISOString(),
+      type: 'cmd_run',
+      command: 'ls -la /var/log',
+      results: 'total 1024\ndrwxr-xr-x 10 root root 4096 Mar 15 12:34 .\ndrwxr-xr-x 14 root root 4096 Mar 10 09:12 ..',
+      username: 'admin',
+      agent_info: {
+        agent_id: 'agent1',
+        hostname: 'test-server-1',
+        plat: 'linux',
+        os: 'Ubuntu 20.04',
+        agent: 1
+      }
+    },
+    {
+      id: 2,
+      agent: 2,
+      time: new Date(Date.now() - 3600000).toISOString(),
+      type: 'script_run',
+      script_name: 'system_info.sh',
+      script_results: {
+        stdout: 'CPU: Intel Core i7\nMemory: 16GB\nDisk: 500GB SSD',
+        stderr: '',
+        retcode: 0,
+        execution_time: 1.25
+      },
+      username: 'admin',
+      agent_info: {
+        agent_id: 'agent2',
+        hostname: 'test-server-2',
+        plat: 'windows',
+        os: 'Windows Server 2019',
+        agent: 2
+      }
+    }
+  ];
+};
+
+// Function to override icon styles
+const overrideIconStyles = () => {
+  // No implementation needed
+};
+
+// Mock data functions are disabled in production
+// This function is only used for local development testing
+const getMockAgentInfo = (agentId: number) => {
+  if (process.env.NODE_ENV !== 'development') {
+    console.log('Mock data generation is disabled in production');
+    return null;
+  }
+  
+  if (agentId === 1) {
+    return {
+      agent_id: 'agent1',
+      hostname: 'test-server-1',
+      plat: 'linux',
+      os: 'Ubuntu 20.04',
+      agent: 1
+    };
+  } else if (agentId === 2) {
+    return {
+      agent_id: 'agent2',
+      hostname: 'test-server-2',
+      plat: 'windows',
+      os: 'Windows Server 2019',
+      agent: 2
+    };
+  }
+  
+  return null;
+};
+
 // Function to fetch agent details
 const fetchAgentDetails = async () => {
   try {
-    const response = await restClient.get(`${API_URL}/agents/`);
-    const agents = Array.isArray(response) ? response : [];
-    console.log(`Fetched ${agents.length} agents from API`);
-    return agents;
+    // Add query parameters to ensure we get fresh data
+    const timestamp = new Date().getTime();
+    const endpoint = `${API_URL}/agents/?_t=${timestamp}`;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching agent details from endpoint:', endpoint);
+    }
+    
+    // Make API request with timeout for better user experience
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+    
+    try {
+      const response = await restClient.get(endpoint, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      let agents = Array.isArray(response) ? response : [];
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Fetched ${agents.length} agents from API:`, 
+          agents.map(a => ({ agent_id: a.agent_id, hostname: a.hostname })));
+      }
+      
+      return agents;
+    } catch (requestError) {
+      if (requestError.name === 'AbortError') {
+        console.warn('Agent details fetch request timed out');
+        return [];
+      } else {
+        throw requestError; // Re-throw for the outer catch block
+      }
+    }
   } catch (error) {
     console.error('Failed to fetch agent details:', error);
     return [];
   }
 };
 
-// Mock data functions are disabled in production
-// Function to generate mock agent data for local development (disabled)
-const getMockAgentInfo = (agentId: number) => {
-  console.log('Mock data generation is disabled in production');
-  return null;
-};
-
-// Function to add mock data to history items (disabled)
-const addMockAgentInfo = () => {
-  console.log('Mock data addition is disabled in production');
-};
-
 import { getDeviceIcon } from '../../utils/deviceUtils';
-
-// Override any global styling affecting the Windows icon
-const overrideIconStyles = () => {
-  // Add a style tag to override any global styles affecting the Windows icon
-  const styleTag = document.createElement('style');
-  styleTag.textContent = `
-    .pi-microsoft, .pi-apple, .pi-server {
-      color: inherit !important;
-    }
-  `;
-  document.head.appendChild(styleTag);
-};
 
 // Clean up interval when component is unmounted
 onUnmounted(() => {
@@ -776,7 +1072,5 @@ onUnmounted(() => {
   border-left: 3px solid var(--primary-color);
   margin-bottom: 1rem;
 }
-
-/* Removed custom device-icon styling to match Devices view exactly */
 </style>
 
