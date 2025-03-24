@@ -2,6 +2,17 @@
   <div class="monitoring-page">
     <div class="of-mdm-header">
       <h1 class="of-title">History</h1>
+      <div class="of-actions">
+        <OFButton 
+          icon="pi pi-sync" 
+          :class="[
+            'p-button-sm', 
+            autoPollingEnabled ? 'p-button-warning' : 'p-button-text'
+          ]"
+          :style="autoPollingEnabled ? 'background-color: var(--of-primary) !important; border-color: var(--of-primary) !important; color: black !important; font-weight: bold !important;' : ''"
+          @click="togglePolling(!autoPollingEnabled)" 
+          v-tooltip.top="autoPollingEnabled ? 'Disable Auto Refresh' : 'Enable Auto Refresh'" />
+      </div>
     </div>
 
     <!-- Add loading state -->
@@ -152,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed, onUnmounted, watch } from "vue";
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
@@ -188,6 +199,7 @@ const previousHistoryItems = ref<HistoryEntry[]>([]);
 const refreshInterval = ref<number | null>(null);
 const showDialog = ref(false);
 const selectedHistoryItem = ref<HistoryEntry | null>(null);
+const autoPollingEnabled = ref(true); // Default to enabled
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
@@ -239,6 +251,17 @@ const getDialogTitle = () => {
     return 'Command Output';
   } else {
     return `Script Output: ${selectedHistoryItem.value.script_name}`;
+  }
+};
+
+const togglePolling = (enabled: boolean) => {
+  autoPollingEnabled.value = enabled;
+  
+  if (enabled) {
+    setupRefreshInterval();
+  } else if (refreshInterval.value) {
+    clearInterval(refreshInterval.value);
+    refreshInterval.value = null;
   }
 };
 
@@ -342,24 +365,39 @@ const fetchHistory = async () => {
   }
 };
 
-// Set up one-second refresh interval
+// Set up auto-refresh interval with better performance
 const setupRefreshInterval = () => {
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value);
   }
   
   refreshInterval.value = window.setInterval(() => {
-    fetchHistory();
-  }, 1000);
+    // Use requestAnimationFrame to avoid blocking the UI thread
+    window.requestAnimationFrame(() => {
+      fetchHistory();
+    });
+  }, 5000); // Changed from 1000 to 5000 ms for less frequent updates
 };
 
 onMounted(() => {
   fetchDevices();
   fetchHistory();
-  setupRefreshInterval();
+  
+  if (autoPollingEnabled.value) {
+    setupRefreshInterval();
+  }
 });
 
 // Clean up interval when component is unmounted
+// Watch for filter changes
+watch(selectedAgent, () => {
+  fetchHistory();
+});
+
+watch(() => filters.type.value, () => {
+  fetchHistory();
+});
+
 onUnmounted(() => {
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value);
