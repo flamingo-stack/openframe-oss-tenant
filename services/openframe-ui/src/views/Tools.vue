@@ -70,7 +70,10 @@
             <div class="tool-card">
               <div :class="['tool-card-inner', getCategoryClassForTool(tool)]">
                 <div class="tool-header">
-                  <h3>{{ getDisplayName(tool) }}</h3>
+                  <h3>
+                    <i :class="getIntegratedToolIcon(tool.toolType)" class="mr-2"></i>
+                    {{ getDisplayName(tool) }}
+                  </h3>
                   <span class="tool-category" :data-category="tool.category">{{ tool.category }}</span>
                   <img 
                     :src="getToolIcon(tool)" 
@@ -159,6 +162,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { getDisplayName } from '../utils/displayUtils';
 import { useRoute, useRouter } from 'vue-router';
 import { getToolCategory, getCategoryClass, sortToolsByCategory } from '../utils/categoryUtils';
+import { getIntegratedToolIcon } from '../utils/deviceUtils';
 import { OFButton } from '../components/ui';
 
 // Get theme store
@@ -937,4 +941,4 @@ h2 {
   align-items: center;
   gap: 1rem;
 }
-</style>          
+</style>                                        

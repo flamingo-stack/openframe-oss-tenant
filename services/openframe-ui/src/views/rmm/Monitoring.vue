@@ -196,6 +196,7 @@ import {
   OFScriptDialog,
   OFConfirmationDialog
 } from '../../components/ui';
+import { getMonitorIcon } from '../../utils/deviceUtils';
 
 interface Monitor {
   id: string;
@@ -262,17 +263,6 @@ const formatMonitorType = (type: string) => {
     service: 'Service Status'
   };
   return typeMap[type] || type;
-};
-
-const getMonitorIcon = (type: string) => {
-  const iconMap: Record<string, string> = {
-    cpu: 'pi pi-microchip',
-    memory: 'pi pi-server',
-    disk: 'pi pi-hdd',
-    network: 'pi pi-globe',
-    service: 'pi pi-cog'
-  };
-  return iconMap[type] || 'pi pi-chart-line';
 };
 
 const getMonitorTypeSeverity = (type: string) => {
@@ -488,4 +478,4 @@ onMounted(async () => {
   font-size: 1.125rem;
   color: var(--primary-color);
 }
-</style>                                
+</style>                                                                                                                                                                                                

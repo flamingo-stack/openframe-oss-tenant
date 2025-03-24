@@ -138,6 +138,7 @@ import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
 import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
+import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
@@ -163,33 +164,6 @@ const filters = ref({
 
 const showExecutionHistory = ref(false);
 const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
-
-const formatPlatform = (platform: string) => {
-  const platformMap: Record<string, string> = {
-    darwin: 'macOS',
-    windows: 'Windows',
-    linux: 'Linux'
-  };
-  return platformMap[platform] || platform;
-};
-
-const getDeviceIcon = (platform: string) => {
-  const iconMap: Record<string, string> = {
-    windows: 'pi pi-microsoft',
-    darwin: 'pi pi-apple',
-    linux: 'pi pi-server'
-  };
-  return iconMap[platform] || 'pi pi-desktop';
-};
-
-const getPlatformSeverity = (platform: string) => {
-  const severityMap: Record<string, string> = {
-    darwin: 'info',
-    windows: 'warning',
-    linux: 'success'
-  };
-  return severityMap[platform] || 'info';
-};
 
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {

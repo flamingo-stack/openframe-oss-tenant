@@ -267,6 +267,7 @@ import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import { getTaskIcon } from '../../utils/deviceUtils';
 // Import from our new UI component library
 import { 
   OFButton, 
@@ -359,16 +360,6 @@ const formatTaskType = (type: string) => {
     custom: 'Custom'
   };
   return typeMap[type] || type;
-};
-
-const getTaskIcon = (type: string) => {
-  const iconMap: Record<string, string> = {
-    maintenance: 'pi pi-wrench',
-    backup: 'pi pi-database',
-    update: 'pi pi-refresh',
-    custom: 'pi pi-cog'
-  };
-  return iconMap[type] || 'pi pi-clock';
 };
 
 const getTaskTypeSeverity = (type: string) => {
@@ -617,4 +608,4 @@ onMounted(async () => {
   color: var(--text-color-secondary);
   font-size: 0.875rem;
 }
-</style>             
+</style>                                                                              
