@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from '@vue/runtime-core';
 import Sidebar from 'primevue/sidebar';
 import { OFButton } from '../../components/ui';
 import { restClient } from "../../apollo/apolloClient";
@@ -248,7 +248,7 @@ const fetchAgentInfo = async () => {
 const addMockAgentInfo = () => {
   console.log('Adding mock agent info to executions');
   
-  const mockAgentData = {
+  const mockAgentData: Record<string, { platform: string; os: string; status: string; plat: string; operating_system: string; }> = {
     'test-device': {
       platform: 'Windows',
       os: 'Windows 10 Pro',
