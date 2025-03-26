@@ -286,8 +286,9 @@ case "$1" in
     ;;
   register-tools)
     # ------------- REGISTER TOOLS -------------
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml
-    kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
+    # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
+    # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
+    ./kind-cluster/apps/jobs/register.sh
     ;;
   all)
     # ------------- ALL -------------

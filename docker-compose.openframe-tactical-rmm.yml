@@ -188,7 +188,7 @@ services:
       args: *default-args
     platform: linux/amd64
     ports:
-      - "8080:8080"  
+      - "8080:8080"
       - "8000:8000"
     volumes:
       - tactical_nginx_data:/opt/tactical
@@ -332,6 +332,7 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
+    external: true
 
 volumes:
   tactical_websockets_data:

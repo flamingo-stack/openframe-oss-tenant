@@ -122,3 +122,4 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
+    external: true

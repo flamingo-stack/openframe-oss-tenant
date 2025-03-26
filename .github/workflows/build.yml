@@ -9,6 +9,13 @@ permissions:
   id-token: write
 
 on:
+  push:
+    paths:
+      - 'libs/**'
+      - 'services/**'
+      - 'infrastructure/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
   pull_request:
     types: [closed]
@@ -26,82 +33,108 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  build-java:
+  changes:
+    name: Check for changes
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      data: ${{ steps.filter.outputs.data }}
+      api: ${{ steps.filter.outputs.api }}
+      config: ${{ steps.filter.outputs.config }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      management: ${{ steps.filter.outputs.management }}
+      stream: ${{ steps.filter.outputs.stream }}
+      mongodb: ${{ steps.filter.outputs.mongodb }}
+      cassandra: ${{ steps.filter.outputs.cassandra }}
+      nifi: ${{ steps.filter.outputs.nifi }}
+      postgresql: ${{ steps.filter.outputs.postgresql }}
+      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
+      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
+      tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
+      tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
+      tactical-websockets: ${{ steps.filter.outputs.tactical-websockets }}
+      tactical-celery: ${{ steps.filter.outputs.tactical-celery }}
+      tactical-celerybeat: ${{ steps.filter.outputs.tactical-celerybeat }}
+      fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
+      meshcentral: ${{ steps.filter.outputs.meshcentral }}
+      ui: ${{ steps.filter.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            core:
+              - './libs/openframe-core/**'
+            data:
+              - './libs/openframe-data/**'
+            api:
+              - './services/openframe-api/**'
+            config:
+              - './services/openframe-config/**'
+            gateway:
+              - './services/openframe-gateway/**'
+            management:
+              - './services/openframe-management/**'
+            stream:
+              - './services/openframe-stream/**'
+            mongodb:
+              - './infrastructure/mongodb/**'
+            cassandra:
+              - './infrastructure/cassandra/**'
+            nifi:
+              - './infrastructure/nifi/**'
+            postgresql:
+              - './infrastructure/postgresql/**'
+            tactical-frontend:
+              - './infrastructure/tactical-rmm/tactical-frontend/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-nginx:
+              - './infrastructure/tactical-rmm/tactical-nginx/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-backend:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-nats:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-websockets:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-celery:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-celerybeat:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            fleetmdm:
+              - './infrastructure/fleetmdm/**'
+            meshcentral:
+              - './infrastructure/meshcentral/nginx/**'
+              - './infrastructure/meshcentral/config/**'
+            ui:
+              - './services/openframe-ui/**'
+
+  build:
+    name: "Build: ${{ matrix.module.name }}"
+    needs: changes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         module: [
-          { name: 'core', path: 'libs/openframe-core' },
-          { name: 'data', path: 'libs/openframe-data' },
-          { name: 'api', path: 'services/openframe-api' },
-          { name: 'config', path: 'services/openframe-config' },
-          { name: 'gateway', path: 'services/openframe-gateway' },
-          { name: 'management', path: 'services/openframe-management' },
-          { name: 'stream', path: 'services/openframe-stream' },
-        ]
-    outputs:
-      status: ${{ job.status }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Maven Central Repository with JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Check for path changes
-        id: check_changes
-        run: |
-          # Check if this is a PR or manual trigger
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Get the base and head SHAs for the PR
-            BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
-            HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
-
-            # Check if there are any changes in the module path
-            if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.module.path }}"; then
-              echo "No changes detected in ${{ matrix.module.path }}"
-              echo "changed=false" >> $GITHUB_OUTPUT
-            else
-              echo "Changes detected in ${{ matrix.module.path }}"
-              echo "changed=true" >> $GITHUB_OUTPUT
-            fi
-          else
-            # For manual triggers, always build
-            echo "Manual trigger - building all modules"
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build with Maven
-        if: steps.check_changes.outputs.changed == 'true'
-        run: mvn clean install -pl ${{ matrix.module.path }} -am -Dcompress
-
-      - name: Upload Java artifacts
-        if: steps.check_changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: openframe-${{ matrix.module.name }}
-          path: |
-            ${{ matrix.module.path }}/target/*.jar
-            !${{ matrix.module.path }}/target/original-*.jar
-            !${{ matrix.module.path }}/target/*-sources.jar
-            !${{ matrix.module.path }}/target/*-javadoc.jar
-          retention-days: 1
-
-  build-image:
-    needs: build-java
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false  # Disable fail-fast behavior
-      matrix:
-        service: [
-          { name: 'mongodb', path: './infrastructure/mongodb/', artifact_name: '',
+          # Java Apps
+          { name: 'core', path: 'libs/openframe-core', type: 'java', artifact_name: 'openframe-core' },
+          { name: 'data', path: 'libs/openframe-data', type: 'java', artifact_name: 'openframe-data' },
+          { name: 'api', path: 'services/openframe-api', type: 'java', artifact_name: 'openframe-api' },
+          { name: 'config', path: 'services/openframe-config', type: 'java', artifact_name: 'openframe-config' },
+          { name: 'gateway', path: 'services/openframe-gateway', type: 'java', artifact_name: 'openframe-gateway' },
+          { name: 'management', path: 'services/openframe-management', type: 'java', artifact_name: 'openframe-management' },
+          { name: 'stream', path: 'services/openframe-stream', type: 'java', artifact_name: 'openframe-stream' },
+          # Non-Java Apps
+          { name: 'mongodb', path: './infrastructure/mongodb/', type: 'container', artifact_name: '',
             build_args: {
               MONGO_INITDB_ROOT_USERNAME: 'openframe',
               MONGO_INITDB_ROOT_PASSWORD: 'password123456789',
@@ -110,7 +143,7 @@ jobs:
               MONGO_APP_PASSWORD: 'password123456789'
             }
           },
-          { name: 'cassandra', path: './infrastructure/cassandra/', artifact_name: '',
+          { name: 'cassandra', path: './infrastructure/cassandra/', type: 'container', artifact_name: '',
             build_args: {
               CASSANDRA_CLUSTER_NAME: 'openframe_cluster',
               CASSANDRA_DC: 'datacenter1',
@@ -127,7 +160,7 @@ jobs:
               JMX_PORT: '7199'
             }
           },
-          { name: 'nifi', path: './infrastructure/nifi/',
+          { name: 'nifi', path: './infrastructure/nifi/', type: 'container',
             build_args: {
               NIFI_WEB_HTTPS_PORT: '8443',
               NIFI_WEB_HTTP_HOST: '0.0.0.0',
@@ -135,19 +168,15 @@ jobs:
               SINGLE_USER_CREDENTIALS_PASSWORD: 'password123456789'
             }
           },
-          { name: 'postgresql', path: './infrastructure/postgresql/' },
-          {
-            name: 'authentik-postgresql',
-            path: './infrastructure/postgresql/',
+          { name: 'postgresql', path: './infrastructure/postgresql/', type: 'container' },
+          { name: 'authentik-postgresql', path: './infrastructure/postgresql/', type: 'container',
             build_args: {
               POSTGRES_USER: 'authentik-user',
               POSTGRES_PASSWORD: 'authentik-password-1234',
               POSTGRES_MULTIPLE_DATABASES: 'authentik-database,authentik-database-authentik'
             }
           },
-          {
-            name: 'tactical-frontend',
-            path: './infrastructure/tactical-rmm/tactical-frontend/',
+          { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -191,9 +220,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          {
-            name: 'tactical-nginx',
-            path: './infrastructure/tactical-rmm/tactical-nginx/',
+          { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -237,9 +264,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          {
-            name: 'tactical-backend',
-            path: './infrastructure/tactical-rmm/tactical-base/',
+          { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -283,9 +308,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          {
-            name: 'tactical-nats',
-            path: './infrastructure/tactical-rmm/tactical-base/',
+          { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -329,9 +352,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          {
-            name: 'tactical-websockets',
-            path: './infrastructure/tactical-rmm/tactical-base/',
+          { name: 'tactical-websockets', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -375,9 +396,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          {
-            name: 'tactical-celery',
-            path: './infrastructure/tactical-rmm/tactical-base/',
+          { name: 'tactical-celery', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -421,9 +440,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          {
-            name: 'tactical-celerybeat',
-            path: './infrastructure/tactical-rmm/tactical-base/',
+          { name: 'tactical-celerybeat', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -467,18 +484,9 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'fleetmdm', path: './infrastructure/fleetmdm/' },
-          { name: 'core', path: './libs/openframe-core/', artifact_name: 'openframe-core' },
-          { name: 'data', path: './libs/openframe-data/', artifact_name: 'openframe-data' },
-          { name: 'api', path: './services/openframe-api/', artifact_name: 'openframe-api' },
-          { name: 'config', path: './services/openframe-config/', artifact_name: 'openframe-config' },
-          { name: 'gateway', path: './services/openframe-gateway/', artifact_name: 'openframe-gateway' },
-          { name: 'management', path: './services/openframe-management/', artifact_name: 'openframe-management' },
-          { name: 'stream', path: './services/openframe-stream/', artifact_name: 'openframe-stream' },
-          { name: 'ui', path: './services/openframe-ui/' },
-          {
-            name: 'meshcentral',
-            path: './infrastructure/meshcentral/server/',
+          { name: 'fleetmdm', path: './infrastructure/fleetmdm/', type: 'container' },
+          { name: 'ui', path: './services/openframe-ui/', type: 'container' },
+          { name: 'meshcentral', path: './infrastructure/meshcentral/server/', type: 'container',
             build_args: {
               MESH_DIR: '/opt/mesh',
               MESH_TEMP_DIR: '/tmp/mesh',
@@ -504,9 +512,7 @@ jobs:
               MESH_WEBRTC_ENABLED: 'false'
             }
           },
-          {
-            name: 'meshcentral-nginx',
-            path: './infrastructure/meshcentral/nginx/',
+          { name: 'meshcentral-nginx', path: './infrastructure/meshcentral/nginx/', type: 'container',
             build_args: {
               MESH_DIR: '/opt/mesh',
               MESH_TEMP_DIR: '/tmp/mesh',
@@ -533,129 +539,144 @@ jobs:
             }
           }
         ]
+    outputs:
+      status: ${{ job.status }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Check for path changes
-        id: check_changes
-        run: |
-          # Check if this is a PR or manual trigger
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Get the base and head SHAs for the PR
-            BASE_SHA=$(git rev-parse ${{ github.event.pull_request.base.sha }})
-            HEAD_SHA=$(git rev-parse ${{ github.event.pull_request.head.sha }})
-
-            # For tactical services, also check shared folder
-            if [[ "${{ matrix.service.path }}" == *"tactical-base"* ]]; then
-              # Check both service path and shared folder
-              if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}" && git diff --quiet $BASE_SHA $HEAD_SHA -- "./infrastructure/tactical-rmm/shared/"; then
-                echo "No changes detected in ${{ matrix.service.path }} or shared folder"
-                echo "changed=false" >> $GITHUB_OUTPUT
-              else
-                echo "Changes detected in ${{ matrix.service.path }} or shared folder"
-                echo "changed=true" >> $GITHUB_OUTPUT
-              fi
-            else
-              # For non-tactical services, check only service path
-              if git diff --quiet $BASE_SHA $HEAD_SHA -- "${{ matrix.service.path }}"; then
-                echo "No changes detected in ${{ matrix.service.path }}"
-                echo "changed=false" >> $GITHUB_OUTPUT
-              else
-                echo "Changes detected in ${{ matrix.service.path }}"
-                echo "changed=true" >> $GITHUB_OUTPUT
-              fi
-            fi
-          else
-            # For manual triggers, always build
-            echo "Manual trigger - building all images"
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
+          fetch-depth: 2
 
       - name: Set up environment
-        if: steps.check_changes.outputs.changed == 'true'
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         run: |
           echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
           echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
           echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
+      - name: Set up Maven Central Repository with JDK 21
+        if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        run: mvn clean install -pl ${{ matrix.module.path }} -am -Dcompress
+
+      - name: Upload Java artifacts
+        if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.module.artifact_name }}
+          path: |
+            ${{ matrix.module.path }}/target/*.jar
+            !${{ matrix.module.path }}/target/original-*.jar
+            !${{ matrix.module.path }}/target/*-sources.jar
+            !${{ matrix.module.path }}/target/*-javadoc.jar
+          retention-days: 1
+
       - name: Download Java artifacts
-        if: steps.check_changes.outputs.changed == 'true' && matrix.service.artifact_name != ''
+        if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.service.artifact_name }}
+          name: ${{ matrix.module.artifact_name }}
           path: .
 
       - name: Prepare Java artifacts for Docker build
-        if: steps.check_changes.outputs.changed == 'true' && matrix.service.artifact_name != ''
+        if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
         run: |
-          mkdir -p ${{ matrix.service.path }}/target
-          mv *.jar ${{ matrix.service.path }}/target/
+          mkdir -p ${{ matrix.module.path }}/target
+          mv *.jar ${{ matrix.module.path }}/target/
 
       - name: Log in to GitHub Container Registry
-        if: steps.check_changes.outputs.changed == 'true'
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        if: steps.check_changes.outputs.changed == 'true'
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up QEMU
-        if: steps.check_changes.outputs.changed == 'true'
-        uses: docker/setup-qemu-action@v3
+      - name: Format build arguments
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        id: format_args
+        run: |
+          # Convert the build args to the correct format
+          BUILD_ARGS=""
 
-      - name: Debug Build Args
-        run: echo '${{ toJson(matrix.service.build_args) }}'
+          # Debug the raw input
+          echo "Raw input:"
+          echo '${{ toJSON(matrix.module.build_args) }}'
+
+          echo
+          # Convert YAML object to key=value pairs using tr
+          if [ ! -z "${{ matrix.module.build_args }}" ]; then
+            # Process the build args and store in a temporary file
+            echo '${{ toJSON(matrix.module.build_args) }}' | \
+              tr -d "{}" | \
+              tr -d " " | \
+              tr -s "," "\n" | \
+              tr -s ":" "=" | \
+              grep -v '^$' > /tmp/build_args.txt
+
+            # Count total lines
+            total_lines=$(wc -l < /tmp/build_args.txt)
+            current_line=0
+
+            # Read from the temporary file and build the BUILD_ARGS string
+            while IFS= read -r line; do
+              current_line=$((current_line + 1))
+              echo "Processing: $line"
+              if [ $current_line -eq $total_lines ]; then
+                # Last line - don't add newline
+                BUILD_ARGS+="$line"
+              else
+                BUILD_ARGS+="$line\n"
+              fi
+            done < /tmp/build_args.txt
+          fi
+
+          echo
+          echo "Final BUILD_ARGS:"
+          echo -e "$BUILD_ARGS"
+          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
+          echo -e "$BUILD_ARGS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Build and push image
-        if: steps.check_changes.outputs.changed == 'true'
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         id: docker_build
-        run: |
-          # Ensure the Dockerfile exists
-          if [ ! -f "${{ matrix.service.path }}Dockerfile" ]; then
-            echo "Error: Dockerfile not found at ${{ matrix.service.path }}Dockerfile"
-            exit 1
-          fi
-
-          # Set the build context
-          BUILD_CONTEXT="${{ matrix.service.context || matrix.service.path }}"
-
-          # Construct build arguments dynamically
-          BUILD_ARGS=""
-          for key in $(echo '${{ toJson(matrix.service.build_args) }}' | jq -r 'keys[]'); do
-            value=$(echo '${{ toJson(matrix.service.build_args) }}' | jq -r ".\"$key\"")
-            BUILD_ARGS="$BUILD_ARGS --build-arg $key=$value"
-          done
-
-          # Build and push the image with error handling
-          if ! docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --push \
-            --file "${{ matrix.service.path }}Dockerfile" \
-            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:latest" \
-            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.COMMIT_SHA }}" \
-            --tag "${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.service.name }}:${{ env.TIMESTAMP_TAG }}" \
-            --cache-from "type=gha" \
-            --cache-to "type=gha,mode=max" \
-            --provenance=false \
-            $BUILD_ARGS \
-            "$BUILD_CONTEXT"; then
-            echo "Error: Failed to build and push image for ${{ matrix.service.name }}"
-            exit 1
-          fi
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.module.context || matrix.module.path }}
+          file: ${{ matrix.module.path }}Dockerfile
+          platforms: linux/amd64  # ,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          build-args: |
+            ${{ env.BUILD_ARGS }}
 
       - name: Clean up old versions
-        if: steps.check_changes.outputs.changed == 'true' && success() && steps.docker_build.outcome == 'success'
+        if: steps.docker_build.outcome == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: openframe-${{ matrix.module.name }}
         run: |
           chmod +x ./kind-cluster/scripts/gh-packages.sh
-          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.service.name }}" \
+          ./kind-cluster/scripts/gh-packages.sh --delete-old "${{ env.IMAGE_NAME }}" \
             "latest" \
             "${{ env.COMMIT_SHA }}" \
             "${{ env.TIMESTAMP_TAG }}"

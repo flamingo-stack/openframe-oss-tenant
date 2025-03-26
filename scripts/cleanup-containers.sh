@@ -3,6 +3,7 @@ docker compose -f docker-compose.openframe-authentik.yml down -v
 docker compose -f docker-compose.openframe-fleet-mdm.yml down -v
 docker compose -f docker-compose.openframe-tactical-rmm.yml down -v
 docker compose -f docker-compose.openframe-infrastructure.yml down -v
+docker compose -f docker-compose.openframe-network.yml down -v
 
 docker buildx prune -a -f
 
