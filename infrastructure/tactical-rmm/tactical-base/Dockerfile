@@ -4,11 +4,11 @@ FROM python:3.11.8-slim AS create_venv_stage
 ARG DEBIAN_FRONTEND=noninteractive
 
 # set env variables
-ENV VIRTUAL_ENV /opt/venv
-ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_TMP_DIR /tmp/tactical
+ENV VIRTUAL_ENV=/opt/venv
+ENV TACTICAL_DIR=/opt/tactical
+ENV TACTICAL_TMP_DIR=/tmp/tactical
 RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 WORKDIR ${TACTICAL_TMP_DIR}
@@ -35,13 +35,13 @@ RUN apt-get update && \
 FROM python:3.11.8-slim
 
 # set env variables
-ENV VIRTUAL_ENV /opt/venv
-ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_TMP_DIR /tmp/tactical
-ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical/ready
-ENV TACTICAL_USER tactical
-ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
-ENV CUSTOM_CODE_DIR /tmp/custom_code_dir
+ENV VIRTUAL_ENV=/opt/venv
+ENV TACTICAL_DIR=/opt/tactical
+ENV TACTICAL_TMP_DIR=/tmp/tactical
+ENV TACTICAL_READY_FILE=${TACTICAL_DIR}/tmp/tactical/ready
+ENV TACTICAL_USER=tactical
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+ENV CUSTOM_CODE_DIR=/tmp/custom_code_dir
 
 # Copy the GitHub files from build stage
 COPY --from=create_venv_stage ${TACTICAL_TMP_DIR}/api/tacticalrmm ${TACTICAL_TMP_DIR}/api
