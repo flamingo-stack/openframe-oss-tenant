@@ -36,7 +36,6 @@ u|up)
   bash ./kind-cluster/scripts/setup-kind-cluster.sh
   ;;
 a|app)
-  $0 cleanup
   if [ -n "$2" ]; then
     bash ./kind-cluster/scripts/deploy-apps.sh "$2"
   else
