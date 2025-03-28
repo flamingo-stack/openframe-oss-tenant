@@ -23,31 +23,8 @@ grafana:
     server:
       domain: grafana.192.168.100.100.nip.io
       root_url: "%(protocol)s://%(domain)s/"
-    # paths:
-    #   provisioning: /etc/grafana/provisioning
     dashboards:
       default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
-  dashboardProviders:
-    dashboardproviders.yaml:
-      apiVersion: 1
-      providers:
-      - name: 'Default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /tmp/dashboards
-      # - name: 'Library Panels'
-      #   orgId: 1
-      #   folder: ''
-      #   type: file
-      #   disableDeletion: false
-      #   updateIntervalSeconds: 10
-      #   allowUiUpdates: true
-      #   options:
-      #     path: /etc/grafana/library-panels
   enabled: true
   serviceMonitor:
     enabled: true
@@ -73,22 +50,7 @@ grafana:
     size: 1Gi
     finalizers:
       - kubernetes.io/pvc-protection
-  # extraConfigmapMounts:
-  #   - name: provisioning
-  #     configMap: grafana-provisioning
-  #     mountPath: /etc/grafana/provisioning
-  #     readOnly: true
-  #     items:
-  #       - key: library-panels.yaml
-  #         path: library-panels/provider.yaml
   additionalDataSources:
-    # - name: prometheus
-    #   access: proxy
-    #   url: http://prometheus:9090
-    #   isDefault: true
-    #   editable: false
-    #   uid: prometheus
-    #   type: prometheus
     - name: loki
       type: loki
       access: proxy
@@ -96,28 +58,6 @@ grafana:
       isDefault: false
       editable: false
       uid: loki
-      # jsonData:
-      #   maxLines: 1000
-      #   derivedFields:
-      #     - datasourceUid: prometheus
-      #       matcherRegex: "trace_id=(\\w+)"
-      #       name: TraceID
-      #       url: "$${__value.raw}"
-      #   searchContext: "1h"
-      #   serviceMap:
-      #     datasourceUid: prometheus
-      #   spanBar:
-      #     tag: "duration"
-      #   spanStartTimeShift: "1h"
-      #   spanEndTimeShift: "1h"
-      #   lokiQueryType: "Range"
-      #   cacheLevel: "None"
-      #   incrementalQueryOverlapWindow: "10m"
-      #   queryTimeout: "30s"
-      #   exemplarTraceIdDestinations:
-      #     - name: trace_id
-      #       datasourceUid: prometheus
-
   prune: true
 
 alertmanager:
@@ -130,7 +70,7 @@ prometheus:
     enabled: true
     hosts: ["prometheus.192.168.100.100.nip.io"]
   prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false  # select all ServiceMonitor, don't select based on helm chart label
+    serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
