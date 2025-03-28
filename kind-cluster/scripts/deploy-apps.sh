@@ -154,7 +154,7 @@ case "$1" in
   nifi)
     # NIFI (depends on Loki)
     # TODO: liveness probe fails, need to check
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-nifi && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-nifi && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m
     ;;
   zookeeper)
@@ -164,7 +164,7 @@ case "$1" in
     # helm upgrade -i zookeeper bitnami/zookeeper \
     #   --version 13.7.4 \
     #   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/zookeeper/zk.yaml && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/zookeeper/manifests && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=zookeeper --timeout 20m
     ;;
   pinot)
@@ -172,7 +172,7 @@ case "$1" in
     # Pinot Controller (depends on Zookeeper)
     # Pinot Broker (depends on Pinot Controller)
     # Pinot Server (depends on Pinot Controller)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-pinot/manifests && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-pinot/manifests && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-pinot --timeout 20m
 
     # helm repo add openframe-pinot https://raw.githubusercontent.com/apache/pinot/master/helm

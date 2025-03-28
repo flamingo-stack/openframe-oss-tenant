@@ -145,27 +145,3 @@ prometheus:
           resources:
             requests:
               storage: 1Gi
-    additionalScrapeConfigs:
-      - job_name: 'kafka-jmx'
-        static_configs:
-          - targets: ['openframe-kafka-jmx-metrics.infrastructure.svc:5556']
-
-      - job_name: 'zookeeper'
-        static_configs:
-          - targets: ['zookeeper.infrastructure.svc:7070']
-        relabel_configs:
-          - source_labels: [__address__]
-            target_label: service
-            replacement: 'zookeeper'
-
-      - job_name: 'nifi'
-        static_configs:
-          - targets: ['openframe-nifi.infrastructure.svc:9096']
-
-      - job_name: 'pinot'
-        static_configs:
-          - targets: [
-              'openframe-pinot-controller.infrastructure.svc:9011',
-              'openframe-pinot-broker.infrastructure.svc:9011',
-              'openframe-pinot-server.infrastructure.svc:9011'
-            ]

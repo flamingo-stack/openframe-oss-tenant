@@ -2,39 +2,40 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: openframe-pinot-controller-config
+  name: openframe-pinot-server-config
 data:
-  controller.conf: |
-    controller.host=pinot-controller
-    controller.port=9000
-    controller.data.dir=/opt/pinot/data/controller
-    controller.broker.protocol=http
-    controller.query.console.enabled=true
-    controller.admin.access.control.enabled=false
-    controller.helix.instance.id=Controller_pinot-controller_9000
-    controller.enable.split.commit=true
-    controller.local.temp.dir=/tmp/pinot-tmp-data/controller
-    controller.task.scheduler.enabled=false
+  server.conf: |
+    pinot.server.netty.port=8098
+    pinot.server.instance.dataDir=/opt/pinot/data/server
+    pinot.server.instance.segmentTarDir=/opt/pinot/data/server/segments
+    pinot.server.starter.type=helix
+    pinot.server.helix.instance.id=Server_pinot-server_8098
+    pinot.server.adminapi.port=8097
+    pinot.server.netty.host=0.0.0.0
+    pinot.server.starter.enableSegmentBuildTimeLogging=false
+    pinot.server.instance.enable.shutdown.delay=true
+    pinot.server.helix.flappingTimeWindowMs=10000
+    pinot.server.helix.enabled=true
+    # pinot.server.helix.zk.str=zookeeper:2181
+    # pinot.server.helix.cluster.name=openframe-pinot
     pinot.set.instance.id.to.hostname=false
-    controller.zk.str=zookeeper:2181
-    controller.helix.cluster.name=openframe-pinot
 ---
-# Controller Deployment
+# Server Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openframe-pinot-controller
+  name: openframe-pinot-server
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: openframe-pinot
-      component: controller
+      component: server
   template:
     metadata:
       labels:
         app: openframe-pinot
-        component: controller
+        component: server
     spec:
       initContainers:
       - name: init-jmx
@@ -47,15 +48,19 @@ spec:
         - name: jmx-exporter
           mountPath: /opt/jmx_exporter
       containers:
-      - name: pinot-controller
+      - name: pinot-server
         image: apachepinot/pinot:latest
         args:
-          - "StartController"
+          - "StartServer"
+          - -clusterName
+          - openframe-pinot
+          - -zkAddress
+          - zookeeper:2181
           - "-configFileName"
-          - "/opt/pinot/conf/controller.conf"
+          - "/opt/pinot/conf/server.conf"
         ports:
-        - containerPort: 9000
-          name: controller
+        - containerPort: 8098
+          name: server
         - containerPort: 9011
           name: jmx
         env:
@@ -68,9 +73,9 @@ spec:
           mountPath: /opt/jmx_exporter/config.yml
           subPath: config.yml
         - name: pinot-config
-          mountPath: /opt/pinot/conf/controller.conf
-          subPath: controller.conf
-        - name: controller-data
+          mountPath: /opt/pinot/conf/server.conf
+          subPath: server.conf
+        - name: server-data
           mountPath: /opt/pinot/data
       volumes:
       - name: jmx-exporter
@@ -80,22 +85,24 @@ spec:
           name: openframe-pinot-jmx-config
       - name: pinot-config
         configMap:
-          name: openframe-pinot-controller-config
-      - name: controller-data
+          name: openframe-pinot-server-config
+      - name: server-data
         emptyDir: {}
 ---
-# Services
 apiVersion: v1
 kind: Service
 metadata:
-  name: openframe-pinot-controller
+  name: openframe-pinot-server
+  labels:
+    app: openframe-pinot
+    component: server
 spec:
   selector:
     app: openframe-pinot
-    component: controller
+    component: server
   ports:
-    - port: 9000
-      name: controller
+    - port: 8098
+      name: server
     - port: 9011
       name: jmx
   type: ClusterIP
