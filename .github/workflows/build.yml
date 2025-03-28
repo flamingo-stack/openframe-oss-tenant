@@ -134,7 +134,7 @@ jobs:
           { name: 'management', path: 'services/openframe-management', type: 'java', artifact_name: 'openframe-management' },
           { name: 'stream', path: 'services/openframe-stream', type: 'java', artifact_name: 'openframe-stream' },
           # Non-Java Apps
-          { name: 'mongodb', path: './infrastructure/mongodb/', type: 'container', artifact_name: '',
+          { name: 'mongodb', path: './infrastructure/mongodb', type: 'container', artifact_name: '',
             build_args: {
               MONGO_INITDB_ROOT_USERNAME: 'openframe',
               MONGO_INITDB_ROOT_PASSWORD: 'password123456789',
@@ -143,7 +143,7 @@ jobs:
               MONGO_APP_PASSWORD: 'password123456789'
             }
           },
-          { name: 'cassandra', path: './infrastructure/cassandra/', type: 'container', artifact_name: '',
+          { name: 'cassandra', path: './infrastructure/cassandra', type: 'container', artifact_name: '',
             build_args: {
               CASSANDRA_CLUSTER_NAME: 'openframe_cluster',
               CASSANDRA_DC: 'datacenter1',
@@ -160,7 +160,7 @@ jobs:
               JMX_PORT: '7199'
             }
           },
-          { name: 'nifi', path: './infrastructure/nifi/', type: 'container',
+          { name: 'nifi', path: './infrastructure/nifi', type: 'container',
             build_args: {
               NIFI_WEB_HTTPS_PORT: '8443',
               NIFI_WEB_HTTP_HOST: '0.0.0.0',
@@ -168,15 +168,15 @@ jobs:
               SINGLE_USER_CREDENTIALS_PASSWORD: 'password123456789'
             }
           },
-          { name: 'postgresql', path: './infrastructure/postgresql/', type: 'container' },
-          { name: 'authentik-postgresql', path: './infrastructure/postgresql/', type: 'container',
+          { name: 'postgresql', path: './infrastructure/postgresql', type: 'container' },
+          { name: 'authentik-postgresql', path: './infrastructure/postgresql', type: 'container',
             build_args: {
               POSTGRES_USER: 'authentik-user',
               POSTGRES_PASSWORD: 'authentik-password-1234',
               POSTGRES_MULTIPLE_DATABASES: 'authentik-database,authentik-database-authentik'
             }
           },
-          { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend/', type: 'container',
+          { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -220,7 +220,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx/', type: 'container',
+          { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -264,7 +264,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
+          { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -308,7 +308,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
+          { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -352,7 +352,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'tactical-websockets', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
+          { name: 'tactical-websockets', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -396,7 +396,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'tactical-celery', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
+          { name: 'tactical-celery', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -440,7 +440,7 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'tactical-celerybeat', path: './infrastructure/tactical-rmm/tactical-base/', type: 'container',
+          { name: 'tactical-celerybeat', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
             context: ./infrastructure/tactical-rmm,
             build_args: {
               POSTGRES_DB: 'tacticalrmm',
@@ -484,9 +484,9 @@ jobs:
               WEBSOCKETS_BIND_HOST: 'tactical-websockets'
             }
           },
-          { name: 'fleetmdm', path: './infrastructure/fleetmdm/', type: 'container' },
-          { name: 'ui', path: './services/openframe-ui/', type: 'container' },
-          { name: 'meshcentral', path: './infrastructure/meshcentral/server/', type: 'container',
+          { name: 'fleetmdm', path: './infrastructure/fleetmdm', type: 'container' },
+          { name: 'ui', path: './services/openframe-ui', type: 'container' },
+          { name: 'meshcentral', path: './infrastructure/meshcentral/server', type: 'container',
             build_args: {
               MESH_DIR: '/opt/mesh',
               MESH_TEMP_DIR: '/tmp/mesh',
@@ -512,7 +512,7 @@ jobs:
               MESH_WEBRTC_ENABLED: 'false'
             }
           },
-          { name: 'meshcentral-nginx', path: './infrastructure/meshcentral/nginx/', type: 'container',
+          { name: 'meshcentral-nginx', path: './infrastructure/meshcentral/nginx', type: 'container',
             build_args: {
               MESH_DIR: '/opt/mesh',
               MESH_TEMP_DIR: '/tmp/mesh',
@@ -656,7 +656,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.module.context || matrix.module.path }}
-          file: ${{ matrix.module.path }}Dockerfile
+          file: ${{ matrix.module.path }}/Dockerfile
           platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
           tags: |
