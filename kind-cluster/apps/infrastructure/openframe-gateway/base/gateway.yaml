@@ -1,38 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openframe-api
+  name: openframe-gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openframe-api
+      app: openframe-gateway
   template:
     metadata:
       labels:
-        app: openframe-api
+        app: openframe-gateway
     spec:
       imagePullSecrets:
         - name: github-pat-secret
       containers:
-        - name: api
-          image: ghcr.io/flamingo-cx/openframe-api:latest
+        - name: gateway
+          image: ghcr.io/flamingo-cx/openframe-gateway:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8090
+            - containerPort: 8100
               name: http
-            - containerPort: 8091
+            - containerPort: 8101
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: SPRING_CONFIG_IMPORT
               value: "optional:configserver:http://openframe-config-server:8888"
-            - name: OPENFRAME_MANAGEMENT_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: openframe-secrets
-                  key: management-key
           livenessProbe:
             httpGet:
               path: /management/v1/health
@@ -60,33 +55,35 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: openframe-api
+  name: openframe-gateway
+  labels:
+    app: openframe-gateway
 spec:
   selector:
-    app: openframe-api
+    app: openframe-gateway
   ports:
-    - port: 8090
-      targetPort: 8090
+    - port: 8100
+      targetPort: 8100
       name: http
-    - port: 8091
-      targetPort: 8091
+    - port: 8101
+      targetPort: 8101
       name: management
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: openframe-api
+  name: openframe-gateway
 spec:
   ingressClassName: nginx
   rules:
-    - host: openframe-api.192.168.100.100.nip.io
+    - host: openframe-gateway.192.168.100.100.nip.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: openframe-api
+                name: openframe-gateway
                 port:
                   name: http

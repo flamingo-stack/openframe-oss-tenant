@@ -5,15 +5,14 @@ metadata:
   labels:
     app: openframe-promtail
 spec:
-  selector:
-    matchLabels:
-      app: openframe-promtail
   endpoints:
     - port: http-metrics
       path: /metrics
       interval: 15s
       scrapeTimeout: 10s
   namespaceSelector:
-    # any: true
     matchNames:
       - monitoring
+  selector:
+    matchLabels:
+      app: openframe-promtail

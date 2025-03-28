@@ -1,0 +1,3 @@
+resources:
+  - base/stream.yaml
+  - base/servicemonitor.yaml

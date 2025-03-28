@@ -182,29 +182,28 @@ case "$1" in
     ;;
   config-server)
     # CONFIG SERVER (no dependencies)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-config && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-config && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-config-server --timeout 20m
     ;;
   api)
     # API (depends on Config Server, MongoDB, Kafka, Cassandra, Redis)
     # management-key: docker-management-key-123  ???
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/secrets.yaml && \
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-api/api.yaml && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-api && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-api --timeout 20m
     ;;
   management)
     # MANAGEMENT (depends on Config Server, MongoDB)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-management/management.yaml
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-management
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-management --timeout 20m
     ;;
   stream)
     # STREAM (depends on Kafka, Config Server, Cassandra, MongoDB, Loki)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-stream/stream.yaml && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-stream && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-stream --timeout 20m
     ;;
   gateway)
     # GATEWAY (depends on Config Server, MongoDB, Cassandra, Loki)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-gateway/gateway.yaml && \
+    kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-gateway && \
     kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-gateway --timeout 20m
     ;;
   openframe-ui)
