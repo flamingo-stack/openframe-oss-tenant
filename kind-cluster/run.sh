@@ -8,6 +8,13 @@ check_command() {
     fi
 }
 
+# Check if GITHUB_TOKEN_CLASSIC is set
+if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
+    echo "Error: GITHUB_TOKEN_CLASSIC environment variable is not set"
+    echo "Please export GITHUB_TOKEN_CLASSIC with: 'export GITHUB_TOKEN_CLASSIC=<your-token>'"
+    exit 1
+fi
+
 # Check required tools
 echo "Checking required tools..."
 check_command "kind"

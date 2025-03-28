@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Check if GITHUB_TOKEN_CLASSIC is set
-if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
-    echo "Error: GITHUB_TOKEN_CLASSIC environment variable is not set"
-    echo "Please export GITHUB_TOKEN_CLASSIC before running this script"
-    exit 1
-fi
-
 # PULL SECRETS
 kubectl create namespace infrastructure --dry-run=client -o yaml | kubectl apply -f -  && \
 kubectl -n infrastructure create secret docker-registry github-pat-secret \
