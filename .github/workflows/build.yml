@@ -604,7 +604,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: amd64,arm64
+          platforms: ${{ matrix.module.name == 'fleetmdm' && 'amd64' || 'amd64,arm64' }}
 
       - name: Set up Docker Buildx
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
@@ -671,7 +671,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          provenance: true
+          provenance: false
           build-args: |
             ${{ env.BUILD_ARGS }}
 
