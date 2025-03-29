@@ -313,27 +313,26 @@ case "$1" in
     $0 ingress-nginx && \
     $0 grafana && \
     $0 loki && \
-    $0 redis && \
-    $0 efk && \
-    $0 kafka && \
-    $0 kafka-ui && \
-    $0 mongodb && \
-    $0 mongodb-exporter && \
-    $0 mongo-express && \
-    $0 cassandra && \
-    $0 nifi && \
-    $0 zookeeper && \
-    $0 pinot && \
-    $0 config-server && \
-    $0 api && \
-    $0 management && \
-    $0 stream && \
-    $0 gateway && \
-    $0 openframe-ui && \
-    $0 authentik && \
-    $0 fleet && \
-    $0 meshcentral && \
-    $0 rmm && \
+    $0 redis
+    $0 kafka
+    $0 kafka-ui
+    $0 mongodb
+    $0 mongodb-exporter
+    $0 mongo-express
+    $0 cassandra
+    $0 nifi
+    $0 zookeeper
+    $0 pinot
+    $0 config-server
+    $0 api
+    $0 management
+    $0 stream
+    $0 gateway
+    $0 openframe-ui
+    $0 authentik
+    $0 fleet
+    $0 meshcentral
+    $0 rmm
     $0 register-tools
     ;;
   m|minimal)
