@@ -59,7 +59,7 @@ m|minimal)
 f|fast)
   # Bootstrap whole cluster with base apps without waiting for state=Ready
   bash $0 up
-  bash $0 app minimal
+  bash $0 app fast
   ;;
 
 c|cleanup)
