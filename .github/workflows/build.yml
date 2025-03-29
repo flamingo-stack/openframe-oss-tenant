@@ -604,7 +604,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
 
       - name: Set up Docker Buildx
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
@@ -659,11 +659,11 @@ jobs:
       - name: Build and push image
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         id: docker_build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.module.context || matrix.module.path }}
           file: ${{ matrix.module.path }}/Dockerfile
-          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
@@ -672,7 +672,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
-          sbom: false
+          labels: |
+            org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.url=https://openframe.io
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=MIT
+          # sbom: false
           build-args: |
             ${{ env.BUILD_ARGS }}
 
