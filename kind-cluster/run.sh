@@ -51,6 +51,11 @@ b|bootstrap)
   bash $0 up
   bash $0 app all
   ;;
+m|minimal)
+  # Bootstrap whole cluster with base apps
+  bash $0 up
+  bash $0 app minimal
+  ;;
 c|cleanup)
   # Cleanup kind nodes from unused images
   for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
@@ -64,6 +69,7 @@ $0 <parameter>
 Parameters:
 
 b|bootstrap            : Bootstrap whole cluster with all apps
+m|minimal              : Bootstrap whole cluster with base apps
 u|up                   : Setup cluster only
 a|app <app-name>|all   : Deploy all apps or specific app if app-name is provided
 d|down                 : Remove cluster
