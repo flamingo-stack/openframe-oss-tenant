@@ -249,7 +249,7 @@ jobs:
 
       - name: Build and Push image
         run: |
-          BUILD_ARGS=$(echo "${{ toJSON(matrix.build_args) }}" | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" --build-arg ")')
+          BUILD_ARGS=$(echo '${{ toJSON(matrix.build_args) }}' | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" --build-arg ")')
 
           docker buildx build \
             --file ${{ matrix.path }}/Dockerfile \
