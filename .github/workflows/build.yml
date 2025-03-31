@@ -551,6 +551,9 @@ jobs:
             }
           }
         ]
+    steps:
+      - name: Generate Matrix
+        run: echo "Matrix configuration generated"
 
   build_java:
     name: "Build Java: ${{ matrix.module.name }}"
