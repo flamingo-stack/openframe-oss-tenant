@@ -656,199 +656,196 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: echo
+      - name: Set up Maven Central Repository with JDK 21
+        if: matrix.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        if: matrix.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
+
+      - name: Upload Java artifacts
+        if: matrix.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.path }}/target/*.jar
+            !${{ matrix.path }}/target/original-*.jar
+            !${{ matrix.path }}/target/*-sources.jar
+            !${{ matrix.path }}/target/*-javadoc.jar
+          retention-days: 1
+
+  build_amd:
+    name: "Build AMD64 image: ${{ matrix.name }}"
+    needs: [build_java, matrix]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        exclude:
+          - module:
+              name: 'fleetmdm'
+    steps:
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Download Java artifacts
+        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: .
+
+      - name: Prepare Java artifacts for Docker build
+        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         run: |
-          echo "Matrix: ${{ toJSON(matrix) }}"
-      # - name: Set up Maven Central Repository with JDK 21
-      #   if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-      #   uses: actions/setup-java@v4
+          mkdir -p ${{ matrix.path }}/target
+          mv *.jar ${{ matrix.path }}/target/
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Set up QEMU
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+      #   uses: docker/setup-qemu-action@v3
       #   with:
-      #     java-version: '21'
-      #     distribution: 'temurin'
-      #     cache: 'maven'
+      #     platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
 
-      # - name: Build with Maven
-      #   if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-      #   run: mvn clean install -pl ${{ matrix.module.path }} -am -Dcompress
-
-      # - name: Upload Java artifacts
-      #   if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-      #   uses: actions/upload-artifact@v4
+      # - name: Set up Docker Buildx
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+      #   uses: docker/setup-buildx-action@v3
       #   with:
-      #     name: ${{ matrix.module.artifact_name }}
-      #     path: |
-      #       ${{ matrix.module.path }}/target/*.jar
-      #       !${{ matrix.module.path }}/target/original-*.jar
-      #       !${{ matrix.module.path }}/target/*-sources.jar
-      #       !${{ matrix.module.path }}/target/*-javadoc.jar
-      #     retention-days: 1
+      #     driver-opts: 'image=moby/buildkit:buildx-stable-1'
 
-  # build_amd:
-  #   name: "Build AMD64 image: ${{ matrix.module.name }}"
-  #   needs: [build_java, matrix]
-  #   runs-on: macos-latest
-  #   strategy:
-  #     matrix:
-  #       module: ${{ fromJson(needs.matrix.outputs.matrix) }}
-  #       exclude:
-  #         - module:
-  #             name: 'fleetmdm'
-  #   steps:
-  #     - name: Checkout
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 2
+      - name: Format build arguments
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        id: format_args
+        uses: ./.github/actions/format-build-args
+        with:
+          build_args: ${{ toJSON(matrix.build_args) }}
+        env:
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-  #     - name: Download Java artifacts
-  #       if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: ${{ matrix.module.artifact_name }}
-  #         path: .
+      - name: Build and push AMD64 image
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.url=https://openframe.io
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=MIT
+          build-args: |
+            ${{ env.BUILD_ARGS }}
 
-  #     - name: Prepare Java artifacts for Docker build
-  #       if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-  #       run: |
-  #         mkdir -p ${{ matrix.module.path }}/target
-  #         mv *.jar ${{ matrix.module.path }}/target/
+  build_arm:
+    name: "Build ARM64 image: ${{ matrix.name }}"
+    needs: [build_java, matrix]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        exclude:
+          - module:
+              name: 'fleetmdm'
+    steps:
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-  #     - name: Log in to GitHub Container Registry
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download Java artifacts
+        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: .
 
-  #     # - name: Set up QEMU
-  #     #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #     #   uses: docker/setup-qemu-action@v3
-  #     #   with:
-  #     #     platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
+      - name: Prepare Java artifacts for Docker build
+        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        run: |
+          mkdir -p ${{ matrix.path }}/target
+          mv *.jar ${{ matrix.path }}/target/
 
-  #     # - name: Set up Docker Buildx
-  #     #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #     #   uses: docker/setup-buildx-action@v3
-  #     #   with:
-  #     #     driver-opts: 'image=moby/buildkit:buildx-stable-1'
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Format build arguments
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       id: format_args
-  #       uses: ./.github/actions/format-build-args
-  #       with:
-  #         build_args: ${{ toJSON(matrix.module.build_args) }}
-  #       env:
-  #         BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+      - name: Format build arguments
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        id: format_args
+        uses: ./.github/actions/format-build-args
+        with:
+          build_args: ${{ toJSON(matrix.build_args) }}
+        env:
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-  #     - name: Build and push AMD64 image
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       id: docker_build
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: ${{ matrix.module.context || matrix.module.path }}
-  #         file: ${{ matrix.module.path }}/Dockerfile
-  #         platforms: linux/amd64
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
-  #           ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.commit_sha }}
-  #           ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.timestamp_tag }}
-  #         labels: |
-  #           org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
-  #           org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-  #           org.opencontainers.image.url=https://openframe.io
-  #           org.opencontainers.image.vendor=FlamingoCX
-  #           org.opencontainers.image.licenses=MIT
-  #         build-args: |
-  #           ${{ env.BUILD_ARGS }}
+      - name: Build and push ARM64 image
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.url=https://openframe.io
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=MIT
+          build-args: |
+            ${{ env.BUILD_ARGS }}
 
-  # build_arm:
-  #   name: "Build ARM64 image: ${{ matrix.module.name }}"
-  #   needs: [build_java, matrix]
-  #   runs-on: macos-latest
-  #   strategy:
-  #     matrix:
-  #       module: ${{ fromJson(needs.matrix.outputs.matrix) }}
-  #       exclude:
-  #         - module:
-  #             name: 'fleetmdm'
-  #   steps:
-  #     - name: Checkout
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 2
-
-  #     - name: Download Java artifacts
-  #       if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: ${{ matrix.module.artifact_name }}
-  #         path: .
-
-  #     - name: Prepare Java artifacts for Docker build
-  #       if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
-  #       run: |
-  #         mkdir -p ${{ matrix.module.path }}/target
-  #         mv *.jar ${{ matrix.module.path }}/target/
-
-  #     - name: Log in to GitHub Container Registry
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Format build arguments
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       id: format_args
-  #       uses: ./.github/actions/format-build-args
-  #       with:
-  #         build_args: ${{ toJSON(matrix.module.build_args) }}
-  #       env:
-  #         BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
-
-  #     - name: Build and push ARM64 image
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-  #       id: docker_build
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: ${{ matrix.module.context || matrix.module.path }}
-  #         file: ${{ matrix.module.path }}/Dockerfile
-  #         platforms: linux/arm64
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
-  #           ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.commit_sha }}
-  #           ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.timestamp_tag }}
-  #         labels: |
-  #           org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
-  #           org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-  #           org.opencontainers.image.url=https://openframe.io
-  #           org.opencontainers.image.vendor=FlamingoCX
-  #           org.opencontainers.image.licenses=MIT
-  #         build-args: |
-  #           ${{ env.BUILD_ARGS }}
-
-  # cleanup:
-  #   name: Cleanup old versions
-  #   needs: [build_amd, build_arm]
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
-  #   steps:
-  #     - name: Clean up old versions
-  #       if: needs.build_amd.result == 'success' || needs.build_arm.result == 'success'
-  #       env:
-  #         GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
-  #         IMAGE_NAME: openframe-${{ matrix.module.name }}
-  #       run: |
-  #         chmod +x ./kind-cluster/scripts/gh-packages.sh
-  #         ./kind-cluster/scripts/gh-packages.sh --delete-old "${{ env.IMAGE_NAME }}" \
-  #           "latest" \
-  #           "${{ needs.changes.outputs.commit_sha }}" \
-  #           "${{ needs.changes.outputs.timestamp_tag }}"
-  #       continue-on-error: true
+  cleanup:
+    name: Cleanup old versions
+    needs: [build_amd, build_arm]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
+    steps:
+      - name: Clean up old versions
+        if: needs.build_amd.result == 'success' || needs.build_arm.result == 'success'
+        env:
+          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: openframe-${{ matrix.name }}
+        run: |
+          chmod +x ./kind-cluster/scripts/gh-packages.sh
+          ./kind-cluster/scripts/gh-packages.sh --delete-old "${{ env.IMAGE_NAME }}" \
+            "latest" \
+            "${{ needs.changes.outputs.commit_sha }}" \
+            "${{ needs.changes.outputs.timestamp_tag }}"
+        continue-on-error: true
