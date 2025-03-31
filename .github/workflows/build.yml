@@ -652,7 +652,7 @@ jobs:
         run: |
           {
             echo 'matrix_java<<EOF'
-            echo ${{ steps.matrix.outputs.matrix }} | jq '[.[] | select(.type=="java")]'
+            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]'
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
