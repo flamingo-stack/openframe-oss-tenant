@@ -177,4 +177,4 @@ Common issues and solutions:
 - [Kubernetes Deployment Guide](kubernetes.md)
 - [Service Mesh Configuration](../architecture/service-mesh.md)
 - [Monitoring Guide](../operations/monitoring.md)
-- [Security Best Practices](../security/overview.md) 
+- [Security Best Practices](../security/overview.md)  
