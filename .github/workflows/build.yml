@@ -601,10 +601,11 @@ jobs:
     needs: [build_java, matrix]
     runs-on: macos-latest
     strategy:
-      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
-      exclude:
-        - module:
-            name: 'fleetmdm'
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        exclude:
+          - module:
+              name: 'fleetmdm'
     steps:
       - name: Checkout
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
@@ -681,10 +682,11 @@ jobs:
     needs: [build_java, matrix]
     runs-on: macos-latest
     strategy:
-      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
-      exclude:
-        - module:
-            name: 'fleetmdm'
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        exclude:
+          - module:
+              name: 'fleetmdm'
     steps:
       - name: Checkout
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
