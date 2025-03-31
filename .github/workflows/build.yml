@@ -133,12 +133,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      matrix_java: ${{ steps.filter.outputs.matrix_java }}
+      # matrix_java: ${{ steps.filter.outputs.matrix_java }}
     steps:
       - name: Define Matrix
         id: matrix
         run: |
-          matrix='[
+          echo 'matrix=[
             {
               "name": "core",
               "type": "java",
@@ -638,8 +638,7 @@ jobs:
                 "MESH_WEBRTC_ENABLED": "false"
               }
             }
-          ]'
-          echo "matrix='$matrix'" >> "$GITHUB_OUTPUT"
+          ]' >> "$GITHUB_OUTPUT"
 
       - name: Filter Java Projects
         id: filter
