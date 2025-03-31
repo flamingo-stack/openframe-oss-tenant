@@ -261,7 +261,7 @@ jobs:
 
           docker buildx build \
             --file ${{ matrix.path }}/Dockerfile \
-            --platform ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }} \
+            --platform ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }} \
             --label org.opencontainers.image.source=https://github.com/flamingo-cx/openframe \
             --label org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents." \
             --label org.opencontainers.image.url=https://openframe.io \
