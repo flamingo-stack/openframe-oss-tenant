@@ -171,7 +171,7 @@ jobs:
           retention-days: 1
 
   build:
-    name: "Build AMD64 image: ${{ matrix.name }}"
+    name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
     strategy:
@@ -210,20 +210,20 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
+          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
-      - name: Format build arguments
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-        id: format_args
-        uses: ./.github/actions/format-build-args
-        with:
-          build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+      # - name: Format build arguments
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+      #   id: format_args
+      #   uses: ./.github/actions/format-build-args
+      #   with:
+      #     build_args: ${{ toJSON(matrix.build_args) }}
+      #   env:
+      #     BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       # - name: Build and push AMD64 image
       #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
@@ -248,6 +248,7 @@ jobs:
       #       ${{ env.BUILD_ARGS }}
 
       - name: Build and Push image
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           BUILD_ARGS=$(echo '${{ toJSON(matrix.build_args) }}' | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" --build-arg ")')
 
@@ -263,7 +264,8 @@ jobs:
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }} \
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }} \
             --build-arg $BUILD_ARGS \
-            --push ${{ matrix.context || matrix.path }}
+            --push \
+            ${{ matrix.context || matrix.path }}
 
   cleanup:
     name: Cleanup old versions
@@ -275,7 +277,7 @@ jobs:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Clean up old versions
-        if: needs.build_amd.result == 'success' || needs.build_arm.result == 'success'
+        if: needs.build.result == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_NAME: openframe-${{ matrix.name }}
