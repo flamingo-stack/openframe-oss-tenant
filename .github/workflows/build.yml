@@ -138,7 +138,7 @@ jobs:
       - name: Define Matrix
         id: matrix
         run: |
-          echo 'matrix=[
+          matrix='[
             {
               "name": "core",
               "type": "java",
@@ -638,7 +638,8 @@ jobs:
                 "MESH_WEBRTC_ENABLED": "false"
               }
             }
-          ]' >> "$GITHUB_OUTPUT"
+          ]'
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
       - name: Filter Java Projects
         id: filter
