@@ -699,7 +699,7 @@ jobs:
   build_amd:
     name: "Build AMD64 image: ${{ matrix.name }}"
     needs: [build_java, matrix]
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         module: ${{ fromJson(needs.matrix.outputs.matrix) }}
