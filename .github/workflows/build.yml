@@ -275,6 +275,10 @@ jobs:
           mkdir -p ${{ matrix.path }}/target
           mv *.jar ${{ matrix.path }}/target/
 
+      - name: Set up Docker Buildx
+        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to GitHub Container Registry
         if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/login-action@v3
@@ -282,10 +286,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
-        uses: docker/setup-buildx-action@v3
 
       - name: Format build arguments
         if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
