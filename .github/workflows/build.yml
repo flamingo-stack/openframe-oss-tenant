@@ -644,7 +644,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     outputs:
       status: ${{ job.status }}
       matrix: ${{ toJSON(matrix) }}
