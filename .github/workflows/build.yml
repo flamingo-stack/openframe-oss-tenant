@@ -138,7 +138,8 @@ jobs:
       - name: Define Matrix
         id: matrix
         run: |
-          echo 'matrix=[
+          echo -n 'matrix=<<EOF' >> $GITHUB_OUTPUT
+          echo '[
             {
               "name": "core",
               "type": "java",
@@ -639,7 +640,7 @@ jobs:
               }
             }
           ]' >> "$GITHUB_OUTPUT"
-
+          echo 'EOF' >> "$GITHUB_OUTPUT"
       - name: Filter Java Projects
         id: filter
         run: |
