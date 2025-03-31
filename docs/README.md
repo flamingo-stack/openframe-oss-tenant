@@ -1,56 +1,48 @@
 # OpenFrame Documentation
 
-This repository contains comprehensive documentation for the OpenFrame platform.
+This directory contains the complete documentation for OpenFrame, organized into the following sections:
 
-## Documentation Structure
+## Getting Started
+- [Introduction](getting-started/introduction.md) - Overview of OpenFrame
+- [Quick Start](getting-started/quick-start.md) - Quick setup guide
+- [Installation](getting-started/installation.md) - Detailed installation instructions
 
-### Getting Started
-- [Introduction](getting-started/introduction.md) - Overview of OpenFrame and its capabilities
-- [Quick Start](getting-started/quick-start.md) - Quick setup and basic usage guide
+## Development
+- [Setup Guide](development/setup.md) - Development environment setup
+- [Architecture](development/architecture.md) - System architecture and design
+- [Code Style](development/code-style.md) - Coding standards and practices
+- [Testing](development/testing.md) - Testing guidelines and practices
+- [Contributing](development/contributing.md) - How to contribute to OpenFrame
 
-### Architecture
-- [Overview](architecture/overview.md) - System architecture and components
-- [Components](architecture/components.md) - Detailed component descriptions
-- [Data Pipeline](architecture/data-pipeline.md) - Data flow and processing
-- [AI and Analytics](architecture/ai-analytics.md) - AI capabilities and analytics
-- [API Integration](architecture/api-integration.md) - API and tool integration
-- [Security](architecture/security.md) - Security architecture
-- [Deployment](architecture/deployment.md) - Deployment architecture
-
-### API Documentation
-- [API Overview](api/overview.md) - API architecture and principles
+## API Documentation
+- [Overview](api/overview.md) - API architecture and principles
 - [Authentication](api/authentication.md) - Authentication and authorization
-- [Endpoints](api/endpoints.md) - API endpoints and usage
-- [WebSocket](api/websocket.md) - WebSocket API documentation
-- [Integration](api/integration.md) - Integration patterns and examples
+- [Endpoints](api/endpoints.md) - Available API endpoints
+- [WebSocket](api/websocket.md) - Real-time communication
+- [Integration](api/integration.md) - Integration guidelines
 
-### Development
-- [Setup](development/setup.md) - Development environment setup
-- [Architecture](development/architecture.md) - Development architecture
-- [Contributing](development/contributing.md) - Contribution guidelines
-- [Testing](development/testing.md) - Testing guidelines
-- [Code Style](development/code-style.md) - Code style guide
+## Deployment
+- [Overview](deployment/overview.md) - Deployment architecture
+- [Kubernetes](deployment/kubernetes.md) - Kubernetes deployment guide
+- [Scaling](deployment/scaling.md) - Scaling and performance
+- [Monitoring](deployment/monitoring.md) - Monitoring and observability
 
-### Operations
-- [Monitoring](operations/monitoring.md) - Monitoring and observability
-- [Logging](operations/logging.md) - Logging and log management
-- [Backup](operations/backup.md) - Backup and recovery
-- [Scaling](operations/scaling.md) - Scaling and performance
-- [Maintenance](operations/maintenance.md) - Maintenance procedures
-
-### Security
+## Security
 - [Overview](security/overview.md) - Security architecture
 - [Authentication](security/authentication.md) - Authentication mechanisms
 - [Authorization](security/authorization.md) - Authorization and access control
-- [Network](security/network.md) - Network security
-- [Compliance](security/compliance.md) - Compliance and audit
+- [Compliance](security/compliance.md) - Security compliance
 
-### Deployment
-- [Prerequisites](deployment/prerequisites.md) - System requirements
-- [Installation](deployment/installation.md) - Installation guide
-- [Configuration](deployment/configuration.md) - Configuration guide
-- [Upgrade](deployment/upgrade.md) - Upgrade procedures
-- [Troubleshooting](deployment/troubleshooting.md) - Common issues and solutions
+## Operations
+- [Maintenance](operations/maintenance.md) - System maintenance
+- [Backup](operations/backup.md) - Backup and recovery
+- [Monitoring](operations/monitoring.md) - Operations monitoring
+- [Troubleshooting](operations/troubleshooting.md) - Common issues and solutions
+
+## Diagrams
+- [System Architecture](diagrams/system-architecture.md) - System architecture diagrams
+- [Deployment](diagrams/deployment.md) - Deployment architecture diagrams
+- [Security](diagrams/security.md) - Security architecture diagrams
 
 ## Contributing to Documentation
 
