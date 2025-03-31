@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      matrix_java: ${{ steps.matrix.outputs.matrix_java }}
+      matrix_java: ${{ steps.filter.outputs.matrix_java }}
     steps:
       - name: Define Matrix
         id: matrix
@@ -643,7 +643,7 @@ jobs:
       - name: Filter Java Projects
         id: filter
         run: |
-          echo "matrix_java=$(jq '[.[] | select(.type=="java") ]' matrix.json)" >> "$GITHUB_OUTPUT"
+          echo "matrix_java=$(echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]')" >> "$GITHUB_OUTPUT"
 
 
   build_java:
@@ -670,11 +670,11 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
 
       - name: Upload Java artifacts
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
