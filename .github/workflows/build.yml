@@ -636,16 +636,12 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # provenance: false
           labels: |
             org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.url=https://openframe.io
             org.opencontainers.image.vendor=FlamingoCX
             org.opencontainers.image.licenses=MIT
-          # sbom: false
           build-args: |
             ${{ env.BUILD_ARGS }}
 
@@ -703,16 +699,12 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # provenance: false
           labels: |
             org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.url=https://openframe.io
             org.opencontainers.image.vendor=FlamingoCX
             org.opencontainers.image.licenses=MIT
-          # sbom: false
           build-args: |
             ${{ env.BUILD_ARGS }}
 
