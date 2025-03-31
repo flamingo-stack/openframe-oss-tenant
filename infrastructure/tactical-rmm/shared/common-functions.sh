@@ -215,7 +215,7 @@ function tactical_init() {
     # Clean up existing directories if they exist
     rm -rf "${TACTICAL_DIR}/tmp" "${TACTICAL_DIR}/certs"
 
-    # copy container data to volume, excluding downloads directory
+    # copy container data to volume
     rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
     mkdir -p ${TACTICAL_DIR}/tmp ${TACTICAL_DIR}/certs ${TACTICAL_DIR}/reporting/assets ${TACTICAL_DIR}/api/tacticalrmm/private/exe ${TACTICAL_DIR}/api/tacticalrmm/private/log
