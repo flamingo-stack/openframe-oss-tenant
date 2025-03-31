@@ -1,0 +1,698 @@
+name: OpenFrame Build Java & Container Images
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+  pull-requests: write
+  attestations: write
+  id-token: write
+
+on:
+  push:
+    paths:
+      - 'libs/**'
+      - 'services/**'
+      - 'infrastructure/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - 'libs/**'
+      - 'services/**'
+      - 'infrastructure/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
+
+env:
+  ORGANIZATION: flamingo-cx
+  REGISTRY: ghcr.io
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  changes:
+    name: Check for changes
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      data: ${{ steps.filter.outputs.data }}
+      api: ${{ steps.filter.outputs.api }}
+      config: ${{ steps.filter.outputs.config }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      management: ${{ steps.filter.outputs.management }}
+      stream: ${{ steps.filter.outputs.stream }}
+      mongodb: ${{ steps.filter.outputs.mongodb }}
+      cassandra: ${{ steps.filter.outputs.cassandra }}
+      nifi: ${{ steps.filter.outputs.nifi }}
+      postgresql: ${{ steps.filter.outputs.postgresql }}
+      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
+      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
+      tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
+      tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
+      tactical-websockets: ${{ steps.filter.outputs.tactical-websockets }}
+      tactical-celery: ${{ steps.filter.outputs.tactical-celery }}
+      tactical-celerybeat: ${{ steps.filter.outputs.tactical-celerybeat }}
+      fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
+      meshcentral: ${{ steps.filter.outputs.meshcentral }}
+      ui: ${{ steps.filter.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            core:
+              - './libs/openframe-core/**'
+            data:
+              - './libs/openframe-data/**'
+            api:
+              - './services/openframe-api/**'
+            config:
+              - './services/openframe-config/**'
+            gateway:
+              - './services/openframe-gateway/**'
+            management:
+              - './services/openframe-management/**'
+            stream:
+              - './services/openframe-stream/**'
+            mongodb:
+              - './infrastructure/mongodb/**'
+            cassandra:
+              - './infrastructure/cassandra/**'
+            nifi:
+              - './infrastructure/nifi/**'
+            postgresql:
+              - './infrastructure/postgresql/**'
+            tactical-frontend:
+              - './infrastructure/tactical-rmm/tactical-frontend/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-nginx:
+              - './infrastructure/tactical-rmm/tactical-nginx/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-backend:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-nats:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-websockets:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-celery:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            tactical-celerybeat:
+              - './infrastructure/tactical-rmm/tactical-base/**'
+              - './infrastructure/tactical-rmm/shared/**'
+            fleetmdm:
+              - './infrastructure/fleetmdm/**'
+            meshcentral:
+              - './infrastructure/meshcentral/nginx/**'
+              - './infrastructure/meshcentral/config/**'
+            ui:
+              - './services/openframe-ui/**'
+
+  build:
+    name: "Build: ${{ matrix.module.name }}"
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [
+          # Java Apps
+          { name: 'core', path: 'libs/openframe-core', type: 'java', artifact_name: 'openframe-core' },
+          { name: 'data', path: 'libs/openframe-data', type: 'java', artifact_name: 'openframe-data' },
+          { name: 'api', path: 'services/openframe-api', type: 'java', artifact_name: 'openframe-api' },
+          { name: 'config', path: 'services/openframe-config', type: 'java', artifact_name: 'openframe-config' },
+          { name: 'gateway', path: 'services/openframe-gateway', type: 'java', artifact_name: 'openframe-gateway' },
+          { name: 'management', path: 'services/openframe-management', type: 'java', artifact_name: 'openframe-management' },
+          { name: 'stream', path: 'services/openframe-stream', type: 'java', artifact_name: 'openframe-stream' },
+          # Non-Java Apps
+          { name: 'mongodb', path: './infrastructure/mongodb', type: 'container', artifact_name: '',
+            build_args: {
+              MONGO_INITDB_ROOT_USERNAME: 'openframe',
+              MONGO_INITDB_ROOT_PASSWORD: 'password123456789',
+              MONGO_APP_DATABASE: 'openframe',
+              MONGO_APP_USERNAME: 'openframe',
+              MONGO_APP_PASSWORD: 'password123456789'
+            }
+          },
+          { name: 'cassandra', path: './infrastructure/cassandra', type: 'container', artifact_name: '',
+            build_args: {
+              CASSANDRA_CLUSTER_NAME: 'openframe_cluster',
+              CASSANDRA_DC: 'datacenter1',
+              CASSANDRA_START_RPC: 'true',
+              CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS: '128',
+              CASSANDRA_NATIVE_TRANSPORT_PORT_SSL: '9142',
+              CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE: '256MB',
+              CASSANDRA_STARTUP_TIMEOUT: '300',
+              CASSANDRA_SYSTEM_AUTH_BOOTSTRAP_DELAY: '0',
+              GOSSIP_WAIT_TIME_IN_MS: '0',
+              HEAP_NEWSIZE: '128M',
+              MAX_HEAP_SIZE: '512M',
+              LOCAL_JMX: 'no',
+              JMX_PORT: '7199'
+            }
+          },
+          { name: 'nifi', path: './infrastructure/nifi', type: 'container',
+            build_args: {
+              NIFI_WEB_HTTPS_PORT: '8443',
+              NIFI_WEB_HTTP_HOST: '0.0.0.0',
+              SINGLE_USER_CREDENTIALS_USERNAME: 'openframe',
+              SINGLE_USER_CREDENTIALS_PASSWORD: 'password123456789'
+            }
+          },
+          { name: 'postgresql', path: './infrastructure/postgresql', type: 'container' },
+          { name: 'authentik-postgresql', path: './infrastructure/postgresql', type: 'container',
+            build_args: {
+              POSTGRES_USER: 'authentik-user',
+              POSTGRES_PASSWORD: 'authentik-password-1234',
+              POSTGRES_MULTIPLE_DATABASES: 'authentik-database,authentik-database-authentik'
+            }
+          },
+          { name: 'tactical-frontend', path: './infrastructure/tactical-rmm/tactical-frontend', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'tactical-nginx', path: './infrastructure/tactical-rmm/tactical-nginx', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'tactical-backend', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'tactical-nats', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'tactical-websockets', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'tactical-celery', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'tactical-celerybeat', path: './infrastructure/tactical-rmm/tactical-base', type: 'container',
+            context: ./infrastructure/tactical-rmm,
+            build_args: {
+              POSTGRES_DB: 'tacticalrmm',
+              POSTGRES_USER: 'postgres',
+              POSTGRES_PASSWORD: 'postgrespass',
+              POSTGRES_HOST: 'tactical-postgres',
+              POSTGRES_PORT: '5432',
+              REDIS_HOST: 'tactical-redis',
+              SMTP_HOST: 'smtp.example.com',
+              SMTP_PORT: '587',
+              SMTP_FROM: 'mesh@example.com',
+              SMTP_USER: 'mesh@example.com',
+              SMTP_PASS: 'mesh-smtp-pass',
+              SMTP_TLS: 'false',
+              TRMM_USER: 'tactical',
+              TRMM_PASS: 'tactical',
+              TACTICAL_BACKEND_PORT: '8000',
+              TRMM_PROTO: 'http',
+              TRMM_DISABLE_WEB_TERMINAL: 'False',
+              TRMM_DISABLE_SERVER_SCRIPTS: 'False',
+              TRMM_DISABLE_SSO: 'False',
+              TRMM_DISABLE_2FA: 'True',
+              NODE_ENV: 'development',
+              WS_PROTO: 'ws',
+              WS_MASK_OVERRIDE: '1',
+              TACTICAL_DIR: '/opt/tactical',
+              TACTICAL_TMP_DIR: '/tmp/tactical',
+              API_HOST: 'tactical-backend:8000',
+              API_LOCALHOST_HOST: 'localhost:8000',
+              APP_HOST: 'tactical-frontend:8080',
+              APP_LOCALHOST_HOST: 'localhost:8080',
+              NATS_CONFIG: '/opt/tactical/nats-rmm.conf',
+              NATS_API_CONFIG: '/opt/tactical/nats-api.conf',
+              NATS_CONFIG_CHECK_INTERVAL: '5',
+              NATS_STD_BIND_HOST: 'tactical-nats',
+              NATS_WS_BIND_HOST: 'tactical-nats',
+              NATS_CONNECT_HOST: 'tactical-nats',
+              NATS_STANDARD_PORT: '9235',
+              NATS_WEBSOCKET_PORT: '4222',
+              WEBSOCKET_PORT: '8383',
+              WEBSOCKETS_BIND_HOST: 'tactical-websockets'
+            }
+          },
+          { name: 'fleetmdm', path: './infrastructure/fleetmdm', type: 'container' },
+          { name: 'ui', path: './services/openframe-ui', type: 'container' },
+          { name: 'meshcentral', path: './infrastructure/meshcentral/server', type: 'container',
+            build_args: {
+              MESH_DIR: '/opt/mesh',
+              MESH_TEMP_DIR: '/tmp/mesh',
+              MONGO_INITDB_ROOT_USERNAME: 'mongouser',
+              MONGO_INITDB_ROOT_PASSWORD: 'mongopass',
+              MONGO_INITDB_DATABASE: 'meshcentral',
+              MONGODB_HOST: 'openframe-meshcentral-mongodb',
+              MONGODB_PORT: '27017',
+              MESH_USER: 'mesh@openframe.io',
+              MESH_PASS: 'meshpass@1234',
+              MESH_DEVICE_GROUP: 'OpenFrame',
+              MESH_PORT: '8383',
+              MESH_HOST: 'openframe-meshcentral-server',
+              MESH_EXTERNAL_HOST: 'localhost',
+              MESH_EXTERNAL_PORT: '8383',
+              MESH_NGINX_HOST: 'openframe-meshcentral-nginx',
+              MESH_NGINX_NAT_HOST: 'michaels-macbook-pro.local',
+              MESH_NGINX_PORT: '8383',
+              MESH_PROTOCOL: 'wss',
+              MESH_PERSISTENT_CONFIG: '0',
+              MESH_DISABLE_SSL: '1',
+              MESH_COMPRESSION_ENABLED: 'true',
+              MESH_WEBRTC_ENABLED: 'false'
+            }
+          },
+          { name: 'meshcentral-nginx', path: './infrastructure/meshcentral/nginx', type: 'container',
+            build_args: {
+              MESH_DIR: '/opt/mesh',
+              MESH_TEMP_DIR: '/tmp/mesh',
+              MONGO_INITDB_ROOT_USERNAME: 'mongouser',
+              MONGO_INITDB_ROOT_PASSWORD: 'mongopass',
+              MONGO_INITDB_DATABASE: 'meshcentral',
+              MONGODB_HOST: 'openframe-meshcentral-mongodb',
+              MONGODB_PORT: '27017',
+              MESH_USER: 'mesh@openframe.io',
+              MESH_PASS: 'meshpass@1234',
+              MESH_DEVICE_GROUP: 'OpenFrame',
+              MESH_PORT: '8383',
+              MESH_HOST: 'openframe-meshcentral-server',
+              MESH_EXTERNAL_HOST: 'localhost',
+              MESH_EXTERNAL_PORT: '8383',
+              MESH_NGINX_HOST: 'openframe-meshcentral-nginx',
+              MESH_NGINX_NAT_HOST: 'michaels-macbook-pro.local',
+              MESH_NGINX_PORT: '8383',
+              MESH_PROTOCOL: 'wss',
+              MESH_PERSISTENT_CONFIG: '0',
+              MESH_DISABLE_SSL: '1',
+              MESH_COMPRESSION_ENABLED: 'true',
+              MESH_WEBRTC_ENABLED: 'false'
+            }
+          }
+        ]
+    outputs:
+      status: ${{ job.status }}
+    steps:
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up environment
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        run: |
+          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+          echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
+          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+      - name: Set up Maven Central Repository with JDK 21
+        if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        run: mvn clean install -pl ${{ matrix.module.path }} -am -Dcompress
+
+      - name: Upload Java artifacts
+        if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.module.artifact_name }}
+          path: |
+            ${{ matrix.module.path }}/target/*.jar
+            !${{ matrix.module.path }}/target/original-*.jar
+            !${{ matrix.module.path }}/target/*-sources.jar
+            !${{ matrix.module.path }}/target/*-javadoc.jar
+          retention-days: 1
+
+      - name: Download Java artifacts
+        if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.module.artifact_name }}
+          path: .
+
+      - name: Prepare Java artifacts for Docker build
+        if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
+        run: |
+          mkdir -p ${{ matrix.module.path }}/target
+          mv *.jar ${{ matrix.module.path }}/target/
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
+
+      - name: Set up Docker Buildx
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: 'image=moby/buildkit:buildx-stable-1'
+
+      - name: Format build arguments
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        id: format_args
+        run: |
+          # Convert the build args to the correct format
+          BUILD_ARGS=""
+
+          # Debug the raw input
+          echo "Raw input:"
+          echo '${{ toJSON(matrix.module.build_args) }}'
+
+          echo
+          # Convert YAML object to key=value pairs using tr
+          if [ ! -z "${{ matrix.module.build_args }}" ]; then
+            # Process the build args and store in a temporary file
+            echo '${{ toJSON(matrix.module.build_args) }}' | \
+              tr -d "{}" | \
+              tr -d " " | \
+              tr -s "," "\n" | \
+              tr -s ":" "=" | \
+              grep -v '^$' > /tmp/build_args.txt
+
+            # Count total lines
+            total_lines=$(wc -l < /tmp/build_args.txt)
+            current_line=0
+
+            # Read from the temporary file and build the BUILD_ARGS string
+            while IFS= read -r line; do
+              current_line=$((current_line + 1))
+              echo "Processing: $line"
+              if [ $current_line -eq $total_lines ]; then
+                # Last line - don't add newline
+                BUILD_ARGS+="$line"
+              else
+                BUILD_ARGS+="$line\n"
+              fi
+            done < /tmp/build_args.txt
+          fi
+
+          echo
+          echo "Final BUILD_ARGS:"
+          echo -e "$BUILD_ARGS"
+          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
+          echo -e "$BUILD_ARGS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Build and push image
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.module.context || matrix.module.path }}
+          file: ${{ matrix.module.path }}/Dockerfile
+          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          labels: |
+            org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.url=https://openframe.io
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=MIT
+          # sbom: false
+          build-args: |
+            ${{ env.BUILD_ARGS }}
+
+      - name: Clean up old versions
+        if: steps.docker_build.outcome == 'success'
+        env:
+          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: openframe-${{ matrix.module.name }}
+        run: |
+          chmod +x ./kind-cluster/scripts/gh-packages.sh
+          ./kind-cluster/scripts/gh-packages.sh --delete-old "${{ env.IMAGE_NAME }}" \
+            "latest" \
+            "${{ env.COMMIT_SHA }}" \
+            "${{ env.TIMESTAMP_TAG }}"
+        continue-on-error: true
