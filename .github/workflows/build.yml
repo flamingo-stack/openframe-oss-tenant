@@ -255,8 +255,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
-        # exclude:
-        #   - name: 'fleetmdm'
+        exclude:
+          - name: fleetmdm
     steps:
       - name: Checkout
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
