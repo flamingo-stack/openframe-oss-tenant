@@ -133,13 +133,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      # matrix_java: ${{ steps.filter.outputs.matrix_java }}
+      matrix_java: ${{ steps.filter.outputs.matrix_java }}
     steps:
       - name: Define Matrix
         id: matrix
         run: |
-          echo -n 'matrix=<<EOF' >> $GITHUB_OUTPUT
-          echo '[
+          echo 'matrix='[
             {
               "name": "core",
               "type": "java",
@@ -640,12 +639,11 @@ jobs:
               }
             }
           ]' >> "$GITHUB_OUTPUT"
-          echo 'EOF' >> "$GITHUB_OUTPUT"
+
       - name: Filter Java Projects
         id: filter
         run: |
-          matrix_java=$(echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]')
-          echo "matrix_java='$matrix_java'" >> "$GITHUB_OUTPUT"
+          matrix_java=$(echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]') >> "$GITHUB_OUTPUT"
 
 
   build_java:
