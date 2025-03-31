@@ -255,30 +255,28 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
-        exclude:
-          - name: fleetmdm
     steps:
       - name: Checkout
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: matrix.name != 'fleetmdm' && matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: .
 
       - name: Prepare Java artifacts for Docker build
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: matrix.name != 'fleetmdm' && matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         run: |
           mkdir -p ${{ matrix.path }}/target
           mv *.jar ${{ matrix.path }}/target/
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -286,11 +284,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/setup-buildx-action@v3
 
       - name: Format build arguments
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         id: format_args
         uses: ./.github/actions/format-build-args
         with:
@@ -299,7 +297,7 @@ jobs:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push ARM64 image
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         id: docker_build
         uses: docker/build-push-action@v6
         with:
