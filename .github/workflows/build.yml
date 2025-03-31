@@ -646,6 +646,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        exclude:
+          - type: 'container'
     outputs:
       status: ${{ job.status }}
       matrix: ${{ toJSON(matrix) }}
