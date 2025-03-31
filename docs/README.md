@@ -5,7 +5,6 @@ This directory contains the complete documentation for OpenFrame, organized into
 ## Getting Started
 - [Introduction](getting-started/introduction.md) - Overview of OpenFrame
 - [Quick Start](getting-started/quick-start.md) - Quick setup guide
-- [Installation](getting-started/installation.md) - Detailed installation instructions
 
 ## Development
 - [Setup Guide](development/setup.md) - Development environment setup
@@ -22,27 +21,12 @@ This directory contains the complete documentation for OpenFrame, organized into
 - [Integration](api/integration.md) - Integration guidelines
 
 ## Deployment
-- [Overview](deployment/overview.md) - Deployment architecture
+- [Overview](deployment/deployment.md) - Deployment architecture
 - [Kubernetes](deployment/kubernetes.md) - Kubernetes deployment guide
-- [Scaling](deployment/scaling.md) - Scaling and performance
-- [Monitoring](deployment/monitoring.md) - Monitoring and observability
-
-## Security
-- [Overview](security/overview.md) - Security architecture
-- [Authentication](security/authentication.md) - Authentication mechanisms
-- [Authorization](security/authorization.md) - Authorization and access control
-- [Compliance](security/compliance.md) - Security compliance
-
-## Operations
-- [Maintenance](operations/maintenance.md) - System maintenance
-- [Backup](operations/backup.md) - Backup and recovery
-- [Monitoring](operations/monitoring.md) - Operations monitoring
-- [Troubleshooting](operations/troubleshooting.md) - Common issues and solutions
 
 ## Diagrams
-- [System Architecture](diagrams/system-architecture.md) - System architecture diagrams
-- [Deployment](diagrams/deployment.md) - Deployment architecture diagrams
-- [Security](diagrams/security.md) - Security architecture diagrams
+- [System Overview](diagrams/system-overview.md) - System architecture diagrams
+- [Kubernetes Architecture](diagrams/kubernetes-architecture.md) - Deployment architecture diagrams
 
 ## Contributing to Documentation
 
