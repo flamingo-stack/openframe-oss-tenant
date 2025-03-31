@@ -257,6 +257,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
+      - name: Debug
+        run: echo needs.matrix.outputs.matrix
+        continue-on-error: true
+
       - name: Checkout
         if: matrix.name != 'fleetmdm' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/checkout@v4
