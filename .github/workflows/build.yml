@@ -259,7 +259,7 @@ jobs:
             --label org.opencontainers.image.url=https://openframe.io \
             --label org.opencontainers.image.vendor=FlamingoCX \
             --label org.opencontainers.image.licenses=MIT \
-            --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest
+            --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest \
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }} \
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }} \
             --build-arg $BUILD_ARGS \
