@@ -53,11 +53,11 @@ graph TD
 #### Deployment Architecture
 ```mermaid
 graph TD
-    Kubernetes(Kubernetes (K8s)) --> Microservices(Openframe Microservices)
-    Kubernetes --> Tools(Open Source Tools)
+    K8s[Kubernetes] --> Micro[Openframe Microservices]
+    K8s --> Tools[Open Source Tools]
     subgraph VPC
-        Microservices
-        Tools --> APIKeys(Unique API Keys Generated)
+        Micro
+        Tools --> Keys[API Keys]
     end
 ```
 
