@@ -249,13 +249,13 @@ jobs:
 
       - name: Build and Push image
         run: |
-          BUILD_ARGS=$(echo "$json" | jq -r '.build_args | to_entries | map("\(.key)=\(.value)") | join(" --build-arg ")')
+          BUILD_ARGS=$(echo "${{ toJSON(matrix.build_args) }}" | jq -r '.build_args | to_entries | map("\(.key)=\(.value)") | join(" --build-arg ")')
 
           docker buildx build \
             --file ${{ matrix.path }}/Dockerfile \
             --platform ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }} \
             --label org.opencontainers.image.source=https://github.com/flamingo-cx/openframe \
-            --label org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents. \
+            --label org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents." \
             --label org.opencontainers.image.url=https://openframe.io \
             --label org.opencontainers.image.vendor=FlamingoCX \
             --label org.opencontainers.image.licenses=MIT \
