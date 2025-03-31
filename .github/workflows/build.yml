@@ -250,7 +250,7 @@ jobs:
   build_arm:
     name: "Build ARM64 image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
-    if: needs.matrix.outputs.matrix[0].name != 'fleetmdm'
+    if: !contains(toJSON(needs.matrix.outputs.matrix), 'fleetmdm')
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -258,7 +258,7 @@ jobs:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Debug
-        run: echo ${{ needs.matrix.outputs.matrix }}
+        run: echo ${{ needs.matrix.outputs.matrix[0].name }}
         continue-on-error: true
 
       - name: Checkout
