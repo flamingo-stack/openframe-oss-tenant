@@ -33,6 +33,14 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
+  macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    steps:
+      - name: Test
+        run: |
+          echo "Build on macOS"
+
   changes:
     name: Check for changes
     runs-on: ubuntu-latest
