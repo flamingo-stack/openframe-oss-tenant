@@ -639,12 +639,11 @@ jobs:
               }
             }
           ]'
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
       - name: Filter Java Projects
         id: filter
         run: |
-          matrix_java=$(echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]') >> "$GITHUB_OUTPUT"
+          echo matrix_java=$(echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]') >> "$GITHUB_OUTPUT"
 
 
   build_java:
