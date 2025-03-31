@@ -250,7 +250,14 @@ jobs:
       - name: Build and Push image
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         run: |
-          BUILD_ARGS=$(echo '${{ toJSON(matrix.build_args) }}' | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" --build-arg ")')
+          # Construct build arguments dynamically
+          BUILD_ARGS=""
+          if [ "$(echo '${{ toJSON(matrix.build_args) }}' | jq -r '.')" != "null" ]; then
+            for key in $(echo '${{ toJSON(matrix.build_args) }}' | jq -r 'keys[]'); do
+              value=$(echo '${{ toJSON(matrix.build_args) }}' | jq -r ".\"$key\"")
+              BUILD_ARGS="$BUILD_ARGS --build-arg $key=$value"
+            done
+          fi
 
           docker buildx build \
             --file ${{ matrix.path }}/Dockerfile \
@@ -263,7 +270,7 @@ jobs:
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest \
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }} \
             --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }} \
-            --build-arg $BUILD_ARGS \
+            $BUILD_ARGS \
             --push \
             ${{ matrix.context || matrix.path }}
 
