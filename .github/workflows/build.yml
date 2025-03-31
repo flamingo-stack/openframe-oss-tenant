@@ -737,9 +737,9 @@ jobs:
       #   with:
       #     platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
 
-      - name: Set up Docker Buildx
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-buildx-action@v3
+      # - name: Set up Docker Buildx
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+      #   uses: docker/setup-buildx-action@v3
 
       - name: Format build arguments
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
