@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers the deployment of OpenFrame's microservices architecture on Kubernetes. OpenFrame consists of Spring Boot microservices and a Vue.js frontend, all orchestrated through Kubernetes.
+This guide covers the deployment of OpenFrame's microservices architecture on Kubernetes using Kind. OpenFrame consists of Spring Boot microservices and a Vue.js frontend, all orchestrated through Kubernetes.
 
 ## Deployment Architecture
 
@@ -12,101 +12,107 @@ OpenFrame on Kubernetes consists of:
    - OpenFrame Stream (Spring Kafka)
    - OpenFrame Management (Spring Boot)
    - OpenFrame Config (Spring Cloud Config)
+   - OpenFrame NiFi (Data Pipeline)
 
 2. Frontend Services
    - OpenFrame UI (Vue.js)
-   - Grafana Dashboards
-   - Loki Log Viewer
+   - Kafka UI (Kafka Management)
+   - Mongo Express (MongoDB Management)
 
 3. Data Layer
    - Cassandra cluster (indexed storage)
-   - Apache Pinot (real-time analytics)
+   - MongoDB (document storage)
    - Redis cluster (caching)
    - Apache Kafka (event streaming)
+   - Apache Pinot (real-time analytics)
 
 4. Infrastructure
-   - Istio Service Mesh
+   - Ingress Nginx
    - Prometheus & Grafana (monitoring)
-   - Loki (logging)
-   - Ingress Controller
+   - Loki & Promtail (logging)
+   - Service mesh (Istio)
 
-## Deployment Checklist
+## Prerequisites
 
-### Pre-deployment
-- [ ] Review system requirements
-- [ ] Prepare Kubernetes cluster (v1.20+)
-- [ ] Configure Istio service mesh
-- [ ] Set up monitoring stack
-- [ ] Prepare backup strategy
+Before deploying OpenFrame, ensure you have the following tools installed:
+- Docker
+- Kind
+- Helm
+- kubectl
 
-### Deployment
-- [ ] Deploy core infrastructure
-- [ ] Configure Spring Boot services
-- [ ] Deploy Vue.js frontend
-- [ ] Set up monitoring
-- [ ] Configure backups
-- [ ] Test connectivity
+## Deployment Process
 
-### Post-deployment
-- [ ] Verify all services
-- [ ] Test monitoring
-- [ ] Configure alerts
-- [ ] Document configuration
-- [ ] Set up maintenance schedule
+OpenFrame provides a convenient deployment script (`run.sh`) that handles the entire deployment process. Here are the available commands:
 
-## Environment Configuration
+### Bootstrap Complete Cluster
+To set up and deploy the entire cluster with all applications:
+```bash
+./run.sh bootstrap
+```
+
+### Step-by-Step Deployment
+
+1. Set up the Kind cluster:
+```bash
+./run.sh up
+```
+
+2. Deploy all applications:
+```bash
+./run.sh app all
+```
+
+Or deploy specific applications:
+```bash
+./run.sh app redis    # Deploy only Redis
+./run.sh app kafka    # Deploy only Kafka
+./run.sh app cassandra # Deploy only Cassandra
+```
+
+### Cleanup and Maintenance
+
+- Clean up unused images from Kind nodes:
+```bash
+./run.sh cleanup
+```
+
+- Remove the entire cluster:
+```bash
+./run.sh down
+```
+
+## Service Configuration
+
+Each service is configured through its respective Kubernetes manifest in the `kind-cluster/apps/infrastructure/` directory. For example, the API service configuration includes:
 
 ```yaml
-# values.yaml
-global:
-  environment: production
-  domain: your-domain.com
-  storageClass: standard
-
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: api-service
-          uri: lb://openframe-api
-        - id: stream-service
-          uri: lb://openframe-stream
-        - id: management-service
-          uri: lb://openframe-management
-
-services:
-  api:
-    replicas: 2
-    resources:
-      requests:
-        cpu: 500m
-        memory: 1Gi
-    env:
-      - name: SPRING_PROFILES_ACTIVE
-        value: "prod"
-      - name: JAVA_OPTS
-        value: "-Xmx1g -Xms512m"
-
-  gateway:
-    replicas: 2
-    resources:
-      requests:
-        cpu: 500m
-        memory: 512Mi
-
-  stream:
-    replicas: 3
-    resources:
-      requests:
-        cpu: 1000m
-        memory: 2Gi
-
-  ui:
-    replicas: 2
-    resources:
-      requests:
-        cpu: 200m
-        memory: 256Mi
+# Example from openframe-api/api.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-api
+spec:
+  replicas: 1
+  containers:
+    - name: api
+      image: ghcr.io/flamingo-cx/openframe-api:latest
+      ports:
+        - containerPort: 8090
+          name: http
+        - containerPort: 8091
+          name: management
+      env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "k8s"
+        - name: SPRING_CONFIG_IMPORT
+          value: "optional:configserver:http://openframe-config-server:8888"
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "0.5"
+        limits:
+          memory: "1Gi"
+          cpu: "1"
 ```
 
 ## Monitoring and Maintenance
@@ -119,13 +125,14 @@ services:
 - API availability
 
 ### Logging
-- Application logs (via Loki)
+- Application logs (via Loki & Promtail)
 - System logs
 - Access logs
 - Error logs
 
 ### Backup and Recovery
 - Cassandra backups
+- MongoDB backups
 - Kafka topic backups
 - Configuration backups
 - State backups
@@ -134,7 +141,7 @@ services:
 ## Security Considerations
 
 1. Network Security
-   - Istio security policies
+   - Ingress Nginx configuration
    - TLS configuration
    - Service mesh security
 
@@ -167,7 +174,7 @@ Common issues and solutions:
    - Monitor resource usage
 
 3. Connectivity Issues
-   - Service mesh configuration
+   - Ingress configuration
    - Network policies
    - Load balancing
    - DNS resolution

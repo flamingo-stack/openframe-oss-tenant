@@ -25,7 +25,6 @@ openframe/.DS_Store
 **/target/
 .idea/
 *.iml
-.vscode/
 **.class
 **.log
 .env

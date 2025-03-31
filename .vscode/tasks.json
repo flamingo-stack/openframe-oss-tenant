@@ -9,7 +9,7 @@
             "problemMatcher": {
                 "owner": "custom",
                 "pattern": {
-                    "regexp": "^$"
+                    "regexp": "^$"x
                 },
                 "background": {
                     "activeOnStart": true,
