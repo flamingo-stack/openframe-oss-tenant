@@ -138,7 +138,7 @@ jobs:
       - name: Define Matrix
         id: matrix
         run: |
-          echo 'matrix='[
+          echo 'matrix=[
             {
               "name": "core",
               "type": "java",
