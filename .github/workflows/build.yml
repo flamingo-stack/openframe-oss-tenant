@@ -250,7 +250,7 @@ jobs:
   build_arm:
     name: "Build ARM64 image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
-    if: matrix.name != 'fleetmdm'
+    if: needs.matrix.outputs.matrix[0].name != 'fleetmdm'
     runs-on: macos-latest
     strategy:
       fail-fast: false
