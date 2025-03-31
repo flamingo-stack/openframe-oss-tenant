@@ -248,6 +248,7 @@ jobs:
       #       ${{ env.BUILD_ARGS }}
 
       - name: Build and Push image
+        id: docker_build
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           # Construct build arguments dynamically
@@ -274,23 +275,13 @@ jobs:
             --push \
             ${{ matrix.context || matrix.path }}
 
-  cleanup:
-    name: Cleanup old versions
-    needs: [build]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
-    steps:
       - name: Clean up old versions
-        if: needs.build.result == 'success'
+        if: steps.check_changes.outputs.changed == 'true' && success() && steps.docker_build.outcome == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE_NAME: openframe-${{ matrix.name }}
         run: |
           chmod +x ./kind-cluster/scripts/gh-packages.sh
-          ./kind-cluster/scripts/gh-packages.sh --delete-old "${{ env.IMAGE_NAME }}" \
+          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
             "latest" \
             "${{ needs.changes.outputs.commit_sha }}" \
             "${{ needs.changes.outputs.timestamp_tag }}"
