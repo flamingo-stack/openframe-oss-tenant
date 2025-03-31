@@ -58,10 +58,21 @@ jobs:
       fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
       meshcentral: ${{ steps.filter.outputs.meshcentral }}
       ui: ${{ steps.filter.outputs.ui }}
+      timestamp: ${{ steps.setup_env.outputs.timestamp }}
+      timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
+      commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+
+      - name: Set up environment
+        id: setup_env
+        run: |
+          echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> $GITHUB_OUTPUT
+          echo "commit_sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -117,10 +128,11 @@ jobs:
             ui:
               - './services/openframe-ui/**'
 
-  build:
-    name: "Build: ${{ matrix.module.name }}"
-    needs: changes
+  matrix:
+    name: Generate Matrix
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ toJSON(matrix.module) }}
     strategy:
       fail-fast: false
       matrix:
@@ -539,6 +551,14 @@ jobs:
             }
           }
         ]
+
+  build_java:
+    name: "Build Java: ${{ matrix.module.name }}"
+    needs: [changes, matrix]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
     outputs:
       status: ${{ job.status }}
       matrix: ${{ toJSON(matrix) }}
@@ -548,13 +568,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-
-      - name: Set up environment
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-        run: |
-          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
-          echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
-          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
       - name: Set up Maven Central Repository with JDK 21
         if: matrix.module.type == 'java' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
@@ -579,6 +592,22 @@ jobs:
             !${{ matrix.module.path }}/target/*-sources.jar
             !${{ matrix.module.path }}/target/*-javadoc.jar
           retention-days: 1
+
+  build_amd:
+    name: "Build AMD64 image: ${{ matrix.module.name }}"
+    needs: [build_java, matrix]
+    runs-on: macos-latest
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
+      exclude:
+        - module:
+            name: 'fleetmdm'
+    steps:
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Download Java artifacts
         if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
@@ -622,7 +651,6 @@ jobs:
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-      # Build for AMD64 on Ubuntu
       - name: Build and push AMD64 image
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         id: docker_build
@@ -634,8 +662,8 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
-            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
-            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.commit_sha }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.timestamp_tag }}
           labels: |
             org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -647,27 +675,19 @@ jobs:
 
   build_arm:
     name: "Build ARM64 image: ${{ matrix.module.name }}"
-    needs: build
+    needs: [build_java, matrix]
     runs-on: macos-latest
     strategy:
-      matrix:
-        module: ${{ fromJson(needs.build.outputs.matrix) }}
-        exclude:
-          - module:
-              name: 'fleetmdm'
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
+      exclude:
+        - module:
+            name: 'fleetmdm'
     steps:
       - name: Checkout
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-
-      - name: Set up environment
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-        run: |
-          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
-          echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
-          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
       - name: Download Java artifacts
         if: matrix.module.type == 'java' && matrix.module.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true'))
@@ -710,8 +730,8 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
-            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
-            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.commit_sha }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ needs.changes.outputs.timestamp_tag }}
           labels: |
             org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -723,14 +743,13 @@ jobs:
 
   cleanup:
     name: Cleanup old versions
-    needs: [build, build_arm]
+    needs: [build_amd, build_arm]
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        module: ${{ fromJson(needs.build.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Clean up old versions
-        if: needs.build.result == 'success' || needs.build_arm.result == 'success'
+        if: needs.build_amd.result == 'success' || needs.build_arm.result == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_NAME: openframe-${{ matrix.module.name }}
@@ -738,6 +757,6 @@ jobs:
           chmod +x ./kind-cluster/scripts/gh-packages.sh
           ./kind-cluster/scripts/gh-packages.sh --delete-old "${{ env.IMAGE_NAME }}" \
             "latest" \
-            "${{ env.COMMIT_SHA }}" \
-            "${{ env.TIMESTAMP_TAG }}"
+            "${{ needs.changes.outputs.commit_sha }}" \
+            "${{ needs.changes.outputs.timestamp_tag }}"
         continue-on-error: true
