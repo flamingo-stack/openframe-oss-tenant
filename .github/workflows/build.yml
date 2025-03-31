@@ -276,7 +276,7 @@ jobs:
             ${{ matrix.context || matrix.path }}
 
       - name: Clean up old versions
-        if: steps.check_changes.outputs.changed == 'true' && success() && steps.docker_build.outcome == 'success'
+        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
         run: |
