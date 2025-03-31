@@ -9,13 +9,13 @@ permissions:
   id-token: write
 
 on:
-  push:
-    paths:
-      - 'libs/**'
-      - 'services/**'
-      - 'infrastructure/**'
-      - 'pom.xml'
-      - '.github/workflows/build.yml'
+  # push:
+  #   paths:
+  #     - 'libs/**'
+  #     - 'services/**'
+  #     - 'infrastructure/**'
+  #     - 'pom.xml'
+  #     - '.github/workflows/build.yml'
   workflow_dispatch:
   pull_request:
     types: [closed]
@@ -541,6 +541,7 @@ jobs:
         ]
     outputs:
       status: ${{ job.status }}
+      matrix: ${{ toJSON(matrix) }}
     steps:
       - name: Checkout
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
@@ -600,72 +601,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
+      # - name: Set up QEMU
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+      #   uses: docker/setup-qemu-action@v3
+      #   with:
+      #     platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
 
-      - name: Set up Docker Buildx
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: 'image=moby/buildkit:buildx-stable-1'
+      # - name: Set up Docker Buildx
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+      #   uses: docker/setup-buildx-action@v3
+      #   with:
+      #     driver-opts: 'image=moby/buildkit:buildx-stable-1'
 
       - name: Format build arguments
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         id: format_args
-        run: |
-          # Convert the build args to the correct format
-          BUILD_ARGS=""
+        uses: ./.github/actions/format-build-args
+        with:
+          build_args: ${{ toJSON(matrix.module.build_args) }}
+        env:
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-          # Debug the raw input
-          echo "Raw input:"
-          echo '${{ toJSON(matrix.module.build_args) }}'
-
-          echo
-          # Convert YAML object to key=value pairs using tr
-          if [ ! -z "${{ matrix.module.build_args }}" ]; then
-            # Process the build args and store in a temporary file
-            echo '${{ toJSON(matrix.module.build_args) }}' | \
-              tr -d "{}" | \
-              tr -d " " | \
-              tr -s "," "\n" | \
-              tr -s ":" "=" | \
-              grep -v '^$' > /tmp/build_args.txt
-
-            # Count total lines
-            total_lines=$(wc -l < /tmp/build_args.txt)
-            current_line=0
-
-            # Read from the temporary file and build the BUILD_ARGS string
-            while IFS= read -r line; do
-              current_line=$((current_line + 1))
-              echo "Processing: $line"
-              if [ $current_line -eq $total_lines ]; then
-                # Last line - don't add newline
-                BUILD_ARGS+="$line"
-              else
-                BUILD_ARGS+="$line\n"
-              fi
-            done < /tmp/build_args.txt
-          fi
-
-          echo
-          echo "Final BUILD_ARGS:"
-          echo -e "$BUILD_ARGS"
-          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
-          echo -e "$BUILD_ARGS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Build and push image
+      # Build for AMD64 on Ubuntu
+      - name: Build and push AMD64 image
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.module.context || matrix.module.path }}
           file: ${{ matrix.module.path }}/Dockerfile
-          platforms: ${{ matrix.module.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }}
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
@@ -673,7 +638,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          provenance: false
+          # provenance: false
           labels: |
             org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -684,8 +649,83 @@ jobs:
           build-args: |
             ${{ env.BUILD_ARGS }}
 
+  build_arm:
+    name: "Build ARM64 image: ${{ matrix.module.name }}"
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.build.outputs.matrix) }}
+        exclude:
+          - module:
+              name: 'fleetmdm'
+    steps:
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up environment
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        run: |
+          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+          echo "TIMESTAMP_TAG=$(date +%d%m%Y%H%M)" >> $GITHUB_ENV
+          echo "COMMIT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format build arguments
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        id: format_args
+        uses: ./.github/actions/format-build-args
+        with:
+          build_args: ${{ toJSON(matrix.module.build_args) }}
+        env:
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+
+      - name: Build and push ARM64 image
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.module.name], 'true')
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.module.context || matrix.module.path }}
+          file: ${{ matrix.module.path }}/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.COMMIT_SHA }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.module.name }}:${{ env.TIMESTAMP_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # provenance: false
+          labels: |
+            org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.url=https://openframe.io
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=MIT
+          # sbom: false
+          build-args: |
+            ${{ env.BUILD_ARGS }}
+
+  cleanup:
+    name: Cleanup old versions
+    needs: [build, build_arm]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.build.outputs.matrix) }}
+    steps:
       - name: Clean up old versions
-        if: steps.docker_build.outcome == 'success'
+        if: needs.build.result == 'success' || needs.build_arm.result == 'success'
         env:
           GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_NAME: openframe-${{ matrix.module.name }}
