@@ -36,6 +36,7 @@ OpenFrame integrates a curated list of open-source IT and security products into
 
 ### Architecture Diagrams
 
+#### High-Level Architecture
 ```mermaid
 graph TD
     User -->|JWT| Openframe-Gateway
@@ -47,6 +48,77 @@ graph TD
     Cassandra --> AI[ML/DL Anomaly Detection]
     Pinot --> AI
     AI --> Dashboard
+```
+
+#### Deployment Architecture
+```mermaid
+graph TD
+    Kubernetes[Kubernetes (K8s)] --> Microservices[Openframe Microservices]
+    Kubernetes --> Tools[Open Source Tools]
+    subgraph VPC
+        Microservices
+        Tools --> APIKeys[Unique API Keys Generated]
+    end
+```
+
+#### API & Security Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Openframe_API
+    participant Openframe_Gateway
+    participant Tool_API
+    
+    User->>Openframe_API: Authenticate & Request JWT
+    Openframe_API-->>User: JWT Issued
+    User->>Openframe_Gateway: Request with JWT
+    Openframe_Gateway->>Openframe_API: Validate JWT
+    Openframe_API-->>Openframe_Gateway: JWT Validated
+    Openframe_Gateway->>Tool_API: Request with Injected API Token
+    Tool_API-->>Openframe_Gateway: API Response
+    Openframe_Gateway-->>User: Proxy Response
+```
+
+#### Data Pipeline and Storage
+```mermaid
+graph LR
+    ToolDBs[Open Source Tool DBs] --> Kafka[Kafka Pub/Sub]
+    Kafka --> NiFi[Apache NiFi Pipeline]
+    NiFi --> Cassandra[Indexed Storage - Cassandra]
+    NiFi --> Pinot[Real-time Analytics - Pinot]
+```
+
+#### AI/ML Integration
+```mermaid
+graph TD
+    Logs[Unified Logs via NiFi] --> Pinot
+    Logs --> Cassandra
+    Pinot --> ML[ML/DL Anomaly Detection]
+    Cassandra --> ML
+    ML --> AI_Chat[AI Chat & Automation]
+    AI_Chat --> Openframe_MCP[Openframe MCP Server]
+```
+
+#### Dashboard Architecture
+```mermaid
+graph TD
+    Openframe_Gateway --> Replica_View[Replica of Tool Interfaces]
+    Openframe_Gateway --> Monitoring[Grafana & Loki Monitoring]
+    DataLayer --> SIEM[SIEM & Log Investigation Interface]
+    Openframe_UI[Unified Management Interface & Automation Screens] --> Dashboard[Unified Dashboard]
+    Replica_View --> Dashboard
+    Monitoring --> Dashboard
+    SIEM --> Dashboard
+```
+
+#### MCP Integration
+```mermaid
+graph TD
+    MCP_Client[MCP Clients: AI Tools, IDEs] --> MCP_Server[Openframe MCP Server]
+    MCP_Server --> APIs[Openframe Unified APIs]
+    APIs --> DataLayer[Unified Data Layer]
+    DataLayer --> LocalData[Local Data Sources: Cassandra, Pinot, NiFi]
+    MCP_Server --> RemoteServices[Remote Services & Tools]
 ```
 
 ## Documentation Sections
