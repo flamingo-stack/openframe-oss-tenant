@@ -153,6 +153,21 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+          cache-dependency-path: |
+            ${{ matrix.path }}/pom.xml
+            **/pom.xml
+          check-latest: true
+
+      - name: Cache Maven packages
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ matrix.path }}/target
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: Build with Maven
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
@@ -227,7 +242,10 @@ jobs:
             type=raw,value=${{ inputs.version_major }},enable=true
             type=raw,value=${{ needs.changes.outputs.commit_sha }},enable=true
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }},enable=true
-            type=sha
+          labels: |
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
       - name: Format build arguments
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
@@ -250,12 +268,6 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # |
-          #   org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
-          #   org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-          #   org.opencontainers.image.url=https://openframe.io
-          #   org.opencontainers.image.vendor=FlamingoCX
-          #   org.opencontainers.image.licenses=MIT
           build-args: |
             ${{ env.BUILD_ARGS }}
 
