@@ -231,20 +231,20 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
-      - name: Generate tags and prepare metadata
+      - name: Generate metadata
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}
           tags: |
-            type=raw,value=latest,enable=true
-            type=raw,value=${{ inputs.version_major }},enable=true
-            type=raw,value=${{ needs.changes.outputs.commit_sha }},enable=true
-            type=raw,value=${{ needs.changes.outputs.timestamp_tag }},enable=true
+            type=raw,value=latest
+            type=ref,event=tag
+            type=raw,value=${{ needs.changes.outputs.commit_sha }}
+            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
           labels: |
-            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
       - name: Format build arguments
