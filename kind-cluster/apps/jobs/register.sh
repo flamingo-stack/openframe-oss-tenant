@@ -192,7 +192,7 @@ register_tool \
     "KAFKA" \
     "Kafka Message Broker" \
     "Apache Kafka Event Streaming Platform" \
-    '[{"url": "http://kafka-ui", "port": "8081", "type": "DASHBOARD"}, {"url": "http://openframe-kafka", "port": "9092", "type": "BROKER"}, {"url": "http://openframe-kafka", "port": "29092", "type": "INTERNAL"}]' \
+    '[{"url": "http://kafka-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}, {"url": "http://openframe-kafka", "port": "9092", "type": "BROKER"}, {"url": "http://openframe-kafka", "port": "29092", "type": "INTERNAL"}]' \
     "" \
     "" \
     "" \
@@ -352,7 +352,7 @@ register_tool \
     "FLEET" \
     "Fleet MDM" \
     "Fleet Device Management Platform" \
-    '[{"url": "http://openframe-fleet.fleet.svc", "port": "8070", "type": "API"}, {"url": "http://openframe-fleet.fleet.svc", "port": "8070", "type": "DASHBOARD"}]' \
+    '[{"url": "http://fleet.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://fleet.192.168.100.100.nip.io", "port": "8070", "type": "DASHBOARD"}]' \
     "admin@openframe.local" \
     "openframe123!" \
     "$FLEET_TOKEN" \
@@ -392,7 +392,7 @@ register_tool \
     "AUTHENTIK" \
     "Authentik SSO" \
     "Authentik Identity Provider" \
-    '[{"url": "http://openframe-authentik-server.authentik.svc", "port": "5001", "type": "API"}, {"url": "http://openframe-authentik-server.authentik.svc", "port": "5001", "type": "DASHBOARD"}]' \
+    '[{"url": "http://openframe-authentik-server.authentik.svc", "port": "5001", "type": "API"}, {"url": "http://authentik.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
     "akadmin@openframe.local" \
     "openframe123!" \
     "openframe-api-token-123456789" \
@@ -409,7 +409,7 @@ register_tool \
     "GRAFANA" \
     "Grafana" \
     "Grafana Monitoring Dashboard" \
-    '[{"url": "http://kube-prometheus-stack-grafana.monitoring.svc", "port": "3000", "type": "DASHBOARD"}, {"url": "http://kube-prometheus-stack-grafana.monitoring.svc", "port": "3000", "type": "API"}]' \
+    '[{"url": "http://grafana.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}, {"url": "http://grafana.192.168.100.100.nip.io", "port": "80", "type": "API"}]' \
     "openframe" \
     "password123456789" \
     "" \
@@ -425,7 +425,7 @@ register_tool \
     "PROMETHEUS" \
     "Prometheus" \
     "Prometheus Metrics Database" \
-    '[{"url": "http://kube-prometheus-stack-prometheus.monitoring.svc", "port": "9090", "type": "API"}]' \
+    '[{"url": "http://prometheus.192.168.100.100.nip.io", "port": "80", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -489,16 +489,16 @@ echo "Fleet API Token:  $FLEET_TOKEN"
 
 echo "OpenFrame is running!"
 echo "Access points:"
-echo "- Tactical RMM: http://localhost:8080"
-echo "- Tactical RMM API: http://localhost:8000"
+echo "- Tactical RMM: http://tactical-ui.192.168.100.100.nip.io"
+echo "- Tactical RMM API: http://tactical-api.192.168.100.100.nip.io"
 echo "- Tactical RMM Websockets: http://localhost:8384"
-echo "- Kafka UI: http://localhost:8081"
-echo "- MongoDB Express: http://localhost:8082"
+echo "- Kafka UI: http://kafka-ui.192.168.100.100.nip.io"
+echo "- MongoDB Express: http://mongo-express.192.168.100.100.nip.io"
 echo "- NiFi: https://localhost:8443"
-echo "- Grafana: http://localhost:3000"
-echo "- Prometheus: http://localhost:9090"
-echo "- Fleet MDM: http://localhost:8070"
-echo "- MeshCentral: http://localhost:8383"
+echo "- Grafana: http://grafana.192.168.100.100.nip.io"
+echo "- Prometheus: http://prometheus.192.168.100.100.nip.io"
+echo "- Fleet MDM: http://fleet.192.168.100.100.nip.io"
+echo "- MeshCentral: https://meshcentral.192.168.100.100.nip.io/"
 echo "- OpenFrame Config Service: http://localhost:8090"
 echo "- OpenFrame Stream Service: http://localhost:8091"
 echo "- OpenFrame API Service: http://localhost:8092"

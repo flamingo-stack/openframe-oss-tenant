@@ -2,37 +2,39 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: openframe-pinot-broker-config
+  name: openframe-pinot-controller-config
 data:
-  broker.conf: |
-    pinot.broker.client.queryPort=8099
-    pinot.broker.timeoutMs=60000
-    pinot.broker.routing.table.builder.class=random
-    pinot.broker.routing.enable.dynamic.computing=true
-    pinot.broker.enable.query.limit.override=false
-    pinot.broker.healthcheck.enabled=true
+  controller.conf: |
+    controller.host=pinot-controller
+    controller.port=9000
+    controller.data.dir=/opt/pinot/data/controller
+    controller.broker.protocol=http
+    controller.query.console.enabled=true
+    controller.admin.access.control.enabled=false
+    controller.helix.instance.id=Controller_pinot-controller_9000
+    controller.enable.split.commit=true
+    controller.local.temp.dir=/tmp/pinot-tmp-data/controller
+    controller.task.scheduler.enabled=false
     pinot.set.instance.id.to.hostname=false
-    pinot.broker.helix.instance.id=Broker_pinot-broker_8099
-    pinot.broker.metrics.registry.registration.listeners.class=org.apache.pinot.broker.metrics.BrokerMetricsRegistryRegistrationListener
-    # pinot.broker.helix.cluster.name=openframe-pinot
-    # pinot.broker.helix.zk.str=zookeeper:2181
+    controller.zk.str=zookeeper:2181
+    controller.helix.cluster.name=openframe-pinot
 ---
-# Broker Deployment
+# Controller Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openframe-pinot-broker
+  name: openframe-pinot-controller
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: openframe-pinot
-      component: broker
+      component: controller
   template:
     metadata:
       labels:
         app: openframe-pinot
-        component: broker
+        component: controller
     spec:
       initContainers:
       - name: init-jmx
@@ -45,19 +47,15 @@ spec:
         - name: jmx-exporter
           mountPath: /opt/jmx_exporter
       containers:
-      - name: pinot-broker
+      - name: pinot-controller
         image: apachepinot/pinot:latest
         args:
-          - StartBroker
-          - -clusterName
-          - openframe-pinot
-          - -zkAddress
-          - zookeeper:2181
-          - -configFileName
-          - /opt/pinot/conf/broker.conf
+          - "StartController"
+          - "-configFileName"
+          - "/opt/pinot/conf/controller.conf"
         ports:
-        - containerPort: 8099
-          name: broker
+        - containerPort: 9000
+          name: controller
         - containerPort: 9011
           name: jmx
         env:
@@ -70,8 +68,10 @@ spec:
           mountPath: /opt/jmx_exporter/config.yml
           subPath: config.yml
         - name: pinot-config
-          mountPath: /opt/pinot/conf/broker.conf
-          subPath: broker.conf
+          mountPath: /opt/pinot/conf/controller.conf
+          subPath: controller.conf
+        - name: controller-data
+          mountPath: /opt/pinot/data
       volumes:
       - name: jmx-exporter
         emptyDir: {}
@@ -80,19 +80,25 @@ spec:
           name: openframe-pinot-jmx-config
       - name: pinot-config
         configMap:
-          name: openframe-pinot-broker-config
+          name: openframe-pinot-controller-config
+      - name: controller-data
+        emptyDir: {}
 ---
+# Services
 apiVersion: v1
 kind: Service
 metadata:
-  name: openframe-pinot-broker
+  name: openframe-pinot-controller
+  labels:
+    app: openframe-pinot
+    component: controller
 spec:
   selector:
     app: openframe-pinot
-    component: broker
+    component: controller
   ports:
-    - port: 8099
-      name: broker
+    - port: 9000
+      name: controller
     - port: 9011
       name: jmx
   type: ClusterIP

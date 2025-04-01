@@ -1,7 +1,9 @@
 FROM node:20-alpine
 
 ARG MESH_DIR
-ARG MESH_TEMP_DIR
+ARG MESH_TEMP_DIR=/tmp/mesh
+
+ENV MESH_TEMP_DIR=${MESH_TEMP_DIR}
 
 RUN mkdir -p ${MESH_TEMP_DIR}
 

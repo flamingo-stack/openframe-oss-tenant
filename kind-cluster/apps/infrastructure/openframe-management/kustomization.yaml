@@ -1,0 +1,3 @@
+resources:
+  - base/management.yaml
+  - base/servicemonitor.yaml

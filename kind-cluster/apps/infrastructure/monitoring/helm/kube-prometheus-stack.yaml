@@ -23,31 +23,8 @@ grafana:
     server:
       domain: grafana.192.168.100.100.nip.io
       root_url: "%(protocol)s://%(domain)s/"
-    # paths:
-    #   provisioning: /etc/grafana/provisioning
     dashboards:
       default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
-  dashboardProviders:
-    dashboardproviders.yaml:
-      apiVersion: 1
-      providers:
-      - name: 'Default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /tmp/dashboards
-      # - name: 'Library Panels'
-      #   orgId: 1
-      #   folder: ''
-      #   type: file
-      #   disableDeletion: false
-      #   updateIntervalSeconds: 10
-      #   allowUiUpdates: true
-      #   options:
-      #     path: /etc/grafana/library-panels
   enabled: true
   serviceMonitor:
     enabled: true
@@ -73,22 +50,7 @@ grafana:
     size: 1Gi
     finalizers:
       - kubernetes.io/pvc-protection
-  # extraConfigmapMounts:
-  #   - name: provisioning
-  #     configMap: grafana-provisioning
-  #     mountPath: /etc/grafana/provisioning
-  #     readOnly: true
-  #     items:
-  #       - key: library-panels.yaml
-  #         path: library-panels/provider.yaml
   additionalDataSources:
-    # - name: prometheus
-    #   access: proxy
-    #   url: http://prometheus:9090
-    #   isDefault: true
-    #   editable: false
-    #   uid: prometheus
-    #   type: prometheus
     - name: loki
       type: loki
       access: proxy
@@ -96,28 +58,6 @@ grafana:
       isDefault: false
       editable: false
       uid: loki
-      # jsonData:
-      #   maxLines: 1000
-      #   derivedFields:
-      #     - datasourceUid: prometheus
-      #       matcherRegex: "trace_id=(\\w+)"
-      #       name: TraceID
-      #       url: "$${__value.raw}"
-      #   searchContext: "1h"
-      #   serviceMap:
-      #     datasourceUid: prometheus
-      #   spanBar:
-      #     tag: "duration"
-      #   spanStartTimeShift: "1h"
-      #   spanEndTimeShift: "1h"
-      #   lokiQueryType: "Range"
-      #   cacheLevel: "None"
-      #   incrementalQueryOverlapWindow: "10m"
-      #   queryTimeout: "30s"
-      #   exemplarTraceIdDestinations:
-      #     - name: trace_id
-      #       datasourceUid: prometheus
-
   prune: true
 
 alertmanager:
@@ -130,7 +70,7 @@ prometheus:
     enabled: true
     hosts: ["prometheus.192.168.100.100.nip.io"]
   prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false  # select all ServiceMonitor, don't select based on helm chart label
+    serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
@@ -145,56 +85,3 @@ prometheus:
           resources:
             requests:
               storage: 1Gi
-    additionalScrapeConfigs:
-      - job_name: 'openframe-api'
-        metrics_path: '/management/v1/prometheus'
-        static_configs:
-          - targets: ['openframe-api.infrastructure.svc:8091']
-
-      - job_name: 'openframe-stream'
-        metrics_path: '/management/v1/prometheus'
-        static_configs:
-          - targets: ['openframe-stream.infrastructure.svc:8083']
-
-      - job_name: 'openframe-config'
-        metrics_path: '/management/v1/prometheus'
-        static_configs:
-          - targets: ['openframe-config-server.infrastructure.svc:8889']
-
-      - job_name: 'openframe-management'
-        metrics_path: '/management/v1/prometheus'
-        static_configs:
-          - targets: ['openframe-management.infrastructure.svc:8096']
-
-      - job_name: 'openframe-gateway'
-        metrics_path: '/management/v1/prometheus'
-        static_configs:
-          - targets: ['openframe-gateway.infrastructure.svc:8101']
-
-      - job_name: 'kafka-jmx'
-        static_configs:
-          - targets: ['openframe-kafka-jmx-metrics.infrastructure.svc:5556']
-
-      - job_name: 'zookeeper'
-        static_configs:
-          - targets: ['zookeeper.infrastructure.svc:7070']
-        relabel_configs:
-          - source_labels: [__address__]
-            target_label: service
-            replacement: 'zookeeper'
-
-      # - job_name: 'cassandra'
-      #   static_configs:
-      #     - targets: ['openframe-cassandra.infrastructure.svc:9404']
-
-      - job_name: 'nifi'
-        static_configs:
-          - targets: ['openframe-nifi.infrastructure.svc:9096']
-
-      - job_name: 'pinot'
-        static_configs:
-          - targets: [
-              'openframe-pinot-controller.infrastructure.svc:9011',
-              'openframe-pinot-broker.infrastructure.svc:9011',
-              'openframe-pinot-server.infrastructure.svc:9011'
-            ]

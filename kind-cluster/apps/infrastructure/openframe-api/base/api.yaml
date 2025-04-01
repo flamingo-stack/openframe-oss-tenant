@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openframe-management
+  name: openframe-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openframe-management
+      app: openframe-api
   template:
     metadata:
       labels:
-        app: openframe-management
+        app: openframe-api
     spec:
       imagePullSecrets:
         - name: github-pat-secret
       containers:
-        - name: management
-          image: ghcr.io/flamingo-cx/openframe-management:latest
+        - name: api
+          image: ghcr.io/flamingo-cx/openframe-api:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8095
+            - containerPort: 8090
               name: http
-            - containerPort: 8096
+            - containerPort: 8091
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
@@ -60,34 +60,35 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: openframe-management
+  name: openframe-api
+  labels:
+    app: openframe-api
 spec:
   selector:
-    app: openframe-management
+    app: openframe-api
   ports:
-    - port: 8095
-      targetPort: 8095
+    - port: 8090
+      targetPort: 8090
       name: http
-    - port: 8096
-      targetPort: 8096
+    - port: 8091
+      targetPort: 8091
       name: management
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: openframe-management
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: openframe-api
 spec:
+  ingressClassName: nginx
   rules:
-    - host: openframe-management.192.168.100.100.nip.io
+    - host: openframe-api.192.168.100.100.nip.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: openframe-management
+                name: openframe-api
                 port:
-                  number: 8095
+                  name: http

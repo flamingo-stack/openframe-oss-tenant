@@ -1,33 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openframe-gateway
+  name: openframe-management
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openframe-gateway
+      app: openframe-management
   template:
     metadata:
       labels:
-        app: openframe-gateway
+        app: openframe-management
     spec:
       imagePullSecrets:
         - name: github-pat-secret
       containers:
-        - name: gateway
-          image: ghcr.io/flamingo-cx/openframe-gateway:latest
+        - name: management
+          image: ghcr.io/flamingo-cx/openframe-management:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8100
+            - containerPort: 8095
               name: http
-            - containerPort: 8101
+            - containerPort: 8096
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: SPRING_CONFIG_IMPORT
               value: "optional:configserver:http://openframe-config-server:8888"
+            - name: OPENFRAME_MANAGEMENT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openframe-secrets
+                  key: management-key
           livenessProbe:
             httpGet:
               path: /management/v1/health
@@ -55,48 +60,36 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: openframe-gateway
+  name: openframe-management
+  labels:
+    app: openframe-management
 spec:
   selector:
-    app: openframe-gateway
+    app: openframe-management
   ports:
-    - port: 8100
-      targetPort: 8100
+    - port: 8095
+      targetPort: 8095
       name: http
-    - port: 8101
-      targetPort: 8101
+    - port: 8096
+      targetPort: 8096
       name: management
   type: ClusterIP
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: openframe-gateway
-  labels:
-    release: prometheus
-spec:
-  selector:
-    matchLabels:
-      app: openframe-gateway
-  endpoints:
-    - port: management
-      path: /actuator/prometheus
-      interval: 30s
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: openframe-gateway
+  name: openframe-management
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: nginx
   rules:
-    - host: openframe-gateway.192.168.100.100.nip.io
+    - host: openframe-management.192.168.100.100.nip.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: openframe-gateway
+                name: openframe-management
                 port:
-                  name: http
+                  number: 8095

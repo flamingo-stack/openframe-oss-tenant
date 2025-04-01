@@ -128,8 +128,9 @@ networks:
   openframe-network:
     name: openframe-network
     driver: bridge
+    external: true
 
 volumes:
   meshcentral_data:
-  meshcentral_mongo_data: 
+  meshcentral_mongo_data:
   meshcentral_nginx_data:

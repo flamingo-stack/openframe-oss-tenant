@@ -186,12 +186,12 @@ spec:
         env:
         - name: AUTHENTIK_API_URL
           value: "http://authentik-server:9000"
+        - name: AUTHENTIK_BOOTSTRAP_EMAIL
+          value: "akadmin@openframe.local"
         - name: AUTHENTIK_BOOTSTRAP_PASSWORD
           value: "openframe123!"
         - name: AUTHENTIK_BOOTSTRAP_TOKEN
           value: "openframe-api-token-123456789"
-        - name: AUTHENTIK_BOOTSTRAP_EMAIL
-          value: "akadmin@openframe.local"
         - name: AUTHENTIK_REDIS__HOST
           value: "authentik-redis"
         - name: AUTHENTIK_POSTGRESQL__HOST

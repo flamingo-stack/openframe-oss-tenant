@@ -1,4 +1,4 @@
-FROM mongo:7.0
+FROM mongo:7.0-jammy
 
 # Install required packages
 RUN apt-get update && apt-get install -y \

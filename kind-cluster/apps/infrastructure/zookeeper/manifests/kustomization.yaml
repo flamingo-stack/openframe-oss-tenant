@@ -1,0 +1,3 @@
+resources:
+  - base/zk.yaml
+  - base/servicemonitor.yaml

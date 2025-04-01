@@ -1,0 +1,3 @@
+resources:
+  - base/config-server.yaml
+  - base/servicemonitor.yaml

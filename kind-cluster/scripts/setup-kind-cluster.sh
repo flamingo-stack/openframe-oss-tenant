@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the IP address
-K8S_VERSION="v1.32.2"
+K8S_VERSION="v1.32.3"
 
 # Bootsrap cluster
 if ! [ "kind" == "$(kind get clusters --quiet)" ]; then
