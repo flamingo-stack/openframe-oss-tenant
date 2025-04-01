@@ -66,7 +66,7 @@ delete_old_versions() {
     local keep_tags=("${@:2}") # Array of tags to keep
     echo "Processing package: $package_name"
 
-    # Get all versions with their metadata including tags
+    # Get all versions with their metadata including tags and manifests
     versions_response=$(curl -s -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
         "$API_URL/orgs/$ORG/packages/container/$package_name/versions")
 
@@ -81,10 +81,29 @@ delete_old_versions() {
 
     echo "  Keeping tags: ${keep_tags[*]}"
 
-    # Process each version
+    # First pass: collect all manifests that should be kept
+    declare -A keep_manifests
     echo "$versions" | while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null)
+
+        # Check if this version has any of the tags we want to keep
+        for tag in "${keep_tags[@]}"; do
+            if [[ $version_tags == *"$tag"* ]]; then
+                if [[ ! -z "$manifest_digest" ]]; then
+                    keep_manifests["$manifest_digest"]=1
+                fi
+                break
+            fi
+        done
+    done
+
+    # Second pass: delete versions while preserving needed manifests
+    echo "$versions" | while read -r version; do
+        version_id=$(echo "$version" | jq -r '.id')
+        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null)
 
         # Check if this version has any of the tags we want to keep
         keep=false
@@ -95,6 +114,11 @@ delete_old_versions() {
             fi
         done
 
+        # Also keep if manifest is needed by kept tags
+        if [[ ! -z "$manifest_digest" ]] && [[ ${keep_manifests["$manifest_digest"]} -eq 1 ]]; then
+            keep=true
+        fi
+
         if [[ $keep == false ]]; then
             echo "  Deleting version $version_id..."
             delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
@@ -102,6 +126,9 @@ delete_old_versions() {
             check_api_response "$delete_response"
         else
             echo "  Keeping version $version_id with tags: $version_tags"
+            if [[ ! -z "$manifest_digest" ]]; then
+                echo "    Manifest digest: $manifest_digest"
+            fi
         fi
     done
 }
