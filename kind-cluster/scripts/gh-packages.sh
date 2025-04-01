@@ -81,9 +81,12 @@ delete_old_versions() {
 
     echo "  Keeping tags: ${keep_tags[*]}"
 
+    # Create a temporary file to store manifest digests
+    local manifest_file=$(mktemp)
+    trap 'rm -f "$manifest_file"' EXIT
+
     # First pass: collect all manifests that should be kept
-    declare -A keep_manifests
-    echo "$versions" | while read -r version; do
+    while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
         manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null)
@@ -92,15 +95,15 @@ delete_old_versions() {
         for tag in "${keep_tags[@]}"; do
             if [[ $version_tags == *"$tag"* ]]; then
                 if [[ ! -z "$manifest_digest" ]]; then
-                    keep_manifests["$manifest_digest"]=1
+                    echo "$manifest_digest" >> "$manifest_file"
                 fi
                 break
             fi
         done
-    done
+    done <<< "$versions"
 
     # Second pass: delete versions while preserving needed manifests
-    echo "$versions" | while read -r version; do
+    while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
         manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null)
@@ -115,7 +118,7 @@ delete_old_versions() {
         done
 
         # Also keep if manifest is needed by kept tags
-        if [[ ! -z "$manifest_digest" ]] && [[ ${keep_manifests["$manifest_digest"]} -eq 1 ]]; then
+        if [[ ! -z "$manifest_digest" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
             keep=true
         fi
 
@@ -130,7 +133,7 @@ delete_old_versions() {
                 echo "    Manifest digest: $manifest_digest"
             fi
         fi
-    done
+    done <<< "$versions"
 }
 
 # Function to delete a package completely
@@ -194,6 +197,21 @@ delete_packages() {
     echo "All packages processed successfully!"
 }
 
+# Function to delete a specific package
+delete_specific_package() {
+    local package_name=$1
+    echo "Deleting package: $package_name"
+
+    # First delete all versions
+    delete_old_versions "$package_name"
+
+    # Then delete the package itself
+    delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
+        "$API_URL/orgs/$ORG/packages/container/$package_name")
+    check_api_response "$delete_response"
+    echo "  Package $package_name deleted"
+}
+
 # Main script logic
 case "$1" in
     -l|--list)
@@ -213,12 +231,21 @@ case "$1" in
         fi
         delete_old_versions "$2" "${@:3}"
         ;;
+    --delete-package)
+        if [ -z "$2" ]; then
+            echo "Error: Package name is required"
+            echo "Usage: $0 --delete-package <package-name>"
+            exit 1
+        fi
+        delete_specific_package "$2"
+        ;;
     *)
-        echo "Usage: $0 {-l|--list | -d|--delete | --delete-completely | --delete-old <package-name> <tags...>}"
+        echo "Usage: $0 {-l|--list | -d|--delete | --delete-completely | --delete-old <package-name> <tags...> | --delete-package <package-name>}"
         echo "  -l, --list              List all GitHub Packages (Docker images) and their versions."
         echo "  -d, --delete            Delete all versions of all GitHub Packages (Docker images) after confirmation."
         echo "  --delete-completely     Delete all GitHub Packages completely (including package metadata) after confirmation."
         echo "  --delete-old <name> <tags...> Delete old versions of a package except specified tags."
+        echo "  --delete-package <name> Delete a specific package completely."
         exit 1
         ;;
 esac
