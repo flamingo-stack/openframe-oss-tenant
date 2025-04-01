@@ -82,9 +82,28 @@ delete_old_versions() {
     echo "  Keeping tags: ${keep_tags[*]}"
 
     # First pass: collect all manifests that should be kept
+    local manifest_file=$(mktemp)
+    trap 'rm -f "$manifest_file"' EXIT
+
     while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
-        # Get all tags for this version
+        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
+
+        # If this version has a kept tag, store its manifest
+        for tag in "${keep_tags[@]}"; do
+            if [[ "$version_tags" == *"$tag"* ]]; then
+                if [[ ! -z "$manifest_digest" ]]; then
+                    echo "$manifest_digest" >> "$manifest_file"
+                fi
+                break
+            fi
+        done
+    done <<< "$versions"
+
+    # Second pass: process versions
+    while read -r version; do
+        version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
         manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
@@ -102,6 +121,12 @@ delete_old_versions() {
                 break
             fi
         done
+
+        # Also keep if manifest is needed by kept tags
+        if [[ ! -z "$manifest_digest" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
+            keep=true
+            echo "    Keeping due to manifest match: $manifest_digest"
+        fi
 
         if [[ $keep == false ]]; then
             echo "    Deleting version $version_id..."
