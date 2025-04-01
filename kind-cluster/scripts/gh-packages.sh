@@ -64,9 +64,10 @@ list_packages() {
 delete_old_versions() {
     local package_name=$1
     local keep_tags=("${@:2}") # Array of tags to keep
+    local skip_package_delete=${3:-false} # New parameter to control package deletion
     echo "Processing package: $package_name"
 
-    # Get all versions with their metadata including tags
+    # Get all versions with their metadata including tags and manifests
     versions_response=$(curl -s -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
         "$API_URL/orgs/$ORG/packages/container/$package_name/versions")
 
@@ -81,29 +82,70 @@ delete_old_versions() {
 
     echo "  Keeping tags: ${keep_tags[*]}"
 
-    # Process each version
-    echo "$versions" | while read -r version; do
-        version_id=$(echo "$version" | jq -r '.id')
-        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
+    # First pass: collect all versions with kept tags and their manifests
+    local keep_versions_file=$(mktemp)
+    local manifest_file=$(mktemp)
+    trap 'rm -f "$keep_versions_file" "$manifest_file"' EXIT
 
-        # Check if this version has any of the tags we want to keep
-        keep=false
+    while read -r version; do
+        version_id=$(echo "$version" | jq -r '.id')
+        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
+
+        # If this version has a kept tag, store its ID and manifest
         for tag in "${keep_tags[@]}"; do
-            if [[ $version_tags == *"$tag"* ]]; then
-                keep=true
+            if [[ "$version_tags" == *"$tag"* ]]; then
+                echo "$version_id" >> "$keep_versions_file"
+                if [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]]; then
+                    echo "$manifest_digest" >> "$manifest_file"
+                fi
                 break
             fi
         done
+    done <<< "$versions"
+
+    # Second pass: process versions
+    while read -r version; do
+        version_id=$(echo "$version" | jq -r '.id')
+        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
+
+        # Debug output
+        echo "  Checking version $version_id:"
+        echo "    Tags: $version_tags"
+        echo "    Manifest: $manifest_digest"
+
+        # Check if this version should be kept
+        keep=false
+        if grep -q "^$version_id$" "$keep_versions_file"; then
+            keep=true
+            echo "    Keeping due to tag match"
+        elif [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
+            keep=true
+            echo "    Keeping due to manifest match"
+        fi
 
         if [[ $keep == false ]]; then
-            echo "  Deleting version $version_id..."
+            echo "    Deleting version $version_id..."
             delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
                 "$API_URL/orgs/$ORG/packages/container/$package_name/versions/$version_id")
+
+            # Check if we got the "last tagged version" error
+            if [[ $delete_response == *"You cannot delete the last tagged version"* ]]; then
+                if [[ "$skip_package_delete" == "false" ]]; then
+                    echo "    Cannot delete last tagged version, deleting package instead..."
+                    delete_package_completely "$package_name"
+                else
+                    echo "    Cannot delete last tagged version and package deletion is disabled."
+                fi
+                return
+            fi
+
             check_api_response "$delete_response"
         else
-            echo "  Keeping version $version_id with tags: $version_tags"
+            echo "    Keeping version $version_id"
         fi
-    done
+    done <<< "$versions"
 }
 
 # Function to delete a package completely
@@ -111,8 +153,8 @@ delete_package_completely() {
     local package_name=$1
     echo "Deleting package completely: $package_name"
 
-    # First delete all versions
-    delete_old_versions "$package_name"
+    # First delete all versions with skip_package_delete=true to prevent loop
+    delete_old_versions "$package_name" "" "true"
 
     # Then delete the package itself
     delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
@@ -167,6 +209,21 @@ delete_packages() {
     echo "All packages processed successfully!"
 }
 
+# Function to delete a specific package
+delete_specific_package() {
+    local package_name=$1
+    echo "Deleting package: $package_name"
+
+    # First delete all versions with skip_package_delete=true to prevent loop
+    delete_old_versions "$package_name" "" "true"
+
+    # Then delete the package itself
+    delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
+        "$API_URL/orgs/$ORG/packages/container/$package_name")
+    check_api_response "$delete_response"
+    echo "  Package $package_name deleted"
+}
+
 # Main script logic
 case "$1" in
     -l|--list)
@@ -186,12 +243,21 @@ case "$1" in
         fi
         delete_old_versions "$2" "${@:3}"
         ;;
+    --delete-package)
+        if [ -z "$2" ]; then
+            echo "Error: Package name is required"
+            echo "Usage: $0 --delete-package <package-name>"
+            exit 1
+        fi
+        delete_specific_package "$2"
+        ;;
     *)
-        echo "Usage: $0 {-l|--list | -d|--delete | --delete-completely | --delete-old <package-name> <tags...>}"
+        echo "Usage: $0 {-l|--list | -d|--delete | --delete-completely | --delete-old <package-name> <tags...> | --delete-package <package-name>}"
         echo "  -l, --list              List all GitHub Packages (Docker images) and their versions."
         echo "  -d, --delete            Delete all versions of all GitHub Packages (Docker images) after confirmation."
         echo "  --delete-completely     Delete all GitHub Packages completely (including package metadata) after confirmation."
         echo "  --delete-old <name> <tags...> Delete old versions of a package except specified tags."
+        echo "  --delete-package <name> Delete a specific package completely."
         exit 1
         ;;
 esac

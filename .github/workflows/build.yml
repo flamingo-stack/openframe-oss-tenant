@@ -216,73 +216,43 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
-      # - name: Format build arguments
-      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-      #   id: format_args
-      #   uses: ./.github/actions/format-build-args
-      #   with:
-      #     build_args: ${{ toJSON(matrix.build_args) }}
-      #   env:
-      #     BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
-
-      # - name: Build and push AMD64 image
-      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-      #   id: docker_build
-      #   uses: docker/build-push-action@v6
-      #   with:
-      #     context: ${{ matrix.context || matrix.path }}
-      #     file: ${{ matrix.path }}/Dockerfile
-      #     platforms: linux/amd64
-      #     push: true
-      #     tags: |
-      #       ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest
-      #       ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }}
-      #       ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }}
-      #     labels: |
-      #       org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
-      #       org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-      #       org.opencontainers.image.url=https://openframe.io
-      #       org.opencontainers.image.vendor=FlamingoCX
-      #       org.opencontainers.image.licenses=MIT
-      #     build-args: |
-      #       ${{ env.BUILD_ARGS }}
-
-      - name: Build and Push image
-        id: docker_build
+      - name: Format build arguments
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          # Construct build arguments dynamically
-          BUILD_ARGS=""
-          if [ "$(echo '${{ toJSON(matrix.build_args) }}' | jq -r '.')" != "null" ]; then
-            for key in $(echo '${{ toJSON(matrix.build_args) }}' | jq -r 'keys[]'); do
-              value=$(echo '${{ toJSON(matrix.build_args) }}' | jq -r ".\"$key\"")
-              BUILD_ARGS="$BUILD_ARGS --build-arg $key=$value"
-            done
-          fi
-
-          docker buildx build \
-            --file ${{ matrix.path }}/Dockerfile \
-            --platform ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }} \
-            --label org.opencontainers.image.source=https://github.com/flamingo-cx/openframe \
-            --label org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents." \
-            --label org.opencontainers.image.url=https://openframe.io \
-            --label org.opencontainers.image.vendor=FlamingoCX \
-            --label org.opencontainers.image.licenses=MIT \
-            --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest \
-            --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }} \
-            --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }} \
-            $BUILD_ARGS \
-            --push \
-            ${{ matrix.context || matrix.path }}
-
-      - name: Clean up old versions
-        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+        id: format_args
+        uses: ./.github/actions/format-build-args
+        with:
+          build_args: ${{ toJSON(matrix.build_args) }}
         env:
-          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x ./kind-cluster/scripts/gh-packages.sh
-          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
-            "latest" \
-            "${{ needs.changes.outputs.commit_sha }}" \
-            "${{ needs.changes.outputs.timestamp_tag }}"
-        continue-on-error: true
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+
+      - name: Build and push image
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/Dockerfile
+          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }}
+            ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/flamingo-cx/openframe
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.url=https://openframe.io
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.licenses=MIT
+          build-args: |
+            ${{ env.BUILD_ARGS }}
+
+      - name: Delete old versions
+        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          package: openframe-${{ matrix.name }}
+          delete-ghost-images: true
+          delete-tags: "*"
+          exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
