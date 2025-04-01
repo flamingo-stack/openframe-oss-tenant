@@ -91,12 +91,10 @@ delete_old_versions() {
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
         manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
-        # If this version has a kept tag, store its manifest
+        # If this version has a kept tag and a valid manifest, store its manifest
         for tag in "${keep_tags[@]}"; do
-            if [[ "$version_tags" == *"$tag"* ]]; then
-                if [[ ! -z "$manifest_digest" ]]; then
-                    echo "$manifest_digest" >> "$manifest_file"
-                fi
+            if [[ "$version_tags" == *"$tag"* ]] && [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]]; then
+                echo "$manifest_digest" >> "$manifest_file"
                 break
             fi
         done
@@ -123,8 +121,8 @@ delete_old_versions() {
             fi
         done
 
-        # Also keep if manifest is needed by kept tags
-        if [[ ! -z "$manifest_digest" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
+        # Also keep if manifest is needed by kept tags (only if manifest is valid)
+        if [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
             keep=true
             echo "    Keeping due to manifest match: $manifest_digest"
         fi
