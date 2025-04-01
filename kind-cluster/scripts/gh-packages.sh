@@ -82,18 +82,23 @@ delete_old_versions() {
 
     echo "  Keeping tags: ${keep_tags[*]}"
 
-    # First pass: collect all versions with kept tags
+    # First pass: collect all versions with kept tags and their manifests
     local keep_versions_file=$(mktemp)
-    trap 'rm -f "$keep_versions_file"' EXIT
+    local manifest_file=$(mktemp)
+    trap 'rm -f "$keep_versions_file" "$manifest_file"' EXIT
 
     while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
-        # If this version has a kept tag, store its ID
+        # If this version has a kept tag, store its ID and manifest
         for tag in "${keep_tags[@]}"; do
             if [[ "$version_tags" == *"$tag"* ]]; then
                 echo "$version_id" >> "$keep_versions_file"
+                if [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]]; then
+                    echo "$manifest_digest" >> "$manifest_file"
+                fi
                 break
             fi
         done
@@ -103,16 +108,21 @@ delete_old_versions() {
     while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
         # Debug output
         echo "  Checking version $version_id:"
         echo "    Tags: $version_tags"
+        echo "    Manifest: $manifest_digest"
 
         # Check if this version should be kept
         keep=false
         if grep -q "^$version_id$" "$keep_versions_file"; then
             keep=true
             echo "    Keeping due to tag match"
+        elif [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
+            keep=true
+            echo "    Keeping due to manifest match"
         fi
 
         if [[ $keep == false ]]; then

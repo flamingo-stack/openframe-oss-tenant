@@ -277,14 +277,22 @@ jobs:
       #       --push \
       #       ${{ matrix.context || matrix.path }}
 
-      - name: Clean up old versions
-        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
-        env:
-          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x ./kind-cluster/scripts/gh-packages.sh
-          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
-            "latest" \
-            "${{ needs.changes.outputs.commit_sha }}" \
-            "${{ needs.changes.outputs.timestamp_tag }}"
-        continue-on-error: true
+      # - name: Clean up old versions
+      #   if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+      #   env:
+      #     GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     chmod +x ./kind-cluster/scripts/gh-packages.sh
+      #     ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
+      #       "latest" \
+      #       "${{ needs.changes.outputs.commit_sha }}" \
+      #       "${{ needs.changes.outputs.timestamp_tag }}"
+      #   continue-on-error: true
+
+      - name: Delete old versions
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: openframe-${{ matrix.name }}
+          package-type: 'container'
+          min-versions-to-keep: 2
