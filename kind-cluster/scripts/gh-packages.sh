@@ -81,57 +81,35 @@ delete_old_versions() {
 
     echo "  Keeping tags: ${keep_tags[*]}"
 
-    # Create a temporary file to store manifest digests
-    local manifest_file=$(mktemp)
-    trap 'rm -f "$manifest_file"' EXIT
-
     # First pass: collect all manifests that should be kept
     while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
-        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
-        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null)
+        # Get all tags for this version
+        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
+        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
-        # Check if this version has any of the tags we want to keep
-        for tag in "${keep_tags[@]}"; do
-            if [[ $version_tags == *"$tag"* ]]; then
-                if [[ ! -z "$manifest_digest" ]]; then
-                    echo "$manifest_digest" >> "$manifest_file"
-                fi
-                break
-            fi
-        done
-    done <<< "$versions"
-
-    # Second pass: delete versions while preserving needed manifests
-    while read -r version; do
-        version_id=$(echo "$version" | jq -r '.id')
-        version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null)
-        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null)
+        # Debug output
+        echo "  Checking version $version_id:"
+        echo "    Tags: $version_tags"
+        echo "    Manifest: $manifest_digest"
 
         # Check if this version has any of the tags we want to keep
         keep=false
         for tag in "${keep_tags[@]}"; do
-            if [[ $version_tags == *"$tag"* ]]; then
+            if [[ "$version_tags" == *"$tag"* ]]; then
                 keep=true
+                echo "    Keeping due to tag match: $tag"
                 break
             fi
         done
 
-        # Also keep if manifest is needed by kept tags
-        if [[ ! -z "$manifest_digest" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
-            keep=true
-        fi
-
         if [[ $keep == false ]]; then
-            echo "  Deleting version $version_id..."
+            echo "    Deleting version $version_id..."
             delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
                 "$API_URL/orgs/$ORG/packages/container/$package_name/versions/$version_id")
             check_api_response "$delete_response"
         else
-            echo "  Keeping version $version_id with tags: $version_tags"
-            if [[ ! -z "$manifest_digest" ]]; then
-                echo "    Manifest digest: $manifest_digest"
-            fi
+            echo "    Keeping version $version_id"
         fi
     done <<< "$versions"
 }
