@@ -206,11 +206,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+      # - name: Set up QEMU
+      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+      #   uses: docker/setup-qemu-action@v3
+      #   with:
+      #     platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
@@ -262,7 +262,7 @@ jobs:
 
           docker buildx build \
             --file ${{ matrix.path }}/Dockerfile \
-            --platform ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }} \
+            --platform ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64/v8' }} \
             --label org.opencontainers.image.source=https://github.com/flamingo-cx/openframe \
             --label org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents." \
             --label org.opencontainers.image.url=https://openframe.io \
@@ -275,14 +275,14 @@ jobs:
             --push \
             ${{ matrix.context || matrix.path }}
 
-      - name: Clean up old versions
-        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
-        env:
-          GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x ./kind-cluster/scripts/gh-packages.sh
-          ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
-            "latest" \
-            "${{ needs.changes.outputs.commit_sha }}" \
-            "${{ needs.changes.outputs.timestamp_tag }}"
-        continue-on-error: true
+      # - name: Clean up old versions
+      #   if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+      #   env:
+      #     GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     chmod +x ./kind-cluster/scripts/gh-packages.sh
+      #     ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
+      #       "latest" \
+      #       "${{ needs.changes.outputs.commit_sha }}" \
+      #       "${{ needs.changes.outputs.timestamp_tag }}"
+      #   continue-on-error: true
