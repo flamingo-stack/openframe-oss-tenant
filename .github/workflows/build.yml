@@ -131,49 +131,48 @@ jobs:
   matrix:
     uses: ./.github/workflows/matrix.yml
 
-  # build_java:
-  #   name: "Build Java: ${{ matrix.name }}"
-  #   needs: [changes, matrix]
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
-  #   steps:
-  #     - name: Checkout
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 2
+  build_java:
+    name: "Build Java: ${{ matrix.name }}"
+    needs: [changes, matrix]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
+    steps:
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-  #     - name: Set up Maven Central Repository with JDK 21
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-  #       uses: actions/setup-java@v4
-  #       with:
-  #         java-version: '21'
-  #         distribution: 'temurin'
-  #         cache: 'maven'
+      - name: Set up Maven Central Repository with JDK 21
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
-  #     - name: Build with Maven
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-  #       run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
+      - name: Build with Maven
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
 
-  #     - name: Upload Java artifacts
-  #       if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ matrix.artifact_name }}
-  #         path: |
-  #           ${{ matrix.path }}/target/*.jar
-  #           !${{ matrix.path }}/target/original-*.jar
-  #           !${{ matrix.path }}/target/*-sources.jar
-  #           !${{ matrix.path }}/target/*-javadoc.jar
-  #         retention-days: 1
+      - name: Upload Java artifacts
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.path }}/target/*.jar
+            !${{ matrix.path }}/target/original-*.jar
+            !${{ matrix.path }}/target/*-sources.jar
+            !${{ matrix.path }}/target/*-javadoc.jar
+          retention-days: 1
 
   build:
     name: "Build image: ${{ matrix.name }}"
-    # needs: [build_java, matrix, changes]
-    needs: [matrix, changes]
+    needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -207,12 +206,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ubuntu-latest already has QEMU installed
-      # - name: Set up QEMU
-      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-      #   uses: docker/setup-qemu-action@v3
-      #   with:
-      #     platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+      - name: Set up QEMU
+        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
@@ -227,7 +225,7 @@ jobs:
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-      - name: Build and push AMD64 image
+      - name: Build and push image
         if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
@@ -236,6 +234,7 @@ jobs:
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
+          provenance: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest
             ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }}
@@ -249,50 +248,11 @@ jobs:
           build-args: |
             ${{ env.BUILD_ARGS }}
 
-      # - name: Build and Push image
-      #   id: docker_build
-      #   if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-      #   run: |
-      #     # Construct build arguments dynamically
-      #     BUILD_ARGS=""
-      #     if [ "$(echo '${{ toJSON(matrix.build_args) }}' | jq -r '.')" != "null" ]; then
-      #       for key in $(echo '${{ toJSON(matrix.build_args) }}' | jq -r 'keys[]'); do
-      #         value=$(echo '${{ toJSON(matrix.build_args) }}' | jq -r ".\"$key\"")
-      #         BUILD_ARGS="$BUILD_ARGS --build-arg $key=$value"
-      #       done
-      #     fi
-
-      #     docker buildx build \
-      #       --file ${{ matrix.path }}/Dockerfile \
-      #       --platform ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }} \
-      #       --label org.opencontainers.image.source=https://github.com/flamingo-cx/openframe \
-      #       --label org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents." \
-      #       --label org.opencontainers.image.url=https://openframe.io \
-      #       --label org.opencontainers.image.vendor=FlamingoCX \
-      #       --label org.opencontainers.image.licenses=MIT \
-      #       --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:latest \
-      #       --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.commit_sha }} \
-      #       --tag ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}:${{ needs.changes.outputs.timestamp_tag }} \
-      #       $BUILD_ARGS \
-      #       --push \
-      #       ${{ matrix.context || matrix.path }}
-
-      # - name: Clean up old versions
-      #   if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
-      #   env:
-      #     GITHUB_TOKEN_CLASSIC: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     chmod +x ./kind-cluster/scripts/gh-packages.sh
-      #     ./kind-cluster/scripts/gh-packages.sh --delete-old "openframe-${{ matrix.name }}" \
-      #       "latest" \
-      #       "${{ needs.changes.outputs.commit_sha }}" \
-      #       "${{ needs.changes.outputs.timestamp_tag }}"
-      #   continue-on-error: true
-
       - name: Delete old versions
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/delete-package-versions@v5
+        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+        uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          package-name: openframe-${{ matrix.name }}
-          package-type: 'container'
-          min-versions-to-keep: 2
+          package: openframe-${{ matrix.name }}
+          delete-ghost-images: true
+          delete-tags: "*"
+          exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
