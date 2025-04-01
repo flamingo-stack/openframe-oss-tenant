@@ -64,6 +64,7 @@ list_packages() {
 delete_old_versions() {
     local package_name=$1
     local keep_tags=("${@:2}") # Array of tags to keep
+    local skip_package_delete=${3:-false} # New parameter to control package deletion
     echo "Processing package: $package_name"
 
     # Get all versions with their metadata including tags and manifests
@@ -132,6 +133,18 @@ delete_old_versions() {
             echo "    Deleting version $version_id..."
             delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
                 "$API_URL/orgs/$ORG/packages/container/$package_name/versions/$version_id")
+
+            # Check if we got the "last tagged version" error
+            if [[ $delete_response == *"You cannot delete the last tagged version"* ]]; then
+                if [[ "$skip_package_delete" == "false" ]]; then
+                    echo "    Cannot delete last tagged version, deleting package instead..."
+                    delete_package_completely "$package_name"
+                else
+                    echo "    Cannot delete last tagged version and package deletion is disabled."
+                fi
+                return
+            fi
+
             check_api_response "$delete_response"
         else
             echo "    Keeping version $version_id"
@@ -144,8 +157,8 @@ delete_package_completely() {
     local package_name=$1
     echo "Deleting package completely: $package_name"
 
-    # First delete all versions
-    delete_old_versions "$package_name"
+    # First delete all versions with skip_package_delete=true to prevent loop
+    delete_old_versions "$package_name" "" "true"
 
     # Then delete the package itself
     delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
@@ -205,8 +218,8 @@ delete_specific_package() {
     local package_name=$1
     echo "Deleting package: $package_name"
 
-    # First delete all versions
-    delete_old_versions "$package_name"
+    # First delete all versions with skip_package_delete=true to prevent loop
+    delete_old_versions "$package_name" "" "true"
 
     # Then delete the package itself
     delete_response=$(curl -s -X DELETE -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github.v3+json" \
