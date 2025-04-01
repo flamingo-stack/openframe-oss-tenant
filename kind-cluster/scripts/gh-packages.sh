@@ -82,19 +82,18 @@ delete_old_versions() {
 
     echo "  Keeping tags: ${keep_tags[*]}"
 
-    # First pass: collect all manifests that should be kept
-    local manifest_file=$(mktemp)
-    trap 'rm -f "$manifest_file"' EXIT
+    # First pass: collect all versions with kept tags
+    local keep_versions_file=$(mktemp)
+    trap 'rm -f "$keep_versions_file"' EXIT
 
     while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
-        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
-        # If this version has a kept tag and a valid manifest, store its manifest
+        # If this version has a kept tag, store its ID
         for tag in "${keep_tags[@]}"; do
-            if [[ "$version_tags" == *"$tag"* ]] && [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]]; then
-                echo "$manifest_digest" >> "$manifest_file"
+            if [[ "$version_tags" == *"$tag"* ]]; then
+                echo "$version_id" >> "$keep_versions_file"
                 break
             fi
         done
@@ -104,27 +103,16 @@ delete_old_versions() {
     while read -r version; do
         version_id=$(echo "$version" | jq -r '.id')
         version_tags=$(echo "$version" | jq -r '.metadata.container.tags[]?' 2>/dev/null || echo "")
-        manifest_digest=$(echo "$version" | jq -r '.metadata.container.manifest_digest' 2>/dev/null || echo "")
 
         # Debug output
         echo "  Checking version $version_id:"
         echo "    Tags: $version_tags"
-        echo "    Manifest: $manifest_digest"
 
-        # Check if this version has any of the tags we want to keep
+        # Check if this version should be kept
         keep=false
-        for tag in "${keep_tags[@]}"; do
-            if [[ "$version_tags" == *"$tag"* ]]; then
-                keep=true
-                echo "    Keeping due to tag match: $tag"
-                break
-            fi
-        done
-
-        # Also keep if manifest is needed by kept tags (only if manifest is valid)
-        if [[ ! -z "$manifest_digest" ]] && [[ "$manifest_digest" != "null" ]] && grep -q "^$manifest_digest$" "$manifest_file"; then
+        if grep -q "^$version_id$" "$keep_versions_file"; then
             keep=true
-            echo "    Keeping due to manifest match: $manifest_digest"
+            echo "    Keeping due to tag match"
         fi
 
         if [[ $keep == false ]]; then
