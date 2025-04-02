@@ -1,0 +1,109 @@
+# https://github.com/bitnami/charts/blob/main/bitnami/mongodb/README.md
+
+initdbScripts:
+  init_script.sh: |
+    #!/bin/bash
+
+    if [[ "$MONGODB_REPLICA_SET_MODE" = "secondary" ]]; then
+      echo "skipping..."
+    else
+      if [ ! -f "$DATA_DIR/.mongodb/.mongodb_password_set" ]; then
+        echo "First time initialization..."
+
+        mkdir -p $DATA_DIR/.mongodb
+
+        # Initialize MongoDB with users
+        mongosh admin -u $MONGODB_ROOT_USER -p $MONGODB_ROOT_PASSWORD --eval <<EOF
+
+    db = db.getSiblingDB('$MONGODB_DATABASE');
+    db.grantRolesToUser('$MONGODB_USERNAME', [{ role: 'readWrite', db: '$MONGODB_DATABASE' }]);
+
+    db.createCollection('events');
+    db.events.insertMany([
+      {
+        id: 'evt-001',
+        type: 'USER_ACTION',
+        payload: JSON.stringify({
+          action: 'LOGIN',
+          userId: 'user-123',
+          timestamp: new Date()
+        }),
+        timestamp: new Date(),
+        userId: 'user-123'
+      },
+      {
+        id: 'evt-002',
+        type: 'SYSTEM_EVENT',
+        payload: JSON.stringify({
+          action: 'BACKUP_COMPLETED',
+          status: 'SUCCESS',
+          timestamp: new Date()
+        }),
+        timestamp: new Date(),
+        userId: 'system'
+      }
+    ]);
+
+    db.events.createIndex({ 'userId': 1, 'timestamp': -1 });
+    db.events.createIndex({ 'type': 1 });
+    EOF
+
+        # Mark initialization as complete
+        touch $DATA_DIR/.mongodb/.mongodb_password_set
+
+        # Stop the temporary MongoDB instance
+        # mongosh admin -u "$MONGODB_ROOT_USER" -p "$MONGODB_ROOT_PASSWORD" --eval "db.shutdownServer()"
+      fi
+    fi
+
+architecture: standalone
+replicaCount: 2
+useStatefulSet: true
+
+service:
+  nameOverride: "openframe-mongodb"
+
+auth:
+  enabled: true
+  rootUser: openframe
+  existingSecret: "openframe-mongodb-secrets"
+
+extraEnvVars:
+  - name: DATA_DIR
+    value: /bitnami/mongodb/data
+  # Disabled because we're using auth.rootUser and auth.existingSecret
+  # - name: MONGODB_ROOT_USER
+  #   value: openframe
+  # - name: MONGODB_ROOT_PASSWORD
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: openframe-mongodb-secrets
+  #       key: mongodb-root-password
+  - name: MONGODB_DATABASE
+    value: openframe
+  - name: MONGODB_USERNAME
+    value: openframe
+  - name: MONGODB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: openframe-mongodb-secrets
+        key: mongodb-passwords
+# extraEnvVarsSecret: ""  # add a secret with the above values
+# extraEnvVarsCM: ""
+
+arbiter:
+  enabled: false
+hidden:
+  enabled: false
+backup:
+  enabled: false
+
+metrics:
+  enabled: true
+  username: ""
+  password: ""
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    prometheusRule:
+    enabled: true

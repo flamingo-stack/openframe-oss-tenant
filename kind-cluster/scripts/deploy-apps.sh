@@ -109,7 +109,18 @@ case "$1" in
     ;;
   mongodb)
     # MONGO DB (depends on Loki)
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
+    # kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
+
+    kubectl -n infrastructure create secret generic openframe-mongodb-secrets \
+      --from-literal=mongodb-root-password=password123456789 \
+      --from-literal=mongodb-passwords=password123456789 \
+      --from-literal=mongodb-replica-set-key=MwfJv7CxZ1 \
+      --dry-run=client -o yaml | kubectl apply -f - && \
+    helm repo add bitnami https://charts.bitnami.com/bitnami && \
+    helm upgrade -i openframe-mongodb bitnami/mongodb \
+      --namespace infrastructure --create-namespace \
+      --version 16.4.12 \
+      -f ./kind-cluster/apps/infrastructure/openframe-mongodb/helm/bitnami-values.yaml
     ;;
   mongodb-exporter)
     # MONGO EXPORTER (depends on MongoDB, Loki)
