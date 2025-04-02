@@ -69,6 +69,9 @@ c|cleanup)
     docker exec $node crictl rmi --prune
   done
   ;;
+build)
+  bash ./kind-cluster/scripts/build-apps.sh "$2"
+  ;;
 *) echo "Usage:
 $0 <parameter>
 
@@ -81,6 +84,7 @@ u|up                   : Setup cluster only
 a|app <app-name>|all   : Deploy all apps or specific app if app-name is provided
 d|down                 : Remove cluster
 c|cleanup              : Cleanup kind nodes from unused images
+b|build <app-name>     : Build specific app
 
 Examples:
   $0 app all         # Deploy all applications
