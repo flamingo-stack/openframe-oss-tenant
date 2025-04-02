@@ -9,6 +9,10 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
   --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
 
 case "$1" in
+  telepresence)
+    telepresence helm install --upgrade &&
+    telepresence connect
+    ;;
   ingress-nginx)
     # INGRESS-NGINX
     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx && \
@@ -260,6 +264,7 @@ case "$1" in
     ;;
   a|all)
     # ------------- ALL -------------
+    $0 telepresence && \
     $0 ingress-nginx && \
     $0 grafana && \
     $0 loki && \
@@ -321,6 +326,7 @@ case "$1" in
     ;;
   f|fast)
     # ------------- ALL no wait for state=Ready -------------
+    $0 telepresence && \
     $0 ingress-nginx && \
     $0 grafana && \
     $0 loki && \
@@ -348,6 +354,7 @@ case "$1" in
     ;;
   m|minimal)
     # ------------- ALL no wait for state=Ready -------------
+    $0 telepresence && \
     $0 ingress-nginx && \
     $0 grafana && \
     $0 loki
@@ -357,6 +364,7 @@ case "$1" in
       echo "Pass app name to deploy specific app to deploy application to the Kubernetes cluster"
       echo
       echo "Available options:"
+      echo "  telepresence     Deploy Telepresence"
       echo "  ingress-nginx    Deploy Ingress Nginx"
       echo "  grafana          Deploy Grafana and Prometheus stack"
       echo "  loki             Deploy Loki and Promtail"

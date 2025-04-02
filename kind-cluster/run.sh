@@ -21,6 +21,7 @@ check_command "kind"
 check_command "docker"
 check_command "helm"
 check_command "kubectl"
+check_command "telepresence"
 
 sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
 sudo sysctl -p > /dev/null 2>&1
