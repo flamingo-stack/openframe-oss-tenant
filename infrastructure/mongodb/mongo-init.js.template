@@ -5,11 +5,16 @@ db = db.getSiblingDB('admin');
 print('Switched to admin database');
 
 try {
-    // Create admin user
+    // Create admin user with full privileges
     db.createUser({
         user: '${MONGO_INITDB_ROOT_USERNAME}',
         pwd: '${MONGO_INITDB_ROOT_PASSWORD}',
-        roles: ['root']
+        roles: [
+            { role: 'root', db: 'admin' },
+            { role: 'userAdminAnyDatabase', db: 'admin' },
+            { role: 'dbAdminAnyDatabase', db: 'admin' },
+            { role: 'readWriteAnyDatabase', db: 'admin' }
+        ]
     });
     print('Admin user created successfully');
 } catch (error) {
@@ -40,23 +45,33 @@ print('Events collection created successfully');
 // Insert sample events
 db.events.insertMany([
     {
-        userId: 'user1',
-        type: 'login',
+        id: 'evt-001',
+        type: 'USER_ACTION',
+        payload: JSON.stringify({
+            action: 'LOGIN',
+            userId: 'user-123',
+            timestamp: new Date()
+        }),
         timestamp: new Date(),
-        details: { ip: '192.168.1.1', success: true }
+        userId: 'user-123'
     },
     {
-        userId: 'user2',
-        type: 'logout',
+        id: 'evt-002',
+        type: 'SYSTEM_EVENT',
+        payload: JSON.stringify({
+            action: 'BACKUP_COMPLETED',
+            status: 'SUCCESS',
+            timestamp: new Date()
+        }),
         timestamp: new Date(),
-        details: { ip: '192.168.1.2' }
+        userId: 'system'
     }
 ]);
 print('Sample events inserted successfully');
 
 // Create indexes
-db.events.createIndex({ userId: 1, timestamp: -1 });
-db.events.createIndex({ type: 1 });
+db.events.createIndex({ 'userId': 1, 'timestamp': -1 });
+db.events.createIndex({ 'type': 1 });
 print('Indexes created successfully');
 
-print('MongoDB initialization script completed.'); 
+print('MongoDB initialization script completed.');
