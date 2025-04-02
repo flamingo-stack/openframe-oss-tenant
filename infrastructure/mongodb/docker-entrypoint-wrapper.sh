@@ -12,17 +12,23 @@ set +a
 : "${MONGO_APP_USERNAME:?Required}"
 : "${MONGO_APP_PASSWORD:?Required}"
 
+# Ensure proper ownership of mounted volumes
+chown -R mongodb:mongodb /var/log/mongodb /data/db
+
 # Check if this is first run
 if [ ! -f "/data/db/.mongodb/.mongodb_password_set" ]; then
     echo "First time initialization..."
-    
+
     # Remove any existing data for clean initialization
-    rm -rf /data/db/*
-    
+    rm -rf /data/db/* /var/log/mongodb/*
+
     # Create necessary directories with proper permissions
-    mkdir -p /data/db /data/configdb /data/db/journal /data/db/diagnostic.data /data/db/.mongodb /var/log/mongodb
-    chmod -R 770 /data/db /data/configdb /var/log/mongodb
-    chown -R mongodb:mongodb /data/db /data/configdb /var/log/mongodb
+    mkdir -p /data/db/.mongodb \
+        /data/configdb \
+        /data/db/journal \
+        /data/db/diagnostic.data \
+        /var/log/mongodb && \
+    chmod -R 770 /data/db /var/log/mongodb
 
     # Start MongoDB temporarily without authentication
     mongod --fork --logpath /var/log/mongodb/mongod.log
@@ -91,4 +97,4 @@ if [ ! -f "/data/db/.mongodb/.mongodb_password_set" ]; then
 fi
 
 # Start MongoDB with authentication enabled
-exec "$@" 
+exec "$@"
