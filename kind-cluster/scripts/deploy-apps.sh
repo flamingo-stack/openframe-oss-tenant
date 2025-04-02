@@ -359,40 +359,63 @@ case "$1" in
     $0 grafana && \
     $0 loki
     ;;
+  infrastructure)
+    # ------------- INFRASTRUCTURE -------------
+    $0 telepresence && \
+    $0 ingress-nginx && \
+    $0 grafana && \
+    $0 loki && \
+    $0 redis
+    $0 kafka
+    $0 kafka-ui
+    $0 mongodb
+    $0 mongodb-exporter
+    $0 mongo-express
+    $0 cassandra
+    $0 nifi
+    $0 zookeeper
+    $0 pinot
+    $0 config-server
+    $0 api
+    $0 management
+    $0 stream
+    $0 gateway
+    $0 openframe-ui
+    ;;
   *)
       echo
       echo "Pass app name to deploy specific app to deploy application to the Kubernetes cluster"
       echo
       echo "Available options:"
-      echo "  telepresence     Deploy Telepresence"
-      echo "  ingress-nginx    Deploy Ingress Nginx"
-      echo "  grafana          Deploy Grafana and Prometheus stack"
-      echo "  loki             Deploy Loki and Promtail"
-      echo "  redis            Deploy Redis"
-      echo "  efk              Deploy Elasticsearch, Fluentd, Kibana stack"
-      echo "  kafka            Deploy Kafka"
-      echo "  kafka-ui         Deploy Kafka UI"
-      echo "  mongodb          Deploy MongoDB"
-      echo "  mongodb-exporter Deploy MongoDB exporter"
-      echo "  mongo-express    Deploy Mongo Express"
-      echo "  cassandra        Deploy Cassandra"
-      echo "  nifi             Deploy NiFi"
-      echo "  zookeeper        Deploy Zookeeper"
-      echo "  pinot            Deploy Pinot"
-      echo "  config-server    Deploy Config Server"
-      echo "  api              Deploy API"
-      echo "  management       Deploy Management"
-      echo "  stream           Deploy Stream"
-      echo "  gateway          Deploy Gateway"
-      echo "  openframe-ui     Deploy OpenFrame UI"
-      echo "  authentik        Deploy Authentik"
-      echo "  fleet            Deploy Fleet"
-      echo "  meshcentral      Deploy Mesh Central"
-      echo "  rmm              Deploy RMM"
-      echo "  register-tools   Register tools"
+      echo "  infrastructure       Deploy infrastructure applications"
+      echo "      telepresence     [-] Deploy Telepresence"
+      echo "      ingress-nginx    [-] Deploy Ingress Nginx"
+      echo "      grafana          [-] Deploy Grafana and Prometheus stack"
+      echo "      loki             [i] Deploy Loki and Promtail"
+      echo "      redis            [n] Deploy Redis"
+      echo "      kafka            [f] Deploy Kafka"
+      echo "      kafka-ui         [r] Deploy Kafka UI"
+      echo "      mongodb          [a] Deploy MongoDB"
+      echo "      mongodb-exporter [s] Deploy MongoDB exporter"
+      echo "      mongo-express    [t] Deploy Mongo Express"
+      echo "      cassandra        [r] Deploy Cassandra"
+      echo "      nifi             [u] Deploy NiFi"
+      echo "      zookeeper        [c] Deploy Zookeeper"
+      echo "      pinot            [t] Deploy Pinot"
+      echo "      config-server    [u] Deploy Config Server"
+      echo "      api              [r] Deploy API"
+      echo "      management       [e] Deploy Management"
+      echo "      stream           [-] Deploy Stream"
+      echo "      gateway          [-] Deploy Gateway"
+      echo "      openframe-ui     [-] Deploy OpenFrame UI"
+      echo "  authentik            Deploy Authentik"
+      echo "  fleet                Deploy Fleet"
+      echo "  meshcentral          Deploy Mesh Central"
+      echo "  rmm                  Deploy RMM"
+      echo "  register-tools       Register tools"
       echo
-      echo "  a|all            Deploy all applications"
-      echo "  f|fast           Deploy all applications but don't wait for state=Ready"
-      echo "  m|minimal        Deploy base applications"
+      echo "  a|all                Deploy all applications"
+      echo "  f|fast               Deploy all applications but don't wait for state=Ready"
+      echo "  m|minimal            Deploy base applications"
       exit 1
 esac
