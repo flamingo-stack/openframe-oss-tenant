@@ -16,7 +16,7 @@
             "mainClass": "com.openframe.management.ManagementApplication",
             "projectName": "openframe-management",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "local"
+                "SPRING_PROFILES_ACTIVE": "k8s"
             },
             "vmArgs": "-Dspring.profiles.active=k8s"
         },
@@ -27,7 +27,7 @@
             "mainClass": "com.openframe.api.ApiApplication",
             "projectName": "openframe-api",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "local"
+                "SPRING_PROFILES_ACTIVE": "k8s"
             },
             "vmArgs": "-Dspring.profiles.active=k8s"
         },
@@ -38,7 +38,7 @@
             "mainClass": "com.openframe.config.ConfigServerApplication",
             "projectName": "openframe-config",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "local"
+                "SPRING_PROFILES_ACTIVE": "k8s"
             },
             "vmArgs": "-Dspring.profiles.active=k8s"
         },
@@ -49,7 +49,7 @@
             "mainClass": "com.openframe.stream.StreamApplication",
             "projectName": "openframe-stream",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "local"
+                "SPRING_PROFILES_ACTIVE": "k8s"
             },
             "vmArgs": "-Dspring.profiles.active=k8s"
         },
@@ -60,7 +60,7 @@
             "mainClass": "com.openframe.gateway.GatewayApplication",
             "projectName": "openframe-gateway",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "local"
+                "SPRING_PROFILES_ACTIVE": "k8s"
             },
             "vmArgs": "-Dspring.profiles.active=k8s"
         }
