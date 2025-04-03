@@ -95,7 +95,7 @@ spec:
         - name: MESH_NGINX_HOST
           value: "meshcentral-nginx"
         - name: MESH_NGINX_NAT_HOST
-          value: "michaels-macbook-pro.local"
+          value: "meshcentral.192.168.100.100.nip.io"
         - name: MESH_NGINX_PORT
           value: "8383"
         - name: MESH_PERSISTENT_CONFIG
@@ -180,7 +180,7 @@ spec:
         - name: MESH_NGINX_HOST
           value: "meshcentral-nginx"
         - name: MESH_NGINX_NAT_HOST
-          value: "michaels-macbook-pro.local"
+          value: "meshcentral.192.168.100.100.nip.io"
         - name: MESH_NGINX_PORT
           value: "8383"
         - name: MESH_PERSISTENT_CONFIG
