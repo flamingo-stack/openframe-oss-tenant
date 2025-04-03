@@ -248,6 +248,9 @@ spec:
       - name: wait-for-backend
         image: redis:6.0-alpine
         command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
           echo "Waiting for Backend..." &&
           until nc -z tactical-backend 8000; do sleep 2; done &&
           echo "Backend is ready!" &&
