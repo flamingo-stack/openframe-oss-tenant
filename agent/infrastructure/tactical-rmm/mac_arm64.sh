@@ -46,6 +46,7 @@ SKIP_RUN="false"
 CLIENT_ID=""
 SITE_ID=""
 AGENT_TYPE="workstation"  # default
+NATS_PORT=""  # NATS port (required)
 
 ############################
 # Parse Script Arguments
@@ -93,6 +94,10 @@ while [[ $# -gt 0 ]]; do
       BUILD_FOLDER="$2"
       shift 2
       ;;
+    --nats-port)
+      NATS_PORT="$2"
+      shift 2
+      ;;
     --skip-run)
       SKIP_RUN="true"
       shift
@@ -110,6 +115,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --codesign-identity <IDENT>  Apple Developer ID for signing"
       echo "  --log-path <PATH>            Agent log file path"
       echo "  --build-folder <FOLDER>      Where to clone and compile (default: rmmagent)"
+      echo "  --nats-port <PORT>           NATS WebSocket port (required)"
       echo "  --skip-run                   Skip final 'run agent' step"
       echo ""
       echo "Any missing fields are prompted interactively."
@@ -196,14 +202,14 @@ function patch_nats_websocket_url() {
   # Create a backup
   cp "$agent_go_file" "$agent_go_file.bak"
   
-  # Replace the wss:// with ws:// in the NATS WebSocket URL construction and hardcode port 8000
+  # Replace the wss:// with ws:// in the NATS WebSocket URL construction and use configured port
   # This modifies the line: natsServer = fmt.Sprintf("wss://%s:%s", ac.APIURL, natsProxyPort)
-  sed -i '' 's/natsServer = fmt.Sprintf("wss:\/\/%s:%s", ac.APIURL, natsProxyPort)/natsServer = fmt.Sprintf("ws:\/\/%s:8000\/natsws", ac.APIURL)/g' "$agent_go_file"
+  sed -i '' "s/natsServer = fmt.Sprintf(\"wss:\/\/%s:%s\", ac.APIURL, natsProxyPort)/natsServer = fmt.Sprintf(\"ws:\/\/%s:$NATS_PORT\/natsws\", ac.APIURL)/g" "$agent_go_file"
   
-  # Also modify the URL construction when NatsStandardPort is set to use hardcoded port 8000
-  sed -i '' 's/natsServer = fmt.Sprintf("nats:\/\/%s:%s", ac.APIURL, ac.NatsStandardPort)/natsServer = fmt.Sprintf("ws:\/\/%s:8000\/natsws", ac.APIURL)/g' "$agent_go_file"
+  # Also modify the URL construction when NatsStandardPort is set to use configured port
+  sed -i '' "s/natsServer = fmt.Sprintf(\"nats:\/\/%s:%s\", ac.APIURL, ac.NatsStandardPort)/natsServer = fmt.Sprintf(\"ws:\/\/%s:$NATS_PORT\/natsws\", ac.APIURL)/g" "$agent_go_file"
   
-  echo "NATS WebSocket URL patch applied to $agent_go_file with hardcoded port 8000"
+  echo "NATS WebSocket URL patch applied to $agent_go_file with port $NATS_PORT"
   
   # Show the diff to verify changes
   echo "Showing diff of changes:"
@@ -483,6 +489,7 @@ function prompt_all_inputs() {
   prompt_if_empty "CLIENT_ID" "Client ID"
   prompt_if_empty "SITE_ID" "Site ID"
   prompt_if_empty "AGENT_TYPE" "Agent type (server/workstation) [server]" "server"
+  prompt_if_empty "NATS_PORT" "NATS WebSocket port (required)"
   # Only prompt for log path if explicitly requested
   if [ -n "$AGENT_LOG_PATH" ]; then
     prompt_if_empty "AGENT_LOG_PATH" "Agent log path"
@@ -497,7 +504,7 @@ function prompt_all_inputs() {
 prompt_all_inputs
 
 # Only show final values and proceed prompt if we're missing required parameters
-if [ -z "$RMM_SERVER_URL" ] || [ -z "$AGENT_AUTH_KEY" ] || [ -z "$CLIENT_ID" ] || [ -z "$SITE_ID" ]; then
+if [ -z "$RMM_SERVER_URL" ] || [ -z "$AGENT_AUTH_KEY" ] || [ -z "$CLIENT_ID" ] || [ -z "$SITE_ID" ] || [ -z "$NATS_PORT" ]; then
   echo ""
   echo "== Final values =="
   # Only display values that are actually set
@@ -506,6 +513,7 @@ if [ -z "$RMM_SERVER_URL" ] || [ -z "$AGENT_AUTH_KEY" ] || [ -z "$CLIENT_ID" ] |
   [ -n "$CLIENT_ID" ] && echo " Client ID       : $CLIENT_ID"
   [ -n "$SITE_ID" ] && echo " Site ID         : $SITE_ID"
   [ -n "$AGENT_TYPE" ] && echo " Agent Type      : $AGENT_TYPE"
+  [ -n "$NATS_PORT" ] && echo " NATS Port       : $NATS_PORT"
   [ -n "$AGENT_LOG_PATH" ] && echo " Log Path        : $AGENT_LOG_PATH"
   [ -n "$CODESIGN_IDENTITY" ] && echo " CodeSign ID     : $CODESIGN_IDENTITY"
   [ -n "$BUILD_FOLDER" ] && echo " Build Folder    : $BUILD_FOLDER"

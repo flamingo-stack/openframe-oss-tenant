@@ -49,6 +49,9 @@ param(
     [string]$BuildFolder = "rmmagent",
     
     [Parameter(Mandatory=$false)]
+    [string]$NatsPort = "",
+    
+    [Parameter(Mandatory=$false)]
     [switch]$SkipRun,
     
     [Parameter(Mandatory=$false)]
@@ -282,7 +285,8 @@ function Clone-Repository {
 
 function Patch-NatsWebsocketUrl {
     param(
-        [string]$RmmUrl
+        [string]$RmmUrl,
+        [string]$NatsPort
     )
     
     Write-Host "Patching NATS WebSocket URL..." -ForegroundColor Yellow
@@ -291,14 +295,12 @@ function Patch-NatsWebsocketUrl {
     if (Test-Path $agentGoFile) {
         $content = Get-Content $agentGoFile -Raw
         
-        # Extract host and port from RMM URL
+        # Extract host from RMM URL
         $uri = [System.Uri]$RmmUrl
         $rmmHost = $uri.Host
-        $rmmPort = if ($uri.Port -ne -1) { $uri.Port } else { if ($uri.Scheme -eq "https") { 443 } else { 80 } }
-        $wsProtocol = if ($uri.Scheme -eq "https") { "wss" } else { "ws" }
         
-        # Set the NATS server URL using the RMM server details (without /natsws suffix)
-        $natsUrl = "${wsProtocol}://${rmmHost}:${rmmPort}"
+        # Set the NATS server URL using the RMM server host and provided NATS port
+        $natsUrl = "ws://${rmmHost}:${NatsPort}/natsws"
         
         # Pattern 1: WebSocket secure pattern
         $wsPattern = 'natsServer = fmt.Sprintf\("wss://%s:%s", ac.APIURL, natsProxyPort\)'
@@ -312,7 +314,7 @@ function Patch-NatsWebsocketUrl {
         }
         
         # Pattern 2: Standard NATS pattern
-        $natsPattern = 'natsServer = fmt.Sprintf\("tls://%s:%s", ac.APIURL, ac.NatsStandardPort\)'
+        $natsPattern = 'natsServer = fmt.Sprintf\("nats://%s:%s", ac.APIURL, ac.NatsStandardPort\)'
         $natsMatches = [regex]::Matches($content, $natsPattern)
         if ($natsMatches.Count -gt 0) {
             Write-Host "`nFound standard NATS pattern in ${agentGoFile}:" -ForegroundColor Yellow
@@ -1091,7 +1093,7 @@ function Show-Help {
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
     Write-Host "  -RmmHost        Hostname or IP of the RMM server"
-    Write-Host "  -RmmPort        Port number for the RMM server (default: 8000)"
+    Write-Host "  -NatsPort       NATS WebSocket port (required)"
     Write-Host "  -Secure         Use HTTPS/WSS for secure connection"
     Write-Host "  -AuthKey        Authentication key for the RMM server"
     Write-Host "  -ClientId       Client ID"
@@ -1104,7 +1106,7 @@ function Show-Help {
     Write-Host "  .\windows_amd64.ps1 -Help"
     Write-Host ""
     Write-Host "  # Non-interactive mode with all parameters:"
-    Write-Host "  .\windows_amd64.ps1 -RmmHost 'rmm.example.com' -RmmPort 8000 -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'server'"
+    Write-Host "  .\windows_amd64.ps1 -RmmHost 'rmm.example.com' -NatsPort 8000 -AuthKey 'your-auth-key' -ClientId 1 -SiteId 1 -AgentType 'server'"
     Write-Host ""
     Write-Host "Note: This script requires administrator privileges." -ForegroundColor Red
     Write-Host "=========================================================" -ForegroundColor Cyan
@@ -1238,8 +1240,14 @@ try {
     # Clone repository
     Clone-Repository -RepoUrl "https://github.com/amidaware/rmmagent.git" -Branch "master" -Folder $BuildFolder
 
-    # Patch NATS WebSocket URL with the RMM server URL
-    Patch-NatsWebsocketUrl -RmmUrl $RmmServerUrl
+    # Validate NATS port is provided
+    if ([string]::IsNullOrEmpty($NatsPort)) {
+        Write-ColorMessage "Error: NATS port is required. Please provide -NatsPort parameter." "Red"
+        exit 1
+    }
+
+    # Patch NATS WebSocket URL with the RMM server URL and NATS port
+    Patch-NatsWebsocketUrl -RmmUrl $RmmServerUrl -NatsPort $NatsPort
 
     # Patch agent code (org name, email, and log level)
     Patch-AgentCode
