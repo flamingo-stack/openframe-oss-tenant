@@ -10,7 +10,7 @@ spring:
 
     # Docker Redis connection (only used by API)
     redis:
-      host: openframe-redis-headless
+      host: openframe-redis-headless.infrastructure.svc.cluster.local
       port: 6379
 
 # Docker logging configuration
