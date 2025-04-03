@@ -24,4 +24,4 @@ spring:
     url: http://openframe-config-server.infrastructure.svc.cluster.local:8888
     activate:
       on-profile: k8s
-    import: "optional:configserver:http://openframe-mongodb.infrastructure.svc.cluster.local:8888"
+    import: "optional:configserver:http://openframe-config-server.infrastructure.svc.cluster.local:8888"

@@ -1,25 +1,6 @@
 spring:
   application:
     name: openframe-gateway
-
----
-spring:
-  config:
-    url: http://localhost:8888
-    activate:
-      on-profile: local
-    import: "optional:configserver:http://localhost:8888"
-
----
-spring:
-  config:
-    url: http://openframe-config-server:8888
-    activate:
-      on-profile: docker
-    import: "optional:configserver:http://openframe-config-server:8888"
-
----
-spring:
   config:
     url: http://openframe-config-server.infrastructure.svc.cluster.local:8888
     activate:

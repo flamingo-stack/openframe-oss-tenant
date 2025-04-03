@@ -102,7 +102,3 @@ oauth:
       scopes:
         - read
         - write
-
-openframe:
-  management:
-    url: http://openframe-management:8095

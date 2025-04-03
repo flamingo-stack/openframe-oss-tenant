@@ -1,7 +1,7 @@
 # Stream service docker environment configuration
 spring:
   kafka:
-    bootstrap-servers: openframe-kafka:9092
+    bootstrap-servers: openframe-kafka.infrastructure.svc.cluster.local:9092
 
   data:
     mongodb:
@@ -9,4 +9,4 @@ spring:
 
 # Docker monitoring endpoints
 loki:
-  url: http://openframe-loki.monitoring:3100/loki/api/v1/push
+  url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
