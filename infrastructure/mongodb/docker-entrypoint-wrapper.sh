@@ -20,14 +20,12 @@ if [ ! -f "/data/db/.mongodb/.mongodb_password_set" ]; then
     echo "First time initialization..."
 
     # Remove any existing data for clean initialization
-    rm -rf /data/db/* /var/log/mongodb/*
+    rm -rf /data/db/* /data/db/.* /var/log/mongodb/* /data/configdb/* /var/log/mongodb/*
 
     # Create necessary directories with proper permissions
     mkdir -p /data/db/.mongodb \
-        /data/configdb \
         /data/db/journal \
-        /data/db/diagnostic.data \
-        /var/log/mongodb && \
+        /data/db/diagnostic.data && \
     chmod -R 770 /data/db /var/log/mongodb
 
     # Start MongoDB temporarily without authentication

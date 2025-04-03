@@ -28,19 +28,22 @@ RUN mkdir -p \
 
 # Copy initialization scripts
 # COPY mongo-init.js.template /docker-entrypoint-initdb.d/
-COPY docker-entrypoint-wrapper.sh /usr/local/bin/
+COPY mongo-init.sh /docker-entrypoint-initdb.d/
+# COPY docker-entrypoint-wrapper.sh /usr/local/bin/
 
 # Set proper permissions for the scripts
-RUN chmod 755 /usr/local/bin/docker-entrypoint-wrapper.sh && \
-    chown mongodb:mongodb /usr/local/bin/docker-entrypoint-wrapper.sh
+# RUN chmod 755 /usr/local/bin/docker-entrypoint-wrapper.sh && \
+#     chown mongodb:mongodb /usr/local/bin/docker-entrypoint-wrapper.sh
+RUN chmod 755 /docker-entrypoint-initdb.d/mongo-init.sh && \
+    chown mongodb:mongodb /docker-entrypoint-initdb.d/mongo-init.sh
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD mongo --eval 'db.runCommand("ping").ok' localhost:27017/test --quiet || exit 1
 
 # Switch to mongodb user
-USER mongodb
+# USER mongodb
 
 # # Set the entrypoint to our wrapper script
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint-wrapper.sh"]
+# ENTRYPOINT ["/usr/local/bin/docker-entrypoint-wrapper.sh"]
 
-CMD ["mongod", "--bind_ip_all", "--auth"]
+# CMD ["mongod", "--bind_ip_all", "--auth"]
