@@ -51,8 +51,8 @@ openframe/.DS_Store
 /tacticalrmm
 **/rmmagent_build/**
 **/rmmagent_build
-**/tactical-rmm/rmmagent_build/**
 **/tactical-rmm/rmmagent_build**
+**/tactical-rmm/rmmagent_build
 **/tactical-rmm/rmmagent
 /agent/infrastructure/tactical-rmm/rmm_build_1740724424
 /rmmagent
