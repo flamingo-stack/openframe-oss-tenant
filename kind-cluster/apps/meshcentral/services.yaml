@@ -34,15 +34,73 @@ spec:
   ports:
   - port: 8383
     targetPort: 8383
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: meshcentral-ui
+#   annotations:
+#     # nginx.ingress.kubernetes.io/rewrite-target: /
+#     # Enable HTTPS backend
+#     # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+#     # WebSocket support
+#     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+#     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+#     # WebSocket connection upgrade
+#     nginx.ingress.kubernetes.io/enable-websocket: "true"
+#     # SSL Passthrough
+#     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+#     # Force SSL redirect
+#     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+# spec:
+#   rules:
+#     - host: meshcentral.192.168.100.100.nip.io
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 # name: meshcentral-nginx
+#                 # port:
+#                 #   number: 8383
+#                 name: meshcentral
+#                 port:
+#                   # name: meshcentral
+#                   number: 8383
+
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: meshcentral-agent
+#   # annotations:
+#   #   # Force SSL redirect
+#   #   nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+# spec:
+#   rules:
+#     - host: mesh-agent.192.168.100.100.nip.io
+#       http:
+#         paths:
+#           - path: /openframe_public/
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: meshcentral
+#                 port:
+#                   name: agent
+
+
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: meshcentral
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/rewrite-target: /
     # Enable HTTPS backend
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     # WebSocket support
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
@@ -57,10 +115,17 @@ spec:
     - host: meshcentral.192.168.100.100.nip.io
       http:
         paths:
+          - path: /openframe_public/
+            pathType: Prefix
+            backend:
+              service:
+                name: meshcentral
+                port:
+                  name: agent
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: meshcentral-nginx
+                name: meshcentral
                 port:
-                  number: 8383
+                  name: meshcentral
