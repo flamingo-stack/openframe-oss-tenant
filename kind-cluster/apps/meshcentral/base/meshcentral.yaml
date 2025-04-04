@@ -15,6 +15,8 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
+        runAsUser: 0
       containers:
       - name: meshcentral
         image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
