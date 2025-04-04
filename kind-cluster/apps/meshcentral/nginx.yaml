@@ -1,0 +1,82 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshcentral-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshcentral-nginx
+  template:
+    metadata:
+      labels:
+        app: meshcentral-nginx
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: nginx
+        image: ghcr.io/flamingo-cx/openframe-meshcentral-nginx:latest
+        ports:
+        - containerPort: 8383
+        env:
+        - name: MONGODB_HOST
+          value: "meshcentral-mongodb"
+        - name: MONGODB_PORT
+          value: "27017"
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "mongouser"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: "mongopass"
+        - name: MONGO_INITDB_DATABASE
+          value: "meshcentral"
+        - name: MESH_USER
+          value: "mesh@openframe.io"
+        - name: MESH_PASS
+          value: "meshpass@1234"
+        - name: MESH_DEVICE_GROUP
+          value: "OpenFrame"
+        - name: MESH_PORT
+          value: "8383"
+        - name: MESH_HOST
+          value: "meshcentral.meshcentral.svc.cluster.local"
+        - name: MESH_EXTERNAL_HOST
+          value: "meshcentral"
+        - name: MESH_EXTERNAL_PORT
+          value: "8383"
+        - name: MESH_NGINX_HOST
+          value: "meshcentral-nginx"
+        - name: MESH_NGINX_NAT_HOST
+          value: "michaels-macbook-pro.local"
+        - name: MESH_NGINX_PORT
+          value: "8383"
+        - name: MESH_PERSISTENT_CONFIG
+          value: "0"
+        - name: MESH_DISABLE_SSL
+          value: "1"
+        - name: MESH_COMPRESSION_ENABLED
+          value: "true"
+        - name: MESH_WEBRTC_ENABLED
+          value: "false"
+        - name: MESH_TEMP_DIR
+          value: "/tmp/mesh"
+        - name: MESH_DIR
+          value: "/opt/mesh"
+        - name: MESH_PROTOCOL
+          value: "wss"
+        - name: RESOLVER
+          value: "kube-dns.kube-system.svc.cluster.local"
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /etc/nginx/conf.d
+        livenessProbe:
+          httpGet:
+            path: /nginx-health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+      volumes:
+      - name: nginx-data
+        persistentVolumeClaim:
+          claimName: meshcentral-nginx-data
