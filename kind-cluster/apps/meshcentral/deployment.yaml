@@ -21,7 +21,10 @@ spec:
       - name: meshcentral
         image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
         ports:
-        - containerPort: 8383
+        - name: meshcentral
+          containerPort: 8383
+        - name: agent
+          containerPort: 80
         env:
         - name: MONGODB_HOST
           value: "meshcentral-mongodb"
