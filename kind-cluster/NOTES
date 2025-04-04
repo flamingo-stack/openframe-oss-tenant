@@ -1,2 +1,3 @@
 # Deprecated builds
 ./infrastructure/mongodb
+./infrastructure/meshcentral/nginx
