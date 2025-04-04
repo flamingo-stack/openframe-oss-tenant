@@ -67,27 +67,27 @@ spec:
           value: "wss"
         - name: RESOLVER
           value: "kube-dns.kube-system.svc.cluster.local"
-        # volumeMounts:
-        # - name: nginx-data
-        #   mountPath: /etc/nginx/conf.d
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /etc/nginx/conf.d
         livenessProbe:
           httpGet:
             path: /nginx-health
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 15
-      # volumes:
-      # - name: nginx-data
-      #   persistentVolumeClaim:
-      #     claimName: meshcentral-nginx-data
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: meshcentral-nginx-data
-# spec:
-#   accessModes:
-#     - ReadWriteOnce
-#   resources:
-#     requests:
-#       storage: 1Gi
+      volumes:
+      - name: nginx-data
+        persistentVolumeClaim:
+          claimName: meshcentral-nginx-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshcentral-nginx-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
