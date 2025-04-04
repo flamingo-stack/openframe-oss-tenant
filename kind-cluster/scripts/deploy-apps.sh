@@ -323,8 +323,7 @@ case "$1" in
   f|fast)
     # ------------- ALL no wait for state=Ready -------------
     $0 ingress-nginx && \
-    $0 grafana && \
-    $0 loki && \
+    $0 monitoring && \
     $0 redis
     $0 kafka
     $0 mongodb
@@ -349,15 +348,12 @@ case "$1" in
   m|minimal)
     # ------------- ALL no wait for state=Ready -------------
     $0 ingress-nginx && \
-    $0 grafana && \
-    $0 loki
-    $0 tools
+    $0 monitoring
     ;;
   infrastructure)
     # ------------- INFRASTRUCTURE -------------
     $0 ingress-nginx && \
-    $0 grafana && \
-    $0 loki && \
+    $0 monitoring && \
     $0 redis
     $0 kafka
     $0 mongodb
@@ -374,6 +370,10 @@ case "$1" in
     $0 openframe-ui
     $0 tools
     ;;
+  monitoring)
+    $0 grafana
+    $0 loki
+    ;;
   tools)
     $0 telepresence
     $0 mongo-express
@@ -385,9 +385,7 @@ case "$1" in
       echo
       echo "Available options:"
       echo "  infrastructure       Deploy infrastructure applications"
-      echo "      ingress-nginx    [-] Deploy Ingress Nginx"
-      echo "      grafana          [-] Deploy Grafana and Prometheus stack"
-      echo "      loki             [i] Deploy Loki and Promtail"
+      echo "      ingress-nginx    [i] Deploy Ingress Nginx"
       echo "      redis            [n] Deploy Redis"
       echo "      kafka            [f] Deploy Kafka"
       echo "      mongodb          [a] Deploy MongoDB"
@@ -402,6 +400,10 @@ case "$1" in
       echo "      stream           [-] Deploy Stream"
       echo "      gateway          [-] Deploy Gateway"
       echo "      openframe-ui     [-] Deploy OpenFrame UI"
+      echo "      monitoring       Deploy monitoring"
+      echo "  monitoring           Deploy monitoring"
+      echo "      grafana          [-] Deploy Grafana and Prometheus stack"
+      echo "      loki             [-] Deploy Loki and Promtail"
       echo "  tools                Deploy tools"
       echo "      telepresence     [t] Deploy Telepresence"
       echo "      mongo-express    [o] Deploy Mongo Express"
