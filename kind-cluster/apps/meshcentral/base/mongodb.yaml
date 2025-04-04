@@ -45,3 +45,14 @@ spec:
       - name: mongo-data
         persistentVolumeClaim:
           claimName: meshcentral-mongo-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshcentral-mongo-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

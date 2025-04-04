@@ -85,3 +85,14 @@ spec:
       # - name: meshcentral-data
       #   persistentVolumeClaim:
       #     claimName: meshcentral-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshcentral-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
