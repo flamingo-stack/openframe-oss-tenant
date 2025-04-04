@@ -96,7 +96,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame UI" \
     "OpenFrame User Interface Service" \
-    '[{"url": "http://openframe-ui", "port": "4000", "type": "DASHBOARD"}]' \
+    '[{"url": "http://openframe-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
     "" \
     "" \
     "" \
@@ -224,7 +224,7 @@ register_tool \
     "NIFI" \
     "Apache NiFi" \
     "NiFi Data Integration Platform" \
-    '[{"url": "https://openframe-nifi", "port": "8443", "type": "DASHBOARD"}, {"url": "https://openframe-nifi", "port": "9096", "type": "API"}]' \
+    '[{"url": "https://openframe-nifi.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://openframe-nifi", "port": "9096", "type": "API"}]' \
     "openframe" \
     "password123456789" \
     "" \
@@ -494,13 +494,14 @@ echo "- Tactical RMM API: http://tactical-api.192.168.100.100.nip.io"
 echo "- Tactical RMM Websockets: http://localhost:8384"
 echo "- Kafka UI: http://kafka-ui.192.168.100.100.nip.io"
 echo "- MongoDB Express: http://mongo-express.192.168.100.100.nip.io"
-echo "- NiFi: https://localhost:8443"
+echo "- NiFi: https://openframe-nifi.192.168.100.100.nip.io/"
 echo "- Grafana: http://grafana.192.168.100.100.nip.io"
 echo "- Prometheus: http://prometheus.192.168.100.100.nip.io"
 echo "- Fleet MDM: http://fleet.192.168.100.100.nip.io"
-echo "- MeshCentral: https://meshcentral.192.168.100.100.nip.io/"
+echo "- MeshCentral: https://meshcentral.192.168.100.100.nip.io"
 echo "- OpenFrame Config Service: http://localhost:8090"
 echo "- OpenFrame Stream Service: http://localhost:8091"
 echo "- OpenFrame API Service: http://localhost:8092"
 
+echo "Ingresses:"
 kubectl get ingress -A | tr -s "  " " " | cut -d " " -f 4 | grep -v HOSTS

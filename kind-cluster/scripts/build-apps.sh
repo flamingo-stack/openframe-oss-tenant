@@ -29,6 +29,9 @@ case $1 in
   mongodb)
     build_app ./infrastructure/mongodb $ARGS
     ;;
+  meshcentral)
+    build_app ./infrastructure/meshcentral/server $ARGS
+    ;;
   *)
       echo
       echo "Pass app name to build specific app"
@@ -54,7 +57,7 @@ case $1 in
       # echo "  openframe-ui     Build OpenFrame UI"
       # echo "  authentik        Build Authentik"
       # echo "  fleet            Build Fleet"
-      # echo "  meshcentral      Build Mesh Central"
+      echo "  meshcentral      Build Mesh Central"
       # echo "  rmm              Build RMM"
       echo
       # echo "  a|all            Build all applications"
