@@ -99,10 +99,14 @@ metadata:
   name: meshcentral
   annotations:
     # WebSocket support
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
     # WebSocket connection upgrade
     nginx.ingress.kubernetes.io/enable-websocket: "true"
+    # WebSocket proxy settings
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
     # SSL Passthrough
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     # Force SSL redirect

@@ -46,18 +46,14 @@ spec:
           value: "8383"
         - name: MESH_HOST
           value: "meshcentral.meshcentral.svc.cluster.local"
-        # https://github.com/Ylianst/MeshCentral/issues/5826
         - name: MESH_EXTERNAL_HOST
-          # value: "localhost"
           value: "meshcentral.192.168.100.100.nip.io"
         - name: MESH_EXTERNAL_PORT
-          value: "8383"
+          value: "443"
         - name: MESH_NGINX_HOST
-          value: "meshcentral-nginx"
+          value: "meshcentral.192.168.100.100.nip.io"
         - name: MESH_NGINX_NAT_HOST
           value: "meshcentral.192.168.100.100.nip.io"
-        - name: MESH_NGINX_PORT
-          value: "8383"
         - name: MESH_PERSISTENT_CONFIG
           value: "0"
         - name: MESH_DISABLE_SSL

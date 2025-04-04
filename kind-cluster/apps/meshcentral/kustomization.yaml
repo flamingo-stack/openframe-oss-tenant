@@ -1,5 +1,5 @@
 resources:
   - base/meshcentral.yaml
   - base/mongodb.yaml
-  - base/nginx.yaml
+  # - base/nginx.yaml
   - base/services.yaml
