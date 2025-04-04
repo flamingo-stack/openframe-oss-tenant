@@ -70,7 +70,7 @@ spec:
           value: "wss"
         volumeMounts:
         - name: meshcentral-data
-          mountPath: /opt/meshcentral  # FIX: actual data path is /opt/mesh/
+          mountPath: /opt/mesh
         livenessProbe:
           httpGet:
             path: /health.ashx
