@@ -98,9 +98,6 @@ kind: Ingress
 metadata:
   name: meshcentral
   annotations:
-    # nginx.ingress.kubernetes.io/rewrite-target: /
-    # Enable HTTPS backend
-    # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     # WebSocket support
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"

@@ -71,16 +71,16 @@ spec:
           value: "/opt/mesh"
         - name: MESH_PROTOCOL
           value: "wss"
-        volumeMounts:
-        - name: meshcentral-data
-          mountPath: /opt/mesh
+        # volumeMounts:
+        # - name: meshcentral-data
+        #   mountPath: /opt/mesh
         livenessProbe:
           httpGet:
             path: /health.ashx
             port: 8383
           initialDelaySeconds: 30
           periodSeconds: 15
-      volumes:
-      - name: meshcentral-data
-        persistentVolumeClaim:
-          claimName: meshcentral-data
+      # volumes:
+      # - name: meshcentral-data
+      #   persistentVolumeClaim:
+      #     claimName: meshcentral-data
