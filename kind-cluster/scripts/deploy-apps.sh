@@ -265,20 +265,23 @@ case "$1" in
   a|all)
     # ------------- ALL -------------
     $0 ingress-nginx && \
-    $0 grafana && \
-    $0 loki && \
+      kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/instance=ingress-nginx --timeout 20m && \
+    $0 monitoring && \
+      kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/instance=kube-prometheus-stack --timeout 20m && \
+      kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/instance=kube-prometheus-stack-prometheus --timeout 20m && \
+      kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/instance=kube-prometheus-stack-alertmanager --timeout 20m && \
       kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-loki --timeout 20m && \
       kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m && \
     $0 redis && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=openframe-redis --timeout 20m && \
     $0 kafka && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=openframe-kafka --timeout 20m && \
     $0 mongodb && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app=mongo-express --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-mongodb --timeout 20m && \
     $0 mongodb-exporter && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-mongodb-exporter --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=prometheus-mongodb-exporter --timeout 20m && \
     $0 cassandra && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=cassandra --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=openframe-cassandra --timeout 20m && \
     $0 nifi && \
       kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m && \
     $0 zookeeper && \
@@ -309,7 +312,6 @@ case "$1" in
     $0 meshcentral && \
       kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral --timeout 20m && \
       kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m && \
-      kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-nginx --timeout 20m && \
     $0 rmm && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-backend --timeout 20m && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-celery --timeout 20m && \
@@ -317,8 +319,8 @@ case "$1" in
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-frontend --timeout 20m && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-nats --timeout 20m && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-websockets --timeout 20m && \
-    $0 register-tools && \
-    $0 tools
+    $0 tools && \
+    $0 register-apps
     ;;
   f|fast)
     # ------------- ALL no wait for state=Ready -------------
@@ -342,7 +344,7 @@ case "$1" in
     $0 fleet
     $0 meshcentral
     $0 rmm
-    $0 register-tools
+    $0 register-apps
     $0 tools
     ;;
   m|minimal)
