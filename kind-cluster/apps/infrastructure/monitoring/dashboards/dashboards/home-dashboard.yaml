@@ -160,7 +160,7 @@ data:
           "type": "stat",
           "targets": [
             {
-              "expr": "up{job=\"openframe-config\"}",
+              "expr": "up{job=\"openframe-config-server\"}",
               "legendFormat": "Config"
             }
           ]
@@ -432,7 +432,7 @@ data:
           "type": "stat",
           "targets": [
             {
-              "expr": "up{job=\"cassandra\"}",
+              "expr": "up{job=\"openframe-cassandra\"}",
               "legendFormat": "Cassandra"
             }
           ]
@@ -500,7 +500,7 @@ data:
           "type": "stat",
           "targets": [
             {
-              "expr": "up{job=\"pinot\"}",
+              "expr": "up{job=\"openframe-pinot-server\"}",
               "legendFormat": "Pinot"
             }
           ]
@@ -568,7 +568,7 @@ data:
           "type": "stat",
           "targets": [
             {
-              "expr": "up{job=\"nifi\"}",
+              "expr": "up{job=\"openframe-nifi\"}",
               "legendFormat": "NiFi"
             }
           ]
@@ -636,7 +636,7 @@ data:
           "type": "stat",
           "targets": [
             {
-              "expr": "up{job=\"loki\"}",
+              "expr": "up{job=\"openframe-loki\"}",
               "legendFormat": "Loki"
             }
           ]

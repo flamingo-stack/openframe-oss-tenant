@@ -21,6 +21,7 @@ check_command "kind"
 check_command "docker"
 check_command "helm"
 check_command "kubectl"
+check_command "telepresence"
 
 sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
 sudo sysctl -p > /dev/null 2>&1
@@ -69,6 +70,9 @@ c|cleanup)
     docker exec $node crictl rmi --prune
   done
   ;;
+build)
+  bash ./kind-cluster/scripts/build-apps.sh "$2"
+  ;;
 *) echo "Usage:
 $0 <parameter>
 
@@ -81,6 +85,7 @@ u|up                   : Setup cluster only
 a|app <app-name>|all   : Deploy all apps or specific app if app-name is provided
 d|down                 : Remove cluster
 c|cleanup              : Cleanup kind nodes from unused images
+b|build <app-name>     : Build specific app
 
 Examples:
   $0 app all         # Deploy all applications

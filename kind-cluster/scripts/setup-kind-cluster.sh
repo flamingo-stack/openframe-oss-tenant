@@ -3,6 +3,8 @@
 # Set the IP address
 K8S_VERSION="v1.32.3"
 
+helm repo update
+
 # Bootsrap cluster
 if ! [ "kind" == "$(kind get clusters --quiet)" ]; then
     # Check operating system and configure IP accordingly

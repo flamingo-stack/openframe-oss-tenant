@@ -1,0 +1,4 @@
+resources:
+  - base/meshcentral.yaml
+  - base/mongodb.yaml
+  - base/services.yaml

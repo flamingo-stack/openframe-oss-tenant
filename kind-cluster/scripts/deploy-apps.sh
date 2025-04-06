@@ -9,6 +9,10 @@ kubectl -n infrastructure create secret docker-registry github-pat-secret \
   --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
 
 case "$1" in
+  telepresence)
+    telepresence helm install --upgrade &&
+    telepresence connect
+    ;;
   ingress-nginx)
     # INGRESS-NGINX
     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx && \
@@ -24,7 +28,7 @@ case "$1" in
     helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
       -n monitoring --create-namespace \
       --version 69.8.2 \
-      -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml && \
+      -f ./kind-cluster/apps/infrastructure/monitoring/helm/kube-prometheus-stack.yaml --timeout 20m && \
     kubectl -n monitoring wait --for=condition=Ready pod -l release=kube-prometheus-stack --timeout 20m && \
     kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/monitoring/dashboards
     ;;
@@ -110,6 +114,17 @@ case "$1" in
   mongodb)
     # MONGO DB (depends on Loki)
     kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
+
+    # kubectl -n infrastructure create secret generic openframe-mongodb-secrets \
+    #   --from-literal=mongodb-root-password=password123456789 \
+    #   --from-literal=mongodb-passwords=password123456789 \
+    #   --from-literal=mongodb-replica-set-key=MwfJv7CxZ1 \
+    #   --dry-run=client -o yaml | kubectl apply -f - && \
+    # helm repo add bitnami https://charts.bitnami.com/bitnami && \
+    # helm upgrade -i openframe-mongodb bitnami/mongodb \
+    #   --namespace infrastructure --create-namespace \
+    #   --version 16.4.12 \
+    #   -f ./kind-cluster/apps/infrastructure/openframe-mongodb/helm/bitnami-values.yaml
     ;;
   mongodb-exporter)
     # MONGO EXPORTER (depends on MongoDB, Loki)
@@ -229,7 +244,7 @@ case "$1" in
       --docker-username=vusal-fl \
       --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
       --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
-    kubectl -n meshcentral apply -f ./kind-cluster/apps/meshcentral
+    kubectl -n meshcentral apply -k ./kind-cluster/apps/meshcentral
     ;;
   rmm)
     # ------------- RMM -------------
@@ -241,7 +256,7 @@ case "$1" in
       --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
     kubectl -n tactical-rmm apply -f ./kind-cluster/apps/tactical-rmm
     ;;
-  register-tools)
+  register-apps)
     # ------------- REGISTER TOOLS -------------
     # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
@@ -250,24 +265,23 @@ case "$1" in
   a|all)
     # ------------- ALL -------------
     $0 ingress-nginx && \
-    $0 grafana && \
-    $0 loki && \
+      kubectl -n ingress-nginx wait --for=condition=Ready pod -l app.kubernetes.io/instance=ingress-nginx --timeout 20m && \
+    $0 monitoring && \
+      kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/instance=kube-prometheus-stack --timeout 20m && \
+      kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/instance=kube-prometheus-stack-prometheus --timeout 20m && \
+      kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/instance=kube-prometheus-stack-alertmanager --timeout 20m && \
       kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-loki --timeout 20m && \
       kubectl -n monitoring wait --for=condition=Ready pod -l app=openframe-promtail --timeout 20m && \
     $0 redis && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=redis --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=openframe-redis --timeout 20m && \
     $0 kafka && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka --timeout 20m && \
-    $0 kafka-ui && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka-ui --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=openframe-kafka --timeout 20m && \
     $0 mongodb && \
       kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-mongodb --timeout 20m && \
-    $0 mongo-express && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app=mongo-express --timeout 20m && \
     $0 mongodb-exporter && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-mongodb-exporter --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=prometheus-mongodb-exporter --timeout 20m && \
     $0 cassandra && \
-      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/name=cassandra --timeout 20m && \
+      kubectl -n infrastructure wait --for=condition=Ready pod -l app.kubernetes.io/instance=openframe-cassandra --timeout 20m && \
     $0 nifi && \
       kubectl -n infrastructure wait --for=condition=Ready pod -l app=openframe-nifi --timeout 20m && \
     $0 zookeeper && \
@@ -298,7 +312,6 @@ case "$1" in
     $0 meshcentral && \
       kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral --timeout 20m && \
       kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-mongodb --timeout 20m && \
-      kubectl -n meshcentral wait --for=condition=Ready pod -l app=meshcentral-nginx --timeout 20m && \
     $0 rmm && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-backend --timeout 20m && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-celery --timeout 20m && \
@@ -306,19 +319,17 @@ case "$1" in
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-frontend --timeout 20m && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-nats --timeout 20m && \
       kubectl -n tactical-rmm wait --for=condition=Ready pod -l app=tactical-websockets --timeout 20m && \
-    $0 register-tools
+    $0 tools && \
+    $0 register-apps
     ;;
   f|fast)
     # ------------- ALL no wait for state=Ready -------------
     $0 ingress-nginx && \
-    $0 grafana && \
-    $0 loki && \
+    $0 monitoring && \
     $0 redis
     $0 kafka
-    $0 kafka-ui
     $0 mongodb
     $0 mongodb-exporter
-    $0 mongo-express
     $0 cassandra
     $0 nifi
     $0 zookeeper
@@ -333,47 +344,80 @@ case "$1" in
     $0 fleet
     $0 meshcentral
     $0 rmm
-    $0 register-tools
+    $0 register-apps
+    $0 tools
     ;;
   m|minimal)
     # ------------- ALL no wait for state=Ready -------------
     $0 ingress-nginx && \
-    $0 grafana && \
+    $0 monitoring
+    ;;
+  infrastructure)
+    # ------------- INFRASTRUCTURE -------------
+    $0 ingress-nginx && \
+    $0 monitoring && \
+    $0 redis
+    $0 kafka
+    $0 mongodb
+    $0 mongodb-exporter
+    $0 cassandra
+    $0 nifi
+    $0 zookeeper
+    $0 pinot
+    $0 config-server
+    $0 api
+    $0 management
+    $0 stream
+    $0 gateway
+    $0 openframe-ui
+    $0 tools
+    ;;
+  monitoring)
+    $0 grafana
     $0 loki
+    ;;
+  tools)
+    $0 telepresence
+    $0 mongo-express
+    $0 kafka-ui
     ;;
   *)
       echo
       echo "Pass app name to deploy specific app to deploy application to the Kubernetes cluster"
       echo
       echo "Available options:"
-      echo "  ingress-nginx    Deploy Ingress Nginx"
-      echo "  grafana          Deploy Grafana and Prometheus stack"
-      echo "  loki             Deploy Loki and Promtail"
-      echo "  redis            Deploy Redis"
-      echo "  efk              Deploy Elasticsearch, Fluentd, Kibana stack"
-      echo "  kafka            Deploy Kafka"
-      echo "  kafka-ui         Deploy Kafka UI"
-      echo "  mongodb          Deploy MongoDB"
-      echo "  mongodb-exporter Deploy MongoDB exporter"
-      echo "  mongo-express    Deploy Mongo Express"
-      echo "  cassandra        Deploy Cassandra"
-      echo "  nifi             Deploy NiFi"
-      echo "  zookeeper        Deploy Zookeeper"
-      echo "  pinot            Deploy Pinot"
-      echo "  config-server    Deploy Config Server"
-      echo "  api              Deploy API"
-      echo "  management       Deploy Management"
-      echo "  stream           Deploy Stream"
-      echo "  gateway          Deploy Gateway"
-      echo "  openframe-ui     Deploy OpenFrame UI"
-      echo "  authentik        Deploy Authentik"
-      echo "  fleet            Deploy Fleet"
-      echo "  meshcentral      Deploy Mesh Central"
-      echo "  rmm              Deploy RMM"
-      echo "  register-tools   Register tools"
+      echo "  infrastructure       Deploy infrastructure applications"
+      echo "      ingress-nginx    [i] Deploy Ingress Nginx"
+      echo "      redis            [n] Deploy Redis"
+      echo "      kafka            [f] Deploy Kafka"
+      echo "      mongodb          [a] Deploy MongoDB"
+      echo "      mongodb-exporter [s] Deploy MongoDB exporter"
+      echo "      cassandra        [r] Deploy Cassandra"
+      echo "      nifi             [u] Deploy NiFi"
+      echo "      zookeeper        [c] Deploy Zookeeper"
+      echo "      pinot            [t] Deploy Pinot"
+      echo "      config-server    [u] Deploy Config Server"
+      echo "      api              [r] Deploy API"
+      echo "      management       [e] Deploy Management"
+      echo "      stream           [-] Deploy Stream"
+      echo "      gateway          [-] Deploy Gateway"
+      echo "      openframe-ui     [-] Deploy OpenFrame UI"
+      echo "      monitoring       Deploy monitoring"
+      echo "  monitoring           Deploy monitoring"
+      echo "      grafana          [-] Deploy Grafana and Prometheus stack"
+      echo "      loki             [-] Deploy Loki and Promtail"
+      echo "  tools                Deploy tools"
+      echo "      telepresence     [t] Deploy Telepresence"
+      echo "      mongo-express    [o] Deploy Mongo Express"
+      echo "      kafka-ui         [o] Deploy Kafka UI"
+      echo "  authentik            Deploy Authentik"
+      echo "  fleet                Deploy Fleet"
+      echo "  meshcentral          Deploy Mesh Central"
+      echo "  rmm                  Deploy RMM"
+      echo "  register-apps       Register apps"
       echo
-      echo "  a|all            Deploy all applications"
-      echo "  f|fast           Deploy all applications but don't wait for state=Ready"
-      echo "  m|minimal        Deploy base applications"
+      echo "  a|all                Deploy all applications"
+      echo "  f|fast               Deploy all applications but don't wait for state=Ready"
+      echo "  m|minimal            Deploy base applications"
       exit 1
 esac
