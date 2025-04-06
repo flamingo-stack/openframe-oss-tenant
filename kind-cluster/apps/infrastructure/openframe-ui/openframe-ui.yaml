@@ -22,15 +22,15 @@ spec:
               name: http
           env:
             - name: VITE_API_URL
-              value: "http://openframe-api.192.168.100.100.nip.io"
+              value: "https://openframe-api.192.168.100.100.nip.io"
             - name: VITE_GATEWAY_URL
-              value: "http://openframe-gateway.192.168.100.100.nip.io"
+              value: "https://openframe-gateway.192.168.100.100.nip.io"
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
               value: "prod_secret"
             - name: VITE_GRAFANA_URL
-              value: "http://grafana.192.168.100.100.nip.io"
+              value: "https://grafana.192.168.100.100.nip.io"
           livenessProbe:
             httpGet:
               path: /
