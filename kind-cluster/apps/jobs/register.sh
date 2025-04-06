@@ -86,10 +86,6 @@ register_tool() {
     return 0
 }
 
-# Get Fleet token
-POD=$(kubectl -n fleet get pods -o name -l app=fleet)
-FLEET_TOKEN=$(kubectl exec -n fleet $POD -- cat /etc/fleet/api_token.txt)
-
 # Register OpenFrame UI Service with layer info
 register_tool \
     "openframe-ui" \
@@ -347,12 +343,15 @@ register_tool \
     "#9E9E9E"
 
 # Register Fleet with layer info
+# Get Fleet token
+POD=$(kubectl -n fleet get pods -o name -l app=fleet)
+FLEET_TOKEN=$(kubectl exec -n fleet $POD -- cat /etc/fleet/api_token.txt)
 register_tool \
     "fleet" \
     "FLEET" \
     "Fleet MDM" \
     "Fleet Device Management Platform" \
-    '[{"url": "http://fleet.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://fleet.192.168.100.100.nip.io", "port": "8070", "type": "DASHBOARD"}]' \
+    '[{"url": "http://fleet.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://fleet.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
     "admin@openframe.local" \
     "openframe123!" \
     "$FLEET_TOKEN" \
@@ -375,7 +374,7 @@ register_tool \
     "MESHCENTRAL" \
     "MeshCentral" \
     "MeshCentral Remote Management Platform" \
-    '[{"url": "https://openframe-meshcentral-nginx.meshcentral.svc", "port": "8383", "type": "DASHBOARD"}, {"url": "https://openframe-meshcentral.meshcentral.svc", "port": "8383", "type": "API"}]' \
+    '[{"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "API"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
     "$MESHCENTRAL_API_KEY" \
@@ -392,7 +391,7 @@ register_tool \
     "AUTHENTIK" \
     "Authentik SSO" \
     "Authentik Identity Provider" \
-    '[{"url": "http://openframe-authentik-server.authentik.svc", "port": "5001", "type": "API"}, {"url": "http://authentik.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
+    '[{"url": "http://authentik.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://authentik.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
     "akadmin@openframe.local" \
     "openframe123!" \
     "openframe-api-token-123456789" \
@@ -463,7 +462,7 @@ register_tool \
     "TACTICAL_RMM" \
     "Tactical RMM" \
     "Remote Monitoring and Management Platform" \
-    '[{"url": "http://tactical-backend.tactical-rmm.svc", "port": "8000", "type": "API"}, {"url": "http://tactical-frontend.tactical-rmm.svc", "port": "8080", "type": "DASHBOARD"}]' \
+    '[{"url": "http://tactical-api.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://tactical-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
     "tactical" \
     "tactical" \
     "$TACTICAL_API_KEY" \
@@ -499,6 +498,7 @@ echo "- Grafana: http://grafana.192.168.100.100.nip.io"
 echo "- Prometheus: http://prometheus.192.168.100.100.nip.io"
 echo "- Fleet MDM: http://fleet.192.168.100.100.nip.io"
 echo "- MeshCentral: https://meshcentral.192.168.100.100.nip.io"
+echo "- Authentik: http://authentik.192.168.100.100.nip.io"
 echo "- OpenFrame Config Service: http://localhost:8090"
 echo "- OpenFrame Stream Service: http://localhost:8091"
 echo "- OpenFrame API Service: http://localhost:8092"

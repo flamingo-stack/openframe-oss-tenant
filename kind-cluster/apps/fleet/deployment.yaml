@@ -143,6 +143,10 @@ spec:
           value: "8070"
         - name: FLEET_SETUP_ADMIN_NAME
           value: "Admin"
+        # - name: FLEET_URL  # Did not change app URL shown in the UI
+        #   value: "https://fleet.192.168.100.100.nip.io"
+        # - name: FLEET_SERVER_INSECURE_HTTP
+        #   value: "true"
         volumeMounts:
         - name: fleet-logs
           mountPath: /var/log/osquery
