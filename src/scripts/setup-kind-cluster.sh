@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Set the IP address
-K8S_VERSION="v1.32.3"
-
 helm repo update
 
 # Bootsrap cluster
@@ -31,8 +28,7 @@ if ! [ "kind" == "$(kind get clusters --quiet)" ]; then
         exit 1
     fi
 
-    kind create cluster --config ./kind-cluster/kind/cluster.yaml --image kindest/node:$K8S_VERSION
+    kind create cluster --config ./src/kind/cluster.yaml --image kindest/node:$K8S_VERSION
 else
     echo "Cluster already setup"
 fi
-

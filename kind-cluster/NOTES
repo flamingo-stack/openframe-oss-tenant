@@ -1,3 +1,4 @@
 # Deprecated builds
 ./infrastructure/mongodb
+./infrastructure/cassandra
 ./infrastructure/meshcentral/nginx
