@@ -4,13 +4,12 @@ APP=$1
 ACTION=$2
 IFWAIT=$3
 
-[ "$APP" == "" ] && show_help_apps && exit 1
+if [ -z "$APP" ]; then
+  show_help_apps
+  exit 0
+fi
 
 if [ "$APP" != "" ] && [ "$ACTION" != "" ]; then
-  # Source required functions
-  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-  for s in "$SCRIPT_DIR/functions/"*; do source "$s"; done
-
   # PULL SECRETS
   kubectl create namespace infrastructure --dry-run=client -o yaml | kubectl apply -f -  && \
   kubectl -n infrastructure create secret docker-registry github-pat-secret \
@@ -18,7 +17,6 @@ if [ "$APP" != "" ] && [ "$ACTION" != "" ]; then
     --docker-username=vusal-fl \
     --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
     --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
-
 fi
 
 case "$APP" in
@@ -227,67 +225,82 @@ case "$APP" in
     ;;
   a|all)
     # ------------- ALL -------------
-    $0 observability && \
-    $0 logging && \
-    $0 redis && \
-    $0 kafka && \
-    $0 mongodb && \
-    $0 mongodb-exporter && \
-    $0 cassandra && \
-    $0 nifi && \
-    $0 zookeeper && \
-    $0 pinot && \
-    $0 config-server && \
-    $0 api && \
-    $0 management && \
-    $0 stream && \
-    $0 gateway && \
-    $0 openframe-ui && \
-    $0 authentik && \
-    $0 fleet && \
-    $0 meshcentral && \
-    $0 rmm && \
-    $0 tools && \
+    ACTION=${2}  # Default to deploy if not specified
+    IFWAIT=${3:-}       # Optional --wait flag
+    $0 observability $ACTION $IFWAIT && \
+    $0 logging $ACTION $IFWAIT && \
+    $0 redis $ACTION $IFWAIT && \
+    $0 kafka $ACTION $IFWAIT && \
+    $0 mongodb $ACTION $IFWAIT && \
+    $0 mongodb-exporter $ACTION $IFWAIT && \
+    $0 cassandra $ACTION $IFWAIT && \
+    $0 nifi $ACTION $IFWAIT && \
+    $0 zookeeper $ACTION $IFWAIT && \
+    $0 pinot $ACTION $IFWAIT && \
+    $0 config-server $ACTION $IFWAIT && \
+    $0 api $ACTION $IFWAIT && \
+    $0 management $ACTION $IFWAIT && \
+    $0 stream $ACTION $IFWAIT && \
+    $0 gateway $ACTION $IFWAIT && \
+    $0 openframe-ui $ACTION $IFWAIT && \
+    $0 authentik $ACTION $IFWAIT && \
+    $0 fleet $ACTION $IFWAIT && \
+    $0 meshcentral $ACTION $IFWAIT && \
+    $0 rmm $ACTION $IFWAIT && \
+    $0 tools $ACTION $IFWAIT && \
     $0 register-apps
     ;;
   m|minimal)
     # ------------- ALL no wait for state=Ready -------------
-    $0 ingress-nginx && \
-    $0 observability
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 ingress-nginx $ACTION $IFWAIT && \
+    $0 observability $ACTION $IFWAIT
     ;;
   infrastructure)
     # ------------- INFRASTRUCTURE -------------
-    $0 ingress-nginx && \
-    $0 monitoring && \
-    $0 redis
-    $0 kafka
-    $0 mongodb
-    $0 mongodb-exporter
-    $0 cassandra
-    $0 nifi
-    $0 zookeeper
-    $0 pinot
-    $0 config-server
-    $0 api
-    $0 management
-    $0 stream
-    $0 gateway
-    $0 openframe-ui
-    $0 tools
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 ingress-nginx $ACTION $IFWAIT && \
+    $0 monitoring $ACTION $IFWAIT && \
+    $0 redis $ACTION $IFWAIT && \
+    $0 kafka $ACTION $IFWAIT && \
+    $0 mongodb $ACTION $IFWAIT && \
+    $0 mongodb-exporter $ACTION $IFWAIT && \
+    $0 cassandra $ACTION $IFWAIT && \
+    $0 nifi $ACTION $IFWAIT && \
+    $0 zookeeper $ACTION $IFWAIT && \
+    $0 pinot $ACTION $IFWAIT && \
+    $0 config-server $ACTION $IFWAIT && \
+    $0 api $ACTION $IFWAIT && \
+    $0 management $ACTION $IFWAIT && \
+    $0 stream $ACTION $IFWAIT && \
+    $0 gateway $ACTION $IFWAIT && \
+    $0 openframe-ui $ACTION $IFWAIT && \
+    $0 tools $ACTION $IFWAIT
     ;;
   observability)
-    $0 monitoring
-    $0 logging
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 monitoring $ACTION $IFWAIT && \
+    $0 logging $ACTION $IFWAIT
     ;;
   tools)
-    $0 telepresence
-    $0 mongo-express
-    $0 kafka-ui
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 telepresence $ACTION $IFWAIT && \
+    $0 mongo-express $ACTION $IFWAIT && \
+    $0 kafka-ui $ACTION $IFWAIT
     ;;
   -h|--help|-Help)
     show_help_apps
     ;;
   *)
-    echo "Get help with: $0 [ -h | --help | -Help ]"
+    echo "Unknown app: $APP"
+    show_help_apps
     exit 1
 esac
