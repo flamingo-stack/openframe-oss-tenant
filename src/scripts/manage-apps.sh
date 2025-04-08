@@ -296,7 +296,7 @@ case "$APP" in
     $0 meshcentral $ACTION $IFWAIT && \
     $0 rmm $ACTION $IFWAIT && \
     $0 tools $ACTION $IFWAIT && \
-    $0 register-apps
+    $0 register-apps $ACTION
     ;;
   -h|--help|-Help)
     show_help_apps
