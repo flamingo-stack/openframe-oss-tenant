@@ -209,6 +209,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_openframe_ui_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_openframe_ui_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying OpenFrame UI in dev mode"
+      cd ./services/openframe-ui
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   authentik)

@@ -383,7 +383,7 @@ function infra_gateway_delete() {
 # OPENFRAME UI (depends on API, Management)
 function infra_openframe_ui_deploy() {
   echo "Deploying UI"
-  kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
+  kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-ui
 }
 
 function infra_openframe_ui_wait() {
@@ -393,5 +393,5 @@ function infra_openframe_ui_wait() {
 
 function infra_openframe_ui_delete() {
   echo "Deleting Infrastructure"
-  kubectl -n infrastructure delete -f ./kind-cluster/apps/infrastructure/openframe-ui/openframe-ui.yaml
+  kubectl -n infrastructure delete -k ./kind-cluster/apps/infrastructure/openframe-ui
 }
