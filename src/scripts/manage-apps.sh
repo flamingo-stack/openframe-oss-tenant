@@ -290,8 +290,9 @@ case "$APP" in
     elif [ "$ACTION" == "delete" ]; then
       meshcentral_delete
     elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
+      echo "Deploying MeshCentral in dev mode"
+      cd ./infrastructure/meshcentral/server
+      skaffold dev --no-prune=false --cache-artifacts=false -n meshcentral
     fi
     ;;
   rmm)
