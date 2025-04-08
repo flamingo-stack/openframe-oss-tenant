@@ -117,6 +117,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_cassandra_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_cassandra_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Cassandra in dev mode"
+      cd ./infrastructure/cassandra
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   nifi)

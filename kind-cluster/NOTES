@@ -2,3 +2,4 @@
 ./infrastructure/mongodb
 ./infrastructure/cassandra
 ./infrastructure/meshcentral/nginx
+./monitoring
