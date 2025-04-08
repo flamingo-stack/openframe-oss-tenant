@@ -185,6 +185,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_stream_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_stream_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Stream in dev mode"
+      cd ./services/openframe-stream
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   gateway)
