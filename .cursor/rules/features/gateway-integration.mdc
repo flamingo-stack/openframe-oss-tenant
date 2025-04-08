@@ -1,0 +1,492 @@
+---
+description: API Gateway integration patterns in OpenFrame
+globs: 
+alwaysApply: false
+---
+# Gateway Integration
+
+This document explains the API Gateway integration patterns used in OpenFrame.
+
+## Overview
+
+The OpenFrame Gateway serves as the entry point for all client requests, providing:
+
+- Routing to backend services
+- Authentication and authorization
+- Rate limiting
+- Request/response transformation
+- Circuit breaking
+- Logging and monitoring
+- Tool integration
+
+## Gateway Architecture
+
+The OpenFrame Gateway is built on Spring Cloud Gateway and follows these architectural principles:
+
+- API-first design
+- Reactive programming model
+- Microservices integration
+- Security by design
+- Observability
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│             │     │             │     │             │
+│   Client    │────▶│   Gateway   │────▶│  Services   │
+│             │     │             │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘
+                          │
+                          │
+                          ▼
+                    ┌─────────────┐
+                    │             │
+                    │ Integrated  │
+                    │    Tools    │
+                    │             │
+                    └─────────────┘
+```
+
+## Route Configuration
+
+Routes are configured in `application.yml` using Spring Cloud Gateway's routing DSL:
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: api-service
+          uri: lb://openframe-api
+          predicates:
+            - Path=/api/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+
+        - id: management-service
+          uri: lb://openframe-management
+          predicates:
+            - Path=/management/**
+          filters:
+            - RewritePath=/management/(?<segment>.*), /$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: managementCircuitBreaker
+                fallbackUri: forward:/fallback/management
+```
+
+## Tool Integration
+
+The Gateway integrates external tools through a dedicated `IntegrationController`:
+
+```java
+@RestController
+@RequestMapping("/tools/{toolName}")
+public class IntegrationController {
+    private final ToolRegistry toolRegistry;
+    private final WebClient.Builder webClientBuilder;
+    
+    @GetMapping("/**")
+    public Mono<ResponseEntity<String>> proxyGetRequest(
+            @PathVariable String toolName,
+            ServerHttpRequest request) {
+        Tool tool = toolRegistry.getTool(toolName);
+        if (tool == null) {
+            return Mono.just(ResponseEntity.notFound().build());
+        }
+        
+        String path = extractPath(request);
+        return webClientBuilder.build()
+            .get()
+            .uri(tool.getBaseUrl() + path)
+            .headers(headers -> copyHeaders(request.getHeaders(), headers))
+            .retrieve()
+            .toEntity(String.class);
+    }
+    
+    // Additional methods for POST, PUT, DELETE, etc.
+}
+```
+
+## Authentication Flow
+
+The Gateway handles authentication through JWT tokens:
+
+1. Client sends request with JWT token in Authorization header
+2. Gateway validates the token
+3. If valid, the request is enriched with user information
+4. Request is forwarded to the appropriate service
+5. If invalid, a 401 Unauthorized response is returned
+
+Example JWT authentication filter:
+
+```java
+@Component
+public class JwtAuthenticationFilter implements WebFilter {
+    private final ReactiveJwtDecoder jwtDecoder;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String token = extractToken(request);
+        
+        if (token != null) {
+            return jwtDecoder.decode(token)
+                .map(jwt -> {
+                    Map<String, Object> claims = jwt.getClaims();
+                    String userId = (String) claims.get("sub");
+                    List<String> roles = (List<String>) claims.get("roles");
+                    
+                    ServerHttpRequest modifiedRequest = request.mutate()
+                        .header("X-User-Id", userId)
+                        .header("X-User-Roles", String.join(",", roles))
+                        .build();
+                    
+                    return exchange.mutate().request(modifiedRequest).build();
+                })
+                .flatMap(chain::filter)
+                .onErrorResume(e -> {
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                });
+        }
+        
+        return chain.filter(exchange);
+    }
+}
+```
+
+## Tool Authentication
+
+The Gateway handles authentication for integrated tools:
+
+1. Gateway retrieves tool credentials from the configuration service
+2. Gateway adds appropriate authentication headers to the request
+3. Request is forwarded to the tool
+4. Response is returned to the client
+
+Example tool authentication implementation:
+
+```java
+@Component
+public class ToolAuthenticationService {
+    private final ToolCredentialsRepository credentialsRepository;
+    
+    public Mono<ServerHttpRequest> authenticateToolRequest(
+            ServerHttpRequest request, String toolName) {
+        return credentialsRepository.findByToolName(toolName)
+            .map(credentials -> {
+                ServerHttpRequest.Builder builder = request.mutate();
+                
+                switch (credentials.getAuthType()) {
+                    case API_KEY:
+                        builder.header(credentials.getAuthHeaderName(), 
+                                      credentials.getApiKey());
+                        break;
+                    case BASIC:
+                        String auth = credentials.getUsername() + ":" + 
+                                     credentials.getPassword();
+                        String encodedAuth = Base64.getEncoder()
+                            .encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+                        builder.header("Authorization", "Basic " + encodedAuth);
+                        break;
+                    case BEARER:
+                        builder.header("Authorization", 
+                                      "Bearer " + credentials.getToken());
+                        break;
+                }
+                
+                return builder.build();
+            })
+            .defaultIfEmpty(request);
+    }
+}
+```
+
+## Rate Limiting
+
+The Gateway implements rate limiting to protect backend services:
+
+```java
+@Configuration
+public class RateLimiterConfig {
+    @Bean
+    public RedisRateLimiter redisRateLimiter() {
+        return new RedisRateLimiter(10, 20);
+    }
+    
+    @Bean
+    KeyResolver userKeyResolver() {
+        return exchange -> {
+            String userId = exchange.getRequest().getHeaders()
+                .getFirst("X-User-Id");
+            if (userId != null) {
+                return Mono.just(userId);
+            }
+            return Mono.just("anonymous");
+        };
+    }
+}
+```
+
+## Circuit Breaking
+
+The Gateway implements circuit breaking to handle service failures:
+
+```java
+@Configuration
+public class CircuitBreakerConfig {
+    @Bean
+    public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer() {
+        return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
+            .circuitBreakerConfig(CircuitBreakerConfig.custom()
+                .slidingWindowSize(10)
+                .failureRateThreshold(50)
+                .waitDurationInOpenState(Duration.ofSeconds(10))
+                .permittedNumberOfCallsInHalfOpenState(5)
+                .build())
+            .timeLimiterConfig(TimeLimiterConfig.custom()
+                .timeoutDuration(Duration.ofSeconds(3))
+                .build())
+            .build());
+    }
+}
+```
+
+## Request/Response Logging
+
+The Gateway logs all requests and responses for debugging and auditing:
+
+```java
+@Component
+public class LoggingFilter implements GlobalFilter {
+    private static final Logger log = LoggerFactory.getLogger(LoggingFilter.class);
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        
+        log.info("Request: {} {}", request.getMethod(), request.getURI());
+        
+        return chain.filter(exchange)
+            .doOnSuccess(aVoid -> {
+                ServerHttpResponse response = exchange.getResponse();
+                log.info("Response: {}", response.getStatusCode());
+            })
+            .doOnError(throwable -> {
+                log.error("Error during request processing", throwable);
+            });
+    }
+}
+```
+
+## CORS Configuration
+
+The Gateway configures CORS to allow cross-origin requests:
+
+```java
+@Configuration
+public class CorsConfig {
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.setAllowedOrigins(Arrays.asList("https://*.openframe.com"));
+        corsConfig.setMaxAge(3600L);
+        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        corsConfig.setAllowedHeaders(Arrays.asList("*"));
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfig);
+        
+        return new CorsWebFilter(source);
+    }
+}
+```
+
+## Tool Registration
+
+Tools are registered with the Gateway through the configuration service:
+
+```java
+@Service
+public class ToolRegistrationService {
+    private final ToolRepository toolRepository;
+    
+    public Mono<Tool> registerTool(Tool tool) {
+        return toolRepository.save(tool);
+    }
+    
+    public Flux<Tool> getAllTools() {
+        return toolRepository.findAll();
+    }
+    
+    public Mono<Tool> getToolByName(String name) {
+        return toolRepository.findByName(name);
+    }
+}
+```
+
+Example tool registration:
+
+```java
+@Component
+public class ToolRegistrationInitializer implements ApplicationRunner {
+    private final ToolRegistrationService toolService;
+    
+    @Override
+    public void run(ApplicationArguments args) {
+        // Register Tactical RMM
+        Tool tacticalRmm = new Tool();
+        tacticalRmm.setName("tactical-rmm");
+        tacticalRmm.setDisplayName("Tactical RMM");
+        tacticalRmm.setBaseUrl("http://tactical-rmm:8000");
+        tacticalRmm.setAuthType(AuthType.API_KEY);
+        
+        // Register Fleet MDM
+        Tool fleetMdm = new Tool();
+        fleetMdm.setName("fleet-mdm");
+        fleetMdm.setDisplayName("Fleet MDM");
+        fleetMdm.setBaseUrl("http://fleet-server:8080");
+        fleetMdm.setAuthType(AuthType.BEARER);
+        
+        // Register MeshCentral
+        Tool meshCentral = new Tool();
+        meshCentral.setName("meshcentral");
+        meshCentral.setDisplayName("MeshCentral");
+        meshCentral.setBaseUrl("http://meshcentral:4430");
+        meshCentral.setAuthType(AuthType.BEARER);
+        
+        toolService.registerTool(tacticalRmm).subscribe();
+        toolService.registerTool(fleetMdm).subscribe();
+        toolService.registerTool(meshCentral).subscribe();
+    }
+}
+```
+
+## Best Practices
+
+1. **Security First**: Always validate authentication and authorization
+   ```java
+   private boolean isPermittedPath(String path) {
+       return Arrays.asList("/auth/login", "/auth/register", "/public/**")
+           .stream()
+           .anyMatch(pattern -> new AntPathMatcher().match(pattern, path));
+   }
+   ```
+
+2. **Error Handling**: Implement proper error handling
+   ```java
+   @Component
+   public class ErrorHandlingFilter implements GlobalFilter {
+       @Override
+       public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+           return chain.filter(exchange)
+               .onErrorResume(error -> {
+                   ServerHttpResponse response = exchange.getResponse();
+                   response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+                   
+                   ErrorResponse errorResponse = new ErrorResponse(
+                       "Internal Server Error",
+                       error.getMessage()
+                   );
+                   
+                   byte[] bytes = new Gson().toJson(errorResponse).getBytes(StandardCharsets.UTF_8);
+                   DataBuffer buffer = response.bufferFactory().wrap(bytes);
+                   response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                   
+                   return response.writeWith(Mono.just(buffer));
+               });
+       }
+   }
+   ```
+
+3. **Performance Optimization**: Optimize for performance
+   ```java
+   @Bean
+   public WebClient.Builder webClientBuilder() {
+       return WebClient.builder()
+           .codecs(configurer -> configurer
+               .defaultCodecs()
+               .maxInMemorySize(16 * 1024 * 1024))
+           .filter(ExchangeFilterFunctions.logRequest())
+           .filter(ExchangeFilterFunctions.logResponse());
+   }
+   ```
+
+4. **Monitoring**: Implement comprehensive monitoring
+   ```java
+   @Component
+   public class MetricsFilter implements GlobalFilter {
+       private final MeterRegistry meterRegistry;
+       
+       @Override
+       public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+           long startTime = System.currentTimeMillis();
+           
+           return chain.filter(exchange)
+               .doFinally(signalType -> {
+                   long duration = System.currentTimeMillis() - startTime;
+                   String path = exchange.getRequest().getPath().value();
+                   HttpStatus status = exchange.getResponse().getStatusCode();
+                   
+                   meterRegistry.timer("gateway.request.duration",
+                       "path", path,
+                       "status", status != null ? status.toString() : "unknown")
+                       .record(duration, TimeUnit.MILLISECONDS);
+               });
+       }
+   }
+   ```
+
+5. **Documentation**: Document API endpoints
+   ```java
+   @Bean
+   public OpenAPI openAPI() {
+       return new OpenAPI()
+           .info(new Info()
+               .title("OpenFrame Gateway API")
+               .version("v1")
+               .description("API Gateway for OpenFrame platform"))
+           .components(new Components()
+               .addSecuritySchemes("bearer-jwt", new SecurityScheme()
+                   .type(SecurityScheme.Type.HTTP)
+                   .scheme("bearer")
+                   .bearerFormat("JWT")))
+           .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+   }
+   ```
+
+6. **Caching**: Implement caching for frequently accessed data
+   ```java
+   @Bean
+   public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+       RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+           .entryTtl(Duration.ofMinutes(10))
+           .disableCachingNullValues()
+           .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+               new GenericJackson2JsonRedisSerializer()));
+       
+       return RedisCacheManager.builder(redisConnectionFactory)
+           .cacheDefaults(cacheConfiguration)
+           .build();
+   }
+   ```
+
+7. **Versioning**: Implement API versioning
+   ```java
+   @Bean
+   public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+       return builder.routes()
+           .route("api-v1", r -> r.path("/api/v1/**")
+               .filters(f -> f.rewritePath("/api/v1/(?<segment>.*)", "/${segment}"))
+               .uri("lb://openframe-api-v1"))
+           .route("api-v2", r -> r.path("/api/v2/**")
+               .filters(f -> f.rewritePath("/api/v2/(?<segment>.*)", "/${segment}"))
+               .uri("lb://openframe-api-v2"))
+           .build();
+   }
+   ```

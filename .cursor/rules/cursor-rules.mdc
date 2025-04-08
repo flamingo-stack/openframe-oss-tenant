@@ -1,0 +1,94 @@
+---
+description: How to add or edit Cursor rules in OpenFrame
+globs: 
+alwaysApply: false
+---
+# Cursor Rules in OpenFrame
+
+This document explains how to add and maintain Cursor rules for the OpenFrame project.
+
+## Rules Location
+
+1. Always place rule files in PROJECT_ROOT/.cursor/rules/:
+   ```
+   .cursor/rules/
+   ├── cursor-rules.mdc
+   ├── project-structure.mdc
+   ├── java-spring-cursor-rules.mdc
+   ├── vuejs-typescript-best-practices.mdc
+   └── ...
+   ```
+
+2. For feature-specific rules, use the features subdirectory:
+   ```
+   .cursor/rules/features/
+   ├── gateway-integration.mdc
+   ├── tactical-rmm.mdc
+   ├── fleet-mdm.mdc
+   └── ...
+   ```
+
+## Naming Conventions
+
+- Use kebab-case for filenames (e.g., `api-design.mdc`, `database-patterns.mdc`)
+- Always use .mdc extension
+- Make names descriptive of the rule's purpose
+- For technology-specific rules, include the technology name (e.g., `java-spring-cursor-rules.mdc`)
+- For feature-specific rules, use the feature name (e.g., `tactical-rmm.mdc`)
+
+## Rule File Structure
+
+Each rule file should follow this structure:
+
+```
+---
+description: Brief description of what this rule covers
+globs: optional/path/pattern/**/* 
+alwaysApply: false
+---
+# Rule Title
+
+Main content explaining the rule with markdown formatting.
+
+## Section 1
+
+Detailed explanation with examples.
+
+## Section 2
+
+More detailed content.
+
+```
+
+## Frontmatter Options
+
+- `description`: Brief summary of the rule's purpose (required)
+- `globs`: File patterns this rule applies to (optional)
+- `alwaysApply`: Whether to apply this rule to all files (default: false)
+
+## Adding New Rules
+
+1. Identify the category for your new rule:
+   - Technology-specific (Java, Vue.js, etc.)
+   - Feature-specific (Gateway, RMM, etc.)
+   - Development workflow (Testing, CI/CD, etc.)
+   - UI/UX development
+
+2. Create a new .mdc file in the appropriate location
+
+3. Add proper frontmatter with description
+
+4. Structure the content with clear headings and examples
+
+5. Include code examples where appropriate
+
+6. Reference OpenFrame-specific patterns and conventions
+
+## Best Practices
+
+- Keep rules focused on a single topic or technology
+- Use clear, concise language
+- Include practical examples from the OpenFrame codebase
+- Update rules when conventions or patterns change
+- Cross-reference related rules where appropriate
+- Use proper markdown formatting for readability
