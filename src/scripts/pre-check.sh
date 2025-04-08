@@ -17,6 +17,7 @@ check_command() {
 # Function to get installation commands based on OS
 get_install_command() {
     local cmd=$1
+    OS=$(uname -s)
 
     case $cmd in
         "kind")
@@ -84,17 +85,13 @@ done
 # Exit if any commands are missing
 if [ ${#missing_commands[@]} -ne 0 ]; then
     echo "The following required commands are missing: ${missing_commands[*]}"
-    echo "Installation commands:"
+
     for cmd in "${missing_commands[@]}"; do
         install_cmd=$(get_install_command "$cmd")
-        echo "$cmd: $install_cmd"
-    done
-
-    read -p "Do you want to proceed with installation? (y/n): " proceed
-    if [[ "$proceed" == "y" ]]; then
-        echo "Installing missing commands..."
-        for cmd in "${missing_commands[@]}"; do
-            install_cmd=$(get_install_command "$cmd")
+        echo -e "\nInstallation command for $cmd:"
+        echo "$install_cmd"
+        read -p "Do you want to install $cmd? (y/n): " proceed
+        if [[ "$proceed" == "y" ]]; then
             echo "Installing $cmd..."
             eval "$install_cmd"
             if [ $? -eq 0 ]; then
@@ -103,11 +100,10 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
                 echo "Failed to install $cmd"
                 exit 1
             fi
-        done
-    else
-        echo "Installation aborted."
-        exit 1
-    fi
+        else
+            echo "Skipping $cmd installation"
+        fi
+    done
 fi
 
 # Check if GITHUB_TOKEN_CLASSIC is set
