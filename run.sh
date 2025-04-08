@@ -44,6 +44,9 @@ case "$1" in
   a|app)
     if [ -n "$APP" ]; then
       bash ./src/scripts/manage-apps.sh "$APP" "$ACTION" "$IFWAIT"
+    else
+      echo "App name is required"
+      exit 1
     fi
     ;;
   b|bootstrap)

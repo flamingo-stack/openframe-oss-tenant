@@ -18,10 +18,7 @@ if [ "$APP" != "" ] && [ "$ACTION" != "" ]; then
     --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
     --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
 else
-  if [ "$APP" == "" ]; then
-    echo "App name is required"
-    exit 0
-  elif [ "$ACTION" == "" ]; then
+  if [ "$ACTION" == "" ]; then
     echo "Action is required"
     exit 0
   fi
