@@ -223,12 +223,57 @@ case "$APP" in
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
     ./kind-cluster/apps/jobs/register.sh
     ;;
+  observability)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 monitoring $ACTION $IFWAIT && \
+    $0 logging $ACTION $IFWAIT
+    ;;
+  m|minimal)
+    # ------------- ALL no wait for state=Ready -------------
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 ingress-nginx $ACTION $IFWAIT && \
+    $0 observability $ACTION $IFWAIT
+    ;;
+  tools)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 telepresence $ACTION $IFWAIT && \
+    $0 mongo-express $ACTION $IFWAIT && \
+    $0 kafka-ui $ACTION $IFWAIT
+    ;;
+  infrastructure)
+    # ------------- INFRASTRUCTURE -------------
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 minimal $ACTION $IFWAIT && \
+    $0 redis $ACTION $IFWAIT && \
+    $0 kafka $ACTION $IFWAIT && \
+    $0 mongodb $ACTION $IFWAIT && \
+    $0 mongodb-exporter $ACTION $IFWAIT && \
+    $0 cassandra $ACTION $IFWAIT && \
+    $0 nifi $ACTION $IFWAIT && \
+    $0 zookeeper $ACTION $IFWAIT && \
+    $0 pinot $ACTION $IFWAIT && \
+    $0 config-server $ACTION $IFWAIT && \
+    $0 api $ACTION $IFWAIT && \
+    $0 management $ACTION $IFWAIT && \
+    $0 stream $ACTION $IFWAIT && \
+    $0 gateway $ACTION $IFWAIT && \
+    $0 openframe-ui $ACTION $IFWAIT && \
+    $0 tools $ACTION $IFWAIT
+    ;;
   a|all)
     # ------------- ALL -------------
-    ACTION=${2}  # Default to deploy if not specified
-    IFWAIT=${3:-}       # Optional --wait flag
-    $0 observability $ACTION $IFWAIT && \
-    $0 logging $ACTION $IFWAIT && \
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 minimal $ACTION $IFWAIT && \
     $0 redis $ACTION $IFWAIT && \
     $0 kafka $ACTION $IFWAIT && \
     $0 mongodb $ACTION $IFWAIT && \
@@ -249,52 +294,6 @@ case "$APP" in
     $0 rmm $ACTION $IFWAIT && \
     $0 tools $ACTION $IFWAIT && \
     $0 register-apps
-    ;;
-  m|minimal)
-    # ------------- ALL no wait for state=Ready -------------
-    ACTION=${2}
-    IFWAIT=${3:-}
-
-    $0 ingress-nginx $ACTION $IFWAIT && \
-    $0 observability $ACTION $IFWAIT
-    ;;
-  infrastructure)
-    # ------------- INFRASTRUCTURE -------------
-    ACTION=${2}
-    IFWAIT=${3:-}
-
-    $0 ingress-nginx $ACTION $IFWAIT && \
-    $0 monitoring $ACTION $IFWAIT && \
-    $0 redis $ACTION $IFWAIT && \
-    $0 kafka $ACTION $IFWAIT && \
-    $0 mongodb $ACTION $IFWAIT && \
-    $0 mongodb-exporter $ACTION $IFWAIT && \
-    $0 cassandra $ACTION $IFWAIT && \
-    $0 nifi $ACTION $IFWAIT && \
-    $0 zookeeper $ACTION $IFWAIT && \
-    $0 pinot $ACTION $IFWAIT && \
-    $0 config-server $ACTION $IFWAIT && \
-    $0 api $ACTION $IFWAIT && \
-    $0 management $ACTION $IFWAIT && \
-    $0 stream $ACTION $IFWAIT && \
-    $0 gateway $ACTION $IFWAIT && \
-    $0 openframe-ui $ACTION $IFWAIT && \
-    $0 tools $ACTION $IFWAIT
-    ;;
-  observability)
-    ACTION=${2}
-    IFWAIT=${3:-}
-
-    $0 monitoring $ACTION $IFWAIT && \
-    $0 logging $ACTION $IFWAIT
-    ;;
-  tools)
-    ACTION=${2}
-    IFWAIT=${3:-}
-
-    $0 telepresence $ACTION $IFWAIT && \
-    $0 mongo-express $ACTION $IFWAIT && \
-    $0 kafka-ui $ACTION $IFWAIT
     ;;
   -h|--help|-Help)
     show_help_apps
