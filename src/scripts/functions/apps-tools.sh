@@ -8,7 +8,7 @@ function tools_telepresence_deploy() {
 
 function tools_telepresence_wait() {
   echo "Waiting for telepresence to be ready"
-  wait_for_app "ambassador" "app=telepresence"
+  wait_for_app "ambassador" "app=traffic-manager"
 }
 
 function tools_telepresence_delete() {
