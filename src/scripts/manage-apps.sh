@@ -31,12 +31,18 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then tools_telepresence_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tools_telepresence_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   ingress-nginx)
     if [ "$ACTION" == "deploy" ]; then
       infra_ingress_nginx_deploy
       if [ "$IFWAIT" == "--wait" ]; then infra_ingress_nginx_wait; fi
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   monitoring)
@@ -45,6 +51,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_monitoring_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_monitoring_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   logging)
@@ -53,6 +62,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_logging_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_logging_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   efk)
@@ -61,6 +73,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_efk_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_efk_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   redis)
@@ -69,6 +84,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_redis_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_redis_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   kafka)
@@ -77,6 +95,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_kafka_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_kafka_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   kafka-ui)
@@ -85,6 +106,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then tools_kafka_ui_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tools_kafka_ui_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   mongodb)
@@ -93,6 +117,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_mongodb_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_mongodb_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   mongodb-exporter)
@@ -101,6 +128,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_mongodb_exporter_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_mongodb_exporter_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   mongo-express)
@@ -109,6 +139,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then tools_mongo_express_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tools_mongo_express_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   cassandra)
@@ -118,9 +151,8 @@ case "$APP" in
     elif [ "$ACTION" == "delete" ]; then
       infra_cassandra_delete
     elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Cassandra in dev mode"
-      cd ./infrastructure/cassandra
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   nifi)
@@ -141,6 +173,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_zookeeper_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_zookeeper_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   pinot)
@@ -149,6 +184,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_pinot_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_pinot_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   config-server)
@@ -229,6 +267,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then authentik_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       authentik_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   fleet)
@@ -237,6 +278,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then fleet_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       fleet_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   meshcentral)
@@ -245,6 +289,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then meshcentral_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       meshcentral_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   rmm)
@@ -253,6 +300,9 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then tactical_rmm_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tactical_rmm_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
     fi
     ;;
   register-apps)
