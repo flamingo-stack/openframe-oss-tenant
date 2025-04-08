@@ -10,13 +10,7 @@ if [ -z "$APP" ]; then
 fi
 
 if [ "$APP" != "" ] && [ "$ACTION" != "" ]; then
-  # PULL SECRETS
-  kubectl create namespace infrastructure --dry-run=client -o yaml | kubectl apply -f -  && \
-  kubectl -n infrastructure create secret docker-registry github-pat-secret \
-    --docker-server=ghcr.io \
-    --docker-username=vusal-fl \
-    --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
-    --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
+  bash ./src/scripts/functions/bases.sh
 else
   if [ "$ACTION" == "" ]; then
     echo "Action is required"
@@ -38,8 +32,17 @@ case "$APP" in
     ;;
   ingress-nginx)
     if [ "$ACTION" == "deploy" ]; then
-      infra_ingress_nginx_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_ingress_nginx_wait; fi
+      cluster_ingress_nginx_deploy
+      if [ "$IFWAIT" == "--wait" ]; then cluster_ingress_nginx_wait; fi
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    fi
+    ;;
+  metrics-server)
+    if [ "$ACTION" == "deploy" ]; then
+      cluster_metrics_server_deploy
+      if [ "$IFWAIT" == "--wait" ]; then cluster_metrics_server_wait; fi
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -47,10 +50,10 @@ case "$APP" in
     ;;
   monitoring)
     if [ "$ACTION" == "deploy" ]; then
-      infra_monitoring_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_monitoring_wait; fi
+      cluster_monitoring_deploy
+      if [ "$IFWAIT" == "--wait" ]; then cluster_monitoring_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_monitoring_delete
+      cluster_monitoring_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -58,10 +61,10 @@ case "$APP" in
     ;;
   logging)
     if [ "$ACTION" == "deploy" ]; then
-      infra_logging_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_logging_wait; fi
+      cluster_logging_deploy
+      if [ "$IFWAIT" == "--wait" ]; then cluster_logging_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_logging_delete
+      cluster_logging_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -69,10 +72,10 @@ case "$APP" in
     ;;
   efk)
     if [ "$ACTION" == "deploy" ]; then
-      infra_efk_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_efk_wait; fi
+      cluster_efk_deploy
+      if [ "$IFWAIT" == "--wait" ]; then cluster_efk_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_efk_delete
+      cluster_efk_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -324,6 +327,7 @@ case "$APP" in
     IFWAIT=${3:-}
 
     $0 ingress-nginx $ACTION $IFWAIT && \
+    $0 metrics-server $ACTION $IFWAIT && \
     $0 observability $ACTION $IFWAIT
     ;;
   tools)
