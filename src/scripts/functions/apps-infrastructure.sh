@@ -169,7 +169,7 @@ function infra_mongodb_deploy() {
   # helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
 
   echo "Deploying MongoDB"
-  kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
+  kubectl -n infrastructure apply -k ./kind-cluster/apps/infrastructure/openframe-mongodb/manifests
 
   # kubectl -n infrastructure create secret generic openframe-mongodb-secrets \
   #   --from-literal=mongodb-root-password=password123456789 \
@@ -189,7 +189,7 @@ function infra_mongodb_wait() {
 
 function infra_mongodb_delete() {
   echo "Deleting MongoDB"
-  kubectl -n infrastructure delete -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
+  kubectl -n infrastructure delete -k ./kind-cluster/apps/infrastructure/openframe-mongodb/manifests
 }
 
 # MONGO EXPORTER

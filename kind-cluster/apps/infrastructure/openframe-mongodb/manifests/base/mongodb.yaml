@@ -169,7 +169,6 @@ spec:
             weight: 1
       containers:
         - name: openframe-mongodb
-          # image: ghcr.io/flamingo-cx/openframe-mongodb:030420251434
           image: mongo:7.0.18
           ports:
             - containerPort: 27017
