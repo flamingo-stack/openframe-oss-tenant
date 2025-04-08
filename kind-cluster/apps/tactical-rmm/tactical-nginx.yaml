@@ -1,35 +1,77 @@
+---
+# Find variabel per app and remove unused
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: tactical-postgres
+  name: tactical-nginx-config
+data:
+  RESOLVER: "kube-dns.kube-system.svc.cluster.local"
+  # APP_HOST: "tactical-ui.192.168.100.100.nip.io"
+  APP_HOST: "tactical-frontend.tactical-rmm.svc.cluster.local:8080"
+  # API_HOST: "tactical-api.192.168.100.100.nip.io"
+  API_HOST: "tactical-backend.tactical-rmm.svc.cluster.local:8000"
+  # WEBSOCKETS_BIND_HOST: tactical-api.192.168.100.100.nip.io
+  # WEBSOCKET_PORT: "80"
+  WEBSOCKETS_BIND_HOST: tactical-websockets.tactical-rmm.svc.cluster.local
+  WEBSOCKET_PORT: "8383"
+  NATS_STD_BIND_HOST: "tactical-nats.tactical-rmm.svc.cluster.local"
+  NATS_STANDARD_PORT: "9235"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-nginx
 spec:
+  replicas: 1
   selector:
-    app: tactical-postgres
-  ports:
-  - port: 5432
-    targetPort: 5432
+    matchLabels:
+      app: tactical-nginx
+  template:
+    metadata:
+      labels:
+        app: tactical-nginx
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      containers:
+      - name: nginx
+        image: ghcr.io/flamingo-cx/openframe-tactical-nginx:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: tactical-nginx-config
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /opt/tactical
+        startupProbe:
+          httpGet:
+            path: /nginx_status
+            port: 8081
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /nginx_status
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: nginx-data
+        persistentVolumeClaim:
+          claimName: tactical-nginx-data
 ---
 apiVersion: v1
-kind: Service
+kind: PersistentVolumeClaim
 metadata:
-  name: tactical-redis
+  name: tactical-nginx-data
 spec:
-  selector:
-    app: tactical-redis
-  ports:
-  - port: 6379
-    targetPort: 6379
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tactical-frontend
-spec:
-  selector:
-    app: tactical-frontend
-  ports:
-  - port: 8080
-    targetPort: 8080
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -44,65 +86,6 @@ spec:
     targetPort: 8080
   - name: api
     port: 8000
-    targetPort: 8000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tactical-backend
-spec:
-  selector:
-    app: tactical-backend
-  ports:
-  - port: 8000
-    targetPort: 8000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tactical-nats
-spec:
-  selector:
-    app: tactical-nats
-  ports:
-  - name: http
-    port: 9235
-    targetPort: 9235
-  - name: websocket
-    port: 4222
-    targetPort: 4222
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tactical-websockets
-spec:
-  selector:
-    app: tactical-websockets
-  ports:
-  - port: 8383
-    targetPort: 8383
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tactical-celery
-spec:
-  selector:
-    app: tactical-celery
-  ports:
-  - port: 8000
-    targetPort: 8000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tactical-celerybeat
-spec:
-  selector:
-    app: tactical-celerybeat
-  ports:
-  - port: 8000
     targetPort: 8000
 ---
 apiVersion: networking.k8s.io/v1

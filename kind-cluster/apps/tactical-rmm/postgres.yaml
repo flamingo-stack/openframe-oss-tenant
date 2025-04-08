@@ -41,37 +41,24 @@ spec:
         persistentVolumeClaim:
           claimName: tactical-postgres-data
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
-  name: tactical-redis
+  name: tactical-postgres-data
 spec:
-  replicas: 1
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-postgres
+spec:
   selector:
-    matchLabels:
-      app: tactical-redis
-  template:
-    metadata:
-      labels:
-        app: tactical-redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:6.0-alpine
-        command: ["redis-server", "--save", "3600", "1", "300", "100", "60", "10000"]
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
-        livenessProbe:
-          exec:
-            command:
-            - redis-cli
-            - ping
-          initialDelaySeconds: 30
-          periodSeconds: 10
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: tactical-redis-data
+    app: tactical-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
