@@ -1,0 +1,281 @@
+---
+description: Fleet MDM integration and usage in OpenFrame
+globs: 
+alwaysApply: false
+---
+# Fleet MDM Integration
+
+This document explains how Fleet MDM is integrated with OpenFrame and how to work with it.
+
+## Overview
+
+Fleet MDM (Mobile Device Management) is integrated into OpenFrame to provide mobile device management capabilities. It allows administrators to:
+
+- Manage mobile devices (iOS, Android)
+- Deploy applications
+- Enforce security policies
+- Track device inventory
+- Remote wipe and lock devices
+- Monitor compliance
+
+## Configuration
+
+Fleet MDM is configured in `docker-compose.openframe-fleet-mdm.yml`:
+
+```yaml
+version: '3.8'
+services:
+  fleet-server:
+    image: fleetdm/fleet:latest
+    environment:
+      - FLEET_MYSQL_ADDRESS=fleet-db:3306
+      - FLEET_MYSQL_DATABASE=fleet
+      - FLEET_MYSQL_USERNAME=fleet
+      - FLEET_MYSQL_PASSWORD=fleet
+      # Additional environment variables
+    volumes:
+      - fleet-data:/var/lib/fleet
+    depends_on:
+      - fleet-db
+
+  fleet-db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=fleet
+      - MYSQL_USER=fleet
+      - MYSQL_PASSWORD=fleet
+      - MYSQL_ROOT_PASSWORD=rootpassword
+    volumes:
+      - fleet-db-data:/var/lib/mysql
+
+  # Additional services
+```
+
+## API Integration
+
+OpenFrame integrates with Fleet MDM through its API. The integration is implemented in:
+
+- `services/openframe-gateway/src/main/java/com/openframe/gateway/controller/IntegrationController.java`: Routes requests to Fleet MDM
+- `services/openframe-api/src/main/java/com/openframe/api/service/FleetMdmService.java`: Service for interacting with Fleet MDM API
+
+Example API integration:
+
+```java
+@Service
+public class FleetMdmService {
+    private final WebClient webClient;
+    
+    public FleetMdmService(WebClient.Builder webClientBuilder, 
+                          @Value("${openframe.integration.fleet-mdm.url}") String baseUrl) {
+        this.webClient = webClientBuilder
+            .baseUrl(baseUrl)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
+    }
+    
+    public Flux<Device> getDevices() {
+        return webClient.get()
+            .uri("/api/v1/fleet/devices")
+            .retrieve()
+            .bodyToFlux(Device.class);
+    }
+    
+    // Additional methods for interacting with Fleet MDM API
+}
+```
+
+## Authentication
+
+Authentication with Fleet MDM is handled through API tokens:
+
+1. API tokens are stored in the OpenFrame configuration service
+2. The gateway service retrieves the token when proxying requests
+3. The token is added to the request headers
+
+Example authentication implementation:
+
+```java
+@Component
+public class FleetMdmAuthenticationFilter implements WebFilter {
+    private final ToolCredentialsService credentialsService;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        
+        if (isFleetMdmRequest(request)) {
+            return credentialsService.getCredentialsForTool("fleet-mdm")
+                .map(credentials -> {
+                    ServerHttpRequest modifiedRequest = request.mutate()
+                        .header("Authorization", "Bearer " + credentials.getApiToken())
+                        .build();
+                    return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                })
+                .orElse(chain.filter(exchange));
+        }
+        
+        return chain.filter(exchange);
+    }
+}
+```
+
+## UI Integration
+
+The Fleet MDM UI is integrated into the OpenFrame dashboard:
+
+- `services/openframe-ui/src/views/mdm/Devices.vue`: Mobile device management view
+- `services/openframe-ui/src/views/mdm/Policies.vue`: Policy management view
+- `services/openframe-ui/src/views/mdm/Applications.vue`: Application management view
+
+Example UI component:
+
+```vue
+<template>
+  <div class="mdm-devices">
+    <h1>Mobile Devices</h1>
+    <data-table :columns="columns" :data="devices" :loading="loading">
+      <template #actions="{ row }">
+        <button @click="lockDevice(row)">Lock</button>
+        <button @click="wipeDevice(row)">Wipe</button>
+      </template>
+    </data-table>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useFleetService } from '@/services/FleetService';
+import DataTable from '@/components/ui/DataTable.vue';
+
+const fleetService = useFleetService();
+const devices = ref([]);
+const loading = ref(true);
+
+const columns = [
+  { field: 'name', label: 'Device Name' },
+  { field: 'platform', label: 'Platform' },
+  { field: 'osVersion', label: 'OS Version' },
+  { field: 'lastSeen', label: 'Last Seen' },
+  { field: 'actions', label: 'Actions' }
+];
+
+onMounted(async () => {
+  try {
+    devices.value = await fleetService.getDevices();
+  } catch (error) {
+    console.error('Failed to fetch devices:', error);
+  } finally {
+    loading.value = false;
+  }
+});
+
+function lockDevice(device) {
+  // Implementation for locking a device
+}
+
+function wipeDevice(device) {
+  // Implementation for wiping a device
+}
+</script>
+```
+
+## Data Models
+
+Key data models for Fleet MDM integration:
+
+```java
+@Data
+public class MobileDevice {
+    private String id;
+    private String name;
+    private String platform; // iOS, Android
+    private String osVersion;
+    private String serialNumber;
+    private String udid;
+    private String status;
+    private LocalDateTime lastSeen;
+    private String userId;
+    // Additional properties
+}
+
+@Data
+public class MobilePolicy {
+    private String id;
+    private String name;
+    private String description;
+    private List<String> platforms;
+    private Map<String, Object> settings;
+    private List<String> assignedGroups;
+    // Additional properties
+}
+```
+
+## Best Practices
+
+1. **Error Handling**: Always handle API errors gracefully
+   ```java
+   .onErrorResume(WebClientResponseException.class, ex -> {
+       log.error("Error from Fleet MDM API: {}", ex.getMessage());
+       return Mono.error(new IntegrationException("Failed to communicate with Fleet MDM", ex));
+   })
+   ```
+
+2. **Caching**: Cache frequently accessed data
+   ```java
+   @Cacheable(value = "fleetMdmDevices", key = "#root.methodName")
+   public Flux<MobileDevice> getDevices() {
+       // Implementation
+   }
+   ```
+
+3. **Pagination**: Handle pagination for large result sets
+   ```java
+   public Flux<MobileDevice> getAllDevices() {
+       return getDevicesPage(1)
+           .expand(page -> {
+               if (page.hasNext()) {
+                   return getDevicesPage(page.getNextPage());
+               } else {
+                   return Mono.empty();
+               }
+           })
+           .flatMapIterable(Page::getItems);
+   }
+   ```
+
+4. **Device Grouping**: Organize devices by groups for easier management
+   ```java
+   public Flux<DeviceGroup> getDeviceGroups() {
+       return webClient.get()
+           .uri("/api/v1/fleet/device_groups")
+           .retrieve()
+           .bodyToFlux(DeviceGroup.class);
+   }
+   ```
+
+5. **Policy Management**: Create and manage policies for device configuration
+   ```java
+   public Mono<MobilePolicy> createPolicy(MobilePolicy policy) {
+       return webClient.post()
+           .uri("/api/v1/fleet/policies")
+           .bodyValue(policy)
+           .retrieve()
+           .bodyToMono(MobilePolicy.class);
+   }
+   ```
+
+6. **Application Distribution**: Manage application deployment
+   ```java
+   public Mono<Application> deployApplication(String appId, List<String> deviceIds) {
+       return webClient.post()
+           .uri("/api/v1/fleet/applications/{appId}/deploy", appId)
+           .bodyValue(Map.of("device_ids", deviceIds))
+           .retrieve()
+           .bodyToMono(Application.class);
+   }
+   ```
+
+7. **UI Consistency**: Follow the OpenFrame UI design patterns for MDM screens
+   - Use the same component structure as existing MDM views
+   - Maintain consistent styling and layout
+   - Reuse common components for similar functionality

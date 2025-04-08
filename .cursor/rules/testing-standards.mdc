@@ -1,0 +1,540 @@
+---
+description: Testing standards and best practices for OpenFrame
+globs: 
+alwaysApply: false
+---
+# Testing Standards
+
+This document outlines the testing standards and best practices for the OpenFrame project.
+
+## Testing Pyramid
+
+OpenFrame follows the testing pyramid approach:
+
+```
+    /\
+   /  \
+  /    \
+ / E2E  \
+/--------\
+/ Integration \
+/----------------\
+/     Unit Tests    \
+/----------------------\
+```
+
+- **Unit Tests**: Test individual components in isolation
+- **Integration Tests**: Test interactions between components
+- **End-to-End Tests**: Test complete user flows
+
+## Unit Testing
+
+### Java Unit Tests
+
+Java unit tests use JUnit 5 and Mockito:
+
+```java
+@ExtendWith(MockitoExtension.class)
+public class DeviceServiceTest {
+    @Mock
+    private DeviceRepository deviceRepository;
+    
+    @InjectMocks
+    private DeviceService deviceService;
+    
+    @Test
+    public void testGetDeviceById() {
+        // Arrange
+        String deviceId = "device-123";
+        Device expectedDevice = new Device();
+        expectedDevice.setId(deviceId);
+        expectedDevice.setHostname("test-device");
+        
+        when(deviceRepository.findById(deviceId)).thenReturn(Mono.just(expectedDevice));
+        
+        // Act
+        Mono<Device> result = deviceService.getDeviceById(deviceId);
+        
+        // Assert
+        StepVerifier.create(result)
+            .expectNext(expectedDevice)
+            .verifyComplete();
+        
+        verify(deviceRepository).findById(deviceId);
+    }
+}
+```
+
+### Vue.js Unit Tests
+
+Vue.js unit tests use Vitest and Vue Test Utils:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
+import DeviceList from '@/components/DeviceList.vue';
+
+describe('DeviceList', () => {
+  it('renders devices correctly', async () => {
+    // Arrange
+    const devices = [
+      { id: '1', hostname: 'device-1', status: 'online' },
+      { id: '2', hostname: 'device-2', status: 'offline' }
+    ];
+    
+    // Act
+    const wrapper = mount(DeviceList, {
+      props: {
+        devices
+      }
+    });
+    
+    // Assert
+    expect(wrapper.findAll('tr').length).toBe(devices.length + 1); // +1 for header row
+    expect(wrapper.text()).toContain('device-1');
+    expect(wrapper.text()).toContain('device-2');
+  });
+  
+  it('emits select event when device is clicked', async () => {
+    // Arrange
+    const devices = [
+      { id: '1', hostname: 'device-1', status: 'online' }
+    ];
+    
+    const wrapper = mount(DeviceList, {
+      props: {
+        devices
+      }
+    });
+    
+    // Act
+    await wrapper.find('tr:nth-child(2)').trigger('click');
+    
+    // Assert
+    expect(wrapper.emitted().select).toBeTruthy();
+    expect(wrapper.emitted().select[0]).toEqual([devices[0]]);
+  });
+});
+```
+
+## Integration Testing
+
+### Spring Boot Integration Tests
+
+Spring Boot integration tests use `@SpringBootTest`:
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class DeviceControllerIntegrationTest {
+    @Autowired
+    private WebTestClient webTestClient;
+    
+    @Autowired
+    private DeviceRepository deviceRepository;
+    
+    @BeforeEach
+    public void setup() {
+        deviceRepository.deleteAll().block();
+    }
+    
+    @Test
+    public void testGetDevices() {
+        // Arrange
+        Device device1 = new Device();
+        device1.setHostname("device-1");
+        device1.setStatus("online");
+        
+        Device device2 = new Device();
+        device2.setHostname("device-2");
+        device2.setStatus("offline");
+        
+        deviceRepository.saveAll(Arrays.asList(device1, device2)).blockLast();
+        
+        // Act & Assert
+        webTestClient.get()
+            .uri("/api/devices")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBodyList(Device.class)
+            .hasSize(2)
+            .contains(device1, device2);
+    }
+}
+```
+
+### API Integration Tests
+
+API integration tests use WebTestClient:
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class ApiIntegrationTest {
+    @Autowired
+    private WebTestClient webTestClient;
+    
+    @Test
+    public void testCreateDevice() {
+        // Arrange
+        DeviceRequest request = new DeviceRequest();
+        request.setHostname("test-device");
+        request.setOperatingSystem("Linux");
+        
+        // Act & Assert
+        webTestClient.post()
+            .uri("/api/devices")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isCreated()
+            .expectBody()
+            .jsonPath("$.id").isNotEmpty()
+            .jsonPath("$.hostname").isEqualTo("test-device")
+            .jsonPath("$.operatingSystem").isEqualTo("Linux");
+    }
+}
+```
+
+## End-to-End Testing
+
+### Cypress Tests
+
+End-to-end tests use Cypress:
+
+```javascript
+describe('Device Management', () => {
+  beforeEach(() => {
+    cy.login('admin', 'password');
+    cy.visit('/devices');
+  });
+  
+  it('should display device list', () => {
+    cy.get('table').should('be.visible');
+    cy.get('tr').should('have.length.greaterThan', 1);
+  });
+  
+  it('should navigate to device details', () => {
+    cy.get('tr').eq(1).click();
+    cy.url().should('include', '/devices/');
+    cy.get('h1').should('contain', 'Device Details');
+  });
+  
+  it('should create a new device', () => {
+    cy.get('[data-test="add-device-button"]').click();
+    cy.get('[data-test="hostname-input"]').type('new-device');
+    cy.get('[data-test="os-select"]').select('Linux');
+    cy.get('[data-test="save-button"]').click();
+    
+    cy.get('table').should('contain', 'new-device');
+  });
+});
+```
+
+## Test Coverage
+
+- Aim for at least 80% code coverage for unit tests
+- Focus on testing business logic and edge cases
+- Use JaCoCo for Java code coverage
+- Use c8 for JavaScript/TypeScript code coverage
+
+Example JaCoCo configuration:
+
+```xml
+<plugin>
+    <groupId>org.jacoco</groupId>
+    <artifactId>jacoco-maven-plugin</artifactId>
+    <version>0.8.8</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>prepare-agent</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+                <goal>report</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>check</id>
+            <goals>
+                <goal>check</goal>
+            </goals>
+            <configuration>
+                <rules>
+                    <rule>
+                        <element>BUNDLE</element>
+                        <limits>
+                            <limit>
+                                <counter>INSTRUCTION</counter>
+                                <value>COVEREDRATIO</value>
+                                <minimum>0.80</minimum>
+                            </limit>
+                        </limits>
+                    </rule>
+                </rules>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+## Mocking
+
+### Java Mocking
+
+Use Mockito for Java mocking:
+
+```java
+@ExtendWith(MockitoExtension.class)
+public class AlertServiceTest {
+    @Mock
+    private NotificationService notificationService;
+    
+    @Mock
+    private DeviceRepository deviceRepository;
+    
+    @InjectMocks
+    private AlertService alertService;
+    
+    @Test
+    public void testProcessAlert() {
+        // Arrange
+        String deviceId = "device-123";
+        Device device = new Device();
+        device.setId(deviceId);
+        device.setHostname("test-device");
+        
+        Alert alert = new Alert();
+        alert.setDeviceId(deviceId);
+        alert.setType("CPU_HIGH");
+        alert.setSeverity("HIGH");
+        
+        when(deviceRepository.findById(deviceId)).thenReturn(Mono.just(device));
+        when(notificationService.sendNotification(any())).thenReturn(Mono.empty());
+        
+        // Act
+        Mono<Void> result = alertService.processAlert(alert);
+        
+        // Assert
+        StepVerifier.create(result)
+            .verifyComplete();
+        
+        verify(deviceRepository).findById(deviceId);
+        verify(notificationService).sendNotification(any());
+    }
+}
+```
+
+### JavaScript Mocking
+
+Use Vitest for JavaScript mocking:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { useDeviceStore } from '@/stores/deviceStore';
+import { createPinia, setActivePinia } from 'pinia';
+import { DeviceService } from '@/services/DeviceService';
+
+// Mock the DeviceService
+vi.mock('@/services/DeviceService', () => ({
+  DeviceService: {
+    getDevices: vi.fn(),
+    getDeviceById: vi.fn(),
+    createDevice: vi.fn(),
+    updateDevice: vi.fn(),
+    deleteDevice: vi.fn()
+  }
+}));
+
+describe('DeviceStore', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+  
+  it('fetches devices', async () => {
+    // Arrange
+    const devices = [
+      { id: '1', hostname: 'device-1', status: 'online' },
+      { id: '2', hostname: 'device-2', status: 'offline' }
+    ];
+    
+    DeviceService.getDevices.mockResolvedValue(devices);
+    
+    const store = useDeviceStore();
+    
+    // Act
+    await store.fetchDevices();
+    
+    // Assert
+    expect(DeviceService.getDevices).toHaveBeenCalled();
+    expect(store.devices).toEqual(devices);
+  });
+});
+```
+
+## Test Data
+
+### Test Fixtures
+
+Use test fixtures for consistent test data:
+
+```java
+public class TestFixtures {
+    public static Device createTestDevice() {
+        Device device = new Device();
+        device.setId("device-123");
+        device.setHostname("test-device");
+        device.setOperatingSystem("Linux");
+        device.setStatus("online");
+        device.setLastSeen(LocalDateTime.now());
+        return device;
+    }
+    
+    public static Alert createTestAlert() {
+        Alert alert = new Alert();
+        alert.setId("alert-123");
+        alert.setDeviceId("device-123");
+        alert.setType("CPU_HIGH");
+        alert.setSeverity("HIGH");
+        alert.setTimestamp(LocalDateTime.now());
+        return alert;
+    }
+}
+```
+
+### Test Containers
+
+Use Testcontainers for integration tests with real databases:
+
+```java
+@Testcontainers
+@SpringBootTest
+public class MongoDbIntegrationTest {
+    @Container
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:6.0");
+    
+    @DynamicPropertySource
+    static void setProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
+    }
+    
+    @Autowired
+    private DeviceRepository deviceRepository;
+    
+    @Test
+    public void testSaveAndFindDevice() {
+        // Arrange
+        Device device = TestFixtures.createTestDevice();
+        
+        // Act
+        Device savedDevice = deviceRepository.save(device).block();
+        Device foundDevice = deviceRepository.findById(savedDevice.getId()).block();
+        
+        // Assert
+        assertNotNull(foundDevice);
+        assertEquals(device.getHostname(), foundDevice.getHostname());
+    }
+}
+```
+
+## Test Naming Conventions
+
+- Use descriptive test names that explain what is being tested
+- Follow the pattern: `test{MethodName}_{Scenario}_{ExpectedResult}`
+- For BDD style: `should{ExpectedBehavior}When{Scenario}`
+
+Examples:
+```java
+@Test
+public void testGetDeviceById_ExistingDevice_ReturnsDevice() { ... }
+
+@Test
+public void testGetDeviceById_NonExistingDevice_ReturnsEmpty() { ... }
+
+@Test
+public void shouldReturnDeviceWhenValidIdProvided() { ... }
+
+@Test
+public void shouldThrowExceptionWhenInvalidIdProvided() { ... }
+```
+
+## Test Organization
+
+- Group tests by functionality
+- Use nested classes for related tests
+- Separate unit tests from integration tests
+- Use appropriate test directories
+
+Example test organization:
+```
+src/
+├── test/
+│   ├── java/
+│   │   └── com/openframe/
+│   │       ├── unit/
+│   │       │   ├── service/
+│   │       │   ├── repository/
+│   │       │   └── util/
+│   │       ├── integration/
+│   │       │   ├── api/
+│   │       │   ├── repository/
+│   │       │   └── service/
+│   │       └── e2e/
+│   └── resources/
+│       ├── fixtures/
+│       └── application-test.yml
+```
+
+## Continuous Integration
+
+- Run tests automatically on every pull request
+- Fail the build if tests fail
+- Generate and publish test reports
+- Track test coverage over time
+
+Example GitHub Actions workflow:
+```yaml
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Run Tests
+      run: mvn test
+      
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: target/site/jacoco/
+```
+
+## Best Practices
+
+1. **Write Tests First**: Follow Test-Driven Development (TDD) where appropriate
+2. **Keep Tests Simple**: Each test should verify one specific behavior
+3. **Use Assertions Effectively**: Make assertions specific and meaningful
+4. **Isolate Tests**: Tests should not depend on each other
+5. **Mock External Dependencies**: Use mocks for external services
+6. **Test Edge Cases**: Include tests for boundary conditions and error scenarios
+7. **Maintain Tests**: Update tests when code changes
+8. **Optimize Test Performance**: Keep tests fast to run
+9. **Use Test Suites**: Group related tests together
+10. **Document Test Requirements**: Explain what each test is verifying

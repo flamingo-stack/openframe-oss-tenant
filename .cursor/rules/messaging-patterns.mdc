@@ -1,0 +1,559 @@
+---
+description: Messaging and event-driven architecture patterns for OpenFrame
+globs: 
+alwaysApply: false
+---
+# Messaging Patterns
+
+This document outlines the messaging and event-driven architecture patterns used in the OpenFrame project.
+
+## Kafka Usage Patterns
+
+### Topic Naming Conventions
+
+- Use kebab-case for topic names
+- Follow the pattern `{domain}-{entity}-{action}`
+- Use plural for entity collections
+- Use past tense for actions
+
+Examples:
+```
+devices-created
+devices-updated
+devices-deleted
+alerts-triggered
+metrics-collected
+```
+
+### Producer Patterns
+
+- Use the KafkaTemplate for producing messages
+- Set appropriate key for message partitioning
+- Include metadata in message headers
+- Handle production errors gracefully
+- Use asynchronous sending for non-blocking operations
+
+Example producer:
+```java
+@Service
+public class DeviceEventProducer {
+    private final KafkaTemplate<String, DeviceEvent> kafkaTemplate;
+    
+    public CompletableFuture<SendResult<String, DeviceEvent>> publishDeviceCreated(Device device) {
+        DeviceEvent event = new DeviceEvent(
+            UUID.randomUUID().toString(),
+            "DEVICE_CREATED",
+            LocalDateTime.now(),
+            device
+        );
+        
+        return kafkaTemplate.send("devices-created", device.getId(), event)
+            .handle((result, ex) -> {
+                if (ex != null) {
+                    log.error("Failed to send device created event: {}", ex.getMessage());
+                    throw new EventPublishingException("Failed to publish device created event", ex);
+                }
+                return result;
+            });
+    }
+}
+```
+
+### Consumer Patterns
+
+- Use the @KafkaListener annotation for consuming messages
+- Group consumers by functionality
+- Handle deserialization errors
+- Implement idempotent processing
+- Use manual acknowledgment for critical processing
+- Implement proper error handling and retries
+
+Example consumer:
+```java
+@Service
+public class DeviceEventConsumer {
+    private final DeviceService deviceService;
+    
+    @KafkaListener(
+        topics = "devices-created",
+        groupId = "device-processor",
+        containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void consumeDeviceCreatedEvent(
+            @Payload DeviceEvent event,
+            @Header(KafkaHeaders.RECEIVED_KEY) String key,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+            @Header(KafkaHeaders.OFFSET) long offset,
+            Acknowledgment acknowledgment) {
+        
+        try {
+            log.info("Processing device created event: {}, partition: {}, offset: {}", 
+                    event.getId(), partition, offset);
+            
+            deviceService.processDeviceCreated(event.getDevice());
+            
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("Error processing device created event: {}", e.getMessage());
+            // Implement retry or dead letter queue logic
+        }
+    }
+}
+```
+
+### Serialization
+
+- Use JSON for message serialization
+- Define clear schema for each message type
+- Include version information in the schema
+- Handle schema evolution gracefully
+- Consider using Avro for complex schemas
+
+Example serialization configuration:
+```java
+@Configuration
+public class KafkaConfig {
+    @Bean
+    public KafkaTemplate<String, Object> kafkaTemplate(
+            ProducerFactory<String, Object> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
+    }
+    
+    @Bean
+    public ProducerFactory<String, Object> producerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+    
+    @Bean
+    public ConsumerFactory<String, Object> consumerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.openframe.*");
+        return new DefaultKafkaConsumerFactory<>(configProps);
+    }
+    
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
+            new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        return factory;
+    }
+}
+```
+
+## Event Schema Design
+
+### Event Structure
+
+- Use a consistent structure for all events
+- Include common metadata fields
+- Use strong typing for event payloads
+- Version your event schemas
+
+Example event structure:
+```java
+@Data
+public class Event<T> {
+    private String id;
+    private String type;
+    private String source;
+    private LocalDateTime timestamp;
+    private String version;
+    private T data;
+    private Map<String, String> metadata;
+}
+
+@Data
+public class DeviceEvent {
+    private String id;
+    private String type; // CREATED, UPDATED, DELETED, etc.
+    private LocalDateTime timestamp;
+    private Device device;
+}
+```
+
+### Schema Evolution
+
+- Make schema changes backward compatible
+- Add new fields as optional
+- Never remove or rename fields
+- Use default values for new fields
+- Version your schemas explicitly
+
+Example schema evolution:
+```java
+// Version 1
+@Data
+public class DeviceEventV1 {
+    private String id;
+    private String type;
+    private LocalDateTime timestamp;
+    private DeviceV1 device;
+}
+
+// Version 2 (backward compatible)
+@Data
+public class DeviceEventV2 {
+    private String id;
+    private String type;
+    private LocalDateTime timestamp;
+    private DeviceV2 device;
+    private String source; // New field
+}
+```
+
+## Consumer Group Strategies
+
+### Group ID Naming
+
+- Use descriptive names for consumer groups
+- Follow the pattern `{service}-{function}-{version}`
+- Use consistent naming across services
+
+Examples:
+```
+device-service-processor-v1
+alert-service-notifier-v1
+metrics-service-aggregator-v1
+```
+
+### Partition Assignment
+
+- Consider the number of partitions based on throughput
+- Ensure balanced partition assignment
+- Use appropriate partition assignment strategy
+- Monitor consumer lag
+
+Example configuration:
+```java
+@Bean
+public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
+    ConcurrentKafkaListenerContainerFactory<String, Object> factory =
+        new ConcurrentKafkaListenerContainerFactory<>();
+    factory.setConsumerFactory(consumerFactory());
+    factory.setConcurrency(3); // Number of consumer threads
+    factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+    return factory;
+}
+```
+
+### Rebalancing
+
+- Handle consumer rebalancing gracefully
+- Implement ConsumerRebalanceListener for custom logic
+- Commit offsets before rebalancing
+- Clean up resources during rebalancing
+
+Example rebalance listener:
+```java
+@Component
+public class CustomRebalanceListener implements ConsumerRebalanceListener {
+    private final KafkaConsumer<String, Object> consumer;
+    
+    @Override
+    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+        // Commit offsets for the revoked partitions
+        consumer.commitSync();
+        
+        // Clean up any resources
+        for (TopicPartition partition : partitions) {
+            log.info("Partition revoked: {}", partition);
+            // Clean up resources for this partition
+        }
+    }
+    
+    @Override
+    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+        for (TopicPartition partition : partitions) {
+            log.info("Partition assigned: {}", partition);
+            // Initialize resources for this partition
+        }
+    }
+}
+```
+
+## Error Handling and Dead Letter Queues
+
+### Error Handling Strategies
+
+- Implement retry logic for transient errors
+- Use exponential backoff for retries
+- Set appropriate retry limits
+- Move failed messages to dead letter queues
+- Log detailed error information
+
+Example error handling:
+```java
+@Service
+public class DeviceEventConsumer {
+    private final DeviceService deviceService;
+    private final KafkaTemplate<String, DeviceEvent> kafkaTemplate;
+    
+    @KafkaListener(
+        topics = "devices-created",
+        groupId = "device-processor",
+        containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void consumeDeviceCreatedEvent(
+            @Payload DeviceEvent event,
+            @Header(KafkaHeaders.RECEIVED_KEY) String key,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+            @Header(KafkaHeaders.OFFSET) long offset,
+            Acknowledgment acknowledgment) {
+        
+        try {
+            deviceService.processDeviceCreated(event.getDevice());
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("Error processing device created event: {}", e.getMessage());
+            
+            // Add error information to headers
+            Map<String, Object> headers = new HashMap<>();
+            headers.put("error", e.getMessage());
+            headers.put("original-topic", "devices-created");
+            headers.put("retry-count", getRetryCount(event) + 1);
+            
+            if (shouldRetry(e, getRetryCount(event))) {
+                // Send to retry topic
+                kafkaTemplate.send("devices-created-retry", key, event, headers);
+            } else {
+                // Send to dead letter queue
+                kafkaTemplate.send("devices-created-dlq", key, event, headers);
+            }
+            
+            acknowledgment.acknowledge();
+        }
+    }
+    
+    private int getRetryCount(DeviceEvent event) {
+        // Get retry count from event metadata
+        return 0; // Implement actual logic
+    }
+    
+    private boolean shouldRetry(Exception e, int retryCount) {
+        // Determine if the error is retryable
+        return retryCount < 3 && isTransientError(e);
+    }
+    
+    private boolean isTransientError(Exception e) {
+        // Determine if the error is transient
+        return e instanceof TimeoutException || e instanceof ConnectException;
+    }
+}
+```
+
+### Dead Letter Queues
+
+- Create dedicated dead letter queues for each topic
+- Follow the naming pattern `{original-topic}-dlq`
+- Include error information in message headers
+- Implement monitoring for dead letter queues
+- Create tools for message reprocessing
+
+Example dead letter queue configuration:
+```java
+@Bean
+public NewTopic deviceCreatedDlqTopic() {
+    return TopicBuilder.name("devices-created-dlq")
+        .partitions(3)
+        .replicas(3)
+        .build();
+}
+
+@KafkaListener(
+    topics = "devices-created-dlq",
+    groupId = "dlq-monitor",
+    containerFactory = "kafkaListenerContainerFactory"
+)
+public void monitorDeadLetterQueue(
+        @Payload DeviceEvent event,
+        @Header(KafkaHeaders.RECEIVED_KEY) String key,
+        @Header("error") String error,
+        @Header("original-topic") String originalTopic) {
+    
+    log.error("Message in DLQ: topic={}, key={}, error={}", originalTopic, key, error);
+    
+    // Send alert or notification
+    alertService.sendAlert("Message in DLQ", 
+        String.format("Topic: %s, Key: %s, Error: %s", originalTopic, key, error));
+}
+```
+
+## Event Sourcing Patterns
+
+### Event Store
+
+- Use Kafka as an event store
+- Maintain a complete history of events
+- Use compacted topics for current state
+- Implement event replay functionality
+- Consider using a dedicated event store database
+
+Example event store service:
+```java
+@Service
+public class EventStoreService {
+    private final KafkaTemplate<String, Event<?>> kafkaTemplate;
+    
+    public <T> CompletableFuture<SendResult<String, Event<?>>> storeEvent(
+            String aggregateId, String eventType, T data) {
+        
+        Event<T> event = new Event<>();
+        event.setId(UUID.randomUUID().toString());
+        event.setType(eventType);
+        event.setSource("openframe-service");
+        event.setTimestamp(LocalDateTime.now());
+        event.setVersion("1.0");
+        event.setData(data);
+        
+        return kafkaTemplate.send("event-store", aggregateId, event);
+    }
+    
+    public Flux<Event<?>> getEventsForAggregate(String aggregateId) {
+        // Implement logic to retrieve events for an aggregate
+        // This could involve reading from Kafka or a dedicated event store
+        return Flux.empty(); // Placeholder
+    }
+}
+```
+
+### Event Replay
+
+- Implement functionality to replay events
+- Support replay from a specific point in time
+- Use consumer groups for replay to avoid affecting production
+- Handle schema evolution during replay
+- Monitor replay progress
+
+Example event replay service:
+```java
+@Service
+public class EventReplayService {
+    private final KafkaConsumer<String, Event<?>> consumer;
+    private final EventProcessor eventProcessor;
+    
+    public void replayEvents(String topic, LocalDateTime fromTime) {
+        // Find the offset corresponding to the timestamp
+        Map<TopicPartition, Long> timestampsToSearch = new HashMap<>();
+        List<PartitionInfo> partitions = consumer.partitionsFor(topic);
+        
+        for (PartitionInfo partition : partitions) {
+            TopicPartition topicPartition = new TopicPartition(topic, partition.partition());
+            timestampsToSearch.put(topicPartition, fromTime.toInstant(ZoneOffset.UTC).toEpochMilli());
+        }
+        
+        Map<TopicPartition, OffsetAndTimestamp> offsetsForTimes = consumer.offsetsForTimes(timestampsToSearch);
+        
+        // Assign partitions and seek to the appropriate offsets
+        Set<TopicPartition> topicPartitions = offsetsForTimes.keySet();
+        consumer.assign(topicPartitions);
+        
+        for (Map.Entry<TopicPartition, OffsetAndTimestamp> entry : offsetsForTimes.entrySet()) {
+            if (entry.getValue() != null) {
+                consumer.seek(entry.getKey(), entry.getValue().offset());
+            }
+        }
+        
+        // Process events
+        while (true) {
+            ConsumerRecords<String, Event<?>> records = consumer.poll(Duration.ofMillis(100));
+            
+            if (records.isEmpty()) {
+                break;
+            }
+            
+            for (ConsumerRecord<String, Event<?>> record : records) {
+                eventProcessor.processEvent(record.value());
+            }
+        }
+    }
+}
+```
+
+### CQRS Implementation
+
+- Separate command and query responsibilities
+- Use event sourcing for the command side
+- Build specialized read models for queries
+- Update read models based on events
+- Ensure eventual consistency
+
+Example CQRS implementation:
+```java
+@Service
+public class DeviceCommandService {
+    private final EventStoreService eventStoreService;
+    
+    public Mono<String> createDevice(CreateDeviceCommand command) {
+        // Validate command
+        // Generate device ID
+        String deviceId = UUID.randomUUID().toString();
+        
+        // Create device event
+        Device device = new Device();
+        device.setId(deviceId);
+        device.setHostname(command.getHostname());
+        device.setOperatingSystem(command.getOperatingSystem());
+        device.setStatus("offline");
+        
+        // Store event
+        return Mono.fromFuture(eventStoreService.storeEvent(deviceId, "DEVICE_CREATED", device))
+            .map(result -> deviceId);
+    }
+}
+
+@Service
+public class DeviceQueryService {
+    private final DeviceRepository deviceRepository;
+    
+    public Mono<Device> getDevice(String deviceId) {
+        return deviceRepository.findById(deviceId);
+    }
+    
+    public Flux<Device> getDevicesByStatus(String status) {
+        return deviceRepository.findByStatus(status);
+    }
+}
+
+@Service
+public class DeviceEventHandler {
+    private final DeviceRepository deviceRepository;
+    
+    @KafkaListener(topics = "event-store", groupId = "device-read-model-updater")
+    public void handleDeviceEvents(ConsumerRecord<String, Event<?>> record) {
+        Event<?> event = record.value();
+        
+        if ("DEVICE_CREATED".equals(event.getType())) {
+            Device device = (Device) event.getData();
+            deviceRepository.save(device).subscribe();
+        } else if ("DEVICE_UPDATED".equals(event.getType())) {
+            Device device = (Device) event.getData();
+            deviceRepository.save(device).subscribe();
+        } else if ("DEVICE_DELETED".equals(event.getType())) {
+            String deviceId = (String) event.getData();
+            deviceRepository.deleteById(deviceId).subscribe();
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Message Design**: Design clear, versioned message schemas
+2. **Idempotent Processing**: Ensure consumers can process messages multiple times without side effects
+3. **Partition Strategy**: Choose appropriate partition keys for related messages
+4. **Error Handling**: Implement comprehensive error handling with retries and dead letter queues
+5. **Monitoring**: Monitor consumer lag, throughput, and error rates
+6. **Security**: Implement proper authentication and authorization for Kafka
+7. **Testing**: Test producers and consumers thoroughly
+8. **Documentation**: Document message schemas and consumer/producer patterns
+9. **Performance Tuning**: Optimize Kafka configuration for your workload
+10. **Disaster Recovery**: Implement backup and recovery procedures

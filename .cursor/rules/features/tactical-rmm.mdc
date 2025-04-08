@@ -1,0 +1,250 @@
+---
+description: Tactical RMM integration and usage in OpenFrame
+globs: 
+alwaysApply: false
+---
+# Tactical RMM Integration
+
+This document explains how Tactical RMM is integrated with OpenFrame and how to work with it.
+
+## Overview
+
+Tactical RMM (Remote Monitoring and Management) is integrated into OpenFrame to provide device management, monitoring, and remote control capabilities. It allows administrators to:
+
+- Monitor device health and performance
+- Deploy software and patches
+- Run scripts remotely
+- Manage alerts and notifications
+- Access devices remotely
+
+## Configuration
+
+Tactical RMM is configured in `docker-compose.openframe-tactical-rmm.yml`:
+
+```yaml
+version: '3.8'
+services:
+  tactical-rmm-api:
+    image: tactical/api:latest
+    environment:
+      - POSTGRES_HOST=tactical-db
+      - REDIS_HOST=tactical-redis
+      # Additional environment variables
+    volumes:
+      - tactical-data:/opt/tactical
+    depends_on:
+      - tactical-db
+      - tactical-redis
+
+  tactical-rmm-websockets:
+    image: tactical/websockets:latest
+    # Configuration for websockets service
+
+  tactical-rmm-frontend:
+    image: tactical/frontend:latest
+    # Configuration for frontend service
+
+  # Additional services (database, redis, etc.)
+```
+
+## API Integration
+
+OpenFrame integrates with Tactical RMM through its API. The integration is implemented in:
+
+- `services/openframe-gateway/src/main/java/com/openframe/gateway/controller/IntegrationController.java`: Routes requests to Tactical RMM
+- `services/openframe-api/src/main/java/com/openframe/api/service/TacticalRmmService.java`: Service for interacting with Tactical RMM API
+
+Example API integration:
+
+```java
+@Service
+public class TacticalRmmService {
+    private final WebClient webClient;
+    
+    public TacticalRmmService(WebClient.Builder webClientBuilder, 
+                             @Value("${openframe.integration.tactical-rmm.url}") String baseUrl) {
+        this.webClient = webClientBuilder
+            .baseUrl(baseUrl)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
+    }
+    
+    public Flux<Device> getDevices() {
+        return webClient.get()
+            .uri("/api/v3/agents/")
+            .retrieve()
+            .bodyToFlux(Device.class);
+    }
+    
+    // Additional methods for interacting with Tactical RMM API
+}
+```
+
+## Authentication
+
+Authentication with Tactical RMM is handled through API keys:
+
+1. API keys are stored in the OpenFrame configuration service
+2. The gateway service retrieves the API key when proxying requests
+3. The API key is added to the request headers
+
+Example authentication implementation:
+
+```java
+@Component
+public class TacticalRmmAuthenticationFilter implements WebFilter {
+    private final ToolCredentialsService credentialsService;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        
+        if (isTacticalRmmRequest(request)) {
+            return credentialsService.getCredentialsForTool("tactical-rmm")
+                .map(credentials -> {
+                    ServerHttpRequest modifiedRequest = request.mutate()
+                        .header("X-API-KEY", credentials.getApiKey())
+                        .build();
+                    return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                })
+                .orElse(chain.filter(exchange));
+        }
+        
+        return chain.filter(exchange);
+    }
+}
+```
+
+## UI Integration
+
+The Tactical RMM UI is integrated into the OpenFrame dashboard:
+
+- `services/openframe-ui/src/views/rmm/Devices.vue`: Device management view
+- `services/openframe-ui/src/views/rmm/Monitoring.vue`: Monitoring view
+- `services/openframe-ui/src/views/rmm/Scripts.vue`: Script management view
+
+Example UI component:
+
+```vue
+<template>
+  <div class="rmm-devices">
+    <h1>Devices</h1>
+    <data-table :columns="columns" :data="devices" :loading="loading">
+      <template #actions="{ row }">
+        <button @click="runScript(row)">Run Script</button>
+        <button @click="remoteControl(row)">Remote Control</button>
+      </template>
+    </data-table>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRmmService } from '@/services/RmmService';
+import DataTable from '@/components/ui/DataTable.vue';
+
+const rmmService = useRmmService();
+const devices = ref([]);
+const loading = ref(true);
+
+const columns = [
+  { field: 'hostname', label: 'Hostname' },
+  { field: 'operating_system', label: 'OS' },
+  { field: 'status', label: 'Status' },
+  { field: 'last_seen', label: 'Last Seen' },
+  { field: 'actions', label: 'Actions' }
+];
+
+onMounted(async () => {
+  try {
+    devices.value = await rmmService.getDevices();
+  } catch (error) {
+    console.error('Failed to fetch devices:', error);
+  } finally {
+    loading.value = false;
+  }
+});
+
+function runScript(device) {
+  // Implementation for running a script on a device
+}
+
+function remoteControl(device) {
+  // Implementation for remote control
+}
+</script>
+```
+
+## Data Models
+
+Key data models for Tactical RMM integration:
+
+```java
+@Data
+public class Device {
+    private String id;
+    private String hostname;
+    private String operatingSystem;
+    private String status;
+    private LocalDateTime lastSeen;
+    private String agentId;
+    private String clientId;
+    private String siteId;
+    // Additional properties
+}
+
+@Data
+public class Script {
+    private String id;
+    private String name;
+    private String description;
+    private String content;
+    private String scriptType; // PowerShell, Bash, Python, etc.
+    private boolean defaultArgs;
+    private String defaultTimeout;
+    // Additional properties
+}
+```
+
+## Best Practices
+
+1. **Error Handling**: Always handle API errors gracefully
+   ```java
+   .onErrorResume(WebClientResponseException.class, ex -> {
+       log.error("Error from Tactical RMM API: {}", ex.getMessage());
+       return Mono.error(new IntegrationException("Failed to communicate with Tactical RMM", ex));
+   })
+   ```
+
+2. **Caching**: Cache frequently accessed data
+   ```java
+   @Cacheable(value = "tacticalRmmDevices", key = "#root.methodName")
+   public Flux<Device> getDevices() {
+       // Implementation
+   }
+   ```
+
+3. **Pagination**: Handle pagination for large result sets
+   ```java
+   public Flux<Device> getAllDevices() {
+       return getDevicesPage(1)
+           .expand(page -> {
+               if (page.hasNext()) {
+                   return getDevicesPage(page.getNextPage());
+               } else {
+                   return Mono.empty();
+               }
+           })
+           .flatMapIterable(Page::getItems);
+   }
+   ```
+
+4. **Monitoring**: Add metrics for API calls
+   ```java
+   .doOnSubscribe(s -> meterRegistry.counter("tactical_rmm_api_calls", "endpoint", "getDevices").increment())
+   ```
+
+5. **UI Consistency**: Follow the OpenFrame UI design patterns for RMM screens
+   - Use the same component structure as existing RMM views
+   - Maintain consistent styling and layout
+   - Reuse common components for similar functionality

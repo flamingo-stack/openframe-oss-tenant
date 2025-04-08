@@ -1,0 +1,819 @@
+---
+description: Monitoring and observability best practices for OpenFrame
+globs: 
+alwaysApply: false
+---
+# Monitoring and Observability
+
+This document outlines the monitoring and observability best practices for the OpenFrame project.
+
+## Monitoring Stack
+
+OpenFrame uses a comprehensive monitoring stack:
+
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Visualization and dashboards
+- **Loki**: Log aggregation
+- **Tempo**: Distributed tracing
+- **Alertmanager**: Alert management and notifications
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│             │     │             │     │             │
+│  Prometheus │     │    Loki     │     │   Tempo     │
+│             │     │             │     │             │
+└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+       │                   │                   │
+       │                   │                   │
+       ▼                   ▼                   ▼
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│                      Grafana                        │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+                          │
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│                   Alertmanager                      │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+## Metrics Collection
+
+### Application Metrics
+
+Spring Boot applications expose metrics through Micrometer and Actuator:
+
+```java
+@Configuration
+public class MetricsConfig {
+    @Bean
+    public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags(
+            @Value("${spring.application.name}") String applicationName) {
+        return registry -> registry.config()
+            .commonTags("application", applicationName);
+    }
+    
+    @Bean
+    public TimedAspect timedAspect(MeterRegistry registry) {
+        return new TimedAspect(registry);
+    }
+}
+```
+
+Example usage in code:
+```java
+@Service
+public class DeviceService {
+    private final MeterRegistry meterRegistry;
+    private final DeviceRepository deviceRepository;
+    
+    @Timed(value = "device.service.get.time", description = "Time taken to get device")
+    public Mono<Device> getDeviceById(String id) {
+        return deviceRepository.findById(id)
+            .doOnSuccess(device -> {
+                if (device != null) {
+                    meterRegistry.counter("device.service.get.success").increment();
+                } else {
+                    meterRegistry.counter("device.service.get.notfound").increment();
+                }
+            })
+            .doOnError(e -> meterRegistry.counter("device.service.get.error").increment());
+    }
+    
+    @Timed(value = "device.service.create.time", description = "Time taken to create device")
+    public Mono<Device> createDevice(Device device) {
+        return deviceRepository.save(device)
+            .doOnSuccess(d -> meterRegistry.counter("device.service.create.success").increment())
+            .doOnError(e -> meterRegistry.counter("device.service.create.error").increment());
+    }
+}
+```
+
+### Custom Metrics
+
+Define custom metrics for business-specific monitoring:
+
+```java
+@Component
+public class DeviceMetrics {
+    private final MeterRegistry meterRegistry;
+    
+    @Scheduled(fixedRate = 60000)
+    public void recordDeviceMetrics() {
+        // Record device count by status
+        Map<String, Long> deviceCountByStatus = deviceRepository.countByStatus().block();
+        deviceCountByStatus.forEach((status, count) -> {
+            meterRegistry.gauge("device.count.by.status", 
+                Tags.of("status", status), count);
+        });
+        
+        // Record device count by OS
+        Map<String, Long> deviceCountByOs = deviceRepository.countByOperatingSystem().block();
+        deviceCountByOs.forEach((os, count) -> {
+            meterRegistry.gauge("device.count.by.os", 
+                Tags.of("os", os), count);
+        });
+    }
+}
+```
+
+### Prometheus Configuration
+
+Configure Prometheus to scrape metrics from OpenFrame services:
+
+```yaml
+# prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'openframe-api'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['openframe-api:8080']
+    
+  - job_name: 'openframe-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['openframe-gateway:8100']
+    
+  - job_name: 'openframe-management'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['openframe-management:8081']
+    
+  # Additional services...
+```
+
+## Logging
+
+### Structured Logging
+
+Use structured logging with JSON format:
+
+```xml
+<!-- logback-spring.xml -->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>true</includeMdc>
+            <includeContext>true</includeContext>
+            <customFields>{"application":"${spring.application.name}"}</customFields>
+        </encoder>
+    </appender>
+    
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+    
+    <logger name="com.openframe" level="DEBUG" />
+</configuration>
+```
+
+### Contextual Logging
+
+Include context information in logs:
+
+```java
+@Component
+public class LoggingFilter implements WebFilter {
+    private static final Logger log = LoggerFactory.getLogger(LoggingFilter.class);
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String requestId = request.getHeaders().getFirst("X-Request-ID");
+        
+        if (requestId == null) {
+            requestId = UUID.randomUUID().toString();
+        }
+        
+        String finalRequestId = requestId;
+        return chain.filter(exchange)
+            .contextWrite(context -> context.put(
+                LoggingContextKey.REQUEST_ID, finalRequestId))
+            .doOnSubscribe(s -> {
+                MDC.put("requestId", finalRequestId);
+                MDC.put("method", request.getMethod().toString());
+                MDC.put("path", request.getPath().value());
+                MDC.put("clientIp", request.getRemoteAddress().getAddress().getHostAddress());
+                
+                log.info("Request received: {} {}", 
+                    request.getMethod(), request.getPath().value());
+            })
+            .doFinally(signalType -> {
+                log.info("Request completed: {} {} with status {}", 
+                    request.getMethod(), 
+                    request.getPath().value(),
+                    exchange.getResponse().getStatusCode());
+                
+                MDC.clear();
+            });
+    }
+}
+```
+
+### Log Aggregation with Loki
+
+Configure Loki for log aggregation:
+
+```yaml
+# loki.yml
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /data/loki/boltdb-shipper-active
+    cache_location: /data/loki/boltdb-shipper-cache
+    cache_ttl: 24h
+    shared_store: filesystem
+  filesystem:
+    directory: /data/loki/chunks
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+compactor:
+  working_directory: /data/loki/boltdb-shipper-compactor
+  shared_store: filesystem
+```
+
+## Distributed Tracing
+
+### Tracing Configuration
+
+Configure distributed tracing with Spring Cloud Sleuth and OpenTelemetry:
+
+```java
+@Configuration
+public class TracingConfig {
+    @Bean
+    public OpenTelemetry openTelemetry() {
+        return OpenTelemetrySdk.builder()
+            .setTracerProvider(
+                SdkTracerProvider.builder()
+                    .addSpanProcessor(BatchSpanProcessor.builder(
+                        OtlpGrpcSpanExporter.builder()
+                            .setEndpoint("http://tempo:4317")
+                            .build())
+                        .build())
+                    .build())
+            .build();
+    }
+}
+```
+
+### Trace Propagation
+
+Ensure trace context propagation across services:
+
+```java
+@Component
+public class TracingWebFilter implements WebFilter {
+    private final OpenTelemetry openTelemetry;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        Context context = openTelemetry.getPropagators().getTextMapPropagator()
+            .extract(Context.current(), request.getHeaders(), 
+                (headers, key) -> headers.getFirst(key));
+        
+        Span span = openTelemetry.getTracer("openframe")
+            .spanBuilder("http-request")
+            .setParent(context)
+            .setAttribute("http.method", request.getMethod().toString())
+            .setAttribute("http.url", request.getURI().toString())
+            .startSpan();
+        
+        return chain.filter(exchange)
+            .doFinally(signalType -> {
+                span.setAttribute("http.status_code", 
+                    exchange.getResponse().getStatusCode().value());
+                span.end();
+            });
+    }
+}
+```
+
+### Manual Instrumentation
+
+Add manual instrumentation for critical code paths:
+
+```java
+@Service
+public class DeviceService {
+    private final Tracer tracer;
+    private final DeviceRepository deviceRepository;
+    
+    public Mono<Device> getDeviceById(String id) {
+        Span span = tracer.spanBuilder("DeviceService.getDeviceById")
+            .setAttribute("device.id", id)
+            .startSpan();
+        
+        try (Scope scope = span.makeCurrent()) {
+            return deviceRepository.findById(id)
+                .doOnSuccess(device -> {
+                    if (device != null) {
+                        span.setAttribute("device.found", true);
+                        span.setAttribute("device.hostname", device.getHostname());
+                    } else {
+                        span.setAttribute("device.found", false);
+                    }
+                })
+                .doOnError(e -> {
+                    span.recordException(e);
+                    span.setStatus(StatusCode.ERROR);
+                })
+                .doFinally(signalType -> span.end());
+        }
+    }
+}
+```
+
+## Dashboards
+
+### Grafana Dashboards
+
+Create comprehensive Grafana dashboards for monitoring:
+
+1. **System Dashboard**: Overall system health and performance
+2. **Service Dashboard**: Individual service metrics
+3. **Business Dashboard**: Business-specific metrics
+4. **Error Dashboard**: Error rates and patterns
+
+Example dashboard configuration:
+```json
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.7",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"openframe-api\"}[1m])) by (status)",
+          "interval": "",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "API Request Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "schemaVersion": 26,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "OpenFrame API Dashboard",
+  "uid": "openframe-api",
+  "version": 1
+}
+```
+
+## Alerting
+
+### Alert Rules
+
+Define Prometheus alert rules:
+
+```yaml
+# alert-rules.yml
+groups:
+  - name: openframe-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for the last 5 minutes"
+          
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, service)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 1 second for the last 5 minutes"
+          
+      - alert: ServiceDown
+        expr: up{job=~"openframe-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+```
+
+### Alertmanager Configuration
+
+Configure Alertmanager for alert routing and notifications:
+
+```yaml
+# alertmanager.yml
+global:
+  resolve_timeout: 5m
+  slack_api_url: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
+
+route:
+  group_by: ['alertname', 'job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'slack-notifications'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      continue: true
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
+
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+      - channel: '#monitoring'
+        send_resolved: true
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        
+  - name: 'slack-critical'
+    slack_configs:
+      - channel: '#alerts-critical'
+        send_resolved: true
+        title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        
+  - name: 'slack-warnings'
+    slack_configs:
+      - channel: '#alerts-warnings'
+        send_resolved: true
+        title: 'WARNING: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+```
+
+## Health Checks
+
+### Spring Boot Actuator
+
+Configure Spring Boot Actuator for health checks:
+
+```java
+@Configuration
+public class ActuatorConfig {
+    @Bean
+    public HealthContributor mongoHealthContributor(MongoClient mongoClient) {
+        return new MongoHealthIndicator(mongoClient);
+    }
+    
+    @Bean
+    public HealthContributor kafkaHealthContributor(KafkaTemplate<String, Object> kafkaTemplate) {
+        return new KafkaHealthIndicator(kafkaTemplate);
+    }
+    
+    @Bean
+    public HealthContributor redisHealthContributor(RedisConnectionFactory redisConnectionFactory) {
+        return new RedisHealthIndicator(redisConnectionFactory);
+    }
+}
+```
+
+Example health check endpoint:
+```
+GET /actuator/health
+```
+
+Response:
+```json
+{
+  "status": "UP",
+  "components": {
+    "diskSpace": {
+      "status": "UP",
+      "details": {
+        "total": 10737418240,
+        "free": 5368709120,
+        "threshold": 10485760
+      }
+    },
+    "mongo": {
+      "status": "UP",
+      "details": {
+        "version": "6.0.0"
+      }
+    },
+    "kafka": {
+      "status": "UP"
+    },
+    "redis": {
+      "status": "UP",
+      "details": {
+        "version": "7.0.0"
+      }
+    }
+  }
+}
+```
+
+### Custom Health Indicators
+
+Implement custom health indicators for business-specific health checks:
+
+```java
+@Component
+public class IntegratedToolsHealthIndicator implements ReactiveHealthIndicator {
+    private final ToolRegistry toolRegistry;
+    private final WebClient.Builder webClientBuilder;
+    
+    @Override
+    public Mono<Health> health() {
+        return toolRegistry.getAllTools()
+            .flatMap(tool -> checkToolHealth(tool))
+            .collectList()
+            .map(results -> {
+                boolean allUp = results.stream()
+                    .allMatch(result -> result.getStatus() == Status.UP);
+                
+                Health.Builder builder = allUp ? Health.up() : Health.down();
+                
+                results.forEach(result -> {
+                    builder.withDetail(result.getToolName(), result.getStatus().toString());
+                });
+                
+                return builder.build();
+            });
+    }
+    
+    private Mono<ToolHealthResult> checkToolHealth(Tool tool) {
+        return webClientBuilder.build()
+            .get()
+            .uri(tool.getBaseUrl() + "/health")
+            .retrieve()
+            .toEntity(String.class)
+            .map(response -> {
+                Status status = response.getStatusCode().is2xxSuccessful() ? 
+                    Status.UP : Status.DOWN;
+                return new ToolHealthResult(tool.getName(), status);
+            })
+            .onErrorResume(e -> Mono.just(
+                new ToolHealthResult(tool.getName(), Status.DOWN)));
+    }
+    
+    @Data
+    @AllArgsConstructor
+    private static class ToolHealthResult {
+        private String toolName;
+        private Status status;
+    }
+}
+```
+
+## Best Practices
+
+1. **Metrics Naming**: Use consistent naming conventions for metrics
+   ```java
+   // Good
+   Counter.builder("http.requests.total")
+       .tag("method", "GET")
+       .tag("path", "/api/devices")
+       .register(meterRegistry);
+   
+   // Bad
+   Counter.builder("requests")
+       .register(meterRegistry);
+   ```
+
+2. **Log Levels**: Use appropriate log levels
+   ```java
+   // Debug: Detailed information for debugging
+   log.debug("Processing device with ID: {}", deviceId);
+   
+   // Info: General information about application progress
+   log.info("Device created: {}", device.getId());
+   
+   // Warn: Potential issues that don't prevent operation
+   log.warn("Device not found: {}", deviceId);
+   
+   // Error: Errors that prevent operation
+   log.error("Failed to create device", exception);
+   ```
+
+3. **Contextual Logging**: Include context in logs
+   ```java
+   MDC.put("requestId", requestId);
+   MDC.put("userId", userId);
+   log.info("User {} accessed resource {}", userId, resourceId);
+   ```
+
+4. **Health Check Design**: Design meaningful health checks
+   ```java
+   @Component
+   public class DatabaseHealthIndicator implements HealthIndicator {
+       private final JdbcTemplate jdbcTemplate;
+       
+       @Override
+       public Health health() {
+           try {
+               int result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+               return (result == 1) ? Health.up().build() : Health.down().build();
+           } catch (Exception e) {
+               return Health.down(e).build();
+           }
+       }
+   }
+   ```
+
+5. **Dashboard Organization**: Organize dashboards by function
+   - System dashboards for infrastructure metrics
+   - Service dashboards for application metrics
+   - Business dashboards for domain-specific metrics
+   - Error dashboards for troubleshooting
+
+6. **Alert Design**: Design actionable alerts
+   - Alert on symptoms, not causes
+   - Include clear descriptions and remediation steps
+   - Set appropriate thresholds to avoid alert fatigue
+   - Route alerts to the right teams
+
+7. **Tracing Sampling**: Configure appropriate sampling rates
+   ```java
+   @Bean
+   public Sampler sampler() {
+       // Sample 10% of requests in production
+       return ProbabilityBasedSampler.create(0.1);
+   }
+   ```
+
+8. **Metric Cardinality**: Be mindful of metric cardinality
+   ```java
+   // Good: Limited cardinality
+   Timer.builder("http.request.duration")
+       .tag("method", request.getMethod().toString())
+       .tag("status", response.getStatus().toString())
+       .register(meterRegistry);
+   
+   // Bad: Unbounded cardinality
+   Timer.builder("http.request.duration")
+       .tag("path", request.getPath()) // Unbounded
+       .tag("user", request.getUser()) // Unbounded
+       .register(meterRegistry);
+   ```
+
+9. **Correlation IDs**: Use correlation IDs to track requests
+   ```java
+   String correlationId = request.getHeaders().getFirst("X-Correlation-ID");
+   if (correlationId == null) {
+       correlationId = UUID.randomUUID().toString();
+   }
+   MDC.put("correlationId", correlationId);
+   ```
+
+10. **Regular Review**: Regularly review and update monitoring
+    - Review alert thresholds and rules
+    - Update dashboards for new features
+    - Add metrics for new business requirements
+    - Remove unused or redundant metrics

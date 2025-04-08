@@ -1,0 +1,813 @@
+---
+description: Security best practices for OpenFrame
+globs: 
+alwaysApply: false
+---
+# Security Practices
+
+This document outlines the security best practices for the OpenFrame project.
+
+## Authentication and Authorization
+
+### JWT Authentication
+
+OpenFrame uses JWT (JSON Web Tokens) for authentication:
+
+```java
+@Configuration
+@EnableWebFluxSecurity
+public class SecurityConfig {
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        return http
+            .csrf().disable()
+            .authorizeExchange()
+                .pathMatchers("/auth/**").permitAll()
+                .pathMatchers("/actuator/health").permitAll()
+                .pathMatchers("/actuator/**").hasRole("ADMIN")
+                .anyExchange().authenticated()
+            .and()
+            .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+            .build();
+    }
+    
+    @Bean
+    public ReactiveJwtDecoder jwtDecoder(@Value("${openframe.security.jwt.public-key}") RSAPublicKey publicKey) {
+        return NimbusReactiveJwtDecoder.withPublicKey(publicKey).build();
+    }
+}
+```
+
+### Role-Based Access Control
+
+Implement role-based access control (RBAC):
+
+```java
+@RestController
+@RequestMapping("/api/admin")
+public class AdminController {
+    private final AdminService adminService;
+    
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Flux<User> getAllUsers() {
+        return adminService.getAllUsers();
+    }
+    
+    @PostMapping("/users/{id}/roles")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Mono<User> updateUserRoles(@PathVariable String id, @RequestBody List<String> roles) {
+        return adminService.updateUserRoles(id, roles);
+    }
+}
+```
+
+### Permission Checks
+
+Implement fine-grained permission checks:
+
+```java
+@Service
+public class DeviceService {
+    private final DeviceRepository deviceRepository;
+    private final SecurityService securityService;
+    
+    public Mono<Device> getDeviceById(String id) {
+        return deviceRepository.findById(id)
+            .filterWhen(device -> securityService.hasPermission("READ", "DEVICE", device.getId()));
+    }
+    
+    public Mono<Device> updateDevice(String id, Device device) {
+        return deviceRepository.findById(id)
+            .filterWhen(existingDevice -> securityService.hasPermission("WRITE", "DEVICE", id))
+            .flatMap(existingDevice -> {
+                // Update device
+                return deviceRepository.save(device);
+            });
+    }
+}
+```
+
+## Input Validation
+
+### Request Validation
+
+Validate all incoming requests:
+
+```java
+@RestController
+@RequestMapping("/api/devices")
+public class DeviceController {
+    private final DeviceService deviceService;
+    private final Validator validator;
+    
+    @PostMapping
+    public Mono<ResponseEntity<Device>> createDevice(@RequestBody @Valid DeviceRequest request) {
+        return deviceService.createDevice(request.toDevice())
+            .map(device -> ResponseEntity.status(HttpStatus.CREATED).body(device));
+    }
+    
+    @Data
+    public static class DeviceRequest {
+        @NotBlank(message = "Hostname is required")
+        @Size(min = 3, max = 50, message = "Hostname must be between 3 and 50 characters")
+        private String hostname;
+        
+        @NotBlank(message = "Operating system is required")
+        private String operatingSystem;
+        
+        @Pattern(regexp = "^([0-9]{1,3}\\.){3}[0-9]{1,3}$", message = "Invalid IP address format")
+        private String ipAddress;
+        
+        public Device toDevice() {
+            Device device = new Device();
+            device.setHostname(hostname);
+            device.setOperatingSystem(operatingSystem);
+            device.setIpAddress(ipAddress);
+            return device;
+        }
+    }
+}
+```
+
+### Input Sanitization
+
+Sanitize user input to prevent XSS:
+
+```java
+@Component
+public class InputSanitizer {
+    private final PolicyFactory policy = new HtmlPolicyBuilder()
+        .allowElements("b", "i", "u", "strong", "em")
+        .allowUrlProtocols("https")
+        .allowAttributes("href").onElements("a")
+        .requireRelNofollowOnLinks()
+        .toFactory();
+    
+    public String sanitize(String input) {
+        if (input == null) {
+            return null;
+        }
+        return policy.sanitize(input);
+    }
+}
+
+@Service
+public class NoteService {
+    private final NoteRepository noteRepository;
+    private final InputSanitizer inputSanitizer;
+    
+    public Mono<Note> createNote(Note note) {
+        note.setTitle(inputSanitizer.sanitize(note.getTitle()));
+        note.setContent(inputSanitizer.sanitize(note.getContent()));
+        return noteRepository.save(note);
+    }
+}
+```
+
+## Secure Communication
+
+### TLS Configuration
+
+Configure TLS for secure communication:
+
+```java
+@Configuration
+public class TlsConfig {
+    @Bean
+    public NettyServerCustomizer nettyServerCustomizer(
+            @Value("${server.ssl.key-store}") String keyStore,
+            @Value("${server.ssl.key-store-password}") String keyStorePassword) {
+        return httpServer -> {
+            SslContext sslContext = SslContextBuilder.forServer(
+                    new File(keyStore),
+                    keyStorePassword)
+                .protocols("TLSv1.2", "TLSv1.3")
+                .ciphers(List.of(
+                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+                ))
+                .build();
+            
+            return httpServer.secure(spec -> spec.sslContext(sslContext));
+        };
+    }
+}
+```
+
+### CORS Configuration
+
+Configure CORS to restrict cross-origin requests:
+
+```java
+@Configuration
+public class CorsConfig {
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.setAllowedOrigins(List.of("https://dashboard.openframe.com"));
+        corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        corsConfig.setAllowCredentials(true);
+        corsConfig.setMaxAge(3600L);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfig);
+        
+        return new CorsWebFilter(source);
+    }
+}
+```
+
+## Secrets Management
+
+### Vault Integration
+
+Integrate with HashiCorp Vault for secrets management:
+
+```java
+@Configuration
+@EnableConfigurationProperties(VaultProperties.class)
+public class VaultConfig {
+    @Bean
+    public VaultTemplate vaultTemplate(VaultProperties vaultProperties) {
+        VaultEndpoint endpoint = VaultEndpoint.create(
+            vaultProperties.getHost(),
+            vaultProperties.getPort()
+        );
+        
+        ClientAuthentication clientAuthentication = new TokenAuthentication(
+            vaultProperties.getToken()
+        );
+        
+        return new VaultTemplate(endpoint, clientAuthentication);
+    }
+    
+    @Bean
+    public SecretService secretService(VaultTemplate vaultTemplate) {
+        return new VaultSecretService(vaultTemplate);
+    }
+}
+
+@Service
+public class VaultSecretService implements SecretService {
+    private final VaultTemplate vaultTemplate;
+    
+    @Override
+    public Mono<String> getSecret(String path, String key) {
+        return Mono.fromCallable(() -> {
+            VaultResponse response = vaultTemplate.read(path);
+            if (response == null || response.getData() == null) {
+                return null;
+            }
+            return (String) response.getData().get(key);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+}
+```
+
+### Environment Variables
+
+Use environment variables for configuration:
+
+```java
+@Configuration
+@ConfigurationProperties(prefix = "openframe.security")
+@Data
+public class SecurityProperties {
+    private JwtProperties jwt = new JwtProperties();
+    
+    @Data
+    public static class JwtProperties {
+        private String secret;
+        private long expirationSeconds = 86400;
+    }
+}
+```
+
+## Data Protection
+
+### Encryption
+
+Implement data encryption:
+
+```java
+@Configuration
+public class EncryptionConfig {
+    @Bean
+    public StringEncryptor stringEncryptor(
+            @Value("${openframe.security.encryption.password}") String password,
+            @Value("${openframe.security.encryption.salt}") String salt) {
+        PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
+        encryptor.setAlgorithm("PBEWithHMACSHA512AndAES_256");
+        encryptor.setPassword(password);
+        encryptor.setIvGenerator(new RandomIvGenerator());
+        encryptor.setSaltGenerator(new StringFixedSaltGenerator(salt));
+        encryptor.setPoolSize(4);
+        return encryptor;
+    }
+}
+
+@Service
+public class CredentialService {
+    private final StringEncryptor encryptor;
+    private final CredentialRepository credentialRepository;
+    
+    public Mono<Credential> saveCredential(Credential credential) {
+        credential.setUsername(encryptor.encrypt(credential.getUsername()));
+        credential.setPassword(encryptor.encrypt(credential.getPassword()));
+        return credentialRepository.save(credential);
+    }
+    
+    public Mono<Credential> getCredential(String id) {
+        return credentialRepository.findById(id)
+            .map(credential -> {
+                credential.setUsername(encryptor.decrypt(credential.getUsername()));
+                credential.setPassword(encryptor.decrypt(credential.getPassword()));
+                return credential;
+            });
+    }
+}
+```
+
+### Sensitive Data Handling
+
+Handle sensitive data carefully:
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+    private final UserService userService;
+    
+    @GetMapping("/{id}")
+    public Mono<UserResponse> getUserById(@PathVariable String id) {
+        return userService.getUserById(id)
+            .map(this::mapToResponse);
+    }
+    
+    private UserResponse mapToResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setRoles(user.getRoles());
+        // Do not include password or other sensitive data
+        return response;
+    }
+}
+```
+
+## Logging and Monitoring
+
+### Security Logging
+
+Implement security-focused logging:
+
+```java
+@Component
+public class SecurityLogger {
+    private static final Logger log = LoggerFactory.getLogger("security");
+    
+    public void logAuthenticationSuccess(String username) {
+        log.info("Authentication success for user: {}", username);
+    }
+    
+    public void logAuthenticationFailure(String username, String reason) {
+        log.warn("Authentication failure for user: {}, reason: {}", username, reason);
+    }
+    
+    public void logAccessDenied(String username, String resource) {
+        log.warn("Access denied for user: {} to resource: {}", username, resource);
+    }
+    
+    public void logSecurityEvent(String event, String username, String details) {
+        log.info("Security event: {}, user: {}, details: {}", event, username, details);
+    }
+}
+```
+
+### Audit Logging
+
+Implement comprehensive audit logging:
+
+```java
+@Aspect
+@Component
+public class AuditLogAspect {
+    private static final Logger log = LoggerFactory.getLogger("audit");
+    
+    @Autowired
+    private ReactiveSecurityContextHolder securityContextHolder;
+    
+    @Around("@annotation(auditLog)")
+    public Object logAuditEvent(ProceedingJoinPoint joinPoint, AuditLog auditLog) throws Throwable {
+        String methodName = joinPoint.getSignature().getName();
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String action = auditLog.action();
+        
+        return ReactiveSecurityContextHolder.getContext()
+            .map(context -> {
+                Authentication authentication = context.getAuthentication();
+                String username = authentication != null ? authentication.getName() : "anonymous";
+                
+                Object[] args = joinPoint.getArgs();
+                String argsString = Arrays.toString(args);
+                
+                log.info("AUDIT: User {} performed {} on {}.{} with args: {}", 
+                    username, action, className, methodName, argsString);
+                
+                return username;
+            })
+            .flatMap(username -> {
+                try {
+                    Object result = joinPoint.proceed();
+                    if (result instanceof Mono) {
+                        return ((Mono<?>) result).doOnSuccess(value -> 
+                            log.info("AUDIT: User {} completed {} on {}.{} with result: {}", 
+                                username, action, className, methodName, value));
+                    } else if (result instanceof Flux) {
+                        return ((Flux<?>) result).doOnComplete(() -> 
+                            log.info("AUDIT: User {} completed {} on {}.{}", 
+                                username, action, className, methodName));
+                    } else {
+                        log.info("AUDIT: User {} completed {} on {}.{} with result: {}", 
+                            username, action, className, methodName, result);
+                        return Mono.just(result);
+                    }
+                } catch (Throwable e) {
+                    log.error("AUDIT: User {} failed {} on {}.{} with error: {}", 
+                        username, action, className, methodName, e.getMessage());
+                    return Mono.error(e);
+                }
+            })
+            .contextWrite(ReactiveSecurityContextHolder.withAuthentication(
+                ReactiveSecurityContextHolder.getContext()
+                    .map(SecurityContext::getAuthentication)
+                    .block()));
+    }
+}
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface AuditLog {
+    String action();
+}
+```
+
+## Dependency Management
+
+### Dependency Scanning
+
+Implement dependency scanning in the CI/CD pipeline:
+
+```yaml
+# GitHub Actions workflow
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: OWASP Dependency Check
+      run: mvn org.owasp:dependency-check-maven:check
+      
+    - name: Upload results
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-check-report
+        path: target/dependency-check-report.html
+```
+
+### Dependency Updates
+
+Regularly update dependencies:
+
+```yaml
+# GitHub Actions workflow
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Every Monday at midnight
+
+jobs:
+  dependency-updates:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Check for updates
+      run: mvn versions:display-dependency-updates
+      
+    - name: Create issue for updates
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: Dependency Updates
+        content-filepath: ./target/versions.txt
+        labels: dependencies, security
+```
+
+## Container Security
+
+### Docker Security
+
+Implement Docker security best practices:
+
+```dockerfile
+# Use specific version tags
+FROM eclipse-temurin:21.0.1_12-jre-alpine
+
+# Run as non-root user
+RUN addgroup -S openframe && adduser -S openframe -G openframe
+USER openframe
+
+# Minimize image size
+COPY --chown=openframe:openframe target/*.jar app.jar
+RUN apk add --no-cache tini
+
+# Use tini as entrypoint
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+
+# Set security options
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1
+```
+
+### Kubernetes Security
+
+Implement Kubernetes security best practices:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-api
+  namespace: openframe
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openframe-api
+  template:
+    metadata:
+      labels:
+        app: openframe-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: api
+        image: openframe/api:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+```
+
+## API Security
+
+### Rate Limiting
+
+Implement rate limiting to prevent abuse:
+
+```java
+@Configuration
+public class RateLimiterConfig {
+    @Bean
+    public RedisRateLimiter redisRateLimiter(ReactiveRedisTemplate<String, String> redisTemplate) {
+        return new RedisRateLimiter(redisTemplate);
+    }
+}
+
+@Component
+public class RateLimitingFilter implements WebFilter {
+    private final RedisRateLimiter rateLimiter;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String clientIp = request.getRemoteAddress().getAddress().getHostAddress();
+        
+        return rateLimiter.isAllowed("request_rate_limit", clientIp, 100, 60) // 100 requests per minute
+            .flatMap(allowed -> {
+                if (allowed) {
+                    return chain.filter(exchange);
+                } else {
+                    ServerHttpResponse response = exchange.getResponse();
+                    response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+                    return response.setComplete();
+                }
+            });
+    }
+}
+```
+
+### API Keys
+
+Implement API key authentication for external integrations:
+
+```java
+@Component
+public class ApiKeyAuthenticationFilter implements WebFilter {
+    private final ApiKeyRepository apiKeyRepository;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String apiKey = request.getHeaders().getFirst("X-API-Key");
+        
+        if (apiKey == null) {
+            return chain.filter(exchange);
+        }
+        
+        return apiKeyRepository.findByKey(apiKey)
+            .flatMap(key -> {
+                if (key.isActive() && !key.isExpired()) {
+                    Authentication auth = new ApiKeyAuthentication(
+                        key.getClientId(), key.getScopes());
+                    
+                    return chain.filter(exchange)
+                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
+                } else {
+                    ServerHttpResponse response = exchange.getResponse();
+                    response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return response.setComplete();
+                }
+            })
+            .switchIfEmpty(Mono.defer(() -> {
+                ServerHttpResponse response = exchange.getResponse();
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                return response.setComplete();
+            }));
+    }
+}
+```
+
+## Best Practices
+
+1. **Principle of Least Privilege**: Grant minimal permissions
+   ```java
+   @PreAuthorize("hasPermission(#id, 'Device', 'READ')")
+   public Mono<Device> getDeviceById(String id) {
+       return deviceRepository.findById(id);
+   }
+   ```
+
+2. **Defense in Depth**: Implement multiple layers of security
+   ```java
+   // Layer 1: Network security (Kubernetes Network Policies)
+   // Layer 2: API Gateway authentication
+   // Layer 3: Service-level authorization
+   // Layer 4: Data-level encryption
+   ```
+
+3. **Fail Securely**: Default to secure state on failure
+   ```java
+   try {
+       // Perform security check
+       return securityService.checkPermission(user, resource)
+           .flatMap(hasPermission -> {
+               if (hasPermission) {
+                   return Mono.just(resource);
+               } else {
+                   return Mono.error(new AccessDeniedException("Access denied"));
+               }
+           });
+   } catch (Exception e) {
+       log.error("Security check failed", e);
+       return Mono.error(new AccessDeniedException("Access denied due to security error"));
+   }
+   ```
+
+4. **Complete Mediation**: Validate all access attempts
+   ```java
+   @Aspect
+   @Component
+   public class SecurityAspect {
+       @Around("execution(* com.openframe.*.service.*.*(..))")
+       public Object enforceAccessControl(ProceedingJoinPoint joinPoint) throws Throwable {
+           // Perform security check before method execution
+           // ...
+           
+           return joinPoint.proceed();
+       }
+   }
+   ```
+
+5. **Secure Defaults**: Start with secure configuration
+   ```java
+   @Configuration
+   public class SecurityDefaults {
+       @Bean
+       public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+           return http
+               .csrf().disable() // Only if using tokens for authentication
+               .headers()
+                   .contentSecurityPolicy("default-src 'self'")
+                   .and()
+               .frameOptions().deny()
+               .and()
+               .authorizeExchange()
+                   .anyExchange().authenticated() // Default: require authentication
+               .and()
+               .build();
+       }
+   }
+   ```
+
+6. **Security by Design**: Consider security from the start
+   ```java
+   // Security requirements in design documents
+   // Threat modeling during architecture phase
+   // Security code reviews
+   // Regular security testing
+   ```
+
+7. **Keep Security Simple**: Avoid complex security mechanisms
+   ```java
+   // Use standard libraries and frameworks
+   // Avoid custom cryptography
+   // Follow established patterns
+   ```
+
+8. **Fix Security Issues Correctly**: Address root causes
+   ```java
+   // Identify root cause
+   // Fix all instances of the issue
+   // Add tests to prevent regression
+   // Document the fix
+   ```
+
+9. **Maintain Security Posture**: Regular security activities
+   ```java
+   // Regular dependency updates
+   // Security scanning in CI/CD
+   // Penetration testing
+   // Security training
+   ```
+
+10. **Security in Depth**: Consider all aspects of security
+    ```java
+    // Application security
+    // Infrastructure security
+    // Network security
+    // Physical security
+    // Personnel security
+    ```

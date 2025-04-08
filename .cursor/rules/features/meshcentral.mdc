@@ -1,0 +1,326 @@
+---
+description: MeshCentral integration and usage in OpenFrame
+globs: 
+alwaysApply: false
+---
+# MeshCentral Integration
+
+This document explains how MeshCentral is integrated with OpenFrame and how to work with it.
+
+## Overview
+
+MeshCentral is integrated into OpenFrame to provide remote management capabilities. It allows administrators to:
+
+- Access devices remotely
+- Manage devices across networks
+- Transfer files between devices
+- Monitor device status
+- Perform remote desktop sessions
+- Execute commands remotely
+
+## Configuration
+
+MeshCentral is configured in `docker-compose.openframe-meshcentral.yml`:
+
+```yaml
+version: '3.8'
+services:
+  meshcentral:
+    image: typhonht/meshcentral:latest
+    environment:
+      - HOSTNAME=meshcentral.openframe.local
+      - REVERSE_PROXY=true
+      - ALLOW_NEW_ACCOUNTS=false
+      - WEBRTC=true
+      # Additional environment variables
+    volumes:
+      - meshcentral-data:/opt/meshcentral/data
+    ports:
+      - "4430:4430"  # HTTPS port
+      - "8443:8443"  # WebSocket port
+
+  # Additional services
+```
+
+## API Integration
+
+OpenFrame integrates with MeshCentral through its API. The integration is implemented in:
+
+- `services/openframe-gateway/src/main/java/com/openframe/gateway/controller/IntegrationController.java`: Routes requests to MeshCentral
+- `services/openframe-api/src/main/java/com/openframe/api/service/MeshCentralService.java`: Service for interacting with MeshCentral API
+
+Example API integration:
+
+```java
+@Service
+public class MeshCentralService {
+    private final WebClient webClient;
+    
+    public MeshCentralService(WebClient.Builder webClientBuilder, 
+                             @Value("${openframe.integration.meshcentral.url}") String baseUrl) {
+        this.webClient = webClientBuilder
+            .baseUrl(baseUrl)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
+    }
+    
+    public Flux<Device> getDevices() {
+        return webClient.get()
+            .uri("/api/devices")
+            .retrieve()
+            .bodyToFlux(Device.class);
+    }
+    
+    // Additional methods for interacting with MeshCentral API
+}
+```
+
+## Authentication
+
+Authentication with MeshCentral is handled through login tokens:
+
+1. Login credentials are stored in the OpenFrame configuration service
+2. The gateway service authenticates with MeshCentral to obtain a token
+3. The token is used for subsequent API requests
+
+Example authentication implementation:
+
+```java
+@Component
+public class MeshCentralAuthenticationService {
+    private final WebClient webClient;
+    private final ToolCredentialsService credentialsService;
+    
+    private String authToken;
+    private LocalDateTime tokenExpiration;
+    
+    public Mono<String> getAuthToken() {
+        if (authToken != null && tokenExpiration.isAfter(LocalDateTime.now())) {
+            return Mono.just(authToken);
+        }
+        
+        return credentialsService.getCredentialsForTool("meshcentral")
+            .flatMap(credentials -> {
+                LoginRequest loginRequest = new LoginRequest(
+                    credentials.getUsername(),
+                    credentials.getPassword()
+                );
+                
+                return webClient.post()
+                    .uri("/api/login")
+                    .bodyValue(loginRequest)
+                    .retrieve()
+                    .bodyToMono(LoginResponse.class)
+                    .map(response -> {
+                        authToken = response.getToken();
+                        tokenExpiration = LocalDateTime.now().plusHours(1);
+                        return authToken;
+                    });
+            });
+    }
+}
+```
+
+## UI Integration
+
+The MeshCentral UI is integrated into the OpenFrame dashboard:
+
+- `services/openframe-ui/src/views/remote/Devices.vue`: Remote device management view
+- `services/openframe-ui/src/views/remote/Sessions.vue`: Remote session management view
+- `services/openframe-ui/src/views/remote/FileTransfer.vue`: File transfer view
+
+Example UI component:
+
+```vue
+<template>
+  <div class="remote-devices">
+    <h1>Remote Devices</h1>
+    <data-table :columns="columns" :data="devices" :loading="loading">
+      <template #actions="{ row }">
+        <button @click="connectToDevice(row)">Connect</button>
+        <button @click="transferFiles(row)">Files</button>
+      </template>
+    </data-table>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useMeshCentralService } from '@/services/MeshCentralService';
+import DataTable from '@/components/ui/DataTable.vue';
+
+const meshCentralService = useMeshCentralService();
+const devices = ref([]);
+const loading = ref(true);
+
+const columns = [
+  { field: 'name', label: 'Device Name' },
+  { field: 'os', label: 'OS' },
+  { field: 'status', label: 'Status' },
+  { field: 'lastSeen', label: 'Last Seen' },
+  { field: 'actions', label: 'Actions' }
+];
+
+onMounted(async () => {
+  try {
+    devices.value = await meshCentralService.getDevices();
+  } catch (error) {
+    console.error('Failed to fetch devices:', error);
+  } finally {
+    loading.value = false;
+  }
+});
+
+function connectToDevice(device) {
+  // Implementation for connecting to a device
+  window.open(`/remote/connect/${device.id}`, '_blank');
+}
+
+function transferFiles(device) {
+  // Implementation for file transfer
+  window.open(`/remote/files/${device.id}`, '_blank');
+}
+</script>
+```
+
+## Remote Connection
+
+OpenFrame provides a seamless remote connection experience through MeshCentral:
+
+1. User clicks on a device in the OpenFrame UI
+2. OpenFrame generates a single-use token for the session
+3. User is redirected to the MeshCentral UI with the token
+4. MeshCentral authenticates the user and establishes the connection
+
+Example remote connection implementation:
+
+```java
+@RestController
+@RequestMapping("/api/remote")
+public class RemoteConnectionController {
+    private final MeshCentralService meshCentralService;
+    
+    @GetMapping("/connect/{deviceId}")
+    public Mono<ResponseEntity<Map<String, String>>> getConnectionUrl(@PathVariable String deviceId) {
+        return meshCentralService.generateConnectionToken(deviceId)
+            .map(token -> {
+                String url = meshCentralService.getBaseUrl() + "/connect?token=" + token;
+                return ResponseEntity.ok(Map.of("url", url));
+            });
+    }
+}
+```
+
+## Data Models
+
+Key data models for MeshCentral integration:
+
+```java
+@Data
+public class MeshDevice {
+    private String id;
+    private String name;
+    private String os;
+    private String status;
+    private LocalDateTime lastSeen;
+    private String groupId;
+    private String meshId;
+    private Map<String, Object> properties;
+    // Additional properties
+}
+
+@Data
+public class MeshSession {
+    private String id;
+    private String deviceId;
+    private String userId;
+    private String sessionType; // Desktop, Terminal, Files
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private String status;
+    // Additional properties
+}
+```
+
+## Best Practices
+
+1. **Error Handling**: Always handle API errors gracefully
+   ```java
+   .onErrorResume(WebClientResponseException.class, ex -> {
+       log.error("Error from MeshCentral API: {}", ex.getMessage());
+       return Mono.error(new IntegrationException("Failed to communicate with MeshCentral", ex));
+   })
+   ```
+
+2. **Token Management**: Properly manage authentication tokens
+   ```java
+   private Mono<String> refreshTokenIfNeeded() {
+       if (tokenExpiration.isBefore(LocalDateTime.now().plusMinutes(5))) {
+           return login().map(token -> {
+               authToken = token;
+               tokenExpiration = LocalDateTime.now().plusHours(1);
+               return authToken;
+           });
+       }
+       return Mono.just(authToken);
+   }
+   ```
+
+3. **Connection Security**: Ensure secure connections
+   ```java
+   @Bean
+   public WebClient meshCentralWebClient() {
+       return WebClient.builder()
+           .baseUrl(meshCentralBaseUrl)
+           .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+           .filter((request, next) -> {
+               // Add security headers
+               ClientRequest secureRequest = ClientRequest.from(request)
+                   .header("X-Forwarded-Proto", "https")
+                   .build();
+               return next.exchange(secureRequest);
+           })
+           .build();
+   }
+   ```
+
+4. **Session Management**: Properly track and manage remote sessions
+   ```java
+   public Mono<MeshSession> startSession(String deviceId, String sessionType) {
+       MeshSession session = new MeshSession();
+       session.setDeviceId(deviceId);
+       session.setUserId(getCurrentUserId());
+       session.setSessionType(sessionType);
+       session.setStartTime(LocalDateTime.now());
+       session.setStatus("active");
+       
+       return sessionRepository.save(session);
+   }
+   
+   public Mono<MeshSession> endSession(String sessionId) {
+       return sessionRepository.findById(sessionId)
+           .flatMap(session -> {
+               session.setEndTime(LocalDateTime.now());
+               session.setStatus("completed");
+               return sessionRepository.save(session);
+           });
+   }
+   ```
+
+5. **UI Integration**: Provide a seamless user experience
+   - Use iframe integration for embedded remote sessions
+   - Implement single sign-on between OpenFrame and MeshCentral
+   - Provide consistent styling and branding
+   - Handle connection errors gracefully with user-friendly messages
+
+6. **Performance Optimization**: Optimize for performance
+   - Cache device information
+   - Use WebSocket for real-time updates
+   - Implement connection pooling
+   - Use compression for data transfer
+
+7. **Monitoring**: Monitor remote sessions
+   - Log session start and end times
+   - Track session duration
+   - Monitor resource usage
+   - Alert on suspicious activities

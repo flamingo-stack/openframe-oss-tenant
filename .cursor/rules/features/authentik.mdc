@@ -1,0 +1,449 @@
+---
+description: Authentik SSO integration in OpenFrame
+globs: 
+alwaysApply: false
+---
+# Authentik SSO Integration
+
+This document explains how Authentik is integrated with OpenFrame for single sign-on (SSO) capabilities.
+
+## Overview
+
+Authentik is integrated into OpenFrame to provide identity and access management. It enables:
+
+- Single sign-on (SSO) across all OpenFrame components
+- User management and provisioning
+- Role-based access control
+- Multi-factor authentication
+- Identity provider integration
+- Audit logging
+
+## Configuration
+
+Authentik is configured in `docker-compose.openframe-authentik.yml`:
+
+```yaml
+version: '3.8'
+services:
+  authentik-server:
+    image: ghcr.io/goauthentik/server:latest
+    environment:
+      - AUTHENTIK_SECRET_KEY=your-secret-key
+      - AUTHENTIK_POSTGRESQL__HOST=authentik-db
+      - AUTHENTIK_POSTGRESQL__USER=authentik
+      - AUTHENTIK_POSTGRESQL__PASSWORD=authentik
+      - AUTHENTIK_POSTGRESQL__NAME=authentik
+      - AUTHENTIK_REDIS__HOST=authentik-redis
+      # Additional environment variables
+    volumes:
+      - authentik-media:/media
+      - authentik-custom-templates:/templates
+    depends_on:
+      - authentik-db
+      - authentik-redis
+
+  authentik-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=authentik
+      - POSTGRES_PASSWORD=authentik
+      - POSTGRES_DB=authentik
+    volumes:
+      - authentik-db-data:/var/lib/postgresql/data
+
+  authentik-redis:
+    image: redis:alpine
+    volumes:
+      - authentik-redis-data:/data
+
+  # Additional services
+```
+
+## API Integration
+
+OpenFrame integrates with Authentik through its API. The integration is implemented in:
+
+- `services/openframe-gateway/src/main/java/com/openframe/gateway/controller/AuthController.java`: Handles authentication flows
+- `services/openframe-security/src/main/java/com/openframe/security/service/AuthentikService.java`: Service for interacting with Authentik API
+
+Example API integration:
+
+```java
+@Service
+public class AuthentikService {
+    private final WebClient webClient;
+    
+    public AuthentikService(WebClient.Builder webClientBuilder, 
+                           @Value("${openframe.integration.authentik.url}") String baseUrl) {
+        this.webClient = webClientBuilder
+            .baseUrl(baseUrl)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
+    }
+    
+    public Mono<UserInfo> getUserInfo(String token) {
+        return webClient.get()
+            .uri("/api/v3/core/users/me/")
+            .header("Authorization", "Bearer " + token)
+            .retrieve()
+            .bodyToMono(UserInfo.class);
+    }
+    
+    // Additional methods for interacting with Authentik API
+}
+```
+
+## Authentication Flow
+
+OpenFrame uses Authentik for authentication through the following flow:
+
+1. User accesses OpenFrame
+2. User is redirected to Authentik login page
+3. User authenticates with Authentik
+4. Authentik redirects back to OpenFrame with an authorization code
+5. OpenFrame exchanges the code for access and refresh tokens
+6. OpenFrame validates the tokens and creates a session
+7. User is granted access to OpenFrame resources based on their roles
+
+Example authentication flow implementation:
+
+```java
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+    private final AuthentikService authentikService;
+    private final TokenService tokenService;
+    
+    @GetMapping("/login")
+    public Mono<ResponseEntity<Void>> login() {
+        String authUrl = authentikService.getAuthorizationUrl();
+        return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
+            .location(URI.create(authUrl))
+            .build());
+    }
+    
+    @GetMapping("/callback")
+    public Mono<ResponseEntity<TokenResponse>> callback(@RequestParam String code) {
+        return authentikService.exchangeCodeForTokens(code)
+            .flatMap(tokens -> {
+                return authentikService.getUserInfo(tokens.getAccessToken())
+                    .map(userInfo -> {
+                        TokenResponse response = new TokenResponse();
+                        response.setAccessToken(tokens.getAccessToken());
+                        response.setRefreshToken(tokens.getRefreshToken());
+                        response.setExpiresIn(tokens.getExpiresIn());
+                        response.setUserInfo(userInfo);
+                        return ResponseEntity.ok(response);
+                    });
+            });
+    }
+    
+    @PostMapping("/refresh")
+    public Mono<ResponseEntity<TokenResponse>> refresh(@RequestBody RefreshTokenRequest request) {
+        return authentikService.refreshTokens(request.getRefreshToken())
+            .map(tokens -> {
+                TokenResponse response = new TokenResponse();
+                response.setAccessToken(tokens.getAccessToken());
+                response.setRefreshToken(tokens.getRefreshToken());
+                response.setExpiresIn(tokens.getExpiresIn());
+                return ResponseEntity.ok(response);
+            });
+    }
+}
+```
+
+## JWT Validation
+
+OpenFrame validates JWT tokens issued by Authentik:
+
+1. Gateway service receives a request with a JWT token
+2. Token is validated against Authentik's JWKS endpoint
+3. User claims are extracted from the token
+4. Request is enriched with user information
+5. Request is forwarded to the appropriate service
+
+Example JWT validation implementation:
+
+```java
+@Component
+public class JwtAuthenticationFilter implements WebFilter {
+    private final ReactiveJwtDecoder jwtDecoder;
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String token = extractToken(request);
+        
+        if (token != null) {
+            return jwtDecoder.decode(token)
+                .map(jwt -> {
+                    Map<String, Object> claims = jwt.getClaims();
+                    String userId = (String) claims.get("sub");
+                    List<String> roles = (List<String>) claims.get("roles");
+                    
+                    ServerHttpRequest modifiedRequest = request.mutate()
+                        .header("X-User-Id", userId)
+                        .header("X-User-Roles", String.join(",", roles))
+                        .build();
+                    
+                    return exchange.mutate().request(modifiedRequest).build();
+                })
+                .flatMap(chain::filter)
+                .onErrorResume(e -> {
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                });
+        }
+        
+        return chain.filter(exchange);
+    }
+}
+```
+
+## User Provisioning
+
+OpenFrame synchronizes user information with Authentik:
+
+1. Users are created and managed in Authentik
+2. OpenFrame retrieves user information from Authentik
+3. User roles and permissions are mapped to OpenFrame roles
+4. User access is controlled based on these roles
+
+Example user provisioning implementation:
+
+```java
+@Service
+public class UserProvisioningService {
+    private final AuthentikService authentikService;
+    private final UserRepository userRepository;
+    
+    @Scheduled(fixedRate = 3600000) // Run every hour
+    public void synchronizeUsers() {
+        authentikService.getAllUsers()
+            .flatMap(authentikUser -> {
+                return userRepository.findByExternalId(authentikUser.getId())
+                    .flatMap(user -> {
+                        // Update existing user
+                        user.setEmail(authentikUser.getEmail());
+                        user.setFirstName(authentikUser.getFirstName());
+                        user.setLastName(authentikUser.getLastName());
+                        user.setRoles(mapRoles(authentikUser.getGroups()));
+                        return userRepository.save(user);
+                    })
+                    .switchIfEmpty(Mono.defer(() -> {
+                        // Create new user
+                        User user = new User();
+                        user.setExternalId(authentikUser.getId());
+                        user.setEmail(authentikUser.getEmail());
+                        user.setFirstName(authentikUser.getFirstName());
+                        user.setLastName(authentikUser.getLastName());
+                        user.setRoles(mapRoles(authentikUser.getGroups()));
+                        return userRepository.save(user);
+                    }));
+            })
+            .subscribe();
+    }
+    
+    private List<String> mapRoles(List<String> groups) {
+        // Map Authentik groups to OpenFrame roles
+        return groups.stream()
+            .map(group -> {
+                switch (group) {
+                    case "authentik-admins":
+                        return "ROLE_ADMIN";
+                    case "authentik-users":
+                        return "ROLE_USER";
+                    default:
+                        return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+    }
+}
+```
+
+## UI Integration
+
+The Authentik UI is integrated into the OpenFrame dashboard:
+
+- `services/openframe-ui/src/views/admin/Users.vue`: User management view
+- `services/openframe-ui/src/views/admin/Roles.vue`: Role management view
+- `services/openframe-ui/src/views/admin/Permissions.vue`: Permission management view
+
+Example UI component:
+
+```vue
+<template>
+  <div class="admin-users">
+    <h1>User Management</h1>
+    <data-table :columns="columns" :data="users" :loading="loading">
+      <template #actions="{ row }">
+        <button @click="editUser(row)">Edit</button>
+        <button @click="resetPassword(row)">Reset Password</button>
+      </template>
+    </data-table>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useUserService } from '@/services/UserService';
+import DataTable from '@/components/ui/DataTable.vue';
+
+const userService = useUserService();
+const users = ref([]);
+const loading = ref(true);
+
+const columns = [
+  { field: 'username', label: 'Username' },
+  { field: 'email', label: 'Email' },
+  { field: 'firstName', label: 'First Name' },
+  { field: 'lastName', label: 'Last Name' },
+  { field: 'roles', label: 'Roles' },
+  { field: 'actions', label: 'Actions' }
+];
+
+onMounted(async () => {
+  try {
+    users.value = await userService.getUsers();
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+  } finally {
+    loading.value = false;
+  }
+});
+
+function editUser(user) {
+  // Implementation for editing a user
+}
+
+function resetPassword(user) {
+  // Implementation for resetting a user's password
+}
+</script>
+```
+
+## Data Models
+
+Key data models for Authentik integration:
+
+```java
+@Data
+public class User {
+    private String id;
+    private String externalId;
+    private String username;
+    private String email;
+    private String firstName;
+    private String lastName;
+    private List<String> roles;
+    private boolean enabled;
+    private LocalDateTime lastLogin;
+    // Additional properties
+}
+
+@Data
+public class TokenResponse {
+    private String accessToken;
+    private String refreshToken;
+    private int expiresIn;
+    private String tokenType;
+    private UserInfo userInfo;
+}
+
+@Data
+public class UserInfo {
+    private String id;
+    private String username;
+    private String email;
+    private String firstName;
+    private String lastName;
+    private List<String> groups;
+    // Additional properties
+}
+```
+
+## Best Practices
+
+1. **Token Security**: Securely handle JWT tokens
+   ```java
+   @Bean
+   public ReactiveJwtDecoder jwtDecoder() {
+       return ReactiveJwtDecoders.fromIssuerLocation(authentikIssuerUri);
+   }
+   ```
+
+2. **Token Refresh**: Implement token refresh to maintain sessions
+   ```java
+   public Mono<TokenResponse> refreshTokens(String refreshToken) {
+       return webClient.post()
+           .uri("/api/v3/oauth2/token/")
+           .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+           .body(BodyInserters.fromFormData("grant_type", "refresh_token")
+               .with("refresh_token", refreshToken)
+               .with("client_id", clientId)
+               .with("client_secret", clientSecret))
+           .retrieve()
+           .bodyToMono(TokenResponse.class);
+   }
+   ```
+
+3. **Error Handling**: Handle authentication errors gracefully
+   ```java
+   .onErrorResume(WebClientResponseException.class, ex -> {
+       log.error("Authentication error: {}", ex.getMessage());
+       if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+           return Mono.error(new AuthenticationException("Invalid credentials"));
+       }
+       return Mono.error(new AuthenticationException("Authentication failed"));
+   })
+   ```
+
+4. **User Synchronization**: Keep user data synchronized
+   ```java
+   @Scheduled(fixedRate = 3600000) // Run every hour
+   public void synchronizeUsers() {
+       // Implementation
+   }
+   ```
+
+5. **Role Mapping**: Map Authentik groups to OpenFrame roles
+   ```java
+   private List<String> mapRoles(List<String> groups) {
+       // Implementation
+   }
+   ```
+
+6. **Multi-Factor Authentication**: Support MFA
+   ```java
+   public Mono<MfaResponse> initiateMultiFactorAuthentication(String userId) {
+       return webClient.post()
+           .uri("/api/v3/core/mfa/start/")
+           .bodyValue(Map.of("user_id", userId))
+           .retrieve()
+           .bodyToMono(MfaResponse.class);
+   }
+   ```
+
+7. **Audit Logging**: Log authentication events
+   ```java
+   @Aspect
+   @Component
+   public class AuthenticationAuditAspect {
+       private final AuditLogService auditLogService;
+       
+       @AfterReturning(pointcut = "execution(* com.openframe.security.service.AuthentikService.exchangeCodeForTokens(..))", returning = "result")
+       public void logSuccessfulAuthentication(JoinPoint joinPoint, Object result) {
+           TokenResponse tokens = (TokenResponse) result;
+           auditLogService.logEvent("authentication", "success", tokens.getUserInfo().getUsername());
+       }
+       
+       @AfterThrowing(pointcut = "execution(* com.openframe.security.service.AuthentikService.exchangeCodeForTokens(..))", throwing = "ex")
+       public void logFailedAuthentication(JoinPoint joinPoint, Exception ex) {
+           Object[] args = joinPoint.getArgs();
+           String code = (String) args[0];
+           auditLogService.logEvent("authentication", "failure", "Unknown user", ex.getMessage());
+       }
+   }
+   ```
