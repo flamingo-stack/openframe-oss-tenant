@@ -150,7 +150,7 @@ case "$APP" in
     elif [ "$ACTION" == "delete" ]; then
       infra_config_server_delete
     elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying API in dev mode"
+      echo "Deploying Config Server in dev mode"
       cd ./services/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
@@ -189,6 +189,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_gateway_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_gateway_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Gateway in dev mode"
+      cd ./services/openframe-gateway
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   openframe-ui)
