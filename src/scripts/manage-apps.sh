@@ -17,6 +17,14 @@ if [ "$APP" != "" ] && [ "$ACTION" != "" ]; then
     --docker-username=vusal-fl \
     --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
     --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
+else
+  if [ "$APP" == "" ]; then
+    echo "App name is required"
+    exit 0
+  elif [ "$ACTION" == "" ]; then
+    echo "Action is required"
+    exit 0
+  fi
 fi
 
 case "$APP" in
@@ -231,7 +239,6 @@ case "$APP" in
     $0 logging $ACTION $IFWAIT
     ;;
   m|minimal)
-    # ------------- ALL no wait for state=Ready -------------
     ACTION=${2}
     IFWAIT=${3:-}
 
@@ -247,7 +254,6 @@ case "$APP" in
     $0 kafka-ui $ACTION $IFWAIT
     ;;
   infrastructure)
-    # ------------- INFRASTRUCTURE -------------
     ACTION=${2}
     IFWAIT=${3:-}
 

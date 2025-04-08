@@ -134,8 +134,7 @@ function infra_redis_deploy() {
 
 function infra_redis_wait() {
   echo "Waiting for Redis to be ready"
-  wait_for_app
-  "infrastructure" "app.kubernetes.io/instance=openframe-redis"
+  wait_for_app "infrastructure" "app.kubernetes.io/instance=openframe-redis"
 }
 
 function infra_redis_delete() {
