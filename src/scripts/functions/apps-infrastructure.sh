@@ -192,6 +192,17 @@ function infra_mongodb_delete() {
   kubectl -n infrastructure delete -f ./kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml
 }
 
+# MONGO EXPORTER
+function infra_mongodb_exporter_deploy() {
+  helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts
+
+  echo "Deploying MongoDB Exporter"
+  helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
+    -n infrastructure --create-namespace \
+    --version 3.11.1 \
+    -f ./kind-cluster/apps/infrastructure/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml
+}
+
 function infra_mongodb_exporter_wait() {
   echo "Waiting for MongoDB Exporter to be ready"
   wait_for_app "infrastructure" "app.kubernetes.io/instance=prometheus-mongodb-exporter"
