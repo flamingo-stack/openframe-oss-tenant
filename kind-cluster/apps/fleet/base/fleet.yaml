@@ -1,91 +1,3 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: fleet-mdm-mysql
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: fleet-mdm-mysql
-  template:
-    metadata:
-      labels:
-        app: fleet-mdm-mysql
-    spec:
-      containers:
-      - name: mysql
-        image: mysql:8.0.35
-        args:
-          - --default-authentication-plugin=mysql_native_password
-          - --skip-mysqlx
-          - --character-set-server=utf8mb4
-          - --collation-server=utf8mb4_unicode_ci
-        ports:
-        - containerPort: 3306
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: "openframe123!"
-        - name: MYSQL_DATABASE
-          value: "fleet-mdm-database"
-        - name: MYSQL_USER
-          value: "fleet-mdm-user"
-        - name: MYSQL_PASSWORD
-          value: "fleet-mdm-password-1234"
-        - name: MYSQL_DEFAULT_AUTHENTICATION_PLUGIN
-          value: "mysql_native_password"
-        volumeMounts:
-        - name: mysql-data
-          mountPath: /var/lib/mysql
-        livenessProbe:
-          exec:
-            command:
-            - mysqladmin
-            - ping
-            - -h
-            - localhost
-            - -u
-            - root
-            - -p${MYSQL_ROOT_PASSWORD}
-          initialDelaySeconds: 30
-          periodSeconds: 10
-      volumes:
-      - name: mysql-data
-        persistentVolumeClaim:
-          claimName: fleet-mdm-mysql-data
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: fleet-mdm-redis
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: fleet-mdm-redis
-  template:
-    metadata:
-      labels:
-        app: fleet-mdm-redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:latest
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
-        livenessProbe:
-          exec:
-            command:
-            - redis-cli
-            - ping
-          initialDelaySeconds: 30
-          periodSeconds: 10
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: fleet-mdm-redis-data
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -160,3 +72,43 @@ spec:
       - name: fleet-logs
         persistentVolumeClaim:
           claimName: fleet-mdm-fleet-logs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fleet-mdm-fleet-logs
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleet
+spec:
+  selector:
+    app: fleet
+  ports:
+  - port: 8070
+    targetPort: 8070
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleet
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fleet.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fleet
+                port:
+                  number: 8070

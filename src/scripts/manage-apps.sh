@@ -279,8 +279,9 @@ case "$APP" in
     elif [ "$ACTION" == "delete" ]; then
       fleet_delete
     elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
+      echo "Deploying Fleet in dev mode"
+      cd ./infrastructure/fleetmdm
+      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
     fi
     ;;
   meshcentral)

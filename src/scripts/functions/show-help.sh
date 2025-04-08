@@ -9,7 +9,8 @@ k|cluster                               : Setup cluster only
 d|down                                  : Remove cluster
 a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
                               <action>  : deploy, build, delete, dev (Required)
-                              dev       : Deploy and run in dev mode (Tail changes and deploy on change)
+                              dev       : Deploy and run in dev mode
+                                          Tail changes and deploy on change. Delete app before using dev mode otherwise may require run twice
                               --wait    : Wait for app to be ready (for deploy) (Optional)
 b|bootstrap                             : Bootstrap whole cluster with all apps
 m|minimal                               : Bootstrap whole cluster with base mandatory apps
@@ -19,7 +20,8 @@ Examples:
   $0 app all deploy                     : Deploy all applications
   $0 app redis deploy                   : Deploy only Redis
   $0 app redis deploy --wait            : Deploy only Redis and wait for it to be ready
-  $0 app tactical-rmm delete            : Delete Tactical RMM
+  $0 app redis delete                   : Delete Redis
+  $0 app redis dev                      : Deploy Redis in dev mode
 "
   return 0
 }
