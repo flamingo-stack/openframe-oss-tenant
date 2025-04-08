@@ -173,6 +173,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_management_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_management_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Management in dev mode"
+      cd ./services/openframe-management
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   stream)
