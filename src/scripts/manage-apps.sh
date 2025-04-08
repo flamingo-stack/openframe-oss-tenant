@@ -129,6 +129,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_nifi_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_nifi_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying NiFi in dev mode"
+      cd ./infrastructure/nifi
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   zookeeper)
