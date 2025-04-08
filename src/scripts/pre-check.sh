@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Check if max_user_instances is less than 1500
-current_value=$(sysctl -n fs.inotify.max_user_instances)
-if [ "$current_value" -lt 1500 ]; then
+current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
+if [[ $current_value -lt 1500 ]]; then
   echo "fs.inotify.max_user_instances is less than 1500"
   sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
   sudo sysctl -p > /dev/null 2>&1
