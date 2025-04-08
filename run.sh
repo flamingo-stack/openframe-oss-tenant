@@ -51,13 +51,13 @@ case "$1" in
     ;;
   b|bootstrap)
     # Bootstrap whole cluster with all apps
-    bash $0 pre
-    bash $0 cluster
+    bash $0 pre && \
+    bash $0 cluster && \
     bash $0 app all deploy "$IFWAIT"
     ;;
   m|minimal)
     # Bootstrap whole cluster with base apps
-    bash $0 cluster
+    bash $0 cluster && \
     bash $0 app minimal deploy "$IFWAIT"
     ;;
   c|cleanup)
