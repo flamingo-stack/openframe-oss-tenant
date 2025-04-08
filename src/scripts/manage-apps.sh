@@ -157,6 +157,10 @@ case "$APP" in
       if [ "$IFWAIT" == "--wait" ]; then infra_api_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       infra_api_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying API in dev mode"
+      cd ./services/openframe-api
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
   management)
