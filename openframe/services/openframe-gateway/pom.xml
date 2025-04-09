@@ -8,25 +8,20 @@
         <groupId>com.openframe</groupId>
         <artifactId>openframe-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../../../../pom.xml</relativePath>
+        <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>openframe-api</artifactId>
-    <name>OpenFrame API Service</name>
+    <artifactId>openframe-gateway</artifactId>
+    <name>OpenFrame Gateway Service</name>
 
     <properties>
-        <start-class>com.openframe.api.ApiApplication</start-class>
+        <start-class>com.openframe.gateway.GatewayApplication</start-class>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.openframe</groupId>
             <artifactId>openframe-security</artifactId>
-        </dependency>
-        <!-- Spring Boot starters with Jackson excluded -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <!-- Spring Cloud -->
@@ -35,22 +30,21 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <!-- GraphQL -->
         <dependency>
-            <groupId>com.netflix.graphql.dgs</groupId>
-            <artifactId>graphql-dgs-spring-boot-starter</artifactId>
-            <version>${netflix.dgs.version}</version>
-        </dependency>
-        <!-- Spring Boot Web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
 
-        <!-- WebSocket -->
+        <!-- gRPC dependencies -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
+        </dependency>
+
+        <!-- Spring WebFlux -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
     </dependencies>

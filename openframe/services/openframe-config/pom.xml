@@ -8,34 +8,38 @@
         <groupId>com.openframe</groupId>
         <artifactId>openframe-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../../../../pom.xml</relativePath>
+        <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>openframe-management</artifactId>
-    <name>OpenFrame Management Service</name>
+    <artifactId>openframe-config</artifactId>
+    <name>OpenFrame Config Server</name>
 
     <properties>
-        <start-class>com.openframe.management.ManagementApplication</start-class>
+        <start-class>com.openframe.config.ConfigServerApplication</start-class>
     </properties>
 
     <dependencies>
-        <!-- OpenFrame Dependencies -->
-        <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-data</artifactId>
-        </dependency>
-
-        <!-- Spring Cloud -->
+        <!-- Spring Cloud Config -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-config</artifactId>
+            <artifactId>spring-cloud-config-server</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot starters with Jackson excluded -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -43,17 +47,14 @@
 
         <!-- Monitoring -->
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-observation</artifactId>
-        </dependency>
+
     </dependencies>
 
     <build>

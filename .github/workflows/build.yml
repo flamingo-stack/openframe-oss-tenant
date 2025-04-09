@@ -78,50 +78,50 @@ jobs:
         with:
           filters: |
             core:
-              - './src/openframe/libs/openframe-core/**'
+              - './openframe/libs/openframe-core/**'
             data:
-              - './src/openframe/libs/openframe-data/**'
+              - './openframe/libs/openframe-data/**'
             api:
-              - './src/openframe/services/openframe-api/**'
+              - './openframe/services/openframe-api/**'
             config:
-              - './src/openframe/services/openframe-config/**'
+              - './openframe/services/openframe-config/**'
             gateway:
-              - './src/openframe/services/openframe-gateway/**'
+              - './openframe/services/openframe-gateway/**'
             management:
-              - './src/openframe/services/openframe-management/**'
+              - './openframe/services/openframe-management/**'
             stream:
-              - './src/openframe/services/openframe-stream/**'
+              - './openframe/services/openframe-stream/**'
             ui:
-              - './src/openframe/services/openframe-ui/**'
+              - './openframe/services/openframe-ui/**'
             nifi:
-              - './src/openframe/nifi/**'
+              - './openframe/nifi/**'
             postgresql:
-              - './src/authentik/postgresql/**'
+              - './authentik/postgresql/**'
             tactical-frontend:
-              - './src/tactical-rmm/tactical-frontend/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-frontend/**'
+              - './tactical-rmm/shared/**'
             tactical-nginx:
-              - './src/tactical-rmm/tactical-nginx/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-nginx/**'
+              - './tactical-rmm/shared/**'
             tactical-backend:
-              - './src/tactical-rmm/tactical-base/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-base/**'
+              - './tactical-rmm/shared/**'
             tactical-nats:
-              - './src/tactical-rmm/tactical-base/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-base/**'
+              - './tactical-rmm/shared/**'
             tactical-websockets:
-              - './src/tactical-rmm/tactical-base/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-base/**'
+              - './tactical-rmm/shared/**'
             tactical-celery:
-              - './src/tactical-rmm/tactical-base/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-base/**'
+              - './tactical-rmm/shared/**'
             tactical-celerybeat:
-              - './src/tactical-rmm/tactical-base/**'
-              - './src/tactical-rmm/shared/**'
+              - './tactical-rmm/tactical-base/**'
+              - './tactical-rmm/shared/**'
             fleetmdm:
-              - './src/fleetmdm/**'
+              - './fleetmdm/**'
             meshcentral:
-              - './src/meshcentral/server/**'
+              - './meshcentral/server/**'
 
   matrix:
     uses: ./.github/workflows/matrix.yml

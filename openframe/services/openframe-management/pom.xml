@@ -8,20 +8,25 @@
         <groupId>com.openframe</groupId>
         <artifactId>openframe-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../../../../pom.xml</relativePath>
+        <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>openframe-gateway</artifactId>
-    <name>OpenFrame Gateway Service</name>
+    <artifactId>openframe-management</artifactId>
+    <name>OpenFrame Management Service</name>
 
     <properties>
-        <start-class>com.openframe.gateway.GatewayApplication</start-class>
+        <start-class>com.openframe.management.ManagementApplication</start-class>
     </properties>
 
     <dependencies>
+        <!-- OpenFrame Dependencies -->
         <dependency>
             <groupId>com.openframe</groupId>
-            <artifactId>openframe-security</artifactId>
+            <artifactId>openframe-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-data</artifactId>
         </dependency>
 
         <!-- Spring Cloud -->
@@ -30,23 +35,25 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway</artifactId>
-        </dependency>
-
-        <!-- gRPC dependencies -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty</artifactId>
-        </dependency>
-
-        <!-- Spring WebFlux -->
+        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Monitoring -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-observation</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -56,12 +63,6 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>${start-class}</mainClass>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
                 </configuration>
                 <executions>
                     <execution>

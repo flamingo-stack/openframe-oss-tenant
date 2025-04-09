@@ -47,16 +47,16 @@
 
     <modules>
         <!-- Libraries -->
-        <module>src/openframe/libs/openframe-core</module>
-        <module>src/openframe/libs/openframe-data</module>
-        <module>src/openframe/libs/openframe-security</module>
+        <module>openframe/libs/openframe-core</module>
+        <module>openframe/libs/openframe-data</module>
+        <module>openframe/libs/openframe-security</module>
 
         <!-- Services -->
-        <module>src/openframe/services/openframe-config</module>
-        <module>src/openframe/services/openframe-api</module>
-        <module>src/openframe/services/openframe-stream</module>
-        <module>src/openframe/services/openframe-management</module>
-        <module>src/openframe/services/openframe-gateway</module>
+        <module>openframe/services/openframe-config</module>
+        <module>openframe/services/openframe-api</module>
+        <module>openframe/services/openframe-stream</module>
+        <module>openframe/services/openframe-management</module>
+        <module>openframe/services/openframe-gateway</module>
     </modules>
 
     <dependencies>
