@@ -65,19 +65,6 @@ jobs:
               "artifact_name": "openframe-stream"
             },
             {
-              "name": "mongodb",
-              "type": "container",
-              "path": "./infrastructure/mongodb",
-              "artifact_name": "",
-              "build_args": {
-                "MONGO_INITDB_ROOT_USERNAME": "openframe",
-                "MONGO_INITDB_ROOT_PASSWORD": "password123456789",
-                "MONGO_APP_DATABASE": "openframe",
-                "MONGO_APP_USERNAME": "openframe",
-                "MONGO_APP_PASSWORD": "password123456789"
-              }
-            },
-            {
               "name": "cassandra",
               "type": "container",
               "path": "./infrastructure/cassandra",

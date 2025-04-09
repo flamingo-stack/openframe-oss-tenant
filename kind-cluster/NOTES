@@ -1,5 +1,5 @@
 # Deprecated builds
-./infrastructure/mongodb
++ ./infrastructure/mongodb
 ./infrastructure/cassandra
 # kind-cluster/apps/infrastructure/openframe-cassandra/manifests/base/cassandra.yaml:71:          image: ghcr.io/flamingo-cx/openframe-cassandra:latest
 ./infrastructure/meshcentral/nginx
