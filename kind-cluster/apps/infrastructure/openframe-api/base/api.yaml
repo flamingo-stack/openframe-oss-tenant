@@ -17,7 +17,6 @@ spec:
       containers:
         - name: api
           image: ghcr.io/flamingo-cx/openframe-api:latest
-          imagePullPolicy: Always
           ports:
             - containerPort: 8090
               name: http
