@@ -65,6 +65,13 @@ spec:
                 name: meshcentral
                 port:
                   name: agent
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: meshcentral
+                port:
+                  name: agent
           - path: /
             pathType: Prefix
             backend:
