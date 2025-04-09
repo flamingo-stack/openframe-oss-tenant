@@ -4,12 +4,19 @@ This document describes the REST API for MeshCentral, which wraps MeshCentral's 
 
 ## Authentication
 
-All API endpoints require authentication with a MeshCentral login token, which can be provided in one of the following ways:
+Authentication is handled transparently by the API. The MeshCentral login token is automatically injected into all API requests from the token stored in the MeshCentral server container at `${MESH_DIR}/mesh_token`.
 
-- As a header: `X-MeshAuth: YOUR_TOKEN`
-- As a query parameter: `?auth=YOUR_TOKEN`
+No authentication headers or parameters need to be provided by API consumers.
 
-If no token is provided, the API will use the token stored in the MeshCentral server container at `${MESH_DIR}/mesh_token`.
+### Token Refresh
+
+Token refresh is handled automatically by the system using the `setup_mesh_token()` function in `meshcentral-functions.sh`. This function:
+
+1. Checks if a valid token exists in `${MESH_DIR}/mesh_token`
+2. If the token is missing or invalid, generates a new token using MeshCentral CLI
+3. Stores the token in `${MESH_DIR}/mesh_token` for future use
+
+API consumers do not need to handle token refresh or expiration - this is managed entirely by the server.
 
 ## API Endpoints
 
@@ -111,21 +118,18 @@ Response:
 
 ### List devices:
 ```bash
-curl -X GET http://localhost:80/api/devices \
-  -H "X-MeshAuth: YOUR_TOKEN"
+curl -X GET http://localhost:80/api/devices
 ```
 
 ### Get device info:
 ```bash
-curl -X GET http://localhost:80/api/devices/device123 \
-  -H "X-MeshAuth: YOUR_TOKEN"
+curl -X GET http://localhost:80/api/devices/device123
 ```
 
 ### Run command on device:
 ```bash
 curl -X POST http://localhost:80/api/devices/device123/command \
   -H "Content-Type: application/json" \
-  -H "X-MeshAuth: YOUR_TOKEN" \
   -d '{"command":"echo Hello World","powershell":false}'
 ```
 
@@ -133,6 +137,5 @@ curl -X POST http://localhost:80/api/devices/device123/command \
 ```bash
 curl -X POST http://localhost:80/api/devices/device123/tunnel \
   -H "Content-Type: application/json" \
-  -H "X-MeshAuth: YOUR_TOKEN" \
   -d '{"type":"terminal"}'
 ```
