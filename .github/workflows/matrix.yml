@@ -427,7 +427,7 @@ jobs:
             {
               "name": "meshcentral",
               "type": "container",
-              "path": "./infrastructure/meshcentral/server",
+              "path": "./src/meshcentral/server",
               "build_args": {
                 "MESH_DIR": "/opt/mesh",
                 "MESH_TEMP_DIR": "/tmp/mesh",
