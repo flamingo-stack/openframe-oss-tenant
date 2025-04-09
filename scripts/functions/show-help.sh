@@ -8,9 +8,10 @@ p|pre                                   : Check if all required commands are ins
 k|cluster                               : Setup cluster only
 d|down                                  : Remove cluster
 a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
-                              <action>  : deploy, build, delete, dev (Required)
+                              <action>  : deploy, build, delete, dev, debug (Required)
                               dev       : Build, deploy and run in dev mode
                                           Tail changes, build and deploy on change. (Delete app before using dev mode otherwise may require run twice)
+                              debug     : Enable debug mode and redirect traffic to local port
                               --wait    : Wait for app to be ready (for deploy) (Optional)
 b|bootstrap                   [--wait]  : Bootstrap whole cluster with all apps
 m|minimal                     [--wait]  : Bootstrap whole cluster with base mandatory apps

@@ -2,20 +2,41 @@
 
 APP=$1
 ACTION=$2
-IFWAIT=$3
+
+if [ "$ACTION" == "debug" ]; then
+  LOCAL_PORT="$4"
+  REMOTE_PORT_NAME="$5"
+elif [ "$ACTION" == "deploy" ]; then
+  IFWAIT=$3
+fi
 
 if [ -z "$APP" ]; then
   show_help_apps
   exit 0
 fi
 
-if [ "$APP" != "" ] && [ "$ACTION" != "" ]; then
-  bash ./src/scripts/functions/bases.sh
-else
-  if [ "$ACTION" == "" ]; then
-    echo "Action is required"
-    exit 0
-  fi
+if [ "$ACTION" == "" ]; then
+  echo "Action is required"
+  exit 0
+fi
+
+# Function to check if namespaces and secrets already exist
+function check_bases() {
+  local namespaces=(infrastructure authentik fleet meshcentral tactical-rmm)
+  for ns in "${namespaces[@]}"; do
+    if ! kubectl get namespace "$ns" &> /dev/null; then
+      return 1
+    fi
+    if ! kubectl -n "$ns" get secret github-pat-secret &> /dev/null; then
+      return 1
+    fi
+  done
+  return 0
+}
+
+# Check and run bases.sh only if necessary
+if ! check_bases; then
+  bash ./scripts/functions/bases.sh
 fi
 
 case "$APP" in
@@ -192,7 +213,7 @@ case "$APP" in
       exit 0
     fi
     ;;
-  config-server)
+  openframe-config-server)
     if [ "$ACTION" == "deploy" ]; then
       infra_config_server_deploy
       if [ "$IFWAIT" == "--wait" ]; then infra_config_server_wait; fi
@@ -204,7 +225,7 @@ case "$APP" in
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
-  api)
+  openframe-api)
     if [ "$ACTION" == "deploy" ]; then
       infra_api_deploy
       if [ "$IFWAIT" == "--wait" ]; then infra_api_wait; fi
@@ -214,9 +235,11 @@ case "$APP" in
       echo "Deploying API in dev mode"
       cd ./services/openframe-api
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      debug_app "openframe-api" "openframe-api" "infrastructure" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
-  management)
+  openframe-management)
     if [ "$ACTION" == "deploy" ]; then
       infra_management_deploy
       if [ "$IFWAIT" == "--wait" ]; then infra_management_wait; fi
@@ -228,7 +251,7 @@ case "$APP" in
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
-  stream)
+  openframe-stream)
     if [ "$ACTION" == "deploy" ]; then
       infra_stream_deploy
       if [ "$IFWAIT" == "--wait" ]; then infra_stream_wait; fi
@@ -240,7 +263,7 @@ case "$APP" in
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     fi
     ;;
-  gateway)
+  openframe-gateway)
     if [ "$ACTION" == "deploy" ]; then
       infra_gateway_deploy
       if [ "$IFWAIT" == "--wait" ]; then infra_gateway_wait; fi
@@ -351,11 +374,11 @@ case "$APP" in
     $0 nifi $ACTION $IFWAIT && \
     $0 zookeeper $ACTION $IFWAIT && \
     $0 pinot $ACTION $IFWAIT && \
-    $0 config-server $ACTION $IFWAIT && \
-    $0 api $ACTION $IFWAIT && \
-    $0 management $ACTION $IFWAIT && \
-    $0 stream $ACTION $IFWAIT && \
-    $0 gateway $ACTION $IFWAIT && \
+    $0 openframe-config-server $ACTION $IFWAIT && \
+    $0 openframe-api $ACTION $IFWAIT && \
+    $0 openframe-management $ACTION $IFWAIT && \
+    $0 openframe-stream $ACTION $IFWAIT && \
+    $0 openframe-gateway $ACTION $IFWAIT && \
     $0 openframe-ui $ACTION $IFWAIT && \
     $0 tools $ACTION $IFWAIT
     ;;
@@ -374,10 +397,10 @@ case "$APP" in
     $0 zookeeper $ACTION $IFWAIT && \
     $0 pinot $ACTION $IFWAIT && \
     $0 config-server $ACTION $IFWAIT && \
-    $0 api $ACTION $IFWAIT && \
-    $0 management $ACTION $IFWAIT && \
-    $0 stream $ACTION $IFWAIT && \
-    $0 gateway $ACTION $IFWAIT && \
+    $0 openframe-api $ACTION $IFWAIT && \
+    $0 openframe-management $ACTION $IFWAIT && \
+    $0 openframe-stream $ACTION $IFWAIT && \
+    $0 openframe-gateway $ACTION $IFWAIT && \
     $0 openframe-ui $ACTION $IFWAIT && \
     $0 authentik $ACTION $IFWAIT && \
     $0 fleet $ACTION $IFWAIT && \

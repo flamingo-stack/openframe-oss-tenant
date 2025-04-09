@@ -118,7 +118,7 @@ function cluster_metrics_server_deploy() {
     helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server
 
     echo "Deploying metrics-server"
-    helm install metrics-server metrics-server/metrics-server \
+    helm upgrade -i metrics-server metrics-server/metrics-server \
       --namespace kube-system --set 'args={--kubelet-insecure-tls}'
 }
 

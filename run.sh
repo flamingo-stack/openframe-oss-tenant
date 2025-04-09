@@ -1,21 +1,24 @@
 #!/bin/bash
 
 # Source functions in correct order
-source ./src/scripts/functions/show-help.sh
+source ./scripts/functions/show-help.sh
 export -f show_help show_help_apps
 
-source ./src/scripts/functions/helm-repo-ensure.sh
+source ./scripts/functions/helm-repo-ensure.sh
 export -f helm_repo_ensure
 
-source ./src/scripts/functions/wait.sh
+source ./scripts/functions/wait.sh
 export -f wait_for_app
 
-source ./src/scripts/functions/variables.sh
-source ./src/scripts/functions/build-app.sh
+source ./scripts/functions/variables.sh
+source ./scripts/functions/build-app.sh
 export -f build_app
 
+source ./scripts/functions/debug.sh
+export -f debug_app
+
 # Source remaining functions
-for s in ./src/scripts/functions/apps-*.sh; do
+for s in ./scripts/functions/apps-*.sh; do
   source "$s"
   # Export all functions from the sourced file
   while IFS= read -r func; do
@@ -28,22 +31,28 @@ if [ "$1" == "b" ] || [ "$1" == "bootstrap" ] || [ "$1" == "m" ] || [ "$1" == "m
 else
   APP=$2
   ACTION=$3
-  IFWAIT=$4
+  if [ "$ACTION" == "debug" ]; then
+    LOCAL_PORT="$4"
+    REMOTE_PORT_NAME="$5"
+  elif [ "$ACTION" == "deploy" ]; then
+    IFWAIT=$4
+  fi
 fi
 
 case "$1" in
   p|pre)
-    bash ./src/scripts/pre-check.sh
+    bash ./scripts/pre-check.sh
     ;;
   k|cluster)
-    bash ./src/scripts/setup-kind-cluster.sh
+    bash ./scripts/setup-kind-cluster.sh
     ;;
   d|down)
     kind delete cluster
     ;;
   a|app)
     if [ -n "$APP" ]; then
-      bash ./src/scripts/manage-apps.sh "$APP" "$ACTION" "$IFWAIT"
+      bash $0 pre && \
+      bash ./scripts/manage-apps.sh "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
       echo "App name is required"
       exit 1
@@ -57,6 +66,7 @@ case "$1" in
     ;;
   m|minimal)
     # Bootstrap whole cluster with base apps
+    bash $0 pre && \
     bash $0 cluster && \
     bash $0 app minimal deploy "$IFWAIT"
     ;;
