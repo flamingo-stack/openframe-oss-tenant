@@ -11,7 +11,7 @@ a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
                               <action>  : deploy, build, delete, dev, debug (Required)
                               dev       : Build, deploy and run in dev mode
                                           Tail changes, build and deploy on change. (Delete app before using dev mode otherwise may require run twice)
-                              debug     : Enable debug mode and redirect traffic to local port (Use CTRL+C to stop)
+  debug <local-port> <remote-port-name> : Enable debug mode and redirect traffic to local port (Use CTRL+C to stop)
                               --wait    : Wait for app to be ready (for deploy) (Optional)
 b|bootstrap                   [--wait]  : Bootstrap whole cluster with all apps
 m|minimal                     [--wait]  : Bootstrap whole cluster with base mandatory apps
