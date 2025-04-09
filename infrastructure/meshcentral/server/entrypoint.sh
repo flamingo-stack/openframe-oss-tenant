@@ -45,6 +45,10 @@ if [ ! -f "${MESH_DIR}/mesh_token" ]; then
   # Setup the user
   setup_mesh_user
 
+  mkdir -p ${MESH_DIR}/nginx-api/{api,helpers}
+  chmod 755 ${MESH_DIR}/nginx-api
+  chmod 755 ${MESH_DIR}/nginx-api/{api,helpers}
+
   # Start MeshCentral in the background
   start_meshcentral &
 
