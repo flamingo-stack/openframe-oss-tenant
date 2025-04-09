@@ -1,14 +1,4 @@
 
-get_auth_token() {
-  local token="$HTTP_X_MESHAUTH"
-  
-  if [ -z "$token" ] && [ -n "$QUERY_STRING" ]; then
-    token=$(echo "$QUERY_STRING" | grep -oP 'auth=\K[^&]+')
-  fi
-  
-  echo "$token"
-}
-
 get_stored_token() {
   if [ -f "${MESH_DIR}/mesh_token" ]; then
     cat "${MESH_DIR}/mesh_token"
@@ -34,13 +24,10 @@ is_token_valid() {
 }
 
 authenticate() {
-  local token=$(get_auth_token)
+  local token=$(get_stored_token)
   
   if [ -z "$token" ]; then
-    token=$(get_stored_token)
-    if [ -z "$token" ]; then
-      return 1
-    fi
+    return 1
   fi
   
   if is_token_valid "$token"; then
