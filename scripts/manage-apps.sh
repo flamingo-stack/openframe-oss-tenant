@@ -396,7 +396,7 @@ case "$APP" in
     $0 nifi $ACTION $IFWAIT && \
     $0 zookeeper $ACTION $IFWAIT && \
     $0 pinot $ACTION $IFWAIT && \
-    $0 config-server $ACTION $IFWAIT && \
+    $0 openframe-config-server $ACTION $IFWAIT && \
     $0 openframe-api $ACTION $IFWAIT && \
     $0 openframe-management $ACTION $IFWAIT && \
     $0 openframe-stream $ACTION $IFWAIT && \
