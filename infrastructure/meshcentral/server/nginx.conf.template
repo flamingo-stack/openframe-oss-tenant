@@ -29,18 +29,12 @@ http {
             
             # Include FastCGI parameters
             include fastcgi_params;
-            fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api$fastcgi_script_name;
-            fastcgi_param PATH_INFO $fastcgi_path_info;
-            fastcgi_param QUERY_STRING $query_string;
-            fastcgi_param REQUEST_METHOD $request_method;
-            fastcgi_param CONTENT_TYPE $content_type;
-            fastcgi_param CONTENT_LENGTH $content_length;
-            fastcgi_param HTTP_X_MESHAUTH $http_x_meshauth;
             
             # Define API routes
             location ~ ^/api/devices/?$ {
                 fastcgi_pass unix:/var/run/fcgiwrap.socket;
                 fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/devices.sh;
+                fastcgi_param PATH_INFO "";
             }
             
             location ~ ^/api/devices/([^/]+)/?$ {
