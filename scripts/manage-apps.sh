@@ -49,6 +49,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   ingress-nginx)
@@ -58,6 +60,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   metrics-server)
@@ -67,6 +71,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   monitoring)
@@ -78,6 +84,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   logging)
@@ -89,6 +97,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   efk)
@@ -100,6 +110,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   redis)
@@ -111,6 +123,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   kafka)
@@ -122,6 +136,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   kafka-ui)
@@ -133,6 +149,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   mongodb)
@@ -144,6 +162,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   mongodb-exporter)
@@ -155,6 +175,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   mongo-express)
@@ -166,6 +188,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
     fi
     ;;
   cassandra)
@@ -177,6 +201,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   nifi)
@@ -189,6 +215,8 @@ case "$APP" in
       echo "Deploying NiFi in dev mode"
       cd ./infrastructure/nifi
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   zookeeper)
@@ -200,6 +228,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   pinot)
@@ -211,6 +241,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   openframe-config-server)
@@ -223,6 +255,8 @@ case "$APP" in
       echo "Deploying Config Server in dev mode"
       cd ./services/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   openframe-api)
@@ -249,6 +283,8 @@ case "$APP" in
       echo "Deploying Management in dev mode"
       cd ./services/openframe-management
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   openframe-stream)
@@ -261,6 +297,8 @@ case "$APP" in
       echo "Deploying Stream in dev mode"
       cd ./services/openframe-stream
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   openframe-gateway)
@@ -273,6 +311,8 @@ case "$APP" in
       echo "Deploying Gateway in dev mode"
       cd ./services/openframe-gateway
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   openframe-ui)
@@ -285,6 +325,8 @@ case "$APP" in
       echo "Deploying OpenFrame UI in dev mode"
       cd ./services/openframe-ui
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   authentik)
@@ -296,6 +338,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   fleet)
@@ -308,6 +352,8 @@ case "$APP" in
       echo "Deploying Fleet in dev mode"
       cd ./infrastructure/fleetmdm
       skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   meshcentral)
@@ -320,6 +366,8 @@ case "$APP" in
       echo "Deploying MeshCentral in dev mode"
       cd ./infrastructure/meshcentral/server
       skaffold dev --no-prune=false --cache-artifacts=false -n meshcentral
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   rmm)
@@ -331,6 +379,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
     fi
     ;;
   register-apps)
