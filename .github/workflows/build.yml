@@ -91,10 +91,8 @@ jobs:
               - './services/openframe-management/**'
             stream:
               - './services/openframe-stream/**'
-            mongodb:
-              - './infrastructure/mongodb/**'
-            cassandra:
-              - './infrastructure/cassandra/**'
+            ui:
+              - './services/openframe-ui/**'
             nifi:
               - './infrastructure/nifi/**'
             postgresql:
@@ -123,10 +121,7 @@ jobs:
             fleetmdm:
               - './infrastructure/fleetmdm/**'
             meshcentral:
-              - './infrastructure/meshcentral/nginx/**'
-              - './infrastructure/meshcentral/config/**'
-            ui:
-              - './services/openframe-ui/**'
+              - './infrastructure/meshcentral/server/**'
 
   matrix:
     uses: ./.github/workflows/matrix.yml
