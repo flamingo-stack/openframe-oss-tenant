@@ -93,8 +93,8 @@ jobs:
             {
               "name": "tactical-frontend",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-frontend",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-frontend",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -140,8 +140,8 @@ jobs:
             {
               "name": "tactical-nginx",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-nginx",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-nginx",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -187,8 +187,8 @@ jobs:
             {
               "name": "tactical-backend",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-base",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-base",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -234,8 +234,8 @@ jobs:
             {
               "name": "tactical-nats",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-base",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-base",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -281,8 +281,8 @@ jobs:
             {
               "name": "tactical-websockets",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-base",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-base",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -328,8 +328,8 @@ jobs:
             {
               "name": "tactical-celery",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-base",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-base",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -375,8 +375,8 @@ jobs:
             {
               "name": "tactical-celerybeat",
               "type": "container",
-              "path": "./infrastructure/tactical-rmm/tactical-base",
-              "context": "./infrastructure/tactical-rmm",
+              "path": "./src/tactical-rmm/tactical-base",
+              "context": "./src/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
