@@ -12,8 +12,8 @@ a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
                               dev       : Build, deploy and run in dev mode
                                           Tail changes, build and deploy on change. (Delete app before using dev mode otherwise may require run twice)
                               --wait    : Wait for app to be ready (for deploy) (Optional)
-b|bootstrap                             : Bootstrap whole cluster with all apps
-m|minimal                               : Bootstrap whole cluster with base mandatory apps
+b|bootstrap                   [--wait]  : Bootstrap whole cluster with all apps
+m|minimal                     [--wait]  : Bootstrap whole cluster with base mandatory apps
 c|cleanup                               : Remove unused images from kind nodes
 
 Examples:
