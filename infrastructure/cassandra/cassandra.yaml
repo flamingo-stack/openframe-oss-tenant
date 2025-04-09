@@ -1,4 +1,0 @@
-jmx_prometheus_javaagent:
-  enabled: true
-  port: 9404
-  config_path: /etc/cassandra/jmx_prometheus_javaagent.yml

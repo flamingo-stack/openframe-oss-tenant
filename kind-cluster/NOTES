@@ -2,7 +2,7 @@
 + ./infrastructure/mongodb
 + ./infrastructure/cassandra
 + ./infrastructure/meshcentral/nginx
-./monitoring
++ ./monitoring
 
 # USED
 # grep -rHn 'image: ' kind-cluster/apps/ | grep flamingo-cx
@@ -28,6 +28,3 @@ kind-cluster/apps/tactical-rmm/tactical-backend.yaml:45:        image: ghcr.io/f
 kind-cluster/apps/fleet/deployment.yaml:108:        image: ghcr.io/flamingo-cx/openframe-fleetmdm:latest
 
 kind-cluster/apps/meshcentral/base/meshcentral.yaml:22:        image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
-
-# this is official image
-kind-cluster/apps/infrastructure/openframe-cassandra/manifests/base/cassandra.yaml:71:          image: ghcr.io/flamingo-cx/openframe-cassandra:latest
