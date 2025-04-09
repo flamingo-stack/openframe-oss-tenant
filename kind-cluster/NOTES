@@ -1,7 +1,7 @@
 # Deprecated builds
 + ./infrastructure/mongodb
 + ./infrastructure/cassandra
-./infrastructure/meshcentral/nginx
++ ./infrastructure/meshcentral/nginx
 ./monitoring
 
 # USED
