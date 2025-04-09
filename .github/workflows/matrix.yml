@@ -422,7 +422,7 @@ jobs:
             {
               "name": "fleetmdm",
               "type": "container",
-              "path": "./infrastructure/fleetmdm"
+              "path": "./src/fleetmdm"
             },
             {
               "name": "meshcentral",
