@@ -1,0 +1,504 @@
+---
+description: Database usage patterns and best practices for OpenFrame
+globs: 
+alwaysApply: false
+---
+# Database Patterns
+
+This document outlines the database usage patterns and best practices for the OpenFrame project.
+
+## MongoDB Usage Patterns
+
+### Document Design
+
+- Design documents around specific use cases
+- Embed related data when it's always accessed together
+- Use references for large or frequently changing data
+- Avoid deeply nested documents (limit to 2-3 levels)
+- Use descriptive field names
+- Follow consistent naming conventions (camelCase)
+
+Example document:
+```json
+{
+  "_id": "device123",
+  "hostname": "server-01",
+  "operatingSystem": "Linux",
+  "status": "online",
+  "lastSeen": "2023-04-01T12:00:00Z",
+  "metadata": {
+    "location": "Data Center 1",
+    "rack": "A4",
+    "model": "Dell PowerEdge R740"
+  },
+  "tags": ["production", "database", "critical"],
+  "siteId": "site456"  // Reference to a site document
+}
+```
+
+### Indexing Strategy
+
+- Create indexes for frequently queried fields
+- Use compound indexes for queries with multiple conditions
+- Add indexes for sorting operations
+- Consider partial indexes for filtered queries
+- Use text indexes for full-text search
+- Monitor and optimize index usage
+
+Example indexes:
+```java
+@Document(collection = "devices")
+public class Device {
+    @Id
+    private String id;
+    
+    @Indexed
+    private String hostname;
+    
+    @Indexed
+    private String status;
+    
+    @CompoundIndex(def = "{'siteId': 1, 'status': 1}")
+    private String siteId;
+    
+    // Other fields
+}
+```
+
+### Query Optimization
+
+- Use projection to limit returned fields
+- Filter documents as early as possible
+- Use appropriate operators ($in, $gt, $lt, etc.)
+- Leverage aggregation pipeline for complex queries
+- Avoid large skip values for pagination
+- Use cursor-based pagination for large collections
+
+Example optimized query:
+```java
+List<Device> findActiveDevicesBySite(String siteId, int limit, String lastId) {
+    Query query = new Query();
+    
+    if (lastId != null) {
+        query.addCriteria(Criteria.where("_id").gt(lastId));
+    }
+    
+    query.addCriteria(Criteria.where("siteId").is(siteId)
+        .and("status").is("online"));
+    
+    query.fields()
+        .include("hostname")
+        .include("status")
+        .include("lastSeen");
+    
+    query.limit(limit);
+    query.with(Sort.by(Sort.Direction.ASC, "_id"));
+    
+    return mongoTemplate.find(query, Device.class);
+}
+```
+
+### Aggregation Patterns
+
+- Use aggregation pipeline for complex data transformations
+- Break down complex pipelines into smaller stages
+- Use $lookup for joining collections
+- Leverage $group for data summarization
+- Use $project to reshape documents
+- Consider performance implications of each stage
+
+Example aggregation:
+```java
+AggregationResults<DeviceStatusSummary> getDeviceStatusSummaryBySite(String siteId) {
+    Aggregation aggregation = Aggregation.newAggregation(
+        Aggregation.match(Criteria.where("siteId").is(siteId)),
+        Aggregation.group("status").count().as("count"),
+        Aggregation.project("count").and("status").previousOperation(),
+        Aggregation.sort(Sort.Direction.DESC, "count")
+    );
+    
+    return mongoTemplate.aggregate(
+        aggregation, "devices", DeviceStatusSummary.class);
+}
+```
+
+## Cassandra Data Modeling
+
+### Table Design
+
+- Design tables based on query patterns
+- Denormalize data for efficient reads
+- Use wide rows for related data
+- Choose appropriate partition keys
+- Use clustering columns for sorting
+- Avoid large partitions
+
+Example table definition:
+```cql
+CREATE TABLE events (
+    device_id text,
+    event_time timestamp,
+    event_type text,
+    severity text,
+    message text,
+    details map<text, text>,
+    PRIMARY KEY (device_id, event_time)
+) WITH CLUSTERING ORDER BY (event_time DESC);
+```
+
+### Partition Strategy
+
+- Choose partition keys that distribute data evenly
+- Avoid hotspots by using composite partition keys if needed
+- Keep partition sizes manageable (< 100MB)
+- Consider time-based partitioning for time-series data
+- Use bucketing for high-cardinality partition keys
+
+Example composite partition key:
+```cql
+CREATE TABLE events_by_day (
+    device_id text,
+    day date,
+    event_time timestamp,
+    event_type text,
+    severity text,
+    message text,
+    PRIMARY KEY ((device_id, day), event_time)
+) WITH CLUSTERING ORDER BY (event_time DESC);
+```
+
+### Query Patterns
+
+- Design queries around specific use cases
+- Always include partition key in WHERE clause
+- Use clustering columns for range queries
+- Avoid using ALLOW FILTERING
+- Use secondary indexes sparingly
+- Consider materialized views for alternative access patterns
+
+Example query patterns:
+```java
+// Efficient query - includes partition key
+session.execute(
+    "SELECT * FROM events WHERE device_id = ? AND event_time > ? AND event_time < ?",
+    deviceId, startTime, endTime
+);
+
+// Materialized view for querying by event type
+session.execute(
+    "SELECT * FROM events_by_type WHERE event_type = ? AND severity = ?",
+    eventType, severity
+);
+```
+
+### Time Series Data
+
+- Use time-based partitioning
+- Consider TTL for automatic data expiration
+- Use compaction strategies optimized for time series
+- Implement data retention policies
+- Consider downsampling for historical data
+
+Example time series table:
+```cql
+CREATE TABLE metrics (
+    device_id text,
+    metric_name text,
+    day date,
+    timestamp timestamp,
+    value double,
+    PRIMARY KEY ((device_id, metric_name, day), timestamp)
+) WITH CLUSTERING ORDER BY (timestamp DESC)
+  AND default_time_to_live = 2592000; -- 30 days
+```
+
+## Redis Caching Strategies
+
+### Cache Design
+
+- Cache frequently accessed data
+- Use appropriate data structures (string, hash, list, set, sorted set)
+- Set reasonable TTL values
+- Implement cache invalidation strategies
+- Use namespaced keys
+- Consider memory usage
+
+Example cache implementation:
+```java
+@Service
+public class DeviceCacheService {
+    private final RedisTemplate<String, Device> redisTemplate;
+    private final DeviceRepository deviceRepository;
+    
+    private static final String KEY_PREFIX = "device:";
+    private static final Duration CACHE_TTL = Duration.ofMinutes(15);
+    
+    public Device getDevice(String deviceId) {
+        String key = KEY_PREFIX + deviceId;
+        Device device = redisTemplate.opsForValue().get(key);
+        
+        if (device == null) {
+            device = deviceRepository.findById(deviceId).orElse(null);
+            if (device != null) {
+                redisTemplate.opsForValue().set(key, device, CACHE_TTL);
+            }
+        }
+        
+        return device;
+    }
+    
+    public void invalidateCache(String deviceId) {
+        redisTemplate.delete(KEY_PREFIX + deviceId);
+    }
+}
+```
+
+### Distributed Locking
+
+- Use Redis for distributed locking
+- Implement lock acquisition with timeout
+- Always release locks in finally blocks
+- Use unique lock names
+- Consider using Redisson for advanced locking
+
+Example distributed lock:
+```java
+@Service
+public class DistributedLockService {
+    private final StringRedisTemplate redisTemplate;
+    
+    public boolean acquireLock(String lockName, String lockValue, Duration timeout) {
+        return Boolean.TRUE.equals(redisTemplate.opsForValue()
+            .setIfAbsent(lockName, lockValue, timeout));
+    }
+    
+    public void releaseLock(String lockName, String lockValue) {
+        String currentValue = redisTemplate.opsForValue().get(lockName);
+        if (lockValue.equals(currentValue)) {
+            redisTemplate.delete(lockName);
+        }
+    }
+    
+    public <T> T executeWithLock(String lockName, Duration timeout, Supplier<T> task) {
+        String lockValue = UUID.randomUUID().toString();
+        try {
+            if (acquireLock(lockName, lockValue, timeout)) {
+                return task.get();
+            } else {
+                throw new LockAcquisitionException("Failed to acquire lock: " + lockName);
+            }
+        } finally {
+            releaseLock(lockName, lockValue);
+        }
+    }
+}
+```
+
+### Rate Limiting
+
+- Implement rate limiting using Redis
+- Use sliding window algorithm
+- Configure limits based on client ID or user
+- Return appropriate status codes when limits are exceeded
+- Consider using Redis Lua scripts for atomic operations
+
+Example rate limiter:
+```java
+@Service
+public class RateLimiterService {
+    private final StringRedisTemplate redisTemplate;
+    
+    public boolean allowRequest(String key, int maxRequests, Duration window) {
+        long now = System.currentTimeMillis();
+        long windowStart = now - window.toMillis();
+        
+        String redisKey = "ratelimit:" + key;
+        
+        // Remove expired timestamps
+        redisTemplate.opsForZSet().removeRangeByScore(redisKey, 0, windowStart);
+        
+        // Count current requests in window
+        Long currentCount = redisTemplate.opsForZSet().zCard(redisKey);
+        
+        if (currentCount != null && currentCount >= maxRequests) {
+            return false;
+        }
+        
+        // Add current timestamp
+        redisTemplate.opsForZSet().add(redisKey, String.valueOf(now), now);
+        redisTemplate.expire(redisKey, window.multipliedBy(2));
+        
+        return true;
+    }
+}
+```
+
+### Caching Patterns
+
+- **Cache-Aside**: Load data from cache first, then from database if not found
+- **Write-Through**: Update cache when writing to database
+- **Write-Behind**: Write to cache first, then asynchronously to database
+- **Cache Invalidation**: Remove or update cache entries when data changes
+- **Bulk Loading**: Load multiple cache entries in a single operation
+
+Example cache-aside pattern:
+```java
+@Service
+public class UserService {
+    private final UserRepository userRepository;
+    private final RedisTemplate<String, User> redisTemplate;
+    
+    public User getUserById(String userId) {
+        // Try to get from cache
+        User user = redisTemplate.opsForValue().get("user:" + userId);
+        
+        if (user == null) {
+            // Cache miss, get from database
+            user = userRepository.findById(userId).orElse(null);
+            
+            if (user != null) {
+                // Store in cache
+                redisTemplate.opsForValue().set("user:" + userId, user, Duration.ofMinutes(30));
+            }
+        }
+        
+        return user;
+    }
+    
+    public User updateUser(User user) {
+        // Update database
+        User updatedUser = userRepository.save(user);
+        
+        // Update cache (write-through)
+        redisTemplate.opsForValue().set("user:" + user.getId(), updatedUser, Duration.ofMinutes(30));
+        
+        return updatedUser;
+    }
+    
+    public void deleteUser(String userId) {
+        // Delete from database
+        userRepository.deleteById(userId);
+        
+        // Invalidate cache
+        redisTemplate.delete("user:" + userId);
+    }
+}
+```
+
+## Database Connection Management
+
+### Connection Pooling
+
+- Configure appropriate pool sizes
+- Set reasonable timeout values
+- Monitor connection usage
+- Implement health checks
+- Handle connection failures gracefully
+
+Example connection pool configuration:
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/openframe
+      connection-pool:
+        max-size: 100
+        min-size: 5
+        max-wait-time: 2000
+        max-connection-life-time: 30000
+        max-connection-idle-time: 60000
+    cassandra:
+      contact-points: localhost
+      port: 9042
+      keyspace-name: openframe
+      local-datacenter: datacenter1
+      pool:
+        max-queue-size: 256
+        pool-timeout: 5000
+        heartbeat-interval: 30
+        idle-timeout: 120
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 1000
+```
+
+### Transaction Management
+
+- Use transactions for operations that must be atomic
+- Keep transactions short
+- Handle transaction failures gracefully
+- Consider distributed transactions for cross-database operations
+- Use appropriate isolation levels
+
+Example transaction management:
+```java
+@Service
+public class OrderService {
+    private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final InventoryRepository inventoryRepository;
+    
+    @Transactional
+    public Order createOrder(Order order, Payment payment) {
+        // Save order
+        Order savedOrder = orderRepository.save(order);
+        
+        // Process payment
+        payment.setOrderId(savedOrder.getId());
+        Payment savedPayment = paymentRepository.save(payment);
+        
+        // Update inventory
+        for (OrderItem item : order.getItems()) {
+            inventoryRepository.decreaseStock(item.getProductId(), item.getQuantity());
+        }
+        
+        return savedOrder;
+    }
+}
+```
+
+### Sharding and Partitioning
+
+- Implement sharding for horizontal scaling
+- Choose appropriate shard keys
+- Handle cross-shard queries
+- Consider data locality
+- Implement proper routing
+
+Example sharding configuration:
+```java
+@Configuration
+public class ShardingConfig {
+    @Bean
+    public ShardingStrategy deviceShardingStrategy() {
+        return new HashShardingStrategy("deviceId", 4);
+    }
+    
+    @Bean
+    public ShardedMongoTemplate shardedMongoTemplate(
+            List<MongoTemplate> mongoTemplates,
+            ShardingStrategy shardingStrategy) {
+        return new ShardedMongoTemplate(mongoTemplates, shardingStrategy);
+    }
+}
+```
+
+## Best Practices
+
+1. **Data Modeling**: Design data models around query patterns
+2. **Indexing**: Create appropriate indexes for frequently queried fields
+3. **Query Optimization**: Optimize queries for performance
+4. **Connection Management**: Configure and monitor connection pools
+5. **Caching**: Implement caching for frequently accessed data
+6. **Security**: Implement proper authentication and authorization
+7. **Backup and Recovery**: Implement regular backups and recovery procedures
+8. **Monitoring**: Monitor database performance and usage
+9. **Schema Evolution**: Plan for schema changes and migrations
+10. **Data Validation**: Validate data before storing in the database

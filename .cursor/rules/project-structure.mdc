@@ -1,0 +1,143 @@
+---
+description: OpenFrame project structure and organization
+globs: 
+alwaysApply: false
+---
+# Project Structure
+
+## Main Structure
+
+OpenFrame follows a microservices architecture with these core components:
+
+```
+.
+├── services/                # Microservices
+│   ├── openframe-gateway/   # API Gateway
+│   ├── openframe-api/       # GraphQL API service
+│   ├── openframe-management/# Management interface
+│   ├── openframe-stream/    # Stream processing service
+│   └── openframe-config/    # Configuration service
+├── libs/                    # Shared libraries
+│   ├── openframe-core/      # Core libraries
+│   ├── openframe-data/      # Data access libraries
+│   └── openframe-security/  # Security libraries
+├── config/                  # Configuration files
+│   ├── application.yml      # Base configuration
+│   ├── application-local.yml# Local development overrides
+│   └── application-docker.yml# Docker deployment overrides
+├── docker-compose.*.yml     # Docker compose files for services
+├── scripts/                 # Utility scripts
+│   ├── build-and-run.sh     # Main build script
+│   └── test-public-endpoints.sh # Test script
+└── infrastructure/          # Docker configurations for tools
+```
+
+## Service Layer
+
+Each service follows this structure:
+
+```
+openframe-service/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/openframe/service/
+│   │   │       ├── config/      # Configuration classes
+│   │   │       ├── controller/  # REST controllers
+│   │   │       ├── service/     # Business logic
+│   │   │       ├── repository/  # Data access
+│   │   │       ├── model/       # Domain models
+│   │   │       ├── exception/   # Custom exceptions
+│   │   │       └── Application.java # Main class
+│   │   └── resources/
+│   │       ├── application.yml  # Service configuration
+│   │       └── ...
+│   └── test/
+│       └── java/
+│           └── com/openframe/service/
+│               ├── controller/  # Controller tests
+│               ├── service/     # Service tests
+│               └── ...
+├── pom.xml                      # Maven configuration
+└── README.md                    # Service documentation
+```
+
+## Library Layer
+
+Shared libraries follow this structure:
+
+```
+openframe-library/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/openframe/library/
+│   │   │       ├── model/       # Shared models
+│   │   │       ├── util/        # Utility classes
+│   │   │       └── ...
+│   │   └── resources/
+│   └── test/
+│       └── java/
+│           └── com/openframe/library/
+│               └── ...
+└── pom.xml                      # Maven configuration
+```
+
+## UI Layer
+
+The UI service follows this structure:
+
+```
+openframe-ui/
+├── src/
+│   ├── assets/                  # Static assets
+│   ├── components/              # Vue components
+│   │   ├── ui/                  # Shared UI components
+│   │   └── ...                  # Feature-specific components
+│   ├── views/                   # Vue views/pages
+│   ├── services/                # API client services
+│   ├── store/                   # State management
+│   ├── router/                  # Vue Router configuration
+│   ├── types/                   # TypeScript types
+│   └── main.ts                  # Entry point
+├── public/                      # Public assets
+├── package.json                 # NPM configuration
+└── vite.config.ts               # Vite configuration
+```
+
+## Docker Compose Files
+
+OpenFrame uses multiple Docker Compose files:
+
+- `docker-compose.openframe-infrastructure.yml`: Infrastructure services (MongoDB, Redis, etc.)
+- `docker-compose.openframe-tactical-rmm.yml`: Tactical RMM configuration
+- `docker-compose.openframe-fleet-mdm.yml`: Fleet MDM configuration
+- `docker-compose.openframe-authentik.yml`: Authentik SSO configuration
+- `docker-compose.openframe-meshcentral.yml`: MeshCentral configuration
+
+## Configuration Files
+
+Configuration follows this hierarchy:
+
+1. `application.yml`: Base configuration for all environments
+2. `application-{profile}.yml`: Environment-specific overrides
+   - `application-local.yml`: Local development
+   - `application-docker.yml`: Docker environment
+   - `application-prod.yml`: Production environment
+
+## Build Scripts
+
+The main build script is `scripts/build-and-run.sh`, which:
+
+1. Builds all services with Maven
+2. Starts infrastructure services with Docker Compose
+3. Starts application services with Docker Compose
+4. Registers integrated tools with the OpenFrame API
+
+## Naming Conventions
+
+- Java packages: `com.openframe.{service|library}.{component}`
+- Service names: `openframe-{service}`
+- Library names: `openframe-{library}`
+- Docker Compose files: `docker-compose.openframe-{component}.yml`
+- Configuration files: `application-{profile}.yml`

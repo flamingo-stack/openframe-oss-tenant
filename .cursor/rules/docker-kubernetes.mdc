@@ -1,0 +1,710 @@
+---
+description: Container and orchestration best practices for OpenFrame
+globs: 
+alwaysApply: false
+---
+# Docker and Kubernetes
+
+This document outlines the container and orchestration best practices for the OpenFrame project.
+
+## Dockerfile Standards
+
+### Base Images
+
+- Use official base images from trusted sources
+- Specify exact version tags (not `latest`)
+- Use slim or alpine variants where appropriate
+- Keep base images consistent across services
+- Regularly update base images for security patches
+
+Example Dockerfile:
+```dockerfile
+# Use specific version of OpenJDK
+FROM eclipse-temurin:21-jre-alpine
+
+# Add metadata
+LABEL maintainer="OpenFrame Team <team@openframe.com>"
+LABEL description="OpenFrame API Service"
+LABEL version="1.0.0"
+
+# Set working directory
+WORKDIR /app
+
+# Copy application JAR
+COPY target/openframe-api.jar /app/
+
+# Set non-root user
+RUN addgroup -S openframe && adduser -S openframe -G openframe
+USER openframe
+
+# Set entry point
+ENTRYPOINT ["java", "-jar", "openframe-api.jar"]
+```
+
+### Multi-Stage Builds
+
+- Use multi-stage builds to minimize image size
+- Separate build and runtime environments
+- Only include necessary artifacts in the final image
+- Remove build dependencies from the final image
+
+Example multi-stage build:
+```dockerfile
+# Build stage
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /build/target/openframe-api.jar /app/
+RUN addgroup -S openframe && adduser -S openframe -G openframe
+USER openframe
+ENTRYPOINT ["java", "-jar", "openframe-api.jar"]
+```
+
+### Layer Optimization
+
+- Order instructions from least to most frequently changing
+- Group related commands to minimize layers
+- Use .dockerignore to exclude unnecessary files
+- Minimize the number of RUN commands
+- Clean up in the same layer where files are added
+
+Example layer optimization:
+```dockerfile
+# Install dependencies in a single layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        fontconfig \
+        && rm -rf /var/lib/apt/lists/*
+
+# Copy application files
+COPY --chown=openframe:openframe . /app/
+
+# Set environment variables
+ENV JAVA_OPTS="-Xms512m -Xmx1024m"
+ENV SPRING_PROFILES_ACTIVE="docker"
+```
+
+### Security Best Practices
+
+- Run containers as non-root users
+- Remove unnecessary tools and packages
+- Scan images for vulnerabilities
+- Use multi-stage builds to minimize attack surface
+- Set appropriate file permissions
+- Use secrets management for sensitive data
+
+Example security configuration:
+```dockerfile
+# Create non-root user
+RUN addgroup -S openframe && adduser -S openframe -G openframe
+
+# Set appropriate permissions
+COPY --chown=openframe:openframe . /app/
+
+# Switch to non-root user
+USER openframe
+
+# Use non-privileged port
+EXPOSE 8080
+
+# Don't run as root
+ENTRYPOINT ["java", "-jar", "openframe-api.jar"]
+```
+
+## Docker Compose Configuration
+
+### Service Organization
+
+- Group related services together
+- Use consistent naming conventions
+- Separate infrastructure and application services
+- Use environment variables for configuration
+- Define dependencies between services
+
+Example Docker Compose organization:
+```yaml
+version: '3.8'
+
+# Infrastructure services
+services:
+  mongodb:
+    image: mongo:6.0
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    networks:
+      - openframe-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - openframe-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - openframe-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+    networks:
+      - openframe-network
+
+# Application services
+  openframe-gateway:
+    image: openframe/gateway:latest
+    build:
+      context: ./services/openframe-gateway
+    depends_on:
+      - openframe-config
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://openframe-config:8888
+    ports:
+      - "8100:8100"
+    networks:
+      - openframe-network
+
+  openframe-api:
+    image: openframe/api:latest
+    build:
+      context: ./services/openframe-api
+    depends_on:
+      - openframe-config
+      - mongodb
+      - kafka
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://openframe-config:8888
+    networks:
+      - openframe-network
+
+volumes:
+  mongodb-data:
+  redis-data:
+  kafka-data:
+  zookeeper-data:
+
+networks:
+  openframe-network:
+    driver: bridge
+```
+
+### Environment Configuration
+
+- Use .env files for environment-specific variables
+- Don't hardcode sensitive information
+- Use consistent variable naming
+- Document required environment variables
+- Provide default values where appropriate
+
+Example .env file:
+```
+# MongoDB Configuration
+MONGO_USERNAME=openframe
+MONGO_PASSWORD=openframe_password
+MONGO_DATABASE=openframe
+
+# Redis Configuration
+REDIS_PASSWORD=redis_password
+
+# Kafka Configuration
+KAFKA_BROKERS=kafka:9092
+
+# Application Configuration
+SPRING_PROFILES_ACTIVE=docker
+LOG_LEVEL=INFO
+```
+
+### Volume Management
+
+- Use named volumes for persistent data
+- Document volume purposes
+- Use consistent naming conventions
+- Backup volumes regularly
+- Consider volume drivers for production
+
+Example volume configuration:
+```yaml
+volumes:
+  mongodb-data:
+    driver: local
+  redis-data:
+    driver: local
+  kafka-data:
+    driver: local
+  zookeeper-data:
+    driver: local
+  openframe-config:
+    driver: local
+```
+
+### Network Configuration
+
+- Use custom networks for service isolation
+- Define network dependencies explicitly
+- Use consistent network naming
+- Configure appropriate network drivers
+- Document network architecture
+
+Example network configuration:
+```yaml
+networks:
+  openframe-frontend:
+    driver: bridge
+  openframe-backend:
+    driver: bridge
+  openframe-database:
+    driver: bridge
+  openframe-monitoring:
+    driver: bridge
+```
+
+## Kubernetes Resource Definitions
+
+### Pod Specifications
+
+- Define resource requests and limits
+- Set appropriate health checks
+- Configure proper security contexts
+- Use init containers where needed
+- Implement proper pod affinity/anti-affinity
+
+Example pod specification:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: openframe-api
+  labels:
+    app: openframe
+    component: api
+spec:
+  containers:
+  - name: api
+    image: openframe/api:1.0.0
+    ports:
+    - containerPort: 8080
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    livenessProbe:
+      httpGet:
+        path: /actuator/health/liveness
+        port: 8080
+      initialDelaySeconds: 60
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /actuator/health/readiness
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 5
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+    env:
+    - name: SPRING_PROFILES_ACTIVE
+      value: "kubernetes"
+    - name: JAVA_OPTS
+      value: "-Xms512m -Xmx1024m"
+```
+
+### Deployment Strategies
+
+- Use Deployments for stateless applications
+- Use StatefulSets for stateful applications
+- Configure appropriate update strategies
+- Set proper replica counts
+- Implement pod disruption budgets
+
+Example deployment:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-api
+  labels:
+    app: openframe
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openframe
+      component: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: openframe
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: openframe/api:1.0.0
+        # Container spec as above
+```
+
+### Service Definitions
+
+- Define appropriate service types
+- Configure proper selectors
+- Set port mappings correctly
+- Use meaningful service names
+- Document service endpoints
+
+Example service:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-api
+  labels:
+    app: openframe
+    component: api
+spec:
+  selector:
+    app: openframe
+    component: api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  type: ClusterIP
+```
+
+### ConfigMaps and Secrets
+
+- Use ConfigMaps for non-sensitive configuration
+- Use Secrets for sensitive information
+- Mount as volumes or environment variables
+- Use consistent naming conventions
+- Document configuration parameters
+
+Example ConfigMap and Secret:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openframe-api-config
+data:
+  application.yml: |
+    spring:
+      data:
+        mongodb:
+          host: mongodb
+          port: 27017
+          database: openframe
+      kafka:
+        bootstrap-servers: kafka:9092
+    logging:
+      level:
+        root: INFO
+        com.openframe: DEBUG
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openframe-api-secrets
+type: Opaque
+data:
+  mongodb-password: b3BlbmZyYW1lX3Bhc3N3b3Jk
+  kafka-api-key: a2Fma2FfYXBpX2tleQ==
+```
+
+## Resource Management
+
+### CPU and Memory
+
+- Set appropriate resource requests and limits
+- Monitor resource usage
+- Implement horizontal pod autoscaling
+- Configure proper QoS classes
+- Document resource requirements
+
+Example resource configuration:
+```yaml
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+```
+
+### Storage
+
+- Use appropriate storage classes
+- Define persistent volume claims
+- Set proper access modes
+- Configure storage quotas
+- Document storage requirements
+
+Example storage configuration:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+```
+
+### Namespace Organization
+
+- Use namespaces for logical separation
+- Implement resource quotas per namespace
+- Define network policies
+- Use consistent naming conventions
+- Document namespace purpose
+
+Example namespace configuration:
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openframe-production
+  labels:
+    environment: production
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: openframe-quota
+  namespace: openframe-production
+spec:
+  hard:
+    pods: "50"
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+```
+
+## Deployment Strategies
+
+### CI/CD Integration
+
+- Automate image building and testing
+- Implement proper tagging strategies
+- Use semantic versioning
+- Configure deployment pipelines
+- Document deployment process
+
+Example CI/CD configuration (GitHub Actions):
+```yaml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Build with Maven
+      run: mvn clean package
+      
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: openframe/api:latest,openframe/api:${{ github.sha }}
+        
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set Kubernetes context
+      uses: azure/k8s-set-context@v3
+      with:
+        kubeconfig: ${{ secrets.KUBE_CONFIG }}
+        
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f kubernetes/openframe-api.yaml
+        kubectl set image deployment/openframe-api api=openframe/api:${{ github.sha }}
+```
+
+### Blue-Green Deployment
+
+- Maintain two identical environments
+- Switch traffic between environments
+- Minimize downtime during deployments
+- Implement proper rollback procedures
+- Monitor deployment health
+
+Example blue-green deployment:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-api
+spec:
+  selector:
+    app: openframe
+    component: api
+    version: blue  # Switch between blue and green
+  ports:
+  - port: 80
+    targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-api-blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openframe
+      component: api
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: openframe
+        component: api
+        version: blue
+    spec:
+      containers:
+      - name: api
+        image: openframe/api:1.0.0
+        # Container spec
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-api-green
+spec:
+  replicas: 0  # Scale up during deployment
+  selector:
+    matchLabels:
+      app: openframe
+      component: api
+      version: green
+  template:
+    metadata:
+      labels:
+        app: openframe
+        component: api
+        version: green
+    spec:
+      containers:
+      - name: api
+        image: openframe/api:1.1.0
+        # Container spec
+```
+
+### Canary Deployment
+
+- Gradually roll out changes to a subset of users
+- Monitor performance and errors
+- Implement traffic splitting
+- Configure proper rollback procedures
+- Document canary release process
+
+Example canary deployment:
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: openframe-api
+spec:
+  hosts:
+  - openframe-api
+  http:
+  - route:
+    - destination:
+        host: openframe-api
+        subset: v1
+      weight: 90
+    - destination:
+        host: openframe-api
+        subset: v2
+      weight: 10
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: openframe-api
+spec:
+  host: openframe-api
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+```
+
+## Best Practices
+
+1. **Image Security**: Scan images for vulnerabilities and use minimal base images
+2. **Resource Management**: Set appropriate resource requests and limits
+3. **Configuration**: Use ConfigMaps and Secrets for configuration
+4. **Health Checks**: Implement proper liveness and readiness probes
+5. **Logging**: Configure centralized logging
+6. **Monitoring**: Implement comprehensive monitoring
+7. **Security**: Run containers as non-root users and implement network policies
+8. **Backup**: Regularly backup persistent data
+9. **Documentation**: Document deployment procedures and requirements
+10. **Testing**: Test deployments in staging environments before production

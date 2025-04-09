@@ -1,0 +1,425 @@
+---
+description: API design patterns and standards for OpenFrame
+globs: 
+alwaysApply: false
+---
+# API Design
+
+This document outlines the API design patterns and standards for the OpenFrame project.
+
+## RESTful API Design
+
+### URL Structure
+
+- Use resource-based URLs
+- Use plural nouns for resource collections
+- Use hierarchical structure for nested resources
+- Use kebab-case for multi-word resource names
+- Include API version in the URL path
+
+Examples:
+```
+GET /api/v1/devices                  # Get all devices
+GET /api/v1/devices/{id}             # Get a specific device
+GET /api/v1/devices/{id}/scripts     # Get scripts for a device
+POST /api/v1/devices                 # Create a new device
+PUT /api/v1/devices/{id}             # Update a device
+DELETE /api/v1/devices/{id}          # Delete a device
+```
+
+### HTTP Methods
+
+- Use appropriate HTTP methods for operations:
+  - GET: Retrieve resources
+  - POST: Create resources
+  - PUT: Update resources (full update)
+  - PATCH: Partial update of resources
+  - DELETE: Remove resources
+
+### Status Codes
+
+- Use appropriate HTTP status codes:
+  - 200 OK: Successful request
+  - 201 Created: Resource created successfully
+  - 204 No Content: Successful request with no response body
+  - 400 Bad Request: Invalid request parameters
+  - 401 Unauthorized: Authentication required
+  - 403 Forbidden: Authenticated but not authorized
+  - 404 Not Found: Resource not found
+  - 409 Conflict: Request conflicts with current state
+  - 422 Unprocessable Entity: Validation errors
+  - 500 Internal Server Error: Server-side error
+
+### Request/Response Format
+
+- Use JSON for request and response bodies
+- Use consistent property naming (camelCase)
+- Include appropriate content-type headers
+- Provide meaningful error messages
+- Use pagination for large collections
+- Support filtering, sorting, and field selection
+
+Example response:
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "hostname": "device-1",
+      "operatingSystem": "Windows",
+      "status": "online",
+      "lastSeen": "2023-04-01T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 100,
+    "page": 1,
+    "pageSize": 10,
+    "totalPages": 10
+  }
+}
+```
+
+Example error response:
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request parameters",
+    "details": [
+      {
+        "field": "hostname",
+        "message": "Hostname is required"
+      }
+    ]
+  }
+}
+```
+
+## GraphQL API Design
+
+### Schema Design
+
+- Use descriptive type names
+- Follow naming conventions (PascalCase for types, camelCase for fields)
+- Define clear relationships between types
+- Use input types for mutations
+- Include appropriate descriptions for types and fields
+- Use enums for fixed sets of values
+
+Example schema:
+```graphql
+"""
+Represents a device in the system
+"""
+type Device {
+  "Unique identifier for the device"
+  id: ID!
+  "Hostname of the device"
+  hostname: String!
+  "Operating system of the device"
+  operatingSystem: String!
+  "Current status of the device"
+  status: DeviceStatus!
+  "When the device was last seen"
+  lastSeen: DateTime
+  "Scripts associated with this device"
+  scripts: [Script!]!
+}
+
+"""
+Status of a device
+"""
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+}
+
+"""
+Input for creating a new device
+"""
+input CreateDeviceInput {
+  hostname: String!
+  operatingSystem: String!
+}
+```
+
+### Query Design
+
+- Design queries around specific use cases
+- Support pagination for collections
+- Allow filtering and sorting
+- Enable field selection
+- Use arguments for customization
+- Consider query complexity and depth
+
+Example query:
+```graphql
+query GetDevices($status: DeviceStatus, $page: Int, $pageSize: Int) {
+  devices(status: $status, page: $page, pageSize: $pageSize) {
+    nodes {
+      id
+      hostname
+      operatingSystem
+      status
+      lastSeen
+    }
+    pageInfo {
+      totalCount
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+}
+```
+
+### Mutation Design
+
+- Use descriptive names (createDevice, updateDevice, etc.)
+- Accept input types for arguments
+- Return the modified resource
+- Include error information in the response
+- Use consistent naming patterns
+
+Example mutation:
+```graphql
+mutation CreateDevice($input: CreateDeviceInput!) {
+  createDevice(input: $input) {
+    device {
+      id
+      hostname
+      operatingSystem
+      status
+    }
+    errors {
+      field
+      message
+    }
+  }
+}
+```
+
+## API Gateway Patterns
+
+### Routing
+
+- Route requests based on path prefixes
+- Use consistent routing patterns
+- Support path rewriting for backend services
+- Handle versioning at the gateway level
+
+Example gateway configuration:
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: device-service
+          uri: lb://device-service
+          predicates:
+            - Path=/api/v1/devices/**
+          filters:
+            - RewritePath=/api/v1/devices/(?<path>.*), /devices/$\{path}
+```
+
+### Authentication and Authorization
+
+- Implement JWT authentication at the gateway
+- Validate tokens for each request
+- Include user information in request headers
+- Support role-based access control
+- Use consistent authorization patterns
+
+Example authentication filter:
+```java
+@Component
+public class JwtAuthenticationFilter implements WebFilter {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String token = extractToken(request);
+        
+        if (token != null && validateToken(token)) {
+            ServerHttpRequest modifiedRequest = request.mutate()
+                .header("X-User-Id", getUserIdFromToken(token))
+                .header("X-User-Roles", getRolesFromToken(token))
+                .build();
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+        }
+        
+        return chain.filter(exchange);
+    }
+}
+```
+
+### Rate Limiting
+
+- Implement rate limiting at the gateway
+- Use consistent rate limiting policies
+- Configure limits based on client ID or user
+- Return appropriate status codes (429 Too Many Requests)
+- Include rate limit headers in responses
+
+Example rate limiting configuration:
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: device-service
+          uri: lb://device-service
+          predicates:
+            - Path=/api/v1/devices/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+```
+
+### Circuit Breaking
+
+- Implement circuit breakers for backend services
+- Configure appropriate thresholds
+- Provide fallback responses
+- Monitor circuit breaker status
+- Use consistent circuit breaker patterns
+
+Example circuit breaker configuration:
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: device-service
+          uri: lb://device-service
+          predicates:
+            - Path=/api/v1/devices/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: deviceServiceCircuitBreaker
+                fallbackUri: forward:/fallback/devices
+```
+
+## API Documentation
+
+### OpenAPI/Swagger
+
+- Document all APIs using OpenAPI/Swagger
+- Include detailed descriptions for endpoints
+- Document request/response schemas
+- Provide examples
+- Document error responses
+- Include authentication requirements
+
+Example OpenAPI configuration:
+```java
+@Configuration
+public class OpenApiConfig {
+    @Bean
+    public OpenAPI openAPI() {
+        return new OpenAPI()
+            .info(new Info()
+                .title("OpenFrame API")
+                .version("v1")
+                .description("API for OpenFrame platform"))
+            .components(new Components()
+                .addSecuritySchemes("bearer-jwt", new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .bearerFormat("JWT")))
+            .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+    }
+}
+```
+
+### API Versioning
+
+- Use explicit versioning in URLs
+- Support multiple API versions simultaneously
+- Document version differences
+- Provide migration guides
+- Use semantic versioning
+
+## Integration Patterns
+
+### Tool Integration
+
+- Use consistent integration patterns for external tools
+- Implement proxy endpoints for tool APIs
+- Handle authentication and authorization
+- Transform request/response formats as needed
+- Implement error handling and retries
+
+Example integration controller:
+```java
+@RestController
+@RequestMapping("/tools/{toolName}")
+public class IntegrationController {
+    private final ToolRegistry toolRegistry;
+    private final WebClient.Builder webClientBuilder;
+    
+    @GetMapping("/**")
+    public Mono<ResponseEntity<String>> proxyGetRequest(
+            @PathVariable String toolName,
+            ServerHttpRequest request) {
+        Tool tool = toolRegistry.getTool(toolName);
+        if (tool == null) {
+            return Mono.just(ResponseEntity.notFound().build());
+        }
+        
+        String path = extractPath(request);
+        return webClientBuilder.build()
+            .get()
+            .uri(tool.getBaseUrl() + path)
+            .headers(headers -> copyHeaders(request.getHeaders(), headers))
+            .retrieve()
+            .toEntity(String.class);
+    }
+    
+    // Additional methods for POST, PUT, DELETE, etc.
+}
+```
+
+### Event-Driven Integration
+
+- Use Kafka for event-driven integration
+- Define clear event schemas
+- Implement consistent event handling patterns
+- Use appropriate serialization formats
+- Handle event ordering and idempotency
+
+Example event producer:
+```java
+@Service
+public class DeviceEventProducer {
+    private final KafkaTemplate<String, DeviceEvent> kafkaTemplate;
+    
+    public void publishDeviceCreated(Device device) {
+        DeviceEvent event = new DeviceEvent(
+            UUID.randomUUID().toString(),
+            "DEVICE_CREATED",
+            LocalDateTime.now(),
+            device
+        );
+        
+        kafkaTemplate.send("device-events", device.getId(), event);
+    }
+}
+```
+
+## Best Practices
+
+1. **Consistency**: Use consistent patterns across all APIs
+2. **Simplicity**: Keep APIs simple and focused
+3. **Documentation**: Document all APIs thoroughly
+4. **Versioning**: Version APIs to support evolution
+5. **Security**: Implement proper authentication and authorization
+6. **Performance**: Optimize for performance and scalability
+7. **Monitoring**: Monitor API usage and performance
+8. **Testing**: Test APIs thoroughly
+9. **Error Handling**: Provide clear error messages
+10. **Pagination**: Use pagination for large collections

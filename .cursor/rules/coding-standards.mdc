@@ -1,0 +1,104 @@
+---
+description: General coding standards across all technologies in OpenFrame
+globs: 
+alwaysApply: false
+---
+# Coding Standards
+
+This document outlines the general coding standards that apply across all technologies in the OpenFrame project.
+
+## Code Formatting
+
+- Use consistent indentation (4 spaces for Java, 2 spaces for TypeScript/Vue)
+- Limit line length to 120 characters
+- Use UTF-8 encoding for all files
+- End files with a newline
+- Remove trailing whitespace
+- Use consistent spacing around operators and keywords
+- Use consistent brace placement (same line for Java, new line for TypeScript)
+
+## Documentation
+
+- Document all public classes, interfaces, methods, and fields
+- Use JavaDoc for Java code and JSDoc for TypeScript/JavaScript
+- Include parameter descriptions, return values, and exceptions
+- Document complex algorithms and business logic
+- Keep documentation up-to-date with code changes
+- Use meaningful comments that explain "why" not "what"
+
+## Naming Conventions
+
+- Use descriptive, meaningful names
+- Follow language-specific conventions (camelCase, PascalCase, etc.)
+- Use consistent abbreviations and acronyms
+- Avoid generic names like "data", "manager", "util", etc.
+- Prefix interfaces with "I" in Java (e.g., IUserService)
+- Use verb prefixes for methods (get, set, is, has, etc.)
+
+## Code Organization
+
+- One class per file
+- Group related functionality together
+- Separate concerns appropriately
+- Keep methods and classes focused on a single responsibility
+- Limit method length (aim for < 30 lines)
+- Limit class length (aim for < 500 lines)
+- Order methods logically (public before private, etc.)
+
+## Error Handling
+
+- Use exceptions for exceptional conditions only
+- Handle exceptions at the appropriate level
+- Log exceptions with context information
+- Don't swallow exceptions without logging
+- Use custom exceptions for domain-specific errors
+- Include appropriate stack traces in logs
+
+## Testing
+
+- Write unit tests for all business logic
+- Aim for high test coverage (>80%)
+- Use meaningful test names that describe the scenario
+- Follow the Arrange-Act-Assert pattern
+- Mock external dependencies
+- Keep tests independent and idempotent
+- Test both success and failure scenarios
+
+## Version Control
+
+- Write clear, descriptive commit messages
+- Use the imperative mood in commit messages (e.g., "Add feature" not "Added feature")
+- Keep commits focused on a single change
+- Reference issue numbers in commit messages
+- Squash commits before merging
+- Follow the branching strategy (feature branches, etc.)
+
+## Code Review
+
+- Review all code before merging
+- Check for adherence to coding standards
+- Verify test coverage
+- Look for security vulnerabilities
+- Ensure proper error handling
+- Validate performance considerations
+- Provide constructive feedback
+
+## Security Practices
+
+- Validate all user input
+- Use parameterized queries for database access
+- Sanitize output to prevent XSS
+- Use secure communication (HTTPS, TLS)
+- Don't hardcode sensitive information
+- Follow the principle of least privilege
+- Implement proper authentication and authorization
+
+## Performance Considerations
+
+- Use efficient algorithms and data structures
+- Minimize database queries
+- Use caching where appropriate
+- Optimize resource usage
+- Consider pagination for large result sets
+- Profile and benchmark critical code paths
+- Avoid premature optimization
