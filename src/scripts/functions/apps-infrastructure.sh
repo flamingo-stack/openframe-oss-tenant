@@ -105,8 +105,6 @@ function infra_cassandra_deploy() {
   helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
 
   echo "Deploying Cassandra"
-  # TODO: replace with bitnami/cassandra and remove docker build and files
-  # kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/openframe-cassandra/cassandra.yaml
   helm upgrade -i openframe-cassandra bitnami/cassandra \
     -n infrastructure --create-namespace \
     --version 12.2.1 \
@@ -120,7 +118,6 @@ function infra_cassandra_wait() {
 
 function infra_cassandra_delete() {
   echo "Deleting Cassandra"
-  # kubectl -n infrastructure delete -k ./kind-cluster/apps/infrastructure/openframe-cassandra/manifests
   helm -n infrastructure uninstall openframe-cassandra
 }
 

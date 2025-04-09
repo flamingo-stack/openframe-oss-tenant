@@ -1,7 +1,6 @@
 # Deprecated builds
 + ./infrastructure/mongodb
-./infrastructure/cassandra
-# kind-cluster/apps/infrastructure/openframe-cassandra/manifests/base/cassandra.yaml:71:          image: ghcr.io/flamingo-cx/openframe-cassandra:latest
++ ./infrastructure/cassandra
 ./infrastructure/meshcentral/nginx
 ./monitoring
 ./infrastructure/meshcentral/nginx
@@ -29,3 +28,6 @@ kind-cluster/apps/infrastructure/openframe-nifi/base/nifi.yaml:85:          imag
 kind-cluster/apps/infrastructure/openframe-stream/base/stream.yaml:19:          image: ghcr.io/flamingo-cx/openframe-stream:latest
 kind-cluster/apps/infrastructure/openframe-management/base/management.yaml:19:          image: ghcr.io/flamingo-cx/openframe-management:latest
 kind-cluster/apps/infrastructure/openframe-ui/base/openframe-ui.yaml:19:          image: ghcr.io/flamingo-cx/openframe-ui:latest
+
+# this is official image
+kind-cluster/apps/infrastructure/openframe-cassandra/manifests/base/cassandra.yaml:71:          image: ghcr.io/flamingo-cx/openframe-cassandra:latest

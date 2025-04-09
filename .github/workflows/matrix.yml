@@ -65,27 +65,6 @@ jobs:
               "artifact_name": "openframe-stream"
             },
             {
-              "name": "cassandra",
-              "type": "container",
-              "path": "./infrastructure/cassandra",
-              "artifact_name": "",
-              "build_args": {
-                "CASSANDRA_CLUSTER_NAME": "openframe_cluster",
-                "CASSANDRA_DC": "datacenter1",
-                "CASSANDRA_START_RPC": "true",
-                "CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS": "128",
-                "CASSANDRA_NATIVE_TRANSPORT_PORT_SSL": "9142",
-                "CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE": "256MB",
-                "CASSANDRA_STARTUP_TIMEOUT": "300",
-                "CASSANDRA_SYSTEM_AUTH_BOOTSTRAP_DELAY": "0",
-                "GOSSIP_WAIT_TIME_IN_MS": "0",
-                "HEAP_NEWSIZE": "128M",
-                "MAX_HEAP_SIZE": "512M",
-                "LOCAL_JMX": "no",
-                "JMX_PORT": "7199"
-              }
-            },
-            {
               "name": "nifi",
               "type": "container",
               "path": "./infrastructure/nifi",
