@@ -65,6 +65,11 @@ jobs:
               "artifact_name": "openframe-stream"
             },
             {
+              "name": "ui",
+              "type": "container",
+              "path": "./services/openframe-ui"
+            },
+            {
               "name": "nifi",
               "type": "container",
               "path": "./infrastructure/nifi",
@@ -74,11 +79,6 @@ jobs:
                 "SINGLE_USER_CREDENTIALS_USERNAME": "openframe",
                 "SINGLE_USER_CREDENTIALS_PASSWORD": "password123456789"
               }
-            },
-            {
-              "name": "postgresql",
-              "type": "container",
-              "path": "./infrastructure/postgresql"
             },
             {
               "name": "authentik-postgresql",
@@ -423,11 +423,6 @@ jobs:
               "name": "fleetmdm",
               "type": "container",
               "path": "./infrastructure/fleetmdm"
-            },
-            {
-              "name": "ui",
-              "type": "container",
-              "path": "./services/openframe-ui"
             },
             {
               "name": "meshcentral",

@@ -3,11 +3,19 @@
 + ./infrastructure/cassandra
 ./infrastructure/meshcentral/nginx
 ./monitoring
-./infrastructure/meshcentral/nginx
 
 # USED
 # grep -rHn 'image: ' kind-cluster/apps/ | grep flamingo-cx
-kind-cluster/apps/meshcentral/base/meshcentral.yaml:22:        image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
+kind-cluster/apps/infrastructure/openframe-api/base/api.yaml:19:          image: ghcr.io/flamingo-cx/openframe-api:latest
+kind-cluster/apps/infrastructure/openframe-gateway/base/gateway.yaml:19:          image: ghcr.io/flamingo-cx/openframe-gateway:latest
+kind-cluster/apps/infrastructure/openframe-config/base/config-server.yaml:19:          image: ghcr.io/flamingo-cx/openframe-config:latest
+kind-cluster/apps/infrastructure/openframe-stream/base/stream.yaml:19:          image: ghcr.io/flamingo-cx/openframe-stream:latest
+kind-cluster/apps/infrastructure/openframe-management/base/management.yaml:19:          image: ghcr.io/flamingo-cx/openframe-management:latest
+kind-cluster/apps/infrastructure/openframe-ui/base/openframe-ui.yaml:19:          image: ghcr.io/flamingo-cx/openframe-ui:latest
+
+kind-cluster/apps/infrastructure/openframe-nifi/base/nifi.yaml:85:          image: ghcr.io/flamingo-cx/openframe-nifi:latest
+
+kind-cluster/apps/authentik/deployment.yaml:109:        image: ghcr.io/flamingo-cx/openframe-postgresql:latest
 
 kind-cluster/apps/tactical-rmm/tactical-websockets.yaml:34:        image: ghcr.io/flamingo-cx/openframe-tactical-websockets:latest
 kind-cluster/apps/tactical-rmm/tactical-nats.yaml:38:        image: ghcr.io/flamingo-cx/openframe-tactical-nats:latest
@@ -19,15 +27,7 @@ kind-cluster/apps/tactical-rmm/tactical-backend.yaml:45:        image: ghcr.io/f
 
 kind-cluster/apps/fleet/deployment.yaml:108:        image: ghcr.io/flamingo-cx/openframe-fleetmdm:latest
 
-kind-cluster/apps/authentik/deployment.yaml:109:        image: ghcr.io/flamingo-cx/openframe-postgresql:latest
-
-kind-cluster/apps/infrastructure/openframe-api/base/api.yaml:19:          image: ghcr.io/flamingo-cx/openframe-api:latest
-kind-cluster/apps/infrastructure/openframe-gateway/base/gateway.yaml:19:          image: ghcr.io/flamingo-cx/openframe-gateway:latest
-kind-cluster/apps/infrastructure/openframe-config/base/config-server.yaml:19:          image: ghcr.io/flamingo-cx/openframe-config:latest
-kind-cluster/apps/infrastructure/openframe-nifi/base/nifi.yaml:85:          image: ghcr.io/flamingo-cx/openframe-nifi:latest
-kind-cluster/apps/infrastructure/openframe-stream/base/stream.yaml:19:          image: ghcr.io/flamingo-cx/openframe-stream:latest
-kind-cluster/apps/infrastructure/openframe-management/base/management.yaml:19:          image: ghcr.io/flamingo-cx/openframe-management:latest
-kind-cluster/apps/infrastructure/openframe-ui/base/openframe-ui.yaml:19:          image: ghcr.io/flamingo-cx/openframe-ui:latest
+kind-cluster/apps/meshcentral/base/meshcentral.yaml:22:        image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
 
 # this is official image
 kind-cluster/apps/infrastructure/openframe-cassandra/manifests/base/cassandra.yaml:71:          image: ghcr.io/flamingo-cx/openframe-cassandra:latest
