@@ -25,54 +25,54 @@ jobs:
             {
               "name": "core",
               "type": "java",
-              "path": "libs/openframe-core",
+              "path": "./src/openframe/libs/openframe-core",
               "artifact_name": "openframe-core"
             },
             {
               "name": "data",
               "type": "java",
-              "path": "libs/openframe-data",
+              "path": "./src/openframe/libs/openframe-data",
               "artifact_name": "openframe-data"
             },
             {
               "name": "api",
               "type": "java",
-              "path": "services/openframe-api",
+              "path": "./src/openframe/services/openframe-api",
               "artifact_name": "openframe-api"
             },
             {
               "name": "config",
               "type": "java",
-              "path": "services/openframe-config",
+              "path": "./src/openframe/services/openframe-config",
               "artifact_name": "openframe-config"
             },
             {
               "name": "gateway",
               "type": "java",
-              "path": "services/openframe-gateway",
+              "path": "./src/openframe/services/openframe-gateway",
               "artifact_name": "openframe-gateway"
             },
             {
               "name": "management",
               "type": "java",
-              "path": "services/openframe-management",
+              "path": "./src/openframe/services/openframe-management",
               "artifact_name": "openframe-management"
             },
             {
               "name": "stream",
               "type": "java",
-              "path": "services/openframe-stream",
+              "path": "./src/openframe/services/openframe-stream",
               "artifact_name": "openframe-stream"
             },
             {
               "name": "ui",
               "type": "container",
-              "path": "./services/openframe-ui"
+              "path": "./src/openframe/services/openframe-ui"
             },
             {
               "name": "nifi",
               "type": "container",
-              "path": "./infrastructure/nifi",
+              "path": "./src/openframe/nifi",
               "build_args": {
                 "NIFI_WEB_HTTPS_PORT": "8443",
                 "NIFI_WEB_HTTP_HOST": "0.0.0.0",
