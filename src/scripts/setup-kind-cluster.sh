@@ -28,7 +28,7 @@ if ! [ "kind" == "$(kind get clusters --quiet)" ]; then
         exit 1
     fi
 
-    kind create cluster --config ./src/kind/cluster.yaml --image kindest/node:$K8S_VERSION
+    kind create cluster --config ./deploy/kind/cluster.yaml --image kindest/node:$K8S_VERSION
 else
     echo "Cluster already setup"
 fi
