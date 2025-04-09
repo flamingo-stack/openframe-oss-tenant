@@ -2,11 +2,64 @@ events {
     worker_connections 1024;
 }
 http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    access_log /dev/stdout main;
+    error_log  /dev/stderr notice;
+    
+    sendfile on;
+    
     server {
         listen 80;
+        
+        # Static files - preserve existing functionality
         location /openframe_public {
             root ${MESH_DIR}/nginx;
             autoindex on;
+        }
+        
+        # API endpoints
+        location /api/ {
+            root ${MESH_DIR}/nginx-api;
+            
+            # Include FastCGI parameters
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api$fastcgi_script_name;
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+            fastcgi_param QUERY_STRING $query_string;
+            fastcgi_param REQUEST_METHOD $request_method;
+            fastcgi_param CONTENT_TYPE $content_type;
+            fastcgi_param CONTENT_LENGTH $content_length;
+            fastcgi_param HTTP_X_MESHAUTH $http_x_meshauth;
+            
+            # Define API routes
+            location ~ ^/api/devices/?$ {
+                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/devices.sh;
+            }
+            
+            location ~ ^/api/devices/([^/]+)/?$ {
+                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/devices.sh;
+                fastcgi_param PATH_INFO /$1;
+            }
+            
+            location ~ ^/api/devices/([^/]+)/command/?$ {
+                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/commands.sh;
+                fastcgi_param PATH_INFO /$1;
+            }
+            
+            location ~ ^/api/devices/([^/]+)/tunnel/?$ {
+                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/tunnels.sh;
+                fastcgi_param PATH_INFO /$1;
+            }
         }
     }
 }

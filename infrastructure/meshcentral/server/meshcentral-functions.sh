@@ -246,12 +246,26 @@ configure_and_start_nginx() {
   echo "Configuring and starting Nginx..."
   # Create nginx config template to be processed by envsubst at runtime
   mkdir -p /etc/nginx
-
+  
+  mkdir -p ${MESH_DIR}/nginx-api/api ${MESH_DIR}/nginx-api/helpers
+  
+  if [ -d "/nginx-api" ]; then
+    cp -r /nginx-api/* ${MESH_DIR}/nginx-api/ 2>/dev/null || true
+  fi
+  
+  chmod +x ${MESH_DIR}/nginx-api/api/*.sh 2>/dev/null || true
+  chmod +x ${MESH_DIR}/nginx-api/helpers/*.sh 2>/dev/null || true
+  
+  echo "Starting fcgiwrap..."
+  mkdir -p /var/run
+  spawn-fcgi -s /var/run/fcgiwrap.socket -u node -g node -U nginx -G nginx -- /usr/bin/fcgiwrap
+  chmod 660 /var/run/fcgiwrap.socket
+  
   # Process the template with envsubst
   envsubst </nginx.conf.template >/etc/nginx/nginx.conf
-
+  
   echo "Nginx config file: /etc/nginx/nginx.conf"
-  cat /etc/nginx/nginx.conf
+  
   # Start Nginx
   nginx &
   echo "Nginx started"
