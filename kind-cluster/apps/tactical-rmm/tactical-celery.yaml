@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-celery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-celery
+  template:
+    metadata:
+      labels:
+        app: tactical-celery
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
+      containers:
+      - name: celery
+        image: ghcr.io/flamingo-cx/openframe-tactical-celery:latest
+        args: ["tactical-celery"]
+        envFrom:
+        - configMapRef:
+            name: tactical-common-config
+        volumeMounts:
+        - name: celery-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: celery-data
+        persistentVolumeClaim:
+          claimName: tactical-celery-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tactical-celery-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-celery
+spec:
+  selector:
+    app: tactical-celery
+  ports:
+  - port: 8000
+    targetPort: 8000
