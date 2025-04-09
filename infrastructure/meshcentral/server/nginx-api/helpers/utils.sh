@@ -35,6 +35,19 @@ authenticate() {
     return 0
   fi
   
+  source /meshcentral-functions.sh
+  setup_mesh_token
+  
+  token=$(get_stored_token)
+  if [ -z "$token" ]; then
+    return 1
+  fi
+  
+  if is_token_valid "$token"; then
+    echo "$token"
+    return 0
+  fi
+  
   return 1
 }
 
