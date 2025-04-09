@@ -83,7 +83,7 @@ jobs:
             {
               "name": "authentik-postgresql",
               "type": "container",
-              "path": "./infrastructure/postgresql",
+              "path": "./src/authentik/postgresql",
               "build_args": {
                 "POSTGRES_USER": "authentik-user",
                 "POSTGRES_PASSWORD": "authentik-password-1234",
