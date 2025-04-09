@@ -16,7 +16,7 @@ http {
     
     # Set up environment variable with MeshCentral token
     # This makes authentication transparent to API consumers
-    map "" $mesh_token {
+    map $http_host $mesh_token {
         default "${MESH_DIR}/mesh_token";
     }
     
