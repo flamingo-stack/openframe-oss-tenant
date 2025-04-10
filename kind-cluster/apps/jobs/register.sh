@@ -502,6 +502,6 @@ echo "- Authentik: http://authentik.192.168.100.100.nip.io"
 echo "- OpenFrame Config Service: http://localhost:8090"
 echo "- OpenFrame Stream Service: http://localhost:8091"
 echo "- OpenFrame API Service: http://localhost:8092"
-
-echo "Ingresses:"
+echo
+echo "All ingresses:"
 kubectl get ingress -A | tr -s "  " " " | cut -d " " -f 4 | grep -v HOSTS

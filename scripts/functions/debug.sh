@@ -11,9 +11,8 @@ function debug_app() {
   # Use the passed parameters instead of hardcoded values
   SERVICE_NAME="$1"
   WORKLOAD_NAME="$2"
-  NAMESPACE="$3"
-  LOCAL_PORT="$4"
-  REMOTE_PORT_NAME="$5"
+  LOCAL_PORT="$3"
+  REMOTE_PORT_NAME="$4"
 
   # Handle cleanup on Ctrl+C
   trap cleanup INT
@@ -23,8 +22,7 @@ function debug_app() {
   telepresence intercept "$SERVICE_NAME" \
     --service "$INTERCEPT_NAME" \
     --workload "$WORKLOAD_NAME" \
-    --port "$LOCAL_PORT:$REMOTE_PORT_NAME" \
-    --namespace "$NAMESPACE"
+    --port "$LOCAL_PORT:$REMOTE_PORT_NAME"
 
   # Keep script alive until interrupted
   echo "Intercept running. Press Ctrl+C to stop..."
