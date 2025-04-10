@@ -1,4 +1,4 @@
-# ![OpenFrame Logo](services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
+# ![OpenFrame Logo](openframe/services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
 
 [![OpenFrame Build Java & Container Images](https://github.com/Flamingo-CX/openframe/actions/workflows/build.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build.yml)
 

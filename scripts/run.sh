@@ -1,24 +1,27 @@
 #!/bin/bash
 
+# Get the directory where the script is located, regardless of where it's called from
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 # Source functions in correct order
-source ./functions/show-help.sh
+source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help show_help_apps
 
-source ./functions/helm-repo-ensure.sh
+source "${SCRIPT_DIR}/functions/helm-repo-ensure.sh"
 export -f helm_repo_ensure
 
-source ./functions/wait.sh
+source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
-source ./functions/variables.sh
-source ./functions/build-app.sh
+source "${SCRIPT_DIR}/functions/variables.sh"
+source "${SCRIPT_DIR}/functions/build-app.sh"
 export -f build_app
 
-source ./functions/debug.sh
+source "${SCRIPT_DIR}/functions/debug.sh"
 export -f debug_app
 
 # Source remaining functions
-for s in ./functions/apps-*.sh; do
+for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   source "$s"
   # Export all functions from the sourced file
   while IFS= read -r func; do
@@ -41,18 +44,18 @@ fi
 
 case "$1" in
   p|pre)
-    bash ./pre-check.sh
+    bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
   k|cluster)
-    bash ./setup-kind-cluster.sh
+    bash "${SCRIPT_DIR}/setup-kind-cluster.sh"
     ;;
   d|down)
     kind delete cluster
     ;;
   a|app)
     if [ -n "$APP" ]; then
-      bash $0 pre && \
-      bash ./manage-apps.sh "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash "$0" pre && \
+      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
       echo "App name is required"
       exit 1
@@ -60,15 +63,15 @@ case "$1" in
     ;;
   b|bootstrap)
     # Bootstrap whole cluster with all apps
-    bash $0 pre && \
-    bash $0 cluster && \
-    bash $0 app all deploy "$IFWAIT"
+    bash "$0" pre && \
+    bash "$0" cluster && \
+    bash "$0" app all deploy "$IFWAIT"
     ;;
   m|minimal)
     # Bootstrap whole cluster with base apps
-    bash $0 pre && \
-    bash $0 cluster && \
-    bash $0 app minimal deploy "$IFWAIT"
+    bash "$0" pre && \
+    bash "$0" cluster && \
+    bash "$0" app minimal deploy "$IFWAIT"
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images

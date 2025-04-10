@@ -45,9 +45,7 @@ kind-cluster/apps/meshcentral/base/meshcentral.yaml:22:        image: ghcr.io/fl
 + ./openframe/services/openframe-stream/Dockerfile
 + ./openframe/services/openframe-management/Dockerfile
 + ./openframe/services/openframe-ui/Dockerfile
-
-+ ./openframe/nifi/Dockerfile
-
++ ./infrastructure/nifi/Dockerfile
 ./integrated-tools/authentik/postgresql/Dockerfile
 
 ./integrated-tools/fleetmdm/Dockerfile
