@@ -6,10 +6,14 @@ if [ "$REQUEST_METHOD" = "OPTIONS" ]; then
   handle_options
 fi
 
-TOKEN="$MESH_TOKEN"
+if [ -f "$MESH_TOKEN" ]; then
+  TOKEN=$(cat "$MESH_TOKEN")
+else
+  TOKEN=$(authenticate)
+fi
 
 if [ -z "$TOKEN" ]; then
-  send_error "MeshCentral token not found" 500
+  send_error "MeshCentral token not found or invalid" 500
 fi
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
