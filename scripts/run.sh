@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Get the directory where the script is located, regardless of where it's called from
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
 # Source functions in correct order
 source "${SCRIPT_DIR}/functions/show-help.sh"
