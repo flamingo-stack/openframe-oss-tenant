@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openframe-nifi-jmx-config
+data:
+  config.yml: |
+    rules:
+      - pattern: "org.apache.nifi<type=(.+), name=(.+)><>Value"
+        name: nifi_$1_$2

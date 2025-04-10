@@ -14,4 +14,3 @@ RUN echo "java.arg.100=-javaagent:/opt/nifi/jmx_exporter/jmx_prometheus_javaagen
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD pgrep java || exit 1
-
