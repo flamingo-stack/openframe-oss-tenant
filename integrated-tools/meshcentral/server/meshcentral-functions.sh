@@ -261,8 +261,7 @@ configure_and_start_nginx() {
   spawn-fcgi -s /var/run/fcgiwrap.socket -u node -g node -U nginx -G nginx -- /usr/bin/fcgiwrap
   chmod 660 /var/run/fcgiwrap.socket
   
-  # Process the template with envsubst
-  envsubst </nginx.conf.template >/etc/nginx/nginx.conf
+  envsubst '${MESH_DIR}' </nginx.conf.template >/etc/nginx/nginx.conf
   
   echo "Nginx config file: /etc/nginx/nginx.conf"
   
