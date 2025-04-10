@@ -46,7 +46,7 @@ if [ ! -f "${MESH_DIR}/mesh_token" ]; then
   setup_mesh_user
 
   # Copy the API files
-  mv -rf /nginx-api ${MESH_DIR}
+  cp -rf /nginx-api ${MESH_DIR}
 
   # Make the API files executable
   chmod -R 755 ${MESH_DIR}/nginx-api
