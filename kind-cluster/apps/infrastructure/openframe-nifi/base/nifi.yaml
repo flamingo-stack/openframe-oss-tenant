@@ -80,9 +80,26 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      # initContainers:
+      # - name: init-jmx
+      #   image: busybox
+      #   command:
+      #     - "sh"
+      #     - "-c"
+      #     - "wget -O /opt/nifi/jmx_exporter/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar"
+      #   volumeMounts:
+      #   - name: jmx-exporter
+      #     mountPath: /opt/nifi/jmx_exporter
       containers:
         - name: openframe-nifi
           image: ghcr.io/flamingo-cx/openframe-nifi:latest
+          # image: apache/nifi:latest
+          # command:
+          #   - "sh"
+          #   - "-c"
+          #   - |
+          #     echo "java.arg.100=-javaagent:/opt/nifi/jmx_exporter/jmx_prometheus_javaagent.jar=9096:/opt/nifi/jmx_exporter/config.yml" >> /opt/nifi/nifi-current/conf/bootstrap.conf;
+          #     exec ../scripts/start.sh
           ports:
             - containerPort: 8443
               name: https
@@ -107,7 +124,14 @@ spec:
               value: "openframe-nifi.192.168.100.100.nip.io"
             - name: NIFI_WEB_PROXY_PORT
               value: "8443"
+            # - name: JAVA_OPTS
+            #   value: "java.arg.100=-javaagent:/opt/nifi/jmx_exporter/jmx_prometheus_javaagent.jar=9096:/opt/jmx_exporter/config.yml"
           volumeMounts:
+            # - name: jmx-exporter
+            #   mountPath: /opt/nifi/jmx_exporter
+            # - name: jmx-config
+            #   mountPath: /opt/nifi/jmx_exporter/config.yml
+            #   subPath: config.yml
             - name: openframe-nifi-content
               mountPath: /opt/nifi/nifi-current/content_repository
             - name: openframe-nifi-database
@@ -144,6 +168,11 @@ spec:
               memory: "4Gi"
               cpu: "2"
       volumes:
+        # - name: jmx-exporter
+        #   emptyDir: {}
+        # - name: jmx-config
+        #   configMap:
+        #     name: openframe-nifi-jmx-config
         - name: openframe-nifi-content
           persistentVolumeClaim:
             claimName: openframe-nifi-content

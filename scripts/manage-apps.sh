@@ -3,6 +3,11 @@
 APP=$1
 ACTION=$2
 
+if [ "$APP" == "-h" ] || [ "$APP" == "--help" ] || [ "$APP" == "-Help" ]; then
+  show_help_apps
+  exit 0
+fi
+
 if [ "$ACTION" == "debug" ]; then
   LOCAL_PORT="$4"
   REMOTE_PORT_NAME="$5"
