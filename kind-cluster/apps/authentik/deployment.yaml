@@ -106,7 +106,7 @@ spec:
         fsGroup: 999
       containers:
       - name: postgresql
-        image: ghcr.io/flamingo-cx/openframe-postgresql:latest
+        image: ghcr.io/flamingo-cx/openframe-authentik-postgresql:latest
         ports:
         - containerPort: 5432
         env:
@@ -114,8 +114,8 @@ spec:
           value: authentik-user
         - name: POSTGRES_PASSWORD
           value: authentik-password-1234
-        - name: POSTGRES_DB
-          value: authentik-database-authentik
+        # - name: POSTGRES_DB
+        #   value: authentik-database-authentik
         - name: POSTGRES_MULTIPLE_DATABASES
           value: authentik-database,authentik-database-authentik
         volumeMounts:
