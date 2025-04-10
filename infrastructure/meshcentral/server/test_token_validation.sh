@@ -32,11 +32,18 @@ is_token_valid() {
     return 1
   fi
   
+  #   return 0
+  # else
+  #   return 1
+  # fi
+  
+  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken \"$token\" ServerInfo"
+  
   if [[ "$token" == valid_* ]] || [[ "$token" == refreshed_valid_* ]]; then
-    echo "Token is valid"
+    echo "{\"server\":{\"name\":\"MeshCentral\",\"version\":\"1.1.43\",\"hostname\":\"meshcentral.example.com\",\"platform\":\"linux\",\"self\":\"https://meshcentral.example.com\"}}"
     return 0
   else
-    echo "Token is invalid"
+    echo "Error: Unable to authenticate using the provided token"
     return 1
   fi
 }
@@ -132,11 +139,18 @@ is_token_valid() {
     return 1
   fi
   
+  #   return 0
+  # else
+  #   return 1
+  # fi
+  
+  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken \"$token\" ServerInfo"
+  
   if [[ "$token" == valid_* ]]; then
-    echo "Token is valid"
+    echo "{\"server\":{\"name\":\"MeshCentral\",\"version\":\"1.1.43\",\"hostname\":\"meshcentral.example.com\",\"platform\":\"linux\",\"self\":\"https://meshcentral.example.com\"}}"
     return 0
   else
-    echo "Token is invalid"
+    echo "Error: Unable to authenticate using the provided token"
     return 1
   fi
 }
@@ -212,11 +226,18 @@ is_token_valid() {
     return 1
   fi
   
+  #   return 0
+  # else
+  #   return 1
+  # fi
+  
+  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken \"$token\" ServerInfo"
+  
   if [[ "$token" == valid_* ]]; then
-    echo "Token is valid"
+    echo "{\"server\":{\"name\":\"MeshCentral\",\"version\":\"1.1.43\",\"hostname\":\"meshcentral.example.com\",\"platform\":\"linux\",\"self\":\"https://meshcentral.example.com\"}}"
     return 0
   else
-    echo "Token is invalid"
+    echo "Error: Unable to authenticate using the provided token"
     return 1
   fi
 }
