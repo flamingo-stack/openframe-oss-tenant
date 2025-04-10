@@ -14,18 +14,17 @@ function setup_mesh_token() {
 
   # If we get here, we need to generate a new token
   echo "Generating new mesh token..."
-  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral --logintoken user//${MESH_USER} --configfile ${MESH_DIR}/config.json --logintokenkey"
+  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral --configfile ${MESH_DIR}/config.json --logintoken user//${MESH_USER}"
   mesh_token=$(node ${MESH_DIR}/node_modules/meshcentral \
-    --logintoken user//${MESH_USER} \
     --configfile ${MESH_DIR}/config.json \
-    --logintokenkey)
+    --logintoken user//${MESH_USER})
 
   if [[ ${#mesh_token} -eq 160 ]]; then
     echo ${mesh_token} >${MESH_DIR}/mesh_token
     echo "Mesh token ${mesh_token} set in filesystem"
   else
     echo "Failed to generate mesh token. Fix the error and restart the mesh container"
-    exit 1
+    # exit 1
   fi
 
   sleep 2
