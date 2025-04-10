@@ -21,6 +21,8 @@ RUN chmod +x /meshcentral-functions.sh
 
 COPY nginx.conf.template /
 COPY fastcgi_params /etc/nginx/
+COPY nginx-api/ /nginx-api/
+RUN chmod -R +x /nginx-api/api/*.sh /nginx-api/helpers/*.sh
 
 COPY config.json ${MESH_TEMP_DIR}
 
