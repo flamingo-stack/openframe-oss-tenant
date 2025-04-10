@@ -1,4 +1,7 @@
-FROM fleetdm/fleet:v4.60.1
+FROM --platform=$BUILDPLATFORM fleetdm/fleet:v4.60.1
+
+# Metadata
+LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
 
 USER root
 
@@ -47,11 +50,14 @@ COPY init-fleet.sh /usr/share/init-fleet.sh
 COPY entrypoint.sh /entrypoint.sh
 COPY fleet.yml /etc/fleet/fleet.yml
 
-RUN apk add --no-cache bind-tools curl iputils netcat-openbsd nodejs npm && \
+RUN apk add --no-cache bind-tools curl iputils netcat-openbsd nodejs npm && rm -rf /var/cache/apk/* && \
     npm install -g fleetctl@4.60.1 && \
     chmod 777 /usr/share/init-fleet.sh && \
     chmod +x /usr/share/init-fleet.sh /entrypoint.sh
 
 EXPOSE ${FLEET_SERVER_PORT}
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:${FLEET_SERVER_PORT}/setup || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
