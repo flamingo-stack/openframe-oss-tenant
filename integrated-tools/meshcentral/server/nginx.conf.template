@@ -10,9 +10,16 @@ http {
                     '"$http_user_agent" "$http_x_forwarded_for"';
     
     access_log /dev/stdout main;
-    error_log  /dev/stderr notice;
+    error_log  /dev/stderr debug;
     
     sendfile on;
+    
+    # FastCGI settings
+    fastcgi_buffers 16 16k;
+    fastcgi_buffer_size 32k;
+    fastcgi_connect_timeout 60;
+    fastcgi_send_timeout 60;
+    fastcgi_read_timeout 60;
     
     # Set up environment variable with MeshCentral token
     # This makes authentication transparent to API consumers
@@ -36,6 +43,10 @@ http {
             
             # Set token file path for all API requests
             fastcgi_param MESH_TOKEN "${MESH_DIR}/mesh_token";
+            fastcgi_param MESH_DIR "${MESH_DIR}";
+            
+            # Add error handling
+            error_page 502 = @error502;
             
             # Define API routes
             location ~ ^/api/devices/?$ {
@@ -61,6 +72,12 @@ http {
                 fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/tunnels.sh;
                 fastcgi_param PATH_INFO /$1;
             }
+        }
+        
+        # Error handling location
+        location @error502 {
+            default_type application/json;
+            return 502 '{"error": "Bad Gateway", "details": "FastCGI process failed"}';
         }
     }
 }
