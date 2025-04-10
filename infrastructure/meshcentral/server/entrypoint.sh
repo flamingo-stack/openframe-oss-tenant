@@ -48,6 +48,8 @@ if [ ! -f "${MESH_DIR}/mesh_token" ]; then
   # Copy the API files
   cp -rf /nginx-api ${MESH_DIR}
 
+  echo "Copying the API files"
+
   # Make the API files executable
   chmod -R 755 ${MESH_DIR}/nginx-api
 
