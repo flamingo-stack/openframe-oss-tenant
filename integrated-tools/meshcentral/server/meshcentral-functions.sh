@@ -14,9 +14,9 @@ function setup_mesh_token() {
 
   # If we get here, we need to generate a new token
   echo "Generating new mesh token..."
-  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral --logintoken ${MESH_USER} --configfile ${MESH_DIR}/config.json --logintokenkey"
+  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral --logintoken user//${MESH_USER} --configfile ${MESH_DIR}/config.json --logintokenkey"
   mesh_token=$(node ${MESH_DIR}/node_modules/meshcentral \
-    --logintoken ${MESH_USER} \
+    --logintoken user//${MESH_USER} \
     --configfile ${MESH_DIR}/config.json \
     --logintokenkey)
 
