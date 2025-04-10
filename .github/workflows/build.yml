@@ -96,32 +96,32 @@ jobs:
             nifi:
               - './openframe/nifi/**'
             postgresql:
-              - './authentik/postgresql/**'
+              - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
-              - './tactical-rmm/tactical-frontend/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-frontend/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-nginx:
-              - './tactical-rmm/tactical-nginx/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-nginx/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-backend:
-              - './tactical-rmm/tactical-base/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-nats:
-              - './tactical-rmm/tactical-base/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-websockets:
-              - './tactical-rmm/tactical-base/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-celery:
-              - './tactical-rmm/tactical-base/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-celerybeat:
-              - './tactical-rmm/tactical-base/**'
-              - './tactical-rmm/shared/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             fleetmdm:
-              - './fleetmdm/**'
+              - './integrated-tools/fleetmdm/**'
             meshcentral:
-              - './meshcentral/server/**'
+              - './integrated-tools/meshcentral/server/**'
 
   matrix:
     uses: ./.github/workflows/matrix.yml

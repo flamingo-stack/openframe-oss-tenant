@@ -83,7 +83,7 @@ jobs:
             {
               "name": "authentik-postgresql",
               "type": "container",
-              "path": "./authentik/postgresql",
+              "path": "./integrated-tools/authentik/postgresql",
               "build_args": {
                 "POSTGRES_USER": "authentik-user",
                 "POSTGRES_PASSWORD": "authentik-password-1234",
@@ -93,8 +93,8 @@ jobs:
             {
               "name": "tactical-frontend",
               "type": "container",
-              "path": "./tactical-rmm/tactical-frontend",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-frontend",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -140,8 +140,8 @@ jobs:
             {
               "name": "tactical-nginx",
               "type": "container",
-              "path": "./tactical-rmm/tactical-nginx",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-nginx",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -187,8 +187,8 @@ jobs:
             {
               "name": "tactical-backend",
               "type": "container",
-              "path": "./tactical-rmm/tactical-base",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -234,8 +234,8 @@ jobs:
             {
               "name": "tactical-nats",
               "type": "container",
-              "path": "./tactical-rmm/tactical-base",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -281,8 +281,8 @@ jobs:
             {
               "name": "tactical-websockets",
               "type": "container",
-              "path": "./tactical-rmm/tactical-base",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -328,8 +328,8 @@ jobs:
             {
               "name": "tactical-celery",
               "type": "container",
-              "path": "./tactical-rmm/tactical-base",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -375,8 +375,8 @@ jobs:
             {
               "name": "tactical-celerybeat",
               "type": "container",
-              "path": "./tactical-rmm/tactical-base",
-              "context": "./tactical-rmm",
+              "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -422,12 +422,12 @@ jobs:
             {
               "name": "fleetmdm",
               "type": "container",
-              "path": "./fleetmdm"
+              "path": "./integrated-tools/fleetmdm"
             },
             {
               "name": "meshcentral",
               "type": "container",
-              "path": "./meshcentral/server",
+              "path": "./integrated-tools/meshcentral/server",
               "build_args": {
                 "MESH_DIR": "/opt/mesh",
                 "MESH_TEMP_DIR": "/tmp/mesh",
