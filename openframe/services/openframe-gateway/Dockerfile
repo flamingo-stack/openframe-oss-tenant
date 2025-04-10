@@ -12,4 +12,13 @@ EXPOSE 8100
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8100/management/v1/health || exit 1
 
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Change ownership of the application files
+RUN chown -R appuser:appgroup /app
+
+# Switch to the new user
+USER appuser
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
