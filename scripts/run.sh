@@ -1,24 +1,24 @@
 #!/bin/bash
 
 # Source functions in correct order
-source ./scripts/functions/show-help.sh
+source ./functions/show-help.sh
 export -f show_help show_help_apps
 
-source ./scripts/functions/helm-repo-ensure.sh
+source ./functions/helm-repo-ensure.sh
 export -f helm_repo_ensure
 
-source ./scripts/functions/wait.sh
+source ./functions/wait.sh
 export -f wait_for_app
 
-source ./scripts/functions/variables.sh
-source ./scripts/functions/build-app.sh
+source ./functions/variables.sh
+source ./functions/build-app.sh
 export -f build_app
 
-source ./scripts/functions/debug.sh
+source ./functions/debug.sh
 export -f debug_app
 
 # Source remaining functions
-for s in ./scripts/functions/apps-*.sh; do
+for s in ./functions/apps-*.sh; do
   source "$s"
   # Export all functions from the sourced file
   while IFS= read -r func; do
@@ -41,10 +41,10 @@ fi
 
 case "$1" in
   p|pre)
-    bash ./scripts/pre-check.sh
+    bash ./pre-check.sh
     ;;
   k|cluster)
-    bash ./scripts/setup-kind-cluster.sh
+    bash ./setup-kind-cluster.sh
     ;;
   d|down)
     kind delete cluster
@@ -52,7 +52,7 @@ case "$1" in
   a|app)
     if [ -n "$APP" ]; then
       bash $0 pre && \
-      bash ./scripts/manage-apps.sh "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash ./manage-apps.sh "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
       echo "App name is required"
       exit 1
