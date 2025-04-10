@@ -21,9 +21,8 @@ on:
     types: [closed]
     branches: [main]
     paths:
-      - 'libs/**'
-      - 'services/**'
-      - 'infrastructure/**'
+      - 'openframe/**'
+      - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
 
