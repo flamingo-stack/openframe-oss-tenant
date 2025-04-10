@@ -37,8 +37,6 @@ jobs:
     name: Check for changes
     runs-on: ubuntu-latest
     outputs:
-      core: ${{ steps.filter.outputs.core }}
-      data: ${{ steps.filter.outputs.data }}
       api: ${{ steps.filter.outputs.api }}
       config: ${{ steps.filter.outputs.config }}
       gateway: ${{ steps.filter.outputs.gateway }}
@@ -77,10 +75,6 @@ jobs:
         id: filter
         with:
           filters: |
-            core:
-              - './openframe/libs/openframe-core/**'
-            data:
-              - './openframe/libs/openframe-data/**'
             api:
               - './openframe/services/openframe-api/**'
             config:
