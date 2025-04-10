@@ -1,4 +1,7 @@
-FROM node:21-alpine
+FROM --platform=$BUILDPLATFORM node:21-alpine
+
+# Metadata
+LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
 
 WORKDIR /app
 
