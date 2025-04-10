@@ -34,6 +34,8 @@ is_token_valid() {
   
   echo "Executing: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken \"$token\" ServerInfo"
   
+  # node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken "$token" ServerInfo > /dev/null 2>&1
+  
   if [[ "$token" == valid_* ]] || [[ "$token" == refreshed_valid_* ]]; then
     return 0
   else
@@ -134,7 +136,9 @@ is_token_valid() {
   
   echo "Executing: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken \"$token\" ServerInfo"
   
-  if [[ "$token" == valid_* ]]; then
+  # node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken "$token" ServerInfo > /dev/null 2>&1
+  
+  if [[ "$token" == valid_* ]] || [[ "$token" == refreshed_valid_* ]]; then
     return 0
   else
     return 1
@@ -214,7 +218,9 @@ is_token_valid() {
   
   echo "Executing: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken \"$token\" ServerInfo"
   
-  if [[ "$token" == valid_* ]]; then
+  # node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --logintoken "$token" ServerInfo > /dev/null 2>&1
+  
+  if [[ "$token" == valid_* ]] || [[ "$token" == refreshed_valid_* ]]; then
     return 0
   else
     return 1
