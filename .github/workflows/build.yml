@@ -23,6 +23,7 @@ on:
     paths:
       - 'openframe/**'
       - 'integrated-tools/**'
+      - 'infrastructure/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
 
