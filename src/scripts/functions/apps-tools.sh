@@ -3,7 +3,8 @@
 # TELEPRESENCE
 function tools_telepresence_deploy() {
   echo "Deploying telepresence"
-  telepresence helm install --upgrade && telepresence connect
+  brew install telepresenceio/telepresence/telepresence-oss
+  telepresence helm install && telepresence helm upgrade && telepresence connect
 }
 
 function tools_telepresence_wait() {
