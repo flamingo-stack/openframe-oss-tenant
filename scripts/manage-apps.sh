@@ -218,7 +218,7 @@ case "$APP" in
       infra_nifi_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying NiFi in dev mode"
-      cd ./infrastructure/nifi
+      cd ${SCRIPT_DIR}/infrastructure/nifi
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -258,7 +258,7 @@ case "$APP" in
       infra_config_server_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Config Server in dev mode"
-      cd ./services/openframe-config
+      cd ${SCRIPT_DIR}/openframeservices/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -272,7 +272,7 @@ case "$APP" in
       infra_api_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying API in dev mode"
-      cd ./services/openframe-api
+      cd ${SCRIPT_DIR}/openframeservices/openframe-api
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       debug_app "openframe-api" "openframe-api" "infrastructure" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
@@ -286,7 +286,7 @@ case "$APP" in
       infra_management_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Management in dev mode"
-      cd ./services/openframe-management
+      cd ${SCRIPT_DIR}/openframeservices/openframe-management
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -300,7 +300,7 @@ case "$APP" in
       infra_stream_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Stream in dev mode"
-      cd ./services/openframe-stream
+      cd ${SCRIPT_DIR}/openframeservices/openframe-stream
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -314,7 +314,7 @@ case "$APP" in
       infra_gateway_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Gateway in dev mode"
-      cd ./services/openframe-gateway
+      cd ${SCRIPT_DIR}/openframeservices/openframe-gateway
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -328,7 +328,7 @@ case "$APP" in
       infra_openframe_ui_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying OpenFrame UI in dev mode"
-      cd ./services/openframe-ui
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -355,7 +355,7 @@ case "$APP" in
       fleet_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Fleet in dev mode"
-      cd ./infrastructure/fleetmdm
+      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
       skaffold dev --no-prune=false --cache-artifacts=false -n fleet
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -369,7 +369,7 @@ case "$APP" in
       meshcentral_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying MeshCentral in dev mode"
-      cd ./infrastructure/meshcentral/server
+      cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
       skaffold dev --no-prune=false --cache-artifacts=false -n meshcentral
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
