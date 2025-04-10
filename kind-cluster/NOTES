@@ -3,6 +3,7 @@
 + ./infrastructure/cassandra
 + ./infrastructure/meshcentral/nginx
 + ./monitoring
+./openframe/nifi  # TODO: Remove
 
 # Deprecated dockerfiles
 ./openframe/libs/openframe-core
@@ -44,10 +45,15 @@ kind-cluster/apps/meshcentral/base/meshcentral.yaml:22:        image: ghcr.io/fl
 + ./openframe/services/openframe-stream/Dockerfile
 + ./openframe/services/openframe-management/Dockerfile
 + ./openframe/services/openframe-ui/Dockerfile
+
 + ./openframe/nifi/Dockerfile
+
 ./integrated-tools/authentik/postgresql/Dockerfile
+
 ./integrated-tools/fleetmdm/Dockerfile
+
 ./integrated-tools/meshcentral/server/Dockerfile
+
 ./integrated-tools/tactical-rmm/tactical-frontend/Dockerfile
 ./integrated-tools/tactical-rmm/tactical-nginx/Dockerfile
 ./integrated-tools/tactical-rmm/tactical-base/Dockerfile
