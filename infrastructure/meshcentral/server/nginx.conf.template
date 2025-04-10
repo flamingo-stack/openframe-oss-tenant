@@ -16,9 +16,7 @@ http {
     
     # Set up environment variable with MeshCentral token
     # This makes authentication transparent to API consumers
-    map "" $mesh_token {
-        default "${MESH_DIR}/mesh_token";
-    }
+    # We don't use map to read file content - this is handled in the bash scripts
     
     server {
         listen 80;
@@ -36,8 +34,8 @@ http {
             # Include FastCGI parameters
             include fastcgi_params;
             
-            # Set token for all API requests
-            fastcgi_param MESH_TOKEN $mesh_token;
+            # Set token file path for all API requests
+            fastcgi_param MESH_TOKEN "${MESH_DIR}/mesh_token";
             
             # Define API routes
             location ~ ^/api/devices/?$ {
