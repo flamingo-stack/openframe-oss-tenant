@@ -25,29 +25,36 @@ is_token_valid() {
 
 authenticate() {
   local token=$(get_stored_token)
+  local max_retries=3
+  local retry_count=0
   
   if [ -z "$token" ]; then
     return 1
   fi
   
-  if is_token_valid "$token"; then
-    echo "$token"
-    return 0
-  fi
+  while [ $retry_count -lt $max_retries ]; do
+    if is_token_valid "$token"; then
+      echo "$token"
+      return 0
+    fi
+    
+    echo "Token validation failed, refreshing token (attempt $((retry_count+1))/$max_retries)..." >&2
+    source /meshcentral-functions.sh
+    setup_mesh_token
+    
+    token=$(get_stored_token)
+    if [ -z "$token" ]; then
+      return 1
+    fi
+    
+    retry_count=$((retry_count+1))
+    
+    if [ $retry_count -lt $max_retries ]; then
+      sleep 2
+    fi
+  done
   
-  source /meshcentral-functions.sh
-  setup_mesh_token
-  
-  token=$(get_stored_token)
-  if [ -z "$token" ]; then
-    return 1
-  fi
-  
-  if is_token_valid "$token"; then
-    echo "$token"
-    return 0
-  fi
-  
+  echo "Failed to obtain valid token after $max_retries attempts" >&2
   return 1
 }
 
