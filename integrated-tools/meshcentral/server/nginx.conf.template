@@ -12,7 +12,7 @@ http {
     access_log /dev/stdout main;
     error_log  /dev/stderr debug;
     
-    sendfile on;
+    sendfile on; 
     
     # FastCGI settings
     fastcgi_buffers 16 16k;

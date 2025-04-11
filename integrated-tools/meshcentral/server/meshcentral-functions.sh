@@ -1,35 +1,5 @@
 #!/bin/bash
 
-function setup_mesh_token() {
-  echo "Checking for existing mesh token..."
-
-  # First check if token exists in filesystem
-  if [[ -f "${MESH_DIR}/mesh_token" ]]; then
-    local_token=$(cat "${MESH_DIR}/mesh_token")
-    if [[ -n "$local_token" && ${#local_token} -eq 160 ]]; then
-      echo "Mesh token found in filesystem, using existing token"
-      return 0
-    fi
-  fi
-
-  # If we get here, we need to generate a new token
-  echo "Generating new mesh token..."
-  echo "Executing: node ${MESH_DIR}/node_modules/meshcentral --configfile ${MESH_DIR}/config.json --logintoken user//${MESH_USER}"
-  mesh_token=$(node ${MESH_DIR}/node_modules/meshcentral \
-    --configfile ${MESH_DIR}/config.json \
-    --logintoken user//${MESH_USER})
-
-  if [[ ${#mesh_token} -eq 160 ]]; then
-    echo ${mesh_token} >${MESH_DIR}/mesh_token
-    echo "Mesh token ${mesh_token} set in filesystem"
-  else
-    echo "Failed to generate mesh token. Fix the error and restart the mesh container"
-    # exit 1
-  fi
-
-  sleep 2
-}
-
 function setup_mesh_user() {
   echo "Checking if MeshCentral user already exists..."
   echo "Setting up MeshCentral user..."
@@ -251,50 +221,13 @@ configure_and_start_nginx() {
     cp -r /nginx-api/* ${MESH_DIR}/nginx-api/ 2>/dev/null || true
   fi
   
-  # Ensure proper permissions for API scripts
-  chmod -R +x ${MESH_DIR}/nginx-api/api/*.sh 2>/dev/null || true
-  chmod -R +x ${MESH_DIR}/nginx-api/helpers/*.sh 2>/dev/null || true
+  chmod +x ${MESH_DIR}/nginx-api/api/*.sh 2>/dev/null || true
+  chmod +x ${MESH_DIR}/nginx-api/helpers/*.sh 2>/dev/null || true
   
   echo "Starting fcgiwrap..."
   mkdir -p /var/run
-  
-  # Kill any existing fcgiwrap processes
-  pkill fcgiwrap || true
-  
-  # Remove existing socket if present
-  rm -f /var/run/fcgiwrap.socket || true
-  
-  # Start fcgiwrap with explicit error logging
-  spawn-fcgi -s /var/run/fcgiwrap.socket -u node -g node -U nginx -G nginx -P /var/run/fcgiwrap.pid -F 1 -- /usr/bin/fcgiwrap -f 2>&1 | tee /dev/stderr &
-  
-  # Wait for socket creation and set permissions
-  for i in {1..5}; do
-    if [ -S /var/run/fcgiwrap.socket ]; then
-      echo "fcgiwrap socket created successfully"
-      chmod 660 /var/run/fcgiwrap.socket
-      chown node:nginx /var/run/fcgiwrap.socket
-      break
-    fi
-    echo "Waiting for fcgiwrap socket... attempt $i"
-    sleep 1
-  done
-  
-  if [ ! -S /var/run/fcgiwrap.socket ]; then
-    echo "ERROR: fcgiwrap socket failed to create"
-    exit 1
-  fi
-  
-  # Test fcgiwrap socket
-  echo "Testing fcgiwrap connection..."
-  if ! cgi-fcgi -connect /var/run/fcgiwrap.socket /dev/null; then
-    echo "ERROR: Failed to connect to fcgiwrap socket"
-    exit 1
-  fi
-  
-  # Ensure API directories exist and have correct permissions
-  mkdir -p ${MESH_DIR}/nginx/openframe_public
-  chown -R node:node ${MESH_DIR}/nginx-api
-  chmod -R 755 ${MESH_DIR}/nginx-api
+  spawn-fcgi -s /var/run/fcgiwrap.socket -u node -g node -U nginx -G nginx -- /usr/bin/fcgiwrap
+  chmod 660 /var/run/fcgiwrap.socket
   
   envsubst '${MESH_DIR}' </nginx.conf.template >/etc/nginx/nginx.conf
   
@@ -303,10 +236,4 @@ configure_and_start_nginx() {
   # Start Nginx
   nginx &
   echo "Nginx started"
-  
-  # Verify nginx is running
-  if ! pgrep nginx >/dev/null; then
-    echo "ERROR: Nginx failed to start"
-    exit 1
-  fi
 }
