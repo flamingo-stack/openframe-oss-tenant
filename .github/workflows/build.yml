@@ -196,14 +196,14 @@ jobs:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(matrix.type, 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: .
 
       - name: Prepare Java artifacts for Docker build
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(matrix.type, 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         run: |
           mkdir -p ${{ matrix.path }}/target
           mv *.jar ${{ matrix.path }}/target/
