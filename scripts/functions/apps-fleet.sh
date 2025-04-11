@@ -8,7 +8,7 @@ function fleet_deploy() {
     --docker-username=vusal-fl \
     --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
     --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
-  kubectl -n fleet apply -k ./kind-cluster/apps/fleet
+  kubectl -n fleet apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/fleet
 }
 
 function fleet_wait() {
@@ -20,6 +20,6 @@ function fleet_wait() {
 
 function fleet_delete() {
   echo "Deleting Fleet"
-  kubectl -n fleet delete -f ./kind-cluster/apps/fleet
+  kubectl -n fleet delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/fleet
   kubectl delete namespace fleet
 }

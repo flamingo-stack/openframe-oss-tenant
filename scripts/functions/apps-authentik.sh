@@ -10,7 +10,7 @@ function authentik_deploy() {
       --docker-username=vusal-fl \
       --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
       --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
-    kubectl -n authentik apply -f ./kind-cluster/apps/authentik
+    kubectl -n authentik apply -f ${ROOT_REPO_DIR}/kind-cluster/apps/authentik
 
   # helm upgrade -i authentik-redis authentik/redis \
   # -n authentik2 --create-namespace \
@@ -38,6 +38,6 @@ function authentik_wait() {
 
 function authentik_delete() {
   echo "Deleting Authentik"
-  kubectl -n authentik delete -f ./kind-cluster/apps/authentik
+  kubectl -n authentik delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/authentik
   kubectl delete namespace authentik
 }

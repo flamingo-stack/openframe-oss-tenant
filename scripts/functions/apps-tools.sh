@@ -3,7 +3,6 @@
 # TELEPRESENCE
 function tools_telepresence_deploy() {
   echo "Deploying telepresence"
-  brew install telepresenceio/telepresence/telepresence-oss
   telepresence helm install && telepresence connect
 }
 
@@ -27,7 +26,7 @@ function tools_kafka_ui_deploy() {
   helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
     -n infrastructure --create-namespace \
     --version 1.4.12 \
-    -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
 }
 
 function tools_kafka_ui_wait() {
@@ -43,7 +42,7 @@ function tools_kafka_ui_delete() {
 # MONGO EXPRESS (UI)
 function tools_mongo_express_deploy() {
   echo "Deploying Mongo Express (UI)"
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
+    kubectl -n infrastructure apply -f ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
 }
 
 function tools_mongo_express_wait() {
@@ -53,5 +52,5 @@ function tools_mongo_express_wait() {
 
 function tools_mongo_express_delete() {
   echo "Deleting Mongo Express (UI)"
-  kubectl -n infrastructure delete -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
+  kubectl -n infrastructure delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
 }

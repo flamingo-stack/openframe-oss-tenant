@@ -124,7 +124,7 @@ function openframe_datasources_cassandra_delete() {
 # NiFi
 function openframe_datasources_nifi_deploy() {
   echo "Deploying NiFi"
-  kubectl -n openframe-datasources apply -k ./kind-cluster/apps/openframe-datasources/openframe-nifi
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-nifi
 }
 
 function openframe_datasources_nifi_wait() {
@@ -134,7 +134,7 @@ function openframe_datasources_nifi_wait() {
 
 function openframe_datasources_nifi_delete() {
   echo "Deleting NiFi"
-  kubectl -n openframe-datasources delete -k ./kind-cluster/apps/openframe-datasources/openframe-nifi
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-nifi
 }
 
 # ZOOKEEPER
@@ -147,7 +147,7 @@ function openframe_datasources_zookeeper_deploy() {
   # helm upgrade -i zookeeper bitnami/zookeeper \
   #   --version 13.7.4 \
   #   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
-  kubectl -n openframe-datasources apply -k ./kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
 }
 
 function openframe_datasources_zookeeper_wait() {
@@ -157,7 +157,7 @@ function openframe_datasources_zookeeper_wait() {
 
 function openframe_datasources_zookeeper_delete() {
   echo "Deleting Zookeeper"
-  kubectl -n openframe-datasources delete -k ./kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
 }
 
 # Wait for all openframe-datasources apps to be ready

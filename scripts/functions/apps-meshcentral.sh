@@ -8,7 +8,7 @@ function meshcentral_deploy() {
     --docker-username=vusal-fl \
     --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
     --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
-  kubectl -n meshcentral apply -k ./kind-cluster/apps/meshcentral
+  kubectl -n meshcentral apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/meshcentral
 }
 
 function meshcentral_wait() {
@@ -19,6 +19,6 @@ function meshcentral_wait() {
 
 function meshcentral_delete() {
   echo "Deleting MeshCentral"
-  kubectl -n meshcentral delete -k ./kind-cluster/apps/meshcentral
+  kubectl -n meshcentral delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/meshcentral
   kubectl delete namespace meshcentral
 }

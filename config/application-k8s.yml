@@ -3,14 +3,14 @@ spring:
   data:
     # Docker MongoDB connection
     mongodb:
-      uri: mongodb://openframe:password123456789@openframe-mongodb.infrastructure.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+      uri: mongodb://openframe:password123456789@openframe-mongodb.openframe-datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
     # Docker Cassandra connection
     cassandra:
-      contact-points: openframe-cassandra.infrastructure.svc.cluster.local
+      contact-points: openframe-cassandra.openframe-datasources.svc.cluster.local
 
     # Docker Redis connection (only used by API)
     redis:
-      host: openframe-redis-headless.infrastructure.svc.cluster.local
+      host: openframe-redis-headless.openframe-datasources.svc.cluster.local
       port: 6379
 
 # Docker logging configuration
@@ -18,7 +18,7 @@ logging:
   config: http://openframe-config-server.infrastructure.svc.cluster.local:8888/logging/shared-logback-spring.xml
 
 # Docker monitoring endpoints
-loki: 
+loki:
   url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
 
 # Pinot connection details

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+infra_management_wait
+
 # Function to register an integrated tool
 register_tool() {
     local tool_id=$1

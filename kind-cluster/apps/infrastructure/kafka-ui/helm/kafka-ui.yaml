@@ -19,6 +19,6 @@ env:
 - name: KAFKA_CLUSTERS_0_NAME
   value: "bitnami"
 - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
-  value: "openframe-kafka-broker-headless:9092"
+  value: "openframe-kafka-broker-headless.openframe-datasources:9092"
 # - name: KAFKA_CLUSTERS_0_ZOOKEEPER
 #   value: kafka-zookeeper-headless:2181

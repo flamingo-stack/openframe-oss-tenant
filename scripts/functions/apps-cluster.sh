@@ -46,8 +46,8 @@ function cluster_logging_deploy() {
     echo "Deploying Loki and Promtail"
 
     # LOKI (no dependencies)
-    kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests && \
-    kubectl -n monitoring apply -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests
+    kubectl -n monitoring apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/openframe-loki/manifests && \
+    kubectl -n monitoring apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/openframe-promtail/manifests
     # or
     # helm repo add grafana https://grafana.github.io/helm-charts && \
     # helm upgrade --install loki grafana/loki-stack \
@@ -71,8 +71,8 @@ function cluster_logging_wait() {
 
 function cluster_logging_delete() {
   echo "Deleting logging stack"
-  kubectl -n monitoring delete -k ./kind-cluster/apps/infrastructure/openframe-promtail/manifests
-  kubectl -n monitoring delete -k ./kind-cluster/apps/infrastructure/openframe-loki/manifests
+  kubectl -n monitoring delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/openframe-promtail/manifests
+  kubectl -n monitoring delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/openframe-loki/manifests
 }
 
 # Logging: EFK
@@ -130,4 +130,12 @@ function cluster_metrics_server_wait() {
 function cluster_metrics_server_delete() {
   echo "Deleting metrics-server"
   helm -n kube-system uninstall metrics-server
+}
+
+# Wait for all cluster apps to be ready
+function cluster_wait_all() {
+  cluster_ingress_nginx_wait && \
+  cluster_monitoring_wait
+  cluster_logging_wait
+  cluster_metrics_server_wait
 }

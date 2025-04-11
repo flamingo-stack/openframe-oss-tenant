@@ -8,7 +8,7 @@ function tactical_rmm_deploy() {
     --docker-username=vusal-fl \
     --docker-password=$(echo -n $GITHUB_TOKEN_CLASSIC) \
     --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f - && \
-  kubectl -n tactical-rmm apply -f ./kind-cluster/apps/tactical-rmm
+  kubectl -n tactical-rmm apply -f ${ROOT_REPO_DIR}/kind-cluster/apps/tactical-rmm
 }
 
 function tactical_rmm_wait() {
@@ -26,6 +26,6 @@ function tactical_rmm_wait() {
 
 function tactical_rmm_delete() {
   echo "Deleting Tactical RMM"
-  kubectl -n tactical-rmm delete -f ./kind-cluster/apps/tactical-rmm
+  kubectl -n tactical-rmm delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/tactical-rmm
   kubectl delete namespace tactical-rmm
 }

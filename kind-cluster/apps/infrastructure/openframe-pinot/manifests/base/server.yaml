@@ -16,7 +16,7 @@ data:
     pinot.server.instance.enable.shutdown.delay=true
     pinot.server.helix.flappingTimeWindowMs=10000
     pinot.server.helix.enabled=true
-    # pinot.server.helix.zk.str=zookeeper:2181
+    # pinot.server.helix.zk.str=zookeeper.openframe-datasources:2181
     # pinot.server.helix.cluster.name=openframe-pinot
     pinot.set.instance.id.to.hostname=false
 ---

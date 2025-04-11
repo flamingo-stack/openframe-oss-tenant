@@ -390,7 +390,7 @@ case "$APP" in
   register-apps)
     # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
-    ${ROOT_REPO_DIR}/kind-cluster/apps/register/register.sh
+    ${ROOT_REPO_DIR}/kind-cluster/apps/infrastructure/register/register.sh
     ;;
   observability)
     ACTION=${2}
@@ -405,7 +405,8 @@ case "$APP" in
 
     $0 ingress-nginx $ACTION $IFWAIT && \
     $0 metrics-server $ACTION $IFWAIT && \
-    $0 observability $ACTION $IFWAIT
+    $0 observability $ACTION $IFWAIT && \
+    cluster_wait_all
     ;;
   tools)
     ACTION=${2}
@@ -432,6 +433,7 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
+    $0 openframe_datasources $ACTION $IFWAIT && \
     $0 pinot $ACTION $IFWAIT && \
     $0 openframe-config-server $ACTION $IFWAIT && \
     $0 openframe-api $ACTION $IFWAIT && \
@@ -439,20 +441,15 @@ case "$APP" in
     $0 openframe-stream $ACTION $IFWAIT && \
     $0 openframe-gateway $ACTION $IFWAIT && \
     $0 openframe-ui $ACTION $IFWAIT && \
-    $0 tools $ACTION $IFWAIT
+    $0 tools $ACTION $IFWAIT && \
+    $0 register-apps $ACTION
     ;;
   a|all)
     # ------------- ALL -------------
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 openframe_datasources $ACTION $IFWAIT && \
-    $0 kafka $ACTION $IFWAIT && \
-    $0 mongodb $ACTION $IFWAIT && \
-    $0 mongodb-exporter $ACTION $IFWAIT && \
-    $0 cassandra $ACTION $IFWAIT && \
-    $0 nifi $ACTION $IFWAIT && \
-    $0 zookeeper $ACTION $IFWAIT && \
+    $0 infrastructure $ACTION $IFWAIT && \
     $0 pinot $ACTION $IFWAIT && \
     $0 openframe-config-server $ACTION $IFWAIT && \
     $0 openframe-api $ACTION $IFWAIT && \
