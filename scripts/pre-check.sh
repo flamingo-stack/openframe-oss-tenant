@@ -52,7 +52,8 @@ get_install_command() {
             if [[ "$OS" == "Linux" ]]; then
                 echo "sudo curl -fsSL https://app.getambassador.io/download/tel2/linux/amd64/latest/telepresence -o /usr/local/bin/telepresence && sudo chmod a+x /usr/local/bin/telepresence"
             elif [[ "$OS" == "Darwin" ]]; then
-                echo "brew install datawire/blackbird/telepresence"
+                # echo "brew install datawire/blackbird/telepresence"
+                echo "brewinstall telepresenceio/telepresence/telepresence-oss"
             fi
             ;;
         "skaffold")

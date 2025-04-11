@@ -6,3 +6,5 @@ export DOMAIN="${DOMAIN:-${IP}.nip.io}"
 
 export K8S_VERSION="v1.32.3"  # Kubernetes version
 export OS="$(uname)"  # Operating system
+
+export NAMESPACES="openframe-datasources infrastructure authentik fleet meshcentral tactical-rmm"

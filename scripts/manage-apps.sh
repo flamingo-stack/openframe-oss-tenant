@@ -27,8 +27,7 @@ fi
 
 # Function to check if namespaces and secrets already exist
 function check_bases() {
-  local namespaces=(infrastructure authentik fleet meshcentral tactical-rmm)
-  for ns in "${namespaces[@]}"; do
+  for ns in "${NAMESPACES[@]}"; do
     if ! kubectl get namespace "$ns" &> /dev/null; then
       return 1
     fi
@@ -119,12 +118,12 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  redis)
+  openframe_datasources_redis)
     if [ "$ACTION" == "deploy" ]; then
-      infra_redis_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_redis_wait; fi
+      openframe_datasources_redis_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_redis_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_redis_delete
+      openframe_datasources_redis_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -132,12 +131,12 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  kafka)
+  openframe_datasources_kafka)
     if [ "$ACTION" == "deploy" ]; then
-      infra_kafka_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_kafka_wait; fi
+      openframe_datasources_kafka_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_kafka_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_kafka_delete
+      openframe_datasources_kafka_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -158,12 +157,12 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  mongodb)
+  openframe_datasources_mongodb)
     if [ "$ACTION" == "deploy" ]; then
-      infra_mongodb_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_mongodb_wait; fi
+      openframe_datasources_mongodb_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_mongodb_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_mongodb_delete
+      openframe_datasources_mongodb_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -171,12 +170,12 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  mongodb-exporter)
+  openframe_datasources_mongodb_exporter)
     if [ "$ACTION" == "deploy" ]; then
-      infra_mongodb_exporter_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_mongodb_exporter_wait; fi
+      openframe_datasources_mongodb_exporter_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_mongodb_exporter_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_mongodb_exporter_delete
+      openframe_datasources_mongodb_exporter_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -197,12 +196,12 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  cassandra)
+  openframe_datasources_cassandra)
     if [ "$ACTION" == "deploy" ]; then
-      infra_cassandra_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_cassandra_wait; fi
+      openframe_datasources_cassandra_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_cassandra_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_cassandra_delete
+      openframe_datasources_cassandra_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -210,12 +209,12 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  nifi)
+  openframe_datasources_nifi)
     if [ "$ACTION" == "deploy" ]; then
-      infra_nifi_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_nifi_wait; fi
+      openframe_datasources_nifi_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_nifi_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_nifi_delete
+      openframe_datasources_nifi_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying NiFi in dev mode"
       cd ${SCRIPT_DIR}/infrastructure/nifi
@@ -224,12 +223,12 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  zookeeper)
+  openframe_datasources_zookeeper)
     if [ "$ACTION" == "deploy" ]; then
-      infra_zookeeper_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_zookeeper_wait; fi
+      openframe_datasources_zookeeper_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_zookeeper_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_zookeeper_delete
+      openframe_datasources_zookeeper_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -416,18 +415,23 @@ case "$APP" in
     $0 mongo-express $ACTION $IFWAIT && \
     $0 kafka-ui $ACTION $IFWAIT
     ;;
+  openframe_datasources)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 openframe_datasources_redis $ACTION $IFWAIT
+    $0 openframe_datasources_kafka $ACTION $IFWAIT
+    $0 openframe_datasources_mongodb $ACTION $IFWAIT
+    $0 openframe_datasources_mongodb_exporter $ACTION $IFWAIT
+    $0 openframe_datasources_cassandra $ACTION $IFWAIT
+    $0 openframe_datasources_nifi $ACTION $IFWAIT
+    $0 openframe_datasources_zookeeper $ACTION $IFWAIT && \
+    openframe_datasources_wait_all
+    ;;
   infrastructure)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 minimal $ACTION $IFWAIT && \
-    $0 redis $ACTION $IFWAIT && \
-    $0 kafka $ACTION $IFWAIT && \
-    $0 mongodb $ACTION $IFWAIT && \
-    $0 mongodb-exporter $ACTION $IFWAIT && \
-    $0 cassandra $ACTION $IFWAIT && \
-    $0 nifi $ACTION $IFWAIT && \
-    $0 zookeeper $ACTION $IFWAIT && \
     $0 pinot $ACTION $IFWAIT && \
     $0 openframe-config-server $ACTION $IFWAIT && \
     $0 openframe-api $ACTION $IFWAIT && \
@@ -442,8 +446,7 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 minimal $ACTION $IFWAIT && \
-    $0 redis $ACTION $IFWAIT && \
+    $0 openframe_datasources $ACTION $IFWAIT && \
     $0 kafka $ACTION $IFWAIT && \
     $0 mongodb $ACTION $IFWAIT && \
     $0 mongodb-exporter $ACTION $IFWAIT && \
