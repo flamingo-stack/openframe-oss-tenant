@@ -467,11 +467,11 @@ jobs:
         run: |
           {
             echo 'matrix_java<<EOF'
-            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | contains("java"))]'
+            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | any(. == "java"))]'
             echo EOF
           } >> "$GITHUB_OUTPUT"
           {
             echo 'matrix<<EOF'
-            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | contains("container"))]'
+            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | any(. == "container"))]'
             echo EOF
           } >> "$GITHUB_OUTPUT"
