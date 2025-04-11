@@ -390,7 +390,7 @@ case "$APP" in
   register-apps)
     # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
-    ./kind-cluster/apps/jobs/register.sh
+    ${ROOT_REPO_DIR}/kind-cluster/apps/register/register.sh
     ;;
   observability)
     ACTION=${2}

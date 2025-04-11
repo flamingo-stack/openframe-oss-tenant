@@ -188,7 +188,7 @@ register_tool \
     "KAFKA" \
     "Kafka Message Broker" \
     "Apache Kafka Event Streaming Platform" \
-    '[{"url": "http://kafka-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}, {"url": "http://openframe-kafka", "port": "9092", "type": "BROKER"}, {"url": "http://openframe-kafka", "port": "29092", "type": "INTERNAL"}]' \
+    '[{"url": "http://kafka-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}, {"url": "http://openframe-kafka.openframe-datasources", "port": "9092", "type": "BROKER"}, {"url": "http://openframe-kafka.openframe-datasources", "port": "29092", "type": "INTERNAL"}]' \
     "" \
     "" \
     "" \
@@ -204,7 +204,7 @@ register_tool \
     "ZOOKEEPER" \
     "Zookeeper Coordinator" \
     "Apache Zookeeper Distributed Coordinator" \
-    '[{"url": "http://zookeeper", "port": "2181", "type": "COORDINATOR"}]' \
+    '[{"url": "http://zookeeper.openframe-datasources, "port": "2181", "type": "COORDINATOR"}]' \
     "" \
     "" \
     "" \
@@ -220,7 +220,7 @@ register_tool \
     "NIFI" \
     "Apache NiFi" \
     "NiFi Data Integration Platform" \
-    '[{"url": "https://openframe-nifi.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://openframe-nifi", "port": "9096", "type": "API"}]' \
+    '[{"url": "https://openframe-nifi.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://openframe-nifi.openframe-datasources", "port": "9096", "type": "API"}]' \
     "openframe" \
     "password123456789" \
     "" \
@@ -236,7 +236,7 @@ register_tool \
     "MONGODB" \
     "MongoDB Database" \
     "MongoDB NoSQL Database" \
-    '[{"url": "mongodb://openframe-mongodb", "port": "27017", "type": "DATABASE"}, {"url": "http://openframe-mongo-express", "port": "8010", "type": "DASHBOARD"}]' \
+    '[{"url": "mongodb://openframe-mongodb.openframe-datasources", "port": "27017", "type": "DATABASE"}, {"url": "http://mongo-express.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
     "openframe" \
     "password123456789" \
     "" \
@@ -252,7 +252,7 @@ register_tool \
     "REDIS" \
     "Redis Cache" \
     "Redis In-Memory Cache" \
-    '[{"url": "redis://openframe-redis-headless", "port": "6379", "type": "DATABASE"}]' \
+    '[{"url": "redis://openframe-redis-headless.openframe-datasources", "port": "6379", "type": "DATABASE"}]' \
     "" \
     "" \
     "" \
@@ -268,7 +268,7 @@ register_tool \
     "CASSANDRA" \
     "Cassandra Database" \
     "Cassandra Distributed Database" \
-    '[{"url": "cassandra://openframe-cassandra", "port": "9042", "type": "DATABASE"}]' \
+    '[{"url": "cassandra://openframe-cassandra.openframe-datasources", "port": "9042", "type": "DATABASE"}]' \
     "" \
     "" \
     "" \
