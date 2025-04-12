@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # Setup basic directories and files
-mkdir -p /etc/nginx ${MESH_DIR}/nginx-api/{api,helpers} /var/run
+mkdir -p /etc/nginx ${MESH_DIR}/nginx-api /var/run
 
-# Copy and set permissions for API files
-if [ -d "/nginx-api" ]; then
-    cp -r /nginx-api/* ${MESH_DIR}/nginx-api/
-    # Make sure scripts are executable and owned by node user
+# Copy and set permissions for API script
+if [ -f "/nginx-api/meshcentral-api.sh" ]; then
+    cp /nginx-api/meshcentral-api.sh ${MESH_DIR}/nginx-api/
+    # Make sure script is executable and owned by node user
     chown -R node:node ${MESH_DIR}/nginx-api
     chmod -R 755 ${MESH_DIR}/nginx-api
-    chmod +x ${MESH_DIR}/nginx-api/api/*.sh ${MESH_DIR}/nginx-api/helpers/*.sh
+    chmod +x ${MESH_DIR}/nginx-api/meshcentral-api.sh
 fi
 
 # Start fcgiwrap

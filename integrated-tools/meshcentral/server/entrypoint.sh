@@ -6,8 +6,11 @@ source /scripts/manage-service.sh
 echo "Creating data directory"
 mkdir -p ${MESH_DIR}/data
 
-echo "Creating log file"
+echo "Creating log directory"
 mkdir -p ${MESH_DIR}/logs
+mkdir -p ${MESH_DIR}/nginx-api
+touch ${MESH_DIR}/nginx-api/api.log
+chmod 666 ${MESH_DIR}/nginx-api/api.log
 
 echo "Substituting environment variables in config.json (excluding \$schema)"
 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
@@ -30,10 +33,9 @@ sleep 5
 # Setup mesh components
 setup_mesh_user
 
-# Copy API files
-cp -rf /nginx-api ${MESH_DIR}
-chmod -R 755 ${MESH_DIR}/nginx-api
-chmod -R +x ${MESH_DIR}/nginx-api/api/* ${MESH_DIR}/nginx-api/helpers/*
+# Copy and setup API script
+cp /nginx-api/meshcentral-api.sh ${MESH_DIR}/nginx-api/
+chmod +x ${MESH_DIR}/nginx-api/meshcentral-api.sh
 
 # Start MeshCentral temporarily to setup device group
 start_meshcentral &

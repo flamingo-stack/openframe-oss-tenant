@@ -52,12 +52,18 @@ http {
         
         # Static files
         location /openframe_public {
-            root ${MESH_DIR}/nginx;
+            root ${MESH_DIR}/nginx-api;
             autoindex on;
         }
         
-        # API endpoints
+        # Unified API endpoint
         location /api/ {
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/meshcentral-api.sh;
+            fastcgi_param SCRIPT_NAME /api;
+            fastcgi_param PATH_INFO $uri;
+            fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
+            
             # Pass environment variables
             fastcgi_param MESH_DIR ${MESH_DIR};
             fastcgi_param MESH_USER ${MESH_USER};
@@ -66,48 +72,9 @@ http {
             fastcgi_param MESH_NGINX_HOST ${MESH_NGINX_HOST};
             fastcgi_param MESH_EXTERNAL_PORT ${MESH_EXTERNAL_PORT};
             
-            # Error handling
-            # error_page 502 = @error502;
-            
-            # Define API routes with FastCGI pass
-            location ~ ^/api/devices(/[^/]+)?$ {
-                include fastcgi_params;
-                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/devices.sh;
-                fastcgi_param SCRIPT_NAME /api/devices;
-                fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
-                
-                fastcgi_pass unix:/var/run/fcgiwrap.socket;
-                fastcgi_buffering off;
-                fastcgi_request_buffering off;
-            }
-            
-            location ~ ^/api/devices/([^/]+)/command/?$ {
-                include fastcgi_params;
-                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/commands.sh;
-                fastcgi_param SCRIPT_NAME /api/devices/command;
-                fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
-                
-                fastcgi_pass unix:/var/run/fcgiwrap.socket;
-                fastcgi_buffering off;
-                fastcgi_request_buffering off;
-            }
-            
-            location ~ ^/api/devices/([^/]+)/tunnel/?$ {
-                include fastcgi_params;
-                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/tunnels.sh;
-                fastcgi_param SCRIPT_NAME /api/devices/tunnel;
-                fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
-
-                fastcgi_pass unix:/var/run/fcgiwrap.socket;
-                fastcgi_buffering off;
-                fastcgi_request_buffering off;
-            }
+            fastcgi_pass unix:/var/run/fcgiwrap.socket;
+            fastcgi_buffering off;
+            fastcgi_request_buffering off;
         }
-        
-        # Error handling location
-        # location @error502 {
-        #     default_type application/json;
-        #     return 502 '{"error": "Bad Gateway", "details": "FastCGI process failed"}';
-        # }
     }
 }

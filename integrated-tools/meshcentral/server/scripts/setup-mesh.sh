@@ -110,6 +110,6 @@ EOL
   chown node:node "${MESH_DIR}/meshagent.msh"
   chmod 644 "${MESH_DIR}/meshagent.msh"
 
-  mkdir -p "${MESH_DIR}/nginx/openframe_public"
-  cp "${MESH_DIR}/meshagent.msh" "${MESH_DIR}/nginx/openframe_public/meshagent.msh"
+  mkdir -p "${MESH_DIR}/nginx-api/openframe_public"
+  cp "${MESH_DIR}/meshagent.msh" "${MESH_DIR}/nginx-api/openframe_public/meshagent.msh"
 } 
