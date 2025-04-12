@@ -1,10 +1,9 @@
 #!/bin/bash
-
-# Enable debug mode
-set -x
-
 source "$(dirname "$0")/../helpers/utils.sh"
 source "$(dirname "$0")/../helpers/response.sh"
+
+# Log request details
+log_request
 
 echo "Debug: Starting commands.sh script" >&2
 echo "Debug: REQUEST_METHOD=$REQUEST_METHOD" >&2
@@ -15,12 +14,9 @@ if [ "$REQUEST_METHOD" = "OPTIONS" ]; then
 fi
 
 echo "Debug: Authenticating..." >&2
-TOKEN=$(authenticate)
-echo "Debug: Authentication result: $?" >&2
-
-if [ -z "$TOKEN" ]; then
-  echo "Debug: Token is empty" >&2
-  send_error "MeshCentral token not found or invalid after multiple attempts" 500
+if ! authenticate; then
+  echo "Debug: Authentication failed" >&2
+  send_error "Authentication failed" 401
 fi
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
@@ -51,13 +47,27 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     OPTIONS="$OPTIONS --powershell"
   fi
   
-  echo "Debug: Command: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --logintoken \"$TOKEN\" --configfile ${MESH_DIR}/config.json RunCommand --id \"$DEVICE_ID\" --run \"$COMMAND\" $OPTIONS" >&2
+  local cmd="node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js \
+    --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} \
+    --loginuser ${MESH_USER} \
+    --loginpass ${MESH_PASS} \
+    RunCommand \
+    --id \"$DEVICE_ID\" \
+    --run \"$COMMAND\" \
+    $OPTIONS"
   
-  RESULT=$(node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --logintoken "$TOKEN" --configfile ${MESH_DIR}/config.json RunCommand --id "$DEVICE_ID" --run "$COMMAND" $OPTIONS)
+  echo "========== EXECUTING COMMAND ==========" >&2
+  echo "$cmd" >&2
+  echo "=====================================" >&2
+  
+  RESULT=$(eval "$cmd" 2>&1)
   COMMAND_EXIT_CODE=$?
   
-  echo "Debug: RunCommand exit code: $COMMAND_EXIT_CODE" >&2
-  echo "Debug: Result length: ${#RESULT}" >&2
+  echo "========== COMMAND RESULT ==========" >&2
+  echo "Exit Code: $COMMAND_EXIT_CODE" >&2
+  echo "Output:" >&2
+  echo "$RESULT" >&2
+  echo "===================================" >&2
   
   if [ $COMMAND_EXIT_CODE -ne 0 ]; then
     echo "Debug: RunCommand failed" >&2

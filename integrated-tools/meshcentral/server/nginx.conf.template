@@ -1,34 +1,56 @@
 events {
     worker_connections 1024;
 }
+
+# Run nginx as node user
+user node node;
+
+env MESH_USER;
+env MESH_PASS;
+env MESH_PROTOCOL;
+env MESH_NGINX_HOST;
+env MESH_EXTERNAL_PORT;
+
 http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
     
     log_format main '$remote_addr - $remote_user [$time_local] "$request" '
                     '$status $body_bytes_sent "$http_referer" '
-                    '"$http_user_agent" "$http_x_forwarded_for"';
+                    '"$http_user_agent" "$http_x_forwarded_for" '
+                    'fastcgi_params: "$fastcgi_script_name $fastcgi_path_info" '
+                    'fastcgi_error: "$upstream_http_x_error"';
+    
+    log_format debug_fcgi '$remote_addr - $remote_user [$time_local] "$request" '
+                         '$status $body_bytes_sent "$http_referer" '
+                         'fastcgi_script: "$fastcgi_script_name" '
+                         'fastcgi_path_info: "$fastcgi_path_info" '
+                         'upstream_status: "$upstream_status" '
+                         'upstream_response_time: "$upstream_response_time" '
+                         'upstream_error: "$upstream_http_x_error"';
     
     access_log /dev/stdout main;
+    access_log /dev/stdout debug_fcgi;
     error_log  /dev/stderr debug;
     
-    sendfile on; 
+    sendfile on;
     
     # FastCGI settings
     fastcgi_buffers 16 16k;
     fastcgi_buffer_size 32k;
-    fastcgi_connect_timeout 60;
-    fastcgi_send_timeout 60;
-    fastcgi_read_timeout 60;
-    
-    # Set up environment variable with MeshCentral token
-    # This makes authentication transparent to API consumers
-    # We don't use map to read file content - this is handled in the bash scripts
+    fastcgi_connect_timeout 300;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 300;
+    fastcgi_busy_buffers_size 64k;
+    fastcgi_temp_file_write_size 64k;
+    fastcgi_max_temp_file_size 0;
+    fastcgi_keep_conn on;
+    fastcgi_intercept_errors on;
     
     server {
         listen 80;
         
-        # Static files - preserve existing functionality
+        # Static files
         location /openframe_public {
             root ${MESH_DIR}/nginx;
             autoindex on;
@@ -36,48 +58,56 @@ http {
         
         # API endpoints
         location /api/ {
-            root ${MESH_DIR}/nginx-api;
+            # Pass environment variables
+            fastcgi_param MESH_DIR ${MESH_DIR};
+            fastcgi_param MESH_USER ${MESH_USER};
+            fastcgi_param MESH_PASS ${MESH_PASS};
+            fastcgi_param MESH_PROTOCOL ${MESH_PROTOCOL};
+            fastcgi_param MESH_NGINX_HOST ${MESH_NGINX_HOST};
+            fastcgi_param MESH_EXTERNAL_PORT ${MESH_EXTERNAL_PORT};
             
-            # Include FastCGI parameters
-            include fastcgi_params;
+            # Error handling
+            # error_page 502 = @error502;
             
-            # Set token file path for all API requests
-            fastcgi_param MESH_TOKEN "${MESH_DIR}/mesh_token";
-            fastcgi_param MESH_DIR "${MESH_DIR}";
-            
-            # Add error handling
-            error_page 502 = @error502;
-            
-            # Define API routes
-            location ~ ^/api/devices/?$ {
-                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+            # Define API routes with FastCGI pass
+            location ~ ^/api/devices(/[^/]+)?$ {
+                include fastcgi_params;
                 fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/devices.sh;
-                fastcgi_param PATH_INFO "";
-            }
-            
-            location ~ ^/api/devices/([^/]+)/?$ {
+                fastcgi_param SCRIPT_NAME /api/devices;
+                fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
+                
                 fastcgi_pass unix:/var/run/fcgiwrap.socket;
-                fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/devices.sh;
-                fastcgi_param PATH_INFO /$1;
+                fastcgi_buffering off;
+                fastcgi_request_buffering off;
             }
             
             location ~ ^/api/devices/([^/]+)/command/?$ {
-                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                include fastcgi_params;
                 fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/commands.sh;
-                fastcgi_param PATH_INFO /$1;
+                fastcgi_param SCRIPT_NAME /api/devices/command;
+                fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
+                
+                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                fastcgi_buffering off;
+                fastcgi_request_buffering off;
             }
             
             location ~ ^/api/devices/([^/]+)/tunnel/?$ {
-                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                include fastcgi_params;
                 fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/api/tunnels.sh;
-                fastcgi_param PATH_INFO /$1;
+                fastcgi_param SCRIPT_NAME /api/devices/tunnel;
+                fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
+
+                fastcgi_pass unix:/var/run/fcgiwrap.socket;
+                fastcgi_buffering off;
+                fastcgi_request_buffering off;
             }
         }
         
         # Error handling location
-        location @error502 {
-            default_type application/json;
-            return 502 '{"error": "Bad Gateway", "details": "FastCGI process failed"}';
-        }
+        # location @error502 {
+        #     default_type application/json;
+        #     return 502 '{"error": "Bad Gateway", "details": "FastCGI process failed"}';
+        # }
     }
 }

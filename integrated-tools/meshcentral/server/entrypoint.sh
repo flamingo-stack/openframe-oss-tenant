@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-set -e
-
-source /meshcentral-functions.sh
+source /scripts/setup-mesh.sh
+source /scripts/manage-service.sh
 
 echo "Creating data directory"
 mkdir -p ${MESH_DIR}/data
@@ -13,63 +12,36 @@ mkdir -p ${MESH_DIR}/logs
 echo "Substituting environment variables in config.json (excluding \$schema)"
 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
 
-echo "Making all folders readable by node"
-chmod -R 755 ${MESH_DIR}
-
-echo "Making all files readable by node"
-chmod -R 644 ${MESH_DIR}
-
-echo "Making all folders writable by node"
-chmod -R 775 ${MESH_DIR}
-
-echo "Making all files writable by node"
-chmod -R 664 ${MESH_DIR}
-
-echo "Making all folders executable by node"
-chmod -R 755 ${MESH_DIR}
-
-echo "Making all files executable by node"
-chmod -R 755 ${MESH_DIR}
-
-echo "Setting the owner of all files and folders to node"
+echo "Setting up directory permissions..."
+chmod -R 755 ${MESH_DIR}  # Make all folders readable and executable
+chmod -R 644 ${MESH_DIR}  # Make all files readable
+chmod -R 775 ${MESH_DIR}  # Make all folders writable
+chmod -R 664 ${MESH_DIR}  # Make all files writable
+chmod -R 755 ${MESH_DIR}  # Make all folders executable
+chmod -R 755 ${MESH_DIR}  # Make all files executable
 chown -R node:node ${MESH_DIR}
 
-#install meshcentral under ${MESH_DIR}/node_modules
 echo "Installing MeshCentral..."
 npm install meshcentral --prefix ${MESH_DIR} || { echo "Failed to install MeshCentral"; exit 1; }
 echo "MeshCentral installation completed"
 
 sleep 5
 
-# Setup the user
+# Setup mesh components
 setup_mesh_user
 
-# Copy the API files
+# Copy API files
 cp -rf /nginx-api ${MESH_DIR}
-
-# Make the API files executable
 chmod -R 755 ${MESH_DIR}/nginx-api
-
-# Make the API files executable
 chmod -R +x ${MESH_DIR}/nginx-api/api/* ${MESH_DIR}/nginx-api/helpers/*
 
-# Start MeshCentral in the background
+# Start MeshCentral temporarily to setup device group
 start_meshcentral &
-
-# Wait for MeshCentral to be ready
 wait_for_meshcentral_to_start
-
-# Setup the device group
 setup_mesh_device_group
-
-# Kill the background MeshCentral process
-stop_meshcentral  
-
-# Wait for MeshCentral to stop
+stop_meshcentral
 wait_for_meshcentral_to_stop
 
-# Start Nginx
-configure_and_start_nginx
-
-# Start MeshCentral in the foreground
-start_meshcentral
+# Start services
+/scripts/setup-nginx.sh
+start_meshcentral  # Start in foreground

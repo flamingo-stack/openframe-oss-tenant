@@ -1,127 +1,135 @@
 #!/bin/bash
 
-# Enable debug mode
-set -x
+source "${MESH_DIR}/nginx-api/helpers/utils.sh"
+source "${MESH_DIR}/nginx-api/helpers/response.sh"
 
-source ${MESH_DIR}/nginx-api/helpers/utils.sh
-source ${MESH_DIR}/nginx-api/helpers/response.sh
+# Log request details
+log_request
 
-echo "Debug: Starting devices.sh script" >&2
-echo "Debug: REQUEST_METHOD=$REQUEST_METHOD" >&2
-echo "Debug: PATH_INFO=$PATH_INFO" >&2
-echo "Debug: QUERY_STRING=$QUERY_STRING" >&2
+debug_log "Starting devices.sh script"
+debug_log "REQUEST_METHOD=${REQUEST_METHOD}"
+debug_log "PATH_INFO=${PATH_INFO}"
+debug_log "QUERY_STRING=${QUERY_STRING}"
 
+# Handle OPTIONS request
 if [ "$REQUEST_METHOD" = "OPTIONS" ]; then
   handle_options
+  exit 0
 fi
 
-echo "Debug: Authenticating..." >&2
-TOKEN=$(authenticate)
-echo "Debug: Authentication result: $?" >&2
-
-if [ -z "$TOKEN" ]; then
-  echo "Debug: Token is empty" >&2
-  send_error "MeshCentral token not found or invalid after multiple attempts" 500
-fi
-
-# List all devices
-list_devices() {
-  echo "Debug: Command: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --loginuser ${MESH_USER} --loginpass ${MESH_PASS} --configfile ${MESH_DIR}/config.json ListDevices" >&2
-  
-  local result=$(node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js \
-    --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} \
-    --loginuser ${MESH_USER} \
-    --loginpass ${MESH_PASS} \
-    --configfile ${MESH_DIR}/config.json \
-    ListDevices)
-  
-  local exit_code=$?
-  echo "Debug: ListDevices command exit code: $exit_code" >&2
-  echo "Debug: ListDevices result length: ${#result}" >&2
-  
-  if [ $exit_code -eq 0 ]; then
-    send_json_response "$result"
-  else
-    send_error_response "Failed to list devices"
+# Handle GET request
+if [ "$REQUEST_METHOD" = "GET" ]; then
+  # Check if we have a specific device ID
+  DEVICE_ID=""
+  if [ -n "$PATH_INFO" ]; then
+    # Remove leading slash if present
+    DEVICE_ID=$(echo "$PATH_INFO" | sed 's/^\///')
   fi
-}
-
-# Get device info
-get_device_info() {
-  local device_id="$1"
-  
-  if [ -z "$device_id" ]; then
-    send_error_response "Device ID is required"
-    return 1
-  fi
-  
-  echo "Debug: Command: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --loginuser ${MESH_USER} --loginpass ${MESH_PASS} --configfile ${MESH_DIR}/config.json DeviceInfo --id $device_id" >&2
-  
-  local result=$(node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js \
-    --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} \
-    --loginuser ${MESH_USER} \
-    --loginpass ${MESH_PASS} \
-    --configfile ${MESH_DIR}/config.json \
-    DeviceInfo \
-    --id "$device_id")
-  
-  local exit_code=$?
-  echo "Debug: DeviceInfo command exit code: $exit_code" >&2
-  echo "Debug: DeviceInfo result length: ${#result}" >&2
-  
-  if [ $exit_code -eq 0 ]; then
-    send_json_response "$result"
-  else
-    send_error_response "Failed to get device info"
-  fi
-}
-
-if [ "$REQUEST_METHOD" = "GET" ] && [ -z "$PATH_INFO" ]; then
-  FILTER=""
-  if echo "$QUERY_STRING" | grep -q "filter="; then
-    FILTER="--filter \"$(echo "$QUERY_STRING" | grep -oP 'filter=\K[^&]+' | sed 's/%20/ /g')\""
-    echo "Debug: Using filter: $FILTER" >&2
-  fi
-  
-  echo "Debug: Executing ListDevices command..." >&2
-  echo "Debug: Command: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --loginuser ${MESH_USER} --loginpass ${MESH_PASS} --configfile ${MESH_DIR}/config.json ListDevices --json $FILTER" >&2
-  
-  RESULT=$(node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --loginuser ${MESH_USER} --loginpass ${MESH_PASS} --configfile ${MESH_DIR}/config.json ListDevices --json $FILTER)
-  COMMAND_EXIT_CODE=$?
-  
-  echo "Debug: ListDevices exit code: $COMMAND_EXIT_CODE" >&2
-  echo "Debug: Result length: ${#RESULT}" >&2
-   
-  if [ $COMMAND_EXIT_CODE -ne 0 ]; then
-    echo "Debug: ListDevices command failed" >&2
-    send_error "Failed to list devices: $RESULT" 500
-  fi
-  
-  send_json "$RESULT"
-  
-elif [ "$REQUEST_METHOD" = "GET" ] && [ -n "$PATH_INFO" ]; then
-  DEVICE_ID=$(echo "$PATH_INFO" | cut -d'/' -f2)
   
   if [ -z "$DEVICE_ID" ]; then
-    echo "Debug: Missing device ID" >&2
-    send_error "Missing device ID" 400
+    # List all devices
+    debug_log "Listing all devices..."
+    
+    FILTER=""
+    if [ -n "$QUERY_STRING" ] && echo "$QUERY_STRING" | grep -q "filter="; then
+      FILTER="--filter \"$(echo "$QUERY_STRING" | grep -oP 'filter=\K[^&]+' | sed 's/%20/ /g')\""
+    fi
+    
+    # Prepare command with proper quoting
+    cmd=(node "${MESH_DIR}/node_modules/meshcentral/meshctrl.js"
+      --url "${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}"
+      --loginuser "${MESH_USER}"
+      --loginpass "${MESH_PASS}"
+      ListDevices
+      --json)
+    
+    if [ -n "$FILTER" ]; then
+      cmd+=($FILTER)
+    fi
+    
+    debug_log "========== EXECUTING COMMAND =========="
+    debug_log "Command: ${cmd[*]}"
+    debug_log "======================================"
+    
+    # Execute command and capture output and error
+    RESULT=""
+    ERROR=""
+    {
+      RESULT=$("${cmd[@]}" 2> >(tee /dev/fd/3))
+      COMMAND_EXIT_CODE=$?
+    }
+    
+    debug_log "========== COMMAND RESULT =========="
+    debug_log "Exit Code: $COMMAND_EXIT_CODE"
+    debug_log "Output: $RESULT"
+    debug_log "===================================="
+    
+    # Check if the output is valid JSON
+    if ! (echo "$RESULT" | jq -e . >/dev/null 2>&1); then
+      debug_log "Invalid JSON output"
+      send_error "Invalid response format from MeshCentral" 500
+      exit 1
+    fi
+    
+    if [ $COMMAND_EXIT_CODE -ne 0 ]; then
+      debug_log "ListDevices command failed"
+      ERROR_MSG=$(echo "$RESULT" | jq -r '.error // "Unknown error"' 2>/dev/null || echo "Unknown error")
+      send_error "Failed to list devices: $ERROR_MSG" 500
+      exit 1
+    fi
+    
+    # Send the JSON response using the helper function
+    send_json "$RESULT"
+    exit 0
+  else
+    # Get specific device info
+    debug_log "Getting device info for ID: $DEVICE_ID"
+    
+    # Prepare command with proper quoting
+    cmd=(node "${MESH_DIR}/node_modules/meshcentral/meshctrl.js"
+      --url "${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}"
+      --loginuser "${MESH_USER}"
+      --loginpass "${MESH_PASS}"
+      DeviceInfo
+      --id "$DEVICE_ID"
+      --json)
+    
+    debug_log "========== EXECUTING COMMAND =========="
+    debug_log "Command: ${cmd[*]}"
+    debug_log "======================================"
+    
+    # Execute command and capture output and error
+    RESULT=""
+    ERROR=""
+    {
+      RESULT=$("${cmd[@]}" 2> >(tee /dev/fd/3))
+      COMMAND_EXIT_CODE=$?
+    }
+    
+    debug_log "========== COMMAND RESULT =========="
+    debug_log "Exit Code: $COMMAND_EXIT_CODE"
+    debug_log "Output: $RESULT"
+    debug_log "===================================="
+    
+    # Check if the output is valid JSON
+    if ! (echo "$RESULT" | jq -e . >/dev/null 2>&1); then
+      debug_log "Invalid JSON output"
+      send_error "Invalid response format from MeshCentral" 500
+      exit 1
+    fi
+    
+    if [ $COMMAND_EXIT_CODE -ne 0 ]; then
+      debug_log "DeviceInfo command failed"
+      ERROR_MSG=$(echo "$RESULT" | jq -r '.error // "Unknown error"' 2>/dev/null || echo "Unknown error")
+      send_error "Failed to get device info: $ERROR_MSG" 500
+      exit 1
+    fi
+    
+    # Send the JSON response using the helper function
+    send_json "$RESULT"
+    exit 0
   fi
-  
-  echo "Debug: Getting device info for ID: $DEVICE_ID" >&2
-  echo "Debug: Command: node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --loginuser ${MESH_USER} --loginpass ${MESH_PASS} --configfile ${MESH_DIR}/config.json DeviceInfo --id \"$DEVICE_ID\"" >&2
-  
-  RESULT=$(node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js --url ${MESH_PROTOCOL}://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT} --loginuser ${MESH_USER} --loginpass ${MESH_PASS} --configfile ${MESH_DIR}/config.json DeviceInfo --id "$DEVICE_ID")
-  COMMAND_EXIT_CODE=$?
-  
-  echo "Debug: DeviceInfo exit code: $COMMAND_EXIT_CODE" >&2
-  echo "Debug: Result length: ${#RESULT}" >&2
-  
-  if [ $COMMAND_EXIT_CODE -ne 0 ]; then
-    echo "Debug: DeviceInfo command failed" >&2
-    send_error "Failed to get device info: $RESULT" 500
-  fi
-  
-  send_json "$RESULT"
 else
   send_error "Method not allowed" 405
+  exit 1
 fi

@@ -13,19 +13,21 @@ RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext postgresq
 
 RUN npm update -g npm
 
-COPY entrypoint.sh /
-RUN chmod +x /entrypoint.sh
+# Copy scripts and make them executable
+COPY scripts/ /scripts/
+RUN chmod -R +x /scripts/
 
-COPY meshcentral-functions.sh /
-RUN chmod +x /meshcentral-functions.sh
-
+# Copy configuration files
 COPY nginx.conf.template /
-COPY fastcgi_params /etc/nginx/
+COPY config.json ${MESH_TEMP_DIR}
 
+# Copy API files
 COPY nginx-api/ /nginx-api/
 RUN chmod -R +x /nginx-api/api/*.sh /nginx-api/helpers/*.sh
 
-COPY config.json ${MESH_TEMP_DIR}
+# Copy and set up entrypoint
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
 
 RUN chown -R node:node ${MESH_TEMP_DIR}
 
