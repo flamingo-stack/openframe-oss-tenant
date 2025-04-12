@@ -258,7 +258,7 @@ case "$APP" in
       infra_config_server_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Config Server in dev mode"
-      cd ${SCRIPT_DIR}/openframeservices/openframe-config
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -272,7 +272,7 @@ case "$APP" in
       infra_api_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying API in dev mode"
-      cd ${SCRIPT_DIR}/openframeservices/openframe-api
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       debug_app "openframe-api" "openframe-api" "infrastructure" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
@@ -286,7 +286,7 @@ case "$APP" in
       infra_management_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Management in dev mode"
-      cd ${SCRIPT_DIR}/openframeservices/openframe-management
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -300,7 +300,7 @@ case "$APP" in
       infra_stream_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Stream in dev mode"
-      cd ${SCRIPT_DIR}/openframeservices/openframe-stream
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
@@ -314,7 +314,7 @@ case "$APP" in
       infra_gateway_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying Gateway in dev mode"
-      cd ${SCRIPT_DIR}/openframeservices/openframe-gateway
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
