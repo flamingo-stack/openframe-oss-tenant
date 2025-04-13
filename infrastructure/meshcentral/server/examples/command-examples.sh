@@ -43,6 +43,7 @@ echo "=== Example 8: WebSocket URL Generation ==="
 AUTH_STRING=$(echo -n "$MESH_USER:$MESH_PASS" | base64)
 WS_URL="$MESH_URL/meshrelay.ashx?id=$DEVICE_ID&auth=$AUTH_STRING&p=1&rtc=0"
 echo "WebSocket URL: $WS_URL"
+echo "Base64 encoded auth: $AUTH_STRING (for mesh@openframe.io:meshpass@1234)"
 echo ""
 
 echo "=== Notes ==="
