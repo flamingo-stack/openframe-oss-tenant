@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # Check if max_user_instances is less than 1500
-current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
-if [[ $current_value -lt 1500 ]]; then
-  echo "fs.inotify.max_user_instances is less than 1500"
-  sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
-  sudo sysctl -p > /dev/null 2>&1
+if [ $OS == "Linux" ]; then
+  current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
+  if [[ $current_value -lt 1500 ]]; then
+    echo "fs.inotify.max_user_instances is less than 1500"
+    sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
+    sudo sysctl -p > /dev/null 2>&1
+  fi
 fi
 
 # Function to check if a command exists
@@ -52,7 +54,8 @@ get_install_command() {
             if [[ "$OS" == "Linux" ]]; then
                 echo "sudo curl -fsSL https://app.getambassador.io/download/tel2/linux/amd64/latest/telepresence -o /usr/local/bin/telepresence && sudo chmod a+x /usr/local/bin/telepresence"
             elif [[ "$OS" == "Darwin" ]]; then
-                echo "brew install datawire/blackbird/telepresence"
+                # echo "brew install datawire/blackbird/telepresence"
+                echo "brew install telepresenceio/telepresence/telepresence-oss"
             fi
             ;;
         "skaffold")

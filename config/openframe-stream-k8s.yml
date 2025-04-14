@@ -1,8 +1,8 @@
 # Stream service docker environment configuration
 spring:
   kafka:
-    bootstrap-servers: openframe-kafka.infrastructure.svc.cluster.local:9092
+    bootstrap-servers: openframe-kafka.openframe-datasources.svc.cluster.local:9092
 
   data:
     mongodb:
-      uri: mongodb://openframe:password123456789@openframe-mongodb.infrastructure.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
+      uri: mongodb://openframe:password123456789@openframe-mongodb.openframe-datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000

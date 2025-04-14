@@ -1,0 +1,3 @@
+resources:
+  - base/fleet-mdm-mysql.yaml
+  - base/fleet-mdm-redis.yaml

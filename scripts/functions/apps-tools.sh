@@ -3,8 +3,7 @@
 # TELEPRESENCE
 function tools_telepresence_deploy() {
   echo "Deploying telepresence"
-  brew install telepresenceio/telepresence/telepresence-oss
-  telepresence helm install && telepresence helm upgrade && telepresence connect
+  telepresence helm install && telepresence connect
 }
 
 function tools_telepresence_wait() {
@@ -25,33 +24,33 @@ function tools_kafka_ui_deploy() {
 
   echo "Deploying Kafka UI"
   helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
-    -n infrastructure --create-namespace \
+    -n client-tools --create-namespace \
     --version 1.4.12 \
-    -f ./kind-cluster/apps/infrastructure/kafka-ui/helm/kafka-ui.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/kafka-ui/helm/kafka-ui.yaml
 }
 
 function tools_kafka_ui_wait() {
   echo "Waiting for Kafka UI to be ready"
-  wait_for_app "infrastructure" "app.kubernetes.io/name=kafka-ui"
+  wait_for_app "client-tools" "app.kubernetes.io/name=kafka-ui"
 }
 
 function tools_kafka_ui_delete() {
   echo "Deleting Kafka UI"
-  helm delete kafka-ui -n infrastructure
+  helm delete kafka-ui -n client-tools
 }
 
 # MONGO EXPRESS (UI)
 function tools_mongo_express_deploy() {
   echo "Deploying Mongo Express (UI)"
-    kubectl -n infrastructure apply -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
+    kubectl -n client-tools apply -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/mongo-express/mongo-express.yaml
 }
 
 function tools_mongo_express_wait() {
   echo "Waiting for Mongo Express (UI) to be ready"
-  wait_for_app "infrastructure" "app=mongo-express"
+  wait_for_app "client-tools" "app=mongo-express"
 }
 
 function tools_mongo_express_delete() {
   echo "Deleting Mongo Express (UI)"
-  kubectl -n infrastructure delete -f ./kind-cluster/apps/infrastructure/mongo-express/mongo-express.yaml
+  kubectl -n client-tools delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/mongo-express/mongo-express.yaml
 }

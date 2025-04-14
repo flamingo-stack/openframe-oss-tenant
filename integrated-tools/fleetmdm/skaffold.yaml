@@ -12,5 +12,6 @@ build:
     useBuildkit: false
     push: false
 manifests:
-  rawYaml:
-    - ../../kind-cluster/apps/fleet/base/fleet.yaml
+  kustomize:
+    paths:
+    - ../../kind-cluster/apps/integrated-tools/fleet

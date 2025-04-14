@@ -1,0 +1,24 @@
+yamlApplicationConfig:
+  auth:
+    type: disabled
+  management:
+    health:
+      ldap:
+        enabled: false
+
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  host: "kafka-ui.192.168.100.100.nip.io"
+
+env:
+- name: DYNAMIC_CONFIG_ENABLED  # config from UI
+  value: 'true'
+- name: "DISABLELOGDIRSCOLLECTION"
+  value: 'true'
+- name: KAFKA_CLUSTERS_0_NAME
+  value: "bitnami"
+- name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+  value: "openframe-kafka-broker-headless.openframe-datasources:9092"
+# - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+#   value: kafka-zookeeper-headless:2181

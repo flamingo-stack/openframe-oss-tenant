@@ -27,8 +27,7 @@ fi
 
 # Function to check if namespaces and secrets already exist
 function check_bases() {
-  local namespaces=(infrastructure authentik fleet meshcentral tactical-rmm)
-  for ns in "${namespaces[@]}"; do
+  for ns in "${NAMESPACES[@]}"; do
     if ! kubectl get namespace "$ns" &> /dev/null; then
       return 1
     fi
@@ -45,12 +44,12 @@ if ! check_bases; then
 fi
 
 case "$APP" in
-  telepresence)
+  platform_ingress_nginx)
     if [ "$ACTION" == "deploy" ]; then
-      tools_telepresence_deploy
-      if [ "$IFWAIT" == "--wait" ]; then tools_telepresence_wait; fi
+      platform_ingress_nginx_deploy
+      if [ "$IFWAIT" == "--wait" ]; then platform_ingress_nginx_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      tools_telepresence_delete
+      platform_ingress_nginx_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -58,34 +57,12 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  ingress-nginx)
+  platform_metrics_server)
     if [ "$ACTION" == "deploy" ]; then
-      cluster_ingress_nginx_deploy
-      if [ "$IFWAIT" == "--wait" ]; then cluster_ingress_nginx_wait; fi
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "$APP is not supported for debug mode"
-    fi
-    ;;
-  metrics-server)
-    if [ "$ACTION" == "deploy" ]; then
-      cluster_metrics_server_deploy
-      if [ "$IFWAIT" == "--wait" ]; then cluster_metrics_server_wait; fi
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "$APP is not supported for debug mode"
-    fi
-    ;;
-  monitoring)
-    if [ "$ACTION" == "deploy" ]; then
-      cluster_monitoring_deploy
-      if [ "$IFWAIT" == "--wait" ]; then cluster_monitoring_wait; fi
+      platform_metrics_server_deploy
+      if [ "$IFWAIT" == "--wait" ]; then platform_metrics_server_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      cluster_monitoring_delete
+      platform_metrics_server_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -93,12 +70,12 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  logging)
+  platform_monitoring)
     if [ "$ACTION" == "deploy" ]; then
-      cluster_logging_deploy
-      if [ "$IFWAIT" == "--wait" ]; then cluster_logging_wait; fi
+      platform_monitoring_deploy
+      if [ "$IFWAIT" == "--wait" ]; then platform_monitoring_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      cluster_logging_delete
+      platform_monitoring_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -106,12 +83,12 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  efk)
+  platform_logging)
     if [ "$ACTION" == "deploy" ]; then
-      cluster_efk_deploy
-      if [ "$IFWAIT" == "--wait" ]; then cluster_efk_wait; fi
+      platform_logging_deploy
+      if [ "$IFWAIT" == "--wait" ]; then platform_logging_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      cluster_efk_delete
+      platform_logging_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -119,12 +96,25 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  redis)
+  platform_efk)
     if [ "$ACTION" == "deploy" ]; then
-      infra_redis_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_redis_wait; fi
+      platform_efk_deploy
+      if [ "$IFWAIT" == "--wait" ]; then platform_efk_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_redis_delete
+      platform_efk_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
+    fi
+    ;;
+  openframe_datasources_redis)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_redis_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_redis_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_redis_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -132,12 +122,12 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  kafka)
+  openframe_datasources_kafka)
     if [ "$ACTION" == "deploy" ]; then
-      infra_kafka_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_kafka_wait; fi
+      openframe_datasources_kafka_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_kafka_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_kafka_delete
+      openframe_datasources_kafka_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -145,7 +135,282 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  kafka-ui)
+  openframe_datasources_mongodb)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_mongodb_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_mongodb_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_mongodb_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_datasources_mongodb_exporter)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_mongodb_exporter_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_mongodb_exporter_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_mongodb_exporter_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
+    fi
+    ;;
+  openframe_datasources_cassandra)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_cassandra_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_cassandra_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_cassandra_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_datasources_nifi)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_nifi_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_nifi_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_nifi_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying NiFi in dev mode"
+      cd ${SCRIPT_DIR}/infrastructure/nifi
+      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_datasources_zookeeper)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_zookeeper_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_zookeeper_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_zookeeper_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_datasources_pinot)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_datasources_pinot_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_pinot_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_datasources_pinot_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_microservices_openframe_config_server)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_microservices_openframe_config_server_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_config_server_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_microservices_openframe_config_server_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Config Server in dev mode"
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
+      skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_microservices_openframe_api)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_microservices_openframe_api_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_api_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_microservices_openframe_api_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying API in dev mode"
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
+      skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    elif [ "$ACTION" == "debug" ]; then
+      debug_app "openframe-api" "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+    fi
+    ;;
+  openframe_microservices_openframe_management)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_microservices_openframe_management_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_management_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_microservices_openframe_management_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Management in dev mode"
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
+      skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_microservices_openframe_stream)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_microservices_openframe_stream_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_stream_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_microservices_openframe_stream_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Stream in dev mode"
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
+      skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_microservices_openframe_gateway)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_microservices_openframe_gateway_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_gateway_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_microservices_openframe_gateway_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Gateway in dev mode"
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
+      skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_microservices_openframe_ui)
+    if [ "$ACTION" == "deploy" ]; then
+      openframe_microservices_openframe_ui_deploy
+      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_ui_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      openframe_microservices_openframe_ui_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying OpenFrame UI in dev mode"
+      cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
+      skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  openframe_microservices_register_apps)
+    # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
+    # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
+    ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/register/register.sh
+    ;;
+  integrated_tools_datasources_fleet)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_datasources_fleet_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_fleet_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_datasources_fleet_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Fleet in dev mode"
+      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
+      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_fleet)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_fleet_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_fleet_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_fleet_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Fleet in dev mode"
+      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
+      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_datasources_authentik)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_datasources_authentik_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_authentik_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_datasources_authentik_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_authentik)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_authentik_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_authentik_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_authentik_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_datasources_meshcentral)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_datasources_meshcentral_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_meshcentral_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_datasources_meshcentral_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_meshcentral)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_meshcentral_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_meshcentral_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_meshcentral_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying MeshCentral in dev mode"
+      cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
+      skaffold dev --no-prune=false --cache-artifacts=false -n integrated-tools
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_datasources_tactical_rmm)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_datasources_tactical_rmm_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_tactical_rmm_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_datasources_tactical_rmm_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_tactical_rmm)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_tactical_rmm_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_tactical_rmm_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_tactical_rmm_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  tools_kafka_ui)
     if [ "$ACTION" == "deploy" ]; then
       tools_kafka_ui_deploy
       if [ "$IFWAIT" == "--wait" ]; then tools_kafka_ui_wait; fi
@@ -158,33 +423,7 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  mongodb)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_mongodb_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_mongodb_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_mongodb_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  mongodb-exporter)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_mongodb_exporter_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_mongodb_exporter_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_mongodb_exporter_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "$APP is not supported for debug mode"
-    fi
-    ;;
-  mongo-express)
+  tools_mongo_express)
     if [ "$ACTION" == "deploy" ]; then
       tools_mongo_express_deploy
       if [ "$IFWAIT" == "--wait" ]; then tools_mongo_express_wait; fi
@@ -197,272 +436,101 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  cassandra)
+  tools_telepresence)
     if [ "$ACTION" == "deploy" ]; then
-      infra_cassandra_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_cassandra_wait; fi
+      tools_telepresence_deploy
+      if [ "$IFWAIT" == "--wait" ]; then tools_telepresence_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      infra_cassandra_delete
+      tools_telepresence_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
     elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+      echo "$APP is not supported for debug mode"
     fi
     ;;
-  nifi)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_nifi_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_nifi_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_nifi_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying NiFi in dev mode"
-      cd ${SCRIPT_DIR}/infrastructure/nifi
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  zookeeper)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_zookeeper_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_zookeeper_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_zookeeper_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  pinot)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_pinot_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_pinot_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_pinot_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  openframe-config-server)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_config_server_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_config_server_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_config_server_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Config Server in dev mode"
-      cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  openframe-api)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_api_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_api_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_api_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying API in dev mode"
-      cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      debug_app "openframe-api" "openframe-api" "infrastructure" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-    fi
-    ;;
-  openframe-management)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_management_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_management_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_management_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Management in dev mode"
-      cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  openframe-stream)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_stream_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_stream_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_stream_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Stream in dev mode"
-      cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  openframe-gateway)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_gateway_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_gateway_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_gateway_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Gateway in dev mode"
-      cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  openframe-ui)
-    if [ "$ACTION" == "deploy" ]; then
-      infra_openframe_ui_deploy
-      if [ "$IFWAIT" == "--wait" ]; then infra_openframe_ui_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      infra_openframe_ui_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying OpenFrame UI in dev mode"
-      cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
-      skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  authentik)
-    if [ "$ACTION" == "deploy" ]; then
-      authentik_deploy
-      if [ "$IFWAIT" == "--wait" ]; then authentik_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      authentik_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  fleet)
-    if [ "$ACTION" == "deploy" ]; then
-      fleet_deploy
-      if [ "$IFWAIT" == "--wait" ]; then fleet_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      fleet_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Fleet in dev mode"
-      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  meshcentral)
-    if [ "$ACTION" == "deploy" ]; then
-      meshcentral_deploy
-      if [ "$IFWAIT" == "--wait" ]; then meshcentral_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      meshcentral_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying MeshCentral in dev mode"
-      cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
-      skaffold dev --no-prune=false --cache-artifacts=false -n meshcentral
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  rmm)
-    if [ "$ACTION" == "deploy" ]; then
-      tactical_rmm_deploy
-      if [ "$IFWAIT" == "--wait" ]; then tactical_rmm_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      tactical_rmm_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  register-apps)
-    # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
-    # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
-    ./kind-cluster/apps/jobs/register.sh
-    ;;
-  observability)
+  # BUNDLE APPS
+  o|observability)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 monitoring $ACTION $IFWAIT && \
-    $0 logging $ACTION $IFWAIT
+    $0 platform_metrics_server $ACTION $IFWAIT && \
+    $0 platform_monitoring $ACTION $IFWAIT && \
+    $0 platform_logging $ACTION $IFWAIT
     ;;
-  m|minimal)
+  p|platform)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 ingress-nginx $ACTION $IFWAIT && \
-    $0 metrics-server $ACTION $IFWAIT && \
-    $0 observability $ACTION $IFWAIT
+    $0 platform_ingress_nginx $ACTION $IFWAIT && \
+    $0 observability $ACTION $IFWAIT && \
+    platform_wait_all
     ;;
-  tools)
+  t|client_tools)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 telepresence $ACTION $IFWAIT && \
-    $0 mongo-express $ACTION $IFWAIT && \
-    $0 kafka-ui $ACTION $IFWAIT
+    $0 tools_kafka_ui $ACTION $IFWAIT && \
+    $0 tools_mongo_express $ACTION $IFWAIT && \
+    $0 tools_telepresence $ACTION $IFWAIT
     ;;
-  infrastructure)
+  od|openframe_datasources)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 minimal $ACTION $IFWAIT && \
-    $0 redis $ACTION $IFWAIT && \
-    $0 kafka $ACTION $IFWAIT && \
-    $0 mongodb $ACTION $IFWAIT && \
-    $0 mongodb-exporter $ACTION $IFWAIT && \
-    $0 cassandra $ACTION $IFWAIT && \
-    $0 nifi $ACTION $IFWAIT && \
-    $0 zookeeper $ACTION $IFWAIT && \
-    $0 pinot $ACTION $IFWAIT && \
-    $0 openframe-config-server $ACTION $IFWAIT && \
-    $0 openframe-api $ACTION $IFWAIT && \
-    $0 openframe-management $ACTION $IFWAIT && \
-    $0 openframe-stream $ACTION $IFWAIT && \
-    $0 openframe-gateway $ACTION $IFWAIT && \
-    $0 openframe-ui $ACTION $IFWAIT && \
-    $0 tools $ACTION $IFWAIT
+    $0 openframe_datasources_redis $ACTION $IFWAIT
+    $0 openframe_datasources_kafka $ACTION $IFWAIT
+    $0 openframe_datasources_mongodb $ACTION $IFWAIT
+    $0 openframe_datasources_mongodb_exporter $ACTION $IFWAIT
+    $0 openframe_datasources_cassandra $ACTION $IFWAIT
+    $0 openframe_datasources_nifi $ACTION $IFWAIT
+    $0 openframe_datasources_zookeeper $ACTION $IFWAIT
+    $0 openframe_datasources_pinot $ACTION $IFWAIT
+    ;;
+  om|openframe_microservices)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 openframe_microservices_openframe_config_server $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_api $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_management $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_stream $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_gateway $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_ui $ACTION $IFWAIT
+    $0 openframe_microservices_register_apps $ACTION
+    ;;
+  itd|integrated_tools_datasources)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 integrated_tools_datasources_fleet $ACTION $IFWAIT
+    $0 integrated_tools_datasources_authentik $ACTION $IFWAIT
+    $0 integrated_tools_datasources_meshcentral $ACTION $IFWAIT
+    $0 integrated_tools_datasources_tactical_rmm $ACTION $IFWAIT
+    ;;
+  it|integrated_tools)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 integrated_tools_fleet $ACTION $IFWAIT
+    $0 integrated_tools_authentik $ACTION $IFWAIT
+    $0 integrated_tools_meshcentral $ACTION $IFWAIT
+    $0 integrated_tools_tactical_rmm $ACTION $IFWAIT
     ;;
   a|all)
     # ------------- ALL -------------
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 minimal $ACTION $IFWAIT && \
-    $0 redis $ACTION $IFWAIT && \
-    $0 kafka $ACTION $IFWAIT && \
-    $0 mongodb $ACTION $IFWAIT && \
-    $0 mongodb-exporter $ACTION $IFWAIT && \
-    $0 cassandra $ACTION $IFWAIT && \
-    $0 nifi $ACTION $IFWAIT && \
-    $0 zookeeper $ACTION $IFWAIT && \
-    $0 pinot $ACTION $IFWAIT && \
-    $0 openframe-config-server $ACTION $IFWAIT && \
-    $0 openframe-api $ACTION $IFWAIT && \
-    $0 openframe-management $ACTION $IFWAIT && \
-    $0 openframe-stream $ACTION $IFWAIT && \
-    $0 openframe-gateway $ACTION $IFWAIT && \
-    $0 openframe-ui $ACTION $IFWAIT && \
-    $0 authentik $ACTION $IFWAIT && \
-    $0 fleet $ACTION $IFWAIT && \
-    $0 meshcentral $ACTION $IFWAIT && \
-    $0 rmm $ACTION $IFWAIT && \
-    $0 tools $ACTION $IFWAIT && \
-    $0 register-apps $ACTION
+    $0 platform $ACTION $IFWAIT && \
+    $0 openframe_datasources $ACTION $IFWAIT && \
+    $0 openframe_microservices $ACTION $IFWAIT && \
+    $0 openframe_microservices_register_apps $ACTION && \
+    $0 integrated_tools_authentik $ACTION $IFWAIT && \
+    $0 integrated_tools_fleet $ACTION $IFWAIT && \
+    $0 integrated_tools_meshcentral $ACTION $IFWAIT && \
+    $0 integrated_tools_tactical_rmm $ACTION $IFWAIT && \
+    $0 client_tools $ACTION $IFWAIT
     ;;
   -h|--help|-Help)
     show_help_apps

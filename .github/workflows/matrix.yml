@@ -15,7 +15,7 @@ jobs:
     name: Generate Matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
+      matrix: ${{ steps.filter.outputs.matrix }}
       matrix_java: ${{ steps.filter.outputs.matrix_java }}
     steps:
       - name: Define Matrix
@@ -24,55 +24,55 @@ jobs:
           matrix_json='[
             {
               "name": "core",
-              "type": "java",
+              "type": ["java"],
               "path": "./openframe/libs/openframe-core",
               "artifact_name": "openframe-core"
             },
             {
               "name": "data",
-              "type": "java",
+              "type": ["java"],
               "path": "./openframe/libs/openframe-data",
               "artifact_name": "openframe-data"
             },
             {
               "name": "api",
-              "type": "java",
+              "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
               "artifact_name": "openframe-api"
             },
             {
               "name": "config",
-              "type": "java",
+              "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",
               "artifact_name": "openframe-config"
             },
             {
               "name": "gateway",
-              "type": "java",
+              "type": ["java", "container"],
               "path": "./openframe/services/openframe-gateway",
               "artifact_name": "openframe-gateway"
             },
             {
               "name": "management",
-              "type": "java",
+              "type": ["java", "container"],
               "path": "./openframe/services/openframe-management",
               "artifact_name": "openframe-management"
             },
             {
               "name": "stream",
-              "type": "java",
+              "type": ["java", "container"],
               "path": "./openframe/services/openframe-stream",
               "artifact_name": "openframe-stream"
             },
             {
               "name": "ui",
-              "type": "container",
+              "type": ["container"],
               "path": "./openframe/services/openframe-ui"
             },
             {
               "name": "nifi",
-              "type": "container",
-              "path": "./infrastructure/nifi",
+              "type": ["container"],
+              "path": "./openframe/datasources/nifi",
               "build_args": {
                 "NIFI_WEB_HTTPS_PORT": "8443",
                 "NIFI_WEB_HTTP_HOST": "0.0.0.0",
@@ -82,7 +82,7 @@ jobs:
             },
             {
               "name": "authentik-postgresql",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/authentik/postgresql",
               "build_args": {
                 "POSTGRES_USER": "authentik-user",
@@ -92,7 +92,7 @@ jobs:
             },
             {
               "name": "tactical-frontend",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-frontend",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -139,7 +139,7 @@ jobs:
             },
             {
               "name": "tactical-nginx",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-nginx",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -186,7 +186,7 @@ jobs:
             },
             {
               "name": "tactical-backend",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -233,7 +233,7 @@ jobs:
             },
             {
               "name": "tactical-nats",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -280,7 +280,7 @@ jobs:
             },
             {
               "name": "tactical-websockets",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -327,7 +327,7 @@ jobs:
             },
             {
               "name": "tactical-celery",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -374,7 +374,7 @@ jobs:
             },
             {
               "name": "tactical-celerybeat",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
@@ -421,12 +421,12 @@ jobs:
             },
             {
               "name": "fleetmdm",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/fleetmdm"
             },
             {
               "name": "meshcentral",
-              "type": "container",
+              "type": ["container"],
               "path": "./integrated-tools/meshcentral/server",
               "build_args": {
                 "MESH_DIR": "/opt/mesh",
@@ -467,6 +467,11 @@ jobs:
         run: |
           {
             echo 'matrix_java<<EOF'
-            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type=="java")]'
+            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | any(. == "java"))]'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo 'matrix<<EOF'
+            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | any(. == "container"))]'
             echo EOF
           } >> "$GITHUB_OUTPUT"

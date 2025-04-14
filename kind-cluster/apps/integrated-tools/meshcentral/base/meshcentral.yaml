@@ -1,0 +1,154 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshcentral
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshcentral
+  template:
+    metadata:
+      labels:
+        app: meshcentral
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
+        runAsUser: 0
+      containers:
+      - name: meshcentral
+        image: ghcr.io/flamingo-cx/openframe-meshcentral:latest
+        ports:
+        - name: meshcentral
+          containerPort: 8383
+        - name: agent
+          containerPort: 80
+        env:
+        - name: MONGODB_HOST
+          value: "meshcentral-mongodb.integrated-tools-datasources"
+        - name: MONGODB_PORT
+          value: "27017"
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "mongouser"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: "mongopass"
+        - name: MONGO_INITDB_DATABASE
+          value: "meshcentral"
+        - name: MESH_USER
+          value: "mesh@openframe.io"
+        - name: MESH_PASS
+          value: "meshpass@1234"
+        - name: MESH_DEVICE_GROUP
+          value: "OpenFrame"
+        - name: MESH_PORT
+          value: "8383"
+        - name: MESH_HOST
+          value: "meshcentral.integrated-tools.svc.cluster.local"
+        - name: MESH_EXTERNAL_HOST
+          value: "meshcentral.192.168.100.100.nip.io"
+        - name: MESH_EXTERNAL_PORT
+          value: "443"
+        - name: MESH_NGINX_HOST
+          value: "meshcentral.192.168.100.100.nip.io"
+        - name: MESH_NGINX_NAT_HOST
+          value: "meshcentral.192.168.100.100.nip.io"
+        - name: MESH_PERSISTENT_CONFIG
+          value: "0"
+        - name: MESH_DISABLE_SSL
+          value: "1"
+        - name: MESH_COMPRESSION_ENABLED
+          value: "true"
+        - name: MESH_WEBRTC_ENABLED
+          value: "false"
+        - name: MESH_TEMP_DIR
+          value: "/tmp/mesh"
+        - name: MESH_DIR
+          value: "/opt/mesh"
+        - name: MESH_PROTOCOL
+          value: "wss"
+        volumeMounts:
+        - name: meshcentral-data
+          mountPath: /opt/mesh
+        livenessProbe:
+          httpGet:
+            path: /health.ashx
+            port: 8383
+          initialDelaySeconds: 30
+          periodSeconds: 15
+      volumes:
+      - name: meshcentral-data
+        persistentVolumeClaim:
+          claimName: meshcentral-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshcentral-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshcentral
+spec:
+  selector:
+    app: meshcentral
+  ports:
+  - name: meshcentral
+    port: 8383
+    targetPort: 8383
+  - name: agent
+    port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meshcentral
+  annotations:
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    # WebSocket connection upgrade
+    nginx.ingress.kubernetes.io/enable-websocket: "true"
+    # WebSocket proxy settings
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # SSL Passthrough
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    # Force SSL redirect
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+    - host: meshcentral.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /openframe_public/
+            pathType: Prefix
+            backend:
+              service:
+                name: meshcentral
+                port:
+                  name: agent
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: meshcentral
+                port:
+                  name: agent
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: meshcentral
+                port:
+                  name: meshcentral

@@ -9,13 +9,12 @@ permissions:
   id-token: write
 
 on:
-  # push:
-  #   paths:
-  #     - 'libs/**'
-  #     - 'services/**'
-  #     - 'infrastructure/**'
-  #     - 'pom.xml'
-  #     - '.github/workflows/build.yml'
+  push:
+    paths:
+      - 'openframe/**'
+      - 'integrated-tools/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
   pull_request:
     types: [closed]
@@ -23,7 +22,6 @@ on:
     paths:
       - 'openframe/**'
       - 'integrated-tools/**'
-      - 'infrastructure/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
 
@@ -94,7 +92,7 @@ jobs:
             ui:
               - './openframe/services/openframe-ui/**'
             nifi:
-              - './openframe/nifi/**'
+              - './infrastructure/nifi/**'
             postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
@@ -196,14 +194,14 @@ jobs:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: .
 
       - name: Prepare Java artifacts for Docker build
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         run: |
           mkdir -p ${{ matrix.path }}/target
           mv *.jar ${{ matrix.path }}/target/

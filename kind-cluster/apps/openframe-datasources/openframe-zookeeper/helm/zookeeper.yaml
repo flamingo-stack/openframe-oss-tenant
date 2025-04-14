@@ -1,0 +1,15 @@
+fourlwCommandsWhitelist: "srvr,ruok,conf,stat"
+tickTime: 2000
+
+replicaCount: 1
+
+containerPorts:
+  client: 2181
+  tls: 3181
+  follower: 2888
+  election: 3888
+  adminServer: 8080
+  metrics: 9141
+
+metrics:
+  enabled: true
