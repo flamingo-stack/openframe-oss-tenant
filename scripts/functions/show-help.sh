@@ -7,16 +7,15 @@ Parameters:
 p|pre                                   : Check if all required commands are installed
 k|cluster                               : Setup cluster only
 d|delete                                : Remove cluster
-a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
+a|app <app-name|all> <action>           : Deploy <app-name> or 'all' apps
                               <action>  : deploy, build, delete, dev, debug (Required)
                               dev       : Build, deploy and run in dev mode
                                           Tail changes, build and deploy on change. (Delete app before using dev mode otherwise may require run twice)
   debug <local-port> <remote-port-name> : Enable debug mode and redirect traffic to local port (Use CTRL+C to stop)
-                              --wait    : Wait for app to be ready (for deploy) (Optional)
-b|bootstrap                   [--wait]  : Bootstrap cluster with all apps
+b|bootstrap                             : Bootstrap cluster with all apps
 s|start                                 : Start kind cluster
 stop                                    : Stop kind cluster
-p|platform                    [--wait]  : Bootstrap cluster with base mandatory apps
+p|platform                              : Bootstrap cluster with base mandatory apps
 c|cleanup                               : Remove unused images from kind nodes
 
 Examples:

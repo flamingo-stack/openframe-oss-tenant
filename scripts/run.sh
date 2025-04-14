@@ -30,20 +30,15 @@ for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   done < <(declare -F | awk '{print $3}')
 done
 
-if [ "$1" == "b" ] || [ "$1" == "bootstrap" ] || [ "$1" == "m" ] || [ "$1" == "minimal" ]; then
-  IFWAIT=$2
-else
-  APP=$2
-  ACTION=$3
-  if [ "$ACTION" == "debug" ]; then
-    LOCAL_PORT="$4"
-    REMOTE_PORT_NAME="$5"
-  elif [ "$ACTION" == "deploy" ]; then
-    IFWAIT=$4
-  fi
+ARG=$1
+APP=$2
+ACTION=$3
+if [ "$ACTION" == "debug" ]; then
+  LOCAL_PORT="$4"
+  REMOTE_PORT_NAME="$5"
 fi
 
-case "$1" in
+case "$ARG" in
   p|pre)
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
@@ -56,7 +51,7 @@ case "$1" in
   a|app)
     if [ -n "$APP" ]; then
       bash "$0" pre && \
-      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
       echo "App name is required"
       exit 1
@@ -66,13 +61,13 @@ case "$1" in
     # Bootstrap whole cluster with all apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash "$0" app all deploy "$IFWAIT"
+    bash "$0" app all deploy
     ;;
   p|platform)
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash "$0" app platform deploy "$IFWAIT"
+    bash "$0" app platform deploy
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images
@@ -100,6 +95,6 @@ case "$1" in
     exit 0
     ;;
   *)
-    echo "Get help with: $0 [ -h | --help | -Help ]"
-    exit 1
+    show_help
+    exit 0
 esac
