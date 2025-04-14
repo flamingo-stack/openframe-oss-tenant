@@ -14,7 +14,3 @@ spring:
 
 management:
   key: ${OPENFRAME_MANAGEMENT_KEY:docker-management-key-123}
-
-# Docker monitoring endpoints
-loki:
-  url: http://openframe-loki.platform.svc.cluster.local:3100/loki/api/v1/push

@@ -1,80 +1,50 @@
 #!/usr/bin/env bash
 
-set -e
+source /scripts/setup-mesh.sh
+source /scripts/manage-service.sh
 
-source /meshcentral-functions.sh
+echo "Creating data directory"
+mkdir -p ${MESH_DIR}/data
 
-if [ ! -f "${MESH_DIR}/mesh_token" ]; then
-  echo "Creating data directory"
-  mkdir -p ${MESH_DIR}/data
+echo "Creating log directory"
+mkdir -p ${MESH_DIR}/logs
+mkdir -p ${MESH_DIR}/nginx-api
+touch ${MESH_DIR}/nginx-api/api.log
+chmod 666 ${MESH_DIR}/nginx-api/api.log
 
-  echo "Creating log file"
-  mkdir -p ${MESH_DIR}/logs
+echo "Substituting environment variables in config.json (excluding \$schema)"
+envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
 
-  echo "Substituting environment variables in config.json (excluding \$schema)"
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
+echo "Setting up directory permissions..."
+chmod -R 755 ${MESH_DIR}  # Make all folders readable and executable
+chmod -R 644 ${MESH_DIR}  # Make all files readable
+chmod -R 775 ${MESH_DIR}  # Make all folders writable
+chmod -R 664 ${MESH_DIR}  # Make all files writable
+chmod -R 755 ${MESH_DIR}  # Make all folders executable
+chmod -R 755 ${MESH_DIR}  # Make all files executable
+chown -R node:node ${MESH_DIR}
 
-  echo "Making all folders readable by node"
-  chmod -R 755 ${MESH_DIR}
+echo "Installing MeshCentral..."
+npm install meshcentral --prefix ${MESH_DIR} || { echo "Failed to install MeshCentral"; exit 1; }
+echo "MeshCentral installation completed"
 
-  echo "Making all files readable by node"
-  chmod -R 644 ${MESH_DIR}
+sleep 5
 
-  echo "Making all folders writable by node"
-  chmod -R 775 ${MESH_DIR}
+# Setup mesh components
+setup_mesh_user
 
-  echo "Making all files writable by node"
-  chmod -R 664 ${MESH_DIR}
+# Copy and setup API script
+cp /nginx-api/meshcentral-api.sh ${MESH_DIR}/nginx-api/
+chmod +x ${MESH_DIR}/nginx-api/meshcentral-api.sh
 
-  echo "Making all folders executable by node"
-  chmod -R 755 ${MESH_DIR}
+# Start MeshCentral temporarily to setup device group
+start_meshcentral &
+wait_for_meshcentral_to_start
+setup_mesh_device_group
+stop_meshcentral
+wait_for_meshcentral_to_stop
+generate_mesh_auth_args
 
-  echo "Making all files executable by node"
-  chmod -R 755 ${MESH_DIR}
-
-  echo "Setting the owner of all files and folders to node"
-  chown -R node:node ${MESH_DIR}
-
-  #install meshcentral under ${MESH_DIR}/node_modules
-  echo "Installing MeshCentral..."
-  npm install meshcentral --prefix ${MESH_DIR} || { echo "Failed to install MeshCentral"; exit 1; }
-  echo "MeshCentral installation completed"
-
-  sleep 5
-  
-  # Setup the user
-  setup_mesh_user
-
-  # Copy the API files
-  cp -rf /nginx-api ${MESH_DIR}
-
-  # Make the API files executable
-  chmod -R 755 ${MESH_DIR}/nginx-api
-
-  # Make the API files executable
-  chmod -R +x ${MESH_DIR}/nginx-api/api/* ${MESH_DIR}/nginx-api/helpers/*
-
-  # Start MeshCentral in the background
-  start_meshcentral &
-
-  # Wait for MeshCentral to be ready
-  wait_for_meshcentral_to_start
-
-  # Setup the device group
-  setup_mesh_device_group
-
-  # Setup the token
-  setup_mesh_token
-
-  # Kill the background MeshCentral process
-  stop_meshcentral  
-
-  # Wait for MeshCentral to stop
-  wait_for_meshcentral_to_stop
-fi
-
-# Start Nginx
-configure_and_start_nginx
-
-# Start MeshCentral in the foreground
-start_meshcentral
+# Start services
+/scripts/setup-nginx.sh
+start_meshcentral  # Start in foreground
