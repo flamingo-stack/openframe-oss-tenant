@@ -303,6 +303,34 @@ case "$APP" in
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
     ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/register/register.sh
     ;;
+  integrated_tools_datasources_fleet)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_datasources_fleet_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_fleet_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_datasources_fleet_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Fleet in dev mode"
+      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
+      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_fleet)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_fleet_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_fleet_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_fleet_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "Deploying Fleet in dev mode"
+      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
+      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
   authentik)
     if [ "$ACTION" == "deploy" ]; then
       authentik_deploy
@@ -312,20 +340,6 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
-    fi
-    ;;
-  fleet)
-    if [ "$ACTION" == "deploy" ]; then
-      fleet_deploy
-      if [ "$IFWAIT" == "--wait" ]; then fleet_wait; fi
-    elif [ "$ACTION" == "delete" ]; then
-      fleet_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "Deploying Fleet in dev mode"
-      cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-      skaffold dev --no-prune=false --cache-artifacts=false -n fleet
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
     fi
@@ -396,6 +410,7 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
+  # BUNDLE APPS
   o|observability)
     ACTION=${2}
     IFWAIT=${3:-}
@@ -446,6 +461,20 @@ case "$APP" in
     $0 openframe_microservices_openframe_ui $ACTION $IFWAIT && \
     openframe_microservices_wait_all
     $0 openframe_microservices_register_apps $ACTION
+    ;;
+  itd|integrated_tools_datasources)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 integrated_tools_datasources_fleet $ACTION $IFWAIT
+    integrated_tools_datasources_wait_all
+    ;;
+  it|integrated_tools)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    $0 integrated_tools_fleet $ACTION $IFWAIT
+    integrated_tools_wait_all
     ;;
   a|all)
     # ------------- ALL -------------
