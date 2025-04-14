@@ -10,7 +10,6 @@ function fleet_wait() {
   echo "Waiting for Fleet to be ready"
   wait_for_app "integrated-tools-datasources" "app=fleet-mdm-redis"
   wait_for_app "integrated-tools-datasources" "app=fleet-mdm-mysql"
-  wait_for_app "integrated-tools-datasources" "app=fleet"
 }
 
 function integrated_tools_datasources_fleet_delete() {
@@ -50,6 +49,21 @@ function integrated_tools_datasources_authentik_wait() {
 function integrated_tools_datasources_authentik_delete() {
   echo "Deleting Authentik"
   kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/authentik/manifests
+}
+# MESHCENTRAL
+function integrated_tools_datasources_meshcentral_deploy() {
+  echo "Deploying MeshCentral"
+  kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/meshcentral
+}
+
+function integrated_tools_datasources_meshcentral_wait() {
+  echo "Waiting for MeshCentral to be ready"
+  wait_for_app "integrated-tools-datasources" "app=meshcentral"
+}
+
+function integrated_tools_datasources_meshcentral_delete() {
+  echo "Deleting MeshCentral"
+  kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/meshcentral
 }
 
 # Wait for all integrated-tools-datasources apps to be ready

@@ -357,16 +357,29 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  meshcentral)
+  integrated_tools_datasources_meshcentral)
     if [ "$ACTION" == "deploy" ]; then
-      meshcentral_deploy
-      if [ "$IFWAIT" == "--wait" ]; then meshcentral_wait; fi
+      integrated_tools_datasources_meshcentral_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_meshcentral_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      meshcentral_delete
+      integrated_tools_datasources_meshcentral_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_meshcentral)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_meshcentral_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_meshcentral_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_meshcentral_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "Deploying MeshCentral in dev mode"
       cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
-      skaffold dev --no-prune=false --cache-artifacts=false -n meshcentral
+      skaffold dev --no-prune=false --cache-artifacts=false -n integrated-tools
     elif [ "$ACTION" == "debug" ]; then
       echo "Debug mode not enabled for this app"
     fi
@@ -384,7 +397,7 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  kafka-ui)
+  tools_kafka_ui)
     if [ "$ACTION" == "deploy" ]; then
       tools_kafka_ui_deploy
       if [ "$IFWAIT" == "--wait" ]; then tools_kafka_ui_wait; fi
@@ -397,7 +410,7 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  mongo-express)
+  tools_mongo_express)
     if [ "$ACTION" == "deploy" ]; then
       tools_mongo_express_deploy
       if [ "$IFWAIT" == "--wait" ]; then tools_mongo_express_wait; fi
@@ -410,7 +423,7 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  telepresence)
+  tools_telepresence)
     if [ "$ACTION" == "deploy" ]; then
       tools_telepresence_deploy
       if [ "$IFWAIT" == "--wait" ]; then tools_telepresence_wait; fi
@@ -444,9 +457,9 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 kafka-ui $ACTION $IFWAIT && \
-    $0 mongo-express $ACTION $IFWAIT && \
-    $0 telepresence $ACTION $IFWAIT
+    $0 tools_kafka_ui $ACTION $IFWAIT && \
+    $0 tools_mongo_express $ACTION $IFWAIT && \
+    $0 tools_telepresence $ACTION $IFWAIT
     ;;
   od|openframe_datasources)
     ACTION=${2}
@@ -480,6 +493,8 @@ case "$APP" in
     IFWAIT=${3:-}
 
     $0 integrated_tools_datasources_fleet $ACTION $IFWAIT
+    $0 integrated_tools_datasources_authentik $ACTION $IFWAIT
+    $0 integrated_tools_datasources_meshcentral $ACTION $IFWAIT
     integrated_tools_datasources_wait_all
     ;;
   it|integrated_tools)
@@ -487,6 +502,8 @@ case "$APP" in
     IFWAIT=${3:-}
 
     $0 integrated_tools_fleet $ACTION $IFWAIT
+    $0 integrated_tools_authentik $ACTION $IFWAIT
+    $0 integrated_tools_meshcentral $ACTION $IFWAIT
     integrated_tools_wait_all
     ;;
   a|all)
