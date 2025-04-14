@@ -110,7 +110,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Gateway" \
     "OpenFrame Gateway Service" \
-    '[{"url": "http://openframe-gateway", "port": "8100", "type": "API"}]' \
+    '[{"url": "http://openframe-gateway.openframe-microservices.svc", "port": "8100", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -126,7 +126,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame API" \
     "OpenFrame API Gateway Service" \
-    '[{"url": "http://openframe-api", "port": "8095", "type": "API"}]' \
+    '[{"url": "http://openframe-api.openframe-microservices.svc", "port": "8095", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -142,7 +142,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Stream" \
     "OpenFrame Stream Processing Service" \
-    '[{"url": "http://openframe-stream", "port": "8091", "type": "API"}]' \
+    '[{"url": "http://openframe-stream.openframe-microservices.svc", "port": "8091", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -158,7 +158,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Management" \
     "OpenFrame Management Service" \
-    '[{"url": "http://openframe-management", "port": "8096", "type": "API"}]' \
+    '[{"url": "http://openframe-management.openframe-microservices.svc", "port": "8096", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -174,7 +174,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Config" \
     "OpenFrame Configuration Service" \
-    '[{"url": "http://openframe-config", "port": "8090", "type": "API"}]' \
+    '[{"url": "http://openframe-config.openframe-microservices.svc", "port": "8090", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -286,7 +286,7 @@ register_tool \
     "PINOT" \
     "Apache Pinot" \
     "Apache Pinot Real-time Analytics Database" \
-    '[{"url": "http://openframe-pinot-controller", "port": "9000", "type": "CONTROLLER"},{"url": "http://openframe-pinot-broker", "port": "8099", "type": "BROKER"},{"url": "http://openframe-pinot-server", "port": "8097", "type": "SERVER"}]' \
+    '[{"url": "http://openframe-pinot-controller.openframe-datasources.svc", "port": "9000", "type": "CONTROLLER"},{"url": "http://openframe-pinot-broker.openframe-datasources.svc", "port": "8099", "type": "BROKER"},{"url": "http://openframe-pinot-server.openframe-datasources.svc", "port": "8097", "type": "SERVER"}]' \
     "" \
     "" \
     "" \
@@ -442,7 +442,7 @@ register_tool \
     "LOKI" \
     "Loki" \
     "Loki Log Aggregation System" \
-    '[{"url": "http://openframe-loki.monitoring.svc", "port": "3100", "type": "API"}]' \
+    '[{"url": "http://openframe-loki.platform.svc", "port": "3100", "type": "API"}]' \
     "" \
     "" \
     "" \
