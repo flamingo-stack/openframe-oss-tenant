@@ -18,7 +18,7 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/OpenFrame-AI/openframe-backend
+          uri: https://github.com/Flamingo-CX/openframe
           username: ${GITHUB_USERNAME:michaelassraf}
           password: ${GITHUB_TOKEN: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}
           clone-on-start: true

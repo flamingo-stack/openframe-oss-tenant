@@ -113,3 +113,14 @@ EOL
   mkdir -p "${MESH_DIR}/nginx-api/openframe_public"
   cp "${MESH_DIR}/meshagent.msh" "${MESH_DIR}/nginx-api/openframe_public/meshagent.msh"
 } 
+
+generate_mesh_auth_args() {
+  echo "[meshcentral] Generating Mesh Auth Args..."
+  # URL encode the credentials using printf and jq
+  MESH_USER_ENCODED=$(printf '%s' "${MESH_USER}" | jq -sRr @uri)
+  MESH_PASS_ENCODED=$(printf '%s' "${MESH_PASS}" | jq -sRr @uri)
+  
+  echo "${MESH_USER_ENCODED}" >"${MESH_DIR}/mesh_user_encoded"
+  echo "${MESH_PASS_ENCODED}" >"${MESH_DIR}/mesh_pass_encoded"
+  echo "[meshcentral] Mesh Auth Args: $(cat ${MESH_DIR}/mesh_user_encoded) $(cat ${MESH_DIR}/mesh_pass_encoded)"
+} 

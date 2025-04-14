@@ -45,7 +45,7 @@ if [ -n "$QUERY_STRING" ]; then
         if [ -n "$value" ]; then
             # URL decode the value
             value=$(printf '%b' "${value//%/\\x}")
-            CMD="$CMD --$key \"$value\""
+            CMD="$CMD --$key '$value'"
         fi
     done <<< "${QUERY_STRING//&/$'\n'}"
 fi
@@ -57,7 +57,7 @@ if [ "$REQUEST_METHOD" = "POST" ] && [ "$CONTENT_LENGTH" -gt 0 ]; then
         key=$(echo "$key" | tr -d '"{} ')
         value=$(echo "$value" | tr -d '"{},')
         if [ -n "$key" ] && [ -n "$value" ]; then
-            CMD="$CMD --$key \"$value\""
+            CMD="$CMD --$key '$value'"
         fi
     done <<< "$POST_DATA"
 fi

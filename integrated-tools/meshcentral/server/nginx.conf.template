@@ -29,8 +29,17 @@ http {
                          'upstream_response_time: "$upstream_response_time" '
                          'upstream_error: "$upstream_http_x_error"';
     
+    log_format proxy_debug '[$time_local] $remote_addr - $remote_user '
+                          '"$request" $status $body_bytes_sent '
+                          '"$http_referer" "$http_user_agent" '
+                          'upstream_addr: "$upstream_addr" '
+                          'upstream_uri: "$uri" '
+                          'proxy_host: "$proxy_host" '
+                          'proxy_uri: "$proxy_mesh_url"';
+    
     access_log /dev/stdout main;
     access_log /dev/stdout debug_fcgi;
+    access_log /dev/stdout proxy_debug;
     error_log  /dev/stderr debug;
     
     sendfile on;
@@ -47,6 +56,9 @@ http {
     fastcgi_keep_conn on;
     fastcgi_intercept_errors on;
     
+    resolver kube-dns.kube-system.svc.cluster.local valid=30s;
+    resolver_timeout 5s;
+
     server {
         listen 80;
         
@@ -54,6 +66,27 @@ http {
         location /openframe_public {
             root ${MESH_DIR}/nginx-api;
             autoindex on;
+        }
+
+        location /api/tunnel {
+            # Define the proxy URL as a variable with escaped parameters
+            set $proxy_mesh_url "https://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}/meshrelay.ashx?$args&user=${MESH_USER_ENCODED}&pass=${MESH_PASS_ENCODED}";
+            
+            # Log the proxy_pass URL before substitution
+            add_header X-Debug-ProxyPass-Original $proxy_mesh_url;
+            
+            proxy_pass $proxy_mesh_url;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_read_timeout 86400;
+            
+            # Log details about the proxy connection
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Debug-URI $uri;
+            proxy_set_header X-Debug-Args $args;
         }
         
         # Unified API endpoint

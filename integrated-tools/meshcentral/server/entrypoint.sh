@@ -43,6 +43,7 @@ wait_for_meshcentral_to_start
 setup_mesh_device_group
 stop_meshcentral
 wait_for_meshcentral_to_stop
+generate_mesh_auth_args
 
 # Start services
 /scripts/setup-nginx.sh
