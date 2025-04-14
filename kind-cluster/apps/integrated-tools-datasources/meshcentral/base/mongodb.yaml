@@ -56,3 +56,14 @@ spec:
   resources:
     requests:
       storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshcentral-mongodb
+spec:
+  selector:
+    app: meshcentral-mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
