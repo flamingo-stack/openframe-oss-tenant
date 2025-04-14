@@ -160,6 +160,30 @@ function openframe_datasources_zookeeper_delete() {
   kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
 }
 
+# PINOT
+function openframe_datasources_pinot_deploy() {
+  echo "Deploying Pinot"
+  # Pinot Controller (depends on Zookeeper)
+  # Pinot Broker (depends on Pinot Controller)
+  # Pinot Server (depends on Pinot Controller)
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-pinot/manifests
+
+  # helm_repo_ensure openframe-pinot https://raw.githubusercontent.com/apache/pinot/master/helm
+  # helm upgrade -i pinot pinot/pinot \
+  #     -n openframe-datasources --create-namespace \
+  #     --version 0.3.1
+}
+
+function openframe_datasources_pinot_wait() {
+  echo "Waiting for Pinot to be ready"
+  wait_for_app "openframe-datasources" "app=openframe-pinot"
+}
+
+function openframe_datasources_pinot_delete() {
+  echo "Deleting Pinot"
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-pinot/manifests
+}
+
 # Wait for all openframe-datasources apps to be ready
 function openframe_datasources_wait_all() {
   openframe_datasources_redis_wait
@@ -169,4 +193,5 @@ function openframe_datasources_wait_all() {
   openframe_datasources_cassandra_wait
   openframe_datasources_zookeeper_wait
   openframe_datasources_nifi_wait
+  openframe_datasources_pinot_wait
 }

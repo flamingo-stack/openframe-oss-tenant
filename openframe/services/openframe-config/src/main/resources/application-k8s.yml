@@ -2,13 +2,13 @@ loki:
   url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
 spring:
   config:
-    url: http://openframe-config-server.infrastructure.svc.cluster.local:8888
+    url: http://openframe-config-server.openframe-microservices.svc.cluster.local:8888
 
 security:
   oauth2:
     resourceserver:
       jwt:
-        issuer-uri: http://openframe-api.infrastructure.svc.cluster.local:8090
+        issuer-uri: http://openframe-api.openframe-microservices.svc.cluster.local:8090
     authorization:
       cors:
-        allowed-origins: http://openframe-config-server.infrastructure.svc.cluster.local
+        allowed-origins: http://openframe-config-server.openframe-microservices.svc.cluster.local

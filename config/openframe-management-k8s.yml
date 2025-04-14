@@ -6,7 +6,7 @@ spring:
     # Docker Redis connection (created from application-k8s.yaml)
     # TODO: Remove this once Redis url is taken from application-k8s.yaml
     redis:
-      host: openframe-redis-headless
+      host: openframe-redis-headless.openframe-datasources.svc.cluster.local
       port: 6379
 
   kafka:
@@ -17,4 +17,4 @@ management:
 
 # Docker monitoring endpoints
 loki:
-  url: http://openframe-loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+  url: http://openframe-loki.platform.svc.cluster.local:3100/loki/api/v1/push

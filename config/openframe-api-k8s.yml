@@ -19,7 +19,7 @@ loki:
 
 openframe:
   management:
-    url: http://openframe-management.infrastructure.svc.cluster.local:8095
+    url: http://openframe-management.openframe-microservices.svc.cluster.local:8095
     key: ${OPENFRAME_MANAGEMENT_KEY:docker-management-key-123}
 
 
