@@ -1,8 +1,15 @@
 #!/bin/bash
 
-# Get the directory where the script is located, regardless of where it's called from
-export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DEPLOY_DIR="$(dirname "$SCRIPT_DIR")/deploy"
+
+# Convert Windows paths to Git Bash paths if running on Windows
+if [[ "$(uname -s)" == *"NT"* ]] || [[ "$(uname -s)" == "MINGW"* ]] || [[ "$(uname -s)" == "CYGWIN"* ]]; then
+    # Convert Windows path to Git Bash path
+    SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+    DEPLOY_DIR=$(echo "$DEPLOY_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+fi
 
 # Source functions in correct order
 source "${SCRIPT_DIR}/functions/variables.sh"
@@ -28,13 +35,18 @@ export -f wait_parallel
 source "${SCRIPT_DIR}/functions/debug.sh"
 export -f debug_app
 
+source "${SCRIPT_DIR}/functions/swap-config.sh"
+export -f setup_wslconfig setup_swap check_memory
+
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
-  source "$s"
-  # Export all functions from the sourced file
-  while IFS= read -r func; do
-    export -f "$func"
-  done < <(declare -F | awk '{print $3}')
+  if [ -f "$s" ]; then
+    source "$s"
+    # Export all functions from the sourced file
+    while IFS= read -r func; do
+      export -f "$func"
+    done < <(declare -F | awk '{print $3}')
+  fi
 done
 
 # Function to check if namespaces and secrets already exist
@@ -66,7 +78,11 @@ case "$ARG" in
   pre)
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
+  s|swap)
+    check_memory
+    ;;
   k|cluster)
+    check_memory
     bash "${SCRIPT_DIR}/setup-cluster.sh" && \
     if ! check_bases; then
       bash ${SCRIPT_DIR}/bases.sh
@@ -88,12 +104,14 @@ case "$ARG" in
     # Bootstrap whole cluster with all apps
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
+    bash "$0" swap && \
     bash "$0" cluster && \
     bash "$0" app all deploy
     ;;
   p|platform)
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
+    bash "$0" swap && \
     bash "$0" cluster && \
     bash ${SCRIPT_DIR}/bases.sh && \
     bash "$0" app platform deploy
@@ -103,7 +121,7 @@ case "$ARG" in
     # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
       echo "Cleaning up $node ..."
-      docker exec $node crictl rmi --prune
+      docker exec "$node" crictl rmi --prune
     done
     ;;
   s|start)
