@@ -9,7 +9,7 @@ spec:
       interval: 30s
   namespaceSelector:
     matchNames:
-    - infrastructure
+    - openframe-datasources
   selector:
     matchLabels:
       app: openframe-nifi

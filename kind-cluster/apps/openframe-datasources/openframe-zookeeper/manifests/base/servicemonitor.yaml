@@ -14,7 +14,7 @@ spec:
           replacement: 'zookeeper'
   namespaceSelector:
     matchNames:
-    - infrastructure
+    - openframe-datasources
   selector:
     matchLabels:
       app: zookeeper

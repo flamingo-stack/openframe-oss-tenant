@@ -58,4 +58,4 @@ metrics:
   enabled: true
   serviceMonitor:
     enabled: true
-    namespace: infrastructure
+    namespace: openframe-datasources

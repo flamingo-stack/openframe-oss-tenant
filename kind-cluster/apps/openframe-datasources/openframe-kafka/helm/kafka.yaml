@@ -76,4 +76,4 @@ metrics:
       enabled: true
   prometheusRule:
     enabled: true
-    namespace: monitoring
+    namespace: openframe-datasources

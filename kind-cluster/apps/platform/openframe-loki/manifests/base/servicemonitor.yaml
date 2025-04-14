@@ -11,9 +11,8 @@ spec:
       interval: 15s
       scrapeTimeout: 10s
   namespaceSelector:
-    # any: true
     matchNames:
-      - monitoring
+      - platform
   selector:
     matchLabels:
       app: openframe-loki
