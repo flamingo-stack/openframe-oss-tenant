@@ -8,13 +8,13 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: authentik-certs
+  name: authentik-templates
 data:
-  # Empty ConfigMap for certificates
+  # Empty ConfigMap for custom templates
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: authentik-templates
+  name: authentik-certs
 data:
-  # Empty ConfigMap for custom templates
+  # Empty for now, can be populated with certificates later

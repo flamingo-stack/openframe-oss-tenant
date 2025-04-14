@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-postgresql
+spec:
+  selector:
+    app: authentik-postgresql
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentik-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentik-postgresql
+  template:
+    metadata:
+      labels:
+        app: authentik-postgresql
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: postgresql
+        image: ghcr.io/flamingo-cx/openframe-authentik-postgresql:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: authentik-user
+        - name: POSTGRES_PASSWORD
+          value: authentik-password-1234
+        # - name: POSTGRES_DB
+        #   value: authentik-database-authentik
+        - name: POSTGRES_MULTIPLE_DATABASES
+          value: authentik-database,authentik-database-authentik
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - authentik-user
+            - -d
+            - authentik-database-authentik
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - authentik-user
+            - -d
+            - authentik-database-authentik
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+      volumes:
+      - name: postgresql-data
+        persistentVolumeClaim:
+          claimName: authentik-postgresql-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: authentik-postgresql-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

@@ -331,12 +331,25 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  authentik)
+  integrated_tools_datasources_authentik)
     if [ "$ACTION" == "deploy" ]; then
-      authentik_deploy
-      if [ "$IFWAIT" == "--wait" ]; then authentik_wait; fi
+      integrated_tools_datasources_authentik_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_authentik_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      authentik_delete
+      integrated_tools_datasources_authentik_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_authentik)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_authentik_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_authentik_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_authentik_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0

@@ -1,0 +1,12 @@
+auth:
+  enabled: false
+  password: ""
+
+replica:
+  replicaCount: 1
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+

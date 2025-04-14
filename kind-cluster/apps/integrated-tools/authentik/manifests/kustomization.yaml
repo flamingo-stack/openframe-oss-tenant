@@ -1,0 +1,3 @@
+resources:
+  - base/configmaps.yaml
+  - base/deployment.yaml

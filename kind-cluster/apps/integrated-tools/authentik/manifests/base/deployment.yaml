@@ -1,157 +1,3 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: authentik-certs
-data:
-  # Empty for now, can be populated with certificates later
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: authentik-templates
-data:
-  # Empty for now, can be populated with custom templates later
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: authentik-server
-spec:
-  selector:
-    app: authentik-server
-  ports:
-  - port: 9000
-    targetPort: 9000
-    protocol: TCP
-    name: http
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: authentik-redis
-spec:
-  selector:
-    app: authentik-redis
-  ports:
-  - port: 6379
-    targetPort: 6379
-    protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: authentik-postgresql
-spec:
-  selector:
-    app: authentik-postgresql
-  ports:
-  - port: 5432
-    targetPort: 5432
-    protocol: TCP
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: authentik-redis
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: authentik-redis
-  template:
-    metadata:
-      labels:
-        app: authentik-redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:latest
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
-        livenessProbe:
-          tcpSocket:
-            port: 6379
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          tcpSocket:
-            port: 6379
-          initialDelaySeconds: 5
-          periodSeconds: 5
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: authentik-redis-data
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: authentik-postgresql
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: authentik-postgresql
-  template:
-    metadata:
-      labels:
-        app: authentik-postgresql
-    spec:
-      imagePullSecrets:
-        - name: github-pat-secret
-      securityContext:
-        fsGroup: 999
-      containers:
-      - name: postgresql
-        image: ghcr.io/flamingo-cx/openframe-authentik-postgresql:latest
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_USER
-          value: authentik-user
-        - name: POSTGRES_PASSWORD
-          value: authentik-password-1234
-        # - name: POSTGRES_DB
-        #   value: authentik-database-authentik
-        - name: POSTGRES_MULTIPLE_DATABASES
-          value: authentik-database,authentik-database-authentik
-        volumeMounts:
-        - name: postgresql-data
-          mountPath: /var/lib/postgresql/data
-        livenessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - authentik-user
-            - -d
-            - authentik-database-authentik
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - authentik-user
-            - -d
-            - authentik-database-authentik
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          limits:
-            cpu: 500m
-            memory: 1Gi
-          requests:
-            cpu: 250m
-            memory: 512Mi
-      volumes:
-      - name: postgresql-data
-        persistentVolumeClaim:
-          claimName: authentik-postgresql-data
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -171,7 +17,7 @@ spec:
       - name: wait-for-postgres
         image: postgres:latest
         command: ['sh', '-c',
-          'until pg_isready -h authentik-postgresql -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+          'until pg_isready -h authentik-postgresql.integrated-tools-datasources -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
         env:
         - name: PGPASSWORD
           value: "authentik-password-1234"
@@ -193,9 +39,9 @@ spec:
         - name: AUTHENTIK_BOOTSTRAP_TOKEN
           value: "openframe-api-token-123456789"
         - name: AUTHENTIK_REDIS__HOST
-          value: "authentik-redis"
+          value: "authentik-redis.integrated-tools-datasources"
         - name: AUTHENTIK_POSTGRESQL__HOST
-          value: "authentik-postgresql"
+          value: "authentik-postgresql.integrated-tools-datasources"
         - name: AUTHENTIK_POSTGRESQL__USER
           value: "authentik-user"
         - name: AUTHENTIK_POSTGRESQL__NAME
@@ -298,7 +144,7 @@ spec:
       - name: wait-for-postgres
         image: postgres:latest
         command: ['sh', '-c',
-          'until pg_isready -h authentik-postgresql -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+          'until pg_isready -h authentik-postgresql.integrated-tools-datasources -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
         env:
         - name: PGPASSWORD
           value: "authentik-password-1234"
@@ -320,9 +166,9 @@ spec:
         - name: AUTHENTIK_BOOTSTRAP_EMAIL
           value: "akadmin@openframe.local"
         - name: AUTHENTIK_REDIS__HOST
-          value: "authentik-redis"
+          value: "authentik-redis.integrated-tools-datasources"
         - name: AUTHENTIK_POSTGRESQL__HOST
-          value: "authentik-postgresql"
+          value: "authentik-postgresql.integrated-tools-datasources"
         - name: AUTHENTIK_POSTGRESQL__USER
           value: "authentik-user"
         - name: AUTHENTIK_POSTGRESQL__NAME
@@ -406,3 +252,34 @@ spec:
       - name: templates
         configMap:
           name: authentik-templates
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-server
+spec:
+  selector:
+    app: authentik-server
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authentik
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: authentik.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: authentik-server
+                port:
+                  number: 9000
