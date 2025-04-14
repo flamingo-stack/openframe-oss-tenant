@@ -11,8 +11,6 @@ fi
 if [ "$ACTION" == "debug" ]; then
   LOCAL_PORT="$4"
   REMOTE_PORT_NAME="$5"
-elif [ "$ACTION" == "deploy" ]; then
-  IFWAIT=$3
 fi
 
 if [ -z "$APP" ]; then
@@ -25,29 +23,10 @@ if [ "$ACTION" == "" ]; then
   exit 0
 fi
 
-# Function to check if namespaces and secrets already exist
-function check_bases() {
-  for ns in "${NAMESPACES[@]}"; do
-    if ! kubectl get namespace "$ns" &> /dev/null; then
-      return 1
-    fi
-    if ! kubectl -n "$ns" get secret github-pat-secret &> /dev/null; then
-      return 1
-    fi
-  done
-  return 0
-}
-
-# Check and run bases.sh only if necessary
-if ! check_bases; then
-  bash ./scripts/functions/bases.sh
-fi
-
 case "$APP" in
   platform_ingress_nginx)
     if [ "$ACTION" == "deploy" ]; then
-      platform_ingress_nginx_deploy
-      if [ "$IFWAIT" == "--wait" ]; then platform_ingress_nginx_wait; fi
+      platform_ingress_nginx_deploy && platform_ingress_nginx_wait
     elif [ "$ACTION" == "delete" ]; then
       platform_ingress_nginx_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -60,7 +39,6 @@ case "$APP" in
   platform_metrics_server)
     if [ "$ACTION" == "deploy" ]; then
       platform_metrics_server_deploy
-      if [ "$IFWAIT" == "--wait" ]; then platform_metrics_server_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       platform_metrics_server_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -72,8 +50,7 @@ case "$APP" in
     ;;
   platform_monitoring)
     if [ "$ACTION" == "deploy" ]; then
-      platform_monitoring_deploy
-      if [ "$IFWAIT" == "--wait" ]; then platform_monitoring_wait; fi
+      platform_monitoring_deploy && platform_monitoring_wait
     elif [ "$ACTION" == "delete" ]; then
       platform_monitoring_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -86,7 +63,6 @@ case "$APP" in
   platform_logging)
     if [ "$ACTION" == "deploy" ]; then
       platform_logging_deploy
-      if [ "$IFWAIT" == "--wait" ]; then platform_logging_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       platform_logging_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -99,7 +75,6 @@ case "$APP" in
   platform_efk)
     if [ "$ACTION" == "deploy" ]; then
       platform_efk_deploy
-      if [ "$IFWAIT" == "--wait" ]; then platform_efk_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       platform_efk_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -112,7 +87,6 @@ case "$APP" in
   openframe_datasources_redis)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_redis_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_redis_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_redis_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -125,7 +99,6 @@ case "$APP" in
   openframe_datasources_kafka)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_kafka_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_kafka_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_kafka_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -138,7 +111,6 @@ case "$APP" in
   openframe_datasources_mongodb)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_mongodb_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_mongodb_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_mongodb_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -151,7 +123,6 @@ case "$APP" in
   openframe_datasources_mongodb_exporter)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_mongodb_exporter_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_mongodb_exporter_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_mongodb_exporter_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -164,7 +135,6 @@ case "$APP" in
   openframe_datasources_cassandra)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_cassandra_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_cassandra_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_cassandra_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -177,7 +147,6 @@ case "$APP" in
   openframe_datasources_nifi)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_nifi_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_nifi_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_nifi_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -191,7 +160,6 @@ case "$APP" in
   openframe_datasources_zookeeper)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_zookeeper_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_zookeeper_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_zookeeper_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -204,7 +172,6 @@ case "$APP" in
   openframe_datasources_pinot)
     if [ "$ACTION" == "deploy" ]; then
       openframe_datasources_pinot_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_datasources_pinot_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_datasources_pinot_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -217,7 +184,6 @@ case "$APP" in
   openframe_microservices_openframe_config_server)
     if [ "$ACTION" == "deploy" ]; then
       openframe_microservices_openframe_config_server_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_config_server_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_microservices_openframe_config_server_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -231,7 +197,6 @@ case "$APP" in
   openframe_microservices_openframe_api)
     if [ "$ACTION" == "deploy" ]; then
       openframe_microservices_openframe_api_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_api_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_microservices_openframe_api_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -245,7 +210,6 @@ case "$APP" in
   openframe_microservices_openframe_management)
     if [ "$ACTION" == "deploy" ]; then
       openframe_microservices_openframe_management_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_management_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_microservices_openframe_management_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -259,7 +223,6 @@ case "$APP" in
   openframe_microservices_openframe_stream)
     if [ "$ACTION" == "deploy" ]; then
       openframe_microservices_openframe_stream_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_stream_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_microservices_openframe_stream_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -273,7 +236,6 @@ case "$APP" in
   openframe_microservices_openframe_gateway)
     if [ "$ACTION" == "deploy" ]; then
       openframe_microservices_openframe_gateway_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_gateway_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_microservices_openframe_gateway_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -287,7 +249,6 @@ case "$APP" in
   openframe_microservices_openframe_ui)
     if [ "$ACTION" == "deploy" ]; then
       openframe_microservices_openframe_ui_deploy
-      if [ "$IFWAIT" == "--wait" ]; then openframe_microservices_openframe_ui_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       openframe_microservices_openframe_ui_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -306,7 +267,6 @@ case "$APP" in
   integrated_tools_datasources_fleet)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_datasources_fleet_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_fleet_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_datasources_fleet_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -320,7 +280,6 @@ case "$APP" in
   integrated_tools_fleet)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_fleet_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_fleet_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_fleet_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -334,7 +293,6 @@ case "$APP" in
   integrated_tools_datasources_authentik)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_datasources_authentik_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_authentik_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_datasources_authentik_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -347,7 +305,6 @@ case "$APP" in
   integrated_tools_authentik)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_authentik_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_authentik_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_authentik_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -360,7 +317,6 @@ case "$APP" in
   integrated_tools_datasources_meshcentral)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_datasources_meshcentral_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_meshcentral_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_datasources_meshcentral_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -373,7 +329,6 @@ case "$APP" in
   integrated_tools_meshcentral)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_meshcentral_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_meshcentral_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_meshcentral_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -387,7 +342,6 @@ case "$APP" in
   integrated_tools_datasources_tactical_rmm)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_datasources_tactical_rmm_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_tactical_rmm_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_datasources_tactical_rmm_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -400,7 +354,6 @@ case "$APP" in
   integrated_tools_tactical_rmm)
     if [ "$ACTION" == "deploy" ]; then
       integrated_tools_tactical_rmm_deploy
-      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_tactical_rmm_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_tactical_rmm_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -413,7 +366,6 @@ case "$APP" in
   tools_kafka_ui)
     if [ "$ACTION" == "deploy" ]; then
       tools_kafka_ui_deploy
-      if [ "$IFWAIT" == "--wait" ]; then tools_kafka_ui_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tools_kafka_ui_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -426,7 +378,6 @@ case "$APP" in
   tools_mongo_express)
     if [ "$ACTION" == "deploy" ]; then
       tools_mongo_express_deploy
-      if [ "$IFWAIT" == "--wait" ]; then tools_mongo_express_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tools_mongo_express_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -439,7 +390,6 @@ case "$APP" in
   tools_telepresence)
     if [ "$ACTION" == "deploy" ]; then
       tools_telepresence_deploy
-      if [ "$IFWAIT" == "--wait" ]; then tools_telepresence_wait; fi
     elif [ "$ACTION" == "delete" ]; then
       tools_telepresence_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -454,84 +404,88 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 platform_metrics_server $ACTION $IFWAIT && \
-    $0 platform_monitoring $ACTION $IFWAIT && \
-    $0 platform_logging $ACTION $IFWAIT
+    $0 platform_monitoring $ACTION && \
+    $0 platform_metrics_server $ACTION &
+    $0 platform_logging $ACTION &
+    echo
     ;;
   p|platform)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 platform_ingress_nginx $ACTION $IFWAIT && \
-    $0 observability $ACTION $IFWAIT && \
-    platform_wait_all
+    $0 platform_ingress_nginx $ACTION && \
+    $0 observability $ACTION
     ;;
   t|client_tools)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 tools_kafka_ui $ACTION $IFWAIT && \
-    $0 tools_mongo_express $ACTION $IFWAIT && \
-    $0 tools_telepresence $ACTION $IFWAIT
+    $0 tools_kafka_ui $ACTION && \
+    $0 tools_mongo_express $ACTION && \
+    $0 tools_telepresence $ACTION
     ;;
   od|openframe_datasources)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 openframe_datasources_redis $ACTION $IFWAIT
-    $0 openframe_datasources_kafka $ACTION $IFWAIT
-    $0 openframe_datasources_mongodb $ACTION $IFWAIT
-    $0 openframe_datasources_mongodb_exporter $ACTION $IFWAIT
-    $0 openframe_datasources_cassandra $ACTION $IFWAIT
-    $0 openframe_datasources_nifi $ACTION $IFWAIT
-    $0 openframe_datasources_zookeeper $ACTION $IFWAIT
-    $0 openframe_datasources_pinot $ACTION $IFWAIT
-
+    $0 openframe_datasources_redis $ACTION &
+    $0 openframe_datasources_kafka $ACTION &
+    $0 openframe_datasources_mongodb $ACTION &
+    $0 openframe_datasources_mongodb_exporter $ACTION &
+    $0 openframe_datasources_cassandra $ACTION &
+    $0 openframe_datasources_nifi $ACTION &
+    $0 openframe_datasources_zookeeper $ACTION &
+    $0 openframe_datasources_pinot $ACTION &
+    echo
     ;;
   om|openframe_microservices)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 openframe_microservices_openframe_config_server $ACTION $IFWAIT
-    $0 openframe_microservices_openframe_api $ACTION $IFWAIT
-    $0 openframe_microservices_openframe_management $ACTION $IFWAIT
-    $0 openframe_microservices_openframe_stream $ACTION $IFWAIT
-    $0 openframe_microservices_openframe_gateway $ACTION $IFWAIT
-    $0 openframe_microservices_openframe_ui $ACTION $IFWAIT
-    $0 openframe_microservices_register_apps $ACTION
+    $0 openframe_microservices_openframe_config_server $ACTION &
+    $0 openframe_microservices_openframe_api $ACTION &
+    $0 openframe_microservices_openframe_management $ACTION &
+    $0 openframe_microservices_openframe_stream $ACTION &
+    $0 openframe_microservices_openframe_gateway $ACTION &
+    $0 openframe_microservices_openframe_ui $ACTION &
+    echo
     ;;
   itd|integrated_tools_datasources)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 integrated_tools_datasources_fleet $ACTION $IFWAIT
-    $0 integrated_tools_datasources_authentik $ACTION $IFWAIT
-    $0 integrated_tools_datasources_meshcentral $ACTION $IFWAIT
-    $0 integrated_tools_datasources_tactical_rmm $ACTION $IFWAIT
+    $0 integrated_tools_datasources_fleet $ACTION &
+    $0 integrated_tools_datasources_authentik $ACTION &
+    $0 integrated_tools_datasources_meshcentral $ACTION &
+    $0 integrated_tools_datasources_tactical_rmm $ACTION &
+    echo
     ;;
   it|integrated_tools)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 integrated_tools_fleet $ACTION $IFWAIT
-    $0 integrated_tools_authentik $ACTION $IFWAIT
-    $0 integrated_tools_meshcentral $ACTION $IFWAIT
-    $0 integrated_tools_tactical_rmm $ACTION $IFWAIT
+    $0 integrated_tools_fleet $ACTION &
+    $0 integrated_tools_authentik $ACTION &
+    $0 integrated_tools_meshcentral $ACTION &
+    $0 integrated_tools_tactical_rmm $ACTION &
+    echo
     ;;
   a|all)
     # ------------- ALL -------------
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 platform $ACTION $IFWAIT && \
-    $0 openframe_datasources $ACTION $IFWAIT && \
-    $0 openframe_microservices $ACTION $IFWAIT && \
-    $0 openframe_microservices_register_apps $ACTION && \
-    $0 integrated_tools_authentik $ACTION $IFWAIT && \
-    $0 fleet $ACTION $IFWAIT && \
-    $0 meshcentral $ACTION $IFWAIT && \
-    $0 rmm $ACTION $IFWAIT && \
-    $0 client_tools $ACTION $IFWAIT
+    $0 platform $ACTION && \
+    $0 openframe_datasources $ACTION & \
+    $0 integrated_tools_datasources $ACTION & \
+    openframe_datasources_wait_all && \
+    integrated_tools_datasources_wait_all && \
+    $0 openframe_microservices $ACTION &
+    $0 integrated_tools $ACTION &
+    $0 client_tools $ACTION &
+    echo
+    echo "Waiting for openframe-ui to be ready and run below command to register apps:"
+    echo "$0 openframe_microservices_register_apps deploy"
     ;;
   -h|--help|-Help)
     show_help_apps

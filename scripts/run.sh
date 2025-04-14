@@ -30,16 +30,30 @@ for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   done < <(declare -F | awk '{print $3}')
 done
 
+# Function to check if namespaces and secrets already exist
+function check_bases() {
+  for ns in "${NAMESPACES[@]}"; do
+    if ! kubectl get namespace "$ns" &> /dev/null; then
+      return 1
+    fi
+    if ! kubectl -n "$ns" get secret github-pat-secret &> /dev/null; then
+      return 1
+    fi
+  done
+  return 0
+}
+
 ARG=$1
 APP=$2
 ACTION=$3
+
 if [ "$ACTION" == "debug" ]; then
   LOCAL_PORT="$4"
   REMOTE_PORT_NAME="$5"
 fi
 
 case "$ARG" in
-  p|pre)
+  pre)
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
   k|cluster)
@@ -49,6 +63,11 @@ case "$ARG" in
     kind delete cluster
     ;;
   a|app)
+    # Check and run bases.sh only if necessary
+    if ! check_bases; then
+      bash ./scripts/functions/bases.sh
+    fi
+
     if [ -n "$APP" ]; then
       bash "$0" pre && \
       bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
