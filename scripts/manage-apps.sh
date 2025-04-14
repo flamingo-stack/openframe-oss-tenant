@@ -526,10 +526,10 @@ case "$APP" in
     $0 openframe_datasources $ACTION $IFWAIT && \
     $0 openframe_microservices $ACTION $IFWAIT && \
     $0 openframe_microservices_register_apps $ACTION && \
-    $0 authentik $ACTION $IFWAIT && \
-    $0 fleet $ACTION $IFWAIT && \
-    $0 meshcentral $ACTION $IFWAIT && \
-    $0 rmm $ACTION $IFWAIT && \
+    $0 integrated_tools_authentik $ACTION $IFWAIT && \
+    $0 integrated_tools_fleet $ACTION $IFWAIT && \
+    $0 integrated_tools_meshcentral $ACTION $IFWAIT && \
+    $0 integrated_tools_tactical_rmm $ACTION $IFWAIT && \
     $0 client_tools $ACTION $IFWAIT
     ;;
   -h|--help|-Help)

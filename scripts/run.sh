@@ -50,7 +50,7 @@ case "$1" in
   k|cluster)
     bash "${SCRIPT_DIR}/setup-kind-cluster.sh"
     ;;
-  d|down)
+  d|delete)
     kind delete cluster
     ;;
   a|app)

@@ -6,7 +6,7 @@ Parameters:
 
 p|pre                                   : Check if all required commands are installed
 k|cluster                               : Setup cluster only
-d|down                                  : Remove cluster
+d|delete                                : Remove cluster
 a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
                               <action>  : deploy, build, delete, dev, debug (Required)
                               dev       : Build, deploy and run in dev mode
