@@ -76,9 +76,23 @@ case "$1" in
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images
-    for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
+    for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
       echo "Cleaning up $node ..."
       docker exec $node crictl rmi --prune
+    done
+    ;;
+  s|start)
+    # Stop kind containers
+    for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
+      echo "Starting $node ..."
+      docker start $node
+    done
+    ;;
+  stop)
+    # Stop kind containers
+    for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+      echo "Stopping $node ..."
+      docker stop $node
     done
     ;;
   -h|--help|-Help)

@@ -14,6 +14,8 @@ a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
   debug <local-port> <remote-port-name> : Enable debug mode and redirect traffic to local port (Use CTRL+C to stop)
                               --wait    : Wait for app to be ready (for deploy) (Optional)
 b|bootstrap                   [--wait]  : Bootstrap cluster with all apps
+s|start                                 : Start kind cluster
+stop                                    : Stop kind cluster
 p|platform                    [--wait]  : Bootstrap cluster with base mandatory apps
 c|cleanup                               : Remove unused images from kind nodes
 
