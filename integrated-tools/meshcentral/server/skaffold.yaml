@@ -35,5 +35,6 @@ build:
     useBuildkit: false
     push: false
 manifests:
-  rawYaml:
-    - ../../../kind-cluster/apps/meshcentral/base/meshcentral.yaml
+  kustomize:
+    paths:
+    - ../../../kind-cluster/apps/integrated-tools/meshcentral

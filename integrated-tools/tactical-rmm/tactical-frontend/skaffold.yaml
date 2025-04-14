@@ -53,4 +53,4 @@ build:
     push: false
 manifests:
   rawYaml:
-    - ../../kind-cluster/apps/tactical-rmm/tactical-frontend.yaml
+    - ../../../kind-cluster/apps/integrated-tools/tactical-rmm/base/tactical-frontend.yam

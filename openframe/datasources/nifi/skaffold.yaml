@@ -19,4 +19,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../kind-cluster/apps/infrastructure/openframe-nifi
+    - ../../../kind-cluster/apps/openframe-datasources/openframe-nifi

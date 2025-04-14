@@ -13,4 +13,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../kind-cluster/apps/infrastructure/openframe-management
+    - ../../../kind-cluster/apps/openframe-microservices/openframe-management
