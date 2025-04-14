@@ -7,13 +7,37 @@ function platform_ingress_nginx_deploy() {
   echo "Deploying ingress-nginx"
   helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
     -n platform --create-namespace \
-    --version 4.12.0 \
-    -f ./kind-cluster/apps/platform/ingress-nginx/helm/ingress-nginx.yaml
+    --version 4.12.1 \
+    -f ./kind-cluster/apps/platform/ingress-nginx/helm/values.yaml
 }
 
 function platform_ingress_nginx_wait() {
   echo "Waiting for ingress-nginx to be ready"
   wait_for_app "platform" "app.kubernetes.io/instance=ingress-nginx"
+}
+
+function platform_ingress_nginx_delete() {
+  echo "Deleting ingress-nginx"
+  helm -n platform uninstall ingress-nginx
+}
+
+# METRICS-SERVER
+function platform_metrics_server_deploy() {
+    helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server
+
+    echo "Deploying metrics-server"
+    helm upgrade -i metrics-server metrics-server/metrics-server \
+      --namespace kube-system --set 'args={--kubelet-insecure-tls}'
+}
+
+function platform_metrics_server_wait() {
+  echo "Waiting for metrics-server to be ready"
+  wait_for_app "kube-system" "app.kubernetes.io/instance=metrics-server"
+}
+
+function platform_metrics_server_delete() {
+  echo "Deleting metrics-server"
+  helm -n kube-system uninstall metrics-server
 }
 
 # Monitoring: GRAFANA + PROMETHEUS
@@ -23,8 +47,8 @@ function platform_monitoring_deploy() {
     echo "Deploying kube-prometheus-stack"
     helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
       -n platform --create-namespace \
-      --version 69.8.2 \
-      -f ./kind-cluster/apps/infrastructure/platform/helm/kube-prometheus-stack.yaml --timeout 20m && \
+      --version 70.4.2 \
+      -f ./kind-cluster/apps/platform/monitoring/helm/values.yaml --timeout 20m && \
     echo "Deploying dashboards" && \
     kubectl -n platform apply -k ./kind-cluster/apps/platform/monitoring/dashboards
 }
@@ -46,8 +70,8 @@ function platform_logging_deploy() {
     echo "Deploying Loki and Promtail"
 
     # LOKI (no dependencies)
-    kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/logging/manifests && \
-    kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/promtail/manifests
+    kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/openframe-loki/manifests && \
+    kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/openframe-promtail/manifests
     # or
     # helm repo add grafana https://grafana.github.io/helm-charts && \
     # helm upgrade --install loki grafana/loki-stack \
@@ -113,29 +137,10 @@ function platform_efk_delete() {
   echo "[TODO] Deleting EFK"
 }
 
-# METRICS-SERVER
-function platform_metrics_server_deploy() {
-    helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server
-
-    echo "Deploying metrics-server"
-    helm upgrade -i metrics-server metrics-server/metrics-server \
-      --namespace kube-system --set 'args={--kubelet-insecure-tls}'
-}
-
-function platform_metrics_server_wait() {
-  echo "Waiting for metrics-server to be ready"
-  wait_for_app "kube-system" "app.kubernetes.io/instance=metrics-server"
-}
-
-function platform_metrics_server_delete() {
-  echo "Deleting metrics-server"
-  helm -n kube-system uninstall metrics-server
-}
-
 # Wait for all cluster apps to be ready
 function platform_wait_all() {
   platform_ingress_nginx_wait && \
-  platform_monitoring_wait
+  platform_metrics_server_wait && \
+  platform_monitoring_wait && \
   platform_logging_wait
-  platform_metrics_server_wait
 }

@@ -48,6 +48,8 @@ case "$APP" in
     if [ "$ACTION" == "deploy" ]; then
       platform_ingress_nginx_deploy
       if [ "$IFWAIT" == "--wait" ]; then platform_ingress_nginx_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      platform_ingress_nginx_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -59,6 +61,8 @@ case "$APP" in
     if [ "$ACTION" == "deploy" ]; then
       platform_metrics_server_deploy
       if [ "$IFWAIT" == "--wait" ]; then platform_metrics_server_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      platform_metrics_server_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -392,23 +396,23 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  observability)
+  o|observability)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 monitoring $ACTION $IFWAIT && \
-    $0 logging $ACTION $IFWAIT
+    $0 platform_metrics_server $ACTION $IFWAIT && \
+    $0 platform_monitoring $ACTION $IFWAIT && \
+    $0 platform_logging $ACTION $IFWAIT
     ;;
-  m|minimal)
+  p|platform)
     ACTION=${2}
     IFWAIT=${3:-}
 
     $0 platform_ingress_nginx $ACTION $IFWAIT && \
-    $0 platform_metrics_server $ACTION $IFWAIT && \
     $0 observability $ACTION $IFWAIT && \
     platform_wait_all
     ;;
-  client_tools)
+  t|client_tools)
     ACTION=${2}
     IFWAIT=${3:-}
 
@@ -416,7 +420,7 @@ case "$APP" in
     $0 mongo-express $ACTION $IFWAIT && \
     $0 telepresence $ACTION $IFWAIT
     ;;
-  openframe_datasources)
+  od|openframe_datasources)
     ACTION=${2}
     IFWAIT=${3:-}
 
@@ -430,7 +434,7 @@ case "$APP" in
     $0 openframe_datasources_pinot $ACTION $IFWAIT
     openframe_datasources_wait_all
     ;;
-  openframe_microservices)
+  om|openframe_microservices)
     ACTION=${2}
     IFWAIT=${3:-}
 

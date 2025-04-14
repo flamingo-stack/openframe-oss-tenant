@@ -68,11 +68,11 @@ case "$1" in
     bash "$0" cluster && \
     bash "$0" app all deploy "$IFWAIT"
     ;;
-  m|minimal)
+  p|platform)
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash "$0" app minimal deploy "$IFWAIT"
+    bash "$0" app platform deploy "$IFWAIT"
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images

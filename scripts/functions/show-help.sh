@@ -13,8 +13,8 @@ a|app <app-name|all> <action> [--wait]  : Deploy <app-name> or 'all' apps
                                           Tail changes, build and deploy on change. (Delete app before using dev mode otherwise may require run twice)
   debug <local-port> <remote-port-name> : Enable debug mode and redirect traffic to local port (Use CTRL+C to stop)
                               --wait    : Wait for app to be ready (for deploy) (Optional)
-b|bootstrap                   [--wait]  : Bootstrap whole cluster with all apps
-m|minimal                     [--wait]  : Bootstrap whole cluster with base mandatory apps
+b|bootstrap                   [--wait]  : Bootstrap cluster with all apps
+p|platform                    [--wait]  : Bootstrap cluster with base mandatory apps
 c|cleanup                               : Remove unused images from kind nodes
 
 Examples:
@@ -29,14 +29,14 @@ Examples:
 
 function show_help_apps() {
   echo "Available options:"
-  echo "  observability               Deploy monitoring"
+  echo "  o|observability             Deploy monitoring"
   echo "      monitoring              Deploy Grafana and Prometheus stack"
   echo "      logging                 Deploy Loki and Promtail"
-  echo "  minimal                     Deploy base applications"
+  echo "  p|platform                  Deploy platform applications"
   echo "      ingress-nginx           Deploy Ingress Nginx"
   echo "      metrics-server          Deploy Metrics Server"
   echo "      observability           Deploy monitoring"
-  echo "  openframe_datasources       Deploy openframe_datasources applications"
+  echo "  od|openframe_datasources    Deploy openframe_datasources applications"
   echo "      redis                   Deploy Redis"
   echo "      kafka                   Deploy Kafka"
   echo "      mongodb                 Deploy MongoDB"
@@ -44,8 +44,7 @@ function show_help_apps() {
   echo "      cassandra               Deploy Cassandra"
   echo "      nifi                    Deploy NiFi"
   echo "      zookeeper               Deploy Zookeeper"
-  echo "  infrastructure              Deploy infrastructure applications"
-  echo "      openframe_datasources   Deploy OpenFrame Datasources"
+  echo "  om|openframe_microservices  Deploy openframe_microservices applications"
   echo "      pinot                   Deploy Pinot"
   echo "      config-server           Deploy Config Server"
   echo "      api                     Deploy API"
@@ -53,7 +52,7 @@ function show_help_apps() {
   echo "      stream                  Deploy Stream"
   echo "      gateway                 Deploy Gateway"
   echo "      openframe-ui            Deploy OpenFrame UI"
-  echo "  tools                       Deploy tools"
+  echo "  t|client_tools              Deploy tools"
   echo "      telepresence            Deploy Telepresence"
   echo "      mongo-express           Deploy Mongo Express"
   echo "      kafka-ui                Deploy Kafka UI"
