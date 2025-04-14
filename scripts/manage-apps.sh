@@ -479,10 +479,11 @@ case "$APP" in
     $0 openframe_datasources $ACTION & \
     $0 integrated_tools_datasources $ACTION & \
     openframe_datasources_wait_all && \
-    integrated_tools_datasources_wait_all && \
     $0 openframe_microservices $ACTION &
+    integrated_tools_datasources_wait_all && \
     $0 integrated_tools $ACTION &
     $0 client_tools $ACTION &
+    $0 register_apps $ACTION
     echo
     echo "Waiting for openframe-ui to be ready and run below command to register apps:"
     echo "$0 openframe_microservices_register_apps deploy"
