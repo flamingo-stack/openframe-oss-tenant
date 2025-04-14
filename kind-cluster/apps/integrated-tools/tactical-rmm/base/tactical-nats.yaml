@@ -20,14 +20,14 @@ spec:
         image: redis:6.0-alpine
         command: ['sh', '-c', '
           echo "Waiting for PostgreSQL..." &&
-          until nc -z tactical-postgres 5432; do sleep 2; done &&
+          until nc -z tactical-postgres.integrated-tools-datasources.svc.cluster.local 5432; do sleep 2; done &&
           echo "PostgreSQL is ready!" &&
           echo "Waiting for Backend..." &&
-          until nc -z tactical-backend 8000; do sleep 2; done &&
+          until nc -z tactical-backend.integrated-tools.svc.cluster.local 8000; do sleep 2; done &&
           echo "Backend is ready!" &&
           echo "Waiting for NATS files in Redis..." &&
-          until redis-cli -h tactical-redis -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
-          until redis-cli -h tactical-redis -p 6379 get "tactical_nats_api_conf" > /dev/null; do sleep 2; done &&
+          until redis-cli -h tactical-redis.integrated-tools-datasources.svc.cluster.local -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
+          until redis-cli -h tactical-redis.integrated-tools-datasources.svc.cluster.local -p 6379 get "tactical_nats_api_conf" > /dev/null; do sleep 2; done &&
           echo "NATS files are ready in Redis!"
           ']
         # volumeMounts:

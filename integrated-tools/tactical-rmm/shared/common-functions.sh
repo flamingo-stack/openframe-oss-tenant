@@ -64,7 +64,7 @@ function copy_custom_code() {
 function set_ready_status() {
     local service_name=$1
     echo "Setting ready status for ${service_name}"
-    redis-cli -h tactical-redis -p 6379 set "tactical_${service_name}_ready" "True"
+    redis-cli -h $REDIS_HOST -p 6379 set "tactical_${service_name}_ready" "True"
     # Create directory if it doesn't exist
     mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
     echo "${service_name}" >${TACTICAL_READY_FILE}
@@ -126,13 +126,13 @@ function create_superuser_and_api_key() {
     # create default organization and API key
     echo "Creating default organization and API key"
     echo "from accounts.models import User, APIKey; from clients.models import Client, Site; from core.models import CoreSettings; from django.utils.crypto import get_random_string; from django.utils import timezone; user = User.objects.get(username='${TRMM_USER}'); client = Client.objects.create(name='Default Organization', created_by=user) if not Client.objects.exists() else Client.objects.first(); site = Site.objects.create(client=client, name='Default Site', created_by=user) if not Site.objects.filter(client=client).exists() else Site.objects.filter(client=client).first(); api_key = APIKey.objects.create(name='Default', key=get_random_string(length=32).upper(), user=user) if not APIKey.objects.filter(user=user).exists() else APIKey.objects.filter(user=user).first(); print(f'{api_key.key}')" | python manage.py shell >${TACTICAL_DIR}/api_key.txt
-    redis-cli -h tactical-redis -p 6379 set "tactical_api_key" "$(cat ${TACTICAL_DIR}/api_key.txt)"
+    redis-cli -h $REDIS_HOST -p 6379 set "tactical_api_key" "$(cat ${TACTICAL_DIR}/api_key.txt)"
 }
 
 function getNATSFilesFromRedis() {
     echo "Getting NATS files from Redis"
-    NATS_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_rmm_conf")
-    NATS_API_CONFIG_CONTENT=$(redis-cli -h tactical-redis -p 6379 get "tactical_nats_api_conf")
+    NATS_CONFIG_CONTENT=$(redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_rmm_conf")
+    NATS_API_CONFIG_CONTENT=$(redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_api_conf")
 
     echo "NATS Configuration Content:\n ${NATS_CONFIG_CONTENT}"
     echo "NATS API Configuration Content:\n ${NATS_API_CONFIG_CONTENT}"
@@ -200,8 +200,8 @@ function installNATs() {
 
 function pushNATSFilesToRedis() {
     echo "Pushing NATS files to Redis"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
-    redis-cli -h tactical-redis -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
+    redis-cli -h $REDIS_HOST -p 6379 set "tactical_nats_rmm_conf" "$(cat ${NATS_CONFIG})"
+    redis-cli -h $REDIS_HOST -p 6379 set "tactical_nats_api_conf" "$(cat ${NATS_API_CONFIG})"
 }
 
 function tactical_init() {
@@ -222,7 +222,7 @@ function tactical_init() {
     touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
 
     # configure django settings
-    MESH_TOKEN=$(redis-cli -h tactical-redis -p 6379 get mesh_token)
+    MESH_TOKEN=$(redis-cli -h $REDIS_HOST -p 6379 get mesh_token)
     export MESH_TOKEN
     ADMINURL="admin"
     export ADMINURL

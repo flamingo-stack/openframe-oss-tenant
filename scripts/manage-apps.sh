@@ -384,12 +384,25 @@ case "$APP" in
       echo "Debug mode not enabled for this app"
     fi
     ;;
-  rmm)
+  integrated_tools_datasources_tactical_rmm)
     if [ "$ACTION" == "deploy" ]; then
-      tactical_rmm_deploy
-      if [ "$IFWAIT" == "--wait" ]; then tactical_rmm_wait; fi
+      integrated_tools_datasources_tactical_rmm_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_datasources_tactical_rmm_wait; fi
     elif [ "$ACTION" == "delete" ]; then
-      tactical_rmm_delete
+      integrated_tools_datasources_tactical_rmm_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "Debug mode not enabled for this app"
+    fi
+    ;;
+  integrated_tools_tactical_rmm)
+    if [ "$ACTION" == "deploy" ]; then
+      integrated_tools_tactical_rmm_deploy
+      if [ "$IFWAIT" == "--wait" ]; then integrated_tools_tactical_rmm_wait; fi
+    elif [ "$ACTION" == "delete" ]; then
+      integrated_tools_tactical_rmm_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -473,19 +486,17 @@ case "$APP" in
     $0 openframe_datasources_nifi $ACTION $IFWAIT
     $0 openframe_datasources_zookeeper $ACTION $IFWAIT
     $0 openframe_datasources_pinot $ACTION $IFWAIT
-    openframe_datasources_wait_all
     ;;
   om|openframe_microservices)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 openframe_microservices_openframe_config_server $ACTION $IFWAIT && \
-    $0 openframe_microservices_openframe_api $ACTION $IFWAIT && \
-    $0 openframe_microservices_openframe_management $ACTION $IFWAIT && \
-    $0 openframe_microservices_openframe_stream $ACTION $IFWAIT && \
-    $0 openframe_microservices_openframe_gateway $ACTION $IFWAIT && \
-    $0 openframe_microservices_openframe_ui $ACTION $IFWAIT && \
-    openframe_microservices_wait_all
+    $0 openframe_microservices_openframe_config_server $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_api $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_management $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_stream $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_gateway $ACTION $IFWAIT
+    $0 openframe_microservices_openframe_ui $ACTION $IFWAIT
     $0 openframe_microservices_register_apps $ACTION
     ;;
   itd|integrated_tools_datasources)
@@ -495,7 +506,7 @@ case "$APP" in
     $0 integrated_tools_datasources_fleet $ACTION $IFWAIT
     $0 integrated_tools_datasources_authentik $ACTION $IFWAIT
     $0 integrated_tools_datasources_meshcentral $ACTION $IFWAIT
-    integrated_tools_datasources_wait_all
+    $0 integrated_tools_datasources_tactical_rmm $ACTION $IFWAIT
     ;;
   it|integrated_tools)
     ACTION=${2}
@@ -504,7 +515,7 @@ case "$APP" in
     $0 integrated_tools_fleet $ACTION $IFWAIT
     $0 integrated_tools_authentik $ACTION $IFWAIT
     $0 integrated_tools_meshcentral $ACTION $IFWAIT
-    integrated_tools_wait_all
+    $0 integrated_tools_tactical_rmm $ACTION $IFWAIT
     ;;
   a|all)
     # ------------- ALL -------------

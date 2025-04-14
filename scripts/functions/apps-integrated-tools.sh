@@ -66,9 +66,32 @@ function integrated_tools_meshcentral_delete() {
   kubectl -n integrated-tools delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/meshcentral
 }
 
+# TACTICAL RMM
+function integrated_tools_tactical_rmm_deploy() {
+  echo "Deploying Tactical RMM"
+  kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/tactical-rmm
+}
+
+function tactical_rmm_wait() {
+  echo "Waiting for Tactical RMM to be ready"
+  wait_for_app "integrated-tools" "app=tactical-nginx"
+  wait_for_app "integrated-tools" "app=tactical-frontend"
+  wait_for_app "integrated-tools" "app=tactical-backend"
+  wait_for_app "integrated-tools" "app=tactical-nats"
+  wait_for_app "integrated-tools" "app=tactical-celery"
+  wait_for_app "integrated-tools" "app=tactical-celerybeat"
+  wait_for_app "integrated-tools" "app=tactical-websockets"
+}
+
+function integrated_tools_tactical_rmm_delete() {
+  echo "Deleting Tactical RMM"
+  kubectl -n integrated-tools delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/tactical-rmm
+}
+
 # Wait for all integrated-tools apps to be ready
 function integrated_tools_wait_all() {
   integrated_tools_fleet_wait
   integrated_tools_authentik_wait
   integrated_tools_meshcentral_wait
+  integrated_tools_tactical_rmm_wait
 }

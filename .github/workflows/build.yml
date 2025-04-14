@@ -9,13 +9,13 @@ permissions:
   id-token: write
 
 on:
-  # push:
-  #   paths:
-  #     - 'openframe/**'
-  #     - 'integrated-tools/**'
-  #     - 'infrastructure/**'
-  #     - 'pom.xml'
-  #     - '.github/workflows/build.yml'
+  push:
+    paths:
+      - 'openframe/**'
+      - 'integrated-tools/**'
+      - 'infrastructure/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
   pull_request:
     types: [closed]
