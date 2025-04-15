@@ -7,168 +7,85 @@ function Test-Administrator {
     $currentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
 
-# Function to reliably set up Loopback adapter with the required IP
+# Function to reliably set up virtual adapter with the required IP
 function Set-KindLoopbackAdapter {
-    Write-Host "Checking and configuring network for Kind cluster..." -ForegroundColor Cyan
-
     try {
-        # Direct approach - add IP to existing adapter
-        # Find a suitable network adapter that's up
-        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" } | Select-Object -First 1
+        Write-Host "Setting up network for Kind cluster..." -ForegroundColor Cyan
+        $ip = '192.168.100.100'
+        $switchName = "OpenFrameSwitch"
+        $vAdapterName = "vEthernet ($switchName)"
 
-        if (-not $adapter) {
-            Write-Host "ERROR: Could not find any active network adapter" -ForegroundColor Red
+        # Remove the IP from Ethernet or Wi-Fi if present
+        $badAdapters = Get-NetAdapter | Where-Object { $_.Name -match 'Ethernet|Wi-Fi' }
+        foreach ($adapter in $badAdapters) {
+            $badIP = Get-NetIPAddress -InterfaceAlias $adapter.Name -IPAddress $ip -ErrorAction SilentlyContinue
+            if ($badIP) {
+                Write-Host "Removing $ip from $($adapter.Name) to avoid affecting physical adapters..." -ForegroundColor Yellow
+                Remove-NetIPAddress -InterfaceAlias $adapter.Name -IPAddress $ip -Confirm:$false
+            }
+        }
+
+        # Check if the IP is already configured on the correct virtual adapter
+        $existingIP = Get-NetIPAddress -InterfaceAlias $vAdapterName -IPAddress $ip -ErrorAction SilentlyContinue
+        if ($existingIP) {
+            Write-Host "IP address $ip is already configured on $vAdapterName" -ForegroundColor Green
+            return $true
+        }
+
+        # Create a new internal virtual switch if it doesn't exist
+        $virtualSwitch = Get-VMSwitch -Name $switchName -ErrorAction SilentlyContinue
+        if (-not $virtualSwitch) {
+            Write-Host "Creating new virtual switch '$switchName'..." -ForegroundColor Yellow
+            New-VMSwitch -Name $switchName -SwitchType Internal -ErrorAction Stop
+            Write-Host "Virtual switch created successfully" -ForegroundColor Green
+        } else {
+            Write-Host "Using existing virtual switch '$switchName'" -ForegroundColor Green
+        }
+
+        # Get the virtual network adapter associated with the switch
+        $vAdapter = Get-NetAdapter -Name $vAdapterName -ErrorAction SilentlyContinue
+        if (-not $vAdapter) {
+            Write-Host "Virtual adapter $vAdapterName not found. Please check Hyper-V installation." -ForegroundColor Red
             return $false
         }
 
-        # Check if the IP already exists
-        $existingIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
-        if ($existingIP) {
-            Write-Host "Kind cluster IP (192.168.100.100) is already configured." -ForegroundColor Green
-            return $true
-        }
-
-        Write-Host "Adding IP address 192.168.100.100 to adapter $($adapter.Name)..." -ForegroundColor Yellow
-
-        # Try multiple methods to add the IP
-        $success = $false
-
-        # Method 1: New-NetIPAddress PowerShell cmdlet
-        try {
-            $result = New-NetIPAddress -IPAddress "192.168.100.100" -PrefixLength 24 -InterfaceIndex $adapter.ifIndex
-            if ($result) {
-                $success = $true
-                Write-Host "Successfully configured network using New-NetIPAddress." -ForegroundColor Green
-            }
-        } catch {
-            Write-Host "New-NetIPAddress method failed: $_" -ForegroundColor Yellow
-        }
-
-        # Method 2: Try using netsh if PowerShell method failed
-        if (-not $success) {
-            try {
-                Write-Host "Trying netsh method..." -ForegroundColor Yellow
-                $netshResult = netsh interface ipv4 add address name="$($adapter.Name)" addr=192.168.100.100 mask=255.255.255.0
-
-                # Verify IP was added
-                Start-Sleep -Seconds 2
-                $verifyIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-                if ($verifyIP) {
-                    $success = $true
-                    Write-Host "Successfully configured network using netsh." -ForegroundColor Green
-                }
-            } catch {
-                Write-Host "Netsh method failed: $_" -ForegroundColor Yellow
-            }
-        }
-
-        # Method 3: Create a new loopback interface if both methods failed
-        if (-not $success) {
-            try {
-                Write-Host "Creating a dedicated loopback interface..." -ForegroundColor Yellow
-
-                # Create a new network interface using New-LoopbackAdapter from NetAdapter module
-                if (Get-Command New-LoopbackAdapter -ErrorAction SilentlyContinue) {
-                    $newAdapter = New-LoopbackAdapter -Name "KindLoopback" -ErrorAction Stop
-
-                    # Configure the IP on the new adapter
-                    New-NetIPAddress -InterfaceAlias "KindLoopback" -IPAddress "192.168.100.100" -PrefixLength 24 | Out-Null
-                    $success = $true
-                    Write-Host "Successfully created and configured loopback adapter." -ForegroundColor Green
-                }
-            } catch {
-                Write-Host "Loopback adapter creation failed: $_" -ForegroundColor Yellow
-            }
-        }
-
-        # As a last resort, try using PowerShell's Route Add command
-        if (-not $success) {
-            try {
-                Write-Host "Adding static route as last resort..." -ForegroundColor Yellow
-
-                # Add a persistent route
-                $routeResult = route add 192.168.100.100 mask 255.255.255.255 $adapter.ifIndex -p
-
-                if ($LASTEXITCODE -eq 0) {
-                    $success = $true
-                    Write-Host "Successfully added static route for 192.168.100.100." -ForegroundColor Green
-                }
-            } catch {
-                Write-Host "Route add method failed: $_" -ForegroundColor Yellow
-            }
-        }
-
-        # Final verification
-        $finalCheck = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
-        if ($finalCheck -or $success) {
-            Write-Host "IP 192.168.100.100 is now available for Kind cluster." -ForegroundColor Green
+        # Configure IP on the virtual adapter
+        Write-Host "Configuring IP address on $vAdapterName..." -ForegroundColor Yellow
+        $netshResult = netsh interface ipv4 add address "$vAdapterName" $ip 255.255.255.0
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Successfully configured IP on $vAdapterName" -ForegroundColor Green
             return $true
         } else {
-            Write-Host "Could not configure IP address through any method." -ForegroundColor Red
-            Write-Host "Trying one more approach - adding a host entry..." -ForegroundColor Yellow
-
-            # Add a hosts file entry as a fallback
-            try {
-                $hostsFile = "$env:windir\System32\drivers\etc\hosts"
-                $hostsContent = Get-Content $hostsFile
-
-                if (-not ($hostsContent -match "192.168.100.100")) {
-                    Add-Content -Path $hostsFile -Value "`n192.168.100.100 kind.local # Added by Kind setup script" -Force
-                    Write-Host "Added hosts file entry for 192.168.100.100 -> kind.local" -ForegroundColor Green
-                    return $true  # We'll consider this sufficient for our purposes
-                } else {
-                    Write-Host "Hosts file already has an entry for 192.168.100.100" -ForegroundColor Green
-                    return $true
-                }
-            } catch {
-                Write-Host "Failed to modify hosts file: $_" -ForegroundColor Red
-                return $false
-            }
+            Write-Host "Failed to configure IP on $vAdapterName" -ForegroundColor Red
+            return $false
         }
     } catch {
         Write-Host "Error configuring network: $_" -ForegroundColor Red
-        Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
         return $false
     }
 }
 
 # Function to cleanup network configuration
 function Remove-KindNetwork {
-    Write-Host "Removing Kind cluster network configuration..." -ForegroundColor Cyan
+    Write-Host "Cleaning up network configuration..." -ForegroundColor Cyan
 
     try {
         # Remove the IP address if it exists
         $existingIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
         if ($existingIP) {
             Remove-NetIPAddress -IPAddress "192.168.100.100" -Confirm:$false
-            Write-Host "Removed Kind cluster IP configuration." -ForegroundColor Green
+            Write-Host "Removed IP configuration" -ForegroundColor Green
         }
 
-        # Remove any static routes for this IP
-        try {
-            route delete 192.168.100.100
-        } catch {
-            # Ignore errors from route deletion
-        }
-
-        # Remove hosts file entry if it exists
-        try {
-            $hostsFile = "$env:windir\System32\drivers\etc\hosts"
-            $hostsContent = Get-Content $hostsFile
-
-            if ($hostsContent -match "192.168.100.100") {
-                $newContent = $hostsContent | Where-Object { $_ -notmatch "192.168.100.100" }
-                Set-Content -Path $hostsFile -Value $newContent -Force
-                Write-Host "Removed hosts file entry for 192.168.100.100" -ForegroundColor Green
-            }
-        } catch {
-            Write-Host "Could not update hosts file: $_" -ForegroundColor Yellow
+        # Remove the virtual switch if it exists
+        $switchName = "OpenFrameSwitch"
+        $virtualSwitch = Get-VMSwitch -Name $switchName -ErrorAction SilentlyContinue
+        if ($virtualSwitch) {
+            Remove-VMSwitch -Name $switchName -Force
+            Write-Host "Removed virtual switch" -ForegroundColor Green
         }
     } catch {
-        Write-Host "Error removing network configuration: $_" -ForegroundColor Yellow
+        Write-Host "Error during cleanup: $_" -ForegroundColor Red
     }
 }
 
@@ -321,68 +238,69 @@ function Reset-KubernetesInDocker {
         Write-Host "Restarting Docker again to enable Kubernetes..." -ForegroundColor Yellow
         Restart-DockerDesktop
 
-        # Wait for Kubernetes to initialize
-        Write-Host "Waiting for Kubernetes to initialize (this may take several minutes)..." -ForegroundColor Yellow
-
-        Start-Sleep -Seconds 30
-
-        # Verify Kubernetes is running
-        Write-Host "Verifying Kubernetes cluster..." -ForegroundColor Yellow
-        $retryCount = 0
-        $maxRetries = 10
-        $k8sRunning = $false
-
-        while ($retryCount -lt $maxRetries -and -not $k8sRunning) {
-            $retryCount++
-            Write-Host "Checking Kubernetes status... (Attempt $retryCount of $maxRetries)" -ForegroundColor Yellow
-
-            try {
-                $job = Start-Job -ScriptBlock { kubectl cluster-info }
-                $completed = Wait-Job $job -Timeout 15
-
-                if ($completed) {
-                    $result = Receive-Job $job
-                    Remove-Job $job
-
-                    if ($result -match "Kubernetes control plane") {
-                        $k8sRunning = $true
-                        Write-Host "Kubernetes is now running properly!" -ForegroundColor Green
-                    }
-                } else {
-                    Stop-Job $job
-                    Remove-Job $job -Force
-                }
-            } catch {
-                # Continue with next attempt
-            }
-
-            if (-not $k8sRunning) {
-                Start-Sleep -Seconds 15
-            }
-        }
-
-        if ($k8sRunning) {
-            # Set up .kube/config
-            Write-Host "Setting up kubectl configuration..." -ForegroundColor Yellow
-            New-Item -ItemType Directory -Path "$env:USERPROFILE\.kube" -Force | Out-Null
-
-            $dockerK8sConfig = "$env:USERPROFILE\AppData\Roaming\Docker\kubernetes\config"
-            if (Test-Path $dockerK8sConfig) {
-                Copy-Item -Path $dockerK8sConfig -Destination "$env:USERPROFILE\.kube\config" -Force
-                Write-Host "Copied Kubernetes config to user profile." -ForegroundColor Green
-            }
-
-            return $true
-        } else {
-            Write-Host "Kubernetes did not start properly after reset." -ForegroundColor Red
-            return $false
-        }
+#         # Wait for Kubernetes to initialize
+#         Write-Host "Waiting for Kubernetes to initialize (this may take several minutes)..." -ForegroundColor Yellow
+#
+#         Start-Sleep -Seconds 30
+#
+#         # Verify Kubernetes is running
+#         Write-Host "Verifying Kubernetes cluster..." -ForegroundColor Yellow
+#         $retryCount = 0
+#         $maxRetries = 10
+#         $k8sRunning = $false
+#
+#         while ($retryCount -lt $maxRetries -and -not $k8sRunning) {
+#             $retryCount++
+#             Write-Host "Checking Kubernetes status... (Attempt $retryCount of $maxRetries)" -ForegroundColor Yellow
+#
+#             try {
+#                 $job = Start-Job -ScriptBlock { kubectl cluster-info }
+#                 $completed = Wait-Job $job -Timeout 15
+#
+#                 if ($completed) {
+#                     $result = Receive-Job $job
+#                     Remove-Job $job
+#
+#                     if ($result -match "Kubernetes control plane") {
+#                         $k8sRunning = $true
+#                         Write-Host "Kubernetes is now running properly!" -ForegroundColor Green
+#                     }
+#                 } else {
+#                     Stop-Job $job
+#                     Remove-Job $job -Force
+#                 }
+#             } catch {
+#                 # Continue with next attempt
+#             }
+#
+#             if (-not $k8sRunning) {
+#                 Start-Sleep -Seconds 15
+#             }
+#         }
+#
+#         if ($k8sRunning) {
+#             # Set up .kube/config
+#             Write-Host "Setting up kubectl configuration..." -ForegroundColor Yellow
+#             New-Item -ItemType Directory -Path "$env:USERPROFILE\.kube" -Force | Out-Null
+#
+#             $dockerK8sConfig = "$env:USERPROFILE\AppData\Roaming\Docker\kubernetes\config"
+#             if (Test-Path $dockerK8sConfig) {
+#                 Copy-Item -Path $dockerK8sConfig -Destination "$env:USERPROFILE\.kube\config" -Force
+#                 Write-Host "Copied Kubernetes config to user profile." -ForegroundColor Green
+#             }
+#
+#             return $true
+#         } else {
+#             Write-Host "Kubernetes did not start properly after reset." -ForegroundColor Red
+#             return $false
+#         }
     } catch {
         Write-Host "Error during Kubernetes reset: $_" -ForegroundColor Red
         Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
         return $false
     }
 }
+
 
 # Function to check Docker status
 function Test-DockerStatus {
@@ -660,141 +578,6 @@ function Cleanup-Environment {
     Remove-KindNetwork
 }
 
-# Function to configure Kind network using a Loopback Adapter
-function Set-KindNetwork {
-    Write-Host "Checking and configuring Loopback Adapter for Kind cluster..." -ForegroundColor Cyan
-
-    try {
-        # First check if the dedicated loopback adapter already exists
-        $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Loopback*" } | Select-Object -First 1
-
-        # Create a new loopback adapter if one doesn't exist
-        if (-not $loopbackAdapter) {
-            Write-Host "Creating new Loopback Adapter..." -ForegroundColor Yellow
-
-            # Use Device Manager's Add Legacy Hardware wizard to add Microsoft KM-TEST Loopback Adapter
-            # This is an alternative approach that doesn't require devcon.exe
-
-            Write-Host "Creating Microsoft KM-TEST Loopback Adapter using PowerShell..." -ForegroundColor Yellow
-
-            # Add the Microsoft KM-TEST Loopback Adapter using PowerShell commands
-            Add-WindowsCapability -Online -Name "Networking.LoopbackAdapter~~~~0.0.1.0"
-
-            # Wait for the adapter to be created
-            Start-Sleep -Seconds 5
-
-            # Get the newly created adapter
-            $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Microsoft KM-TEST Loopback Adapter*" } | Select-Object -First 1
-
-            if (-not $loopbackAdapter) {
-                # Alternative method using netcfg if Add-WindowsCapability failed
-                Write-Host "Trying alternative method with netcfg..." -ForegroundColor Yellow
-
-                $netcfgResult = netcfg -v -l "$env:windir\inf\netloop.inf" -c p -i *MSLOOP
-
-                # Wait for the adapter to be created
-                Start-Sleep -Seconds 5
-
-                # Get the newly created adapter
-                $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Loopback*" } | Select-Object -First 1
-            }
-
-            if (-not $loopbackAdapter) {
-                Write-Host "ERROR: Failed to create Loopback Adapter" -ForegroundColor Red
-                return $false
-            }
-
-            # Rename the adapter for clarity
-            try {
-                Rename-NetAdapter -Name $loopbackAdapter.Name -NewName "Kind-Loopback"
-                $loopbackAdapter = Get-NetAdapter -Name "Kind-Loopback" -ErrorAction SilentlyContinue
-                if (-not $loopbackAdapter) {
-                    $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Loopback*" } | Select-Object -First 1
-                }
-            } catch {
-                Write-Host "Warning: Could not rename adapter, but will continue with: $($loopbackAdapter.Name)" -ForegroundColor Yellow
-            }
-
-            Write-Host "Successfully created Loopback Adapter: $($loopbackAdapter.Name)" -ForegroundColor Green
-        } else {
-            Write-Host "Found existing Loopback Adapter: $($loopbackAdapter.Name)" -ForegroundColor Green
-        }
-
-        # Make sure the adapter is enabled
-        if ($loopbackAdapter.Status -ne "Up") {
-            Write-Host "Enabling Loopback Adapter..." -ForegroundColor Yellow
-            Enable-NetAdapter -Name $loopbackAdapter.Name -Confirm:$false
-            Start-Sleep -Seconds 2
-            $loopbackAdapter = Get-NetAdapter -Name $loopbackAdapter.Name
-        }
-
-        # Check if the IP already exists on the loopback adapter
-        $existingIP = Get-NetIPAddress -InterfaceIndex $loopbackAdapter.ifIndex -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
-        if ($existingIP) {
-            Write-Host "Kind cluster IP (192.168.100.100) is already configured on the Loopback Adapter." -ForegroundColor Green
-            return $true
-        }
-
-        # Configure the IP address on the loopback adapter using netsh (more reliable than New-NetIPAddress)
-        Write-Host "Adding IP address 192.168.100.100 to Loopback Adapter using netsh..." -ForegroundColor Yellow
-
-        try {
-            # Using netsh command instead of New-NetIPAddress
-            $netshResult = netsh interface ipv4 add address name="$($loopbackAdapter.Name)" addr=192.168.100.100 mask=255.255.255.0
-
-            # Verify IP was added
-            Start-Sleep -Seconds 2
-            $verifyIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
-            if ($verifyIP) {
-                Write-Host "Successfully configured IP address on Loopback Adapter." -ForegroundColor Green
-
-                # Add a hosts file entry for convenience
-                $hostsFile = "$env:windir\System32\drivers\etc\hosts"
-                $hostsContent = Get-Content $hostsFile
-
-                if (-not ($hostsContent -match "192.168.100.100")) {
-                    Add-Content -Path $hostsFile -Value "`n192.168.100.100 kind.local # Added by Kind setup script" -Force
-                    Write-Host "Added hosts file entry for 192.168.100.100 -> kind.local" -ForegroundColor Green
-                }
-
-                return $true
-            } else {
-                Write-Host "IP address not found after configuration. Netsh output: $netshResult" -ForegroundColor Red
-
-                # Try one last alternative method - PowerShell cmdlet with different parameters
-                Write-Host "Trying one last method..." -ForegroundColor Yellow
-                try {
-                    $null = New-NetIPAddress -IPAddress "192.168.100.100" -PrefixLength 24 -InterfaceAlias $loopbackAdapter.Name
-
-                    # Verify again
-                    Start-Sleep -Seconds 2
-                    $finalVerifyIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
-                    if ($finalVerifyIP) {
-                        Write-Host "Successfully configured IP address using alternative method." -ForegroundColor Green
-                        return $true
-                    }
-                } catch {
-                    Write-Host "Alternative method also failed: $_" -ForegroundColor Red
-                }
-
-                return $false
-            }
-        }
-        catch {
-            Write-Host "Error configuring IP address on Loopback Adapter: $_" -ForegroundColor Red
-            return $false
-        }
-    }
-    catch {
-        Write-Host "Error in Set-KindNetwork: $_" -ForegroundColor Red
-        Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
-        return $false
-    }
-}
-
 # Check if script is running as administrator, if not, restart as admin
 if (-not (Test-Administrator)) {
     Write-Host "This script requires administrator privileges. Restarting as admin..." -ForegroundColor Yellow
@@ -834,30 +617,74 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "Git is already installed." -ForegroundColor Green
 }
 
-# Check Docker and Kubernetes status
-if (-not (Test-DockerStatus)) {
-    Write-Host "Docker has issues. Attempting to restart Docker..." -ForegroundColor Yellow
-    if (-not (Restart-DockerDesktop)) {
-        Write-Host "Failed to restart Docker. Please restart Docker Desktop manually and run the script again." -ForegroundColor Red
-        Exit 1
+# 3. Check/install Docker Desktop with WSL2
+Write-Host "Checking for Docker Desktop installation..." -ForegroundColor Cyan
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "Docker Desktop not found. Installing Docker Desktop with WSL2..." -ForegroundColor Yellow
+
+    # Make sure WSL2 is enabled
+    Write-Host "Ensuring WSL2 is enabled..." -ForegroundColor Cyan
+    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+    # Set WSL2 as default
+    Write-Host "Setting WSL2 as default..." -ForegroundColor Cyan
+    wsl --set-default-version 2
+
+    # Install Docker Desktop
+    choco install docker-desktop -y
+
+    Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
+    Write-Host "NOTE: You may need to restart your computer to complete the Docker installation." -ForegroundColor Yellow
+
+    $restartChoice = Read-Host "Do you want to restart your computer now? (Y/N)"
+    if ($restartChoice -eq "Y" -or $restartChoice -eq "y") {
+        Restart-Computer -Force
+        exit
     }
+} else {
+    Write-Host "Docker Desktop is already installed." -ForegroundColor Green
 }
 
-if (-not (Test-KubernetesStatus)) {
-    Write-Host "Kubernetes has issues. Attempting to reset Kubernetes..." -ForegroundColor Yellow
-    if (-not (Reset-KubernetesInDocker)) {
-        Write-Host "Failed to reset Kubernetes. Please reset Kubernetes in Docker Desktop manually and run the script again." -ForegroundColor Red
-        Exit 1
-    }
-}
-
-# Configure network for Kind cluster
-if (-not (Set-KindNetwork)) {
+# 4. Configure network for Kind cluster and create Kind cluster (before any kubectl checks)
+if (-not (Set-KindLoopbackAdapter)) {
     Write-Host "Failed to configure IP for Kind cluster." -ForegroundColor Red
     Write-Host "Will attempt to continue with the installation..." -ForegroundColor Yellow
+} else {
+    # Check if Kind cluster already exists
+    $kindClusters = kind get clusters 2>&1
+    if ($LASTEXITCODE -eq 0 -and $kindClusters -match "kind") {
+        Write-Host "Kind cluster already exists. Skipping creation." -ForegroundColor Green
+    } else {
+        Write-Host "No Kind cluster found. Creating a new Kind cluster..." -ForegroundColor Yellow
+        # Prompt for config file and version
+        $defaultConfig = Join-Path $repoPath "kind-cluster\deploy\kind\cluster.template.yaml"
+        $defaultVersion = "v1.32.3"
+        $configFile = Read-Host "Enter path to Kind cluster config file [`$defaultConfig`]"
+        if ([string]::IsNullOrWhiteSpace($configFile)) { $configFile = $defaultConfig }
+        $kindVersion = Read-Host "Enter Kind node image version [`$defaultVersion`]"
+        if ([string]::IsNullOrWhiteSpace($kindVersion)) { $kindVersion = $defaultVersion }
+        
+        # Create the cluster
+        kind create cluster --config "$configFile" --image kindest/node:$kindVersion
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Kind cluster created successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "Failed to create Kind cluster. Please check the config file and try again." -ForegroundColor Red
+        }
+    }
 }
 
-# 3. Handle repository
+# 5. Now check Kubernetes status (kubectl)
+# if (-not (Test-KubernetesStatus)) {
+#     Write-Host "Kubernetes has issues. Attempting to reset Kubernetes..." -ForegroundColor Yellow
+#     if (-not (Reset-KubernetesInDocker)) {
+#         Write-Host "Failed to reset Kubernetes. Please reset Kubernetes in Docker Desktop manually and run the script again." -ForegroundColor Red
+#         Exit 1
+#     }
+# }
+
+# Handle repository
 # Use the current directory where the script is running
 $currentDir = Get-Location
 $repoPath = $currentDir.Path
@@ -934,36 +761,7 @@ if (-not (Test-Path "$repoPath\.git")) {
     }
 }
 
-# 4. Check/install Docker Desktop with WSL2
-Write-Host "Checking for Docker Desktop installation..." -ForegroundColor Cyan
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "Docker Desktop not found. Installing Docker Desktop with WSL2..." -ForegroundColor Yellow
-
-    # Make sure WSL2 is enabled
-    Write-Host "Ensuring WSL2 is enabled..." -ForegroundColor Cyan
-    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-    # Set WSL2 as default
-    Write-Host "Setting WSL2 as default..." -ForegroundColor Cyan
-    wsl --set-default-version 2
-
-    # Install Docker Desktop
-    choco install docker-desktop -y
-
-    Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
-    Write-Host "NOTE: You may need to restart your computer to complete the Docker installation." -ForegroundColor Yellow
-
-    $restartChoice = Read-Host "Do you want to restart your computer now? (Y/N)"
-    if ($restartChoice -eq "Y" -or $restartChoice -eq "y") {
-        Restart-Computer -Force
-        exit
-    }
-} else {
-    Write-Host "Docker Desktop is already installed." -ForegroundColor Green
-}
-
-# 5. Find and run the run.sh script using Git Bash
+# 6. Find and run the run.sh script using Git Bash
 Write-Host "Searching for run.sh in the repository..." -ForegroundColor Cyan
 $gitBashPath = "C:\Program Files\Git\bin\bash.exe"
 

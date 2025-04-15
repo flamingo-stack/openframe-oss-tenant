@@ -36,8 +36,8 @@ source "${SCRIPT_DIR}/functions/debug.sh"
 export -f debug_app
 
 # Source swap-config.sh directly to ensure it's loaded
-source "${SCRIPT_DIR}/functions/swap-config.sh"
-export -f setup_wslconfig setup_swap check_memory check_docker_desktop apply_changes
+#source "${SCRIPT_DIR}/functions/swap-config.sh"
+#export -f setup_wslconfig setup_swap check_memory check_docker_desktop apply_changes
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -79,10 +79,10 @@ case "$ARG" in
   pre)
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
-  s|swap)
+#  s|swap)
     # Run memory check, setup swap, and verify Docker is running
-    check_memory && setup_swap
-    ;;
+#    check_memory && setup_swap
+#    ;;
   k|cluster)
     check_memory
     bash "${SCRIPT_DIR}/setup-cluster.sh" && \
@@ -106,14 +106,14 @@ case "$ARG" in
     # Bootstrap whole cluster with all apps
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
-    bash "$0" swap && \
+#    bash "$0" swap && \
     bash "$0" cluster && \
     bash "$0" app all deploy
     ;;
   p|platform)
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
-    bash "$0" swap && \
+#    bash "$0" swap && \
     bash "$0" cluster && \
     bash ${SCRIPT_DIR}/bases.sh && \
     bash "$0" app platform deploy
