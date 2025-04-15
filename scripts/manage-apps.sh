@@ -432,13 +432,16 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
     openframe_datasources_wait_all && \
-    $0 openframe_microservices_openframe_config_server $ACTION
-    $0 openframe_microservices_openframe_api $ACTION
-    $0 openframe_microservices_openframe_management $ACTION
-    $0 openframe_microservices_openframe_stream $ACTION
-    $0 openframe_microservices_openframe_gateway $ACTION
-    $0 openframe_microservices_openframe_ui $ACTION
-    echo
+    $0 openframe_microservices_openframe_config_server $ACTION &
+    $0 openframe_microservices_openframe_api $ACTION &
+    $0 openframe_microservices_openframe_management $ACTION &
+    $0 openframe_microservices_openframe_stream $ACTION &
+    $0 openframe_microservices_openframe_gateway $ACTION &
+    $0 openframe_microservices_openframe_ui $ACTION &
+    wait_parallel || {
+      echo "OpenFrame Microservices stack deployment failed"
+      exit 1
+    }
     ;;
   itd|integrated_tools_datasources)
     ACTION=${2}
@@ -454,11 +457,14 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 integrated_tools_fleet $ACTION
-    $0 integrated_tools_authentik $ACTION
-    $0 integrated_tools_meshcentral $ACTION
-    $0 integrated_tools_tactical_rmm $ACTION
-    echo
+    $0 integrated_tools_fleet $ACTION &
+    $0 integrated_tools_authentik $ACTION &
+    $0 integrated_tools_meshcentral $ACTION &
+    $0 integrated_tools_tactical_rmm $ACTION &
+    wait_parallel || {
+      echo "Integrated Tools stack deployment failed"
+      exit 1
+    }
     ;;
   a|all)
     # ------------- ALL -------------
@@ -473,7 +479,7 @@ case "$APP" in
     $0 client_tools $ACTION
     $0 openframe_microservices_register_apps $ACTION
     echo
-    echo "Waiting for all apps to be ready. Deployment finished."
+    echo "Wait for all apps to be ready. Deployment finished."
     ;;
   -h|--help|-Help)
     show_help_apps

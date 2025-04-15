@@ -59,7 +59,7 @@ function integrated_tools_datasources_meshcentral_deploy() {
 
 function integrated_tools_datasources_meshcentral_wait() {
   echo "Waiting for MeshCentral to be ready"
-  wait_for_app "integrated-tools-datasources" "app=meshcentral"
+  wait_for_app "integrated-tools-datasources" "app=meshcentral-mongodb"
 }
 
 function integrated_tools_datasources_meshcentral_delete() {

@@ -5,6 +5,11 @@ export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd 
 export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
 # Source functions in correct order
+source "${SCRIPT_DIR}/functions/variables.sh"
+
+source "${SCRIPT_DIR}/functions/build-app.sh"
+export -f build_app
+
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help show_help_apps
 
@@ -14,9 +19,8 @@ export -f helm_repo_ensure
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
-source "${SCRIPT_DIR}/functions/variables.sh"
-source "${SCRIPT_DIR}/functions/build-app.sh"
-export -f build_app
+source "${SCRIPT_DIR}/functions/wait-parallel.sh"
+export -f wait_parallel
 
 source "${SCRIPT_DIR}/functions/debug.sh"
 export -f debug_app
