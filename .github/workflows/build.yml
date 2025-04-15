@@ -92,7 +92,7 @@ jobs:
             ui:
               - './openframe/services/openframe-ui/**'
             nifi:
-              - './infrastructure/nifi/**'
+              - './openframe/datasources/nifi/**'
             postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
