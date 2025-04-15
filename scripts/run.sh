@@ -35,8 +35,9 @@ export -f wait_parallel
 source "${SCRIPT_DIR}/functions/debug.sh"
 export -f debug_app
 
+# Source swap-config.sh directly to ensure it's loaded
 source "${SCRIPT_DIR}/functions/swap-config.sh"
-export -f setup_wslconfig setup_swap check_memory
+export -f setup_wslconfig setup_swap check_memory check_docker_desktop apply_changes
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -79,7 +80,8 @@ case "$ARG" in
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
   s|swap)
-    check_memory
+    # Run memory check, setup swap, and verify Docker is running
+    check_memory && setup_swap
     ;;
   k|cluster)
     check_memory
