@@ -660,94 +660,136 @@ function Cleanup-Environment {
     Remove-KindNetwork
 }
 
-# First, define the function for setting the IP
+# Function to configure Kind network using a Loopback Adapter
 function Set-KindNetwork {
-    Write-Host "Checking and configuring network for Kind cluster..." -ForegroundColor Cyan
+    Write-Host "Checking and configuring Loopback Adapter for Kind cluster..." -ForegroundColor Cyan
 
     try {
-        # Direct approach - add IP to existing adapter
-        # Find a suitable network adapter that's up
-        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" } | Select-Object -First 1
+        # First check if the dedicated loopback adapter already exists
+        $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Loopback*" } | Select-Object -First 1
 
-        if (-not $adapter) {
-            Write-Host "ERROR: Could not find any active network adapter" -ForegroundColor Red
-            return $false
+        # Create a new loopback adapter if one doesn't exist
+        if (-not $loopbackAdapter) {
+            Write-Host "Creating new Loopback Adapter..." -ForegroundColor Yellow
+
+            # Use Device Manager's Add Legacy Hardware wizard to add Microsoft KM-TEST Loopback Adapter
+            # This is an alternative approach that doesn't require devcon.exe
+
+            Write-Host "Creating Microsoft KM-TEST Loopback Adapter using PowerShell..." -ForegroundColor Yellow
+
+            # Add the Microsoft KM-TEST Loopback Adapter using PowerShell commands
+            Add-WindowsCapability -Online -Name "Networking.LoopbackAdapter~~~~0.0.1.0"
+
+            # Wait for the adapter to be created
+            Start-Sleep -Seconds 5
+
+            # Get the newly created adapter
+            $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Microsoft KM-TEST Loopback Adapter*" } | Select-Object -First 1
+
+            if (-not $loopbackAdapter) {
+                # Alternative method using netcfg if Add-WindowsCapability failed
+                Write-Host "Trying alternative method with netcfg..." -ForegroundColor Yellow
+
+                $netcfgResult = netcfg -v -l "$env:windir\inf\netloop.inf" -c p -i *MSLOOP
+
+                # Wait for the adapter to be created
+                Start-Sleep -Seconds 5
+
+                # Get the newly created adapter
+                $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Loopback*" } | Select-Object -First 1
+            }
+
+            if (-not $loopbackAdapter) {
+                Write-Host "ERROR: Failed to create Loopback Adapter" -ForegroundColor Red
+                return $false
+            }
+
+            # Rename the adapter for clarity
+            try {
+                Rename-NetAdapter -Name $loopbackAdapter.Name -NewName "Kind-Loopback"
+                $loopbackAdapter = Get-NetAdapter -Name "Kind-Loopback" -ErrorAction SilentlyContinue
+                if (-not $loopbackAdapter) {
+                    $loopbackAdapter = Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.Description -like "*Loopback*" } | Select-Object -First 1
+                }
+            } catch {
+                Write-Host "Warning: Could not rename adapter, but will continue with: $($loopbackAdapter.Name)" -ForegroundColor Yellow
+            }
+
+            Write-Host "Successfully created Loopback Adapter: $($loopbackAdapter.Name)" -ForegroundColor Green
+        } else {
+            Write-Host "Found existing Loopback Adapter: $($loopbackAdapter.Name)" -ForegroundColor Green
         }
 
-        # Check if the IP already exists
-        $existingIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
+        # Make sure the adapter is enabled
+        if ($loopbackAdapter.Status -ne "Up") {
+            Write-Host "Enabling Loopback Adapter..." -ForegroundColor Yellow
+            Enable-NetAdapter -Name $loopbackAdapter.Name -Confirm:$false
+            Start-Sleep -Seconds 2
+            $loopbackAdapter = Get-NetAdapter -Name $loopbackAdapter.Name
+        }
+
+        # Check if the IP already exists on the loopback adapter
+        $existingIP = Get-NetIPAddress -InterfaceIndex $loopbackAdapter.ifIndex -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
 
         if ($existingIP) {
-            Write-Host "Kind cluster IP (192.168.100.100) is already configured." -ForegroundColor Green
+            Write-Host "Kind cluster IP (192.168.100.100) is already configured on the Loopback Adapter." -ForegroundColor Green
             return $true
         }
 
-        Write-Host "Adding IP address 192.168.100.100 to adapter $($adapter.Name)..." -ForegroundColor Yellow
+        # Configure the IP address on the loopback adapter using netsh (more reliable than New-NetIPAddress)
+        Write-Host "Adding IP address 192.168.100.100 to Loopback Adapter using netsh..." -ForegroundColor Yellow
 
-        # Try multiple methods to add the IP
-        $success = $false
-
-        # Method 1: New-NetIPAddress PowerShell cmdlet
         try {
-            $result = New-NetIPAddress -IPAddress "192.168.100.100" -PrefixLength 24 -InterfaceIndex $adapter.ifIndex
-            if ($result) {
-                $success = $true
-                Write-Host "Successfully configured network using New-NetIPAddress." -ForegroundColor Green
-            }
-        } catch {
-            Write-Host "New-NetIPAddress method failed: $_" -ForegroundColor Yellow
-        }
+            # Using netsh command instead of New-NetIPAddress
+            $netshResult = netsh interface ipv4 add address name="$($loopbackAdapter.Name)" addr=192.168.100.100 mask=255.255.255.0
 
-        # Method 2: Try using netsh if PowerShell method failed
-        if (-not $success) {
-            try {
-                Write-Host "Trying netsh method..." -ForegroundColor Yellow
-                $netshResult = netsh interface ipv4 add address name="$($adapter.Name)" addr=192.168.100.100 mask=255.255.255.0
+            # Verify IP was added
+            Start-Sleep -Seconds 2
+            $verifyIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
 
-                # Verify IP was added
-                Start-Sleep -Seconds 2
-                $verifyIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-                if ($verifyIP) {
-                    $success = $true
-                    Write-Host "Successfully configured network using netsh." -ForegroundColor Green
-                }
-            } catch {
-                Write-Host "Netsh method failed: $_" -ForegroundColor Yellow
-            }
-        }
+            if ($verifyIP) {
+                Write-Host "Successfully configured IP address on Loopback Adapter." -ForegroundColor Green
 
-        # Method 3: Add a hosts file entry as a fallback
-        if (-not $success) {
-            try {
-                Write-Host "Adding a hosts file entry as a fallback..." -ForegroundColor Yellow
+                # Add a hosts file entry for convenience
                 $hostsFile = "$env:windir\System32\drivers\etc\hosts"
                 $hostsContent = Get-Content $hostsFile
 
                 if (-not ($hostsContent -match "192.168.100.100")) {
                     Add-Content -Path $hostsFile -Value "`n192.168.100.100 kind.local # Added by Kind setup script" -Force
                     Write-Host "Added hosts file entry for 192.168.100.100 -> kind.local" -ForegroundColor Green
-                    $success = $true
-                } else {
-                    Write-Host "Hosts file already has an entry for 192.168.100.100" -ForegroundColor Green
-                    $success = $true
                 }
-            } catch {
-                Write-Host "Failed to modify hosts file: $_" -ForegroundColor Red
+
+                return $true
+            } else {
+                Write-Host "IP address not found after configuration. Netsh output: $netshResult" -ForegroundColor Red
+
+                # Try one last alternative method - PowerShell cmdlet with different parameters
+                Write-Host "Trying one last method..." -ForegroundColor Yellow
+                try {
+                    $null = New-NetIPAddress -IPAddress "192.168.100.100" -PrefixLength 24 -InterfaceAlias $loopbackAdapter.Name
+
+                    # Verify again
+                    Start-Sleep -Seconds 2
+                    $finalVerifyIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
+
+                    if ($finalVerifyIP) {
+                        Write-Host "Successfully configured IP address using alternative method." -ForegroundColor Green
+                        return $true
+                    }
+                } catch {
+                    Write-Host "Alternative method also failed: $_" -ForegroundColor Red
+                }
+
+                return $false
             }
         }
-
-        # Final verification
-        $finalCheck = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-
-        if ($finalCheck -or $success) {
-            Write-Host "IP 192.168.100.100 is now available for Kind cluster." -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "Could not configure IP address through any method." -ForegroundColor Red
+        catch {
+            Write-Host "Error configuring IP address on Loopback Adapter: $_" -ForegroundColor Red
             return $false
         }
-    } catch {
-        Write-Host "Error configuring network: $_" -ForegroundColor Red
+    }
+    catch {
+        Write-Host "Error in Set-KindNetwork: $_" -ForegroundColor Red
         Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
         return $false
     }

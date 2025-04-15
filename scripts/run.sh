@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DEPLOY_DIR="$(dirname "$SCRIPT_DIR")/deploy"
+export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
 # Convert Windows paths to Git Bash paths if running on Windows
-if [[ "$(uname -s)" == *"NT"* ]] || [[ "$(uname -s)" == "MINGW"* ]] || [[ "$(uname -s)" == "CYGWIN"* ]]; then
+if [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
     # Convert Windows path to Git Bash path
-    SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
-    DEPLOY_DIR=$(echo "$DEPLOY_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+    export SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+    export ROOT_REPO_DIR=$(echo "$ROOT_REPO_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
 fi
 
 # Source functions in correct order
