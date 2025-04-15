@@ -247,6 +247,7 @@ OpenFrame builds upon many excellent open-source projects. We're grateful to all
 * [Issue Tracker](https://github.com/Flamingo-CX/openframe/issues)
 * [Documentation](docs/)
 * [Community Forum](https://community.openframe.org)
+* [Developer Resources](https://github.com/Flamingo-CX/openframe/wiki)
 
 ---
 
