@@ -47,7 +47,7 @@ spec:
       - name: wait-for-controller
         image: busybox
         command: ['sh', '-c', 'until nc -z openframe-pinot-controller 9000; do echo waiting for controller; sleep 3; done']
-      - name: wait-for-controller
+      - name: wait-for-broker
         image: busybox
         command: ['sh', '-c', 'until nc -z openframe-pinot-broker 8099; do echo waiting for broker; sleep 3; done']
       - name: init-jmx

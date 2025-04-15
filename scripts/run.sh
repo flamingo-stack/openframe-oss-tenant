@@ -72,7 +72,10 @@ case "$ARG" in
     ;;
   b|bootstrap)
     # Bootstrap whole cluster with all apps
-    bash "$0" platform && \
+    # Bootstrap whole cluster with base apps
+    bash "$0" pre && \
+    bash "$0" cluster && \
+    bash ${SCRIPT_DIR}/bases.sh && \
     bash "$0" app all deploy
     ;;
   p|platform)

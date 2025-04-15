@@ -396,7 +396,7 @@ case "$APP" in
 
     $0 platform_monitoring $ACTION && \
     $0 platform_logging $ACTION &&
-    $0 platform_metrics_server $ACTION &
+    $0 platform_metrics_server $ACTION
     echo
     ;;
   p|platform)
@@ -418,46 +418,46 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 openframe_datasources_redis $ACTION &
-    $0 openframe_datasources_kafka $ACTION &
-    $0 openframe_datasources_mongodb $ACTION &
-    $0 openframe_datasources_mongodb_exporter $ACTION &
-    $0 openframe_datasources_cassandra $ACTION &
-    $0 openframe_datasources_nifi $ACTION &
-    $0 openframe_datasources_zookeeper $ACTION &
-    $0 openframe_datasources_pinot $ACTION &
+    $0 openframe_datasources_redis $ACTION
+    $0 openframe_datasources_kafka $ACTION
+    $0 openframe_datasources_mongodb $ACTION
+    $0 openframe_datasources_mongodb_exporter $ACTION
+    $0 openframe_datasources_cassandra $ACTION
+    $0 openframe_datasources_nifi $ACTION
+    $0 openframe_datasources_zookeeper $ACTION
+    $0 openframe_datasources_pinot $ACTION
     echo
     ;;
   om|openframe_microservices)
     ACTION=${2}
     IFWAIT=${3:-}
     openframe_datasources_wait_all && \
-    $0 openframe_microservices_openframe_config_server $ACTION &
-    $0 openframe_microservices_openframe_api $ACTION &
-    $0 openframe_microservices_openframe_management $ACTION &
-    $0 openframe_microservices_openframe_stream $ACTION &
-    $0 openframe_microservices_openframe_gateway $ACTION &
-    $0 openframe_microservices_openframe_ui $ACTION &
+    $0 openframe_microservices_openframe_config_server $ACTION
+    $0 openframe_microservices_openframe_api $ACTION
+    $0 openframe_microservices_openframe_management $ACTION
+    $0 openframe_microservices_openframe_stream $ACTION
+    $0 openframe_microservices_openframe_gateway $ACTION
+    $0 openframe_microservices_openframe_ui $ACTION
     echo
     ;;
   itd|integrated_tools_datasources)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 integrated_tools_datasources_fleet $ACTION &
-    $0 integrated_tools_datasources_authentik $ACTION &
-    $0 integrated_tools_datasources_meshcentral $ACTION &
-    $0 integrated_tools_datasources_tactical_rmm $ACTION &
+    $0 integrated_tools_datasources_fleet $ACTION
+    $0 integrated_tools_datasources_authentik $ACTION
+    $0 integrated_tools_datasources_meshcentral $ACTION
+    $0 integrated_tools_datasources_tactical_rmm $ACTION
     echo
     ;;
   it|integrated_tools)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    $0 integrated_tools_fleet $ACTION &
-    $0 integrated_tools_authentik $ACTION &
-    $0 integrated_tools_meshcentral $ACTION &
-    $0 integrated_tools_tactical_rmm $ACTION &
+    $0 integrated_tools_fleet $ACTION
+    $0 integrated_tools_authentik $ACTION
+    $0 integrated_tools_meshcentral $ACTION
+    $0 integrated_tools_tactical_rmm $ACTION
     echo
     ;;
   a|all)
@@ -466,11 +466,11 @@ case "$APP" in
     IFWAIT=${3:-}
 
     $0 platform $ACTION && \
-    $0 openframe_datasources $ACTION & \
-    $0 integrated_tools_datasources $ACTION & \
-    $0 openframe_microservices $ACTION &
-    $0 integrated_tools $ACTION &
-    $0 client_tools $ACTION &
+    $0 openframe_datasources $ACTION
+    $0 integrated_tools_datasources $ACTION
+    $0 openframe_microservices $ACTION
+    $0 integrated_tools $ACTION
+    $0 client_tools $ACTION
     $0 openframe_microservices_register_apps $ACTION
     echo
     echo "Waiting for all apps to be ready. Deployment finished."
