@@ -37,6 +37,12 @@ spec:
         component: controller
     spec:
       initContainers:
+      - name: wait-for-zookeeper
+        image: busybox
+        command:
+          - "sh"
+          - "-c"
+          - "until nc -z zookeeper 2181; do sleep 1; done"
       - name: init-jmx
         image: busybox
         command:

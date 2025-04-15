@@ -8,7 +8,8 @@ function openframe_datasources_redis_deploy() {
   helm upgrade -i openframe-redis bitnami/redis \
     -n openframe-datasources --create-namespace \
     --version 20.11.3 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-redis/helm/redis.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-redis/helm/redis.yaml \
+    --wait --timeout 1h
 
     # REDIS EXPORTER
     # TODO: service montor enabled in redis chart directly, no need to istall this one
@@ -38,7 +39,8 @@ function openframe_datasources_kafka_deploy() {
   helm upgrade -i openframe-kafka bitnami/kafka \
     -n openframe-datasources --create-namespace \
     --version 31.5.0 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-kafka/helm/kafka.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-kafka/helm/kafka.yaml \
+    --wait --timeout 1h
 }
 
 function openframe_datasources_kafka_wait() {
@@ -87,7 +89,8 @@ function openframe_datasources_mongodb_exporter_deploy() {
   helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
     -n openframe-datasources --create-namespace \
     --version 3.11.1 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml \
+    --wait --timeout 1h
 }
 
 function openframe_datasources_mongodb_exporter_wait() {
@@ -108,7 +111,8 @@ function openframe_datasources_cassandra_deploy() {
   helm upgrade -i openframe-cassandra bitnami/cassandra \
     -n openframe-datasources --create-namespace \
     --version 12.2.1 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-cassandra/helm/bitnami-cassandra.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-cassandra/helm/bitnami-cassandra.yaml \
+    --wait --timeout 1h
 }
 
 function openframe_datasources_cassandra_wait() {

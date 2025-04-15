@@ -43,8 +43,8 @@ if ! [ "kind" == "$(kind get clusters --quiet)" ]; then
     if [ "${PERSISTENT_VOLUMES}" = "true" ]; then
         # Ask for volume path if not provided
         if [ -z "${KIND_VOLUME_PATH}" ]; then
-            read -p "Enter path for kind volumes [default: /opt/kind-volumes]: " KIND_VOLUME_PATH
-            KIND_VOLUME_PATH=${KIND_VOLUME_PATH:-/opt/kind-volumes}
+            read -p "Enter path for kind volumes [default: $HOME/kind-volumes]: " KIND_VOLUME_PATH
+            KIND_VOLUME_PATH=${KIND_VOLUME_PATH:-$HOME/kind-volumes}
         fi
 
         # Check if directory exists and has content

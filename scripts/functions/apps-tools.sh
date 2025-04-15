@@ -2,8 +2,24 @@
 
 # TELEPRESENCE
 function tools_telepresence_deploy() {
-  echo "Deploying telepresence"
-  telepresence helm install && telepresence connect
+  echo "Checking telepresence status"
+  if ! helm -n client-tools list | grep -q "traffic-manager.*deployed"; then
+    if ! telepresence status | grep -q "OSS User Daemon: Running"; then
+      echo "Deploying telepresence"
+      telepresence helm install -n client-tools
+    else
+      echo "Telepresence is already running"
+    fi
+  else
+    echo "Telepresence is already installed"
+  fi
+
+  if ! telepresence status | grep -q "OSS Traffic Manager: Connected"; then
+    echo "Connecting telepresence"
+    telepresence connect
+  else
+    echo "Telepresence is already connected"
+  fi
 }
 
 function tools_telepresence_wait() {
@@ -26,7 +42,8 @@ function tools_kafka_ui_deploy() {
   helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
     -n client-tools --create-namespace \
     --version 1.4.12 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/kafka-ui/helm/kafka-ui.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/kafka-ui/helm/kafka-ui.yaml \
+    --wait --timeout 1h
 }
 
 function tools_kafka_ui_wait() {

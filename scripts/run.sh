@@ -5,6 +5,11 @@ export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd 
 export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
 # Source functions in correct order
+source "${SCRIPT_DIR}/functions/variables.sh"
+
+source "${SCRIPT_DIR}/functions/build-app.sh"
+export -f build_app
+
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help show_help_apps
 
@@ -14,9 +19,8 @@ export -f helm_repo_ensure
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
-source "${SCRIPT_DIR}/functions/variables.sh"
-source "${SCRIPT_DIR}/functions/build-app.sh"
-export -f build_app
+source "${SCRIPT_DIR}/functions/wait-parallel.sh"
+export -f wait_parallel
 
 source "${SCRIPT_DIR}/functions/debug.sh"
 export -f debug_app
@@ -30,21 +34,30 @@ for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   done < <(declare -F | awk '{print $3}')
 done
 
-if [ "$1" == "b" ] || [ "$1" == "bootstrap" ] || [ "$1" == "m" ] || [ "$1" == "minimal" ]; then
-  IFWAIT=$2
-else
-  APP=$2
-  ACTION=$3
-  if [ "$ACTION" == "debug" ]; then
-    LOCAL_PORT="$4"
-    REMOTE_PORT_NAME="$5"
-  elif [ "$ACTION" == "deploy" ]; then
-    IFWAIT=$4
-  fi
+# Function to check if namespaces and secrets already exist
+function check_bases() {
+  for ns in "${NAMESPACES[@]}"; do
+    if ! kubectl get namespace "$ns" &> /dev/null; then
+      return 1
+    fi
+    if ! kubectl -n "$ns" get secret github-pat-secret &> /dev/null; then
+      return 1
+    fi
+  done
+  return 0
+}
+
+ARG=$1
+APP=$2
+ACTION=$3
+
+if [ "$ACTION" == "debug" ]; then
+  LOCAL_PORT="$4"
+  REMOTE_PORT_NAME="$5"
 fi
 
-case "$1" in
-  p|pre)
+case "$ARG" in
+  pre)
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
   k|cluster)
@@ -54,25 +67,27 @@ case "$1" in
     kind delete cluster
     ;;
   a|app)
+    # Deploy app one by one
     if [ -n "$APP" ]; then
-      bash "$0" pre && \
-      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$IFWAIT" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
-      echo "App name is required"
-      exit 1
+      bash "${SCRIPT_DIR}/manage-apps.sh" "''"
     fi
     ;;
   b|bootstrap)
     # Bootstrap whole cluster with all apps
+    # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash "$0" app all deploy "$IFWAIT"
+    bash ${SCRIPT_DIR}/bases.sh && \
+    bash "$0" app all deploy
     ;;
   p|platform)
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash "$0" app platform deploy "$IFWAIT"
+    bash ${SCRIPT_DIR}/bases.sh && \
+    bash "$0" app platform deploy
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images
@@ -100,6 +115,6 @@ case "$1" in
     exit 0
     ;;
   *)
-    echo "Get help with: $0 [ -h | --help | -Help ]"
-    exit 1
+    show_help
+    exit 0
 esac

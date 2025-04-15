@@ -21,7 +21,7 @@ function integrated_tools_authentik_deploy() {
   # helm_repo_ensure authentik https://goauthentik.io/charts
 
   echo "Deploying Authentik"
-    kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/authentik/manifests
+  kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/authentik/manifests
 
   # helm upgrade -i authentik-redis authentik/redis \
   # -n authentik2 --create-namespace \

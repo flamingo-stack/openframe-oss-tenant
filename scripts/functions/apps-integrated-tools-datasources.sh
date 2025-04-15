@@ -6,7 +6,7 @@ function integrated_tools_datasources_fleet_deploy() {
   kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/fleet
 }
 
-function fleet_wait() {
+function integrated_tools_datasources_fleet_wait() {
   echo "Waiting for Fleet to be ready"
   wait_for_app "integrated-tools-datasources" "app=fleet-mdm-redis"
   wait_for_app "integrated-tools-datasources" "app=fleet-mdm-mysql"
@@ -59,7 +59,7 @@ function integrated_tools_datasources_meshcentral_deploy() {
 
 function integrated_tools_datasources_meshcentral_wait() {
   echo "Waiting for MeshCentral to be ready"
-  wait_for_app "integrated-tools-datasources" "app=meshcentral"
+  wait_for_app "integrated-tools-datasources" "app=meshcentral-mongodb"
 }
 
 function integrated_tools_datasources_meshcentral_delete() {
