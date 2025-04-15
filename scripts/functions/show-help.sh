@@ -53,7 +53,7 @@ function show_help_apps() {
   echo "      openframe_stream             Deploy Stream"
   echo "      openframe_gateway            Deploy Gateway"
   echo "      openframe_ui                 Deploy OpenFrame UI"
-  echo "  register_apps                    Register apps"
+  echo "  openframe_microservices_register_apps                    Register apps"
   echo "  itd|integrated_tools_datasources Deploy integrated_tools_datasources applications"
   echo "      fleet                        Deploy Fleet datasources"
   echo "      authentik                    Deploy Authentik datasources"
