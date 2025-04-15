@@ -167,6 +167,7 @@ t, client_tools               # Client tools
    - Stream (`openframe_microservices_openframe_stream`)
    - Gateway (`openframe_microservices_openframe_gateway`)
    - UI (`openframe_microservices_openframe_ui`)
+   - Register Apps (`openframe_microservices_register_apps`)
 
 4. **Integrated Tools Datasources (itd, integrated_tools_datasources)**
    - Fleet (`integrated_tools_datasources_fleet`)
