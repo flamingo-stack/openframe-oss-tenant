@@ -2,8 +2,24 @@
 
 # TELEPRESENCE
 function tools_telepresence_deploy() {
-  echo "Deploying telepresence"
-  telepresence helm install && telepresence connect
+  echo "Checking telepresence status"
+  if ! helm -n client-tools list | grep -q "traffic-manager.*deployed"; then
+    if ! telepresence status | grep -q "OSS User Daemon: Running"; then
+      echo "Deploying telepresence"
+      telepresence helm install -n client-tools
+    else
+      echo "Telepresence is already running"
+    fi
+  else
+    echo "Telepresence is already installed"
+  fi
+
+  if ! telepresence status | grep -q "OSS Traffic Manager: Connected"; then
+    echo "Connecting telepresence"
+    telepresence connect
+  else
+    echo "Telepresence is already connected"
+  fi
 }
 
 function tools_telepresence_wait() {
