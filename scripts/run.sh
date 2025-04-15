@@ -65,7 +65,6 @@ case "$ARG" in
   a|app)
     # Deploy app one by one
     if [ -n "$APP" ]; then
-      bash "$0" pre && \
       bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
       bash "${SCRIPT_DIR}/manage-apps.sh" "''"
@@ -73,15 +72,14 @@ case "$ARG" in
     ;;
   b|bootstrap)
     # Bootstrap whole cluster with all apps
-    bash "$0" pre && \
-    bash "$0" cluster && \
+    bash "$0" platform && \
     bash "$0" app all deploy
     ;;
   p|platform)
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash ./scripts/functions/bases.sh && \
+    bash ${SCRIPT_DIR}/bases.sh && \
     bash "$0" app platform deploy
     ;;
   c|cleanup)

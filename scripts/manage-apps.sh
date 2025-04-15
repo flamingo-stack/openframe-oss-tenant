@@ -252,7 +252,7 @@ case "$APP" in
   openframe_microservices_register_apps)
     # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
-    ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/register/register.sh
+    openframe_microservices_openframe_management_wait && ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/register/register.sh
     ;;
   integrated_tools_datasources_fleet)
     if [ "$ACTION" == "deploy" ]; then
