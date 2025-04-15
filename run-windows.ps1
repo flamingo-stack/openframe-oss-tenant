@@ -640,62 +640,6 @@ function Test-KubernetesStatus {
     return $k8sRunning
 }
 
-# Function to check and configure network for legacy Kind cluster
-function Set-LegacyKindNetwork {
-    Write-Host "Checking network configuration for legacy Kind cluster (192.168.0.23)..." -ForegroundColor Cyan
-
-    try {
-        # Get the primary network adapter
-        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.InterfaceDescription -notlike "*Loopback*" } | Select-Object -First 1
-
-        if (-not $adapter) {
-            Write-Host "ERROR: Could not find active network adapter" -ForegroundColor Red
-            return $false
-        }
-
-        # Check if the IP already exists
-        $existingIP = Get-NetIPAddress -IPAddress "192.168.0.23" -ErrorAction SilentlyContinue
-
-        if ($existingIP) {
-            Write-Host "Legacy Kind cluster IP (192.168.0.23) is already configured." -ForegroundColor Green
-            return $true
-        }
-
-        Write-Host "Adding IP address 192.168.0.23 to adapter $($adapter.Name)..." -ForegroundColor Yellow
-
-        # Add the IP address with a different subnet to avoid conflicts
-        $result = New-NetIPAddress -IPAddress "192.168.0.23" -PrefixLength 32 -InterfaceIndex $adapter.ifIndex -SkipAsSource $true
-
-        if ($result) {
-            Write-Host "Successfully configured network for legacy Kind cluster." -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "Failed to configure network for legacy Kind cluster." -ForegroundColor Red
-            return $false
-        }
-    } catch {
-        Write-Host "Error configuring legacy network: $_" -ForegroundColor Red
-        Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
-        return $false
-    }
-}
-
-# Function to remove legacy Kind network configuration
-function Remove-LegacyKindNetwork {
-    Write-Host "Removing legacy Kind cluster network configuration..." -ForegroundColor Cyan
-
-    try {
-        $existingIP = Get-NetIPAddress -IPAddress "192.168.0.23" -ErrorAction SilentlyContinue
-
-        if ($existingIP) {
-            Remove-NetIPAddress -IPAddress "192.168.0.23" -Confirm:$false
-            Write-Host "Removed legacy Kind cluster IP configuration." -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "Error removing legacy network configuration: $_" -ForegroundColor Yellow
-    }
-}
-
 # Add this to your existing cleanup code
 function Cleanup-Environment {
     Write-Host "Cleaning up environment..." -ForegroundColor Cyan
@@ -713,7 +657,6 @@ function Cleanup-Environment {
     }
 
     # Remove network configurations
-    Remove-LegacyKindNetwork
     Remove-KindNetwork
 }
 
@@ -869,12 +812,6 @@ if (-not (Test-KubernetesStatus)) {
 # Configure network for Kind cluster
 if (-not (Set-KindNetwork)) {
     Write-Host "Failed to configure IP for Kind cluster." -ForegroundColor Red
-    Write-Host "Will attempt to continue with the installation..." -ForegroundColor Yellow
-}
-
-# Configure legacy network for backward compatibility
-if (-not (Set-LegacyKindNetwork)) {
-    Write-Host "Failed to configure legacy IP for Kind cluster." -ForegroundColor Red
     Write-Host "Will attempt to continue with the installation..." -ForegroundColor Yellow
 }
 
@@ -1084,7 +1021,6 @@ trap {
 $cleanupNetwork = Read-Host "Do you want to clean up the network configuration? (Y/N)"
 if ($cleanupNetwork -eq "Y" -or $cleanupNetwork -eq "y") {
     Remove-KindNetwork
-    Remove-LegacyKindNetwork
     Write-Host "Network configuration has been removed." -ForegroundColor Green
 } else {
     Write-Host "Network configuration has been preserved for future use." -ForegroundColor Green
