@@ -27,6 +27,8 @@ get_install_command() {
                 echo "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64 && chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind"
             elif [[ "$OS" == "Darwin" ]]; then
                 echo "brew install kind"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "curl -Lo ./kind.exe https://kind.sigs.k8s.io/dl/v0.20.0/kind-windows-amd64 && mkdir -p ~/bin && mv ./kind.exe ~/bin/kind.exe"
             fi
             ;;
         "docker")
@@ -34,6 +36,8 @@ get_install_command() {
                 echo "curl -fsSL https://get.docker.com | sh"
             elif [[ "$OS" == "Darwin" ]]; then
                 echo "brew install --cask docker"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "Please download and install Docker Desktop for Windows from https://www.docker.com/products/docker-desktop"
             fi
             ;;
         "helm")
@@ -41,6 +45,8 @@ get_install_command() {
                 echo "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
             elif [[ "$OS" == "Darwin" ]]; then
                 echo "brew install helm"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh"
             fi
             ;;
         "kubectl")
@@ -48,6 +54,8 @@ get_install_command() {
                 echo "curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/"
             elif [[ "$OS" == "Darwin" ]]; then
                 echo "brew install kubectl"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/windows/amd64/kubectl.exe && mkdir -p ~/bin && mv ./kubectl.exe ~/bin/kubectl.exe"
             fi
             ;;
         "telepresence")
@@ -56,6 +64,8 @@ get_install_command() {
             elif [[ "$OS" == "Darwin" ]]; then
                 # echo "brew install datawire/blackbird/telepresence"
                 echo "brew install telepresenceio/telepresence/telepresence-oss"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "curl -fsSL -o telepresence-setup.exe https://app.getambassador.io/download/tel2/windows/amd64/latest/telepresence-setup.exe && ./telepresence-setup.exe"
             fi
             ;;
         "skaffold")
@@ -63,6 +73,8 @@ get_install_command() {
                 echo "curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/"
             elif [[ "$OS" == "Darwin" ]]; then
                 echo "brew install skaffold"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "curl -Lo skaffold.exe https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe && mkdir -p ~/bin && mv ./skaffold.exe ~/bin/skaffold.exe"
             fi
             ;;
         "jq")
@@ -70,6 +82,8 @@ get_install_command() {
                 echo "sudo apt-get install jq"
             elif [[ "$OS" == "Darwin" ]]; then
                 echo "brew install jq"
+            elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+                echo "curl -L -o jq.exe https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe && mkdir -p ~/bin && mv ./jq.exe ~/bin/jq.exe"
             fi
             ;;
         "k3d")
@@ -95,6 +109,16 @@ done
 if [ ${#missing_commands[@]} -ne 0 ]; then
     echo "The following required commands are missing: ${missing_commands[*]}"
 
+    # If Windows, add a message about PATH
+    OS=$(uname -s)
+    if [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+        echo -e "\nNOTE: For Windows, the tools will be installed to ~/bin. Make sure this directory is in your PATH."
+        echo "You can add it with: export PATH=\$PATH:~/bin"
+
+        # Create bin directory if it doesn't exist
+        mkdir -p ~/bin
+    fi
+
     for cmd in "${missing_commands[@]}"; do
         install_cmd=$(get_install_command "$cmd")
         echo -e "\nInstallation command for $cmd:"
@@ -113,6 +137,13 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
             echo "Skipping $cmd installation"
         fi
     done
+
+    # For Windows, remind to add PATH if any tools were installed
+    if [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]] && [ ${#missing_commands[@]} -gt 0 ]; then
+        echo -e "\nReminder: To use the installed tools, make sure ~/bin is in your PATH with:"
+        echo "export PATH=\$PATH:~/bin"
+        echo "You may need to restart your Git Bash session for this to take effect."
+    fi
 fi
 
 # Check if GITHUB_TOKEN_CLASSIC is set
