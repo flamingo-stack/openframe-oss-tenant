@@ -63,17 +63,12 @@ case "$ARG" in
     kind delete cluster
     ;;
   a|app)
-    # Check and run bases.sh only if necessary
-    if ! check_bases; then
-      bash ./scripts/functions/bases.sh
-    fi
-
+    # Deploy app one by one
     if [ -n "$APP" ]; then
       bash "$0" pre && \
       bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
-      echo "App name is required"
-      exit 1
+      bash "${SCRIPT_DIR}/manage-apps.sh" "''"
     fi
     ;;
   b|bootstrap)
@@ -86,6 +81,7 @@ case "$ARG" in
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
+    bash ./scripts/functions/bases.sh && \
     bash "$0" app platform deploy
     ;;
   c|cleanup)

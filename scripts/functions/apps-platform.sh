@@ -8,7 +8,8 @@ function platform_ingress_nginx_deploy() {
   helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
     -n platform --create-namespace \
     --version 4.12.1 \
-    -f ./kind-cluster/apps/platform/ingress-nginx/helm/values.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/platform/ingress-nginx/helm/values.yaml \
+    --wait --timeout 1h
 }
 
 function platform_ingress_nginx_wait() {
@@ -23,11 +24,12 @@ function platform_ingress_nginx_delete() {
 
 # METRICS-SERVER
 function platform_metrics_server_deploy() {
-    helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server
+  helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server
 
-    echo "Deploying metrics-server"
-    helm upgrade -i metrics-server metrics-server/metrics-server \
-      --namespace kube-system --set 'args={--kubelet-insecure-tls}'
+  echo "Deploying metrics-server"
+  helm upgrade -i metrics-server metrics-server/metrics-server \
+    --namespace kube-system --set 'args={--kubelet-insecure-tls}' \
+  --wait --timeout 1h
 }
 
 function platform_metrics_server_wait() {
@@ -42,15 +44,16 @@ function platform_metrics_server_delete() {
 
 # Monitoring: GRAFANA + PROMETHEUS
 function platform_monitoring_deploy() {
-    helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts
+  helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts
 
-    echo "Deploying kube-prometheus-stack"
-    helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-      -n platform --create-namespace \
-      --version 70.4.2 \
-      -f ./kind-cluster/apps/platform/monitoring/helm/values.yaml --timeout 20m && \
-    echo "Deploying dashboards" && \
-    kubectl -n platform apply -k ./kind-cluster/apps/platform/monitoring/dashboards
+  echo "Deploying kube-prometheus-stack"
+  helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+    -n platform --create-namespace \
+    --version 70.4.2 \
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/platform/monitoring/helm/values.yaml  \
+    --wait --timeout 1h && \
+  echo "Deploying dashboards" && \
+  kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/monitoring/dashboards
 }
 
 function platform_monitoring_wait() {
@@ -67,24 +70,24 @@ function platform_monitoring_delete() {
 
 # Logging: LOKI + PROMTAIL
 function platform_logging_deploy() {
-    echo "Deploying Loki and Promtail"
+  echo "Deploying Loki and Promtail"
 
-    # LOKI (no dependencies)
-    kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/openframe-loki/manifests && \
-    kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/openframe-promtail/manifests
-    # or
-    # helm repo add grafana https://grafana.github.io/helm-charts && \
-    # helm upgrade --install loki grafana/loki-stack \
-    #   --version 2.10.2 \
-    #   -f ./kind-cluster/apps/infrastructure/loki/helm/loki-stack.yaml
+  # LOKI (no dependencies)
+  kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/openframe-loki/manifests && \
+  kubectl -n platform apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/openframe-promtail/manifests
+  # or
+  # helm repo add grafana https://grafana.github.io/helm-charts && \
+  # helm upgrade --install loki grafana/loki-stack \
+  #   --version 2.10.2 \
+  #   -f ./kind-cluster/apps/infrastructure/loki/helm/loki-stack.yaml
 
-    # helm upgrade --install loki grafana/loki \
-    #   --version 6.28.0 \
-    #   -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
+  # helm upgrade --install loki grafana/loki \
+  #   --version 6.28.0 \
+  #   -f ./kind-cluster/apps/infrastructure/loki/helm/loki.yaml
 
-    # helm upgrade --install promtail grafana/promtail \
-    #   --version 6.16.6 \
-    #   -f ./kind-cluster/apps/infrastructure/promtail/helm/promtail.yaml
+  # helm upgrade --install promtail grafana/promtail \
+  #   --version 6.16.6 \
+  #   -f ./kind-cluster/apps/infrastructure/promtail/helm/promtail.yaml
 }
 
 function platform_logging_wait() {

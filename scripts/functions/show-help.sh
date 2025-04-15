@@ -29,7 +29,7 @@ Examples:
 }
 
 function show_help_apps() {
-  echo "Available options:"
+  echo "Available apps and bundles:"
   echo "  o|observability                  Deploy monitoring stack"
   echo "      platform_monitoring          Deploy Grafana and Prometheus stack"
   echo "      platform_metrics_server      Deploy Metrics Server"

@@ -3,24 +3,14 @@
 APP=$1
 ACTION=$2
 
-if [ "$APP" == "-h" ] || [ "$APP" == "--help" ] || [ "$APP" == "-Help" ]; then
-  show_help_apps
-  exit 0
-fi
-
 if [ "$ACTION" == "debug" ]; then
   LOCAL_PORT="$4"
   REMOTE_PORT_NAME="$5"
 fi
 
-if [ -z "$APP" ]; then
-  show_help_apps
-  exit 0
-fi
-
-if [ "$ACTION" == "" ]; then
-  echo "Action is required"
-  exit 0
+if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
+  echo "Action is required: deploy, delete, dev, debug"
+  exit 1
 fi
 
 case "$APP" in
@@ -29,18 +19,6 @@ case "$APP" in
       platform_ingress_nginx_deploy && platform_ingress_nginx_wait
     elif [ "$ACTION" == "delete" ]; then
       platform_ingress_nginx_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "$APP is not supported for debug mode"
-    fi
-    ;;
-  platform_metrics_server)
-    if [ "$ACTION" == "deploy" ]; then
-      platform_metrics_server_deploy
-    elif [ "$ACTION" == "delete" ]; then
-      platform_metrics_server_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -62,9 +40,21 @@ case "$APP" in
     ;;
   platform_logging)
     if [ "$ACTION" == "deploy" ]; then
-      platform_logging_deploy
+      platform_logging_deploy && platform_logging_wait
     elif [ "$ACTION" == "delete" ]; then
       platform_logging_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
+    fi
+    ;;
+  platform_metrics_server)
+    if [ "$ACTION" == "deploy" ]; then
+      platform_metrics_server_deploy
+    elif [ "$ACTION" == "delete" ]; then
+      platform_metrics_server_delete
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
@@ -279,7 +269,7 @@ case "$APP" in
     ;;
   integrated_tools_fleet)
     if [ "$ACTION" == "deploy" ]; then
-      integrated_tools_fleet_deploy
+      integrated_tools_datasources_fleet_wait && integrated_tools_fleet_deploy
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_fleet_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -304,7 +294,7 @@ case "$APP" in
     ;;
   integrated_tools_authentik)
     if [ "$ACTION" == "deploy" ]; then
-      integrated_tools_authentik_deploy
+      integrated_tools_datasources_authentik_wait && integrated_tools_authentik_deploy
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_authentik_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -328,7 +318,7 @@ case "$APP" in
     ;;
   integrated_tools_meshcentral)
     if [ "$ACTION" == "deploy" ]; then
-      integrated_tools_meshcentral_deploy
+      integrated_tools_datasources_meshcentral_wait && integrated_tools_meshcentral_deploy
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_meshcentral_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -353,7 +343,7 @@ case "$APP" in
     ;;
   integrated_tools_tactical_rmm)
     if [ "$ACTION" == "deploy" ]; then
-      integrated_tools_tactical_rmm_deploy
+      integrated_tools_datasources_tactical_rmm_wait && integrated_tools_tactical_rmm_deploy
     elif [ "$ACTION" == "delete" ]; then
       integrated_tools_tactical_rmm_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -365,7 +355,7 @@ case "$APP" in
     ;;
   tools_kafka_ui)
     if [ "$ACTION" == "deploy" ]; then
-      tools_kafka_ui_deploy
+      openframe_datasources_kafka_wait && tools_kafka_ui_deploy
     elif [ "$ACTION" == "delete" ]; then
       tools_kafka_ui_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -377,7 +367,7 @@ case "$APP" in
     ;;
   tools_mongo_express)
     if [ "$ACTION" == "deploy" ]; then
-      tools_mongo_express_deploy
+      openframe_datasources_mongodb_wait && tools_mongo_express_deploy
     elif [ "$ACTION" == "delete" ]; then
       tools_mongo_express_delete
     elif [ "$ACTION" == "dev" ]; then
@@ -405,8 +395,8 @@ case "$APP" in
     IFWAIT=${3:-}
 
     $0 platform_monitoring $ACTION && \
+    $0 platform_logging $ACTION &&
     $0 platform_metrics_server $ACTION &
-    $0 platform_logging $ACTION &
     echo
     ;;
   p|platform)
@@ -441,7 +431,7 @@ case "$APP" in
   om|openframe_microservices)
     ACTION=${2}
     IFWAIT=${3:-}
-
+    openframe_datasources_wait_all && \
     $0 openframe_microservices_openframe_config_server $ACTION &
     $0 openframe_microservices_openframe_api $ACTION &
     $0 openframe_microservices_openframe_management $ACTION &
@@ -478,21 +468,19 @@ case "$APP" in
     $0 platform $ACTION && \
     $0 openframe_datasources $ACTION & \
     $0 integrated_tools_datasources $ACTION & \
-    openframe_datasources_wait_all && \
     $0 openframe_microservices $ACTION &
-    integrated_tools_datasources_wait_all && \
     $0 integrated_tools $ACTION &
     $0 client_tools $ACTION &
-    $0 register_apps $ACTION
+    $0 openframe_microservices_register_apps $ACTION
     echo
-    echo "Waiting for openframe-ui to be ready and run below command to register apps:"
-    echo "$0 openframe_microservices_register_apps deploy"
+    echo "Waiting for all apps to be ready. Deployment finished."
     ;;
   -h|--help|-Help)
     show_help_apps
     ;;
   *)
-    echo "Unknown app: $APP"
+    echo "Unknown app: $APP
+    "
     show_help_apps
     exit 1
 esac

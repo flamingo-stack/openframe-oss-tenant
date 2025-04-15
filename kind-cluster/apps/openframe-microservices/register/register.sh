@@ -366,7 +366,7 @@ register_tool \
 
     # Get MeshCentral API key
 echo "Getting MeshCentral API key..."
-POD=$(kubectl -n meshcentral get pods -o name -l app=meshcentral)
+POD=$(kubectl -n integrated-tools get pods -o name -l app=meshcentral)
 MESHCENTRAL_API_KEY=$(kubectl exec -n meshcentral $POD -- cat /opt/mesh/mesh_token)
 echo "MeshCentral API key: $MESHCENTRAL_API_KEY"
 
@@ -454,8 +454,8 @@ register_tool \
 
 # Get Tactical RMM API key
 echo "Getting Tactical RMM API key..."
-POD=$(kubectl -n tactical-rmm get pods -o name -l app=tactical-backend)
-TACTICAL_API_KEY=$(kubectl exec -n tactical-rmm $POD -- cat /opt/tactical/api_key.txt)
+POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
+TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/tactical/api_key.txt)
 echo "Tactical RMM API key: $TACTICAL_API_KEY"
 
 # Register Tactical RMM with layer info

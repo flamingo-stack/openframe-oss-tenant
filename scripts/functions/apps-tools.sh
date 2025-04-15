@@ -26,7 +26,8 @@ function tools_kafka_ui_deploy() {
   helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
     -n client-tools --create-namespace \
     --version 1.4.12 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/kafka-ui/helm/kafka-ui.yaml
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/kafka-ui/helm/kafka-ui.yaml \
+    --wait --timeout 1h
 }
 
 function tools_kafka_ui_wait() {

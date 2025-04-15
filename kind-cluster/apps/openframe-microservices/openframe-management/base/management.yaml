@@ -14,6 +14,10 @@ spec:
     spec:
       imagePullSecrets:
         - name: github-pat-secret
+      initContainers:
+        - name: wait-for-config-server
+          image: curlimages/curl:latest
+          command: ["sh", "-c", "until curl -f http://openframe-config-server:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
       containers:
         - name: management
           image: ghcr.io/flamingo-cx/openframe-management:latest

@@ -35,6 +35,15 @@ spec:
         component: broker
     spec:
       initContainers:
+      - name: wait-for-zookeeper
+        image: busybox
+        command:
+          - "sh"
+          - "-c"
+          - "until nc -z zookeeper 2181; do sleep 1; done"
+      - name: wait-for-controller
+        image: busybox
+        command: ['sh', '-c', 'until nc -z openframe-pinot-controller 9000; do echo waiting for controller; sleep 3; done']
       - name: init-jmx
         image: busybox
         command:
