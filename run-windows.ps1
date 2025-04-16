@@ -7,305 +7,10 @@ function Test-Administrator {
     $currentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
 
-# Function to reliably set up virtual adapter with the required IP
-function Set-KindLoopbackAdapter {
-    try {
-        Write-Host "Setting up network for Kind cluster..." -ForegroundColor Cyan
-        $ip = '192.168.100.100'
-        $switchName = "OpenFrameSwitch"
-        $vAdapterName = "vEthernet ($switchName)"
-
-        # Remove the IP from Ethernet or Wi-Fi if present
-        $badAdapters = Get-NetAdapter | Where-Object { $_.Name -match 'Ethernet|Wi-Fi' }
-        foreach ($adapter in $badAdapters) {
-            $badIP = Get-NetIPAddress -InterfaceAlias $adapter.Name -IPAddress $ip -ErrorAction SilentlyContinue
-            if ($badIP) {
-                Write-Host "Removing $ip from $($adapter.Name) to avoid affecting physical adapters..." -ForegroundColor Yellow
-                Remove-NetIPAddress -InterfaceAlias $adapter.Name -IPAddress $ip -Confirm:$false
-            }
-        }
-
-        # Check if the IP is already configured on the correct virtual adapter
-        $existingIP = Get-NetIPAddress -InterfaceAlias $vAdapterName -IPAddress $ip -ErrorAction SilentlyContinue
-        if ($existingIP) {
-            Write-Host "IP address $ip is already configured on $vAdapterName" -ForegroundColor Green
-            return $true
-        }
-
-        # Create a new internal virtual switch if it doesn't exist
-        $virtualSwitch = Get-VMSwitch -Name $switchName -ErrorAction SilentlyContinue
-        if (-not $virtualSwitch) {
-            Write-Host "Creating new virtual switch '$switchName'..." -ForegroundColor Yellow
-            New-VMSwitch -Name $switchName -SwitchType Internal -ErrorAction Stop
-            Write-Host "Virtual switch created successfully" -ForegroundColor Green
-        } else {
-            Write-Host "Using existing virtual switch '$switchName'" -ForegroundColor Green
-        }
-
-        # Get the virtual network adapter associated with the switch
-        $vAdapter = Get-NetAdapter -Name $vAdapterName -ErrorAction SilentlyContinue
-        if (-not $vAdapter) {
-            Write-Host "Virtual adapter $vAdapterName not found. Please check Hyper-V installation." -ForegroundColor Red
-            return $false
-        }
-
-        # Configure IP on the virtual adapter
-        Write-Host "Configuring IP address on $vAdapterName..." -ForegroundColor Yellow
-        $netshResult = netsh interface ipv4 add address "$vAdapterName" $ip 255.255.255.0
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Successfully configured IP on $vAdapterName" -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "Failed to configure IP on $vAdapterName" -ForegroundColor Red
-            return $false
-        }
-    } catch {
-        Write-Host "Error configuring network: $_" -ForegroundColor Red
-        return $false
-    }
-}
-
-# Function to cleanup network configuration
-function Remove-KindNetwork {
-    Write-Host "Cleaning up network configuration..." -ForegroundColor Cyan
-
-    try {
-        # Remove the IP address if it exists
-        $existingIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-        if ($existingIP) {
-            Remove-NetIPAddress -IPAddress "192.168.100.100" -Confirm:$false
-            Write-Host "Removed IP configuration" -ForegroundColor Green
-        }
-
-        # Remove the virtual switch if it exists
-        $switchName = "OpenFrameSwitch"
-        $virtualSwitch = Get-VMSwitch -Name $switchName -ErrorAction SilentlyContinue
-        if ($virtualSwitch) {
-            Remove-VMSwitch -Name $switchName -Force
-            Write-Host "Removed virtual switch" -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "Error during cleanup: $_" -ForegroundColor Red
-    }
-}
-
-# Function to perform a complete Docker restart
-function Restart-DockerDesktop {
-    Write-Host "Restarting Docker Desktop..." -ForegroundColor Cyan
-
-    # First, try to gracefully stop Docker Desktop
-    $dockerProcess = Get-Process "Docker Desktop" -ErrorAction SilentlyContinue
-    if ($dockerProcess) {
-        Write-Host "Stopping Docker Desktop gracefully..." -ForegroundColor Yellow
-        $dockerProcess | Stop-Process -Force
-        Start-Sleep -Seconds 5
-    }
-
-    # Force kill any remaining Docker processes
-    Get-Process | Where-Object {$_.Name -like "*docker*"} | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 3
-
-    # Start Docker Desktop again
-    Write-Host "Starting Docker Desktop..." -ForegroundColor Yellow
-    Start-Process 'C:\Program Files\Docker\Docker\Docker Desktop.exe'
-
-    # Wait for Docker to start
-    Write-Host "Waiting for Docker to initialize (this may take several minutes)..." -ForegroundColor Yellow
-    $retryCount = 0
-    $maxRetries = 12 # 2 minutes
-    $dockerRunning = $false
-
-    while ($retryCount -lt $maxRetries -and -not $dockerRunning) {
-        $retryCount++
-        Write-Host "Checking if Docker is ready... (Attempt $retryCount of $maxRetries)" -ForegroundColor Yellow
-        Start-Sleep -Seconds 10
-
-        try {
-            $result = docker info 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                $dockerRunning = $true
-                Write-Host "Docker is now running properly." -ForegroundColor Green
-            }
-        } catch {
-            # Continue waiting
-        }
-    }
-
-    if (-not $dockerRunning) {
-        Write-Host "WARNING: Docker may not be running properly after restart attempts." -ForegroundColor Red
-        return $false
-    }
-
-    return $true
-}
-
-# Function to reset Kubernetes in Docker Desktop
-function Reset-KubernetesInDocker {
-    Write-Host "Resetting Kubernetes in Docker Desktop..." -ForegroundColor Cyan
-
-    try {
-        # First check if settings.json exists
-        $settingsPath = "$env:USERPROFILE\AppData\Roaming\Docker\settings.json"
-        if (-not (Test-Path $settingsPath)) {
-            Write-Host "Docker settings file not found. Docker Desktop might not be installed properly." -ForegroundColor Red
-            return $false
-        }
-
-        # Make a backup of the settings
-        $backupPath = "$settingsPath.backup"
-        Copy-Item -Path $settingsPath -Destination $backupPath -Force
-        Write-Host "Created backup of Docker settings at: $backupPath" -ForegroundColor Green
-
-        # Read the settings file
-        $settingsJson = Get-Content $settingsPath -Raw
-        $settings = ConvertFrom-Json $settingsJson
-
-        # Disable Kubernetes
-        Write-Host "Disabling Kubernetes in Docker settings..." -ForegroundColor Yellow
-
-        # Create objects if they don't exist with proper structure
-        if (-not (Get-Member -InputObject $settings -Name "kubernetes" -MemberType Properties)) {
-            Add-Member -InputObject $settings -MemberType NoteProperty -Name "kubernetes" -Value (New-Object PSObject)
-        }
-
-        if (-not (Get-Member -InputObject $settings.kubernetes -Name "enabled" -MemberType Properties)) {
-            Add-Member -InputObject $settings.kubernetes -MemberType NoteProperty -Name "enabled" -Value $false
-        } else {
-            $settings.kubernetes.enabled = $false
-        }
-
-        # Also check extensions
-        if (-not (Get-Member -InputObject $settings -Name "extensions" -MemberType Properties)) {
-            Add-Member -InputObject $settings -MemberType NoteProperty -Name "extensions" -Value (New-Object PSObject)
-        }
-
-        if (-not (Get-Member -InputObject $settings.extensions -Name "kubernetes" -MemberType Properties)) {
-            Add-Member -InputObject $settings.extensions -MemberType NoteProperty -Name "kubernetes" -Value (New-Object PSObject)
-        }
-
-        if (-not (Get-Member -InputObject $settings.extensions.kubernetes -Name "enabled" -MemberType Properties)) {
-            Add-Member -InputObject $settings.extensions.kubernetes -MemberType NoteProperty -Name "enabled" -Value $false
-        } else {
-            $settings.extensions.kubernetes.enabled = $false
-        }
-
-        # Save the modified settings
-        $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-
-        # Restart Docker to apply changes
-        Write-Host "Restarting Docker to apply changes..." -ForegroundColor Yellow
-        Restart-DockerDesktop
-
-        # Clean Kubernetes data
-        Write-Host "Cleaning Kubernetes data..." -ForegroundColor Yellow
-        $kubePaths = @(
-            "$env:USERPROFILE\.kube",
-            "$env:ProgramData\DockerDesktop\kubernetes",
-            "$env:USERPROFILE\AppData\Local\Docker\kubernetes",
-            "$env:USERPROFILE\AppData\Roaming\Docker\kubernetes"
-        )
-
-        foreach ($path in $kubePaths) {
-            if (Test-Path $path) {
-                try {
-                    # Create a backup with timestamp
-                    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-                    $backupDir = "$path.backup_$timestamp"
-                    Copy-Item -Path $path -Destination $backupDir -Recurse -Force -ErrorAction SilentlyContinue
-
-                    # Try to clean the directory
-                    Remove-Item -Path "$path\*" -Recurse -Force -ErrorAction SilentlyContinue
-                    Write-Host "Cleaned Kubernetes data at: $path" -ForegroundColor Green
-                } catch {
-                    Write-Host "Could not fully clean $path. Some files may be in use." -ForegroundColor Yellow
-                }
-            }
-        }
-
-        # Re-enable Kubernetes in settings
-        Write-Host "Re-enabling Kubernetes in Docker settings..." -ForegroundColor Yellow
-        $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
-
-        $settings.kubernetes.enabled = $true
-        if (Get-Member -InputObject $settings.extensions -Name "kubernetes" -MemberType Properties) {
-            $settings.extensions.kubernetes.enabled = $true
-        }
-
-        # Save the settings again
-        $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-
-        # Restart Docker again
-        Write-Host "Restarting Docker again to enable Kubernetes..." -ForegroundColor Yellow
-        Restart-DockerDesktop
-
-#         # Wait for Kubernetes to initialize
-#         Write-Host "Waiting for Kubernetes to initialize (this may take several minutes)..." -ForegroundColor Yellow
-#
-#         Start-Sleep -Seconds 30
-#
-#         # Verify Kubernetes is running
-#         Write-Host "Verifying Kubernetes cluster..." -ForegroundColor Yellow
-#         $retryCount = 0
-#         $maxRetries = 10
-#         $k8sRunning = $false
-#
-#         while ($retryCount -lt $maxRetries -and -not $k8sRunning) {
-#             $retryCount++
-#             Write-Host "Checking Kubernetes status... (Attempt $retryCount of $maxRetries)" -ForegroundColor Yellow
-#
-#             try {
-#                 $job = Start-Job -ScriptBlock { kubectl cluster-info }
-#                 $completed = Wait-Job $job -Timeout 15
-#
-#                 if ($completed) {
-#                     $result = Receive-Job $job
-#                     Remove-Job $job
-#
-#                     if ($result -match "Kubernetes control plane") {
-#                         $k8sRunning = $true
-#                         Write-Host "Kubernetes is now running properly!" -ForegroundColor Green
-#                     }
-#                 } else {
-#                     Stop-Job $job
-#                     Remove-Job $job -Force
-#                 }
-#             } catch {
-#                 # Continue with next attempt
-#             }
-#
-#             if (-not $k8sRunning) {
-#                 Start-Sleep -Seconds 15
-#             }
-#         }
-#
-#         if ($k8sRunning) {
-#             # Set up .kube/config
-#             Write-Host "Setting up kubectl configuration..." -ForegroundColor Yellow
-#             New-Item -ItemType Directory -Path "$env:USERPROFILE\.kube" -Force | Out-Null
-#
-#             $dockerK8sConfig = "$env:USERPROFILE\AppData\Roaming\Docker\kubernetes\config"
-#             if (Test-Path $dockerK8sConfig) {
-#                 Copy-Item -Path $dockerK8sConfig -Destination "$env:USERPROFILE\.kube\config" -Force
-#                 Write-Host "Copied Kubernetes config to user profile." -ForegroundColor Green
-#             }
-#
-#             return $true
-#         } else {
-#             Write-Host "Kubernetes did not start properly after reset." -ForegroundColor Red
-#             return $false
-#         }
-    } catch {
-        Write-Host "Error during Kubernetes reset: $_" -ForegroundColor Red
-        Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
-        return $false
-    }
-}
-
-
 # Function to check Docker status
 function Test-DockerStatus {
     Write-Host "Checking Docker status..." -ForegroundColor Cyan
-
+    
     # Check if Docker Desktop is installed
     $dockerDesktop = Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue
     if (-not $dockerDesktop) {
@@ -338,22 +43,8 @@ function Test-DockerStatus {
 
     if (-not $dockerRunning) {
         Write-Host "ERROR: Docker is not running properly after multiple attempts." -ForegroundColor Red
-        Write-Host "Attempting to restart Docker Desktop..." -ForegroundColor Yellow
-
-        if (Restart-DockerDesktop) {
-            Write-Host "Docker restart successful! Checking status again..." -ForegroundColor Green
-            $result = docker info 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                $dockerRunning = $true
-                Write-Host "Docker is now running properly after restart." -ForegroundColor Green
-            } else {
-                Write-Host "Docker is still not responding properly after restart." -ForegroundColor Red
-                return $false
-            }
-        } else {
-            Write-Host "Failed to restart Docker. Please try manually restarting Docker Desktop." -ForegroundColor Red
-            return $false
-        }
+        Write-Host "Please ensure Docker Desktop is running and try again." -ForegroundColor Red
+        return $false
     }
 
     return $true
@@ -362,21 +53,21 @@ function Test-DockerStatus {
 # Function to enable Kubernetes in Docker Desktop
 function Enable-Kubernetes {
     Write-Host "Attempting to enable Kubernetes in Docker Desktop..." -ForegroundColor Cyan
-
+    
     try {
         $settingsPath = "$env:USERPROFILE\AppData\Roaming\Docker\settings.json"
-
+        
         # Read current settings
         $settings = Get-Content $settingsPath -ErrorAction Stop | ConvertFrom-Json
-
+        
         # Check if we need to modify settings
         $settingsChanged = $false
-
+        
         # Create kubernetes object if it doesn't exist
         if (-not $settings.PSObject.Properties['kubernetes']) {
             $settings | Add-Member -Type NoteProperty -Name 'kubernetes' -Value @{}
         }
-
+        
         # Enable Kubernetes
         if (-not ($settings.kubernetes.PSObject.Properties['enabled'] -and $settings.kubernetes.enabled)) {
             $settings.kubernetes | Add-Member -Type NoteProperty -Name 'enabled' -Value $true -Force
@@ -398,26 +89,55 @@ function Enable-Kubernetes {
             $settings.extensions.kubernetes | Add-Member -Type NoteProperty -Name 'enabled' -Value $true -Force
             $settingsChanged = $true
         }
-
+        
         if ($settingsChanged) {
             Write-Host "Updating Docker Desktop settings..." -ForegroundColor Yellow
-
+            
             # Create backup of current settings
             $backupPath = "$settingsPath.backup"
             Copy-Item -Path $settingsPath -Destination $backupPath -Force
             Write-Host "Created backup of settings at: $backupPath" -ForegroundColor Cyan
-
+            
             # Save modified settings
             $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-
+            
             # Restart Docker Desktop
             Write-Host "Restarting Docker Desktop to apply Kubernetes settings..." -ForegroundColor Yellow
-            Restart-DockerDesktop
-
-            # Wait for Kubernetes to initialize
+            
+            # Try to gracefully stop Docker Desktop
+            $dockerProcess = Get-Process "Docker Desktop" -ErrorAction SilentlyContinue
+            if ($dockerProcess) {
+                $dockerProcess | Stop-Process -Force
+                Start-Sleep -Seconds 5
+            }
+            
+            # Start Docker Desktop
+            Start-Process 'C:\Program Files\Docker\Docker\Docker Desktop.exe'
+            
+            # Wait for Docker to start
+            Write-Host "Waiting for Docker Desktop to initialize (this may take several minutes)..." -ForegroundColor Yellow
+            $retryCount = 0
+            $maxRetries = 12 # 2 minutes total
+            
+            do {
+                $retryCount++
+                Write-Host "Waiting for Docker... (Attempt $retryCount of $maxRetries)" -ForegroundColor Yellow
+                Start-Sleep -Seconds 10
+                
+                try {
+                    $dockerRunning = docker info 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        break
+                    }
+                } catch {
+                    # Continue waiting
+                }
+            } while ($retryCount -lt $maxRetries)
+            
+            # Additional wait for Kubernetes to initialize
             Write-Host "Waiting for Kubernetes to initialize..." -ForegroundColor Yellow
             Start-Sleep -Seconds 30
-
+            
             return $true
         } else {
             Write-Host "Kubernetes is already enabled in settings." -ForegroundColor Green
@@ -447,14 +167,14 @@ function Test-KubernetesStatus {
             $dockerSettings = Get-Content $settingsPath -ErrorAction Stop | ConvertFrom-Json
             $k8sEnabled = $false
 
-            if ($dockerSettings.PSObject.Properties['kubernetes'] -and
-                    $dockerSettings.kubernetes.PSObject.Properties['enabled']) {
+            if ($dockerSettings.PSObject.Properties['kubernetes'] -and 
+                $dockerSettings.kubernetes.PSObject.Properties['enabled']) {
                 $k8sEnabled = $dockerSettings.kubernetes.enabled
             }
 
             if (-not $k8sEnabled) {
                 Write-Host "Kubernetes is not enabled in Docker Desktop" -ForegroundColor Yellow
-
+                
                 # Try to enable Kubernetes
                 if (-not (Enable-Kubernetes)) {
                     Write-Host "Failed to enable Kubernetes automatically." -ForegroundColor Red
@@ -480,11 +200,11 @@ function Test-KubernetesStatus {
     while ($retryCount -lt $maxRetries -and -not $k8sRunning) {
         try {
             Write-Host ("Checking Kubernetes connection... (Attempt " + ($retryCount + 1) + " of $maxRetries)") -ForegroundColor Yellow
-
+            
             # Try to get cluster info with a timeout
             $job = Start-Job -ScriptBlock { kubectl cluster-info }
             $completed = Wait-Job $job -Timeout 10
-
+            
             if ($null -eq $completed) {
                 Stop-Job $job
                 Remove-Job $job -Force
@@ -493,17 +213,17 @@ function Test-KubernetesStatus {
             } else {
                 $result = Receive-Job $job
                 Remove-Job $job
-
+                
                 if ($result -match "Kubernetes control plane") {
                     $k8sRunning = $true
                     Write-Host "Kubernetes is running properly:" -ForegroundColor Green
                     Write-Host $result -ForegroundColor Green
-
+                    
                     # Show node status with timeout
                     Write-Host "`nChecking Kubernetes nodes status..." -ForegroundColor Cyan
                     $nodeJob = Start-Job -ScriptBlock { kubectl get nodes }
                     $nodeCompleted = Wait-Job $nodeJob -Timeout 5
-
+                    
                     if ($nodeCompleted) {
                         Receive-Job $nodeJob | ForEach-Object {
                             Write-Host $_ -ForegroundColor Green
@@ -518,7 +238,7 @@ function Test-KubernetesStatus {
         catch {
             Write-Host "Error checking Kubernetes: $_" -ForegroundColor Red
         }
-
+        
         if (-not $k8sRunning) {
             $retryCount++
             if ($retryCount -lt $maxRetries) {
@@ -530,52 +250,166 @@ function Test-KubernetesStatus {
 
     if (-not $k8sRunning) {
         Write-Host "`nERROR: Kubernetes is not running properly after $maxRetries attempts." -ForegroundColor Red
-        Write-Host "Attempting to reset Kubernetes in Docker Desktop..." -ForegroundColor Yellow
-
-        if (Reset-KubernetesInDocker) {
-            Write-Host "Kubernetes reset successful! Checking status again..." -ForegroundColor Green
-
-            # Check one more time
-            $job = Start-Job -ScriptBlock { kubectl cluster-info }
-            $completed = Wait-Job $job -Timeout 15
-            if ($completed) {
-                $result = Receive-Job $job
-                Remove-Job $job
-
-                if ($result -match "Kubernetes control plane") {
-                    $k8sRunning = $true
-                    Write-Host "Kubernetes is now running properly after reset!" -ForegroundColor Green
-                }
-            } else {
-                Stop-Job $job
-                Remove-Job $job -Force
-            }
-        } else {
-            Write-Host "Failed to reset Kubernetes. Please try manual reset in Docker Desktop." -ForegroundColor Red
-        }
+        Write-Host "Please try these steps:" -ForegroundColor Yellow
+        Write-Host "1. Right-click Docker Desktop icon in system tray" -ForegroundColor Yellow
+        Write-Host "2. Select 'Restart...'" -ForegroundColor Yellow
+        Write-Host "3. Wait a few minutes for everything to initialize" -ForegroundColor Yellow
+        Write-Host "4. Run this script again" -ForegroundColor Yellow
+        return $false
     }
 
-    return $k8sRunning
+    return $true
+}
+
+# Function to check and configure network for Kind cluster
+function Set-KindNetwork {
+    Write-Host "Checking network configuration for Kind cluster..." -ForegroundColor Cyan
+    
+    try {
+        # Get the primary network adapter
+        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.InterfaceDescription -notlike "*Loopback*" } | Select-Object -First 1
+        
+        if (-not $adapter) {
+            Write-Host "ERROR: Could not find active network adapter" -ForegroundColor Red
+            return $false
+        }
+        
+        # Check if the IP already exists
+        $existingIP = Get-NetIPAddress -IPAddress "192.168.0.23" -ErrorAction SilentlyContinue
+        
+        if ($existingIP) {
+            Write-Host "Kind cluster IP (192.168.0.23) is already configured." -ForegroundColor Green
+            return $true
+        }
+        
+        Write-Host "Adding IP address 192.168.0.23 to adapter $($adapter.Name)..." -ForegroundColor Yellow
+        
+        # Add the IP address with a different subnet to avoid conflicts
+        $result = New-NetIPAddress -IPAddress "192.168.0.23" -PrefixLength 32 -InterfaceIndex $adapter.ifIndex -SkipAsSource $true
+        
+        if ($result) {
+            Write-Host "Successfully configured network for Kind cluster." -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "Failed to configure network for Kind cluster." -ForegroundColor Red
+            return $false
+        }
+    } catch {
+        Write-Host "Error configuring network: $_" -ForegroundColor Red
+        Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
+        return $false
+    }
+}
+
+# Function to remove Kind network configuration
+function Remove-KindNetwork {
+    Write-Host "Removing Kind cluster network configuration..." -ForegroundColor Cyan
+    
+    try {
+        $existingIP = Get-NetIPAddress -IPAddress "192.168.0.23" -ErrorAction SilentlyContinue
+        
+        if ($existingIP) {
+            Remove-NetIPAddress -IPAddress "192.168.0.23" -Confirm:$false
+            Write-Host "Removed Kind cluster IP configuration." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Error removing network configuration: $_" -ForegroundColor Yellow
+    }
 }
 
 # Add this to your existing cleanup code
 function Cleanup-Environment {
     Write-Host "Cleaning up environment..." -ForegroundColor Cyan
-
+    
     # Remove Kind cluster if it exists
-    try {
-        $kindCluster = $(kind get clusters 2>&1)
-        if ($LASTEXITCODE -eq 0 -and $kindCluster -contains "kind") {
-            Write-Host "Removing existing Kind cluster..." -ForegroundColor Yellow
-            kind delete cluster
-            Remove-Item -Path "/tmp/control-plane", "/tmp/worker1", "/tmp/worker2", "/tmp/worker3" -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    } catch {
-        Write-Host "Error when checking for Kind clusters: $_" -ForegroundColor Yellow
+    $kindCluster = $(kind get clusters 2>&1)
+    if ($LASTEXITCODE -eq 0 -and $kindCluster -contains "kind") {
+        Write-Host "Removing existing Kind cluster..." -ForegroundColor Yellow
+        kind delete cluster
+        Remove-Item -Path "/tmp/control-plane", "/tmp/worker1", "/tmp/worker2", "/tmp/worker3" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    
+    # Remove network configuration
+    Remove-KindNetwork
+}
+
+# Function to configure network for OpenFrame
+function Configure-OpenFrameNetwork {
+    param (
+        [string]$ConfigPath = ".\config\service-domains.yaml"
+    )
+    
+    Write-Host "Configuring network for OpenFrame..." -ForegroundColor Cyan
+    
+    # Check if yaml module is available
+    if (-not (Get-Module -ListAvailable -Name powershell-yaml)) {
+        Write-Host "Installing powershell-yaml module..." -ForegroundColor Yellow
+        Install-Module -Name powershell-yaml -Force -Scope CurrentUser
     }
 
-    # Remove network configurations
-    Remove-KindNetwork
+    # Read configuration
+    try {
+        $config = Get-Content $ConfigPath -Raw | ConvertFrom-Yaml
+        $activeConfig = $config.domains[$config.active_config]
+        
+        if (-not $activeConfig) {
+            Write-Host "No active configuration found in $ConfigPath" -ForegroundColor Red
+            return $false
+        }
+
+        # If using localhost configuration, no additional setup needed
+        if (-not $activeConfig.use_nip_io) {
+            Write-Host "Using localhost configuration - no additional network setup needed." -ForegroundColor Green
+            return $true
+        }
+
+        # For custom IP configuration
+        $customIP = $activeConfig.base_domain
+        
+        # Validate IP address
+        try {
+            $null = [System.Net.IPAddress]::Parse($customIP)
+        } catch {
+            Write-Host "Invalid IP address in configuration: $customIP" -ForegroundColor Red
+            return $false
+        }
+
+        # Check if IP is already configured
+        $existingIP = Get-NetIPAddress -IPAddress $customIP -ErrorAction SilentlyContinue
+        if ($existingIP) {
+            Write-Host "IP address $customIP is already configured." -ForegroundColor Green
+            return $true
+        }
+
+        # Get default network adapter
+        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.InterfaceDescription -notlike "*Loopback*" } | Select-Object -First 1
+        if (-not $adapter) {
+            Write-Host "No suitable network adapter found." -ForegroundColor Red
+            return $false
+        }
+
+        # Add IP address
+        try {
+            New-NetIPAddress -IPAddress $customIP -PrefixLength 24 -InterfaceIndex $adapter.ifIndex | Out-Null
+            Write-Host "Successfully configured IP address $customIP" -ForegroundColor Green
+            
+            # Add hosts file entry if needed
+            $hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"
+            $hostsContent = Get-Content $hostsFile
+            if (-not ($hostsContent -match $customIP)) {
+                Add-Content -Path $hostsFile -Value "`n$customIP kind.local # Added by OpenFrame setup" -Force
+                Write-Host "Added hosts file entry for $customIP" -ForegroundColor Green
+            }
+            
+            return $true
+        } catch {
+            Write-Host "Failed to configure IP address: $_" -ForegroundColor Red
+            return $false
+        }
+    } catch {
+        Write-Host "Error reading configuration from $ConfigPath : $_" -ForegroundColor Red
+        return $false
+    }
 }
 
 # Check if script is running as administrator, if not, restart as admin
@@ -617,74 +451,18 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "Git is already installed." -ForegroundColor Green
 }
 
-# 3. Check/install Docker Desktop with WSL2
-Write-Host "Checking for Docker Desktop installation..." -ForegroundColor Cyan
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "Docker Desktop not found. Installing Docker Desktop with WSL2..." -ForegroundColor Yellow
-
-    # Make sure WSL2 is enabled
-    Write-Host "Ensuring WSL2 is enabled..." -ForegroundColor Cyan
-    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-    # Set WSL2 as default
-    Write-Host "Setting WSL2 as default..." -ForegroundColor Cyan
-    wsl --set-default-version 2
-
-    # Install Docker Desktop
-    choco install docker-desktop -y
-
-    Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
-    Write-Host "NOTE: You may need to restart your computer to complete the Docker installation." -ForegroundColor Yellow
-
-    $restartChoice = Read-Host "Do you want to restart your computer now? (Y/N)"
-    if ($restartChoice -eq "Y" -or $restartChoice -eq "y") {
-        Restart-Computer -Force
-        exit
-    }
-} else {
-    Write-Host "Docker Desktop is already installed." -ForegroundColor Green
+# Check Docker and Kubernetes status
+if (-not (Test-DockerStatus)) {
+    Write-Host "Please fix Docker issues and run the script again." -ForegroundColor Red
+    Exit 1
 }
 
-# 4. Configure network for Kind cluster and create Kind cluster (before any kubectl checks)
-if (-not (Set-KindLoopbackAdapter)) {
-    Write-Host "Failed to configure IP for Kind cluster." -ForegroundColor Red
-    Write-Host "Will attempt to continue with the installation..." -ForegroundColor Yellow
-} else {
-    # Check if Kind cluster already exists
-    $kindClusters = kind get clusters 2>&1
-    if ($LASTEXITCODE -eq 0 -and $kindClusters -match "kind") {
-        Write-Host "Kind cluster already exists. Skipping creation." -ForegroundColor Green
-    } else {
-        Write-Host "No Kind cluster found. Creating a new Kind cluster..." -ForegroundColor Yellow
-        # Prompt for config file and version
-        $defaultConfig = Join-Path $repoPath "kind-cluster\deploy\kind\cluster.template.yaml"
-        $defaultVersion = "v1.32.3"
-        $configFile = Read-Host "Enter path to Kind cluster config file [`$defaultConfig`]"
-        if ([string]::IsNullOrWhiteSpace($configFile)) { $configFile = $defaultConfig }
-        $kindVersion = Read-Host "Enter Kind node image version [`$defaultVersion`]"
-        if ([string]::IsNullOrWhiteSpace($kindVersion)) { $kindVersion = $defaultVersion }
-        
-        # Create the cluster
-        kind create cluster --config "$configFile" --image kindest/node:$kindVersion
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Kind cluster created successfully!" -ForegroundColor Green
-        } else {
-            Write-Host "Failed to create Kind cluster. Please check the config file and try again." -ForegroundColor Red
-        }
-    }
+if (-not (Test-KubernetesStatus)) {
+    Write-Host "Please fix Kubernetes issues and run the script again." -ForegroundColor Red
+    Exit 1
 }
 
-# 5. Now check Kubernetes status (kubectl)
-# if (-not (Test-KubernetesStatus)) {
-#     Write-Host "Kubernetes has issues. Attempting to reset Kubernetes..." -ForegroundColor Yellow
-#     if (-not (Reset-KubernetesInDocker)) {
-#         Write-Host "Failed to reset Kubernetes. Please reset Kubernetes in Docker Desktop manually and run the script again." -ForegroundColor Red
-#         Exit 1
-#     }
-# }
-
-# Handle repository
+# 3. Handle repository
 # Use the current directory where the script is running
 $currentDir = Get-Location
 $repoPath = $currentDir.Path
@@ -761,7 +539,36 @@ if (-not (Test-Path "$repoPath\.git")) {
     }
 }
 
-# 6. Find and run the run.sh script using Git Bash
+# 4. Check/install Docker Desktop with WSL2
+Write-Host "Checking for Docker Desktop installation..." -ForegroundColor Cyan
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "Docker Desktop not found. Installing Docker Desktop with WSL2..." -ForegroundColor Yellow
+
+    # Make sure WSL2 is enabled
+    Write-Host "Ensuring WSL2 is enabled..." -ForegroundColor Cyan
+    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+    # Set WSL2 as default
+    Write-Host "Setting WSL2 as default..." -ForegroundColor Cyan
+    wsl --set-default-version 2
+
+    # Install Docker Desktop
+    choco install docker-desktop -y
+
+    Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
+    Write-Host "NOTE: You may need to restart your computer to complete the Docker installation." -ForegroundColor Yellow
+
+    $restartChoice = Read-Host "Do you want to restart your computer now? (Y/N)"
+    if ($restartChoice -eq "Y" -or $restartChoice -eq "y") {
+        Restart-Computer -Force
+        exit
+    }
+} else {
+    Write-Host "Docker Desktop is already installed." -ForegroundColor Green
+}
+
+# 5. Find and run the run.sh script using Git Bash
 Write-Host "Searching for run.sh in the repository..." -ForegroundColor Cyan
 $gitBashPath = "C:\Program Files\Git\bin\bash.exe"
 
@@ -850,20 +657,23 @@ if ($runShFiles.Count -gt 0) {
     }
 }
 
-# Add trap to handle errors
+# Add these lines before creating the Kind cluster
+if (-not (Set-KindNetwork)) {
+    Write-Host "Failed to configure network for Kind cluster. Please check network settings and try again." -ForegroundColor Red
+    Exit 1
+}
+
+# Add cleanup to your existing error handling
 trap {
     Write-Host "Error occurred: $_" -ForegroundColor Red
     Cleanup-Environment
     Exit 1
 }
 
-# Ask if user wants to clean up the network configuration
-$cleanupNetwork = Read-Host "Do you want to clean up the network configuration? (Y/N)"
-if ($cleanupNetwork -eq "Y" -or $cleanupNetwork -eq "y") {
-    Remove-KindNetwork
-    Write-Host "Network configuration has been removed." -ForegroundColor Green
-} else {
-    Write-Host "Network configuration has been preserved for future use." -ForegroundColor Green
+# Add this to your main script flow
+if (-not (Configure-OpenFrameNetwork)) {
+    Write-Host "Failed to configure network. Please check the configuration and try again." -ForegroundColor Red
+    exit 1
 }
 
 Write-Host "OpenFrame installation and setup process completed!" -ForegroundColor Green
