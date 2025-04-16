@@ -105,7 +105,7 @@ if ! [ "openframe-dev" == "$(k3d cluster list --no-headers | tr -s "  " " " | cu
         --k3s-arg "--disable=traefik@server:0" \
         --port "80:80@loadbalancer" \
         --port "443:443@loadbalancer" \
-        --k3s-arg "--kubelet-arg=eviction-hard=nodefs.available<5%,nodefs.inodesFree<4%,imagefs.available<10%"@all
+        --k3s-arg "--kubelet-arg=eviction-hard=nodefs.available<1%,nodefs.inodesFree<1%,imagefs.available<1%"@all
 else
     echo "Cluster already setup"
 fi
