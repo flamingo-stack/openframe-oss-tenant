@@ -9,15 +9,12 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "true", matchIfMissing = false)
-public class ConfigurationLogger {
-    private static final Logger logger = LoggerFactory.getLogger(ConfigurationLogger.class);
+@ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "false", matchIfMissing = false)
+public class ConfigurationLoggerNoCassandra {
+    private static final Logger logger = LoggerFactory.getLogger(ConfigurationLoggerNoCassandra.class);
 
     @Value("${spring.data.mongodb.uri}")
     private String mongoUri;
-    
-    @Value("${spring.data.cassandra.contact-points}")
-    private String cassandraContactPoints;
     
     @Value("${spring.data.redis.host}")
     private String redisHost;
@@ -32,10 +29,8 @@ public class ConfigurationLogger {
     public void logConfiguration(ApplicationReadyEvent event) {
         logger.info("Application Configuration:");
         logger.info("MongoDB URI: {}", mongoUri);
-        logger.info("Cassandra Contact Points: {}", cassandraContactPoints);
         logger.info("Redis Host: {}", redisHost);
         logger.info("Pinot Controller URL: {}", pinotControllerUrl);
         logger.info("Pinot Broker URL: {}", pinotBrokerUrl);
     }
-
-}  
+}
