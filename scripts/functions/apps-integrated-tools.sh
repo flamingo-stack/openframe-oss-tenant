@@ -13,7 +13,7 @@ function integrated_tools_fleet_wait() {
 
 function integrated_tools_fleet_delete() {
   echo "Deleting Fleet"
-  kubectl -n integrated-tools delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/fleet
+  kubectl -n integrated-tools delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/fleet
 }
 
 # AUTENTIK

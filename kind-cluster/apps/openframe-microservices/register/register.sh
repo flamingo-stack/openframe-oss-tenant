@@ -344,8 +344,8 @@ register_tool \
 
 # Register Fleet with layer info
 # Get Fleet token
-POD=$(kubectl -n fleet get pods -o name -l app=fleet)
-FLEET_TOKEN=$(kubectl exec -n fleet $POD -- cat /etc/fleet/api_token.txt)
+POD=$(kubectl -n integrated-tools get pods -o name -l app=fleet)
+FLEET_TOKEN=$(kubectl exec -n integrated-tools $POD -- cat /etc/fleet/api_token.txt)
 register_tool \
     "fleet" \
     "FLEET" \
@@ -365,7 +365,7 @@ register_tool \
     # Get MeshCentral API key
 echo "Getting MeshCentral API key..."
 POD=$(kubectl -n integrated-tools get pods -o name -l app=meshcentral)
-MESHCENTRAL_API_KEY=$(kubectl exec -n meshcentral $POD -- cat /opt/mesh/mesh_token)
+MESHCENTRAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/mesh/mesh_token)
 echo "MeshCentral API key: $MESHCENTRAL_API_KEY"
 
 # Register MeshCentral with layer info

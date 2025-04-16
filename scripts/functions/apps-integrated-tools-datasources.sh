@@ -14,7 +14,7 @@ function integrated_tools_datasources_fleet_wait() {
 
 function integrated_tools_datasources_fleet_delete() {
   echo "Deleting Fleet"
-  kubectl -n integrated-tools-datasources delete -f ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/fleet
+  kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/fleet
 }
 
 # AUTENTIK

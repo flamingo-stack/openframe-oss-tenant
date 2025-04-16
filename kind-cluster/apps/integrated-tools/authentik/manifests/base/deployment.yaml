@@ -48,6 +48,10 @@ spec:
           value: authentik-database-authentik
         - name: AUTHENTIK_POSTGRESQL__PASSWORD
           value: "authentik-password-1234"
+        # https://github.com/goauthentik/authentik/issues/9454
+        # https://github.com/goauthentik/authentik/issues/5746#issuecomment-1875219192
+        - name: AUTHENTIK_REDIS__DB
+          value: "1"
         - name: AUTHENTIK_SECRET_KEY
           value: "X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA"
         - name: AUTHENTIK_ERROR_REPORTING__ENABLED
@@ -175,6 +179,8 @@ spec:
           value: authentik-database-authentik
         - name: AUTHENTIK_POSTGRESQL__PASSWORD
           value: "authentik-password-1234"
+        - name: AUTHENTIK_REDIS__DB
+          value: "1"
         - name: AUTHENTIK_SECRET_KEY
           value: "X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA"
         - name: AUTHENTIK_ERROR_REPORTING__ENABLED
