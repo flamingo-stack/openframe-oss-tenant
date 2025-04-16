@@ -7,11 +7,11 @@ export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 # Source functions in correct order
 source "${SCRIPT_DIR}/functions/variables.sh"
 
+source "${SCRIPT_DIR}/functions/show-help.sh"
+export -f show_help
+
 source "${SCRIPT_DIR}/functions/build-app.sh"
 export -f build_app
-
-source "${SCRIPT_DIR}/functions/show-help.sh"
-export -f show_help show_help_apps
 
 source "${SCRIPT_DIR}/functions/helm-repo-ensure.sh"
 export -f helm_repo_ensure
@@ -61,10 +61,14 @@ case "$ARG" in
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
   k|cluster)
-    bash "${SCRIPT_DIR}/setup-kind-cluster.sh"
+    bash "${SCRIPT_DIR}/setup-cluster.sh" && \
+    if ! check_bases; then
+      bash ${SCRIPT_DIR}/bases.sh
+    fi
     ;;
   d|delete)
-    kind delete cluster
+    # kind delete cluster
+    k3d cluster delete openframe-dev
     ;;
   a|app)
     # Deploy app one by one
@@ -79,7 +83,6 @@ case "$ARG" in
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash ${SCRIPT_DIR}/bases.sh && \
     bash "$0" app all deploy
     ;;
   p|platform)
@@ -98,17 +101,19 @@ case "$ARG" in
     ;;
   s|start)
     # Stop kind containers
-    for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
-      echo "Starting $node ..."
-      docker start $node
-    done
+    # for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
+    #   echo "Starting $node ..."
+    #   docker start $node
+    # done
+    k3d cluster start openframe-dev
     ;;
   stop)
     # Stop kind containers
-    for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
-      echo "Stopping $node ..."
-      docker stop $node
-    done
+    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+    #   echo "Stopping $node ..."
+    #   docker stop $node
+    # done
+    k3d cluster stop openframe-dev
     ;;
   -h|--help|-Help)
     show_help

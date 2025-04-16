@@ -5,7 +5,6 @@ controller:
       maxUnavailable: 1
   terminationGracePeriodSeconds: 0
   watchIngressWithoutClass: true
-  # allowSnippetAnnotations: true
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Equal"
@@ -17,9 +16,6 @@ controller:
     enabled: false
   extraArgs:
     publish-status-address: localhost
-  nodeSelector:
-    kubernetes.io/os: linux
-    ingress-ready: "true"
   metrics:
     enabled: true
     serviceMonitor:
@@ -34,6 +30,3 @@ controller:
   service:
     type: NodePort
     externalTrafficPolicy: Local
-
-# tcp:
-#   5672: "rabbitmq/rabbitmq-cluster:5672"

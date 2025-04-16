@@ -50,18 +50,18 @@ case "$APP" in
       echo "$APP is not supported for debug mode"
     fi
     ;;
-  platform_metrics_server)
-    if [ "$ACTION" == "deploy" ]; then
-      platform_metrics_server_deploy
-    elif [ "$ACTION" == "delete" ]; then
-      platform_metrics_server_delete
-    elif [ "$ACTION" == "dev" ]; then
-      echo "$APP is not supported in dev mode"
-      exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "$APP is not supported for debug mode"
-    fi
-    ;;
+  # platform_metrics_server)
+  #   if [ "$ACTION" == "deploy" ]; then
+  #     platform_metrics_server_deploy
+  #   elif [ "$ACTION" == "delete" ]; then
+  #     platform_metrics_server_delete
+  #   elif [ "$ACTION" == "dev" ]; then
+  #     echo "$APP is not supported in dev mode"
+  #     exit 0
+  #   elif [ "$ACTION" == "debug" ]; then
+  #     echo "$APP is not supported for debug mode"
+  #   fi
+  #   ;;
   platform_efk)
     if [ "$ACTION" == "deploy" ]; then
       platform_efk_deploy
@@ -396,7 +396,7 @@ case "$APP" in
 
     $0 platform_monitoring $ACTION && \
     $0 platform_logging $ACTION &&
-    $0 platform_metrics_server $ACTION
+    # $0 platform_metrics_server $ACTION
     echo
     ;;
   p|platform)
@@ -482,11 +482,12 @@ case "$APP" in
     echo "Wait for all apps to be ready. Deployment finished."
     ;;
   -h|--help|-Help)
-    show_help_apps
+    cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
     ;;
   *)
-    echo "Unknown app: $APP
-    "
-    show_help_apps
+    echo "Unknown app: $APP"
+    echo
+    echo "Available apps:"
+    cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
     exit 1
 esac

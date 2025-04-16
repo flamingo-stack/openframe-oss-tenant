@@ -72,12 +72,18 @@ get_install_command() {
                 echo "brew install jq"
             fi
             ;;
+        "k3d")
+            if [[ "$OS" == "Linux" ]]; then
+                echo "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash"
+            elif [[ "$OS" == "Darwin" ]]; then
+                echo "brew install k3d"
+            fi
     esac
 }
 
 # Check all commands and collect results
 missing_commands=()
-commands=("kind" "docker" "helm" "kubectl" "telepresence" "skaffold" "jq")
+commands=("kind" "docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d")
 
 for cmd in "${commands[@]}"; do
     if ! check_command "$cmd"; then
