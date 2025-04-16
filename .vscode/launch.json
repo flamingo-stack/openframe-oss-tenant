@@ -15,6 +15,7 @@
             "request": "launch",
             "mainClass": "com.openframe.management.ManagementApplication",
             "projectName": "openframe-management",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-management",
             "env": {
                 "SPRING_PROFILES_ACTIVE": "k8s"
             },
@@ -26,6 +27,7 @@
             "request": "launch",
             "mainClass": "com.openframe.api.ApiApplication",
             "projectName": "openframe-api",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-api",
             "env": {
                 "SPRING_PROFILES_ACTIVE": "k8s"
             },
@@ -37,6 +39,7 @@
             "request": "launch",
             "mainClass": "com.openframe.config.ConfigServerApplication",
             "projectName": "openframe-config",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-config",
             "env": {
                 "SPRING_PROFILES_ACTIVE": "k8s"
             },
@@ -48,6 +51,7 @@
             "request": "launch",
             "mainClass": "com.openframe.stream.StreamApplication",
             "projectName": "openframe-stream",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-stream",
             "env": {
                 "SPRING_PROFILES_ACTIVE": "k8s"
             },
@@ -59,6 +63,7 @@
             "request": "launch",
             "mainClass": "com.openframe.gateway.GatewayApplication",
             "projectName": "openframe-gateway",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-gateway",
             "env": {
                 "SPRING_PROFILES_ACTIVE": "k8s"
             },
