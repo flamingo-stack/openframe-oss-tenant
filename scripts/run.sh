@@ -94,7 +94,8 @@ case "$ARG" in
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images
-    for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+    for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
       echo "Cleaning up $node ..."
       docker exec $node crictl rmi --prune
     done

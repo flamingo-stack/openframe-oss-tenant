@@ -105,7 +105,10 @@ if ! [ "openframe-dev" == "$(k3d cluster list --no-headers | tr -s "  " " " | cu
         --k3s-arg "--disable=traefik@server:0" \
         --port "80:80@loadbalancer" \
         --port "443:443@loadbalancer" \
-        --k3s-arg "--kubelet-arg=eviction-hard=nodefs.available<1%,nodefs.inodesFree<1%,imagefs.available<1%"@all
+        --k3s-arg "--kubelet-arg=eviction-hard="@all \
+        --k3s-arg "--kubelet-arg=eviction-soft="@all #\
+        # --k3s-arg "--kubelet-arg=eviction-max-pod-grace-period=0"@all \
+        # --k3s-arg "--kubelet-arg=imagefs-cleanup-threshold=0"@all
 else
     echo "Cluster already setup"
 fi
