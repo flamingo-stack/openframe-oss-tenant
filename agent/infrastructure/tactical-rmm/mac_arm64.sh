@@ -14,7 +14,7 @@
 #   1) Interactive mode:
 #        ./mac_arm64.sh
 #   2) Provide some or all args:
-#        ./mac_arm64.sh --org-name "OpenFrame" --rmm-url "http://localhost:8000" ...
+#        ./mac_arm64.sh --org-name "OpenFrame" --xrmm-url "http://localhost:8000" ...
 #   3) Non-interactive (all args):
 #        ./mac_arm64.sh --org-name "MyOrg" ... --skip-run
 #

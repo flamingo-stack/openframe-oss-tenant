@@ -73,6 +73,7 @@ public abstract class BaseSecurityConfig {
                                         "/metrics/**",
                                         "/oauth/token",
                                         "/oauth/register",
+                                        "/api/agents/register",
                                         managementContextPath + "/**"
                                 )
                                 .permitAll()

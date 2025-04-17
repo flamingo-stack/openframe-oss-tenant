@@ -47,20 +47,20 @@ public abstract class BaseReactiveSecurityConfig {
                         -> Mono.just(new JwtAuthenticationToken(token))
                     ))
                 )
-                .authorizeExchange(exchanges -> exchanges
-                    .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .pathMatchers(
-                            "/error/**",
-                            "/health/**",
-                            "/metrics/**",
-                            "/oauth/token",
-                            "/oauth/register",
-                            managementContextPath + "/**"
-                    ).permitAll()
-                    .pathMatchers("/.well-known/userinfo").authenticated()
-                    .pathMatchers("/.well-known/openid-configuration").permitAll()
-                    .anyExchange().authenticated()
-                )
+                 .authorizeExchange(exchanges -> exchanges
+                     .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                     .pathMatchers(
+                             "/error/**",
+                             "/health/**",
+                             "/metrics/**",
+                             "/oauth/token",
+                             "/oauth/register",
+                             managementContextPath + "/**"
+                     ).permitAll()
+                     .pathMatchers("/.well-known/userinfo").authenticated()
+                     .pathMatchers("/.well-known/openid-configuration").permitAll()
+                     .anyExchange().authenticated()
+                 )
                 .build();
     }
 

@@ -82,6 +82,10 @@ public interface JwtAuthenticationOperations {
                 || path.startsWith("/actuator")
                 || path.startsWith("/oauth/token")
                 || path.startsWith("/oauth/register")
+                || path.startsWith("/api/agents/register")
+                // TODO: remove
+                || path.startsWith("/tools")
+                || path.startsWith("/proxy")
                 || path.startsWith(getManagementPath())
                 || path.equals("/.well-known/openid-configuration");
     }

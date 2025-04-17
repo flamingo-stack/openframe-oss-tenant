@@ -4,5 +4,6 @@
         "https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json": "**/*.yml",
         "file:///toc.schema.json": "/toc\\.yml/i",
         "https://json.schemastore.org/yamllint.json": "file:///depo/docs/github/companies/flamingo/openframe/kind-cluster/apps/infrastructure/openframe-mongodb/mongodb.yaml"
-    }
+    },
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

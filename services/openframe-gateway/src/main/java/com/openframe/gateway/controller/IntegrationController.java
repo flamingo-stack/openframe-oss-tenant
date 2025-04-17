@@ -2,9 +2,13 @@ package com.openframe.gateway.controller;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
+import com.openframe.core.model.*;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
@@ -19,10 +23,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.ToolCredentials;
-import com.openframe.core.model.ToolUrl;
-import com.openframe.core.model.ToolUrlType;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import com.openframe.gateway.config.CurlLoggingHandler;
@@ -55,12 +55,12 @@ public class IntegrationController {
                 throw new RuntimeException("Tool URL not found for tool: " + toolId);
             }
 
-            URI integratedToolUri = new URI(toolUrl.get().getUrl());
+            URI integratedToolUri = new URI("http://tactical-backend.tactical-rmm.svc.cluster.local:8000");
             URI originalUrlUri = new URI(originalUrl);
 
             // Extract the path after /tools/{toolId}
             String fullPath = originalUrlUri.getPath();
-            String toolPath = "/tools/" + toolId;
+            String toolPath = "/tools/agent/" + toolId;
             String pathToProxy = fullPath.substring(fullPath.indexOf(toolPath) + toolPath.length());
             if (pathToProxy.isEmpty()) {
                 pathToProxy = "/";
@@ -99,9 +99,9 @@ public class IntegrationController {
                 .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
     }
 
-    @RequestMapping(value = "/{toolId}/**", method = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
+    @RequestMapping(value = "api/{toolId}/**", method = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
             RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS })
-    public Mono<ResponseEntity<String>> proxyRequest(@PathVariable String toolId, ServerHttpRequest request,
+    public Mono<ResponseEntity<String>> proxyApiRequest(@PathVariable String toolId, ServerHttpRequest request,
             Authentication auth) {
         String path = request.getPath().toString();
         log.info("Proxying request for tool: {}, path: {}", toolId, path);
@@ -201,5 +201,69 @@ public class IntegrationController {
             }).doOnSuccess(response -> log.info("Successfully proxied request to {}", tool.getName())).doOnError(
                     error -> log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
         }).onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(e.getMessage())));
+    }
+
+    @RequestMapping(value = "agent/{toolId}/**", method = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
+            RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS })
+    public Mono<ResponseEntity<String>> proxyAgentRequest(@PathVariable String toolId, ServerHttpRequest request) {
+        return toolRepository.findById(toolId)
+                .map(Mono::just)
+                .orElse(Mono.empty())
+                .flatMap(tool -> {
+                    if (!tool.isEnabled()) {
+                        return Mono.just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
+                    }
+            Optional<ToolUrl> toolUrl = toolUrlService.getUrlByToolType(tool, com.openframe.core.model.ToolUrlType.API);
+                    if (!toolUrl.isPresent()) {
+                        return Mono.just(ResponseEntity.badRequest().body("Tool URL not found for tool: " + toolId));
+                    }
+
+                    // Adjust URL based on environment
+                    URI targetUri = adjustUrl(tool, request.getURI().toString(), toolId);
+                    String targetUrl = targetUri.toString();
+                    log.debug("Forwarding request to: {} (original URL: {})", targetUri, toolUrl.get().getUrl());
+
+                    String toolAuthorisation = request.getHeaders().getFirst("Tool-Authorization");
+
+                    WebClient.RequestBodySpec requestSpec = WebClient.builder()
+                            .build()
+                            .method(request.getMethod())
+                            .uri(targetUri)
+                            .headers(headers -> {
+                                headers.addAll(request.getHeaders());
+                                headers.remove("Tool-Authorization");
+                                headers.remove("Authorization");
+                                headers.add("Authorization", toolAuthorisation);
+                            });
+
+                    // Add request body if present
+                    return request.getBody().map(dataBuffer -> {
+                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                        dataBuffer.read(bytes);
+                        return new String(bytes);
+                    })
+                            .reduce(String::concat)
+                            .flatMap(body -> {
+                                if (!body.isEmpty()) {
+                                    requestSpec.bodyValue(body);
+                                }
+                                 return requestSpec.body(BodyInserters.fromValue(body)).retrieve()
+                            .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                    response -> response.bodyToMono(String.class)
+                                            .flatMap(errorBody -> Mono.error(WebClientResponseException.create(
+                                                    response.statusCode().value(), response.statusCode().toString(),
+                                                    response.headers().asHttpHeaders(), errorBody.getBytes(), null))))
+                            .bodyToMono(String.class).timeout(Duration.ofSeconds(30)).map(ResponseEntity::ok)
+                            .onErrorResume(e -> {
+                                if (e instanceof WebClientResponseException) {
+                                    WebClientResponseException ex = (WebClientResponseException) e;
+                                    return Mono.just(ResponseEntity.status(ex.getStatusCode())
+                                            .body(ex.getResponseBodyAsString()));
+                                }
+                                return Mono.just(ResponseEntity.status(500).body(e.getMessage()));
+                            });
+                            });
+                });
+
     }
 }
