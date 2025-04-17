@@ -159,7 +159,7 @@ setup_wslconfig() {
         cat > "$gb_path" << EOF
 [wsl2]
 memory=${memory_gb}GB
-processors=4
+processors=8
 swap=${swap_gb}GB
 EOF
         echo "Created WSL config at $gb_path"
@@ -195,7 +195,7 @@ EOF
         cat > "$win_home/.wslconfig" << EOF
 [wsl2]
 memory=${memory_gb}GB
-processors=4
+processors=8
 swap=${swap_gb}GB
 EOF
         echo "Updated WSL config at $win_home/.wslconfig"
@@ -263,7 +263,7 @@ setup_swap() {
             cat > "$gb_path" << EOF
 [wsl2]
 memory=${memory_gb}GB
-processors=4
+processors=8
 swap=${swap_gb}GB
 EOF
             echo "Updated WSL config at $gb_path"
@@ -318,7 +318,7 @@ EOF
                 cat > "$win_home/.wslconfig" << EOF
 [wsl2]
 memory=${memory_gb}GB
-processors=4
+processors=8
 swap=${swap_gb}GB
 EOF
                 echo "Updated WSL config at $win_home/.wslconfig"

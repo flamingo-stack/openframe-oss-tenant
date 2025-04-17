@@ -22,6 +22,17 @@ elif [[ "$OS" == "Darwin" ]]; then
         sudo ifconfig lo0 alias $IP up
         echo "IP $IP added to the loopback interface."
     fi
+elif [[ "$OS" == *"MINGW"* ]] || [[ "$OS" == *"MSYS"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+    # Windows - using Git Bash
+    # Check if the IP is already added to any interface
+    if ipconfig | grep -q "$IP"; then
+        echo "IP $IP is already configured on an interface."
+    else
+        echo "Error: IP $IP is not configured on any interface."
+        echo "On Windows, please add the loopback interface and configure the IP address manually."
+        echo "You can do this through Device Manager and Network Settings as an administrator."
+        exit 1
+    fi
 else
     echo "Unsupported operating system: $OS"
     exit 1

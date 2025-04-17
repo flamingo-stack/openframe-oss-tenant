@@ -470,16 +470,16 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Host "Docker Desktop is already installed." -ForegroundColor Green
 }
 
-# 6. Find and run the run.sh script using Git Bash
-Write-Host "Searching for run.sh in the repository..." -ForegroundColor Cyan
+# 6. Find and run the run-windows-wrapper.sh script using Git Bash
+Write-Host "Searching for run-windows-wrapper.sh in the repository..." -ForegroundColor Cyan
 $gitBashPath = "C:\Program Files\Git\bin\bash.exe"
 
-# Search for run.sh in the repository
-$runShFiles = Get-ChildItem -Path $repoPath -Filter "run.sh" -Recurse -ErrorAction SilentlyContinue
+# Search for run-windows-wrapper.sh in the repository
+$runShFiles = Get-ChildItem -Path $repoPath -Filter "run-windows-wrapper.sh" -Recurse -ErrorAction SilentlyContinue
 
 if ($runShFiles.Count -gt 0) {
     $scriptPath = $runShFiles[0].FullName
-    Write-Host "Found run.sh at: $scriptPath" -ForegroundColor Green
+    Write-Host "Found run-windows-wrapper.sh at: $scriptPath" -ForegroundColor Green
 
     $scriptDir = Split-Path -Parent $scriptPath
     $scriptRelativePath = $scriptPath.Substring($repoPath.Length + 1).Replace("\", "/")
@@ -500,7 +500,7 @@ if ($runShFiles.Count -gt 0) {
 
         # Create a more interactive experience by opening a proper Git Bash window that stays open
         # Add trap to keep window open on errors, and add explicit pause at the end
-        $bashArgs = "-c `"$tokenCommand cd '$repoPath' && { { ./$scriptRelativePath b; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
+        $bashArgs = "-c `"$tokenCommand cd '$repoPath' && { { ./$scriptRelativePath; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
         Start-Process -FilePath $gitBashPath -ArgumentList "--login", "-i", $bashArgs
 
         # Ask user to confirm completion
@@ -511,13 +511,13 @@ if ($runShFiles.Count -gt 0) {
         Write-Host "export GITHUB_TOKEN_CLASSIC='your-token'; cd '$repoPath' && ./$scriptRelativePath b" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "No run.sh script found in the repository. Please check the repository structure." -ForegroundColor Red
+    Write-Host "No run-windows-wrapper.sh script found in the repository. Please check the repository structure." -ForegroundColor Red
 
     # Ask user if they want to specify the path manually
-    $manualPath = Read-Host "Do you want to specify the path to run.sh manually? (Y/N)"
+    $manualPath = Read-Host "Do you want to specify the path to run-windows-wrapper.sh manually? (Y/N)"
 
     if ($manualPath -eq "Y" -or $manualPath -eq "y") {
-        $customScriptPath = Read-Host "Please enter the full path to the run.sh script"
+        $customScriptPath = Read-Host "Please enter the full path to the run-windows-wrapper.shrun-windows-wrapper.sh script"
 
         if (Test-Path $customScriptPath) {
             Write-Host "Found script at: $customScriptPath" -ForegroundColor Green
