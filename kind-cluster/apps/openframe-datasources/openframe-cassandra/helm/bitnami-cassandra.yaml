@@ -1,3 +1,13 @@
+# resourcesPreset: medium
+
+resources:
+  # requests:
+  #   cpu: 2
+  #   memory: 512Mi
+  limits:
+    cpu: 1
+    memory: 2048Mi
+
 extraEnvVars:
   - name: CASSANDRA_AUTHENTICATOR
     value: AllowAllAuthenticator
