@@ -155,62 +155,20 @@ else
   fi
 fi
 
-# 4. Check/install Docker Desktop
-print_color "cyan" "Checking for Docker Desktop installation..."
-if ! command_exists docker; then
-  print_color "yellow" "Docker Desktop not found. Installing Docker Desktop..."
-
-  brew install --cask docker
-
-  print_color "green" "Docker Desktop installation initiated!"
-  print_color "yellow" "NOTE: You may need to open Docker Desktop from your Applications folder to complete setup."
-
-  if confirm "Would you like to open Docker Desktop now?"; then
-    open -a Docker
-    print_color "yellow" "Please wait for Docker Desktop to start completely before continuing."
-    print_color "yellow" "Press Enter once Docker is running to continue..."
-    read
-  fi
-else
-  print_color "green" "Docker Desktop is already installed."
-
-  # Check if Docker daemon is running
-  if ! docker info >/dev/null 2>&1; then
-    print_color "yellow" "Docker daemon is not running. Starting Docker..."
-    open -a Docker
-    print_color "yellow" "Waiting for Docker to start..."
-
-    # Wait for Docker to start
-    attempt=0
-    max_attempts=30
-    while ! docker info >/dev/null 2>&1; do
-      sleep 2
-      attempt=$((attempt+1))
-      if [ $attempt -ge $max_attempts ]; then
-        print_color "red" "Docker did not start in time. Please start Docker Desktop manually and try again."
-        exit 1
-      fi
-    done
-
-    print_color "green" "Docker started successfully!"
-  fi
-fi
-
-# 5. Ask for GitHub token
+# 4. Ask for GitHub token
 read -p "Please enter your GitHub token (leave empty if not needed): " github_token
 if [ -n "$github_token" ]; then
   export GITHUB_TOKEN_CLASSIC="$github_token"
-  print_color "green" "GitHub token has been set for this session."
 fi
 
 # 6. Find and run the run.sh script
 print_color "cyan" "Searching for run.sh in the repository..."
 
 # Search for run.sh in the repository
-run_sh_path=$(find "$current_dir" -name "run.sh" -type f -print -quit)
+run_sh_path=$(find "$current_dir" -name "run-wrapper.sh" -type f -print -quit)
 
 if [ -n "$run_sh_path" ]; then
-  print_color "green" "Found run.sh at: $run_sh_path"
+  print_color "green" "Found run-wrapper.sh at: $run_sh_path"
 
   script_dir=$(dirname "$run_sh_path")
   script_name=$(basename "$run_sh_path")
@@ -220,14 +178,7 @@ if [ -n "$run_sh_path" ]; then
   chmod +x "$run_sh_path"
 
   cd "$script_dir"
-  echo "Script help:"
-  ./"$script_name" --help
-
-  echo ""
-  echo "Please enter the required parameters:"
-  read -p "> " params
-
-  ./"$script_name" $params
+  ./"$script_name"
 
   # Check the result
   if [ $? -eq 0 ]; then
@@ -238,34 +189,6 @@ if [ -n "$run_sh_path" ]; then
   fi
 else
   print_color "red" "No run.sh script found in the repository. Please check the repository structure."
-
-  # Ask user if they want to specify the path manually
-  if confirm "Do you want to specify the path to run.sh manually?"; then
-    read -p "Please enter the full path to the run.sh script: " custom_script_path
-
-    if [ -f "$custom_script_path" ]; then
-      print_color "green" "Found script at: $custom_script_path"
-      script_dir=$(dirname "$custom_script_path")
-      script_name=$(basename "$custom_script_path")
-
-      # Make the script executable
-      chmod +x "$custom_script_path"
-
-      print_color "green" "Executing $script_name b..."
-      # Change to the script directory and execute it
-      (cd "$script_dir" && ./"$script_name" b)
-
-      # Check the result
-      if [ $? -eq 0 ]; then
-        print_color "green" "Script executed successfully!"
-      else
-        print_color "red" "Script execution failed with errors."
-        print_color "yellow" "Please check the output above for details."
-      fi
-    else
-      print_color "red" "The specified path does not exist. Please check the path and try again."
-    fi
-  fi
 fi
 
 print_color "green" "OpenFrame installation and setup process completed!"

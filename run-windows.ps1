@@ -138,6 +138,7 @@ function Restart-DockerDesktop {
 
     return $true
 }
+
 # Function to check Docker status
 function Test-DockerStatus {
     Write-Host "Checking Docker status..." -ForegroundColor Cyan
@@ -195,55 +196,15 @@ function Test-DockerStatus {
     return $true
 }
 
-# Function to enable Kubernetes in Docker Desktop
-function Enable-Kubernetes {
-    Write-Host "Attempting to enable Kubernetes in Docker Desktop..." -ForegroundColor Cyan
-    
-    try {
-        $settingsPath = "$env:USERPROFILE\AppData\Roaming\Docker\settings.json"
-        
-        # Read current settings
-        $settings = Get-Content $settingsPath -ErrorAction Stop | ConvertFrom-Json
-        
-        # Check if we need to modify settings
-        $settingsChanged = $false
-        
-        # Create kubernetes object if it doesn't exist
-        if (-not $settings.PSObject.Properties['kubernetes']) {
-            $settings | Add-Member -Type NoteProperty -Name 'kubernetes' -Value @{}
-        }
-        
-        # Enable Kubernetes
-        if (-not ($settings.kubernetes.PSObject.Properties['enabled'] -and $settings.kubernetes.enabled)) {
-            $settings.kubernetes | Add-Member -Type NoteProperty -Name 'enabled' -Value $true -Force
-            $settingsChanged = $true
-        }
-
-        # Create extensions object if it doesn't exist
-        if (-not $settings.PSObject.Properties['extensions']) {
-            $settings | Add-Member -Type NoteProperty -Name 'extensions' -Value @{}
-        }
-
-        # Create kubernetes object in extensions if it doesn't exist
-        if (-not $settings.extensions.PSObject.Properties['kubernetes']) {
-            $settings.extensions | Add-Member -Type NoteProperty -Name 'kubernetes' -Value @{}
-        }
-    } catch {
-        Write-Host "Error modifying Docker Desktop settings: $_" -ForegroundColor Red
-        Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
-        return $false
-    }
-}
-
 # Function to remove Kind network configuration
 function Remove-KindNetwork {
     Write-Host "Removing Kind cluster network configuration..." -ForegroundColor Cyan
     
     try {
-        $existingIP = Get-NetIPAddress -IPAddress "192.168.0.23" -ErrorAction SilentlyContinue
+        $existingIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
         
         if ($existingIP) {
-            Remove-NetIPAddress -IPAddress "192.168.0.23" -Confirm:$false
+            Remove-NetIPAddress -IPAddress "192.168.100.100" -Confirm:$false
             Write-Host "Removed Kind cluster IP configuration." -ForegroundColor Green
         }
     } catch {
@@ -441,45 +402,16 @@ if (-not (Test-Path "$repoPath\.git")) {
     }
 }
 
-# 4. Check/install Docker Desktop with WSL2
-Write-Host "Checking for Docker Desktop installation..." -ForegroundColor Cyan
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "Docker Desktop not found. Installing Docker Desktop with WSL2..." -ForegroundColor Yellow
-
-    # Make sure WSL2 is enabled
-    Write-Host "Ensuring WSL2 is enabled..." -ForegroundColor Cyan
-    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-    # Set WSL2 as default
-    Write-Host "Setting WSL2 as default..." -ForegroundColor Cyan
-    wsl --set-default-version 2
-
-    # Install Docker Desktop
-    choco install docker-desktop -y
-
-    Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
-    Write-Host "NOTE: You may need to restart your computer to complete the Docker installation." -ForegroundColor Yellow
-
-    $restartChoice = Read-Host "Do you want to restart your computer now? (Y/N)"
-    if ($restartChoice -eq "Y" -or $restartChoice -eq "y") {
-        Restart-Computer -Force
-        exit
-    }
-} else {
-    Write-Host "Docker Desktop is already installed." -ForegroundColor Green
-}
-
-# 6. Find and run the run-windows-wrapper.sh script using Git Bash
-Write-Host "Searching for run-windows-wrapper.sh in the repository..." -ForegroundColor Cyan
+# 6. Find and run the run-wrapper.sh script using Git Bash
+Write-Host "Searching for run-wrapper.sh in the repository..." -ForegroundColor Cyan
 $gitBashPath = "C:\Program Files\Git\bin\bash.exe"
 
-# Search for run-windows-wrapper.sh in the repository
-$runShFiles = Get-ChildItem -Path $repoPath -Filter "run-windows-wrapper.sh" -Recurse -ErrorAction SilentlyContinue
+# Search for run-wrapper.sh in the repository
+$runShFiles = Get-ChildItem -Path $repoPath -Filter "run-wrapper.sh" -Recurse -ErrorAction SilentlyContinue
 
 if ($runShFiles.Count -gt 0) {
     $scriptPath = $runShFiles[0].FullName
-    Write-Host "Found run-windows-wrapper.sh at: $scriptPath" -ForegroundColor Green
+    Write-Host "Found run-wrapper.sh at: $scriptPath" -ForegroundColor Green
 
     $scriptDir = Split-Path -Parent $scriptPath
     $scriptRelativePath = $scriptPath.Substring($repoPath.Length + 1).Replace("\", "/")
@@ -511,52 +443,7 @@ if ($runShFiles.Count -gt 0) {
         Write-Host "export GITHUB_TOKEN_CLASSIC='your-token'; cd '$repoPath' && ./$scriptRelativePath b" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "No run-windows-wrapper.sh script found in the repository. Please check the repository structure." -ForegroundColor Red
-
-    # Ask user if they want to specify the path manually
-    $manualPath = Read-Host "Do you want to specify the path to run-windows-wrapper.sh manually? (Y/N)"
-
-    if ($manualPath -eq "Y" -or $manualPath -eq "y") {
-        $customScriptPath = Read-Host "Please enter the full path to the run-windows-wrapper.shrun-windows-wrapper.sh script"
-
-        if (Test-Path $customScriptPath) {
-            Write-Host "Found script at: $customScriptPath" -ForegroundColor Green
-            $scriptDir = Split-Path -Parent $customScriptPath
-
-            if (Test-Path $gitBashPath) {
-                Write-Host "Executing custom script using Git Bash..." -ForegroundColor Green
-
-                # Ask user if they want to see output in the current console or in a new window
-                $showOutput = Read-Host "Do you want to see the script output in the current PowerShell window? (Y/N)"
-
-                # Ask for GitHub token
-                $githubToken = Read-Host "Please enter your GitHub token (leave empty if not needed)"
-                $tokenCommand = ""
-                if (-not [string]::IsNullOrWhiteSpace($githubToken)) {
-                    $tokenCommand = "export GITHUB_TOKEN_CLASSIC='$githubToken'; "
-                    Write-Host "GitHub token will be set for this session." -ForegroundColor Green
-                }
-
-                # Always use a separate window for interactive scripts
-                Write-Host "Launching Git Bash in a new window. Please interact with any prompts in that window..." -ForegroundColor Yellow
-
-                # Create a more interactive experience by opening a proper Git Bash window that stays open
-                $scriptFileName = Split-Path -Leaf $customScriptPath
-                # Add trap to keep window open on errors, and add explicit pause at the end
-                $bashArgs = "-c `"$tokenCommand cd '$scriptDir' && { { ./$scriptFileName b; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
-                Start-Process -FilePath $gitBashPath -ArgumentList "--login", "-i", $bashArgs
-
-                # Ask user to confirm completion
-                $confirmed = Read-Host "Press Enter when the Git Bash script has completed (or Ctrl+C to exit)"
-            } else {
-                Write-Host "Git Bash not found at expected location." -ForegroundColor Red
-                Write-Host "Please run the script manually by opening Git Bash and running:" -ForegroundColor Yellow
-                Write-Host "cd '$scriptDir' && ./$(Split-Path -Leaf $customScriptPath)" -ForegroundColor Yellow
-            }
-        } else {
-            Write-Host "The specified path does not exist. Please check the path and try again." -ForegroundColor Red
-        }
-    }
+    Write-Host "No run-wrapper.sh script found in the repository. Please check the repository structure." -ForegroundColor Red
 }
 
 # Add trap to handle errors
