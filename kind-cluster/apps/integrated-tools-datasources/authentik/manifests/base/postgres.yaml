@@ -29,6 +29,13 @@ spec:
         - name: github-pat-secret
       securityContext:
         fsGroup: 999
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod 0700 -R /var/lib/postgresql/data"]
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
       containers:
       - name: postgresql
         image: ghcr.io/flamingo-cx/openframe-authentik-postgresql:latest
@@ -39,8 +46,6 @@ spec:
           value: authentik-user
         - name: POSTGRES_PASSWORD
           value: authentik-password-1234
-        # - name: POSTGRES_DB
-        #   value: authentik-database-authentik
         - name: POSTGRES_MULTIPLE_DATABASES
           value: authentik-database,authentik-database-authentik
         volumeMounts:
