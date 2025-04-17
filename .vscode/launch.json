@@ -2,14 +2,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "chrome",
-            "request": "launch",
-            "name": "OpenFrame UI",
-            "url": "http://localhost:5177",
-            "webRoot": "${workspaceFolder}/openframe/services/openframe-ui",
-            "preLaunchTask": "start-vue"
-        },
-        {
             "type": "java",
             "name": "Management Application",
             "request": "launch",
@@ -68,6 +60,23 @@
                 "SPRING_PROFILES_ACTIVE": "k8s"
             },
             "vmArgs": "-Dspring.profiles.active=k8s"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "OpenFrame UI on Local Kubernetes",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-ui",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "env": {
+                "PORT": "5177",
+                "VITE_API_URL": "http://openframe-api.openframe-microservices:8090",
+                "VITE_GATEWAY_URL": "http://openframe-gateway.openframe-microservices:8100",
+                "VITE_CLIENT_ID": "openframe_web_dashboard",
+                "VITE_CLIENT_SECRET": "prod_secret",
+                "VITE_GRAFANA_URL": "http://localhost:3000"
+            },
+            "console": "integratedTerminal"
         }
     ]
 }
