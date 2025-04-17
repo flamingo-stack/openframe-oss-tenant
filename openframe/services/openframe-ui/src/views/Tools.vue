@@ -3,10 +3,6 @@
     <div class="of-mdm-header">
       <h1 class="of-title">Infrastructure</h1>
       <div class="header-actions">
-        <div class="localhost-toggle">
-          <InputSwitch v-model="useLocalhost" />
-          <span class="toggle-label">Local Deployment</span>
-        </div>
       </div>
     </div>
     
@@ -154,7 +150,6 @@ import Password from 'primevue/password'
 import { ApolloError } from '@apollo/client/errors';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
-import InputSwitch from 'primevue/inputswitch';
 import AuthDebug from '../components/AuthDebug.vue';
 import { getLogoUrl } from '@/services/LogoService';
 import { storeToRefs } from 'pinia';
@@ -457,8 +452,6 @@ const onImageError = (e: Event) => {
   target.classList.add('fallback-icon');
 };
 
-const useLocalhost = ref(true);
-
 const getUrlWithPort = (toolUrl: any): string => {
   if (!toolUrl?.url) return '';
 
@@ -466,9 +459,6 @@ const getUrlWithPort = (toolUrl: any): string => {
     const urlObj = new URL(toolUrl.url);
     if (!urlObj.port && toolUrl.port) {
       urlObj.port = toolUrl.port;
-    }
-    if (useLocalhost.value) {
-      urlObj.hostname = 'localhost';
     }
     return urlObj.toString();
   } catch {
