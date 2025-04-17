@@ -219,8 +219,15 @@ if [ -n "$run_sh_path" ]; then
   # Make sure the script is executable
   chmod +x "$run_sh_path"
 
-  # Change to the script directory and execute it
-  (cd "$script_dir" && ./"$script_name" b)
+  cd "$script_dir"
+  echo "Script help:"
+  ./"$script_name" --help
+
+  echo ""
+  echo "Please enter the required parameters:"
+  read -p "> " params
+
+  ./"$script_name" $params
 
   # Check the result
   if [ $? -eq 0 ]; then

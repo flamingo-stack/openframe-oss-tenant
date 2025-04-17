@@ -22,6 +22,22 @@ get_install_command() {
     OS=$(uname -s)
 
     case $cmd in
+        "brew")
+            if [[ "$OS" == "Darwin" ]]; then
+                # 1. Check/install Homebrew
+                if ! command_exists brew; then
+                  print_color "yellow" "Homebrew not found. Installing Homebrew..."
+                  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                fi
+            fi
+            ;;
+        "git")
+            if [[ "$OS" == "Darwin" ]]; then
+                if ! command_exists git; then
+                  brew install git
+                fi
+            fi
+            ;;
         "kind")
             if [[ "$OS" == "Linux" ]]; then
                 echo "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64 && chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind"

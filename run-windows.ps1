@@ -426,6 +426,19 @@ if (-not (Test-Path "$repoPath\.git")) {
     }
 } else {
     Write-Host "Current directory is a Git repository." -ForegroundColor Green
+
+    # Ask if user wants to pull latest changes
+    $pullChanges = Read-Host "Do you want to pull the latest changes? (Y/N)"
+    if ($pullChanges -eq "Y" -or $pullChanges -eq "y") {
+        Write-Host "Pulling latest changes from the repository..." -ForegroundColor Cyan
+        git pull
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Successfully pulled latest changes." -ForegroundColor Green
+        } else {
+            Write-Host "Failed to pull changes. There might be conflicts or network issues." -ForegroundColor Yellow
+        }
+    }
 }
 
 # 4. Check/install Docker Desktop with WSL2
