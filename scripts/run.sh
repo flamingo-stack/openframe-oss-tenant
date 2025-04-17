@@ -7,6 +7,9 @@ export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 # Source functions in correct order
 source "${SCRIPT_DIR}/functions/variables.sh"
 
+source "${SCRIPT_DIR}/functions/flamingo.sh"
+export -f flamingo
+
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help
 
@@ -46,6 +49,9 @@ function check_bases() {
   done
   return 0
 }
+
+# Display flamingo
+flamingo
 
 ARG=$1
 APP=$2
