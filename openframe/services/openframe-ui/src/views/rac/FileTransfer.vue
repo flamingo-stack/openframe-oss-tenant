@@ -153,18 +153,9 @@ const fetchDeviceDetails = async () => {
   
   try {
     loading.value = true;
-    // In a real implementation, this would fetch device details from API
-    // For now, use mock data
-    selectedDevice.value = {
-      id: selectedDeviceId.value,
-      hostname: `device-${selectedDeviceId.value}`,
-      platform: ['windows', 'darwin', 'linux'][Math.floor(Math.random() * 3)],
-      status: 'online'
-    };
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<Device>(`${API_URL}/devices/${selectedDeviceId.value}`);
-    // selectedDevice.value = response;
+    // Fetch device details from API
+    const response = await restClient.get<Device>(`${API_URL}/devices/${selectedDeviceId.value}`);
+    selectedDevice.value = response;
   } catch (error) {
     console.error('Failed to fetch device details:', error);
     toastService.showError('Failed to fetch device details');
@@ -178,14 +169,10 @@ const fetchFiles = async (path: string) => {
   
   try {
     loading.value = true;
-    // In a real implementation, this would fetch files from the device
-    // For now, use mock data
-    files.value = [];
+    // Fetch files from device via API
+    const response = await restClient.get<FileItem[]>(`${API_URL}/devices/${selectedDeviceId.value}/files?path=${encodeURIComponent(path)}`);
+    files.value = Array.isArray(response) ? response : [];
     currentPath.value = path;
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<FileItem[]>(`${API_URL}/devices/${selectedDeviceId.value}/files?path=${encodeURIComponent(path)}`);
-    // files.value = response;
   } catch (error) {
     console.error('Failed to fetch files:', error);
     toastService.showError('Failed to fetch files');

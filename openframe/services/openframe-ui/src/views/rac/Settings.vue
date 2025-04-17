@@ -102,21 +102,9 @@ const settings = ref<MeshSettings>({
 const fetchSettings = async () => {
   try {
     loading.value = true;
-    // In a real implementation, this would fetch settings from API
-    // For now, use mock data
-    settings.value = {
-      meshUrl: 'http://localhost:8383',
-      meshUser: 'mesh@openframe.io',
-      meshPassword: '********',
-      meshGroup: 'OpenFrame',
-      recordSessions: false,
-      notifyUser: true,
-      requireConsent: false
-    };
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<MeshSettings>(`${API_URL}/settings/`);
-    // settings.value = response;
+    // Fetch settings from API
+    const response = await restClient.get<MeshSettings>(`${API_URL}/settings/`);
+    settings.value = response;
   } catch (error) {
     console.error('Failed to fetch settings:', error);
     toastService.showError('Failed to fetch settings');
@@ -128,12 +116,8 @@ const fetchSettings = async () => {
 const saveSettings = async () => {
   try {
     saving.value = true;
-    // In a real implementation, this would save settings to API
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-    
-    // In a real implementation, this would be:
-    // await restClient.post(`${API_URL}/settings/`, settings.value);
-    
+    // Save settings via API
+    await restClient.post(`${API_URL}/settings/`, settings.value);
     toastService.showSuccess('Settings saved successfully');
   } catch (error) {
     console.error('Failed to save settings:', error);

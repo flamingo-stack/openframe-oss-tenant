@@ -207,28 +207,13 @@ const recentActivity = ref<ConnectionHistory[]>([]);
 const fetchDeviceStats = async () => {
   try {
     console.log('Fetching device stats...');
-    // For initial implementation, use mock data
-    // Later will be connected to actual MeshCentral API
-    const mockDevices = [
-      {
-        id: '1',
-        hostname: 'DESKTOP-1',
-        plat: 'windows',
-        operating_system: 'Windows 10 Pro',
-        status: 'online',
-        last_seen: new Date().toISOString()
-      },
-      {
-        id: '2',
-        hostname: 'DESKTOP-2',
-        plat: 'linux',
-        operating_system: 'Ubuntu 22.04',
-        status: 'offline',
-        last_seen: new Date().toISOString()
-      }
-    ];
+    // Fetch real data from MeshCentral API
+    const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
     
-    const devices = mockDevices;
+    console.log('API Response:', response);
+    
+    // Process the response data
+    const devices = Array.isArray(response) ? response : [];
     const total = devices.length;
     const online = devices.filter(d => d.status === 'online').length;
     const offline = total - online;
@@ -242,13 +227,6 @@ const fetchDeviceStats = async () => {
       offline,
       onlineRate
     };
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
-    // const devices = Array.isArray(response) ? response : [];
-    // const total = devices.length;
-    // const online = devices.filter(d => d.status === 'online').length;
-    // ...etc
   } catch (error) {
     console.error('Failed to fetch device stats:', error);
     toastService.showError('Failed to fetch device stats');
@@ -257,14 +235,15 @@ const fetchDeviceStats = async () => {
 
 const fetchConnectionStats = async () => {
   try {
-    // Mock data for initial implementation
-    connectionStats.value = {
-      total: 10,
-      active: 2,
-      completed: 8
-    };
+    // Fetch real connection data from API
+    const response = await restClient.get<ConnectionHistory[]>(`${API_URL}/connections/`);
+    const connections = Array.isArray(response) ? response : [];
     
-    // In a real implementation, this would fetch from the API
+    const total = connections.length;
+    const active = connections.filter(c => !c.duration).length; // No duration means still active
+    const completed = total - active;
+    
+    connectionStats.value = { total, active, completed };
   } catch (error) {
     console.error('Failed to fetch connection stats:', error);
     toastService.showError('Failed to fetch connection stats');
@@ -273,14 +252,15 @@ const fetchConnectionStats = async () => {
 
 const fetchTransferStats = async () => {
   try {
-    // Mock data for initial implementation
-    transferStats.value = {
-      total: 15,
-      uploads: 8,
-      downloads: 7
-    };
+    // Fetch real file transfer data from API
+    const response = await restClient.get<any[]>(`${API_URL}/filetransfers/`);
+    const transfers = Array.isArray(response) ? response : [];
     
-    // In a real implementation, this would fetch from the API
+    const total = transfers.length;
+    const uploads = transfers.filter(t => t.type === 'upload').length;
+    const downloads = total - uploads;
+    
+    transferStats.value = { total, uploads, downloads };
   } catch (error) {
     console.error('Failed to fetch transfer stats:', error);
     toastService.showError('Failed to fetch transfer stats');
@@ -289,29 +269,9 @@ const fetchTransferStats = async () => {
 
 const fetchRecentActivity = async () => {
   try {
-    // Mock data for initial implementation
-    recentActivity.value = [
-      {
-        id: 1,
-        time: new Date().toISOString(),
-        type: 'remote_connection',
-        username: 'admin',
-        duration: 15,
-        device_id: '1',
-        hostname: 'DESKTOP-1'
-      },
-      {
-        id: 2,
-        time: new Date(Date.now() - 3600000).toISOString(),
-        type: 'file_transfer',
-        username: 'admin',
-        duration: 5,
-        device_id: '2',
-        hostname: 'DESKTOP-2'
-      }
-    ];
-    
-    // In a real implementation, this would fetch from the API
+    // Fetch real activity data from API
+    const response = await restClient.get<ConnectionHistory[]>(`${API_URL}/activity?limit=5`);
+    recentActivity.value = Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Failed to fetch recent activity:', error);
     toastService.showError('Failed to fetch recent activity');

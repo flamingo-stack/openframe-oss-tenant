@@ -209,47 +209,9 @@ const fetchDevices = async () => {
   try {
     loading.value = true;
     
-    // For initial implementation, use mock data
-    // Later will be connected to actual MeshCentral API
-    devices.value = [
-      {
-        id: '1',
-        agent_id: '1',
-        hostname: 'desktop-001',
-        plat: 'windows',
-        operating_system: 'Windows 10 Pro',
-        status: 'online',
-        last_seen: new Date().toISOString(),
-        public_ip: '192.168.1.100',
-        local_ips: ['10.0.0.1']
-      },
-      {
-        id: '2',
-        agent_id: '2',
-        hostname: 'laptop-002',
-        plat: 'darwin',
-        operating_system: 'macOS 12.6',
-        status: 'offline',
-        last_seen: new Date(Date.now() - 86400000).toISOString(),
-        public_ip: '192.168.1.101',
-        local_ips: ['10.0.0.2']
-      },
-      {
-        id: '3',
-        agent_id: '3',
-        hostname: 'server-001',
-        plat: 'linux',
-        operating_system: 'Ubuntu 22.04 LTS',
-        status: 'online',
-        last_seen: new Date().toISOString(),
-        public_ip: '192.168.1.102',
-        local_ips: ['10.0.0.3']
-      }
-    ];
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
-    // devices.value = Array.isArray(response) ? response : [];
+    // Fetch real devices from MeshCentral API
+    const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
+    devices.value = Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
@@ -294,26 +256,23 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
       shellPath = '/bin/bash';
     }
     
-    // In a real implementation, this would be:
-    // const response = await restClient.post<string>(`${API_URL}/devices/${selectedDevice.value.id}/cmd/`, {
-    //   shell: shellPath,
-    //   cmd: cmd,
-    //   timeout: timeout,
-    //   run_as_user: runAsUser
-    // });
-    
-    // Mock response for initial implementation
-    const mockResponse = `Executed command: ${cmd} on ${selectedDevice.value.hostname}\nSuccess!`;
+    // Execute command on device via API
+    const response = await restClient.post<string>(`${API_URL}/devices/${selectedDevice.value.id}/cmd/`, {
+      shell: shellPath,
+      cmd: cmd,
+      timeout: timeout,
+      run_as_user: runAsUser
+    });
 
     lastCommand.value = {
       cmd,
-      output: mockResponse
+      output: response || 'No output returned'
     };
 
     // Update execution history with success status and output
     if (executionHistoryRef.value && executionId) {
       executionHistoryRef.value.updateExecution(executionId, {
-        output: mockResponse,
+        output: response || 'No output returned',
         status: 'success'
       });
     }
@@ -371,14 +330,9 @@ const confirmDelete = async () => {
   try {
     deleting.value = true;
     
-    // In a real implementation, this would be:
-    // await restClient.delete(`${API_URL}/devices/${selectedDevice.value.id}/`);
-    
-    // Mock implementation for now
-    const deviceIndex = devices.value.findIndex(d => d.id === selectedDevice.value?.id);
-    if (deviceIndex !== -1) {
-      devices.value.splice(deviceIndex, 1);
-    }
+    // Delete device via API
+    await restClient.delete(`${API_URL}/devices/${selectedDevice.value.id}/`);
+    await fetchDevices(); // Refresh the device list
     
     deleteDeviceDialog.value = false;
     toastService.showSuccess('Device deleted successfully');
