@@ -1,5 +1,5 @@
 <template>
-  <div class="rmm-dashboard">
+  <div class="rac-dashboard">
     <div class="dashboard-grid">
       <!-- Device Statistics -->
       <div class="dashboard-card device-stats">

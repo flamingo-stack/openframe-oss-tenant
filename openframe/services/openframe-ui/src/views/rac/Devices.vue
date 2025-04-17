@@ -24,6 +24,7 @@
         emptyIcon="pi pi-desktop"
         emptyTitle="No Devices Found" 
         emptyMessage="Add your first device to start monitoring."
+        emptyHint="Devices will appear here once they are added to your RAC server."
       >
         <Column field="hostname" header="Hostname" sortable>
           <template #body="{ data }">
