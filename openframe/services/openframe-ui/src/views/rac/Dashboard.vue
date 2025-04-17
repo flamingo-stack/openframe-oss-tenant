@@ -1,7 +1,7 @@
 <template>
-  <div class="rac-dashboard">
+  <div class="rmm-dashboard">
     <div class="dashboard-grid">
-      <!-- Device Overview -->
+      <!-- Device Statistics -->
       <div class="dashboard-card device-stats">
         <h3><i class="pi pi-mobile"></i> Device Overview</h3>
         <template v-if="deviceStats.total > 0">
@@ -40,8 +40,7 @@
         <div v-else class="empty-state">
           <i class="pi pi-mobile empty-icon"></i>
           <h3>No Devices Found</h3>
-          <p>There are no devices connected via MeshCentral yet.</p>
-          <p class="hint">Add devices to start managing them remotely.</p>
+          <p>There are no devices enrolled in RAC yet.</p>
         </div>
       </div>
 
@@ -68,7 +67,6 @@
           <i class="pi pi-link empty-icon"></i>
           <h3>No Active Connections</h3>
           <p>No remote connections are currently active.</p>
-          <p class="hint">Connect to a device to see connection details here.</p>
         </div>
       </div>
 
@@ -114,8 +112,7 @@
         <div v-else class="empty-state">
           <i class="pi pi-history empty-icon"></i>
           <h3>No Recent Activity</h3>
-          <p>No recent remote access activity to display.</p>
-          <p class="hint">Activity will appear here as you connect to devices.</p>
+          <p>All systems are operating normally.</p>
         </div>
       </div>
 
@@ -142,7 +139,6 @@
           <i class="pi pi-file empty-icon"></i>
           <h3>No File Transfers</h3>
           <p>No file transfers have been initiated yet.</p>
-          <p class="hint">File transfers will appear here once you start transferring files.</p>
         </div>
       </div>
     </div>
