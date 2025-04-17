@@ -114,12 +114,12 @@ spec:
           successThreshold: 1
           timeoutSeconds: 1
         resources:
+          # requests:
+          #   cpu: 150m
+          #   memory: 512Mi
           limits:
             cpu: 150m
-            memory: 512Mi
-          requests:
-            cpu: 150m
-            memory: 512Mi
+            memory: 1024Mi
       volumes:
       - name: media-tmp
         emptyDir: {}
@@ -236,12 +236,12 @@ spec:
           successThreshold: 1
           timeoutSeconds: 10
         resources:
+          # requests:
+          #   cpu: 150m
+          #   memory: 512Mi
           limits:
             cpu: 150m
-            memory: 512Mi
-          requests:
-            cpu: 150m
-            memory: 512Mi
+            memory: 1024Mi
         volumeMounts:
         - name: media-tmp
           mountPath: /media
