@@ -14,13 +14,13 @@ wait_parallel() {
     [[ -z "$(jobs -p)" ]] && break
 
     # Wait for the next job to finish
-    wait -n 2>/dev/null || {
-      # Capture failed job PID
+    if ! wait -n 2>/dev/null; then
+      # Only mark as failed if wait -n actually returned non-zero
       failed=1
       # Get the most recently failed job's command
       failed_job=$(jobs -l | grep "Exit" | head -n1 | awk '{print $4}')
       failed_apps+=("$failed_job")
-    }
+    fi
   done
 
   # Report failures if any
