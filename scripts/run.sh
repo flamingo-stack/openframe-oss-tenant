@@ -106,7 +106,7 @@ case "$ARG" in
     #   echo "Starting $node ..."
     #   docker start $node
     # done
-    k3d cluster start openframe-dev
+    k3d cluster start openframe-dev && telepresence connect
     ;;
   stop)
     # Stop kind containers
@@ -114,7 +114,7 @@ case "$ARG" in
     #   echo "Stopping $node ..."
     #   docker stop $node
     # done
-    k3d cluster stop openframe-dev
+    telepresence quit && k3d cluster stop openframe-dev
     ;;
   -h|--help|-Help)
     show_help
