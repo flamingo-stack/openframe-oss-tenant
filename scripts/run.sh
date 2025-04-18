@@ -73,7 +73,8 @@ case "$ARG" in
     check_memory && setup_swap
     ;;
   k|cluster)
-    check_memory
+    check_memory && \
+    bash "$0" pre && \
     bash "${SCRIPT_DIR}/setup-cluster.sh" && \
     if ! check_bases; then
       bash ${SCRIPT_DIR}/bases.sh
@@ -93,7 +94,6 @@ case "$ARG" in
   b|bootstrap)
     # Bootstrap whole cluster with all apps
     # Bootstrap whole cluster with base apps
-    bash "$0" pre && \
     bash "$0" swap && \
     bash "$0" cluster && \
     bash "$0" app all deploy
