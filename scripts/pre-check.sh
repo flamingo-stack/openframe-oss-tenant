@@ -1,14 +1,6 @@
 #!/bin/bash
 
-# Check if max_user_instances is less than 1500
-if [ $OS == "Linux" ]; then
-  current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
-  if [[ $current_value -lt 1500 ]]; then
-    echo "fs.inotify.max_user_instances is less than 1500"
-    sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
-    sudo sysctl -p > /dev/null 2>&1
-  fi
-fi
+set_max_open_files
 
 # Function to check if a command exists
 check_command() {
@@ -168,3 +160,5 @@ if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
     echo "Please export GITHUB_TOKEN_CLASSIC with: 'export GITHUB_TOKEN_CLASSIC=<your-token>'"
     exit 1
 fi
+
+echo "All pre-checks passed"

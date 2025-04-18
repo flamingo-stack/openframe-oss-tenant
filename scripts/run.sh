@@ -6,9 +6,9 @@ export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
 # Convert Windows paths to Git Bash paths if running on Windows
 if [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
-    # Convert Windows path to Git Bash path
-    export SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
-    export ROOT_REPO_DIR=$(echo "$ROOT_REPO_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+  # Convert Windows path to Git Bash path
+  export SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+  export ROOT_REPO_DIR=$(echo "$ROOT_REPO_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
 fi
 
 # Source functions in correct order
@@ -19,6 +19,9 @@ export -f flamingo
 
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help
+
+source "${SCRIPT_DIR}/functions/add_loopback_ip.sh"
+export -f add_loopback_ip
 
 source "${SCRIPT_DIR}/functions/build-app.sh"
 export -f build_app
@@ -49,19 +52,6 @@ for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
     done < <(declare -F | awk '{print $3}')
   fi
 done
-
-# Function to check if namespaces and secrets already exist
-function check_bases() {
-  for ns in "${NAMESPACES[@]}"; do
-    if ! kubectl get namespace "$ns" &> /dev/null; then
-      return 1
-    fi
-    if ! kubectl -n "$ns" get secret github-pat-secret &> /dev/null; then
-      return 1
-    fi
-  done
-  return 0
-}
 
 # Display flamingo
 flamingo
@@ -123,15 +113,9 @@ case "$ARG" in
     done
     ;;
   s|start)
-    if [ $OS == "Linux" ]; then
-      current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
-      if [[ $current_value -lt 1500 ]]; then
-        echo "fs.inotify.max_user_instances is less than 1500"
-        sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
-        sudo sysctl -p > /dev/null 2>&1
-      fi
-    fi
-    k3d cluster start openframe-dev && telepresence connect
+    add_loopback_ip && set_max_open_files && \
+    k3d cluster start openframe-dev && \
+    tools_telepresence_wait > /dev/null 2>&1 && telepresence connect
     ;;
   stop)
     telepresence quit && k3d cluster stop openframe-dev

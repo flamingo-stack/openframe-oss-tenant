@@ -24,14 +24,14 @@ function tools_telepresence_deploy() {
 
 function tools_telepresence_wait() {
   echo "Waiting for telepresence to be ready"
-  wait_for_app "ambassador" "app=traffic-manager"
+  wait_for_app "client-tools" "app=traffic-manager"
 }
 
 function tools_telepresence_delete() {
   echo "Deleting telepresence"
   telepresence quit
   telepresence helm uninstall
-  kubectl delete namespace ambassador
+  kubectl delete namespace client-tools
 }
 
 # KAFKA UI
