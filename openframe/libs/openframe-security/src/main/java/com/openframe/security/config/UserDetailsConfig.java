@@ -1,5 +1,7 @@
 package com.openframe.security.config;
 
+import com.openframe.data.repository.mongo.OAuthClientRepository;
+import com.openframe.security.oauth.OAuthClientSecurity;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +18,14 @@ public class UserDetailsConfig {
     @Bean
     public UserDetailsService userDetailsService(UserRepository userRepository) {
         return username -> userRepository.findByEmail(username)
-                .map(user -> new UserSecurity(user))
+                .map(UserSecurity::new)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Bean
+    public UserDetailsService oauthClientUserDetailsService(OAuthClientRepository oAuthClientRepository) {
+        return clientId -> oAuthClientRepository.findByClientId(clientId)
+                .map(OAuthClientSecurity::new)
+                .orElseThrow(() -> new UsernameNotFoundException("OAuth client not found"));
     }
 } 

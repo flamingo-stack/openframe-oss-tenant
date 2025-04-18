@@ -3,6 +3,7 @@ package com.openframe.security.jwt;
 import java.time.Instant;
 import java.util.function.Function;
 
+import com.openframe.security.oauth.OAuthClientSecurity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -79,14 +80,27 @@ public class JwtService {
         log.debug("Validating token for user: {}", userDetails.getUsername());
         try {
             Jwt jwt = decoder.decode(token);
-            String tokenEmail = jwt.getClaimAsString("email");
-            log.debug("Token email: {}, User email: {}", tokenEmail, userDetails.getUsername());
-            
-            boolean emailValid = tokenEmail != null && tokenEmail.equals(userDetails.getUsername());
-            boolean notExpired = !jwt.getExpiresAt().isBefore(Instant.now());
-            
-            log.debug("Email valid: {}, Not expired: {}", emailValid, notExpired);
-            return emailValid && notExpired;
+            if (userDetails instanceof UserSecurity userSecurity) {
+                String tokenEmail = jwt.getClaimAsString("email");
+                log.debug("Token email: {}, User email: {}", tokenEmail, userDetails.getUsername());
+
+                boolean emailValid = tokenEmail != null && tokenEmail.equals(userDetails.getUsername());
+                boolean notExpired = !jwt.getExpiresAt().isBefore(Instant.now());
+
+                log.debug("Email valid: {}, Not expired: {}", emailValid, notExpired);
+                return emailValid && notExpired;
+            }
+            if (userDetails instanceof OAuthClientSecurity oauthClientSecurity) {
+                String tokenClientId = jwt.getClaimAsString("sub");
+                log.debug("Token client id: {}, User client id: {}", tokenClientId, userDetails.getUsername());
+
+                boolean clientIdVerified = tokenClientId != null && tokenClientId.equals(userDetails.getUsername());
+                boolean notExpired = !jwt.getExpiresAt().isBefore(Instant.now());
+
+                log.debug("Client id valid: {}, Not expired: {}", clientIdVerified, notExpired);
+                return clientIdVerified && notExpired;
+            }
+            return false;
         } catch (Exception e) {
             log.error("Token validation failed: {}", e.getMessage());
             return false;
