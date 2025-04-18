@@ -1,6 +1,74 @@
 # OpenFrame Installation Script
 # This script checks for and installs the required components for OpenFrame
 
+param(
+    [switch]$Help,
+    [switch]$Silent,
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$RunArgs
+)
+
+# Show help information and exit if -Help is specified
+if ($Help -and $RunArgs.Count -eq 0) {
+    Write-Host @"
+OpenFrame Installation Script
+Usage: .\run-windows.ps1 [-Help] [-Silent] [COMMAND]
+
+Options:
+    -Help     Show this help message and exit
+    -Silent   Run in silent mode (suppress non-essential output and skip confirmations)
+
+Commands (passed to run.sh):
+    bootstrap, b        Bootstrap whole cluster with all apps
+    platform, p        Bootstrap platform only
+    app, a [name]      Manage specific app
+    cluster, k         Setup cluster
+    pre               Run pre-checks
+    swap, s           Setup swap
+    delete, d         Delete cluster
+    cleanup, c        Cleanup resources
+    start             Start cluster
+    stop              Stop cluster
+    -h, --help        Show run.sh help message
+
+Examples:
+    .\run-windows.ps1 -Silent bootstrap     # Run bootstrap in silent mode
+    .\run-windows.ps1 -Silent app nginx deploy    # Deploy nginx app in silent mode
+    .\run-windows.ps1 platform              # Setup platform in interactive mode
+    .\run-windows.ps1 -Help                # Show this help message
+    .\run-windows.ps1 app -Help            # Show run.sh help message
+"@
+    exit 0
+}
+
+# Function to handle user confirmations based on silent mode
+function Get-UserConfirmation {
+    param(
+        [string]$Message,
+        [bool]$DefaultYes = $true
+    )
+    
+    if ($Silent) {
+        return $DefaultYes
+    }
+    
+    $response = Read-Host "$Message (Y/N)"
+    return $response -match '^[Yy]'
+}
+
+# Function to display messages based on silent mode
+function Write-StatusMessage {
+    param(
+        [string]$Message,
+        [string]$Color = "White",
+        [bool]$Important = $false
+    )
+    
+    if (-not $Silent -or $Important) {
+        Write-Host $Message -ForegroundColor $Color
+    }
+}
+
 # Function to check if running as administrator
 function Test-Administrator {
     $currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -336,114 +404,139 @@ Write-Host "Working with repository at $repoPath..." -ForegroundColor Cyan
 if (-not (Test-Path "$repoPath\.git")) {
     Write-Host "Current directory is not a Git repository." -ForegroundColor Yellow
 
-    # Ask user if they want to clone the repo here or specify a different location
-    $cloneHere = Read-Host "Do you want to clone the OpenFrame repository in the current directory? (Y/N)"
-
-    if ($cloneHere -eq "Y" -or $cloneHere -eq "y") {
-        # If directory is not empty, warn the user
-        if ((Get-ChildItem -Path $repoPath | Measure-Object).Count -gt 0) {
-            $forceClone = Read-Host "Warning: The current directory is not empty. Continue with cloning? (Y/N)"
-            if (-not ($forceClone -eq "Y" -or $forceClone -eq "y")) {
-                Write-Host "Operation cancelled by user." -ForegroundColor Red
-                exit 1
-            }
-        }
-
-        # Clone the repository to the current directory
+    # В тихом режиме клонируем в текущую директорию
+    if ($Silent) {
         Write-Host "Cloning OpenFrame repository to current directory..." -ForegroundColor Yellow
         git clone https://github.com/openframe/openframe.git .
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "OpenFrame repository cloned successfully!" -ForegroundColor Green
-        } else {
+        if ($LASTEXITCODE -ne 0) {
             Write-Host "Failed to clone the OpenFrame repository. Please check the URL and your internet connection." -ForegroundColor Red
             exit 1
         }
+        Write-Host "OpenFrame repository cloned successfully!" -ForegroundColor Green
     } else {
-        # Ask for custom path
-        $customPath = Read-Host "Please enter the full path where you want to clone the repository"
-
-        if (-not (Test-Path $customPath)) {
-            $createDir = Read-Host "Directory does not exist. Create it? (Y/N)"
-            if ($createDir -eq "Y" -or $createDir -eq "y") {
-                New-Item -ItemType Directory -Path $customPath -Force | Out-Null
-            } else {
-                Write-Host "Operation cancelled by user." -ForegroundColor Red
+        # Ask user if they want to clone the repo here or specify a different location
+        $cloneHere = Read-Host "Do you want to clone the OpenFrame repository in the current directory? (Y/N)"
+        if ($cloneHere -eq "Y" -or $cloneHere -eq "y") {
+            # If directory is not empty, warn the user
+            if ((Get-ChildItem -Path $repoPath | Measure-Object).Count -gt 0) {
+                $forceClone = Read-Host "Warning: The current directory is not empty. Continue with cloning? (Y/N)"
+                if (-not ($forceClone -eq "Y" -or $forceClone -eq "y")) {
+                    Write-Host "Operation cancelled by user." -ForegroundColor Red
+                    exit 1
+                }
+            }
+            # Clone the repository to the current directory
+            Write-Host "Cloning OpenFrame repository to current directory..." -ForegroundColor Yellow
+            git clone https://github.com/openframe/openframe.git .
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Failed to clone the OpenFrame repository. Please check the URL and your internet connection." -ForegroundColor Red
                 exit 1
             }
-        }
-
-        # Clone the repository to the specified directory
-        Write-Host "Cloning OpenFrame repository to $customPath..." -ForegroundColor Yellow
-        git clone https://github.com/openframe/openframe.git $customPath
-
-        if ($LASTEXITCODE -eq 0) {
+            Write-Host "OpenFrame repository cloned successfully!" -ForegroundColor Green
+        } else {
+            # Ask for custom path
+            $customPath = Read-Host "Please enter the full path where you want to clone the repository"
+            if (-not (Test-Path $customPath)) {
+                $createDir = Read-Host "Directory does not exist. Create it? (Y/N)"
+                if ($createDir -eq "Y" -or $createDir -eq "y") {
+                    New-Item -ItemType Directory -Path $customPath -Force | Out-Null
+                } else {
+                    Write-Host "Operation cancelled by user." -ForegroundColor Red
+                    exit 1
+                }
+            }
+            # Clone the repository to the specified directory
+            Write-Host "Cloning OpenFrame repository to $customPath..." -ForegroundColor Yellow
+            git clone https://github.com/openframe/openframe.git $customPath
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Failed to clone the OpenFrame repository. Please check the URL and your internet connection." -ForegroundColor Red
+                exit 1
+            }
             Write-Host "OpenFrame repository cloned successfully!" -ForegroundColor Green
             $repoPath = $customPath
-        } else {
-            Write-Host "Failed to clone the OpenFrame repository. Please check the URL and your internet connection." -ForegroundColor Red
-            exit 1
         }
     }
 } else {
     Write-Host "Current directory is a Git repository." -ForegroundColor Green
 
-    # Ask if user wants to pull latest changes
-    $pullChanges = Read-Host "Do you want to pull the latest changes? (Y/N)"
-    if ($pullChanges -eq "Y" -or $pullChanges -eq "y") {
+    # В тихом режиме автоматически делаем pull
+    if ($Silent) {
         Write-Host "Pulling latest changes from the repository..." -ForegroundColor Cyan
         git pull
-
         if ($LASTEXITCODE -eq 0) {
             Write-Host "Successfully pulled latest changes." -ForegroundColor Green
         } else {
             Write-Host "Failed to pull changes. There might be conflicts or network issues." -ForegroundColor Yellow
         }
+    } else {
+        # Ask if user wants to pull latest changes
+        $pullChanges = Read-Host "Do you want to pull the latest changes? (Y/N)"
+        if ($pullChanges -eq "Y" -or $pullChanges -eq "y") {
+            Write-Host "Pulling latest changes from the repository..." -ForegroundColor Cyan
+            git pull
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "Successfully pulled latest changes." -ForegroundColor Green
+            } else {
+                Write-Host "Failed to pull changes. There might be conflicts or network issues." -ForegroundColor Yellow
+            }
+        }
     }
 }
 
-# 6. Find and run the run-wrapper.sh script using Git Bash
-Write-Host "Searching for run-wrapper.sh in the repository..." -ForegroundColor Cyan
+# 6. Find and run the run.sh script using Git Bash
+Write-Host "Searching for run.sh in the repository..." -ForegroundColor Cyan
 $gitBashPath = "C:\Program Files\Git\bin\bash.exe"
 
-# Search for run-wrapper.sh in the repository
-$runShFiles = Get-ChildItem -Path $repoPath -Filter "run-wrapper.sh" -Recurse -ErrorAction SilentlyContinue
+# Search for run.sh in the repository
+$runShFiles = Get-ChildItem -Path $repoPath -Filter "run.sh" -Recurse -ErrorAction SilentlyContinue
 
 if ($runShFiles.Count -gt 0) {
     $scriptPath = $runShFiles[0].FullName
-    Write-Host "Found run-wrapper.sh at: $scriptPath" -ForegroundColor Green
+    Write-Host "Found run.sh at: $scriptPath" -ForegroundColor Green
 
     $scriptDir = Split-Path -Parent $scriptPath
     $scriptRelativePath = $scriptPath.Substring($repoPath.Length + 1).Replace("\", "/")
 
     if (Test-Path $gitBashPath) {
-        Write-Host "Executing $scriptRelativePath b using Git Bash..." -ForegroundColor Green
+        Write-Host "Executing $scriptRelativePath with args: $RunArgs" -ForegroundColor Green
 
-        # Ask for GitHub token
+        # Always ask for GitHub token
         $githubToken = Read-Host "Please enter your GitHub token (leave empty if not needed)"
+
         $tokenCommand = ""
         if (-not [string]::IsNullOrWhiteSpace($githubToken)) {
             $tokenCommand = "export GITHUB_TOKEN_CLASSIC='$githubToken'; "
             Write-Host "GitHub token will be set for this session." -ForegroundColor Green
         }
 
-        # Always use a separate window for interactive scripts
-        Write-Host "Launching Git Bash in a new window. Please interact with any prompts in that window..." -ForegroundColor Yellow
+        # Set environment variables for silent mode
+        $silentEnv = ""
+        if ($Silent) {
+            $silentEnv = @"
+export OPENFRAME_SILENT=true;
+export OPENFRAME_NONINTERACTIVE=true;
+export OPENFRAME_AUTO_APPROVE=true;
+"@
+        }
+
+        # Prepare run.sh arguments
+        $runArgs = if ($RunArgs.Count -gt 0) { $RunArgs -join ' ' } else { '--help' }
 
         # Create a more interactive experience by opening a proper Git Bash window that stays open
-        # Add trap to keep window open on errors, and add explicit pause at the end
-        $bashArgs = "-c `"$tokenCommand cd '$repoPath' && { { ./$scriptRelativePath; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
-        Start-Process -FilePath $gitBashPath -ArgumentList "--login", "-i", $bashArgs
+        $bashArgs = "-c `"$tokenCommand $silentEnv cd '$repoPath' && { { ./$scriptRelativePath $runArgs; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
+        Start-Process -FilePath $gitBashPath -ArgumentList "--login", "-i", $bashArgs -Wait
 
-        # Ask user to confirm completion
-        $confirmed = Read-Host "Press Enter when the Git Bash script has completed (or Ctrl+C to exit)"
+        # В тихом режиме не спрашиваем подтверждение завершения
+        if (-not $Silent) {
+            $confirmed = Read-Host "Press Enter when the Git Bash script has completed (or Ctrl+C to exit)"
+        }
     } else {
         Write-Host "Git Bash not found at expected location." -ForegroundColor Red
         Write-Host "Please run the script manually by opening Git Bash and running:" -ForegroundColor Yellow
-        Write-Host "export GITHUB_TOKEN_CLASSIC='your-token'; cd '$repoPath' && ./$scriptRelativePath b" -ForegroundColor Yellow
+        Write-Host "cd '$repoPath' && ./$scriptRelativePath $runArgs" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "No run-wrapper.sh script found in the repository. Please check the repository structure." -ForegroundColor Red
+    Write-Host "No run.sh script found in the repository. Please check the repository structure." -ForegroundColor Red
 }
 
 # Add trap to handle errors
@@ -453,13 +546,19 @@ trap {
     Exit 1
 }
 
-# Ask if user wants to clean up the network configuration
-$cleanupNetwork = Read-Host "Do you want to clean up the network configuration? (Y/N)"
-if ($cleanupNetwork -eq "Y" -or $cleanupNetwork -eq "y") {
-    Remove-KindNetwork
-    Write-Host "Network configuration has been removed." -ForegroundColor Green
+# Cleanup handling
+if ($Silent) {
+    # В тихом режиме пропускаем очистку
+    Write-Host "Skipping network cleanup in silent mode." -ForegroundColor Green
 } else {
-    Write-Host "Network configuration has been preserved for future use." -ForegroundColor Green
+    # Ask if user wants to clean up the network configuration
+    $cleanupNetwork = Read-Host "Do you want to clean up the network configuration? (Y/N)"
+    if ($cleanupNetwork -eq "Y" -or $cleanupNetwork -eq "y") {
+        Remove-KindNetwork
+        Write-Host "Network configuration has been removed." -ForegroundColor Green
+    } else {
+        Write-Host "Network configuration has been preserved for future use." -ForegroundColor Green
+    }
 }
 
 Write-Host "OpenFrame installation and setup process completed!" -ForegroundColor Green
