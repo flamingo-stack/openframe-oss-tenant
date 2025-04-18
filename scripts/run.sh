@@ -7,11 +7,14 @@ export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 # Source functions in correct order
 source "${SCRIPT_DIR}/functions/variables.sh"
 
-source "${SCRIPT_DIR}/functions/build-app.sh"
-export -f build_app
+source "${SCRIPT_DIR}/functions/flamingo.sh"
+export -f flamingo
 
 source "${SCRIPT_DIR}/functions/show-help.sh"
-export -f show_help show_help_apps
+export -f show_help
+
+source "${SCRIPT_DIR}/functions/build-app.sh"
+export -f build_app
 
 source "${SCRIPT_DIR}/functions/helm-repo-ensure.sh"
 export -f helm_repo_ensure
@@ -47,6 +50,9 @@ function check_bases() {
   return 0
 }
 
+# Display flamingo
+flamingo
+
 ARG=$1
 APP=$2
 ACTION=$3
@@ -61,10 +67,14 @@ case "$ARG" in
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
   k|cluster)
-    bash "${SCRIPT_DIR}/setup-kind-cluster.sh"
+    bash "${SCRIPT_DIR}/setup-cluster.sh" && \
+    if ! check_bases; then
+      bash ${SCRIPT_DIR}/bases.sh
+    fi
     ;;
   d|delete)
-    kind delete cluster
+    # kind delete cluster
+    k3d cluster delete openframe-dev
     ;;
   a|app)
     # Deploy app one by one
@@ -79,7 +89,6 @@ case "$ARG" in
     # Bootstrap whole cluster with base apps
     bash "$0" pre && \
     bash "$0" cluster && \
-    bash ${SCRIPT_DIR}/bases.sh && \
     bash "$0" app all deploy
     ;;
   p|platform)
@@ -91,24 +100,27 @@ case "$ARG" in
     ;;
   c|cleanup)
     # Cleanup kind nodes from unused images
-    for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+    for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
       echo "Cleaning up $node ..."
       docker exec $node crictl rmi --prune
     done
     ;;
   s|start)
     # Stop kind containers
-    for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
-      echo "Starting $node ..."
-      docker start $node
-    done
+    # for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
+    #   echo "Starting $node ..."
+    #   docker start $node
+    # done
+    k3d cluster start openframe-dev && telepresence connect
     ;;
   stop)
     # Stop kind containers
-    for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
-      echo "Stopping $node ..."
-      docker stop $node
-    done
+    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
+    #   echo "Stopping $node ..."
+    #   docker stop $node
+    # done
+    telepresence quit && k3d cluster stop openframe-dev
     ;;
   -h|--help|-Help)
     show_help

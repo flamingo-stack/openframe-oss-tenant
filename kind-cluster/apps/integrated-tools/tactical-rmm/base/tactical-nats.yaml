@@ -16,23 +16,52 @@ spec:
       imagePullSecrets:
         - name: github-pat-secret
       initContainers:
-      - name: wait-for-backend
+      - name: wait-for-redis
         image: redis:6.0-alpine
         command: ['sh', '-c', '
-          echo "Waiting for PostgreSQL..." &&
-          until nc -z tactical-postgres.integrated-tools-datasources.svc.cluster.local 5432; do sleep 2; done &&
-          echo "PostgreSQL is ready!" &&
-          echo "Waiting for Backend..." &&
-          until nc -z tactical-backend.integrated-tools.svc.cluster.local 8000; do sleep 2; done &&
-          echo "Backend is ready!" &&
-          echo "Waiting for NATS files in Redis..." &&
-          until redis-cli -h tactical-redis.integrated-tools-datasources.svc.cluster.local -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
-          until redis-cli -h tactical-redis.integrated-tools-datasources.svc.cluster.local -p 6379 get "tactical_nats_api_conf" > /dev/null; do sleep 2; done &&
-          echo "NATS files are ready in Redis!"
+          echo "Waiting for Redis..." &&
+          until redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
+          until redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_api_conf" > /dev/null; do sleep 2; done &&
+          echo "Redis is ready!"
           ']
-        # volumeMounts:
-        # - name: nats-data
-        #   mountPath: /opt/tactical
+        envFrom:
+        - configMapRef:
+            name: tactical-common-config
+      - name: wait-for-backend
+        image: postgres:14-alpine
+        command:
+        - sh
+        - -c
+        - |
+          echo "Checking PostgreSQL connection..." &&
+          until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT; do
+            echo "Waiting for PostgreSQL to accept connections...";
+            sleep 2;
+          done &&
+          echo "PostgreSQL is accepting connections!" &&
+          echo "Verifying PostgreSQL query execution..." &&
+          until PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -c "SELECT 1;" > /dev/null 2>&1; do
+            echo "Waiting for PostgreSQL to execute queries...";
+            sleep 2;
+          done &&
+          echo "PostgreSQL is fully operational!" &&
+          echo "Waiting for Backend port..." &&
+          HOST_IP=$(echo $API_HOST | cut -d':' -f1) &&
+          HOST_PORT=$(echo $API_HOST | cut -d':' -f2) &&
+          until nc -z $HOST_IP $HOST_PORT; do
+            echo "Waiting for backend port to be ready...";
+            sleep 2;
+          done &&
+          echo "Backend port is ready!" &&
+          echo "Checking Backend health endpoint..." &&
+          until wget -q --spider ${TRMM_PROTO}://$API_HOST 2>/dev/null; do
+            echo "Waiting for backend health endpoint...";
+            sleep 2;
+          done &&
+          echo "Backend is fully ready!"
+        envFrom:
+        - configMapRef:
+            name: tactical-common-config
       containers:
       - name: nats
         image: ghcr.io/flamingo-cx/openframe-tactical-nats:latest

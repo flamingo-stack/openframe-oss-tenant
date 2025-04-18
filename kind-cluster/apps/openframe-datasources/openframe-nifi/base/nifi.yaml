@@ -162,10 +162,10 @@ spec:
             failureThreshold: 10
           resources:
             requests:
-              memory: "2Gi"
+              memory: "512Mi"
               cpu: "1"
             limits:
-              memory: "4Gi"
+              memory: "2Gi"
               cpu: "2"
       volumes:
         # - name: jmx-exporter

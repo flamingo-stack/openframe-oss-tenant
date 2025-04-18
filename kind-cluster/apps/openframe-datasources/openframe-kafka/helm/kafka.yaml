@@ -2,6 +2,13 @@ broker:
   resourcesPreset: medium
   replicaCount: 1
   podAntiAffinityPreset: hard
+  resources:
+    # requests:
+    #   cpu: 2
+    #   memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2048Mi
 
 listeners:
   client:
@@ -34,6 +41,14 @@ extraEnv:
 controller:
   resourcesPreset: medium
   replicaCount: 1
+
+  resources:
+    # requests:
+    #   cpu: 2
+    #   memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2048Mi
 
 kraft:
   enabled: true
@@ -77,3 +92,4 @@ metrics:
   prometheusRule:
     enabled: true
     namespace: openframe-datasources
+
