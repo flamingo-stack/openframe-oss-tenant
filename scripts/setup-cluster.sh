@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Updating helm repos indexes"
-# helm repo update > /dev/null 2>&1
+helm repo update > /dev/null 2>&1
 
 # Check operating system and configure IP accordingly
 if [[ "$OS" == "Linux" ]]; then
@@ -39,74 +39,6 @@ else
 fi
 
 # Bootsrap cluster
-# if ! [ "kind" == "$(kind get clusters --quiet)" ]; then
-#     # Ask about persistent volumes if not set
-#     if [ -z "${PERSISTENT_VOLUMES}" ]; then
-#         read -p "Do you want to enable persistent volumes? (y/N): " enable_volumes
-#         if [[ "${enable_volumes}" =~ ^[Yy]$ ]]; then
-#             PERSISTENT_VOLUMES=true
-#         else
-#             PERSISTENT_VOLUMES=false
-#         fi
-#     fi
-
-#     # Handle persistent volumes setup if enabled
-#     if [ "${PERSISTENT_VOLUMES}" = "true" ]; then
-#         # Ask for volume path if not provided
-#         if [ -z "${KIND_VOLUME_PATH}" ]; then
-#             read -p "Enter path for kind volumes [default: $HOME/kind-volumes]: " KIND_VOLUME_PATH
-#             KIND_VOLUME_PATH=${KIND_VOLUME_PATH:-$HOME/kind-volumes}
-#         fi
-
-#         # Check if directory exists and has content
-#         if [ -d "${KIND_VOLUME_PATH}" ] && [ "$(ls -A ${KIND_VOLUME_PATH} 2>/dev/null)" ]; then
-#             read -p "Directory ${KIND_VOLUME_PATH} exists and has content. Delete contents? (y/N): " should_delete
-#             if [[ "${should_delete}" =~ ^[Yy]$ ]]; then
-#                 # Safety check for path
-#                 if [ "${KIND_VOLUME_PATH}" != "/" ] && [ -n "${KIND_VOLUME_PATH}" ]; then
-#                     echo "Deleting contents of ${KIND_VOLUME_PATH}..."
-#                     # Use shopt to ensure glob patterns that don't match return null
-#                     shopt -s nullglob
-#                     sudo rm -rf "${KIND_VOLUME_PATH}"/{*,.*} 2>/dev/null || true
-#                     shopt -u nullglob
-#                 fi
-#             fi
-#         fi
-
-#         # Create volumes directory and set permissions
-#         sudo mkdir -p "${KIND_VOLUME_PATH}"
-#         # Get current user and group
-#         CURRENT_USER=$(id -u)
-#         CURRENT_GROUP=$(id -g)
-#         sudo chown -R ${CURRENT_USER}:${CURRENT_GROUP} "${KIND_VOLUME_PATH}"
-#         sudo chmod 755 "${KIND_VOLUME_PATH}"
-
-#         # Prepare volume mounts configuration
-#         export VOLUME_MOUNTS="extraMounts:
-#   - hostPath: ${KIND_VOLUME_PATH}
-#     containerPath: /var/local-path-provisioner"
-#     else
-#         export VOLUME_MOUNTS=""
-#     fi
-
-#     # Convert types for template
-#     export PORT=$((${API_SERVER_PORT:-6443}))
-#     if [[ "${DISABLE_DEFAULT_CNI:-false}" =~ ^(true|yes|y|1)$ ]]; then
-#         export CNI=true
-#     else
-#         export CNI=false
-#     fi
-
-#     # Process template and create cluster
-#     CLUSTER_CONFIG_FILE="$(mktemp)"
-#     echo "Creating cluster config file: $CLUSTER_CONFIG_FILE"
-#     envsubst < ./deploy/kind/cluster.template.yaml > $CLUSTER_CONFIG_FILE
-#     kind create cluster --config $CLUSTER_CONFIG_FILE --image kindest/node:$K8S_VERSION
-# else
-#     echo "Cluster already setup"
-# fi
-
-
 # Create a new k3d cluster
 if ! [ "openframe-dev" == "$(k3d cluster list --no-headers | tr -s "  " " " | cut -d " " -f 1)" ]; then
     k3d cluster create openframe-dev \

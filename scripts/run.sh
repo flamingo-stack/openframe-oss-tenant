@@ -90,7 +90,6 @@ case "$ARG" in
     fi
     ;;
   d|delete)
-    # kind delete cluster
     k3d cluster delete openframe-dev
     ;;
   a|app)
@@ -118,27 +117,23 @@ case "$ARG" in
     bash "$0" app platform deploy
     ;;
   c|cleanup)
-    # Cleanup kind nodes from unused images
-    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
       echo "Cleaning up $node ..."
       docker exec "$node" crictl rmi --prune
     done
     ;;
   s|start)
-    # Stop kind containers
-    # for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
-    #   echo "Starting $node ..."
-    #   docker start $node
-    # done
+    if [ $OS == "Linux" ]; then
+      current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
+      if [[ $current_value -lt 1500 ]]; then
+        echo "fs.inotify.max_user_instances is less than 1500"
+        sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
+        sudo sysctl -p > /dev/null 2>&1
+      fi
+    fi
     k3d cluster start openframe-dev && telepresence connect
     ;;
   stop)
-    # Stop kind containers
-    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
-    #   echo "Stopping $node ..."
-    #   docker stop $node
-    # done
     telepresence quit && k3d cluster stop openframe-dev
     ;;
   -h|--help|-Help)
