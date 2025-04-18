@@ -6,9 +6,9 @@ export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
 # Convert Windows paths to Git Bash paths if running on Windows
 if [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
-    # Convert Windows path to Git Bash path
-    export SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
-    export ROOT_REPO_DIR=$(echo "$ROOT_REPO_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+  # Convert Windows path to Git Bash path
+  export SCRIPT_DIR=$(echo "$SCRIPT_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
+  export ROOT_REPO_DIR=$(echo "$ROOT_REPO_DIR" | sed 's/\\/\//g' | sed 's/^\([A-Za-z]\):/\/\1/')
 fi
 
 # Source functions in correct order
@@ -19,6 +19,9 @@ export -f flamingo
 
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help
+
+source "${SCRIPT_DIR}/functions/add_loopback_ip.sh"
+export -f add_loopback_ip
 
 source "${SCRIPT_DIR}/functions/build-app.sh"
 export -f build_app
@@ -50,19 +53,6 @@ for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   fi
 done
 
-# Function to check if namespaces and secrets already exist
-function check_bases() {
-  for ns in "${NAMESPACES[@]}"; do
-    if ! kubectl get namespace "$ns" &> /dev/null; then
-      return 1
-    fi
-    if ! kubectl -n "$ns" get secret github-pat-secret &> /dev/null; then
-      return 1
-    fi
-  done
-  return 0
-}
-
 # Display flamingo
 flamingo
 
@@ -83,14 +73,14 @@ case "$ARG" in
     check_memory && setup_swap
     ;;
   k|cluster)
-    check_memory
+    check_memory && \
+    bash "$0" pre && \
     bash "${SCRIPT_DIR}/setup-cluster.sh" && \
     if ! check_bases; then
       bash ${SCRIPT_DIR}/bases.sh
     fi
     ;;
   d|delete)
-    # kind delete cluster
     k3d cluster delete openframe-dev
     ;;
   a|app)
@@ -104,7 +94,6 @@ case "$ARG" in
   b|bootstrap)
     # Bootstrap whole cluster with all apps
     # Bootstrap whole cluster with base apps
-    bash "$0" pre && \
     bash "$0" swap && \
     bash "$0" cluster && \
     bash "$0" app all deploy
@@ -118,27 +107,17 @@ case "$ARG" in
     bash "$0" app platform deploy
     ;;
   c|cleanup)
-    # Cleanup kind nodes from unused images
-    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
       echo "Cleaning up $node ..."
       docker exec "$node" crictl rmi --prune
     done
     ;;
   s|start)
-    # Stop kind containers
-    # for node in kind-control-plane kind-worker kind-worker2 kind-worker3; do
-    #   echo "Starting $node ..."
-    #   docker start $node
-    # done
-    k3d cluster start openframe-dev && telepresence connect
+    add_loopback_ip && set_max_open_files && \
+    k3d cluster start openframe-dev && \
+    tools_telepresence_wait > /dev/null 2>&1 && telepresence connect
     ;;
   stop)
-    # Stop kind containers
-    # for node in kind-worker kind-worker2 kind-worker3 kind-control-plane; do
-    #   echo "Stopping $node ..."
-    #   docker stop $node
-    # done
     telepresence quit && k3d cluster stop openframe-dev
     ;;
   -h|--help|-Help)

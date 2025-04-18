@@ -35,7 +35,7 @@ spec:
             - name: ME_CONFIG_MONGODB_ADMINPASSWORD
               value: "password123456789"
             - name: ME_CONFIG_MONGODB_URL
-              value: "mongodb://openframe:password123456789@openframe-mongodb.openframe-datasources:27017/"
+              value: "mongodb://openframe:password123456789@openframe-mongodb.openframe-datasources.svc.cluster.local:27017/"
           ports:
             - containerPort: 8081
           imagePullPolicy: Always

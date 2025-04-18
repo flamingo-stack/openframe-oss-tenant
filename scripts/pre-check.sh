@@ -1,14 +1,6 @@
 #!/bin/bash
 
-# Check if max_user_instances is less than 1500
-if [ $OS == "Linux" ]; then
-  current_value=$(sysctl -n fs.inotify.max_user_instances 2>/dev/null || echo "0")
-  if [[ $current_value -lt 1500 ]]; then
-    echo "fs.inotify.max_user_instances is less than 1500"
-    sudo sysctl fs.inotify.max_user_instances=1500 > /dev/null 2>&1
-    sudo sysctl -p > /dev/null 2>&1
-  fi
-fi
+set_max_open_files
 
 # Function to check if a command exists
 check_command() {
@@ -162,9 +154,17 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
     fi
 fi
 
+# Check docker daemon is running
+if ! docker ps > /dev/null 2>&1; then
+    echo "Docker daemon is not running"
+    exit 1
+fi
+
 # Check if GITHUB_TOKEN_CLASSIC is set
 if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
     echo "Error: GITHUB_TOKEN_CLASSIC environment variable is not set"
     echo "Please export GITHUB_TOKEN_CLASSIC with: 'export GITHUB_TOKEN_CLASSIC=<your-token>'"
     exit 1
 fi
+
+echo "All pre-checks passed"

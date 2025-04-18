@@ -12,7 +12,7 @@ spec:
       scrapeTimeout: 10s
   namespaceSelector:
     matchNames:
-      - monitoring
+      - platform
   selector:
     matchLabels:
       app: openframe-promtail
