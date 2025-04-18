@@ -154,6 +154,12 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
     fi
 fi
 
+# Check docker daemon is running
+if ! docker ps > /dev/null 2>&1; then
+    echo "Docker daemon is not running"
+    exit 1
+fi
+
 # Check if GITHUB_TOKEN_CLASSIC is set
 if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
     echo "Error: GITHUB_TOKEN_CLASSIC environment variable is not set"
