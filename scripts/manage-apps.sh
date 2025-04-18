@@ -14,6 +14,18 @@ if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
 fi
 
 case "$APP" in
+  platform_cert_manager)
+    if [ "$ACTION" == "deploy" ]; then
+      platform_cert_manager_deploy && platform_cert_manager_wait
+    elif [ "$ACTION" == "delete" ]; then
+      platform_cert_manager_delete
+    elif [ "$ACTION" == "dev" ]; then
+      echo "$APP is not supported in dev mode"
+      exit 0
+    elif [ "$ACTION" == "debug" ]; then
+      echo "$APP is not supported for debug mode"
+    fi
+  ;;
   platform_ingress_nginx)
     if [ "$ACTION" == "deploy" ]; then
       platform_ingress_nginx_deploy && platform_ingress_nginx_wait
@@ -403,6 +415,7 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
+    $0 platform_cert_manager $ACTION && \
     $0 platform_ingress_nginx $ACTION && \
     $0 observability $ACTION
     ;;
@@ -426,6 +439,7 @@ case "$APP" in
     $0 openframe_datasources_nifi $ACTION
     $0 openframe_datasources_zookeeper $ACTION
     $0 openframe_datasources_pinot $ACTION
+    echo "OpenFrame Datasources deployed"
     ;;
   om|openframe_microservices)
     ACTION=${2}
@@ -437,6 +451,7 @@ case "$APP" in
     $0 openframe_microservices_openframe_stream $ACTION &
     $0 openframe_microservices_openframe_gateway $ACTION &
     $0 openframe_microservices_openframe_ui $ACTION &
+    echo "OpenFrame Microservices deployed"
     ;;
   itd|integrated_tools_datasources)
     ACTION=${2}
@@ -446,6 +461,7 @@ case "$APP" in
     $0 integrated_tools_datasources_authentik $ACTION
     $0 integrated_tools_datasources_meshcentral $ACTION
     $0 integrated_tools_datasources_tactical_rmm $ACTION
+    echo "Integrated Tools Datasources deployed"
     ;;
   it|integrated_tools)
     ACTION=${2}
@@ -455,6 +471,7 @@ case "$APP" in
     $0 integrated_tools_authentik $ACTION &
     $0 integrated_tools_meshcentral $ACTION &
     $0 integrated_tools_tactical_rmm $ACTION &
+    echo "Integrated Tools deployed"
     ;;
   a|all)
     # ------------- ALL -------------

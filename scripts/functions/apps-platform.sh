@@ -140,8 +140,45 @@ function platform_efk_delete() {
   echo "[TODO] Deleting EFK"
 }
 
+# CERT-MANAGER
+function platform_cert_manager_deploy() {
+  echo "Deploying cert-manager"
+  helm_repo_ensure jetstack https://charts.jetstack.io
+
+  helm upgrade -i cert-manager jetstack/cert-manager \
+    --namespace platform --create-namespace \
+    --version v1.17.1 \
+    -f ${ROOT_REPO_DIR}/kind-cluster/apps/platform/cert-manager/helm/values.yaml \
+    --wait --timeout 1h
+
+  # Create cert-manager namespace if it doesn't exist
+  kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+
+  # Create CA secret
+  echo "Creating CA secret"
+  kubectl create secret generic ca-secret \
+    --namespace platform \
+    --from-file=tls.crt=${ROOT_REPO_DIR}/scripts/files/ca/ca.crt \
+    --from-file=tls.key=${ROOT_REPO_DIR}/scripts/files/ca/ca.key \
+    --dry-run=client -o yaml | kubectl apply -f -
+
+  # Create Issuer
+  echo "Creating Issuers"
+  kubectl apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/platform/cert-manager/manifests
+}
+
+function platform_cert_manager_wait() {
+  echo "Waiting for cert-manager to be ready"
+  wait_for_app "platform" "app.kubernetes.io/instance=cert-manager"
+}
+
+function platform_cert_manager_delete() {
+  echo "Deleting cert-manager"
+}
+
 # Wait for all cluster apps to be ready
 function platform_wait_all() {
+  platform_cert_manager_wait && \
   platform_ingress_nginx_wait && \
   platform_metrics_server_wait && \
   platform_monitoring_wait && \

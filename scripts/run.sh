@@ -69,6 +69,9 @@ case "$ARG" in
   pre)
     bash "${SCRIPT_DIR}/pre-check.sh"
     ;;
+  generate-pki)
+    bash "${SCRIPT_DIR}/pki.sh"
+    ;;
   s|swap)
     check_memory && setup_swap
     ;;
