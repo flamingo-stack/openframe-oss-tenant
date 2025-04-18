@@ -1,0 +1,4 @@
+resources:
+  - base/nifi.yaml
+  # - base/jmx_config.yaml
+  - base/servicemonitor.yaml

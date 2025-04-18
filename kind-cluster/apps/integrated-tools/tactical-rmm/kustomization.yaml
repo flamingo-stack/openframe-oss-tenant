@@ -1,0 +1,9 @@
+resources:
+  - base/common-config.yaml
+  - base/tactical-backend.yaml
+  - base/tactical-celery.yaml
+  - base/tactical-celerybeat.yaml
+  - base/tactical-frontend.yaml
+  - base/tactical-nats.yaml
+  - base/tactical-nginx.yaml
+  - base/tactical-websockets.yaml

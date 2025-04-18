@@ -1,0 +1,16 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: openframe-stream
+build:
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe-stream
+      docker: {}
+  local:
+    useDockerCLI: false
+    useBuildkit: false
+    push: false
+manifests:
+  kustomize:
+    paths:
+    - ../../../kind-cluster/apps/openframe-microservices/openframe-stream

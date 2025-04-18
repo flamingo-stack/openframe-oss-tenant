@@ -1,4 +1,0 @@
-lowercaseOutputName: true
-rules:
-- pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
-  name: kafka_$1_$2_$3

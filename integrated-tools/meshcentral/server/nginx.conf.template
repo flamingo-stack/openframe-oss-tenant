@@ -1,0 +1,113 @@
+events {
+    worker_connections 1024;
+}
+
+# Run nginx as node user
+user node node;
+
+env MESH_USER;
+env MESH_PASS;
+env MESH_PROTOCOL;
+env MESH_NGINX_HOST;
+env MESH_EXTERNAL_PORT;
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for" '
+                    'fastcgi_params: "$fastcgi_script_name $fastcgi_path_info" '
+                    'fastcgi_error: "$upstream_http_x_error"';
+    
+    log_format debug_fcgi '$remote_addr - $remote_user [$time_local] "$request" '
+                         '$status $body_bytes_sent "$http_referer" '
+                         'fastcgi_script: "$fastcgi_script_name" '
+                         'fastcgi_path_info: "$fastcgi_path_info" '
+                         'upstream_status: "$upstream_status" '
+                         'upstream_response_time: "$upstream_response_time" '
+                         'upstream_error: "$upstream_http_x_error"';
+    
+    log_format proxy_debug '[$time_local] $remote_addr - $remote_user '
+                          '"$request" $status $body_bytes_sent '
+                          '"$http_referer" "$http_user_agent" '
+                          'upstream_addr: "$upstream_addr" '
+                          'upstream_uri: "$uri" '
+                          'proxy_host: "$proxy_host" '
+                          'proxy_uri: "$proxy_mesh_url"';
+    
+    access_log /dev/stdout main;
+    access_log /dev/stdout debug_fcgi;
+    access_log /dev/stdout proxy_debug;
+    error_log  /dev/stderr debug;
+    
+    sendfile on;
+    
+    # FastCGI settings
+    fastcgi_buffers 16 16k;
+    fastcgi_buffer_size 32k;
+    fastcgi_connect_timeout 300;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 300;
+    fastcgi_busy_buffers_size 64k;
+    fastcgi_temp_file_write_size 64k;
+    fastcgi_max_temp_file_size 0;
+    fastcgi_keep_conn on;
+    fastcgi_intercept_errors on;
+    
+    resolver kube-dns.kube-system.svc.cluster.local valid=30s;
+    resolver_timeout 5s;
+
+    server {
+        listen 80;
+        
+        # Static files
+        location /openframe_public {
+            root ${MESH_DIR}/nginx-api;
+            autoindex on;
+        }
+
+        location /api/tunnel {
+            # Define the proxy URL as a variable with escaped parameters
+            set $proxy_mesh_url "https://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}/meshrelay.ashx?$args&user=${MESH_USER_ENCODED}&pass=${MESH_PASS_ENCODED}";
+            
+            # Log the proxy_pass URL before substitution
+            add_header X-Debug-ProxyPass-Original $proxy_mesh_url;
+            
+            proxy_pass $proxy_mesh_url;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_read_timeout 86400;
+            
+            # Log details about the proxy connection
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Debug-URI $uri;
+            proxy_set_header X-Debug-Args $args;
+        }
+        
+        # Unified API endpoint
+        location /api/ {
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/meshcentral-api.sh;
+            fastcgi_param SCRIPT_NAME /api;
+            fastcgi_param PATH_INFO $uri;
+            fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
+            
+            # Pass environment variables
+            fastcgi_param MESH_DIR ${MESH_DIR};
+            fastcgi_param MESH_USER ${MESH_USER};
+            fastcgi_param MESH_PASS ${MESH_PASS};
+            fastcgi_param MESH_PROTOCOL ${MESH_PROTOCOL};
+            fastcgi_param MESH_NGINX_HOST ${MESH_NGINX_HOST};
+            fastcgi_param MESH_EXTERNAL_PORT ${MESH_EXTERNAL_PORT};
+            
+            fastcgi_pass unix:/var/run/fcgiwrap.socket;
+            fastcgi_buffering off;
+            fastcgi_request_buffering off;
+        }
+    }
+}

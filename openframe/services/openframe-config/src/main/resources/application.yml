@@ -1,0 +1,73 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+  mvc:
+    problemdetails:
+      enabled: true
+    contentnegotiation:
+      favor-parameter: true
+      media-types:
+        actuator: application/vnd.spring-boot.actuator.v3+json
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/Flamingo-CX/openframe
+          username: ${GITHUB_USERNAME:michaelassraf}
+          password: ${GITHUB_TOKEN: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}
+          clone-on-start: true
+          searchPaths:
+            - config
+          default-label: ${CONFIG_GIT_BRANCH:main}
+
+# Management server configuration
+management:
+  server:
+    port: 8889
+  base-path: /management
+  endpoints:
+    web:
+      base-path: /management/v1
+      exposure:
+        include: health,info,prometheus,metrics
+    enabled-by-default: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    enable:
+      all: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tags:
+    application: ${spring.application.name}
+
+logging:
+  config: classpath:logging/shared-logback-spring.xml
+  level:
+    root: INFO
+    org.springframework.boot.actuate: DEBUG
+    org.springframework.boot.actuate.metrics: DEBUG
+    org.springframework.boot.actuate.endpoint: DEBUG
+    io.micrometer: DEBUG
+    org.springframework.boot.actuate.autoconfigure.metrics: DEBUG
+    org.springframework.boot.actuate.metrics.export.prometheus: DEBUG
+    org.springframework.cloud.config: TRACE
+    org.springframework.web: DEBUG
+    ch.qos.logback: DEBUG
+    com.openframe.config.controller: DEBUG
+  file:
+    path: ${LOG_PATH:logs}

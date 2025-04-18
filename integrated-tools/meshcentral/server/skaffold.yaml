@@ -1,0 +1,40 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: openframe-meshcentral
+build:
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe-meshcentral
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          MESH_DIR: "/opt/mesh"
+          MESH_TEMP_DIR: "/tmp/mesh"
+          MONGO_INITDB_ROOT_USERNAME: "mongouser"
+          MONGO_INITDB_ROOT_PASSWORD: "mongopass"
+          MONGO_INITDB_DATABASE: "meshcentral"
+          MONGODB_HOST: "openframe-meshcentral-mongodb"
+          MONGODB_PORT: "27017"
+          MESH_USER: "mesh@openframe.io"
+          MESH_PASS: "meshpass@1234"
+          MESH_DEVICE_GROUP: "OpenFrame"
+          MESH_PORT: "8383"
+          MESH_HOST: "openframe-meshcentral-server"
+          MESH_EXTERNAL_HOST: "localhost"
+          MESH_EXTERNAL_PORT: "8383"
+          MESH_NGINX_HOST: "openframe-meshcentral-nginx"
+          MESH_NGINX_NAT_HOST: "michaels-macbook-pro.local"
+          MESH_NGINX_PORT: "8383"
+          MESH_PROTOCOL: "wss"
+          MESH_PERSISTENT_CONFIG: "0"
+          MESH_DISABLE_SSL: "1"
+          MESH_COMPRESSION_ENABLED: "true"
+          MESH_WEBRTC_ENABLED: "false"
+  local:
+    useDockerCLI: false
+    useBuildkit: false
+    push: false
+manifests:
+  kustomize:
+    paths:
+    - ../../../kind-cluster/apps/integrated-tools/meshcentral

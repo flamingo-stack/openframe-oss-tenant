@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tactical-common-config
+data:
+  POSTGRES_DB: "tacticalrmm"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "postgrespass"
+  POSTGRES_HOST: "tactical-postgres.integrated-tools-datasources.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  REDIS_HOST: "tactical-redis.integrated-tools-datasources.svc.cluster.local"
+  SMTP_HOST: "smtp.example.com"
+  SMTP_PORT: "587"
+  SMTP_FROM: "mesh@example.com"
+  SMTP_USER: "mesh@example.com"
+  SMTP_PASS: "mesh-smtp-pass"
+  SMTP_TLS: "False"
+  TRMM_USER: "tactical"
+  TRMM_PASS: "tactical"
+  TACTICAL_BACKEND_PORT: "8000"
+  TRMM_PROTO: "http"
+  TRMM_DISABLE_WEB_TERMINAL: "False"
+  TRMM_DISABLE_SERVER_SCRIPTS: "False"
+  TRMM_DISABLE_SSO: "False"
+  TRMM_DISABLE_2FA: "True"
+  NODE_ENV: "development"
+  WS_PROTO: "ws"
+  WS_MASK_OVERRIDE: "1"
+  TACTICAL_DIR: "/opt/tactical"
+  TACTICAL_TMP_DIR: "/tmp/tactical"
+  API_HOST: "tactical-backend.integrated-tools.svc.cluster.local:8000"
+  # below  is shown on browser that backend is not reachable
+  # API_LOCALHOST_HOST: tactical-nginx.integrated-tools.svc.cluster.local:8000 # "localhost:8000"
+  # API_LOCALHOST_HOST: tactical-ui.192.168.100.100.nip.io
+  API_LOCALHOST_HOST: tactical-api.192.168.100.100.nip.io
+  # API_LOCALHOST_HOST: tactical-ui.192.168.100.100.nip.io
+  # API_LOCALHOST_HOST: tactical-backend.integrated-tools.svc.cluster.local:8000 # "localhost:8000"
+  APP_HOST: "tactical-frontend.integrated-tools.svc.cluster.local:8080"
+  APP_LOCALHOST_HOST: tactical-nginx.integrated-tools.svc.cluster.local:8080
+  # https://github.com/Flamingo-CX/tacticalrmm/blob/develop/api/tacticalrmm/tacticalrmm/utils.py#L254-L265
+  NATS_CONFIG: "/opt/tactical/nats-rmm.conf"
+  NATS_API_CONFIG: "/opt/tactical/nats-api.conf"
+  NATS_CONFIG_CHECK_INTERVAL: "5"
+  # NATS_STD_BIND_HOST: "tactical-nats.integrated-tools.svc.cluster.local"
+  NATS_STD_BIND_HOST: "0.0.0.0"  # Important for NATS_CONFIG to ba able to bind port 4222
+  NATS_WEBSOCKET_PORT: "4222"  # this is wrong, it is std bind port
+  # NATS_WS_BIND_HOST: "tactical-nats.integrated-tools.svc.cluster.local"
+  NATS_WS_BIND_HOST: "0.0.0.0"  # Important for NATS_CONFIG to ba able to bind port 9235
+  NATS_STANDARD_PORT: "9235"  # this is wrong, it is websocket port
+  NATS_CONNECT_HOST: "tactical-nats.integrated-tools.svc.cluster.local"
+  # NATS_CONNECT_HOST: "0.0.0.0"
+  NATS_WEBSOCKET_HOST: "tactical-websockets.integrated-tools.svc.cluster.local"  # this is not used anywhere
+  WEBSOCKETS_BIND_HOST: "tactical-websockets"
+  WEBSOCKET_PORT: "8383"
+  PUBLIC_DIR: "/usr/share/nginx/html"
+  TACTICAL_READY_FILE: "/opt/tactical/tmp/tactical/ready"
+  NGINX_HOST_IP: "tactical-nginx.integrated-tools.svc.cluster.local"
+  NGINX_HOST_PORT: "8080"

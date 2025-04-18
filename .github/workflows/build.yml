@@ -9,21 +9,19 @@ permissions:
   id-token: write
 
 on:
-  # push:
-  #   paths:
-  #     - 'libs/**'
-  #     - 'services/**'
-  #     - 'infrastructure/**'
-  #     - 'pom.xml'
-  #     - '.github/workflows/build.yml'
+  push:
+    paths:
+      - 'openframe/**'
+      - 'integrated-tools/**'
+      - 'pom.xml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
   pull_request:
     types: [closed]
     branches: [main]
     paths:
-      - 'libs/**'
-      - 'services/**'
-      - 'infrastructure/**'
+      - 'openframe/**'
+      - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
 
@@ -78,55 +76,50 @@ jobs:
         with:
           filters: |
             core:
-              - './libs/openframe-core/**'
+              - './openframe/libs/openframe-core/**'
             data:
-              - './libs/openframe-data/**'
+              - './openframe/libs/openframe-data/**'
             api:
-              - './services/openframe-api/**'
+              - './openframe/services/openframe-api/**'
             config:
-              - './services/openframe-config/**'
+              - './openframe/services/openframe-config/**'
             gateway:
-              - './services/openframe-gateway/**'
+              - './openframe/services/openframe-gateway/**'
             management:
-              - './services/openframe-management/**'
+              - './openframe/services/openframe-management/**'
             stream:
-              - './services/openframe-stream/**'
-            mongodb:
-              - './infrastructure/mongodb/**'
-            cassandra:
-              - './infrastructure/cassandra/**'
-            nifi:
-              - './infrastructure/nifi/**'
-            postgresql:
-              - './infrastructure/postgresql/**'
-            tactical-frontend:
-              - './infrastructure/tactical-rmm/tactical-frontend/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            tactical-nginx:
-              - './infrastructure/tactical-rmm/tactical-nginx/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            tactical-backend:
-              - './infrastructure/tactical-rmm/tactical-base/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            tactical-nats:
-              - './infrastructure/tactical-rmm/tactical-base/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            tactical-websockets:
-              - './infrastructure/tactical-rmm/tactical-base/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            tactical-celery:
-              - './infrastructure/tactical-rmm/tactical-base/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            tactical-celerybeat:
-              - './infrastructure/tactical-rmm/tactical-base/**'
-              - './infrastructure/tactical-rmm/shared/**'
-            fleetmdm:
-              - './infrastructure/fleetmdm/**'
-            meshcentral:
-              - './infrastructure/meshcentral/nginx/**'
-              - './infrastructure/meshcentral/config/**'
+              - './openframe/services/openframe-stream/**'
             ui:
-              - './services/openframe-ui/**'
+              - './openframe/services/openframe-ui/**'
+            nifi:
+              - './openframe/datasources/nifi/**'
+            postgresql:
+              - './integrated-tools/authentik/postgresql/**'
+            tactical-frontend:
+              - './integrated-tools/tactical-rmm/tactical-frontend/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-nginx:
+              - './integrated-tools/tactical-rmm/tactical-nginx/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-backend:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-nats:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-websockets:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-celery:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-celerybeat:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            fleetmdm:
+              - './integrated-tools/fleetmdm/**'
+            meshcentral:
+              - './integrated-tools/meshcentral/server/**'
 
   matrix:
     uses: ./.github/workflows/matrix.yml
@@ -201,14 +194,14 @@ jobs:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: .
 
       - name: Prepare Java artifacts for Docker build
-        if: matrix.type == 'java' && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
         run: |
           mkdir -p ${{ matrix.path }}/target
           mv *.jar ${{ matrix.path }}/target/
