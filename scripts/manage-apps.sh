@@ -2,11 +2,8 @@
 
 APP=$1
 ACTION=$2
-
-if [ "$ACTION" == "debug" ]; then
-  LOCAL_PORT="$4"
-  REMOTE_PORT_NAME="$5"
-fi
+LOCAL_PORT=$3
+REMOTE_PORT_NAME=$4
 
 if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
@@ -181,7 +178,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      debug_app "openframe-config-server" "openframe-config-server" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      debug_app "openframe-config-server" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_api)
@@ -194,7 +191,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      debug_app "openframe-api" "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      debug_app "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_management)
@@ -220,7 +217,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+      debug_app "openframe-stream" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_gateway)
@@ -233,7 +230,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      debug_app "openframe-gateway" "openframe-gateway" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      debug_app "openframe-gateway" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_ui)
@@ -246,7 +243,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+      debug_app "openframe-ui" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_register_apps)
@@ -326,7 +323,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
       skaffold dev --no-prune=false --cache-artifacts=false -n integrated-tools
     elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+      debug_app "meshcentral" "integrated-tools" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   integrated_tools_datasources_tactical_rmm)
