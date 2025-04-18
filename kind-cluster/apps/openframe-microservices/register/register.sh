@@ -69,7 +69,7 @@ register_tool() {
     echo "$json_payload" | jq '.'
 
     # Send the request
-    curl -X POST "http://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
+    curl -X POST "https://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \
       -d "$json_payload" \
       --retry 5 \

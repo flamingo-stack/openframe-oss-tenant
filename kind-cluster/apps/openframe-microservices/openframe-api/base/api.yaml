@@ -82,8 +82,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: openframe-api
+  annotations:
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - openframe-api.192.168.100.100.nip.io
+    secretName: openframe-api-tls-secret
   rules:
     - host: openframe-api.192.168.100.100.nip.io
       http:
