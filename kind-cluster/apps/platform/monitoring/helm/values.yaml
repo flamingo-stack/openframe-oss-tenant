@@ -42,6 +42,12 @@ grafana:
   ingress:
     enabled: true
     hosts: ["grafana.192.168.100.100.nip.io"]
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+    - secretName: grafana-tls-secret
+      hosts: ["grafana.192.168.100.100.nip.io"]
   persistence:
     enabled: true
     type: sts
@@ -64,11 +70,23 @@ alertmanager:
   ingress:
     enabled: true
     hosts: ["alertmanager.192.168.100.100.nip.io"]
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+    - secretName: alertmanager-tls-secret
+      hosts: ["alertmanager.192.168.100.100.nip.io"]
 
 prometheus:
   ingress:
     enabled: true
     hosts: ["prometheus.192.168.100.100.nip.io"]
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+    - secretName: prometheus-tls-secret
+      hosts: ["prometheus.192.168.100.100.nip.io"]
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
