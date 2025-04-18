@@ -181,7 +181,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+      debug_app "openframe-config-server" "openframe-config-server" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_api)
@@ -233,7 +233,7 @@ case "$APP" in
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
     elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+      debug_app "openframe-gateway" "openframe-gateway" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_ui)
@@ -426,7 +426,6 @@ case "$APP" in
     $0 openframe_datasources_nifi $ACTION
     $0 openframe_datasources_zookeeper $ACTION
     $0 openframe_datasources_pinot $ACTION
-    echo
     ;;
   om|openframe_microservices)
     ACTION=${2}
@@ -438,10 +437,6 @@ case "$APP" in
     $0 openframe_microservices_openframe_stream $ACTION &
     $0 openframe_microservices_openframe_gateway $ACTION &
     $0 openframe_microservices_openframe_ui $ACTION &
-    wait_parallel || {
-      echo "OpenFrame Microservices stack deployment failed"
-      exit 1
-    }
     ;;
   itd|integrated_tools_datasources)
     ACTION=${2}
@@ -451,7 +446,6 @@ case "$APP" in
     $0 integrated_tools_datasources_authentik $ACTION
     $0 integrated_tools_datasources_meshcentral $ACTION
     $0 integrated_tools_datasources_tactical_rmm $ACTION
-    echo
     ;;
   it|integrated_tools)
     ACTION=${2}
@@ -461,10 +455,6 @@ case "$APP" in
     $0 integrated_tools_authentik $ACTION &
     $0 integrated_tools_meshcentral $ACTION &
     $0 integrated_tools_tactical_rmm $ACTION &
-    wait_parallel || {
-      echo "Integrated Tools stack deployment failed"
-      exit 1
-    }
     ;;
   a|all)
     # ------------- ALL -------------
