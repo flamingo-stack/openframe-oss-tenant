@@ -11,7 +11,7 @@ cleanup() {
   exit 0
 }
 
-function debug_app() {
+function intercept_app() {
   # Use the passed parameters instead of hardcoded values
   SERVICE_NAME="$1"
   NAMESPACE="$2"

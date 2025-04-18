@@ -35,8 +35,8 @@ export -f wait_for_app
 source "${SCRIPT_DIR}/functions/wait-parallel.sh"
 export -f wait_parallel
 
-source "${SCRIPT_DIR}/functions/debug.sh"
-export -f debug_app
+source "${SCRIPT_DIR}/functions/intercept.sh"
+export -f intercept_app
 
 # Source swap-config.sh directly to ensure it's loaded
 source "${SCRIPT_DIR}/functions/swap-config.sh"
@@ -60,7 +60,7 @@ ARG=$1
 APP=$2
 ACTION=$3
 
-if [ "$ACTION" == "debug" ]; then
+if [ "$ACTION" == "intercept" ]; then
   LOCAL_PORT="$4"
   REMOTE_PORT_NAME="$5"
 fi
