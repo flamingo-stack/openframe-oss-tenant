@@ -9,7 +9,7 @@ RUN mkdir -p ${MESH_TEMP_DIR}
 
 WORKDIR ${MESH_TEMP_DIR}
 
-RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext postgresql-client nginx fcgiwrap spawn-fcgi nano
+RUN apk add --no-cache bash git redis mongodb-tools curl gnupg gettext postgresql-client nginx fcgiwrap spawn-fcgi nano jq
 
 RUN npm update -g npm
 
@@ -20,7 +20,7 @@ RUN chmod -R +x /scripts/
 # Copy configuration files
 COPY nginx.conf.template /
 COPY config.json ${MESH_TEMP_DIR}
-
+ 
 # Copy API file and make it executable
 COPY nginx-api/meshcentral-api.sh /nginx-api/
 RUN chmod +x /nginx-api/meshcentral-api.sh

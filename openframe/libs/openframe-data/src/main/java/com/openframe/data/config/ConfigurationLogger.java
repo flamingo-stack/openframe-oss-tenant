@@ -11,19 +11,19 @@ import org.springframework.stereotype.Component;
 public class ConfigurationLogger {
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationLogger.class);
 
-    @Value("${spring.data.mongodb.uri}")
+    @Value("${spring.data.mongodb.uri:#{null}}")
     private String mongoUri;
     
-    @Value("${spring.data.cassandra.contact-points}")
+    @Value("${spring.data.cassandra.contact-points:#{null}}")
     private String cassandraContactPoints;
     
-    @Value("${spring.data.redis.host}")
+    @Value("${spring.data.redis.host:#{null}}")
     private String redisHost;
     
-    @Value("${pinot.controller.url}")
+    @Value("${pinot.controller.url:#{null}}")
     private String pinotControllerUrl;
     
-    @Value("${pinot.broker.url}")
+    @Value("${pinot.broker.url:#{null}}")
     private String pinotBrokerUrl;
 
     @EventListener

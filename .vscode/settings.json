@@ -6,5 +6,10 @@
         "https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json": "**/*.yml",
         "file:///toc.schema.json": "/toc\\.yml/i",
         "https://json.schemastore.org/yamllint.json": ""
-    }
+    },
+    "java.debug.settings.hotCodeReplace": "auto",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.autobuild.enabled": true,
+    "java.debug.settings.showLogicalStructure": true,
+    "java.debug.settings.showStaticVariables": true
 }
