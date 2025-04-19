@@ -449,9 +449,9 @@ case "$APP" in
     IFWAIT=${3:-}
 
     $0 integrated_tools_fleet $ACTION &
-    $0 integrated_tools_authentik $ACTION &
-    $0 integrated_tools_meshcentral $ACTION &
-    $0 integrated_tools_tactical_rmm $ACTION &
+    $0 sleep 1 && integrated_tools_authentik $ACTION &
+    $0 sleep 1 && integrated_tools_meshcentral $ACTION &
+    $0 sleep 1 && integrated_tools_tactical_rmm $ACTION &
     ;;
   a|all)
     # ------------- ALL -------------

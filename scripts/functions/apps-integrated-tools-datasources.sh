@@ -21,7 +21,7 @@ function integrated_tools_datasources_fleet_delete() {
 function integrated_tools_datasources_authentik_deploy() {
   # helm_repo_ensure authentik https://goauthentik.io/charts
 
-  echo "Deploying Authentik"
+  echo "Deploying Authentik Datasources"
     kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/authentik/manifests
 
   # helm upgrade -i authentik-redis authentik/redis \
@@ -41,47 +41,47 @@ function integrated_tools_datasources_authentik_deploy() {
 }
 
 function integrated_tools_datasources_authentik_wait() {
-  echo "Waiting for Authentik Datasources to be ready"
+  echo "Waiting for Authentik Datasources Datasources to be ready"
   wait_for_app "integrated-tools-datasources" "app=authentik-postgresql"
   wait_for_app "integrated-tools-datasources" "app=authentik-redis"
 }
 
 function integrated_tools_datasources_authentik_delete() {
-  echo "Deleting Authentik"
+  echo "Deleting Authentik Datasources"
   kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/authentik/manifests
 }
 
 # MESHCENTRAL
 function integrated_tools_datasources_meshcentral_deploy() {
-  echo "Deploying MeshCentral"
+  echo "Deploying MeshCentral Datasources"
   kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/meshcentral
 }
 
 function integrated_tools_datasources_meshcentral_wait() {
-  echo "Waiting for MeshCentral to be ready"
+  echo "Waiting for MeshCentral Datasources to be ready"
   wait_for_app "integrated-tools-datasources" "app=meshcentral-mongodb"
 }
 
 function integrated_tools_datasources_meshcentral_delete() {
-  echo "Deleting MeshCentral"
+  echo "Deleting MeshCentral Datasources"
   kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/meshcentral
 }
 
 # TACTICAL RMM
 # TACTICAL RMM
 function integrated_tools_datasources_tactical_rmm_deploy() {
-  echo "Deploying Tactical RMM"
+  echo "Deploying Tactical RMM Datasources"
   kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/tactical-rmm
 }
 
 function integrated_tools_datasources_tactical_rmm_wait() {
-  echo "Waiting for Tactical RMM Datasources to be ready"
+  echo "Waiting for Tactical RMM Datasources Datasources to be ready"
   wait_for_app "integrated-tools-datasources" "app=tactical-postgres"
   wait_for_app "integrated-tools-datasources" "app=tactical-redis"
 }
 
 function integrated_tools_datasources_tactical_rmm_delete() {
-  echo "Deleting Tactical RMM"
+  echo "Deleting Tactical RMM Datasources"
   kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/tactical-rmm
 }
 

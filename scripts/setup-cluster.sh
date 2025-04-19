@@ -1,10 +1,22 @@
 #!/bin/bash
 
+# Check if the cluster exists
+if k3d cluster list | grep -q "openframe-dev"; then
+    echo "Cluster 'openframe-dev' already exists. Cannot modify existing cluster configuration."
+    echo "To recreate with different settings, please delete it first with: k3d cluster delete openframe-dev"
+    exit 0
+fi
+
 # Set default number of agents based on CPU cores
 if [ "$(uname)" = "Darwin" ]; then
     # macOS
     TOTAL_CPU=$(sysctl -n hw.ncpu)
     TOTAL_MEM=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
+elif [ "$(uname -o 2>/dev/null)" = "Msys" ] || [ "$(uname -o 2>/dev/null)" = "Cygwin" ]; then
+    # Windows (Git Bash/Cygwin)
+    TOTAL_CPU=$(wmic cpu get NumberOfLogicalProcessors | grep -o "[0-9]*" | head -1)
+    TOTAL_MEM=$(wmic ComputerSystem get TotalPhysicalMemory | grep -o "[0-9]*" | head -1)
+    TOTAL_MEM=$(( TOTAL_MEM / 1024 / 1024 / 1024 )) # Convert from bytes to GB
 else
     # Linux
     TOTAL_CPU=$(nproc)
