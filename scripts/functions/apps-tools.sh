@@ -1,6 +1,11 @@
 #!/bin/bash
 
 # TELEPRESENCE
+function tools_telepresence_wait() {
+  echo "Waiting for telepresence to be ready"
+  wait_for_app "client-tools" "app=traffic-manager"
+}
+
 function tools_telepresence_deploy() {
   echo "Checking telepresence status"
   if ! helm -n client-tools list | grep -q "traffic-manager.*deployed"; then
@@ -16,15 +21,10 @@ function tools_telepresence_deploy() {
 
   if ! telepresence status | grep -q "OSS Traffic Manager: Connected"; then
     echo "Connecting telepresence"
-    telepresence connect
+    tools_telepresence_wait && telepresence connect
   else
     echo "Telepresence is already connected"
   fi
-}
-
-function tools_telepresence_wait() {
-  echo "Waiting for telepresence to be ready"
-  wait_for_app "client-tools" "app=traffic-manager"
 }
 
 function tools_telepresence_delete() {

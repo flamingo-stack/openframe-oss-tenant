@@ -84,7 +84,7 @@ case "$ARG" in
     fi
     ;;
   d|delete)
-    k3d cluster delete openframe-dev
+    telepresence quit && k3d cluster delete openframe-dev
     ;;
   a|app)
     # Deploy app one by one
