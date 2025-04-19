@@ -2,18 +2,18 @@
 
 # FLEET
 function integrated_tools_datasources_fleet_deploy() {
-  echo "Deploying Fleet"
+  echo "Deploying Fleet Datasources"
   kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/fleet
 }
 
 function integrated_tools_datasources_fleet_wait() {
-  echo "Waiting for Fleet to be ready"
+  echo "Waiting for Fleet Datasources to be ready"
   wait_for_app "integrated-tools-datasources" "app=fleet-mdm-redis"
   wait_for_app "integrated-tools-datasources" "app=fleet-mdm-mysql"
 }
 
 function integrated_tools_datasources_fleet_delete() {
-  echo "Deleting Fleet"
+  echo "Deleting Fleet Datasources"
   kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools-datasources/fleet
 }
 
