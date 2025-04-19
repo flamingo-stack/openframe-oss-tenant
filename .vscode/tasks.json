@@ -2,6 +2,97 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "rust-build",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build"],
+            "options": {
+                "cwd": "${workspaceFolder}/agent"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-build-release",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build", "--release"],
+            "options": {
+                "cwd": "${workspaceFolder}/agent"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-test",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["test"],
+            "options": {
+                "cwd": "${workspaceFolder}/agent"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-watch",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["watch", "-x", "run"],
+            "options": {
+                "cwd": "${workspaceFolder}/agent"
+            },
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "rust",
+                "fileLocation": ["relative", "${workspaceFolder}/agent"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "endLine": 4,
+                    "endColumn": 5,
+                    "severity": 6,
+                    "message": 7
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Compiling",
+                    "endsPattern": "^Finished|^error:"
+                }
+            }
+        },
+        {
+            "label": "rust-check",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["check"],
+            "options": {
+                "cwd": "${workspaceFolder}/agent"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-clippy",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["clippy"],
+            "options": {
+                "cwd": "${workspaceFolder}/agent"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
             "label": "start-vue",
             "type": "shell",
             "command": "cd ${workspaceFolder}/openframe/services/openframe-ui && npm run dev",
