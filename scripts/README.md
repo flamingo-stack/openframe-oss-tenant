@@ -110,7 +110,7 @@ You can get help information at any time using the following flags:
     - `deploy`: Deploy the application
     - `delete`: Remove the application
     - `dev`: Run in development mode with live build and deploy (`skaffold`)
-    - `debug`: Enable debug mode with port forwarding (`telepresence intercept` mode)
+    - `intercept`: Enable interception with port forwarding (`telepresence intercept` mode)
 
 4. **Bootstrap Options**
 
@@ -209,8 +209,8 @@ t, client_tools               # Client tools
 ./run.sh app openframe_microservices_openframe_api dev
 ./run.sh app integrated_tools_meshcentral dev
 
-# Debug mode examples
-./run.sh app openframe_microservices_openframe_api debug 8080 http
+# intercept mode examples
+./run.sh app openframe_microservices_openframe_api intercept 8080 http
 ```
 
 ## Development Workflow
@@ -242,11 +242,11 @@ t, client_tools               # Client tools
 ./run.sh app openframe_microservices_openframe_api dev
 ```
 
-### 4. Debugging
+### 4. Intercept traffic (use local app like it is in k8s cluster)
 
 ```bash
-# Debug specific service with port forwarding
-./run.sh app openframe_microservices_openframe_api debug <local_port> <remote_port_name>
+# Intercept specific service with port forwarding
+./run.sh app openframe_microservices_openframe_api intercept <local_port> <remote_port_name>
 ```
 
 ## Environment Variables

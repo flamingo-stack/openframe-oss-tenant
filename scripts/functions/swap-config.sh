@@ -363,6 +363,26 @@ EOF
                     return 1
                 fi
 
+                # Check available disk space on /
+                local available_space_mb=$(df -BM / | awk 'NR==2 {gsub(/M/,"",$4); print $4}')
+                echo "Available disk space on /: ${available_space_mb}MB"
+
+                if [ "$available_space_mb" -lt "$swap_mb" ]; then
+                    echo "ERROR: Not enough disk space to create swap file"
+                    echo "Required: ${swap_mb}MB, Available: ${available_space_mb}MB"
+                    return 1
+                fi
+
+                # Ask for user confirmation if not in silent mode
+                if [ "${SILENT:-false}" != "true" ]; then
+                    read -p "Do you want to create a swap file of size ${swap_mb}MB? (y/N) " -n 1 -r
+                    echo
+                    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                        echo "Swap file creation cancelled by user"
+                        return 0
+                    fi
+                fi
+
                 # If swap exists, turn it off first
                 if $swap_exists; then
                     echo "Disabling existing swap first"

@@ -2,11 +2,8 @@
 
 APP=$1
 ACTION=$2
-
-if [ "$ACTION" == "debug" ]; then
-  LOCAL_PORT="$4"
-  REMOTE_PORT_NAME="$5"
-fi
+LOCAL_PORT=$3
+REMOTE_PORT_NAME=$4
 
 if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
@@ -34,7 +31,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -46,7 +43,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -58,7 +55,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -70,7 +67,7 @@ case "$APP" in
   #   elif [ "$ACTION" == "dev" ]; then
   #     echo "$APP is not supported in dev mode"
   #     exit 0
-  #   elif [ "$ACTION" == "debug" ]; then
+  #   elif [ "$ACTION" == "intercept" ]; then
   #     echo "$APP is not supported for debug mode"
   #   fi
   #   ;;
@@ -82,7 +79,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -94,8 +91,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_datasources_kafka)
@@ -106,8 +103,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_datasources_mongodb)
@@ -118,8 +115,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_datasources_mongodb_exporter)
@@ -130,7 +127,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -142,8 +139,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_datasources_nifi)
@@ -155,8 +152,8 @@ case "$APP" in
       echo "Deploying NiFi in dev mode"
       cd ${SCRIPT_DIR}/infrastructure/nifi
       skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_datasources_zookeeper)
@@ -167,8 +164,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_datasources_pinot)
@@ -179,8 +176,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_microservices_openframe_config_server)
@@ -192,8 +189,8 @@ case "$APP" in
       echo "Deploying Config Server in dev mode"
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      intercept_app "openframe-config-server" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_api)
@@ -205,8 +202,8 @@ case "$APP" in
       echo "Deploying API in dev mode"
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
-    elif [ "$ACTION" == "debug" ]; then
-      debug_app "openframe-api" "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+    elif [ "$ACTION" == "intercept" ]; then
+      intercept_app "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_management)
@@ -218,8 +215,8 @@ case "$APP" in
       echo "Deploying Management in dev mode"
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   openframe_microservices_openframe_stream)
@@ -231,8 +228,8 @@ case "$APP" in
       echo "Deploying Stream in dev mode"
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      intercept_app "openframe-stream" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_gateway)
@@ -244,8 +241,8 @@ case "$APP" in
       echo "Deploying Gateway in dev mode"
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      intercept_app "openframe-gateway" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_openframe_ui)
@@ -257,8 +254,8 @@ case "$APP" in
       echo "Deploying OpenFrame UI in dev mode"
       cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
       skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      intercept_app "openframe-ui" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   openframe_microservices_register_apps)
@@ -275,8 +272,8 @@ case "$APP" in
       echo "Deploying Fleet in dev mode"
       cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
       skaffold dev --no-prune=false --cache-artifacts=false -n fleet
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   integrated_tools_fleet)
@@ -288,8 +285,8 @@ case "$APP" in
       echo "Deploying Fleet in dev mode"
       cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
       skaffold dev --no-prune=false --cache-artifacts=false -n fleet
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   integrated_tools_datasources_authentik)
@@ -300,8 +297,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   integrated_tools_authentik)
@@ -312,8 +309,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   integrated_tools_datasources_meshcentral)
@@ -324,8 +321,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   integrated_tools_meshcentral)
@@ -337,8 +334,8 @@ case "$APP" in
       echo "Deploying MeshCentral in dev mode"
       cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
       skaffold dev --no-prune=false --cache-artifacts=false -n integrated-tools
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      intercept_app "meshcentral" "integrated-tools" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     fi
     ;;
   integrated_tools_datasources_tactical_rmm)
@@ -349,8 +346,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   integrated_tools_tactical_rmm)
@@ -361,8 +358,8 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
-      echo "Debug mode not enabled for this app"
+    elif [ "$ACTION" == "intercept" ]; then
+      echo "Interception not enabled for this app"
     fi
     ;;
   tools_kafka_ui)
@@ -373,7 +370,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -385,7 +382,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;
@@ -397,7 +394,7 @@ case "$APP" in
     elif [ "$ACTION" == "dev" ]; then
       echo "$APP is not supported in dev mode"
       exit 0
-    elif [ "$ACTION" == "debug" ]; then
+    elif [ "$ACTION" == "intercept" ]; then
       echo "$APP is not supported for debug mode"
     fi
     ;;

@@ -8,3 +8,5 @@ export K8S_VERSION="v1.32.3"  # Kubernetes version
 export OS="$(uname)"  # Operating system
 
 export NAMESPACES="platform openframe-datasources openframe-microservices integrated-tools-datasources integrated-tools client-tools"
+
+export SILENT="${SILENT:-false}"
