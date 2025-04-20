@@ -1,86 +1,82 @@
 use anyhow::Result;
+use log::{error, info};
 use semver::Version;
 use std::path::PathBuf;
 use tempfile::TempDir;
-use tracing::{error, info};
-use velopack::{UpdateManager, UpdateOptions};
-
-#[derive(Debug)]
-pub struct UpdateInfo {
-    pub version: Version,
-    pub download_url: String,
-    pub release_notes: Option<String>,
-}
+use velopack::{sources::HttpSource, UpdateCheck, UpdateManager, VelopackApp};
 
 pub struct VelopackUpdater {
-    channel: String,
+    update_channel: String,
     temp_dir: TempDir,
     current_version: Version,
     manager: UpdateManager,
 }
 
 impl VelopackUpdater {
-    pub fn new(channel: &str) -> Result<Self> {
-        let manager = UpdateManager::new(UpdateOptions {
-            urls: vec!["https://releases.openframe.org".to_string()],
-            channel: Some(channel.to_string()),
-            ..Default::default()
-        })?;
+    pub fn new(current_version: Version, update_channel: String) -> Result<Self> {
+        // Initialize VelopackApp first
+        VelopackApp::build().run();
+
+        let temp_dir = tempfile::tempdir()?;
+        let source = HttpSource::new("https://updates.openframe.org");
+        let manager = UpdateManager::new(source, None, None)?;
 
         Ok(Self {
-            channel: channel.to_string(),
-            temp_dir: TempDir::new()?,
-            current_version: Version::new(0, 1, 0),
+            update_channel,
+            temp_dir,
+            current_version,
             manager,
         })
     }
 
-    pub async fn check_for_updates(&self) -> Result<Option<UpdateInfo>> {
-        info!("Checking for updates on channel: {}", self.channel);
-
+    pub fn check_for_updates(&self) -> Result<Option<UpdateInfo>> {
         match self.manager.check_for_updates()? {
-            Some(update) => {
-                let version = Version::parse(&update.version)?;
+            UpdateCheck::UpdateAvailable(updates) => {
+                // In the new API, we just get the basic update information
                 Ok(Some(UpdateInfo {
-                    version,
-                    download_url: update.release_notes_url.unwrap_or_default(),
-                    release_notes: update.release_notes,
+                    version: self.current_version.to_string(),
+                    download_url: String::new(), // This is handled internally by Velopack now
+                    release_notes: String::new(), // This is handled internally by Velopack now
                 }))
             }
-            None => {
-                info!("No updates available");
-                Ok(None)
-            }
+            _ => Ok(None),
         }
     }
 
-    pub async fn download_and_apply_update(&self, update: UpdateInfo) -> Result<()> {
-        info!("Downloading update version {}", update.version);
+    pub fn download_and_apply_update(&self, update_info: &UpdateInfo) -> Result<bool> {
+        info!("Checking and downloading updates");
 
-        match self.manager.download()? {
-            true => {
-                info!("Update downloaded successfully");
-                if let Err(e) = self.manager.apply() {
-                    error!("Failed to apply update: {}", e);
-                    return Err(e.into());
-                }
-                info!("Update applied successfully. Restart required.");
-                Ok(())
+        match self.manager.check_for_updates()? {
+            UpdateCheck::UpdateAvailable(updates) => {
+                // Download the update
+                self.manager.download_updates(&updates, None)?;
+
+                // Apply the update and restart
+                self.manager.apply_updates_and_restart(&updates)?;
+                Ok(true)
             }
-            false => {
-                error!("Failed to download update");
-                Ok(())
-            }
+            _ => Ok(false),
         }
     }
 
     pub fn restart_to_apply_update(&self) -> Result<()> {
-        info!("Restarting to apply update...");
-        self.manager.restart()?;
+        match self.manager.check_for_updates()? {
+            UpdateCheck::UpdateAvailable(updates) => {
+                self.manager.apply_updates_and_restart(&updates)?;
+            }
+            _ => {}
+        }
         Ok(())
     }
 
     fn get_download_path(&self) -> PathBuf {
-        self.temp_dir.path().join("update.zip")
+        self.temp_dir.path().to_path_buf()
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct UpdateInfo {
+    pub version: String,
+    pub download_url: String,
+    pub release_notes: String,
 }

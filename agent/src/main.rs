@@ -1,6 +1,8 @@
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 use config::{Config, File};
 use directories::ProjectDirs;
+use semver;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::time::{sleep, Duration};
@@ -11,6 +13,25 @@ use uuid::Uuid;
 mod service;
 mod system;
 mod updater;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Install the agent as a system service
+    Install,
+    /// Uninstall the agent service
+    Uninstall,
+    /// Run the agent as a service
+    Service,
+    /// Run the agent in the foreground (default)
+    Run,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ServerConfig {
@@ -103,7 +124,10 @@ impl Agent {
         let update_channel = config.agent.update_channel.clone();
 
         Ok(Self {
-            updater: updater::VelopackUpdater::new(&update_channel)?,
+            updater: updater::VelopackUpdater::new(
+                semver::Version::parse(env!("CARGO_PKG_VERSION"))?,
+                update_channel,
+            )?,
             system_info: system::SystemInfo::new()?,
             config,
             config_path,
@@ -140,9 +164,9 @@ impl Agent {
 
     async fn check_for_updates(&self) -> Result<()> {
         info!("Checking for updates...");
-        if let Some(update) = self.updater.check_for_updates().await? {
+        if let Some(update) = self.updater.check_for_updates()? {
             info!("New version available: {}", update.version);
-            self.updater.download_and_apply_update(update).await?;
+            self.updater.download_and_apply_update(&update)?;
         }
         Ok(())
     }
@@ -150,6 +174,9 @@ impl Agent {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Parse command line arguments
+    let cli = Cli::parse();
+
     // Initialize tracing
     FmtSubscriber::builder()
         .with_max_level(Level::DEBUG)
@@ -161,6 +188,31 @@ async fn main() -> Result<()> {
         .with_env_filter("info")
         .pretty()
         .init();
+
+    // Handle service commands
+    match cli.command.unwrap_or(Commands::Run) {
+        Commands::Install => {
+            info!("Installing OpenFrame Agent service...");
+            service::ServiceManager::install()?;
+            info!("Service installation completed successfully");
+            return Ok(());
+        }
+        Commands::Uninstall => {
+            info!("Uninstalling OpenFrame Agent service...");
+            service::ServiceManager::uninstall()?;
+            info!("Service uninstallation completed successfully");
+            return Ok(());
+        }
+        Commands::Service => {
+            info!("Starting OpenFrame Agent as a service...");
+            service::ServiceManager::run_as_service()?;
+            return Ok(());
+        }
+        Commands::Run => {
+            info!("Starting OpenFrame Agent in foreground mode...");
+            // Continue with normal agent initialization
+        }
+    }
 
     // Initialize the agent
     match Agent::new().await {

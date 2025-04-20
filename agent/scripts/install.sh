@@ -35,14 +35,18 @@ mkdir -p "$INSTALL_DIR"
 
 # Copy files
 echo -e "${BLUE}Copying files...${NC}"
-cp -r bin/* "$INSTALL_DIR/"
-cp -r config/* "$INSTALL_DIR/"
-cp version "$INSTALL_DIR/"
+cp openframe-agent "$INSTALL_DIR/"
+cp agent.toml "$INSTALL_DIR/"
+cp manifest.json "$INSTALL_DIR/"
 
 # Set permissions
 echo -e "${BLUE}Setting permissions...${NC}"
 chmod 755 "$INSTALL_DIR/openframe-agent"
-chmod 644 "$INSTALL_DIR/config/agent.toml"
+chmod 644 "$INSTALL_DIR/agent.toml"
+chmod 644 "$INSTALL_DIR/manifest.json"
+
+# Create log directory
+mkdir -p /var/log/openframe-agent
 
 # Install service
 echo -e "${BLUE}Installing system service...${NC}"
@@ -58,18 +62,22 @@ if [ "$(uname)" == "Darwin" ]; then
     <key>ProgramArguments</key>
     <array>
         <string>$INSTALL_DIR/openframe-agent</string>
+        <string>service</string>
     </array>
+    <key>WorkingDirectory</key>
+    <string>$INSTALL_DIR</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/var/log/openframe-agent.log</string>
+    <string>/var/log/openframe-agent/stdout.log</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/openframe-agent.error.log</string>
+    <string>/var/log/openframe-agent/stderr.log</string>
 </dict>
 </plist>
 EOF
+    chmod 644 "$SERVICE_DIR/$SERVICE_FILE"
     launchctl load "$SERVICE_DIR/$SERVICE_FILE"
 else
     # Create systemd service
@@ -80,13 +88,17 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=$INSTALL_DIR/openframe-agent
+ExecStart=$INSTALL_DIR/openframe-agent service
+WorkingDirectory=$INSTALL_DIR
 Restart=always
 User=root
+StandardOutput=append:/var/log/openframe-agent/stdout.log
+StandardError=append:/var/log/openframe-agent/stderr.log
 
 [Install]
 WantedBy=multi-user.target
 EOF
+    chmod 644 "$SERVICE_DIR/$SERVICE_FILE"
     systemctl daemon-reload
     systemctl enable openframe-agent
     systemctl start openframe-agent
@@ -97,7 +109,7 @@ echo -e "${GREEN}Installation completed successfully!${NC}"
 # Show status
 echo -e "\n${BLUE}Service status:${NC}"
 if [ "$(uname)" == "Darwin" ]; then
-    launchctl list | grep com.openframe.agent
+    launchctl list | grep com.openframe.agent || echo "Service not running"
 else
-    systemctl status openframe-agent
+    systemctl status openframe-agent || echo "Service not running"
 fi 

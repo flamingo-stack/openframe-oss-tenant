@@ -2,8 +2,14 @@
 name = "openframe-agent"
 version = "0.1.0"
 edition = "2021"
-authors = ["OpenFrame Team"]
+authors = ["Flamingo Team"]
 description = "OpenFrame Agent - Client-side system management agent"
+license = "MIT"
+repository = "https://github.com/Flamingo-CX/openframe"
+documentation = "https://docs.openframe.org"
+readme = "README.md"
+keywords = ["system-management", "monitoring", "agent", "automation"]
+categories = ["system", "monitoring"]
 
 [dependencies]
 tokio = { version = "1.36", features = ["full"] }
@@ -26,7 +32,9 @@ zip = "0.6"
 tempfile = "3.10"
 semver = "1.0"
 sys-info = "0.9"
-velopack = "0.1"
+velopack = "0.0.1213-g57cf68d"
+log = "0.4.27"
+clap = { version = "4.5", features = ["derive"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-service = "0.6"
@@ -41,12 +49,33 @@ embed-resource = "2.4"
 [package.metadata.bundle]
 name = "OpenFrame Agent"
 identifier = "com.openframe.agent"
+icon = ["icons/32x32.png", "icons/128x128.png", "icons/256x256.png"]
+version = "0.1.0"
+copyright = "Copyright (c) 2024 Flamingo Team"
+category = "System"
+short_description = "OpenFrame system management and monitoring agent"
+long_description = """
+OpenFrame Agent is a powerful system management and monitoring solution that provides:
+- System metrics collection and reporting
+- Automated updates and maintenance
+- Remote management capabilities
+- Integration with various management platforms
+"""
 
 [package.metadata.velopack]
 version = "0.1.0"
 product-name = "OpenFrame Agent"
 executable = "openframe-agent"
-authors = ["OpenFrame Team"]
+authors = ["Flamingo Team"]
 first-run = true
 license = "MIT"
-support-url = "https://github.com/openframe/openframe" 
+support-url = "https://github.com/Flamingo-CX/openframe"
+icon = "icons/icon.ico"
+splash-image = "icons/splash.png"
+release-notes = "Initial release of the OpenFrame Agent"
+setup-icon = "icons/setup.ico"
+company-name = "Flamingo"
+copyright = "Copyright © 2024 Flamingo Team"
+suggest-reboot = false
+compression-level = "normal"
+delta = true 
