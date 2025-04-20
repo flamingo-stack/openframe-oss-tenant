@@ -1,0 +1,18 @@
+# OpenFrame Agent Configuration
+
+[server]
+url = "https://api.openframe.org"
+check_interval = 3600  # Update check interval in seconds
+
+[agent]
+id = ""  # Will be auto-generated on first run if empty
+log_level = "info"  # debug, info, warn, error
+update_channel = "stable"  # stable, beta, nightly
+
+[metrics]
+enabled = true
+collection_interval = 60  # Metrics collection interval in seconds
+
+[security]
+tls_verify = true
+certificate_path = ""  # Optional: Path to custom certificate 

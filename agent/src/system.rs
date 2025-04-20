@@ -1,7 +1,8 @@
 use anyhow::Result;
 use serde::Serialize;
-use sysinfo::{System, SystemExt, CpuExt};
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 
 #[derive(Debug, Serialize)]
 pub struct SystemMetrics {
@@ -15,41 +16,46 @@ pub struct SystemMetrics {
 }
 
 pub struct SystemInfo {
-    sys: System,
+    sys: Mutex<System>,
 }
 
 impl SystemInfo {
     pub fn new() -> Result<Self> {
+        let sys = System::new_with_specifics(
+            RefreshKind::new()
+                .with_cpu(CpuRefreshKind::everything())
+                .with_memory(MemoryRefreshKind::everything()),
+        );
         Ok(Self {
-            sys: System::new_all(),
+            sys: Mutex::new(sys),
         })
     }
 
     pub fn collect_metrics(&self) -> Result<SystemMetrics> {
-        self.sys.refresh_all();
+        let mut sys = self.sys.lock().unwrap();
+        sys.refresh_cpu();
+        sys.refresh_memory();
 
-        let cpu_usage = self.sys.global_cpu_info().cpu_usage();
-        let memory_total = self.sys.total_memory();
-        let memory_used = self.sys.used_memory();
-        
-        // Calculate disk space (total of all disks)
+        let cpu_usage = sys.global_cpu_info().cpu_usage();
+        let memory_total = sys.total_memory();
+        let memory_used = sys.used_memory();
+
+        // For disk space, we'll use sys-info
         let mut disk_total = 0;
         let mut disk_used = 0;
-        for disk in self.sys.disks() {
-            disk_total += disk.total_space();
-            disk_used += disk.total_space() - disk.available_space();
+        if let Ok(space) = sys_info::disk_info() {
+            disk_total = space.total as u64 * 1024; // Convert to bytes
+            disk_used = (space.total - space.free) as u64 * 1024;
         }
 
         Ok(SystemMetrics {
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)?
-                .as_secs(),
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             cpu_usage,
             memory_total,
             memory_used,
             disk_total,
             disk_used,
-            uptime: self.sys.uptime(),
+            uptime: sys_info::boottime()?.tv_sec as u64,
         })
     }
-} 
+}

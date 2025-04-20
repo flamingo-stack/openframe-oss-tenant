@@ -1,1 +1,52 @@
- 
+[package]
+name = "openframe-agent"
+version = "0.1.0"
+edition = "2021"
+authors = ["OpenFrame Team"]
+description = "OpenFrame Agent - Client-side system management agent"
+
+[dependencies]
+tokio = { version = "1.36", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+thiserror = "1.0"
+reqwest = { version = "0.11", features = ["json", "native-tls"] }
+directories = "5.0"
+uuid = { version = "1.7", features = ["v4", "serde"] }
+config = "0.14"
+toml = "0.8"
+futures = "0.3"
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+sysinfo = "0.30"
+zip = "0.6"
+tempfile = "3.10"
+semver = "1.0"
+sys-info = "0.9"
+velopack = "0.1"
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.6"
+winreg = "0.52"
+
+[target.'cfg(unix)'.dependencies]
+daemonize = "0.5"
+
+[build-dependencies]
+embed-resource = "2.4"
+
+[package.metadata.bundle]
+name = "OpenFrame Agent"
+identifier = "com.openframe.agent"
+
+[package.metadata.velopack]
+version = "0.1.0"
+product-name = "OpenFrame Agent"
+executable = "openframe-agent"
+authors = ["OpenFrame Team"]
+first-run = true
+license = "MIT"
+support-url = "https://github.com/openframe/openframe" 

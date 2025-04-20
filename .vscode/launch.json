@@ -5,15 +5,11 @@
             "type": "lldb",
             "request": "launch",
             "name": "OpenFrame Agent Debug",
-            "cargo": {
-                "args": ["build", "--bin=openframe-agent"],
-                "filter": {
-                    "name": "openframe-agent",
-                    "kind": "bin"
-                }
-            },
+            "preLaunchTask": "rust-build",
+            "program": "${workspaceFolder}/agent/target/debug/openframe-agent",
             "args": [],
             "cwd": "${workspaceFolder}/agent",
+            "sourceLanguages": ["rust"],
             "env": {
                 "RUST_LOG": "debug",
                 "RUST_BACKTRACE": "1"
@@ -23,15 +19,11 @@
             "type": "lldb",
             "request": "launch",
             "name": "OpenFrame Agent Release",
-            "cargo": {
-                "args": ["build", "--release", "--bin=openframe-agent"],
-                "filter": {
-                    "name": "openframe-agent",
-                    "kind": "bin"
-                }
-            },
+            "preLaunchTask": "rust-build-release",
+            "program": "${workspaceFolder}/agent/target/release/openframe-agent",
             "args": [],
             "cwd": "${workspaceFolder}/agent",
+            "sourceLanguages": ["rust"],
             "env": {
                 "RUST_LOG": "info"
             }
@@ -40,15 +32,15 @@
             "type": "lldb",
             "request": "launch",
             "name": "OpenFrame Agent Tests",
-            "cargo": {
-                "args": ["test", "--no-run", "--bin=openframe-agent"],
-                "filter": {
-                    "name": "openframe-agent",
-                    "kind": "bin"
-                }
-            },
+            "preLaunchTask": "rust-test",
+            "program": "${workspaceFolder}/agent/target/debug/openframe-agent-test",
             "args": [],
-            "cwd": "${workspaceFolder}/agent"
+            "cwd": "${workspaceFolder}/agent",
+            "sourceLanguages": ["rust"],
+            "env": {
+                "RUST_LOG": "debug",
+                "RUST_BACKTRACE": "1"
+            }
         },
         {
             "type": "java",

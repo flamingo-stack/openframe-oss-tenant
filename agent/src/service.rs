@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::path::PathBuf;
 
 #[cfg(windows)]
 use windows_service::{
@@ -61,4 +60,4 @@ impl ServiceManager {
         daemonize.start()?;
         Ok(())
     }
-} 
+}
