@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use std::ffi::OsString;
+use std::path::PathBuf;
 use tracing::{error, info};
+
+use crate::{logging, Agent};
 
 #[cfg(windows)]
 use windows_service::{
@@ -18,8 +21,9 @@ use windows_service::{
 use daemonize::Daemonize;
 
 const SERVICE_NAME: &str = "OpenFrameAgent";
-const DISPLAY_NAME: &str = "OpenFrame Agent Service";
+const DISPLAY_NAME: &str = "OpenFrame Service";
 const DESCRIPTION: &str = "OpenFrame system management and monitoring agent";
+const APP_SUPPORT_DIR: &str = "/Library/Application Support/OpenFrame";
 
 pub struct ServiceManager;
 
@@ -53,11 +57,35 @@ impl ServiceManager {
     #[cfg(unix)]
     pub fn install() -> Result<()> {
         // Create necessary directories and files
-        std::fs::create_dir_all("/var/lib/openframe-agent")?;
-        std::fs::create_dir_all("/var/log/openframe-agent")?;
+        std::fs::create_dir_all(APP_SUPPORT_DIR)?;
+        logging::platform::ensure_log_directory()?;
 
-        // Create service user and group if they don't exist
-        // Note: This would typically be done by the package installer
+        // Set proper permissions
+        #[cfg(target_os = "macos")]
+        {
+            use std::process::Command;
+            Command::new("chown")
+                .args(["-R", "root:admin", APP_SUPPORT_DIR])
+                .status()?;
+            Command::new("chown")
+                .args([
+                    "-R",
+                    "root:admin",
+                    logging::platform::get_log_directory().to_str().unwrap(),
+                ])
+                .status()?;
+            Command::new("chmod")
+                .args(["-R", "775", APP_SUPPORT_DIR])
+                .status()?;
+            Command::new("chmod")
+                .args([
+                    "-R",
+                    "775",
+                    logging::platform::get_log_directory().to_str().unwrap(),
+                ])
+                .status()?;
+        }
+
         info!("Unix daemon installation completed");
         Ok(())
     }
@@ -75,9 +103,8 @@ impl ServiceManager {
     #[cfg(unix)]
     pub fn uninstall() -> Result<()> {
         // Remove service files
-        let _ = std::fs::remove_file("/var/run/openframe-agent.pid");
-        let _ = std::fs::remove_dir_all("/var/lib/openframe-agent");
-        let _ = std::fs::remove_dir_all("/var/log/openframe-agent");
+        let _ = std::fs::remove_dir_all(APP_SUPPORT_DIR);
+        let _ = std::fs::remove_dir_all(logging::platform::get_log_directory());
 
         info!("Unix daemon uninstalled successfully");
         Ok(())
@@ -127,37 +154,91 @@ impl ServiceManager {
 
         info!("Service started successfully");
 
-        // Main service loop would go here
-        // We'll implement this later when we integrate with the Agent struct
+        // Initialize and run the agent
+        match tokio::runtime::Runtime::new() {
+            Ok(rt) => {
+                rt.block_on(async {
+                    match Agent::new().await {
+                        Ok(agent) => {
+                            if let Err(e) = agent.start().await {
+                                error!("Agent error: {}", e);
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to initialize agent: {}", e);
+                        }
+                    }
+                });
+            }
+            Err(e) => {
+                error!("Failed to create Tokio runtime: {}", e);
+            }
+        }
 
         Ok(())
     }
 
     #[cfg(unix)]
     pub fn run_as_service() -> Result<()> {
-        let daemonize: Daemonize<Result<(), std::io::Error>> = Daemonize::new()
-            .pid_file("/var/run/openframe-agent.pid")
-            .chown_pid_file(true)
-            .working_directory("/var/lib/openframe-agent")
-            .user("openframe")
-            .group("openframe")
-            .stdout(std::fs::File::create(
-                "/var/log/openframe-agent/stdout.log",
-            )?)
-            .stderr(std::fs::File::create(
-                "/var/log/openframe-agent/stderr.log",
-            )?)
-            .privileged_action(|| {
-                info!("Preparing to start daemon");
-                Ok(())
-            });
+        // Get current username
+        let username = whoami::username();
+        info!("Starting service as user: {}", username);
 
+        let mut daemonize = Daemonize::new()
+            .pid_file(format!("{}/agent.pid", APP_SUPPORT_DIR))
+            .chown_pid_file(true)
+            .working_directory(APP_SUPPORT_DIR)
+            .user(username.as_str())
+            .umask(0o022);
+
+        // Configure group based on OS
+        #[cfg(target_os = "macos")]
+        {
+            info!("Configuring for macOS with admin group");
+            daemonize = daemonize.group("admin");
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            info!("Configuring for Unix with wheel group");
+            daemonize = daemonize.group("wheel");
+        }
+
+        info!("Starting daemon with configuration");
         match daemonize.start() {
             Ok(_) => {
                 info!("Daemon started successfully");
-                // Main daemon loop would go here
-                // We'll implement this later when we integrate with the Agent struct
-                Ok(())
+                // Initialize and run the agent
+                match tokio::runtime::Runtime::new() {
+                    Ok(rt) => {
+                        info!("Created Tokio runtime");
+                        match rt.block_on(async {
+                            info!("Initializing agent");
+                            match Agent::new().await {
+                                Ok(agent) => {
+                                    info!("Agent initialized, starting main loop");
+                                    agent.start().await
+                                }
+                                Err(e) => {
+                                    error!("Failed to initialize agent: {}", e);
+                                    Err(e)
+                                }
+                            }
+                        }) {
+                            Ok(_) => {
+                                info!("Agent completed successfully");
+                                Ok(())
+                            }
+                            Err(e) => {
+                                error!("Agent error: {}", e);
+                                Err(e.into())
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to create Tokio runtime: {}", e);
+                        Err(e.into())
+                    }
+                }
             }
             Err(e) => {
                 error!("Failed to start daemon: {}", e);

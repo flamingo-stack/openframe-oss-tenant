@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.openframe.agent</string>
+    <string>com.openframe</string>
     <key>CFBundleName</key>
-    <string>OpenFrame Agent</string>
+    <string>OpenFrame</string>
     <key>CFBundleDisplayName</key>
-    <string>OpenFrame Agent</string>
+    <string>OpenFrame</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleExecutable</key>
-    <string>openframe-agent</string>
+    <string>openframe</string>
     <key>CFBundleVersion</key>
     <string>0.1.0</string>
     <key>CFBundleShortVersionString</key>
@@ -34,5 +34,7 @@
     <true/>
     <key>KeepAlive</key>
     <true/>
+    <key>WorkingDirectory</key>
+    <string>/Library/Application Support/OpenFrame</string>
 </dict>
 </plist> 

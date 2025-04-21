@@ -16,7 +16,7 @@ TARGET_DIR="$AGENT_DIR/target"
 PACKAGE_DIR="$TARGET_DIR/package"
 DEPLOY_DIR="$TARGET_DIR/deploy"
 
-echo -e "${BLUE}Starting OpenFrame Agent deployment process...${NC}"
+echo -e "${BLUE}Starting OpenFrame deployment process...${NC}"
 echo -e "Version: $AGENT_VERSION"
 echo -e "Build type: $BUILD_TYPE"
 
@@ -48,10 +48,10 @@ echo -e "${BLUE}Building agent...${NC}"
 cd "$AGENT_DIR"
 if [ "$BUILD_TYPE" = "release" ]; then
     cargo build --release
-    BINARY_PATH="$TARGET_DIR/release/openframe-agent"
+    BINARY_PATH="$TARGET_DIR/release/openframe"
 else
     cargo build
-    BINARY_PATH="$TARGET_DIR/debug/openframe-agent"
+    BINARY_PATH="$TARGET_DIR/debug/openframe"
 fi
 
 # Copy binary and configuration
@@ -76,7 +76,7 @@ EOF
 
 # Create deployment package
 echo -e "${BLUE}Creating deployment package...${NC}"
-DEPLOY_PACKAGE="$DEPLOY_DIR/openframe-agent-$AGENT_VERSION-$(uname -s)-$(uname -m).tar.gz"
+DEPLOY_PACKAGE="$DEPLOY_DIR/openframe-$AGENT_VERSION-$(uname -s)-$(uname -m).tar.gz"
 tar -czf "$DEPLOY_PACKAGE" -C "$PACKAGE_DIR" .
 
 # Cleanup
@@ -89,4 +89,4 @@ echo -e "Package location: $DEPLOY_PACKAGE"
 echo -e "\n${BLUE}Installation instructions:${NC}"
 echo -e "1. Extract the package: tar -xzf $(basename "$DEPLOY_PACKAGE")"
 echo -e "2. Run the installation script: ./install.sh"
-echo -e "3. Start the agent: systemctl start openframe-agent (Linux) or net start OpenFrameAgent (Windows)\n" 
+echo -e "3. Start the agent: systemctl start openframe (Linux) or net start OpenFrameAgent (Windows)\n" 

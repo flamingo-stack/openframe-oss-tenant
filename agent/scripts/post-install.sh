@@ -16,13 +16,13 @@ fi
 
 # Make sure the agent has write permissions to its log file
 if [[ "$(uname)" == "Darwin" ]]; then
-    sudo touch "/Library/Logs/OpenFrame/agent.log"
-    sudo chown ${USER}:admin "/Library/Logs/OpenFrame/agent.log"
-    sudo chmod 644 "/Library/Logs/OpenFrame/agent.log"
+    sudo touch "/Library/Logs/openframe.log"
+    sudo chown ${USER}:admin "/Library/Logs/openframe.log"
+    sudo chmod 644 "/Library/Logs/openframe.log"
 else
-    sudo touch /var/log/openframe/agent.log
-    sudo chown ${USER}:${GROUP} /var/log/openframe/agent.log
-    sudo chmod 644 /var/log/openframe/agent.log
+    sudo touch /var/log/openframe.log
+    sudo chown ${USER}:${GROUP} /var/log/openframe.log
+    sudo chmod 644 /var/log/openframe.log
 fi
 
 echo "Log directory setup completed successfully" 

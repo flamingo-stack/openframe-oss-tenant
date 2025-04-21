@@ -14,7 +14,7 @@
     <true/>
     <key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
     <array>
-        <string>Library/Application Support/com.openframe.agent/</string>
+        <string>Library/Application Support/OpenFrame/</string>
         <string>Library/Logs/OpenFrame/</string>
     </array>
 </dict>

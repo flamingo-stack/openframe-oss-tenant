@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$AGENT_DIR"
 
-echo -e "${BLUE}Building OpenFrame Agent...${NC}"
+echo -e "${BLUE}Building OpenFrame...${NC}"
 
 echo -e "${BLUE}Cleaning target directory...${NC}"
 # Clean the target directory
@@ -24,13 +24,23 @@ echo -e "${BLUE}Setting up build environment...${NC}"
 # Check if Rust is installed
 if ! command -v rustc &> /dev/null; then
     echo "Installing Rust..."
-    brew install rust
+    if [[ "$(uname)" == "Darwin" ]]; then
+        brew install rust
+    elif [[ "$(uname)" == "Linux" ]]; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source $HOME/.cargo/env
+    fi
 fi
 
 # Check if cargo is installed
 if ! command -v cargo &> /dev/null; then
     echo "Installing Cargo..."
-    brew install cargo
+    if [[ "$(uname)" == "Darwin" ]]; then
+        brew install cargo
+    elif [[ "$(uname)" == "Linux" ]]; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source $HOME/.cargo/env
+    fi
 fi
 
 # Check if .NET SDK is installed
@@ -82,70 +92,48 @@ fi
 echo -e "${BLUE}Building release version...${NC}"
 cargo build --release
 
-# Create temporary directory for packaging
-PACK_DIR=$(mktemp -d)
-mkdir -p "$PACK_DIR"
+# Create the app bundle structure
+APP_NAME="OpenFrame"
+APP_BUNDLE="$APP_NAME.app"
+APP_CONTENTS="target/releases/$APP_BUNDLE/Contents"
+APP_MACOS="$APP_CONTENTS/MacOS"
+APP_RESOURCES="$APP_CONTENTS/Resources"
+APP_FRAMEWORKS="$APP_CONTENTS/Frameworks"
 
-echo -e "${BLUE}Preparing package directory...${NC}"
-# Copy binary and config
-cp target/release/openframe-agent "$PACK_DIR/"
-cp -r config "$PACK_DIR/"
+echo -e "${BLUE}Creating app bundle...${NC}"
+mkdir -p "$APP_MACOS" "$APP_RESOURCES" "$APP_FRAMEWORKS"
 
-# Sign the binary before packaging
-if [[ "$(uname)" == "Darwin" ]]; then
-    echo -e "${BLUE}Signing binary...${NC}"
-    codesign --force --deep --sign - --entitlements assets/openframe.entitlements --options runtime "$PACK_DIR/openframe-agent"
-fi
+# Copy binary and resources
+cp "target/release/openframe" "$APP_MACOS/openframe"
+cp assets/Info.plist "$APP_CONTENTS/"
+cp assets/OpenFrame.icns "$APP_RESOURCES/"
+cp assets/OpenFrame.nuspec "$APP_CONTENTS/openframe.nuspec"
+cp config/agent.toml "$APP_RESOURCES/"
 
+# Sign all binaries in MacOS directory with ad-hoc signing and entitlements
+find "$APP_MACOS" -type f -perm +111 | while read -r binary; do
+    echo "Signing binary: $binary"
+    codesign --force --deep --sign - --entitlements "assets/openframe.entitlements" --options runtime "$binary"
+done
+
+# Sign the app bundle with ad-hoc signing and entitlements
+echo -e "${BLUE}Signing app bundle...${NC}"
+codesign --force --deep --sign - --entitlements "assets/openframe.entitlements" --options runtime "target/releases/$APP_BUNDLE"
+
+# Create Velopack package
 echo -e "${BLUE}Creating Velopack package...${NC}"
-
-# Platform-specific settings
-if [[ "$(uname)" == "Darwin" ]]; then
-    PLATFORM_ARGS=(
-        "--channel" "osx"
-        "--icon" "assets/openframe.icns"
-        "--plist" "assets/Info.plist"
-    )
-elif [[ "$(uname)" == "Linux" ]]; then
-    PLATFORM_ARGS=(
-        "--channel" "linux"
-        "--icon" "assets/openframe.png"
-    )
-fi
-
-# Use expanded Velopack CLI arguments
 vpk pack \
-    --packId "com.openframe.agent" \
-    --packVersion "0.1.0" \
-    --packDir "$PACK_DIR" \
-    --outputDir "target/releases" \
-    --mainExe "openframe-agent" \
-    --packTitle "OpenFrame Agent" \
-    --packAuthors "Flamingo AI, Inc." \
-    --delta "BestSpeed" \
-    --exclude ".*\.(pdb|log|tmp)$" \
-    "${PLATFORM_ARGS[@]}" \
-    --signEntitlements "assets/openframe.entitlements" || {
-        echo -e "${RED}Error: Failed to create Velopack package${NC}"
-        rm -rf "$PACK_DIR"
-        exit 1
-    }
+    --packId "com.openframe" \
+    --packVersion "1.0.0" \
+    --packDir "target/releases/$APP_BUNDLE" \
+    --mainExe openframe \
+    --packTitle "$APP_NAME" \
+    --signEntitlements assets/openframe.entitlements \
+    --outputDir target/releases
 
-# Sign the app bundle after creation on macOS
-if [[ "$(uname)" == "Darwin" ]]; then
-    echo -e "${BLUE}Signing app bundle...${NC}"
-    codesign --force --deep --sign - --entitlements assets/openframe.entitlements --options runtime "target/releases/OpenFrame\ Agent.app"
-fi
-
-# Clean up
-rm -rf "$PACK_DIR"
-
-echo -e "${GREEN}Package created successfully!${NC}"
 echo -e "Package location: target/releases"
-
-# Instructions
-echo -e "\n${BLUE}Installation options:${NC}"
-echo "1. Using Velopack (recommended):"
-echo "   vpk install target/releases/openframe-agent-latest.nupkg"
-echo "2. Using portable package:"
-echo "   Extract openframe-agent-osx-Portable.zip and run the app" 
+echo -e "\nInstallation options:"
+echo "1. Copy the app bundle:"
+echo "   cp -r \"target/releases/$APP_BUNDLE\" /Applications/"
+echo "2. Install using package (note: package is unsigned):"
+echo "   sudo installer -pkg target/releases/com.openframe-osx-Setup.pkg -target /" 

@@ -1,4 +1,4 @@
-# OpenFrame Agent Configuration
+# OpenFrame Configuration
 
 [server]
 url = "https://api.openframe.org"
@@ -14,6 +14,17 @@ log_level = "info"  # debug, info, warn, error
 update_channel = "stable"  # stable, beta, nightly
 working_dir = ""  # Custom working directory (defaults to system-specific path)
 temp_dir = ""  # Custom temporary directory (defaults to system temp)
+
+[logging]
+file_enabled = true
+max_files = 5  # Maximum number of rotated log files
+compress = true  # Compress rotated log files
+structured = true  # Enable structured JSON logging
+shipping_enabled = false  # Enable log shipping to central collector
+shipping_endpoint = ""  # Log shipping endpoint URL
+retention_days = 30  # Number of days to keep logs
+metrics_enabled = true  # Enable metrics collection
+console_enabled = true  # Enable console logging (for development)
 
 [metrics]
 enabled = true
@@ -32,13 +43,6 @@ private_key_path = ""  # Optional: Path to private key
 ca_certificates = []  # List of additional CA certificates
 min_tls_version = "1.2"  # Minimum TLS version
 cipher_list = []  # List of allowed cipher suites
-
-[logging]
-file_enabled = true
-file_path = "/var/log/openframe-agent/agent.log"  # Log file path
-max_size = 100  # Maximum log file size in MB
-max_files = 5  # Maximum number of rotated log files
-compress = true  # Compress rotated log files
 
 [monitoring]
 health_check_interval = 300  # Health check interval in seconds

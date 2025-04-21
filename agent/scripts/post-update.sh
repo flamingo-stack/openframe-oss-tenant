@@ -10,9 +10,9 @@ fi
 
 # Start the agent service
 if [ "$(uname)" == "Darwin" ]; then
-    sudo launchctl load /Library/LaunchDaemons/com.openframe.agent.plist
+    sudo launchctl load /Library/LaunchDaemons/com.openframe.plist
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-    sudo systemctl start openframe-agent
+    sudo systemctl start openframe
 elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
     net start OpenFrameAgent
 fi

@@ -1,18 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use config::{Config, File};
-use directories::ProjectDirs;
-use semver;
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use tokio::time::{sleep, Duration};
-use tracing::{error, info, Level};
-use tracing_subscriber::FmtSubscriber;
-use uuid::Uuid;
-
-mod service;
-mod system;
-mod updater;
+use tracing::{error, info};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -23,199 +11,86 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Install the agent as a system service
     Install,
-    /// Uninstall the agent service
     Uninstall,
-    /// Run the agent as a service
     Service,
-    /// Run the agent in the foreground (default)
-    Run,
+    #[command(arg_required_else_help = true)]
+    Run {
+        /// Optional log shipping endpoint
+        #[arg(long, env = "OPENFRAME_LOG_ENDPOINT")]
+        log_endpoint: Option<String>,
+
+        /// Agent ID for log shipping
+        #[arg(long, env = "openframe_ID")]
+        agent_id: Option<String>,
+    },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct ServerConfig {
-    url: String,
-    check_interval: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct AgentConfig {
-    id: String,
-    log_level: String,
-    update_channel: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct MetricsConfig {
-    enabled: bool,
-    collection_interval: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct SecurityConfig {
-    tls_verify: bool,
-    certificate_path: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Configuration {
-    server: ServerConfig,
-    agent: AgentConfig,
-    metrics: MetricsConfig,
-    security: SecurityConfig,
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig {
-                url: "https://api.openframe.org".to_string(),
-                check_interval: 3600,
-            },
-            agent: AgentConfig {
-                id: Uuid::new_v4().to_string(),
-                log_level: "info".to_string(),
-                update_channel: "stable".to_string(),
-            },
-            metrics: MetricsConfig {
-                enabled: true,
-                collection_interval: 60,
-            },
-            security: SecurityConfig {
-                tls_verify: true,
-                certificate_path: String::new(),
-            },
-        }
-    }
-}
-
-struct Agent {
-    config: Configuration,
-    config_path: PathBuf,
-    updater: updater::VelopackUpdater,
-    system_info: system::SystemInfo,
-}
-
-impl Agent {
-    async fn new() -> Result<Self> {
-        let proj_dirs = ProjectDirs::from("com", "openframe", "agent")
-            .expect("Failed to determine project directories");
-
-        let config_dir = proj_dirs.config_dir();
-        std::fs::create_dir_all(config_dir)?;
-
-        let config_path = config_dir.join("agent.toml");
-
-        // Load configuration
-        let config: Configuration = if config_path.exists() {
-            Config::builder()
-                .add_source(File::from(config_path.clone()))
-                .build()?
-                .try_deserialize()?
-        } else {
-            let default_config = Configuration::default();
-            let config_str = toml::to_string_pretty(&default_config)?;
-            std::fs::write(&config_path, config_str)?;
-            default_config
-        };
-
-        // Clone config for updater initialization
-        let update_channel = config.agent.update_channel.clone();
-
-        Ok(Self {
-            updater: updater::VelopackUpdater::new(
-                semver::Version::parse(env!("CARGO_PKG_VERSION"))?,
-                update_channel,
-            )?,
-            system_info: system::SystemInfo::new()?,
-            config,
-            config_path,
-        })
-    }
-
-    async fn start(&self) -> Result<()> {
-        info!("Starting OpenFrame Agent...");
-        info!("Agent ID: {}", self.config.agent.id);
-        info!("Configuration loaded from: {}", self.config_path.display());
-        info!("Server URL: {}", self.config.server.url);
-        info!("Update channel: {}", self.config.agent.update_channel);
-
-        // Initial update check
-        self.check_for_updates().await?;
-
-        // Main agent loop
-        loop {
-            // Collect and report metrics if enabled
-            if self.config.metrics.enabled {
-                if let Ok(metrics) = self.system_info.collect_metrics() {
-                    info!("System metrics: {:?}", metrics);
-                    // TODO: Send metrics to server
-                }
-            }
-
-            // Check for updates
-            self.check_for_updates().await?;
-
-            // Wait for next interval
-            sleep(Duration::from_secs(self.config.server.check_interval)).await;
-        }
-    }
-
-    async fn check_for_updates(&self) -> Result<()> {
-        info!("Checking for updates...");
-        if let Some(update) = self.updater.check_for_updates()? {
-            info!("New version available: {}", update.version);
-            self.updater.download_and_apply_update(&update)?;
-        }
-        Ok(())
-    }
-}
-
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     // Parse command line arguments
     let cli = Cli::parse();
 
-    // Initialize tracing
-    FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
-        .with_target(false)
-        .with_thread_ids(true)
-        .with_file(true)
-        .with_line_number(true)
-        .with_thread_names(true)
-        .with_env_filter("info")
-        .pretty()
-        .init();
+    // Check if running from app bundle and no explicit command is provided
+    let exe_path = std::env::current_exe()?;
+    let is_app_bundle = exe_path
+        .to_string_lossy()
+        .contains("/Applications/OpenFrame.app");
 
-    // Handle service commands
-    match cli.command.unwrap_or(Commands::Run) {
+    // If running from app bundle and no explicit command, run as service
+    if is_app_bundle && cli.command.is_none() {
+        // Initialize logging without shipping for service mode
+        openframe::logging::init(None, None)?;
+        info!("Running from app bundle, starting as service...");
+        return openframe::service::ServiceManager::run_as_service();
+    }
+
+    // Get the command, defaulting to Run if none provided
+    let command = cli.command.unwrap_or(Commands::Run {
+        log_endpoint: None,
+        agent_id: None,
+    });
+
+    // Initialize logging based on command
+    match &command {
+        Commands::Run {
+            log_endpoint,
+            agent_id,
+        } => {
+            openframe::logging::init(log_endpoint.clone(), agent_id.clone())?;
+        }
+        _ => {
+            openframe::logging::init(None, None)?;
+        }
+    }
+
+    // Handle commands
+    match command {
         Commands::Install => {
-            info!("Installing OpenFrame Agent service...");
-            service::ServiceManager::install()?;
+            info!("Installing OpenFrame service...");
+            openframe::service::ServiceManager::install()?;
             info!("Service installation completed successfully");
             return Ok(());
         }
         Commands::Uninstall => {
-            info!("Uninstalling OpenFrame Agent service...");
-            service::ServiceManager::uninstall()?;
+            info!("Uninstalling OpenFrame service...");
+            openframe::service::ServiceManager::uninstall()?;
             info!("Service uninstallation completed successfully");
             return Ok(());
         }
         Commands::Service => {
-            info!("Starting OpenFrame Agent as a service...");
-            service::ServiceManager::run_as_service()?;
+            info!("Starting OpenFrame as a service...");
+            openframe::service::ServiceManager::run_as_service()?;
             return Ok(());
         }
-        Commands::Run => {
-            info!("Starting OpenFrame Agent in foreground mode...");
+        Commands::Run { .. } => {
+            info!("Starting OpenFrame in foreground mode...");
             // Continue with normal agent initialization
         }
     }
 
     // Initialize the agent
-    match Agent::new().await {
+    match openframe::Agent::new().await {
         Ok(agent) => {
             if let Err(e) = agent.start().await {
                 error!("Agent error: {}", e);
