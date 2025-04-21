@@ -8,13 +8,8 @@ function tools_telepresence_wait() {
 
 function tools_telepresence_deploy() {
   echo "Checking telepresence status" && \
-  if ! helm -n client-tools list | grep -q "traffic-manager.*deployed"; then
-    if ! telepresence status | grep -q "OSS User Daemon: Running"; then
-      echo "Deploying telepresence" && \
+  if ! helm -n client-tools list | grep -q "traffic-manager.*"; then
       telepresence helm install -n client-tools
-    else
-      echo "Telepresence is already running"
-    fi
   else
     echo "Telepresence is already installed"
   fi
