@@ -13,8 +13,8 @@ BOLD='\033[1m'
 FRAMES=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
 
 # Symbols for success/failure
-CHECK_SYMBOL='\u2713'
-X_SYMBOL='\u2A2F'
+CHECK_SYMBOL='✓'
+X_SYMBOL='✗'
 
 _spinner_pid=
 _message=
@@ -40,6 +40,9 @@ function start_spinner() {
     _message="${1:-Processing...} "
     _start_time=$(date +%s)
 
+    # Set up trap before starting spinner
+    trap 'kill $_spinner_pid 2>/dev/null; stop_spinner 1; exit 1' SIGINT SIGTERM EXIT
+
     # Start spinner in background
     _spin "$_message" &
     _spinner_pid=$!
@@ -53,9 +56,12 @@ function stop_spinner() {
     local end_time=$(date +%s)
     local duration=$((end_time - _start_time))
 
+    # Remove traps
+    trap - SIGINT SIGTERM EXIT
+
     # Kill the spinner process
-    if [ -n "$_spinner_pid" ] && ps -p $_spinner_pid > /dev/null; then
-        kill $_spinner_pid
+    if [ -n "$_spinner_pid" ] && ps -p $_spinner_pid > /dev/null 2>&1; then
+        kill $_spinner_pid 2>/dev/null
     fi
 
     # Show cursor again
@@ -63,9 +69,9 @@ function stop_spinner() {
 
     # Print final status with color and duration
     if [ $exit_code -eq 0 ]; then
-        printf "\r${GREEN}${CHECK_SYMBOL} ${_message}${CYAN} [%3ds]${NC}\n" $duration
+        printf "\r${GREEN}✓ ${_message}${CYAN} [%3ds]${NC}\n" $duration
     else
-        printf "\r${RED}${X_SYMBOL} ${_message}${CYAN} [%3ds]${NC}\n" $duration
+        printf "\r${RED}✗ ${_message}${CYAN} [%3ds]${NC}\n" $duration
     fi
 
     _spinner_pid=
