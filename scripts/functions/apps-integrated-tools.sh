@@ -2,7 +2,7 @@
 
 # FLEET
 function integrated_tools_fleet_deploy() {
-  echo "Deploying Fleet"
+  echo "Deploying Fleet" && \
   kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/fleet
 }
 
@@ -19,8 +19,7 @@ function integrated_tools_fleet_delete() {
 # AUTENTIK
 function integrated_tools_authentik_deploy() {
   # helm_repo_ensure authentik https://goauthentik.io/charts
-
-  echo "Deploying Authentik"
+  echo "Deploying Authentik" && \
   kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/authentik/manifests
 
   # helm upgrade -i authentik-redis authentik/redis \
@@ -46,13 +45,13 @@ function integrated_tools_authentik_wait() {
 }
 
 function integrated_tools_authentik_delete() {
-  echo "Deleting Authentik"
+  echo "Deleting Authentik" && \
   kubectl -n integrated-tools delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/authentik/manifests
 }
 
 # MESHCENTRAL
 function integrated_tools_meshcentral_deploy() {
-  echo "Deploying MeshCentral"
+  echo "Deploying MeshCentral" && \
   kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/integrated-tools/meshcentral
 }
 

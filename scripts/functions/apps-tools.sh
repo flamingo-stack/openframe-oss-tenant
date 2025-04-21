@@ -7,10 +7,10 @@ function tools_telepresence_wait() {
 }
 
 function tools_telepresence_deploy() {
-  echo "Checking telepresence status"
+  echo "Checking telepresence status" && \
   if ! helm -n client-tools list | grep -q "traffic-manager.*deployed"; then
     if ! telepresence status | grep -q "OSS User Daemon: Running"; then
-      echo "Deploying telepresence"
+      echo "Deploying telepresence" && \
       telepresence helm install -n client-tools
     else
       echo "Telepresence is already running"
@@ -20,7 +20,7 @@ function tools_telepresence_deploy() {
   fi
 
   if ! telepresence status | grep -q "OSS Traffic Manager: Connected"; then
-    echo "Connecting telepresence"
+    echo "Connecting telepresence" && \
     tools_telepresence_wait && telepresence connect
   else
     echo "Telepresence is already connected"
@@ -36,9 +36,8 @@ function tools_telepresence_delete() {
 
 # KAFKA UI
 function tools_kafka_ui_deploy() {
-  helm_repo_ensure kafbat-ui https://kafbat.github.io/helm-charts
-
-  echo "Deploying Kafka UI"
+  helm_repo_ensure kafbat-ui https://kafbat.github.io/helm-charts && \
+  echo "Deploying Kafka UI" && \
   helm upgrade -i kafka-ui kafbat-ui/kafka-ui \
     -n client-tools --create-namespace \
     --version 1.4.12 \
@@ -58,8 +57,8 @@ function tools_kafka_ui_delete() {
 
 # MONGO EXPRESS (UI)
 function tools_mongo_express_deploy() {
-  echo "Deploying Mongo Express (UI)"
-    kubectl -n client-tools apply -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/mongo-express/mongo-express.yaml
+  echo "Deploying Mongo Express (UI)" && \
+  kubectl -n client-tools apply -f ${ROOT_REPO_DIR}/kind-cluster/apps/client-tools/mongo-express/mongo-express.yaml
 }
 
 function tools_mongo_express_wait() {

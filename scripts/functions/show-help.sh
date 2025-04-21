@@ -5,6 +5,7 @@ $0 <parameter>
 Parameters:
 
 pre                                     : Check if all required commands are installed
+pki                                     : Generate CA certificate
 k|cluster                               : Setup cluster only
 d|delete                                : Remove cluster
 s|start                                 : Start kind cluster

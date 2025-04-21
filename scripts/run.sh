@@ -1,6 +1,11 @@
 #!/bin/bash
 
 # Get the directory where the script is located
+# Add environment variable to detect recursive calls
+if [ -z "$OPENFRAME_RECURSIVE_CALL" ]; then
+  export OPENFRAME_RECURSIVE_CALL=0
+fi
+
 export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
 
@@ -13,6 +18,11 @@ fi
 
 # Source functions in correct order
 source "${SCRIPT_DIR}/functions/variables.sh"
+
+source "${SCRIPT_DIR}/functions/spinner.sh"
+while IFS= read -r func; do
+  [[ "$func" == _spin* || "$func" == *spinner* ]] && export -f "$func"
+done < <(declare -F | awk '{print $3}')
 
 source "${SCRIPT_DIR}/functions/flamingo.sh"
 export -f flamingo
@@ -53,8 +63,21 @@ for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   fi
 done
 
-# Display flamingo
-flamingo
+# Display OpenFrame logo and initialize spinners only on first call
+if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
+  flamingo
+
+  trap 'stop_spinner 1' SIGINT SIGTERM
+
+  # Create log directory if it doesn't exist
+  if [ -d "${DEPLOY_LOG_DIR}" ]; then
+    rm -rf "${DEPLOY_LOG_DIR}"
+  fi
+
+  start_spinner "Create log directory for deployment (${DEPLOY_LOG_DIR})"
+  mkdir -p "${DEPLOY_LOG_DIR}"
+  stop_spinner $?
+fi
 
 ARG=$1
 APP=$2
@@ -67,21 +90,36 @@ fi
 
 case "$ARG" in
   pre)
-    bash "${SCRIPT_DIR}/pre-check.sh"
-    ;;
-  generate-pki)
-    bash "${SCRIPT_DIR}/pki.sh"
+    start_spinner "Validating pre-check"
+    bash "${SCRIPT_DIR}/pre-check.sh" > "${DEPLOY_LOG_DIR}/pre-check.log" 2>&1
+    stop_spinner $?
+
     ;;
   s|swap)
-    check_memory && setup_swap
+    start_spinner "Checking memory"
+    check_memory > "${DEPLOY_LOG_DIR}/check-memory.log" 2>&1
+    stop_spinner $? && \
+    start_spinner "Setting up swap"
+    setup_swap > "${DEPLOY_LOG_DIR}/setup-swap.log" 2>&1
+    stop_spinner $?
+    ;;
+  pki)
+    start_spinner "Generating PKI certificates"
+    bash "${SCRIPT_DIR}/pki.sh" > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
+    stop_spinner $?
     ;;
   k|cluster)
-    check_memory && \
-    bash "$0" pre && \
-    bash "${SCRIPT_DIR}/setup-cluster.sh" && \
-    if ! check_bases; then
-      bash ${SCRIPT_DIR}/bases.sh
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" pre && \
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" swap && \
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
+    start_spinner "Setting up cluster"
+    setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
+    stop_spinner $? && \
+    start_spinner "Checking bases"
+    if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
+      bash ${SCRIPT_DIR}/bases.sh > "${DEPLOY_LOG_DIR}/bases.log" 2>&1
     fi
+    stop_spinner $?
     ;;
   d|delete)
     telepresence quit && k3d cluster delete openframe-dev
@@ -96,18 +134,13 @@ case "$ARG" in
     ;;
   b|bootstrap)
     # Bootstrap whole cluster with all apps
-    # Bootstrap whole cluster with base apps
-    bash "$0" swap && \
-    bash "$0" cluster && \
-    bash "$0" app all deploy
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app all deploy
     ;;
   p|platform)
     # Bootstrap whole cluster with base apps
-    bash "$0" pre && \
-    bash "$0" swap && \
-    bash "$0" cluster && \
-    bash ${SCRIPT_DIR}/bases.sh && \
-    bash "$0" app platform deploy
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do

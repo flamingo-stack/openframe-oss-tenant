@@ -168,3 +168,4 @@ if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
 fi
 
 echo "All pre-checks passed"
+echo "Pre-check completed"

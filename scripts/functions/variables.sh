@@ -10,3 +10,5 @@ export OS="$(uname)"  # Operating system
 export NAMESPACES="platform openframe-datasources openframe-microservices integrated-tools-datasources integrated-tools client-tools"
 
 export SILENT="${SILENT:-false}"
+
+export DEPLOY_LOG_DIR=/tmp/openframe-deployment-logs
