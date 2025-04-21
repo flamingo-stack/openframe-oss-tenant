@@ -62,6 +62,17 @@ if [ $OS == "Linux" ]; then
     certutil -d sql:$HOME/.pki/nssdb -A -n "OpenFrame CA" -i ${SCRIPT_DIR}/files/ca/ca.crt -t CT,C,C
     echo "CA certificate imported to NSSDB"
   fi
+elif [ $OS == "Darwin" ]; then
+  # Check if CA certificate is already imported to Keychain
+  if security find-certificate -c "OpenFrame Root CA" -p > /dev/null 2>&1; then
+    echo "CA certificate already imported to Keychain"
+  else
+    security add-trusted-cert -e hostnameMismatch -r trustRoot -k ~/Library/Keychains/login.keychain-db ${SCRIPT_DIR}/files/ca/ca.crt
+    echo "CA certificate imported to Keychain"
+  fi
+else
+  echo "Unsupported OS"
+  exit 1
 fi
 
 # read -p "Press Enter to continue"
