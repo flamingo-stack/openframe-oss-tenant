@@ -122,7 +122,10 @@ case "$ARG" in
     stop_spinner $?
     ;;
   d|delete)
-    telepresence quit && k3d cluster delete openframe-dev
+    start_spinner "Deleting cluster"
+    telepresence quit > "${DEPLOY_LOG_DIR}/telepresence-quit.log" 2>&1 && \
+    k3d cluster delete openframe-dev > "${DEPLOY_LOG_DIR}/k3d-cluster-delete.log" 2>&1
+    stop_spinner $?
     ;;
   a|app)
     # Deploy app one by one
@@ -149,12 +152,19 @@ case "$ARG" in
     done
     ;;
   s|start)
-    add_loopback_ip && set_max_open_files && \
-    k3d cluster start openframe-dev && \
-    tools_telepresence_wait > /dev/null 2>&1 && telepresence connect
+    start_spinner "Starting cluster"
+    add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
+    set_max_open_files > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
+    k3d cluster start openframe-dev > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
+    tools_telepresence_wait > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
+    telepresence connect > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1
+    stop_spinner $?
     ;;
   stop)
-    telepresence quit && k3d cluster stop openframe-dev
+    start_spinner "Stopping cluster"
+    telepresence quit > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1 && \
+    k3d cluster stop openframe-dev > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
+    stop_spinner $?
     ;;
   -h|--help|-Help)
     show_help
