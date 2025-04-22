@@ -1,0 +1,8 @@
+crds:
+  enabled: true
+webhook:
+  timeoutSeconds: 4
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+disableAutoApproval: false

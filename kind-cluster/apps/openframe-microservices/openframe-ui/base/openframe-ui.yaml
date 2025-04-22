@@ -22,9 +22,9 @@ spec:
               name: http
           env:
             - name: VITE_API_URL
-              value: "http://openframe-api.192.168.100.100.nip.io"
+              value: "https://openframe-api.192.168.100.100.nip.io"
             - name: VITE_GATEWAY_URL
-              value: "http://openframe-gateway.192.168.100.100.nip.io"
+              value: "https://openframe-gateway.192.168.100.100.nip.io"
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
@@ -72,8 +72,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: openframe-ui
+  annotations:
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - openframe-ui.192.168.100.100.nip.io
+    secretName: openframe-ui-tls-secret
   rules:
     - host: openframe-ui.192.168.100.100.nip.io
       http:

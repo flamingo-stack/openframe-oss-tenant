@@ -69,7 +69,7 @@ register_tool() {
     echo "$json_payload" | jq '.'
 
     # Send the request
-    curl -X POST "http://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
+    curl --cacert $SCRIPT_DIR/files/ca/ca.crt -X POST "https://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
       -H "Content-Type: application/json" \
       -d "$json_payload" \
       --retry 5 \
@@ -382,7 +382,7 @@ register_tool \
     "Integrated Tool" \
     "Integrated Tools" \
     2 \
-    "#455A64",
+    "#455A64" \
     "BEARER_TOKEN"
 
 # Register Authentik with layer info
@@ -479,14 +479,17 @@ echo "Tactical RMM registered successfully!"
 echo "Integrated tools initialized successfully!"
 
 # Print Fleet credentials
-echo -e "\nFleet MDM Credentials:"
-echo "Admin User:       admin@openframe.local"
-echo "Admin Password:   openframe123!"
-echo "API User:         api@openframe.local"
-echo "API Password:     openframe123!"
-echo "Fleet API Token:  $FLEET_TOKEN"
+echo "Fleet MDM Credentials:"
+echo "Admin User:           admin@openframe.local"
+echo "Admin Password:       openframe123!"
+echo "API User:             api@openframe.local"
+echo "API Password:         openframe123!"
+echo "Fleet API Token:      $FLEET_TOKEN"
+echo "MeshCentral API Key:  $MESHCENTRAL_API_KEY"
+echo "Authentik API Token:  $AUTHENTIK_API_TOKEN"
 
 echo "OpenFrame is running!"
+echo
 echo "Access points:"
 echo "- Tactical RMM: http://tactical-ui.192.168.100.100.nip.io"
 echo "- Tactical RMM API: http://tactical-api.192.168.100.100.nip.io"

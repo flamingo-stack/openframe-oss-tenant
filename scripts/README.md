@@ -274,3 +274,14 @@ The platform uses the following namespaces:
 - `./scripts`: root folder for all scripts
 - `./scripts/run.sh`: main script to run all other scripts (Don;t run other script individually, they will fail)
 - `./scripts/functions`: Contains individual functions to be used in scripts in `./scripts`
+
+## SSL Certificates
+
+Repository contains already created ca cert and private key to be used by cert-manager. If you want to create new certificate for CA then run below comman:
+
+```bash
+# script will generate CA key/cert in ./scripts/files/ca folder
+./scripts/run.sh generate-pki
+```
+
+Import generated certificates from [./scripts/files/ca](./files/ca/) folder to your browser, os trust store or anny tool's trust store based on your needs if you don't want to see self-signed certificate related errors or warnings.

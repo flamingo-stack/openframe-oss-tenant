@@ -16,11 +16,7 @@ get_install_command() {
     case $cmd in
         "brew")
             if [[ "$OS" == "Darwin" ]]; then
-                # 1. Check/install Homebrew
-                if ! command_exists brew; then
-                  print_color "yellow" "Homebrew not found. Installing Homebrew..."
-                  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-                fi
+                echo '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
             fi
             ;;
         "git")
@@ -129,10 +125,7 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
 
     for cmd in "${missing_commands[@]}"; do
         install_cmd=$(get_install_command "$cmd")
-        echo -e "\nInstallation command for $cmd:"
-        echo "$install_cmd"
-        read -p "Do you want to install $cmd? (y/n): " proceed
-        if [[ "$proceed" == "y" ]]; then
+        if [[ "$SILENT" == "true" ]]; then
             echo "Installing $cmd..."
             eval "$install_cmd"
             if [ $? -eq 0 ]; then
@@ -142,7 +135,21 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
                 exit 1
             fi
         else
-            echo "Skipping $cmd installation"
+            echo -e "\nInstallation command for $cmd:"
+            echo "$install_cmd"
+            read -p "Do you want to install $cmd? (y/n): " proceed
+            if [[ "$proceed" == "y" ]]; then
+                echo "Installing $cmd..."
+                eval "$install_cmd"
+                if [ $? -eq 0 ]; then
+                    echo "$cmd installed successfully"
+                else
+                    echo "Failed to install $cmd"
+                    exit 1
+                fi
+            else
+                echo "Skipping $cmd installation"
+            fi
         fi
     done
 
@@ -156,8 +163,12 @@ fi
 
 # Check docker daemon is running
 if ! docker ps > /dev/null 2>&1; then
-    echo "Docker daemon is not running"
-    exit 1
+    echo "Docker daemon is not running, starting Docker"
+    if [ $OS == "Darwin" ]; then
+        sudo docker desktop start
+    elif [ $OS == "Linux" ]; then
+        sudo systemctl start docker
+    fi
 fi
 
 # Check if GITHUB_TOKEN_CLASSIC is set
@@ -168,3 +179,4 @@ if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
 fi
 
 echo "All pre-checks passed"
+echo "Pre-check completed"
