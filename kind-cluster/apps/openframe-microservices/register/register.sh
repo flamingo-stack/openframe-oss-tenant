@@ -489,6 +489,7 @@ echo "MeshCentral API Key:  $MESHCENTRAL_API_KEY"
 echo "Authentik API Token:  $AUTHENTIK_API_TOKEN"
 
 echo "OpenFrame is running!"
+echo
 echo "Access points:"
 echo "- Tactical RMM: http://tactical-ui.192.168.100.100.nip.io"
 echo "- Tactical RMM API: http://tactical-api.192.168.100.100.nip.io"
