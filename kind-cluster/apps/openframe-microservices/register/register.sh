@@ -479,7 +479,7 @@ echo "Tactical RMM registered successfully!"
 echo "Integrated tools initialized successfully!"
 
 # Print Fleet credentials
-echo -e "\nFleet MDM Credentials:"
+echo "Fleet MDM Credentials:"
 echo "Admin User:           admin@openframe.local"
 echo "Admin Password:       openframe123!"
 echo "API User:             api@openframe.local"
