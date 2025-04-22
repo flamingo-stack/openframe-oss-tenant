@@ -105,7 +105,7 @@ case "$ARG" in
     ;;
   pki)
     start_spinner "Generating PKI certificates"
-    bash "${SCRIPT_DIR}/pki.sh" > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
+    create_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
     stop_spinner $?
     ;;
   k|cluster)
@@ -117,7 +117,7 @@ case "$ARG" in
     stop_spinner $? && \
     start_spinner "Checking bases"
     if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
-      bash ${SCRIPT_DIR}/bases.sh > "${DEPLOY_LOG_DIR}/bases.log" 2>&1
+      create_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1
     fi
     stop_spinner $?
     ;;
