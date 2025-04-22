@@ -134,10 +134,9 @@ if [ "$AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ] || [ $((CURRENT_SWAP + AVAI
         write_status_message "Not enough free space on / to create swap (Need: ${SWAP_SIZE}MB + ${RESERVED_SPACE}MB reserved, Have: ${FREE_SPACE}MB)" "\033[31m"
         exit 1
     else
-        write_status_message "Creating swap file with ${SWAP_SIZE}MB..." "\033[32m"
-        echo "Running as root, adjusting swap settings"
-        # MacOS dynamic pager settings
-        sudo sysctl -w vm.swapfile.maxpages=$((SWAP_SIZE * 256))
+        write_status_message "Note: macOS manages swap space dynamically" "\033[33m"
+        write_status_message "Current swap usage: ${CURRENT_SWAP}MB" "\033[33m"
+        write_status_message "You may need to add more physical RAM to meet the recommended memory requirement of ${RECOMMENDED_MEMORY}MB" "\033[33m"
     fi
 fi
 
