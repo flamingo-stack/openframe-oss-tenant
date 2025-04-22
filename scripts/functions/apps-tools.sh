@@ -9,6 +9,16 @@ function tools_telepresence_wait() {
 function tools_telepresence_deploy() {
   echo "Checking telepresence status" && \
   if ! helm -n client-tools list | grep -q "traffic-manager.*"; then
+      echo "Installing telepresence" && \
+      [ -d $HOME/.config/telepresence ] || mkdir -p $HOME/.config/telepresence
+      if [ ! -f $HOME/.config/telepresence/config.yml ]; then
+        cp $HOME/.config/telepresence/config.yml $HOME/.config/telepresence/config.yml.bak
+      fi
+
+      tee $HOME/.config/telepresence/config.yml <<EOF
+timeouts:
+  helm: 1200s
+EOF
       telepresence helm install -n client-tools
   else
     echo "Telepresence is already installed"
