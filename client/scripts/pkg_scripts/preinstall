@@ -6,4 +6,15 @@ sudo launchctl unload /Library/LaunchDaemons/com.openframe.agent.plist 2>/dev/nu
 # Stop any running OpenFrame processes
 sudo pkill -f openframe || true
 
+# Create necessary directories
+mkdir -p "/Library/Logs/OpenFrame"
+mkdir -p "/Library/Application Support/OpenFrame"
+mkdir -p "/Library/Application Support/OpenFrame/run"
+
+# Set proper permissions
+chown -R root:admin "/Library/Logs/OpenFrame"
+chown -R root:admin "/Library/Application Support/OpenFrame"
+chmod -R 755 "/Library/Logs/OpenFrame"
+chmod -R 755 "/Library/Application Support/OpenFrame"
+
 exit 0 

@@ -6,9 +6,9 @@
             "request": "launch",
             "name": "OpenFrame Client Debug",
             "preLaunchTask": "rust-build",
-            "program": "${workspaceFolder}/agent/target/debug/openframe",
+            "program": "${workspaceFolder}/client/target/debug/openframe",
             "args": [],
-            "cwd": "${workspaceFolder}/agent",
+            "cwd": "${workspaceFolder}/client",
             "sourceLanguages": ["rust"],
             "env": {
                 "RUST_LOG": "debug",
@@ -20,9 +20,9 @@
             "request": "launch",
             "name": "OpenFrame Client Release",
             "preLaunchTask": "rust-build-release",
-            "program": "${workspaceFolder}/agent/target/release/openframe",
+            "program": "${workspaceFolder}/client/target/release/openframe",
             "args": [],
-            "cwd": "${workspaceFolder}/agent",
+            "cwd": "${workspaceFolder}/client",
             "sourceLanguages": ["rust"],
             "env": {
                 "RUST_LOG": "info"
@@ -33,9 +33,9 @@
             "request": "launch",
             "name": "OpenFrame Client Tests",
             "preLaunchTask": "rust-test",
-            "program": "${workspaceFolder}/agent/target/debug/openframe-test",
+            "program": "${workspaceFolder}/client/target/debug/openframe-test",
             "args": [],
-            "cwd": "${workspaceFolder}/agent",
+            "cwd": "${workspaceFolder}/client",
             "sourceLanguages": ["rust"],
             "env": {
                 "RUST_LOG": "debug",

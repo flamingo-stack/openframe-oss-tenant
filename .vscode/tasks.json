@@ -2,9 +2,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "deploy-agent",
+            "label": "deploy-client",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/agent/scripts && ./deploy.sh",
+            "command": "cd ${workspaceFolder}/client/scripts && ./deploy.sh",
             "group": "build",
             "presentation": {
                 "reveal": "always",
@@ -17,7 +17,7 @@
             "type": "shell",
             "command": "cargo build",
             "options": {
-                "cwd": "${workspaceFolder}/agent"
+                "cwd": "${workspaceFolder}/client"
             },
             "group": {
                 "kind": "build",
@@ -30,7 +30,7 @@
             "type": "shell",
             "command": "cargo build --release",
             "options": {
-                "cwd": "${workspaceFolder}/agent"
+                "cwd": "${workspaceFolder}/client"
             },
             "group": "build",
             "problemMatcher": ["$rustc"]
@@ -40,7 +40,7 @@
             "type": "shell",
             "command": "cargo test",
             "options": {
-                "cwd": "${workspaceFolder}/agent"
+                "cwd": "${workspaceFolder}/client"
             },
             "group": {
                 "kind": "test",
@@ -53,7 +53,7 @@
             "type": "shell",
             "command": "cargo watch -x run",
             "options": {
-                "cwd": "${workspaceFolder}/agent"
+                "cwd": "${workspaceFolder}/client"
             },
             "isBackground": true,
             "problemMatcher": {
@@ -80,7 +80,7 @@
             "type": "shell",
             "command": "cargo check",
             "options": {
-                "cwd": "${workspaceFolder}/agent"
+                "cwd": "${workspaceFolder}/client"
             },
             "group": "build",
             "problemMatcher": ["$rustc"]
@@ -90,7 +90,7 @@
             "type": "shell",
             "command": "cargo clippy",
             "options": {
-                "cwd": "${workspaceFolder}/agent"
+                "cwd": "${workspaceFolder}/client"
             },
             "group": "build",
             "problemMatcher": ["$rustc"]

@@ -67,12 +67,8 @@ pub struct DirectoryManager {
 
 impl DirectoryManager {
     pub fn new() -> Self {
-        let base_dirs = BaseDirs::new().expect("Failed to get base directories");
-        let data_dir = base_dirs.data_local_dir();
-        let cache_dir = base_dirs.cache_dir();
-
-        let app_support_dir = data_dir.join("OpenFrame");
-        let logs_dir = cache_dir.join("OpenFrame").join("logs");
+        let app_support_dir = PathBuf::from("/Library/Application Support/OpenFrame");
+        let logs_dir = PathBuf::from("/Library/Logs/OpenFrame");
         let run_dir = app_support_dir.join("run");
 
         Self {
