@@ -48,10 +48,6 @@ export -f wait_parallel
 source "${SCRIPT_DIR}/functions/intercept.sh"
 export -f intercept_app
 
-# Source swap-config.sh directly to ensure it's loaded
-source "${SCRIPT_DIR}/functions/swap-config.sh"
-export -f setup_wslconfig setup_swap check_memory check_docker_desktop apply_changes
-
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   if [ -f "$s" ]; then
@@ -90,21 +86,12 @@ if [ "$ACTION" == "intercept" ]; then
 fi
 
 case "$ARG" in
-  s|swap)
-    start_spinner "Checking memory"
-    check_memory > "${DEPLOY_LOG_DIR}/check-memory.log" 2>&1
-    stop_spinner $? && \
-    start_spinner "Setting up swap"
-    setup_swap > "${DEPLOY_LOG_DIR}/setup-swap.log" 2>&1
-    stop_spinner $?
-    ;;
   pki)
     start_spinner "Generating PKI certificates"
     create_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
     stop_spinner $?
     ;;
   k|cluster)
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" swap && \
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
     start_spinner "Setting up cluster"
     setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1

@@ -131,6 +131,50 @@ for cmd in "${missing_commands[@]}"; do
     verify_command "$cmd"
 done
 
+# Check if swap needs to be configured
+RECOMMENDED_MEMORY=24576
+TOTAL_MEMORY_MEMORY=$(free -m | grep "Mem:" | awk '{print $2}')
+AVAILABLE_MEMORY=$(free -m | grep "Mem:" | awk '{print $7}')
+FREE_SPACE=$(df -BM / | grep -v Avail | awk '{print $4}' | sed 's/M//')
+CURRENT_SWAP=$(free -m | grep "Swap:" | awk '{print $4}')
+
+if [ "$AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ] || [ $((CURRENT_SWAP + AVAILABLE_MEMORY)) -lt "$RECOMMENDED_MEMORY" ]; then
+    SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $AVAILABLE_MEMORY)" | bc)
+    RESERVED_SPACE=2048  # Reserve 2GB for OS
+    write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of free RAM (${AVAILABLE_MEMORY}MB)" "\033[33m"
+    write_status_message "Recommended swap size: ${SWAP_SIZE}MB" "\033[33m"
+    write_status_message "Current swap: ${CURRENT_SWAP}MB" "\033[33m"
+    write_status_message "Available disk space: ${FREE_SPACE}MB (Reserving ${RESERVED_SPACE}MB for OS)" "\033[33m"
+    if [ "${FREE_SPACE%.*}" -lt "$(echo "${SWAP_SIZE%.*} + $RESERVED_SPACE" | bc)" ]; then
+        write_status_message "Not enough free space on / to create swap (Need: ${SWAP_SIZE}MB + ${RESERVED_SPACE}MB reserved, Have: ${FREE_SPACE}MB)" "\033[31m"
+        exit 1
+    else
+        # If swap exists, turn it off first
+        if $swap_exists; then
+            echo "Disabling existing swap first"
+            sudo swapoff -a
+        fi
+        write_status_message "Creating swap file with ${SWAP_SIZE}MB..." "\033[32m"
+        sudo fallocate -l ${SWAP_SIZE}M /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        sudo sysctl vm.swappiness=10
+
+        # Make swap permanent by adding to fstab if not already there
+        if ! grep -q "/swapfile" /etc/fstab; then
+            echo "Adding swap entry to /etc/fstab"
+            # Remove any existing swap entries first
+            sudo sed -i '/swap/d' /etc/fstab
+            echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
+        fi
+
+        echo "Swap file configured and enabled"
+        swapon --show
+
+    fi
+fi
+
 # Handle repository
 REPO_PATH=$(pwd)
 write_status_message "Working with repository at $REPO_PATH..." "\033[36m"
