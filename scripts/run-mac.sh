@@ -117,7 +117,7 @@ for cmd in "${missing_commands[@]}"; do
 done
 
 # Check if swap needs to be configured
-RECOMMENDED_MEMORY=24576
+RECOMMENDED_MEMORY=20480
 TOTAL_MEMORY=$(sysctl hw.memsize | awk '{print int($2/1024/1024)}')
 AVAILABLE_MEMORY=$(top -l 1 | grep PhysMem | awk '{print $8}' | sed 's/M//')
 FREE_SPACE=$(df -m / | grep -v Avail | awk '{print $4}')
