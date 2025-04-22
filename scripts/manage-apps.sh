@@ -542,9 +542,9 @@ case "$APP" in
 
     start_spinner "Deploying Integrated Tools"
     $0 integrated_tools_fleet $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-fleet-deploy.log" &
-    $0 integrated_tools_authentik $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-authentik-deploy.log" &
-    $0 integrated_tools_meshcentral $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-meshcentral-deploy.log" &
-    $0 integrated_tools_tactical_rmm $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-tactical-rmm-deploy.log" &
+    $0 sleep 1 && integrated_tools_authentik $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-authentik-deploy.log" &
+    $0 sleep 1 && integrated_tools_meshcentral $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-meshcentral-deploy.log" &
+    $0 sleep 1 && integrated_tools_tactical_rmm $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-tactical-rmm-deploy.log" &
     stop_spinner $?
     ;;
   a|all)
