@@ -1364,6 +1364,7 @@ dependencies = [
  "embed-resource",
  "flate2",
  "futures",
+ "libc",
  "log",
  "reqwest",
  "semver",

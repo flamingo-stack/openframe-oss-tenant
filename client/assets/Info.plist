@@ -36,5 +36,15 @@
     <true/>
     <key>WorkingDirectory</key>
     <string>/Library/Application Support/OpenFrame</string>
+    <key>UserName</key>
+    <string>root</string>
+    <key>GroupName</key>
+    <string>wheel</string>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>StandardErrorPath</key>
+    <string>/Library/Logs/OpenFrame/error.log</string>
+    <key>StandardOutPath</key>
+    <string>/Library/Logs/OpenFrame/output.log</string>
 </dict>
 </plist> 

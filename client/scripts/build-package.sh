@@ -92,48 +92,48 @@ fi
 echo -e "${BLUE}Building release version...${NC}"
 cargo build --release
 
-# Create the app bundle structure
+# Create the package structure
+PACKAGE_ROOT="target/package_root"
 APP_NAME="OpenFrame"
 APP_BUNDLE="$APP_NAME.app"
-APP_CONTENTS="target/releases/$APP_BUNDLE/Contents"
+APP_CONTENTS="$PACKAGE_ROOT/Applications/$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
 APP_RESOURCES="$APP_CONTENTS/Resources"
-APP_FRAMEWORKS="$APP_CONTENTS/Frameworks"
+LAUNCHDAEMONS_DIR="$PACKAGE_ROOT/Library/LaunchDaemons"
+LOGS_DIR="$PACKAGE_ROOT/Library/Logs/OpenFrame"
+APP_SUPPORT_DIR="$PACKAGE_ROOT/Library/Application Support/OpenFrame"
 
-echo -e "${BLUE}Creating app bundle...${NC}"
-mkdir -p "$APP_MACOS" "$APP_RESOURCES" "$APP_FRAMEWORKS"
+echo -e "${BLUE}Creating package structure...${NC}"
+mkdir -p "$APP_MACOS" "$APP_RESOURCES" "$LAUNCHDAEMONS_DIR" "$LOGS_DIR" "$APP_SUPPORT_DIR"
 
-# Copy binary and resources
+# Copy files
 cp "target/release/openframe" "$APP_MACOS/openframe"
-cp assets/Info.plist "$APP_CONTENTS/"
-cp assets/OpenFrame.icns "$APP_RESOURCES/"
-cp assets/OpenFrame.nuspec "$APP_CONTENTS/openframe.nuspec"
-cp config/agent.toml "$APP_RESOURCES/"
+cp "assets/Info.plist" "$APP_CONTENTS/"
+cp "assets/OpenFrame.icns" "$APP_RESOURCES/"
+cp "config/agent.toml" "$APP_RESOURCES/"
+cp "assets/com.openframe.agent.plist" "$LAUNCHDAEMONS_DIR/"
 
-# Sign all binaries in MacOS directory with ad-hoc signing and entitlements
-find "$APP_MACOS" -type f -perm +111 | while read -r binary; do
-    echo "Signing binary: $binary"
-    codesign --force --deep --sign - --entitlements "assets/openframe.entitlements" --options runtime "$binary"
-done
+# Set permissions
+chmod 755 "$APP_MACOS/openframe"
+chmod 644 "$LAUNCHDAEMONS_DIR/com.openframe.agent.plist"
+chmod 755 "$LOGS_DIR"
+chmod 755 "$APP_SUPPORT_DIR"
 
-# Sign the app bundle with ad-hoc signing and entitlements
-echo -e "${BLUE}Signing app bundle...${NC}"
-codesign --force --deep --sign - --entitlements "assets/openframe.entitlements" --options runtime "target/releases/$APP_BUNDLE"
+# Sign the binary with ad-hoc signing and entitlements
+echo -e "${BLUE}Signing binary...${NC}"
+codesign --force --sign - --entitlements "assets/openframe.entitlements" --options runtime "$APP_MACOS/openframe"
 
-# Create Velopack package
-echo -e "${BLUE}Creating Velopack package...${NC}"
-vpk pack \
-    --packId "com.openframe" \
-    --packVersion "1.0.0" \
-    --packDir "target/releases/$APP_BUNDLE" \
-    --mainExe openframe \
-    --packTitle "$APP_NAME" \
-    --signEntitlements assets/openframe.entitlements \
-    --outputDir target/releases
+# Create the package
+echo -e "${BLUE}Creating installer package...${NC}"
+mkdir -p "target/releases"
+pkgbuild --root "$PACKAGE_ROOT" \
+         --identifier "com.openframe" \
+         --version "1.0.0" \
+         --install-location "/" \
+         --scripts "scripts/pkg_scripts" \
+         "target/releases/com.openframe-osx-Setup.pkg"
 
-echo -e "Package location: target/releases"
-echo -e "\nInstallation options:"
-echo "1. Copy the app bundle:"
-echo "   cp -r \"target/releases/$APP_BUNDLE\" /Applications/"
-echo "2. Install using package (note: package is unsigned):"
-echo "   sudo installer -pkg target/releases/com.openframe-osx-Setup.pkg -target /" 
+echo -e "${GREEN}Package created successfully!${NC}"
+echo -e "Package location: target/releases/com.openframe-osx-Setup.pkg"
+echo -e "\nTo install, run:"
+echo -e "sudo installer -pkg target/releases/com.openframe-osx-Setup.pkg -target /" 

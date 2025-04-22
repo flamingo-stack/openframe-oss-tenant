@@ -54,6 +54,7 @@ winreg = "0.52"
 
 [target.'cfg(unix)'.dependencies]
 daemonize = "0.5"
+libc = "0.2"
 
 [build-dependencies]
 embed-resource = "2.4"

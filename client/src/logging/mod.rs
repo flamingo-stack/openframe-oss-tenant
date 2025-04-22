@@ -1,7 +1,7 @@
 pub mod metrics;
-pub mod platform;
 pub mod shipping;
 
+use crate::platform::{DirectoryError, DirectoryManager};
 use chrono::Utc;
 use flate2::write::GzEncoder;
 use flate2::Compression;
@@ -116,60 +116,88 @@ impl tracing::field::Visit for JsonVisitor {
         } else if field.name() == "error" {
             self.error = Some(value.to_string());
         } else {
-            self.fields.insert(
-                field.name().to_string(),
-                serde_json::Value::String(value.to_string()),
-            );
+            self.fields.insert(field.name().to_string(), value.into());
         }
     }
 
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
-        self.fields.insert(
-            field.name().to_string(),
-            serde_json::Value::String(format!("{:?}", value)),
-        );
+        self.fields
+            .insert(field.name().to_string(), format!("{:?}", value).into());
     }
 }
 
-/// Initialize the logging system with the platform-specific path
+/// Initialize logging with optional endpoint and agent ID
 pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::Result<()> {
-    // Ensure log directory exists with correct permissions
-    let log_dir = platform::ensure_log_directory()?;
+    // Check if logging is already initialized
+    static INIT: std::sync::Once = std::sync::Once::new();
+    let mut init_result = Ok(());
 
-    // Create the JSON layer for structured logging
-    let json_layer = JsonLayer::new(get_log_file_path())?;
+    INIT.call_once(|| {
+        // Initialize directory manager and ensure directories exist
+        let dir_manager = DirectoryManager::new();
+        if let Err(e) = dir_manager.perform_health_check() {
+            init_result = Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ));
+            return;
+        }
 
-    // Create a console layer for development
-    let console_layer = fmt::layer()
-        .with_target(true)
-        .with_thread_ids(true)
-        .with_line_number(true)
-        .with_file(true)
-        .with_timer(SystemTime::default());
+        // Set up file appender with rotation
+        let file_appender = tracing_appender::rolling::RollingFileAppender::new(
+            Rotation::DAILY,
+            dir_manager.logs_dir(),
+            "openframe.log",
+        );
 
-    // Create metrics layer
-    let (metrics_layer, metrics_store) = MetricsLayer::new();
+        // Create the JSON layer for structured logging
+        let json_layer = fmt::layer()
+            .json()
+            .with_file(true)
+            .with_line_number(true)
+            .with_thread_ids(true)
+            .with_target(true)
+            .with_timer(SystemTime::default())
+            .with_writer(file_appender);
 
-    // Set up the subscriber with both layers
-    let subscriber = Registry::default()
-        .with(EnvFilter::from_default_env())
-        .with(json_layer)
-        .with(console_layer)
-        .with(metrics_layer);
+        // Create a console layer for development
+        let console_layer = fmt::layer()
+            .with_target(true)
+            .with_thread_ids(true)
+            .with_line_number(true)
+            .with_file(true)
+            .with_timer(SystemTime::default());
 
-    // Set the subscriber as the default
-    tracing::subscriber::set_global_default(subscriber)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        // Create metrics layer
+        let (metrics_layer, metrics_store) = MetricsLayer::new();
 
-    // Store metrics for later access
-    METRICS_STORE.get_or_init(|| metrics_store);
+        // Set up the subscriber with both layers
+        let subscriber = Registry::default()
+            .with(EnvFilter::from_default_env())
+            .with(json_layer)
+            .with(console_layer)
+            .with(metrics_layer);
 
-    // Start the background compression task
-    std::thread::spawn(|| {
-        compress_old_logs();
+        // Set the subscriber as the default
+        if let Err(e) = tracing::subscriber::set_global_default(subscriber) {
+            init_result = Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ));
+            return;
+        }
+
+        // Store metrics for later access
+        METRICS_STORE.get_or_init(|| metrics_store);
+
+        // Start the background compression task with directory manager
+        let dir_manager_clone = dir_manager.clone();
+        std::thread::spawn(move || {
+            compress_old_logs(&dir_manager_clone);
+        });
     });
 
-    Ok(())
+    init_result
 }
 
 // Static storage for metrics
@@ -181,11 +209,9 @@ pub fn get_metrics_store() -> Option<Arc<RwLock<MetricsStore>>> {
 }
 
 /// Compress old log files that haven't been compressed yet
-fn compress_old_logs() {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
+fn compress_old_logs(dir_manager: &DirectoryManager) {
     loop {
-        if let Ok(log_dir) = platform::get_log_directory().canonicalize() {
+        if let Ok(log_dir) = dir_manager.logs_dir().canonicalize() {
             if let Ok(entries) = fs::read_dir(&log_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
@@ -193,7 +219,11 @@ fn compress_old_logs() {
                         // Only process .log files that aren't today's log
                         if ext == "log" {
                             let filename = path.file_name().unwrap().to_string_lossy();
-                            if !filename.ends_with(".gz") && !is_current_log(&filename) {
+                            // Don't compress the current log file
+                            if !filename.ends_with(".gz")
+                                && !is_current_log(&filename)
+                                && filename != "openframe.log"
+                            {
                                 if let Err(e) = compress_log_file(&path) {
                                     eprintln!(
                                         "Failed to compress log file {}: {}",
@@ -237,10 +267,8 @@ fn compress_log_file(path: &PathBuf) -> std::io::Result<()> {
 }
 
 /// Get the current log file path
-pub fn get_log_file_path() -> PathBuf {
-    let mut path = platform::get_log_directory();
-    path.push("openframe.log");
-    path
+pub fn get_log_file_path(dir_manager: &DirectoryManager) -> PathBuf {
+    dir_manager.logs_dir().join("openframe.log")
 }
 
 #[cfg(test)]

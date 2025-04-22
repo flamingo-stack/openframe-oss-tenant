@@ -4,7 +4,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "OpenFrame Debug",
+            "name": "OpenFrame Client Debug",
             "preLaunchTask": "rust-build",
             "program": "${workspaceFolder}/agent/target/debug/openframe",
             "args": [],
@@ -18,7 +18,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "OpenFrame Release",
+            "name": "OpenFrame Client Release",
             "preLaunchTask": "rust-build-release",
             "program": "${workspaceFolder}/agent/target/release/openframe",
             "args": [],
@@ -31,7 +31,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "OpenFrame Tests",
+            "name": "OpenFrame Client Tests",
             "preLaunchTask": "rust-test",
             "program": "${workspaceFolder}/agent/target/debug/openframe-test",
             "args": [],

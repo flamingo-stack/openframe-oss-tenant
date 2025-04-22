@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Set permissions for the application binary and plist
+chmod 755 /Applications/OpenFrame.app/Contents/MacOS/openframe
+chmod 644 /Library/LaunchDaemons/com.openframe.agent.plist
+
+# Load the launch daemon
+launchctl load /Library/LaunchDaemons/com.openframe.agent.plist
+
+exit 0

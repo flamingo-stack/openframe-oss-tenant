@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Unload existing launch daemon if it exists
+sudo launchctl unload /Library/LaunchDaemons/com.openframe.agent.plist 2>/dev/null || true
+
+# Stop any running OpenFrame processes
+sudo pkill -f openframe || true
+
+exit 0 

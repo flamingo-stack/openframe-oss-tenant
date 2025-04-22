@@ -80,6 +80,7 @@ impl MetricsStore {
 }
 
 /// Layer that captures metrics from tracing events
+#[derive(Clone)]
 pub struct MetricsLayer {
     store: Arc<RwLock<MetricsStore>>,
 }
