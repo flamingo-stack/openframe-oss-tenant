@@ -104,13 +104,6 @@ else
     echo "All required commands are installed"
 fi
 
-current_value=$(sysctl -n fs.inotify.max_user_instances || echo "0")
-if [[ $current_value -lt 1500 ]]; then
-    echo "Setting fs.inotify.max_user_instances to 1500"
-    sudo sysctl fs.inotify.max_user_instances=1500 && \
-    sudo sysctl -p
-fi
-
 # Main installation process
 write_status_message "Starting OpenFrame installation process..." "\033[32m" true
 
