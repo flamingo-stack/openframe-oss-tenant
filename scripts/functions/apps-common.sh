@@ -13,18 +13,6 @@ function check_bases() {
   return 0
 }
 
-function set_max_open_files() {
-  # Check if max_user_instances is less than 1500
-  if [ $OS == "Linux" ]; then
-    current_value=$(sysctl -n fs.inotify.max_user_instances || echo "0")
-    if [[ $current_value -lt 1500 ]]; then
-      echo "fs.inotify.max_user_instances is less than 1500" && \
-      sudo sysctl fs.inotify.max_user_instances=1500 && \
-      sudo sysctl -p
-    fi
-  fi
-}
-
 function create_bases() {
   # Iterate over each namespace
   for ns in $NAMESPACES; do

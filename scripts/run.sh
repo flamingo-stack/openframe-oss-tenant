@@ -73,10 +73,11 @@ if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
   if [ -d "${DEPLOY_LOG_DIR}" ]; then
     rm -rf "${DEPLOY_LOG_DIR}"
   fi
-
-  start_spinner "Create log directory for deployment (${DEPLOY_LOG_DIR})"
-  mkdir -p "${DEPLOY_LOG_DIR}"
-  stop_spinner $?
+  if [ "$1" != "" ]; then
+    start_spinner "Create log directory for deployment (${DEPLOY_LOG_DIR})"
+    mkdir -p "${DEPLOY_LOG_DIR}"
+    stop_spinner $?
+  fi
 fi
 
 ARG=$1
@@ -89,12 +90,6 @@ if [ "$ACTION" == "intercept" ]; then
 fi
 
 case "$ARG" in
-  pre)
-    start_spinner "Validating pre-check"
-    bash "${SCRIPT_DIR}/pre-check.sh" > "${DEPLOY_LOG_DIR}/pre-check.log" 2>&1
-    stop_spinner $?
-
-    ;;
   s|swap)
     start_spinner "Checking memory"
     check_memory > "${DEPLOY_LOG_DIR}/check-memory.log" 2>&1
@@ -109,7 +104,6 @@ case "$ARG" in
     stop_spinner $?
     ;;
   k|cluster)
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" pre && \
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" swap && \
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
     start_spinner "Setting up cluster"
@@ -154,7 +148,6 @@ case "$ARG" in
   s|start)
     start_spinner "Starting cluster"
     add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
-    set_max_open_files > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     k3d cluster start openframe-dev > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     tools_telepresence_wait > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     telepresence connect > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1
@@ -166,7 +159,7 @@ case "$ARG" in
     k3d cluster stop openframe-dev > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
     stop_spinner $?
     ;;
-  -h|--help|-Help)
+  -h|--help|-Help|help)
     show_help
     exit 0
     ;;

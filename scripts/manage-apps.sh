@@ -559,7 +559,7 @@ case "$APP" in
     $0 openframe_microservices_register_apps $ACTION
     echo "Wait for all apps to be ready... (This may take a while)"
     ;;
-  -h|--help|-Help)
+  -h|--help|-Help|help)
     cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
     ;;
   *)
