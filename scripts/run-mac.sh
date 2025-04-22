@@ -119,7 +119,7 @@ done
 # Check if swap needs to be configured
 RECOMMENDED_MEMORY=24576
 TOTAL_MEMORY=$(sysctl hw.memsize | awk '{print int($2/1024/1024)}')
-AVAILABLE_MEMORY=$(top -l 1 | grep PhysMem | awk '{print $8}' | sed 's/G//' | awk '{printf "%.0f\n", $1 * 1024}')
+AVAILABLE_MEMORY=$(top -l 1 | grep PhysMem | awk '{print $8}' | sed 's/M//')
 FREE_SPACE=$(df -m / | grep -v Avail | awk '{print $4}')
 CURRENT_SWAP=$(sysctl vm.swapusage | awk '{print $4}' | sed 's/M//' | awk '{printf "%.0f\n", $1}')
 
