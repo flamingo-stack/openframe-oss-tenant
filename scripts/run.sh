@@ -93,7 +93,7 @@ case "$ARG" in
     ;;
   k|cluster)
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
-    if k3d cluster list | grep -q "openframe-dev"; then
+    if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^openframe-dev$"; then
       start_spinner "Using existing 'openframe-dev' cluster."
       stop_spinner $?
     else
