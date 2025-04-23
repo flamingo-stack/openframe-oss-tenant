@@ -308,7 +308,7 @@ case "$APP" in
     ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/register/register.sh > "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
     stop_spinner $?
     echo
-    sed -n '/Fleet MDM Credentials:/,/All ingresses:/{ /All ingresses:/!p }' "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log"
+    sed -n '/Fleet MDM Credentials:/,/OpenFrame is running/p' "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" | sed '$d'
     ;;
   integrated_tools_datasources_fleet)
     if [ "$ACTION" == "deploy" ]; then
