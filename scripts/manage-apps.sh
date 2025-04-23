@@ -529,10 +529,10 @@ case "$APP" in
     IFWAIT=${3:-}
 
     start_spinner "Deploying Integrated Tools" && \
-    $0 integrated_tools_fleet $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-fleet-deploy.log" && \
-    $0 integrated_tools_authentik $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-authentik-deploy.log" && \
-    $0 integrated_tools_meshcentral $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-meshcentral-deploy.log" && \
-    $0 integrated_tools_tactical_rmm $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-tactical-rmm-deploy.log"
+    $0 integrated_tools_fleet $ACTION && \
+    $0 integrated_tools_authentik $ACTION && \
+    $0 integrated_tools_meshcentral $ACTION && \
+    $0 integrated_tools_tactical_rmm $ACTION
     stop_spinner $?
     ;;
   dat|datasources)
