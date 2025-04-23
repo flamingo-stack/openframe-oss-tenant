@@ -187,6 +187,15 @@ OpenFrame provides platform-specific scripts to easily run the application local
 .\scripts\run-windows.ps1 -Help        # Show help message
 ```
 
+The Windows script now includes:
+- Automatic tool installation (kind, kubectl, helm, skaffold, jq, telepresence)
+- GitHub token validation
+- Docker Desktop status check
+- Network configuration for Kind
+- Seamless integration with Git Bash for running the main script
+
+Tools are installed to `~/bin` directory. The script will remind you to add this directory to your PATH if needed.
+
 ### macOS
 ```bash
 ./scripts/run-mac.sh              # Run with interactive mode

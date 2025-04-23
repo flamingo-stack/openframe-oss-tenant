@@ -134,16 +134,14 @@ setup_wslconfig() {
         # Get total system memory in MB
         local total_memory_mb=$(cmd.exe /c "wmic ComputerSystem get TotalPhysicalMemory" 2>/dev/null | grep -v "TotalPhysicalMemory" | tr -d '\r' | awk '{gsub(/[^0-9]/,""); if(length) print int($1/1024/1024)}')
 
-        # Calculate values: 50% for memory, but at least 16GB total resources
-        local memory_mb=$((total_memory_mb / 2))
+        # Calculate values: 60% for memory, but at least 16GB total resources
+        local memory_mb=$(((total_memory_mb / 5) * 3))
         local memory_gb=$((memory_mb / 1024))
 
-        # Ensure at least 16GB total (memory + swap)
-        local total_gb=$((memory_gb * 2))
-        if [ "$total_gb" -lt 16 ]; then
+        if [ "$memory_gb" -lt 16 ]; then
             local swap_gb=$((16 - memory_gb))
         else
-            local swap_gb="$memory_gb"
+            local swap_gb=0
         fi
 
         # Check if .wslconfig exists in the Windows user's home directory
@@ -155,11 +153,12 @@ setup_wslconfig() {
 
         echo "Creating WSL config file with memory=${memory_gb}GB and swap=${swap_gb}GB..."
 
+        number_of_processors = $NUMBER_OF_PROCESSORS
         # Create WSL configuration with calculated values
         cat > "$gb_path" << EOF
 [wsl2]
 memory=${memory_gb}GB
-processors=8
+processors=${number_of_processors}
 swap=${swap_gb}GB
 EOF
         echo "Created WSL config at $gb_path"

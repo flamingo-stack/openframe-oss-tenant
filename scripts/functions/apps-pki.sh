@@ -72,6 +72,25 @@ function create_ca() {
       security add-trusted-cert -e hostnameMismatch -r trustRoot -k ~/Library/Keychains/login.keychain-db ${SCRIPT_DIR}/files/ca/ca.crt
       echo "CA certificate imported to Keychain"
     fi
+  elif [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
+    # Windows-specific certificate installation via Git Bash
+    echo "Windows detected. Installing certificate for Windows browsers..."
+
+    # Convert path to Windows format for certutil command
+    CERT_PATH_WIN=$(cygpath -w "${SCRIPT_DIR}/files/ca/ca.crt")
+
+    # Use certutil which is available in Windows to add the certificate
+    # This will require admin privileges
+    echo "Adding certificate to Windows certificate store (requires admin privileges)"
+    echo "Please approve any security prompts that appear"
+    certutil -addstore -f "ROOT" "$CERT_PATH_WIN"
+
+    echo ""
+    echo "If you see an error above, you can manually import the certificate:"
+    echo "1. Press Win+R and type 'certmgr.msc'"
+    echo "2. Right-click on 'Trusted Root Certification Authorities' -> 'All Tasks' -> 'Import'"
+    echo "3. Browse to: ${CERT_PATH_WIN}"
+    echo "4. Follow the wizard to complete the import"
   else
     echo "Unsupported OS"
     exit 1
