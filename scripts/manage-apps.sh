@@ -1,20 +1,13 @@
 #!/bin/bash
 
-# Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Source spinner functions
+source "${SCRIPT_DIR}/functions/spinner.sh"
+export -f start_spinner stop_spinner _spin
 
 APP=$1
 ACTION=$2
 LOCAL_PORT=$3
 REMOTE_PORT_NAME=$4
-
-
-# Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Source spinner functions
-source "${SCRIPT_DIR}/functions/spinner.sh"
-export -f start_spinner stop_spinner _spin
 
 if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
@@ -304,11 +297,11 @@ case "$APP" in
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
     start_spinner "Registering apps"
     openframe_microservices_openframe_management_wait > /dev/null 2>&1 && \
-    integrated_tools_wait_all > /dev/null 2>&1 && \
+    integrated_tools_wait_all > /dev/null 2>&1 #&& \
     ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/register/register.sh > "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
     stop_spinner $?
     echo
-    sed -n '/Fleet MDM Credentials:/,/OpenFrame is running/p' "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" | sed '$d'
+    sed -n '/Fleet MDM Credentials:/,/All ingresses/p' "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" | sed '$d'
     ;;
   integrated_tools_datasources_fleet)
     if [ "$ACTION" == "deploy" ]; then

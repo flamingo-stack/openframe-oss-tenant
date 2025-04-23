@@ -485,9 +485,7 @@ echo "Admin Password:       openframe123!"
 echo "API User:             api@openframe.local"
 echo "API Password:         openframe123!"
 echo "Fleet API Token:      $FLEET_TOKEN"
-echo "MeshCentral API Key:  $MESHCENTRAL_API_KEY"
-echo "Authentik API Token:  $AUTHENTIK_API_TOKEN"
-
+echo
 echo "OpenFrame is running!"
 echo
 echo "Access points:"
