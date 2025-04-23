@@ -363,10 +363,10 @@ register_tool \
     "BEARER_TOKEN"
 
     # Get MeshCentral API key
-echo "Getting MeshCentral API key..."
-POD=$(kubectl -n integrated-tools get pods -o name -l app=meshcentral)
-MESHCENTRAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/mesh/mesh_token)
-echo "MeshCentral API key: $MESHCENTRAL_API_KEY"
+# echo "Getting MeshCentral API key..."
+# POD=$(kubectl -n integrated-tools get pods -o name -l app=meshcentral)
+# MESHCENTRAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/mesh/mesh_token)
+# echo "MeshCentral API key: $MESHCENTRAL_API_KEY"
 
 # Register MeshCentral with layer info
 register_tool \
@@ -377,7 +377,7 @@ register_tool \
     '[{"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "API"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
-    "$MESHCENTRAL_API_KEY" \
+    "" \  # removed $MESHCENTRAL_API_KEY
     "Device Management" \
     "Integrated Tool" \
     "Integrated Tools" \

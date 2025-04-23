@@ -304,6 +304,7 @@ case "$APP" in
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
     start_spinner "Registering apps"
     openframe_microservices_openframe_management_wait > /dev/null 2>&1 && \
+    integrated_tools_wait_all > /dev/null 2>&1 && \
     ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/register/register.sh > "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
     stop_spinner $?
     echo
