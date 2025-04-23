@@ -132,21 +132,22 @@ for cmd in "${missing_commands[@]}"; do
 done
 
 # Check if swap needs to be configured
-RECOMMENDED_MEMORY=24576
+RECOMMENDED_MEMORY=20480
 TOTAL_MEMORY_MEMORY=$(free -m | grep "Mem:" | awk '{print $2}')
 AVAILABLE_MEMORY=$(free -m | grep "Mem:" | awk '{print $7}')
 FREE_SPACE=$(df -BM / | grep -v Avail | awk '{print $4}' | sed 's/M//')
 CURRENT_SWAP=$(free -m | grep "Swap:" | awk '{print $4}')
+TOTAL_AVAILABLE_MEMORY=$((AVAILABLE_MEMORY + CURRENT_SWAP))
 
-if [ "$AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ] || [ $((CURRENT_SWAP + AVAILABLE_MEMORY)) -lt "$RECOMMENDED_MEMORY" ]; then
-    SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $AVAILABLE_MEMORY)" | bc)
+if [ "$TOTAL_AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ]; then
+    SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $TOTAL_AVAILABLE_MEMORY)" | bc)
     RESERVED_SPACE=2048  # Reserve 2GB for OS
-    write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of free RAM (${AVAILABLE_MEMORY}MB)" "\033[33m"
-    write_status_message "Recommended swap size: ${SWAP_SIZE}MB" "\033[33m"
+    write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of total memory (RAM: ${AVAILABLE_MEMORY}MB, Swap: ${CURRENT_SWAP}MB)" "\033[33m"
+    write_status_message "Additional swap needed: ${SWAP_SIZE}MB" "\033[33m"
     write_status_message "Current swap: ${CURRENT_SWAP}MB" "\033[33m"
     write_status_message "Available disk space: ${FREE_SPACE}MB (Reserving ${RESERVED_SPACE}MB for OS)" "\033[33m"
     if [ "${FREE_SPACE%.*}" -lt "$(echo "${SWAP_SIZE%.*} + $RESERVED_SPACE" | bc)" ]; then
-        write_status_message "Not enough free space on / to create swap (Need: ${SWAP_SIZE}MB + ${RESERVED_SPACE}MB reserved, Have: ${FREE_SPACE}MB)" "\033[31m"
+        write_status_message "Not enough free space on / to create swap (Need: "$(echo "${SWAP_SIZE%.*} + $RESERVED_SPACE" | bc)"MB, Have: ${FREE_SPACE}MB)" "\033[31m"
         exit 1
     else
         # If swap exists, turn it off first
@@ -270,7 +271,8 @@ if [ -n "$RUN_SCRIPT" ]; then
 
     # Execute run.sh with arguments
     cd "$(dirname "$RUN_SCRIPT")"
-    ./run.sh $@
+    systemd-inhibit --what=shutdown:sleep:idle:handle-lid-switch --why="Deployment running" \
+        bash ./run.sh $@
 else
     write_status_message "No run.sh script found in the repository. Please check the repository structure." "\033[31m"
     exit 1
