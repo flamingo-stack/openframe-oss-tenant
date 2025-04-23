@@ -300,11 +300,11 @@ case "$APP" in
     fi
     ;;
   openframe_microservices_register_apps)
-    # kubectl -n infrastructure apply -f ./kind-cluster/apps/jobs/register-tools.yaml && \
+    # kubectl -n infrastructure apply -f ./deploy/dev/jobs/register-tools.yaml && \
     # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
     start_spinner "Registering apps"
     openframe_microservices_openframe_management_wait > /dev/null 2>&1 && \
-    ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/register/register.sh > "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
+    ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/register/register.sh > "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
     stop_spinner $?
     echo
     sed -n '/Fleet MDM Credentials:/,/All ingresses:/{ /All ingresses:/!p }' "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log"

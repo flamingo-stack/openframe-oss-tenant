@@ -3,7 +3,7 @@
 # OPENFRAME CONFIG SERVER
 function openframe_microservices_openframe_config_server_deploy() {
   echo "Deploying Config Server" && \
-  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-config
+  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-config
 }
 
 function openframe_microservices_openframe_config_server_wait() {
@@ -13,13 +13,13 @@ function openframe_microservices_openframe_config_server_wait() {
 
 function openframe_microservices_openframe_config_server_delete() {
   echo "Deleting Config Server"
-  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-config
+  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-config
 }
 
 # OPENFRAME API
 function openframe_microservices_openframe_api_deploy() {
   echo "Deploying API" && \
-  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-api
+  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-api
 }
 
 function openframe_microservices_openframe_api_wait() {
@@ -29,13 +29,13 @@ function openframe_microservices_openframe_api_wait() {
 
 function openframe_microservices_openframe_api_delete() {
   echo "Deleting API" && \
-  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-api
+  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-api
 }
 
 # OPENFRAME MANAGEMENT (depends on Config Server, MongoDB)
 function openframe_microservices_openframe_management_deploy() {
   echo "Deploying Management" && \
-  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-management
+  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-management
 }
 
 function openframe_microservices_openframe_management_wait() {
@@ -45,13 +45,13 @@ function openframe_microservices_openframe_management_wait() {
 
 function openframe_microservices_openframe_management_delete() {
   echo "Deleting Management"
-  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-management
+  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-management
 }
 
 # OPENFRAME STREAM (depends on Kafka, Config Server, Cassandra, MongoDB, Loki)
 function openframe_microservices_openframe_stream_deploy() {
   echo "Deploying Stream" && \
-  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-stream
+  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-stream
 }
 
 function openframe_microservices_openframe_stream_wait() {
@@ -61,13 +61,13 @@ function openframe_microservices_openframe_stream_wait() {
 
 function openframe_microservices_openframe_stream_delete() {
   echo "Deleting Stream" && \
-  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-stream
+  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-stream
 }
 
 # OPENFRAME GATEWAY (depends on Config Server, MongoDB)
 function openframe_microservices_openframe_gateway_deploy() {
   echo "Deploying Gateway"
-  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-gateway
+  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-gateway
 }
 
 function openframe_microservices_openframe_gateway_wait() {
@@ -77,13 +77,13 @@ function openframe_microservices_openframe_gateway_wait() {
 
 function openframe_microservices_openframe_gateway_delete() {
   echo "Deleting Gateway"
-  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-gateway
+  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-gateway
 }
 
 # OPENFRAME UI (depends on API, Management)
 function openframe_microservices_openframe_ui_deploy() {
   echo "Deploying UI" && \
-  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-ui
+  kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-ui
 }
 
 function openframe_microservices_openframe_ui_wait() {
@@ -93,7 +93,7 @@ function openframe_microservices_openframe_ui_wait() {
 
 function openframe_microservices_openframe_ui_delete() {
   echo "Deleting UI"
-  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-microservices/openframe-ui
+  kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-ui
 }
 
 # Wait for all openframe-microservices apps to be ready

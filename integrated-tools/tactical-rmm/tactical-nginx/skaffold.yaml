@@ -53,4 +53,4 @@ build:
     push: false
 manifests:
   rawYaml:
-    - ../../../kind-cluster/apps/integrated-tools/tactical-rmm/base/tactical-nginx.yaml
+    - ../../../deploy/dev/integrated-tools/tactical-rmm/base/tactical-nginx.yaml
