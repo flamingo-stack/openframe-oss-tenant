@@ -25,27 +25,18 @@ public class ToolConnectionService {
     private final ToolConnectionRepository toolConnectionRepository;
     private final MachineRepository machineRepository;
 
-    /**
-     * Get all tool connections across all machines
-     */
     public List<ToolConnectionResponse> getAllToolConnections() {
         return toolConnectionRepository.findAll().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get all tool connections for a specific machine
-     */
     public List<ToolConnectionResponse> getToolConnectionsByMachineId(String openframeAgentId) {
         return toolConnectionRepository.findByMachineId(openframeAgentId).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get all tool connections for a machine in the format with a tools collection
-     */
     public AgentToolCollectionResponse getAgentToolCollection(String openframeAgentId) {
         List<ToolConnection> connections = toolConnectionRepository.findByMachineId(openframeAgentId);
 
@@ -58,9 +49,6 @@ public class ToolConnectionService {
         return new AgentToolCollectionResponse(openframeAgentId, tools);
     }
 
-    /**
-     * Get a specific tool connection by machine ID and tool type
-     */
     public Optional<ToolConnectionResponse> getToolConnectionByMachineIdAndToolId(String openframeAgentId, String toolId) {
         ToolType toolType = getToolTypeFromString(toolId);
         return toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
@@ -100,9 +88,6 @@ public class ToolConnectionService {
         return convertToResponse(saved);
     }
 
-    /**
-     * Update an existing tool connection
-     */
     @Transactional
     public Optional<ToolConnectionResponse> updateToolConnection(String openframeAgentId, String toolId, String agentId) {
         ToolType toolType = getToolTypeFromString(toolId);
@@ -115,9 +100,6 @@ public class ToolConnectionService {
                 });
     }
 
-    /**
-     * Delete a tool connection
-     */
     @Transactional
     public void deleteToolConnection(String openframeAgentId, String toolId) {
         ToolType toolType = getToolTypeFromString(toolId);
@@ -129,9 +111,6 @@ public class ToolConnectionService {
                 });
     }
 
-    /**
-     * Convert a ToolConnection entity to a ToolConnectionResponse
-     */
     private ToolConnectionResponse convertToResponse(ToolConnection connection) {
         return new ToolConnectionResponse(
                 connection.getMachineId(),
@@ -141,9 +120,6 @@ public class ToolConnectionService {
         );
     }
 
-    /**
-     * Convert a string tool ID to a ToolType enum
-     */
     private ToolType getToolTypeFromString(String toolId) {
         try {
             return ToolType.valueOf(toolId.toUpperCase());

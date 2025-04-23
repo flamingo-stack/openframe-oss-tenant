@@ -24,9 +24,6 @@ public class AgentService {
     private final MachineRepository machineRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    /**
-     * Register a new agent in the system
-     */
     @Transactional
     public AgentRegistrationResponse registerAgent(String initialKey, AgentRegistrationRequest request) {
         // Check for existing machine
@@ -66,9 +63,6 @@ public class AgentService {
         return new AgentRegistrationResponse(clientId, clientSecret);
     }
 
-    /**
-     * Generate a secure random secret for OAuth clients
-     */
     private String generateSecureSecret() {
         byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
