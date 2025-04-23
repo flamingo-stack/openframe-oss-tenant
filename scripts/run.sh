@@ -93,9 +93,14 @@ case "$ARG" in
     ;;
   k|cluster)
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
-    start_spinner "Setting up cluster"
-    setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
-    stop_spinner $? && \
+    if k3d cluster list | grep -q "openframe-dev"; then
+      start_spinner "Using existing 'openframe-dev' cluster."
+      stop_spinner $?
+    else
+      start_spinner "Setting up cluster"
+      setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
+      stop_spinner $?
+    fi
     start_spinner "Checking bases"
     if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
       create_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1

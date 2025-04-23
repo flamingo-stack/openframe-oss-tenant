@@ -122,12 +122,13 @@ TOTAL_MEMORY=$(sysctl hw.memsize | awk '{print int($2/1024/1024)}')
 AVAILABLE_MEMORY=$(top -l 1 | grep PhysMem | awk '{print $8}' | sed 's/M//')
 FREE_SPACE=$(df -m / | grep -v Avail | awk '{print $4}')
 CURRENT_SWAP=$(sysctl vm.swapusage | awk '{print $4}' | sed 's/M//' | awk '{printf "%.0f\n", $1}')
+TOTAL_AVAILABLE_MEMORY=$((AVAILABLE_MEMORY + CURRENT_SWAP))
 
-if [ "$AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ] || [ $((CURRENT_SWAP + AVAILABLE_MEMORY)) -lt "$RECOMMENDED_MEMORY" ]; then
-    SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $AVAILABLE_MEMORY)" | bc)
+if [ "$TOTAL_AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ]; then
+    SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $TOTAL_AVAILABLE_MEMORY)" | bc)
     RESERVED_SPACE=2048  # Reserve 2GB for OS
-    write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of free RAM (${AVAILABLE_MEMORY}MB)" "\033[33m"
-    write_status_message "Recommended swap size: ${SWAP_SIZE}MB" "\033[33m"
+    write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of total memory (RAM: ${AVAILABLE_MEMORY}MB, Swap: ${CURRENT_SWAP}MB)" "\033[33m"
+    write_status_message "Additional swap needed: ${SWAP_SIZE}MB" "\033[33m"
     write_status_message "Available disk space: ${FREE_SPACE}MB (Reserving ${RESERVED_SPACE}MB for OS)" "\033[33m"
 
     if [ "${FREE_SPACE%.*}" -lt "$(echo "${SWAP_SIZE%.*} + $RESERVED_SPACE" | bc)" ]; then
@@ -235,7 +236,13 @@ if [ -n "$RUN_SCRIPT" ]; then
 
     # Execute run.sh with arguments
     cd "$(dirname "$RUN_SCRIPT")"
+    caffeinate -dimsu &  # Prevent display, idle, system, and user inactivity sleep
+    caffeinate_pid=$!
     ./run.sh $@
+    # Cleanup
+    if [[ -n "$caffeinate_pid" ]]; then
+        kill "$caffeinate_pid"
+    fi
 else
     write_status_message "No run.sh script found in the repository. Please check the repository structure." "\033[31m"
     exit 1

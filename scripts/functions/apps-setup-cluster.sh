@@ -1,14 +1,6 @@
 #!/bin/bash
 function setup_cluster() {
 
-    # Check if the cluster exists
-    if k3d cluster list | grep -q "openframe-dev"; then
-      echo "Cluster 'openframe-dev' already exists. Cannot modify existing cluster configuration."
-      echo "To recreate with different settings, please delete it first with: $SCRIPT_DIR/run.sh delete"
-      echo "or application deployment will be deployed on the existing cluster"
-      return 1 # TODO: Exit 1 to stop the script ?
-    fi
-
     echo "Updating helm repos indexes"
     helm repo update
 

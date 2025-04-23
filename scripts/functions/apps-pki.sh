@@ -76,7 +76,4 @@ function create_ca() {
     echo "Unsupported OS"
     exit 1
   fi
-
-  # read -p "Press Enter to continue"
-
 }

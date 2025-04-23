@@ -494,7 +494,7 @@ case "$APP" in
     ACTION=${2}
     IFWAIT=${3:-}
 
-    start_spinner "Deploying OpenFrame Microservices"
+    start_spinner "Waiting for OpenFrame Datasources to be ready" && \
     openframe_datasources_redis_wait 2>&1 >> "${DEPLOY_LOG_DIR}/openframe-datasources-redis-deploy.log" && \
     openframe_datasources_kafka_wait 2>&1 >> "${DEPLOY_LOG_DIR}/openframe-datasources-kafka-deploy.log" && \
     openframe_datasources_mongodb_wait 2>&1 >> "${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-deploy.log" && \
@@ -503,23 +503,36 @@ case "$APP" in
     openframe_datasources_zookeeper_wait 2>&1 >> "${DEPLOY_LOG_DIR}/openframe-datasources-zookeeper-deploy.log" && \
     openframe_datasources_nifi_wait 2>&1 >> "${DEPLOY_LOG_DIR}/openframe-datasources-nifi-deploy.log" && \
     openframe_datasources_pinot_wait 2>&1 >> "${DEPLOY_LOG_DIR}/openframe-datasources-pinot-deploy.log" && \
-    $0 openframe_microservices_openframe_config_server $ACTION &
-    $0 openframe_microservices_openframe_api $ACTION &
-    $0 openframe_microservices_openframe_management $ACTION &
-    $0 openframe_microservices_openframe_stream $ACTION &
-    $0 openframe_microservices_openframe_gateway $ACTION &
-    $0 openframe_microservices_openframe_ui $ACTION &
+    stop_spinner $? && \
+    start_spinner "Deploying OpenFrame Microservices" && \
+    $0 openframe_microservices_openframe_config_server $ACTION && \
+    $0 openframe_microservices_openframe_api $ACTION && \
+    $0 openframe_microservices_openframe_management $ACTION && \
+    $0 openframe_microservices_openframe_stream $ACTION && \
+    $0 openframe_microservices_openframe_gateway $ACTION && \
+    $0 openframe_microservices_openframe_ui $ACTION
     stop_spinner $?
     ;;
   itd|integrated_tools_datasources)
     ACTION=${2}
     IFWAIT=${3:-}
 
-    start_spinner "Deploying Integrated Tools Datasources"
-    $0 integrated_tools_datasources_fleet $ACTION
-    $0 integrated_tools_datasources_authentik $ACTION
-    $0 integrated_tools_datasources_meshcentral $ACTION
+    start_spinner "Deploying Integrated Tools Datasources" && \
+    $0 integrated_tools_datasources_fleet $ACTION && \
+    $0 integrated_tools_datasources_authentik $ACTION && \
+    $0 integrated_tools_datasources_meshcentral $ACTION && \
     $0 integrated_tools_datasources_tactical_rmm $ACTION
+    stop_spinner $?
+    ;;
+  it|integrated_tools)
+    ACTION=${2}
+    IFWAIT=${3:-}
+
+    start_spinner "Deploying Integrated Tools" && \
+    $0 integrated_tools_fleet $ACTION && \
+    $0 integrated_tools_authentik $ACTION && \
+    $0 integrated_tools_meshcentral $ACTION && \
+    $0 integrated_tools_tactical_rmm $ACTION
     stop_spinner $?
     ;;
   dat|datasources)
@@ -536,17 +549,6 @@ case "$APP" in
     $0 openframe_microservices $ACTION
     $0 integrated_tools $ACTION
     ;;
-  it|integrated_tools)
-    ACTION=${2}
-    IFWAIT=${3:-}
-
-    start_spinner "Deploying Integrated Tools"
-    $0 integrated_tools_fleet $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-fleet-deploy.log" &
-    sleep 1 && $0 integrated_tools_authentik $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-authentik-deploy.log" &
-    sleep 1 && $0 integrated_tools_meshcentral $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-meshcentral-deploy.log" &
-    sleep 1 && $0 integrated_tools_tactical_rmm $ACTION 2>&1 >> "${DEPLOY_LOG_DIR}/integrated-tools-tactical-rmm-deploy.log" &
-    stop_spinner $?
-    ;;
   a|all)
     # ------------- ALL -------------
     ACTION=${2}
@@ -555,7 +557,6 @@ case "$APP" in
     $0 platform $ACTION && \
     $0 datasources $ACTION && \
     $0 stateless $ACTION && \
-    $0 client_tools $ACTION && \
     $0 openframe_microservices_register_apps $ACTION
     echo "Wait for all apps to be ready... (This may take a while)"
     ;;
@@ -567,5 +568,4 @@ case "$APP" in
     echo
     echo "Available apps:"
     cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
-    exit 1
 esac
