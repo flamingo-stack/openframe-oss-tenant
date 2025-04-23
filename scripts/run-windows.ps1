@@ -47,11 +47,11 @@ function Get-UserConfirmation {
         [string]$Message,
         [bool]$DefaultYes = $true
     )
-    
+
     if ($Silent) {
         return $DefaultYes
     }
-    
+
     $response = Read-Host "$Message (Y/N)"
     return $response -match '^[Yy]'
 }
@@ -63,7 +63,7 @@ function Write-StatusMessage {
         [string]$Color = "White",
         [bool]$Important = $false
     )
-    
+
     if (-not $Silent -or $Important) {
         Write-Host $Message -ForegroundColor $Color
     }
@@ -267,10 +267,10 @@ function Test-DockerStatus {
 # Function to remove Kind network configuration
 function Remove-KindNetwork {
     Write-Host "Removing Kind cluster network configuration..." -ForegroundColor Cyan
-    
+
     try {
         $existingIP = Get-NetIPAddress -IPAddress "192.168.100.100" -ErrorAction SilentlyContinue
-        
+
         if ($existingIP) {
             Remove-NetIPAddress -IPAddress "192.168.100.100" -Confirm:$false
             Write-Host "Removed Kind cluster IP configuration." -ForegroundColor Green
@@ -283,7 +283,7 @@ function Remove-KindNetwork {
 # Add this to your existing cleanup code
 function Cleanup-Environment {
     Write-Host "Cleaning up environment..." -ForegroundColor Cyan
-    
+
     # Remove Kind cluster if it exists
     $kindCluster = $(kind get clusters 2>&1)
     if ($LASTEXITCODE -eq 0 -and $kindCluster -contains "kind") {
@@ -291,7 +291,7 @@ function Cleanup-Environment {
         kind delete cluster
         Remove-Item -Path "/tmp/control-plane", "/tmp/worker1", "/tmp/worker2", "/tmp/worker3" -Recurse -Force -ErrorAction SilentlyContinue
     }
-    
+
     # Remove network configuration
     Remove-KindNetwork
 }

@@ -37,4 +37,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../kind-cluster/apps/integrated-tools/meshcentral
+    - ../../../deploy/dev/integrated-tools/meshcentral
