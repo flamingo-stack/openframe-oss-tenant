@@ -269,21 +269,10 @@ if [ -n "$RUN_SCRIPT" ]; then
         export OPENFRAME_AUTO_APPROVE=true
     fi
 
-    NETWORK_PLUGIN="flannel"
-    for arg in "$@"; do
-        case "$arg" in
-            --network-plugin=*)
-                NETWORK_PLUGIN="${arg#*=}"
-                ;;
-        esac
-    done
-    
-    SCRIPT_ARGS="$@ --network-plugin=$NETWORK_PLUGIN"
-    
     # Execute run.sh with arguments
     cd "$(dirname "$RUN_SCRIPT")"
     systemd-inhibit --what=shutdown:sleep:idle:handle-lid-switch --why="Deployment running" \
-        bash ./run.sh $SCRIPT_ARGS
+        bash ./run.sh $@
 else
     write_status_message "No run.sh script found in the repository. Please check the repository structure." "\033[31m"
     exit 1
