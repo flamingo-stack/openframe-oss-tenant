@@ -221,23 +221,65 @@ function Set-DockerConfiguration {
     }
 }
 
+# Setting up WSL configuration
+function Setup-WSLConfig {
+    Write-Host "Setting up WSL configuration..."
+    Write-Host "Running in Windows environment"
+
+    # Get total system memory in MB
+    $totalMemoryBytes = [math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory)
+    $totalMemoryMB = [math]::Round($totalMemoryBytes / 1MB)
+
+    # Calculate values: 60% for memory, but at least 16GB total resources
+    $memoryMB = [math]::Round(($totalMemoryMB / 5) * 3)
+    $memoryGB = [math]::Round($memoryMB / 1024)
+
+    if ($memoryGB -lt 16) {
+        $swapGB = 16 - $memoryGB
+    } else {
+        $swapGB = 0
+    }
+
+    # Get Windows user profile path
+    $winHome = $env:USERPROFILE
+    $wslConfigPath = Join-Path -Path $winHome -ChildPath ".wslconfig"
+
+    Write-Host "Creating WSL config file with memory=${memoryGB}GB and swap=${swapGB}GB..."
+
+    # Get number of processors
+    $numberOfProcessors = $env:NUMBER_OF_PROCESSORS
+
+    # Create WSL configuration with calculated values
+    $wslConfigContent = @"
+[wsl2]
+memory=${memoryGB}GB
+processors=${numberOfProcessors}
+swap=${swapGB}GB
+"@
+
+    # Write the content to the file
+    Set-Content -Path $wslConfigPath -Value $wslConfigContent -Force
+
+    Write-Host "Created WSL config at $wslConfigPath"
+}
+
 # Function to prevent system sleep
 function Disable-SystemSleep {
     try {
         Write-Host "Configuring system power settings..." -ForegroundColor Yellow
-        
+
         # Prevent sleep when plugged in
         powercfg /change standby-timeout-ac 0
         powercfg /change hibernate-timeout-ac 0
         powercfg /change disk-timeout-ac 0
         powercfg /change monitor-timeout-ac 0
-        
+
         # Prevent sleep on battery (optional, but recommended for laptops)
         powercfg /change standby-timeout-dc 0
         powercfg /change hibernate-timeout-dc 0
         powercfg /change disk-timeout-dc 0
         powercfg /change monitor-timeout-dc 0
-        
+
         Write-Host "System power settings configured to prevent sleep!" -ForegroundColor Green
         return $true
     }
@@ -319,6 +361,8 @@ if (-not (Set-LoopbackAdapter)) {
 
 # 3. Configure Docker
 Set-DockerConfiguration
+
+Setup-WSLConfig
 
 # 4. Prevent system sleep
 if (-not (Disable-SystemSleep)) {
