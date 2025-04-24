@@ -11,5 +11,5 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.autobuild.enabled": true,
     "java.debug.settings.showLogicalStructure": true,
-    "java.debug.settings.showStaticVariables": true,
+    "java.debug.settings.showStaticVariables": true
 }

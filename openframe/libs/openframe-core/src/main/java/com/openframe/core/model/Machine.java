@@ -2,7 +2,6 @@ package com.openframe.core.model;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 import com.openframe.core.model.device.*;
 import jakarta.validation.constraints.NotBlank;
@@ -29,7 +28,6 @@ public class Machine {
     private String organizationId;
 
     private String hostname;
-
     private String displayName;
     private String serialNumber;
     private String manufacturer;
@@ -44,12 +42,11 @@ public class Machine {
     private SecurityState securityState;
     private ComplianceState complianceState;
     private List<SecurityAlert> securityAlerts;
-    private Map<String, String> tags;
 
     private Instant lastSecurityScan;
     private Instant lastComplianceScan;
     private List<ComplianceRequirement> complianceRequirements;
 
     private Instant registeredAt;  // When device was first registered (replaces createdAt)
-    private Instant updatedAt;     // Last time device info was updated (replaces lastModifiedAt)        // "ACTIVE", "OFFLINE", etc.
-} 
+    private Instant updatedAt;     // Last time device info was updated (replaces lastModifiedAt)
+}

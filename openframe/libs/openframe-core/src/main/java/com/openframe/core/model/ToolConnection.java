@@ -10,8 +10,8 @@ import lombok.Data;
 @Data
 @Document(collection = "tool_connections")
 @CompoundIndexes({
-    @CompoundIndex(name = "machine_tool_idx", def = "{'machineId': 1, 'toolType': 1}", unique = true),
-    @CompoundIndex(name = "tool_id_type_idx", def = "{'toolId': 1, 'toolType': 1}", unique = true)
+        @CompoundIndex(name = "machine_tool_idx", def = "{'machineId': 1, 'toolType': 1}", unique = true),
+        @CompoundIndex(name = "tool_id_type_idx", def = "{'agentToolId': 1, 'toolType': 1}", unique = true) // Note this change
 })
 public class ToolConnection {
     @Id
@@ -19,18 +19,13 @@ public class ToolConnection {
 
     private String machineId;
     private ToolType toolType;
-    private String toolId;
-    
+    private String agentToolId;
+
     private ConnectionStatus status;
     private String metadata;   // JSON string for tool-specific data
     
     private Instant connectedAt;
     private Instant lastSyncAt;
     private Instant disconnectedAt;
-    
-    public enum ConnectionStatus {
-        CONNECTED,
-        DISCONNECTED,
-        ERROR
-    }
+
 } 

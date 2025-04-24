@@ -1,5 +1,6 @@
 package com.openframe.api.dto.agent;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,9 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ToolConnectionResponse {
-    private String openframeAgentId;
-    private String toolType; 
+public class ToolConnectionUpdateRequest {
+    @NotBlank(message = "agentToolId is required")
     private String agentToolId;
-    private String status;
 }

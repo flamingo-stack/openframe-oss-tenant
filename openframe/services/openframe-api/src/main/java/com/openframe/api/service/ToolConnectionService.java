@@ -2,6 +2,7 @@ package com.openframe.api.service;
 import com.openframe.api.dto.agent.ToolConnectionResponse;
 import com.openframe.api.dto.agent.AgentToolCollectionResponse;
 import com.openframe.api.dto.agent.AgentToolCollectionResponse.ToolInfo;
+import com.openframe.core.model.ConnectionStatus;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.ToolConnection;
 import com.openframe.core.model.ToolType;
@@ -43,32 +44,27 @@ public class ToolConnectionService {
         List<ToolInfo> tools = connections.stream()
                 .map(conn -> new ToolInfo(
                         conn.getToolType().toString().toLowerCase(),
-                        conn.getToolId()))
+                        conn.getAgentToolId()))
                 .collect(Collectors.toList());
 
         return new AgentToolCollectionResponse(openframeAgentId, tools);
     }
 
-    public Optional<ToolConnectionResponse> getToolConnectionByMachineIdAndToolId(String openframeAgentId, String toolId) {
-        ToolType toolType = getToolTypeFromString(toolId);
+    public Optional<ToolConnectionResponse> getToolConnectionByMachineIdAndToolType(String openframeAgentId, String agentToolType) {
+        ToolType toolType = getToolTypeFromString(agentToolType);
         return toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
                 .map(this::convertToResponse);
     }
 
-    /**
-     * Add a new tool connection
-     */
     @Transactional
-    public ToolConnectionResponse addToolConnection(String openframeAgentId, String toolId, String agentId) {
-        // Verify the machine exists
+    public ToolConnectionResponse addToolConnection(String openframeAgentId, String agentToolType, String agentId) {
         Optional<Machine> machine = machineRepository.findByMachineId(openframeAgentId);
         if (machine.isEmpty()) {
             throw new RuntimeException("Machine not found: " + openframeAgentId);
         }
 
-        ToolType toolType = getToolTypeFromString(toolId);
+        ToolType toolType = getToolTypeFromString(agentToolType);
 
-        // Check if connection already exists
         Optional<ToolConnection> existingConnection = toolConnectionRepository
                 .findByMachineIdAndToolType(openframeAgentId, toolType);
 
@@ -76,12 +72,11 @@ public class ToolConnectionService {
             throw new RuntimeException("Tool connection already exists for this machine and tool type");
         }
 
-        // Create new connection
         ToolConnection connection = new ToolConnection();
         connection.setMachineId(openframeAgentId);
         connection.setToolType(toolType);
-        connection.setToolId(agentId);
-        connection.setStatus(ToolConnection.ConnectionStatus.CONNECTED);
+        connection.setAgentToolId(agentId);
+        connection.setStatus(ConnectionStatus.CONNECTED);
         connection.setConnectedAt(Instant.now());
 
         ToolConnection saved = toolConnectionRepository.save(connection);
@@ -89,23 +84,23 @@ public class ToolConnectionService {
     }
 
     @Transactional
-    public Optional<ToolConnectionResponse> updateToolConnection(String openframeAgentId, String toolId, String agentId) {
-        ToolType toolType = getToolTypeFromString(toolId);
+    public Optional<ToolConnectionResponse> updateToolConnection(String openframeAgentId, String agentToolType, String agentId) {
+        ToolType toolType = getToolTypeFromString(agentToolType);
 
         return toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
                 .map(connection -> {
-                    connection.setToolId(agentId);
+                    connection.setAgentToolId(agentId);
                     connection.setLastSyncAt(Instant.now());
                     return convertToResponse(toolConnectionRepository.save(connection));
                 });
     }
 
     @Transactional
-    public void deleteToolConnection(String openframeAgentId, String toolId) {
-        ToolType toolType = getToolTypeFromString(toolId);
+    public void deleteToolConnection(String openframeAgentId, String agentToolType) {
+        ToolType toolType = getToolTypeFromString(agentToolType);
         toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
                 .ifPresent(connection -> {
-                    connection.setStatus(ToolConnection.ConnectionStatus.DISCONNECTED);
+                    connection.setStatus(ConnectionStatus.DISCONNECTED);
                     connection.setDisconnectedAt(Instant.now());
                     toolConnectionRepository.save(connection);
                 });
@@ -115,16 +110,16 @@ public class ToolConnectionService {
         return new ToolConnectionResponse(
                 connection.getMachineId(),
                 connection.getToolType().toString().toLowerCase(),
-                connection.getToolId(),
+                connection.getAgentToolId(),
                 connection.getStatus().toString()
         );
     }
 
-    private ToolType getToolTypeFromString(String toolId) {
+    private ToolType getToolTypeFromString(String agentToolType) {
         try {
-            return ToolType.valueOf(toolId.toUpperCase());
+            return ToolType.valueOf(agentToolType.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid tool type: " + toolId);
+            throw new RuntimeException("Invalid tool type: " + agentToolType);
         }
     }
 }

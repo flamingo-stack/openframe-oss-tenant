@@ -17,7 +17,7 @@ public class AgentToolCollectionResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ToolInfo {
-        private String toolId;
-        private String agentId;
+        private String toolType;
+        private String agentToolId;
     }
 }

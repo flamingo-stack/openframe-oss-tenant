@@ -26,7 +26,6 @@ public class AgentService {
 
     @Transactional
     public AgentRegistrationResponse registerAgent(String initialKey, AgentRegistrationRequest request) {
-        // Check for existing machine
         Optional<OAuthClient> existingClient = oauthClientRepository
                 .findByMachineId(request.getMachineId());
 
@@ -47,7 +46,6 @@ public class AgentService {
 
         oauthClientRepository.save(client);
 
-        // Create and save machine details
         Machine machine = new Machine();
         machine.setMachineId(request.getMachineId());
         machine.setHostname(request.getHostname());
