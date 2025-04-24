@@ -80,6 +80,16 @@ ARG=$1
 APP=$2
 ACTION=$3
 
+export NETWORK_PLUGIN=${NETWORK_PLUGIN:-"flannel"}
+
+for arg in "$@"; do
+  case "$arg" in
+    --network-plugin=*)
+      export NETWORK_PLUGIN="${arg#*=}"
+      ;;
+  esac
+done
+
 if [ "$ACTION" == "intercept" ]; then
   LOCAL_PORT="$4"
   REMOTE_PORT_NAME="$5"
@@ -100,6 +110,12 @@ case "$ARG" in
       start_spinner "Setting up cluster"
       setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
       stop_spinner $?
+      
+      if [ "$NETWORK_PLUGIN" != "flannel" ]; then
+        start_spinner "Installing $NETWORK_PLUGIN CNI plugin"
+        install_cni_plugin "$NETWORK_PLUGIN" > "${DEPLOY_LOG_DIR}/install-cni.log" 2>&1
+        stop_spinner $?
+      fi
     fi
     start_spinner "Checking bases"
     if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
