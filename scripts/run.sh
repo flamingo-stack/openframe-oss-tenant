@@ -141,8 +141,6 @@ case "$ARG" in
     start_spinner "Starting cluster"
     add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     k3d cluster start openframe-dev > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
-    tools_telepresence_wait > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
-    telepresence connect > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1
     stop_spinner $?
     ;;
   stop)
