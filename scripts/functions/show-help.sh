@@ -4,7 +4,7 @@ $0 <parameter>
 
 Parameters:
 
-pre                                     : Check if all required commands are installed
+pki                                     : Generate CA certificate
 k|cluster                               : Setup cluster only
 d|delete                                : Remove cluster
 s|start                                 : Start kind cluster
@@ -23,7 +23,7 @@ a|app <app-name|all> <action>           : Deploy <app-name> or 'all' apps
                                           Tail changes, build and deploy on change.
                                           (Delete app before using dev mode otherwise may
                                           require run twice)
-  debug <local-port> <remote-port-name> : Enable debug mode and redirect traffic to local
+  intercept <localport> <remoteportname>: Enable intercept mode and redirect traffic to local
                                           port (Use CTRL+C to stop)
 
 

@@ -1,0 +1,105 @@
+grafana:
+  adminUser: openframe
+  adminPassword: password123456789
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+      hide_version: true
+      org_name: Main Org.
+    auth.basic:
+      enabled: true
+    auth:
+      disable_login_form: false
+      login_maximum_inactive_lifetime_duration: 7d
+      login_maximum_lifetime_duration: 30d
+      token_rotation_interval_minutes: 10
+    security:
+      allow_embedding: true
+      cookie_samesite: strict
+      allow_embedding_from_anywhere: true
+      cookie_secure: false
+      disable_initial_admin_creation: false
+    server:
+      domain: grafana.192.168.100.100.nip.io
+      root_url: "%(protocol)s://%(domain)s/"
+    dashboards:
+      default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    path: "/metrics"
+    relabelings:
+      - action: replace
+        sourceLabels: [__meta_kubernetes_pod_name]
+        targetLabel: pod
+      - action: replace
+        sourceLabels: [__meta_kubernetes_namespace]
+        targetLabel: namespace
+      - action: replace
+        sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+        targetLabel: app
+  ingress:
+    enabled: true
+    hosts: ["grafana.192.168.100.100.nip.io"]
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+    - secretName: grafana-tls-secret
+      hosts: ["grafana.192.168.100.100.nip.io"]
+  persistence:
+    enabled: true
+    type: sts
+    accessModes:
+      - ReadWriteOnce
+    size: 1Gi
+    finalizers:
+      - kubernetes.io/pvc-protection
+  additionalDataSources:
+    - name: loki
+      type: loki
+      access: proxy
+      url: http://openframe-loki:3100
+      isDefault: false
+      editable: false
+      uid: loki
+  prune: true
+
+alertmanager:
+  ingress:
+    enabled: true
+    hosts: ["alertmanager.192.168.100.100.nip.io"]
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+    - secretName: alertmanager-tls-secret
+      hosts: ["alertmanager.192.168.100.100.nip.io"]
+
+prometheus:
+  ingress:
+    enabled: true
+    hosts: ["prometheus.192.168.100.100.nip.io"]
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+    - secretName: prometheus-tls-secret
+      hosts: ["prometheus.192.168.100.100.nip.io"]
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    externalPrefixNilUsesHelmValues: false
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi

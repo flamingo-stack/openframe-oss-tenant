@@ -14,4 +14,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../kind-cluster/apps/integrated-tools/fleet
+    - ../../deploy/dev/integrated-tools/fleet
