@@ -41,11 +41,6 @@ echo "Setting permissions on application support directory..."
 chmod -R 755 "/Library/Application Support/OpenFrame"
 ls -la "/Library/Application Support/OpenFrame"
 
-# Create a test log file to verify logging permissions
-echo "Creating test log file in log directory..."
-echo "OpenFrame postinstall test log entry - $(date)" > "/Library/Logs/OpenFrame/postinstall_test.log"
-ls -la "/Library/Logs/OpenFrame/postinstall_test.log"
-
 # Create and initialize the main log file with proper permissions
 echo "Creating and initializing main log file..."
 echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"level\":\"INFO\",\"message\":\"Log file created by postinstall script\",\"source\":\"postinstall\"}" > "/Library/Logs/OpenFrame/openframe.log"

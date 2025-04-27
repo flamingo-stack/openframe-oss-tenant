@@ -138,6 +138,23 @@ This architecture follows these key principles:
   - Discovered `service-manager` crate which provides a unified API for different service managers
   - Confirmed `tracing` with `tracing-subscriber` as the recommended modern logging solution
 
+- [x] Refactor `DirectoryManager` to use platform-agnostic paths
+  - Implemented platform-specific functions for paths (similar to `logging/platform.rs`)
+  - Added `get_logs_directory()` and `get_app_support_directory()` functions
+  - Created platform-specific implementations for Windows, macOS, and Linux
+  - Added `set_directory_permissions()` function with platform-specific implementations
+  - Updated unit tests to include platform-specific assertions
+  - Maintained backward compatibility with existing macOS implementation
+  - Added new `user_logs_dir` field to handle per-user logs separately from system logs
+  - Integrated health check functionality to validate directory permissions
+  - Implemented cross-platform support for both system and user log directories
+  - Built and tested on macOS to verify integration with the daemon service
+
+- [x] Clean up installation scripts to remove unnecessary test files
+  - Identified and removed temporary log file creation in postinstall script
+  - Ensured proper permissions are set on log directories
+  - Verified daemon continues to work with updated DirectoryManager
+
 ## In Progress Tasks
 
 - [ ] Research and select a cross-platform service management library
@@ -145,30 +162,18 @@ This architecture follows these key principles:
   - Consider using `service-manager` crate that supports Windows Service, Launchd (macOS), systemd and other service managers
   - Aim for a minimal adapter pattern rather than a full replacement of existing code
 
-- [ ] Research and select a cross-platform logging library
-  - Current implementation uses `tracing` and `tracing-subscriber` with JSON formatting
-  - Need to ensure consistent log file locations across platforms
-  - Ensure log rotation works on all platforms
-  - Consider enhancing JSON formatting for better compatibility with centralized logging systems
+- [ ] Enhance logging framework for cross-platform consistency
+  - Update logging module to use the improved DirectoryManager exclusively
+  - Consolidate the overlapping functionality in `logging/platform.rs` and `platform/directories.rs`
+  - Ensure consistent log file handling across platforms
+  - Add better error handling for permission issues when writing logs
 
 - [ ] Identify and list all code that is not cross-platform or is obsolete
-  - Platform-specific paths in `DirectoryManager` need to be refactored
   - Service implementation has platform-specific branches
   - Installation scripts only support macOS
   - **GOOD NEWS**: `logging/platform.rs` already has proper cross-platform support
 
-- [ ] Identify all code related to logging and root execution for refactor
-  - Current logging uses DirectoryManager with hard-coded macOS paths
-  - Root execution leverages platform-specific mechanisms
-  - Need a consistent approach across platforms
-  - **GOOD NEWS**: The existing code structure is already well-designed for cross-platform support
-
 ## Future Tasks
-
-- [ ] Refactor `DirectoryManager` to use platform-agnostic paths
-  - Use approach similar to `logging/platform.rs` for cross-platform path resolution
-  - Create a unified API with platform-specific implementations under the hood
-  - Ensure proper permissions across all platforms
 
 - [ ] Implement cross-platform service management
   - Use a lightweight adapter pattern to maintain existing code where possible
@@ -176,12 +181,6 @@ This architecture follows these key principles:
   - For Linux: support both systemd and init.d scripts
   - For macOS: maintain current LaunchDaemon approach
   - Add proper support for automated installation/uninstallation on all platforms
-
-- [ ] Enhance logging framework for cross-platform consistency
-  - Consolidate and standardize the approach used in `logging/platform.rs`
-  - Ensure consistent formatting across platforms
-  - Add structured JSON logging with common fields for better centralized log analysis
-  - Implement proper span/context tracking to correlate related log entries
 
 - [ ] Create platform-specific installation packages
   - Windows: Create MSI installer
@@ -249,7 +248,7 @@ This architecture follows these key principles:
 
 ### Relevant Files
 
-- `client/src/platform/directories.rs` - Platform-specific directory management (needs refactoring)
+- `client/src/platform/directories.rs` - Platform-specific directory management (successfully refactored)
 - `client/src/platform/permissions.rs` - Permission handling (needs cross-platform support)
 - `client/src/service.rs` - Service implementation with platform-specific code
 - `client/src/logging/mod.rs` - Main logging implementation
