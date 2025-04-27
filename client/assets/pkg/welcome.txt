@@ -1,0 +1,6 @@
+Welcome to the OpenFrame Installer
+
+This will install OpenFrame on your Mac.
+OpenFrame requires administrative privileges to install.
+
+Click Continue to proceed with the installation. 

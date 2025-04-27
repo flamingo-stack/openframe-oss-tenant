@@ -1,44 +1,21 @@
 #!/bin/bash
-set -e
-
+# Simple postinstall script
 echo "OpenFrame: Starting postinstall script..."
 
-# Verify application exists
-if [ ! -d "/Applications/OpenFrame.app" ]; then
-    echo "ERROR: /Applications/OpenFrame.app not found!"
-    exit 1
-fi
+# Create required directories and set permissions
+mkdir -p "/Library/Logs/OpenFrame"
+mkdir -p "/Library/Application Support/OpenFrame/run"
 
-if [ ! -f "/Applications/OpenFrame.app/Contents/MacOS/openframe" ]; then
-    echo "ERROR: Binary not found at /Applications/OpenFrame.app/Contents/MacOS/openframe"
-    exit 1
-fi
+# Create empty log files
+touch "/Library/Logs/OpenFrame/error.log"
+touch "/Library/Logs/OpenFrame/output.log"
 
-# Set permissions for the application binary and plist
-echo "Setting permissions on application binary..."
-chmod 755 /Applications/OpenFrame.app/Contents/MacOS/openframe
-echo "Setting permissions on launch daemon plist..."
-chmod 644 /Library/LaunchDaemons/com.openframe.agent.plist
+# Set proper permissions
+chmod 755 "/Library/Logs/OpenFrame"
+chmod 755 "/Library/Application Support/OpenFrame"
+chmod 644 "/Library/Logs/OpenFrame/error.log"
+chmod 644 "/Library/Logs/OpenFrame/output.log"
+chmod 644 "/Library/LaunchDaemons/com.openframe.agent.plist"
 
-# Make sure logs directory exists and has proper permissions
-if [ ! -d "/Library/Logs/OpenFrame" ]; then
-    echo "Creating logs directory..."
-    mkdir -p "/Library/Logs/OpenFrame"
-    chown root:admin "/Library/Logs/OpenFrame"
-    chmod 755 "/Library/Logs/OpenFrame"
-fi
-
-# Make sure support directory exists and has proper permissions
-if [ ! -d "/Library/Application Support/OpenFrame" ]; then
-    echo "Creating support directory..."
-    mkdir -p "/Library/Application Support/OpenFrame/run"
-    chown -R root:admin "/Library/Application Support/OpenFrame"
-    chmod -R 755 "/Library/Application Support/OpenFrame"
-fi
-
-# Load the launch daemon
-echo "Loading launch daemon..."
-launchctl load /Library/LaunchDaemons/com.openframe.agent.plist
-
-echo "OpenFrame: Postinstall completed successfully."
+echo "OpenFrame: Postinstall completed"
 exit 0

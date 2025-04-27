@@ -7,17 +7,34 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Set up directory paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AGENT_DIR="$(dirname "$SCRIPT_DIR")"
-cd "$AGENT_DIR"
-
 echo -e "${BLUE}Building OpenFrame...${NC}"
+
+# Setup directory paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLIENT_DIR="$(dirname "$SCRIPT_DIR")"
+TARGET_DIR="$CLIENT_DIR/target"
+PKG_DIR="$TARGET_DIR/pkg_build"
+PAYLOAD_ROOT="$PKG_DIR/payload_root"
+APP_DIR="$PAYLOAD_ROOT/Applications/OpenFrame.app"
+APP_CONTENTS="$APP_DIR/Contents"
+APP_MACOS="$APP_CONTENTS/MacOS"
+APP_RESOURCES="$APP_CONTENTS/Resources"
+LIBRARY_DIR="$PAYLOAD_ROOT/Library"
+LOGS_DIR="$LIBRARY_DIR/Logs/OpenFrame"
+SUPPORT_DIR="$LIBRARY_DIR/Application Support/OpenFrame"
+LAUNCHDAEMONS_DIR="$LIBRARY_DIR/LaunchDaemons"
+DIST_DIR="$TARGET_DIR/dist"
+ASSETS_DIR="$CLIENT_DIR/assets"
+PKG_ASSETS_DIR="$ASSETS_DIR/pkg"
+CA_DIR="$CLIENT_DIR/../scripts/files/ca"
 
 echo -e "${BLUE}Cleaning target directory...${NC}"
 # Clean the target directory
 cargo clean
 rm -rf target
+mkdir -p "$TARGET_DIR" "$PKG_DIR" "$DIST_DIR"
+mkdir -p "$APP_MACOS" "$APP_RESOURCES"
+mkdir -p "$LOGS_DIR" "$SUPPORT_DIR/run" "$LAUNCHDAEMONS_DIR"
 
 echo -e "${BLUE}Setting up build environment...${NC}"
 
@@ -84,7 +101,7 @@ if ! vpk --help &> /dev/null; then
 fi
 
 # Verify required files exist
-if [ ! -f "config/agent.toml" ]; then
+if [ ! -f "$CLIENT_DIR/config/agent.toml" ]; then
     echo -e "${RED}Error: config/agent.toml not found${NC}"
     exit 1
 fi
@@ -92,98 +109,71 @@ fi
 echo -e "${BLUE}Building release version...${NC}"
 cargo build --release
 
-# Create the package structure
-PACKAGE_ROOT="target/package_root"
-PAYLOAD_ROOT="$PACKAGE_ROOT/payload"
-APP_NAME="OpenFrame"
-APP_BUNDLE="$APP_NAME.app"
-APP_CONTENTS="$PAYLOAD_ROOT/Applications/$APP_BUNDLE/Contents"
-APP_MACOS="$APP_CONTENTS/MacOS"
-APP_RESOURCES="$APP_CONTENTS/Resources"
-LAUNCHDAEMONS_DIR="$PAYLOAD_ROOT/Library/LaunchDaemons"
-LOGS_DIR="$PAYLOAD_ROOT/Library/Logs/OpenFrame"
-APP_SUPPORT_DIR="$PAYLOAD_ROOT/Library/Application Support/OpenFrame"
-
 echo -e "${BLUE}Creating package structure...${NC}"
-mkdir -p "$APP_MACOS" "$APP_RESOURCES" "$LAUNCHDAEMONS_DIR" "$LOGS_DIR" "$APP_SUPPORT_DIR/run"
 
-# Copy files
-cp "target/release/openframe" "$APP_MACOS/openframe"
-cp "assets/Info.plist" "$APP_CONTENTS/"
-cp "assets/OpenFrame.icns" "$APP_RESOURCES/"
-cp "config/agent.toml" "$APP_RESOURCES/"
-cp "assets/com.openframe.agent.plist" "$LAUNCHDAEMONS_DIR/"
+# Copy the binary to the app bundle
+cp "$TARGET_DIR/release/openframe" "$APP_MACOS/openframe"
 
-# Set permissions
-chmod 755 "$APP_MACOS/openframe"
-chmod 644 "$LAUNCHDAEMONS_DIR/com.openframe.agent.plist"
-chmod -R 755 "$LOGS_DIR"
-chmod -R 755 "$APP_SUPPORT_DIR"
+# Copy other necessary files into the app bundle
+cp "$ASSETS_DIR/Info.plist" "$APP_CONTENTS/"
+cp "$ASSETS_DIR/OpenFrame.icns" "$APP_RESOURCES/"
+cp "$CLIENT_DIR/config/agent.toml" "$APP_RESOURCES/"
 
-# Create empty log files
-touch "$LOGS_DIR/error.log" 
-touch "$LOGS_DIR/output.log"
+# Create empty log files and set permissions
+touch "$LOGS_DIR/error.log" "$LOGS_DIR/output.log"
 chmod 644 "$LOGS_DIR/error.log" "$LOGS_DIR/output.log"
 
-# Create and use a self-signed certificate
-echo -e "${BLUE}Setting up code signing certificate...${NC}"
-CERT_NAME="OpenFrameDeveloper"
-CERT_PATH="$PACKAGE_ROOT/certificate.p12"
-KEYCHAIN_PATH="$HOME/Library/Keychains/login.keychain-db"
-PASSWORD="openframe123"  # Use a more secure password in production
+# Copy the LaunchDaemon plist file
+cp "$ASSETS_DIR/com.openframe.agent.plist" "$LAUNCHDAEMONS_DIR/"
+chmod 644 "$LAUNCHDAEMONS_DIR/com.openframe.agent.plist"
 
-# Check if certificate already exists in the keychain
-if ! security find-certificate -c "$CERT_NAME" "$KEYCHAIN_PATH" &>/dev/null; then
-    echo -e "Creating self-signed certificate..."
-    
-    # Create temporary directory for certificate creation
-    CERT_TMP=$(mktemp -d)
-    pushd "$CERT_TMP" > /dev/null
-    
-    # Generate a private key and certificate signing request
-    openssl genrsa -out private.key 2048
-    openssl req -new -key private.key -out request.csr -subj "/CN=$CERT_NAME/O=OpenFrame/C=US"
-    
-    # Create a self-signed certificate
-    openssl x509 -req -days 365 -in request.csr -signkey private.key -out certificate.crt
-    
-    # Convert to p12 format for keychain import
-    openssl pkcs12 -export -out "$CERT_PATH" -inkey private.key -in certificate.crt -passout pass:"$PASSWORD"
-    
-    # Import into keychain
-    security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$PASSWORD" -T /usr/bin/codesign -T /usr/bin/pkgbuild
-    
-    # Trust the certificate
-    CERT_HASH=$(security find-certificate -c "$CERT_NAME" -Z "$KEYCHAIN_PATH" | grep ^SHA-1 | cut -d: -f2- | tr -d ' ')
-    security add-trusted-cert -d -k "$KEYCHAIN_PATH" certificate.crt
-    
-    popd > /dev/null
-    rm -rf "$CERT_TMP"
-    
-    echo -e "${GREEN}Certificate created and installed successfully!${NC}"
-else
-    echo -e "Certificate already exists, using existing certificate."
-fi
+# Set proper permissions
+chmod 755 "$APP_MACOS/openframe"
+chmod -R 755 "$SUPPORT_DIR"
 
-# Use ad-hoc signing for now (this is more reliable)
-echo -e "${BLUE}Signing binary...${NC}"
-codesign --force --sign - --entitlements "assets/openframe.entitlements" --options runtime "$APP_MACOS/openframe"
+echo -e "${BLUE}Signing binary with ad-hoc signature...${NC}"
+codesign --force --options runtime --sign - "$APP_MACOS/openframe"
 
-# Create the final installer package
-echo -e "${BLUE}Creating installer package...${NC}"
-mkdir -p "target/releases"
+# Prepare scripts directory for installation scripts
+mkdir -p "$PKG_DIR/scripts"
+cp -p "$CLIENT_DIR/scripts/pkg_scripts/postinstall" "$PKG_DIR/scripts/"
+cp -p "$CLIENT_DIR/scripts/pkg_scripts/preinstall" "$PKG_DIR/scripts/"
+cp -p "$CLIENT_DIR/scripts/pkg_scripts/uninstall.sh" "$PKG_DIR/scripts/"
 
-# Build the package without signing (more reliable)
-echo -e "${BLUE}Building package...${NC}"
-pkgbuild --root "$PAYLOAD_ROOT" \
-         --identifier "com.openframe" \
-         --version "1.0.0" \
-         --install-location "/" \
-         --scripts "scripts/pkg_scripts" \
+echo -e "${BLUE}Creating component packages with pkgbuild...${NC}"
+
+# Create a component package for the Applications directory
+pkgbuild --root "$PAYLOAD_ROOT/Applications" \
+         --identifier "com.openframe.app" \
+         --install-location "/Applications" \
+         --scripts "$PKG_DIR/scripts" \
          --ownership recommended \
-         "target/releases/com.openframe-osx-Setup.pkg"
+         "$PKG_DIR/app.pkg"
 
-echo -e "${GREEN}Package created successfully!${NC}"
-echo -e "Package location: target/releases/com.openframe-osx-Setup.pkg"
-echo -e "\nTo install, run:"
-echo -e "sudo installer -pkg target/releases/com.openframe-osx-Setup.pkg -target / -allowUntrusted" 
+# Create a component package for the Library directory
+pkgbuild --root "$PAYLOAD_ROOT/Library" \
+         --identifier "com.openframe.library" \
+         --install-location "/Library" \
+         --ownership recommended \
+         "$PKG_DIR/library.pkg"
+
+# Copy component packages to the dist directory
+cp "$PKG_DIR/app.pkg" "$DIST_DIR/"
+cp "$PKG_DIR/library.pkg" "$DIST_DIR/"
+
+echo -e "${BLUE}Creating final package with productbuild...${NC}"
+
+# Copy package resources to build directory
+mkdir -p "$PKG_DIR/Resources"
+cp "$PKG_ASSETS_DIR/welcome.txt" "$PKG_DIR/Resources/"
+cp "$PKG_ASSETS_DIR/conclusion.txt" "$PKG_DIR/Resources/"
+
+# Build the final distribution package without signing
+productbuild --distribution "$PKG_ASSETS_DIR/distribution.xml" \
+             --resources "$PKG_DIR/Resources" \
+             --package-path "$DIST_DIR" \
+             --version "1.0.0" \
+             "$DIST_DIR/com.openframe-osx-Setup.pkg"
+
+echo -e "${GREEN}Package created successfully at $DIST_DIR/com.openframe-osx-Setup.pkg${NC}"
+echo -e "To install, run: sudo installer -pkg $DIST_DIR/com.openframe-osx-Setup.pkg -target / -allowUntrusted" 

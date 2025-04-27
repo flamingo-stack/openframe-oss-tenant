@@ -1,0 +1,7 @@
+OpenFrame has been successfully installed!
+
+The application has been installed to /Applications/OpenFrame.app
+The service has been configured to start automatically.
+
+To manually start the service:
+sudo launchctl load /Library/LaunchDaemons/com.openframe.agent.plist 

@@ -12,7 +12,14 @@
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
-    <true/>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
     <key>WorkingDirectory</key>
     <string>/Library/Application Support/OpenFrame</string>
     <key>StandardErrorPath</key>
@@ -25,5 +32,7 @@
     <string>wheel</string>
     <key>ProcessType</key>
     <string>Interactive</string>
+    <key>ExitTimeOut</key>
+    <integer>10</integer>
 </dict>
 </plist> 
