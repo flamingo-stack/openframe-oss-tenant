@@ -15,12 +15,17 @@ This task list tracks the steps to ensure OpenFrame installs and runs as root on
 - [x] Install LaunchDaemon plist to `/Library/LaunchDaemons`
 - [x] Create required log and support directories with root permissions
 - [x] Fix postinstall script to remove application existence checks that caused installation failure (exit code 143)
+- [x] Fix package structure to use productbuild for creating the installer
+- [x] Implement correct component-based packaging with separate app and library components
+- [x] Ensure component packages are properly copied to dist directory for productbuild
+- [x] Fix distribution.xml to reference component packages correctly
 
 ## In Progress Tasks
 
-- [ ] Fix the package structure to properly install the app bundle (still missing after installation)
-- [ ] Investigate why pkgbuild is not correctly including Application components
-- [ ] Test package installer with pkgutil --expand to examine actual payload structure
+- [x] Test package installer with pkgutil --expand to examine actual payload structure
+- [x] Verify package structure contains both app and library components
+- [x] Verify installation scripts (preinstall and postinstall) are correctly included in package
+- [ ] Identify and fix root cause of installer termination with exit code 143
 - [ ] Verify ownership and permissions in the package
 - [ ] Ensure LaunchDaemon starts agent as root
 - [ ] Verify agent can execute scripts as root
@@ -69,3 +74,14 @@ This task list tracks the steps to ensure OpenFrame installs and runs as root on
 
 ## Important Implementation Note
 DO NOT CREATE A WRAPPER SCRIPT as an installation method. The solution must fix the PKG installer itself to properly install all components directly. Focus on resolving the core packaging issues in build-package.sh and ensuring proper component inclusion through pkgbuild/productbuild. 
+
+## Debugging Notes
+
+- The package structure appears correct with app.pkg and library.pkg components
+- Both preinstall and postinstall scripts are included and simplified
+- Package components show correct install locations (/Applications for app.pkg, /Library for library.pkg)
+- Installation still terminates with exit code 143, suggesting a deeper issue
+- Potential areas to investigate:
+  - Check system logs for errors during installation
+  - Verify permissions on the target directories
+  - Consider debugging installation process with sandbox or trace options 
