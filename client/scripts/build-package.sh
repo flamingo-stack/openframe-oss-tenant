@@ -5,7 +5,20 @@ set -e
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
+
+# Parse arguments
+FORCE_DEV_MODE=0
+
+for arg in "$@"; do
+  case $arg in
+    --dev)
+      FORCE_DEV_MODE=1
+      shift
+      ;;
+  esac
+done
 
 echo -e "${BLUE}Building OpenFrame...${NC}"
 
@@ -31,7 +44,10 @@ CA_DIR="$CLIENT_DIR/../scripts/files/ca"
 echo -e "${BLUE}Cleaning target directory...${NC}"
 # Clean the target directory
 cargo clean
-rm -rf target
+if [ -d "$TARGET_DIR" ]; then
+    # Use sudo to clean up any files with permission issues
+    sudo rm -rf "$TARGET_DIR"
+fi
 mkdir -p "$TARGET_DIR" "$PKG_DIR" "$DIST_DIR"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"
 mkdir -p "$LOGS_DIR" "$SUPPORT_DIR/run" "$LAUNCHDAEMONS_DIR"
@@ -117,11 +133,32 @@ cp "$TARGET_DIR/release/openframe" "$APP_MACOS/openframe"
 # Copy other necessary files into the app bundle
 cp "$ASSETS_DIR/Info.plist" "$APP_CONTENTS/"
 cp "$ASSETS_DIR/OpenFrame.icns" "$APP_RESOURCES/"
-cp "$CLIENT_DIR/config/agent.toml" "$APP_RESOURCES/"
 
-# Create empty log files and set permissions
-touch "$LOGS_DIR/error.log" "$LOGS_DIR/output.log"
-chmod 644 "$LOGS_DIR/error.log" "$LOGS_DIR/output.log"
+# Also copy the agent.toml file to the Application Support directory
+echo -e "${BLUE}Copying configuration file to Application Support directory...${NC}"
+# Generate a unique agent ID using UUID
+AGENT_UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+echo -e "${BLUE}Setting default agent ID to $AGENT_UUID...${NC}"
+
+# Create a temporary copy with the updated agent ID
+TMP_CONFIG=$(mktemp)
+cat "$CLIENT_DIR/config/agent.toml" | sed "s/id = \"\"/id = \"$AGENT_UUID\"/" > "$TMP_CONFIG"
+
+# Also ensure debug logging is enabled for initial deployment
+echo "Setting debug logging in agent configuration..."
+sed -i '' 's/log_level = "info"/log_level = "debug"/' "$TMP_CONFIG"
+
+# Ensure log path is explicitly set
+if ! grep -q "log_path" "$TMP_CONFIG"; then
+    echo "Adding explicit log path to configuration..."
+    sed -i '' '/\[logging\]/a\\
+log_path = "/Library/Logs/OpenFrame"  # Explicit log path for macOS' "$TMP_CONFIG"
+fi
+
+# Copy the modified config to both locations
+cp "$TMP_CONFIG" "$APP_RESOURCES/agent.toml"
+cp "$TMP_CONFIG" "$SUPPORT_DIR/agent.toml"
+rm "$TMP_CONFIG"
 
 # Copy the LaunchDaemon plist file
 cp "$ASSETS_DIR/com.openframe.agent.plist" "$LAUNCHDAEMONS_DIR/"
@@ -140,22 +177,50 @@ cp -p "$CLIENT_DIR/scripts/pkg_scripts/postinstall" "$PKG_DIR/scripts/"
 cp -p "$CLIENT_DIR/scripts/pkg_scripts/preinstall" "$PKG_DIR/scripts/"
 cp -p "$CLIENT_DIR/scripts/pkg_scripts/uninstall.sh" "$PKG_DIR/scripts/"
 
-echo -e "${BLUE}Creating component packages with pkgbuild...${NC}"
+# Ensure installation scripts are executable
+chmod 755 "$PKG_DIR/scripts/postinstall"
+chmod 755 "$PKG_DIR/scripts/preinstall"
+chmod 755 "$PKG_DIR/scripts/uninstall.sh"
 
-# Create a component package for the Applications directory
+echo -e "${BLUE}Creating component packages...${NC}"
+
+# Create a component package for the Applications directory (no sign parameter - ad-hoc)
+echo -e "${BLUE}Creating app component package...${NC}"
+
+# First analyze the bundle to get component info
+echo -e "${BLUE}Analyzing app bundle...${NC}"
+pkgbuild --analyze --root "$PAYLOAD_ROOT/Applications" "$PKG_DIR/app.plist"
+
+# Modify the BundleIsRelocatable property in the plist
+if [ -f "$PKG_DIR/app.plist" ]; then
+    echo -e "${BLUE}Setting BundleIsRelocatable to NO in component plist...${NC}"
+    /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable NO" "$PKG_DIR/app.plist"
+fi
+
+# Build the package with the modified plist
 pkgbuild --root "$PAYLOAD_ROOT/Applications" \
          --identifier "com.openframe.app" \
          --install-location "/Applications" \
          --scripts "$PKG_DIR/scripts" \
          --ownership recommended \
+         --component-plist "$PKG_DIR/app.plist" \
          "$PKG_DIR/app.pkg"
 
-# Create a component package for the Library directory
+# Sign the app component package
+echo -e "${BLUE}Signing app component package...${NC}"
+"$SCRIPT_DIR/create-sign-identity.sh" "$PKG_DIR/app.pkg"
+
+# Create a component package for the Library directory (no sign parameter - ad-hoc)
+echo -e "${BLUE}Creating library component package...${NC}"
 pkgbuild --root "$PAYLOAD_ROOT/Library" \
          --identifier "com.openframe.library" \
          --install-location "/Library" \
          --ownership recommended \
          "$PKG_DIR/library.pkg"
+
+# Sign the library component package
+echo -e "${BLUE}Signing library component package...${NC}"
+"$SCRIPT_DIR/create-sign-identity.sh" "$PKG_DIR/library.pkg"
 
 # Copy component packages to the dist directory
 cp "$PKG_DIR/app.pkg" "$DIST_DIR/"
@@ -168,12 +233,31 @@ mkdir -p "$PKG_DIR/Resources"
 cp "$PKG_ASSETS_DIR/welcome.txt" "$PKG_DIR/Resources/"
 cp "$PKG_ASSETS_DIR/conclusion.txt" "$PKG_DIR/Resources/"
 
-# Build the final distribution package without signing
+# Build the final package (unsigned)
+echo -e "${BLUE}Creating final package...${NC}"
 productbuild --distribution "$PKG_ASSETS_DIR/distribution.xml" \
-             --resources "$PKG_DIR/Resources" \
-             --package-path "$DIST_DIR" \
-             --version "1.0.0" \
-             "$DIST_DIR/com.openframe-osx-Setup.pkg"
+            --resources "$PKG_DIR/Resources" \
+            --package-path "$DIST_DIR" \
+            --version "1.0.0" \
+            "$DIST_DIR/OpenFrame-Setup.pkg"
 
-echo -e "${GREEN}Package created successfully at $DIST_DIR/com.openframe-osx-Setup.pkg${NC}"
-echo -e "To install, run: sudo installer -pkg $DIST_DIR/com.openframe-osx-Setup.pkg -target / -allowUntrusted" 
+# Use our improved create-sign-identity.sh script to handle signing
+if [ -f "$SCRIPT_DIR/create-sign-identity.sh" ]; then
+    echo -e "${BLUE}Running certificate creation and signing script...${NC}"
+    chmod +x "$SCRIPT_DIR/create-sign-identity.sh"
+    "$SCRIPT_DIR/create-sign-identity.sh" "$DIST_DIR/OpenFrame-Setup.pkg"
+    
+    # Check exit status of signing
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Package signed successfully at $DIST_DIR/OpenFrame-Setup.pkg${NC}"
+        echo -e "To install, run: sudo installer -pkg $DIST_DIR/OpenFrame-Setup.pkg -target /"
+    else
+        echo -e "${YELLOW}Warning: Package may be ad-hoc signed. May require --allowUntrusted for installation.${NC}"
+        echo -e "${GREEN}Package created at $DIST_DIR/OpenFrame-Setup.pkg${NC}"
+        echo -e "To install, run: sudo installer -pkg $DIST_DIR/OpenFrame-Setup.pkg -target / -allowUntrusted"
+    fi
+else
+    echo -e "${YELLOW}Warning: Package is unsigned. Requires --allowUntrusted for installation.${NC}"
+    echo -e "${GREEN}Package created at $DIST_DIR/OpenFrame-Setup.pkg${NC}"
+    echo -e "To install, run: sudo installer -pkg $DIST_DIR/OpenFrame-Setup.pkg -target / -allowUntrusted"
+fi 

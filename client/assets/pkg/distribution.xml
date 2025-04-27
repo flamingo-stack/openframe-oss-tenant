@@ -4,8 +4,9 @@
     <organization>OpenFrame</organization>
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
     <options customize="never" require-scripts="true" rootVolumeOnly="true" hostArchitectures="x86_64,arm64"/>
-    <welcome file="welcome.txt" mime-type="text/plain"/>
-    <conclusion file="conclusion.txt" mime-type="text/plain"/>
+    <!-- Resources are commented out as they're currently missing -->
+    <!-- <welcome file="welcome.txt" mime-type="text/plain"/> -->
+    <!-- <conclusion file="conclusion.txt" mime-type="text/plain"/> -->
     <volume-check>
         <allowed-os-versions>
             <os-version min="11.0"/>

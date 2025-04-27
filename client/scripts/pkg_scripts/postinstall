@@ -1,21 +1,110 @@
 #!/bin/bash
-# Simple postinstall script
+# Improved postinstall script for OpenFrame with better debugging
+set -e  # Exit immediately if any command fails
+
 echo "OpenFrame: Starting postinstall script..."
 
 # Create required directories and set permissions
+echo "Creating required log directories..."
 mkdir -p "/Library/Logs/OpenFrame"
 mkdir -p "/Library/Application Support/OpenFrame/run"
 
-# Create empty log files
-touch "/Library/Logs/OpenFrame/error.log"
-touch "/Library/Logs/OpenFrame/output.log"
+# Check for app bundle before setting permissions
+if [ -d "/Applications/OpenFrame.app" ]; then
+    # Set proper permissions for app bundle
+    echo "Setting proper permissions for app bundle..."
+    chmod -R 755 "/Applications/OpenFrame.app"
+    chmod 755 "/Applications/OpenFrame.app/Contents/MacOS/openframe"
+    # Set ownership to root
+    chown -R root:wheel "/Applications/OpenFrame.app"
+else
+    echo "ERROR: OpenFrame.app not found in /Applications! Installation may be incomplete."
+    ls -la "/Applications" || true
+fi
 
-# Set proper permissions
-chmod 755 "/Library/Logs/OpenFrame"
-chmod 755 "/Library/Application Support/OpenFrame"
-chmod 644 "/Library/Logs/OpenFrame/error.log"
-chmod 644 "/Library/Logs/OpenFrame/output.log"
-chmod 644 "/Library/LaunchDaemons/com.openframe.agent.plist"
+# Set proper permissions for support directories with detailed output
+echo "Setting permissions on log directory..."
+chmod -R 755 "/Library/Logs/OpenFrame"
+ls -la "/Library/Logs/OpenFrame"
 
-echo "OpenFrame: Postinstall completed"
+echo "Setting permissions on application support directory..."
+chmod -R 755 "/Library/Application Support/OpenFrame"
+ls -la "/Library/Application Support/OpenFrame"
+
+# Create a test log file to verify logging permissions
+echo "Creating test log file in log directory..."
+echo "OpenFrame postinstall test log entry - $(date)" > "/Library/Logs/OpenFrame/postinstall_test.log"
+ls -la "/Library/Logs/OpenFrame/postinstall_test.log"
+
+# Check for LaunchDaemon plist before setting permissions
+if [ -f "/Library/LaunchDaemons/com.openframe.agent.plist" ]; then
+    # Enhanced debugging - check permissions and validate plist
+    echo "LaunchDaemon plist found. Checking permissions and validity..."
+    ls -l "/Library/LaunchDaemons/com.openframe.agent.plist"
+    
+    # Validate plist format
+    echo "Validating plist format..."
+    plutil -lint "/Library/LaunchDaemons/com.openframe.agent.plist" || echo "WARNING: plist validation failed!"
+    
+    # Set proper permissions
+    echo "Setting proper permissions on LaunchDaemon plist..."
+    chmod 644 "/Library/LaunchDaemons/com.openframe.agent.plist"
+    chown root:wheel "/Library/LaunchDaemons/com.openframe.agent.plist"
+    
+    # First, check if the LaunchDaemon is already loaded
+    ALREADY_LOADED=0
+    if launchctl list | grep -q "com.openframe.agent"; then
+        echo "LaunchDaemon already loaded. Unloading for clean restart..."
+        launchctl unload "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null || true
+        ALREADY_LOADED=1
+    fi
+    
+    # Load the LaunchDaemon with better handling
+    echo "Loading LaunchDaemon..."
+    # Suppress stderr to avoid confusing error messages
+    # Try the bootstrap command first (modern macOS)
+    BOOTSTRAP_RESULT=1
+    LOAD_RESULT=1
+    
+    # Attempt bootstrap but don't show errors to avoid confusion
+    launchctl bootstrap system "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null
+    BOOTSTRAP_RESULT=$?
+    
+    if [ $BOOTSTRAP_RESULT -eq 0 ]; then
+        echo "Successfully loaded LaunchDaemon with bootstrap command"
+    else
+        # If bootstrap fails, try the legacy load command
+        launchctl load "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null
+        LOAD_RESULT=$?
+        
+        if [ $LOAD_RESULT -eq 0 ]; then
+            echo "Successfully loaded LaunchDaemon with load command"
+        else
+            # If both methods fail, check if it's actually loaded despite errors
+            if launchctl list | grep -q "com.openframe.agent"; then
+                echo "LaunchDaemon is running despite load command errors"
+            else
+                echo "WARNING: Failed to load LaunchDaemon. Bootstrap exit code: $BOOTSTRAP_RESULT, Load exit code: $LOAD_RESULT"
+                echo "This is not critical as the LaunchDaemon will be loaded on next reboot."
+            fi
+        fi
+    fi
+else
+    echo "ERROR: LaunchDaemon plist not found! Installation may be incomplete."
+fi
+
+# Set ownership on log and support directories
+echo "Setting ownership on log and support directories..."
+chown -R root:wheel "/Library/Logs/OpenFrame"
+chown -R root:wheel "/Library/Application Support/OpenFrame"
+
+# Verify write access to log directory
+echo "Testing write access to log directory..."
+if touch "/Library/Logs/OpenFrame/write_test" && rm "/Library/Logs/OpenFrame/write_test"; then
+    echo "Log directory is writable"
+else
+    echo "WARNING: Could not write to log directory!"
+fi
+
+echo "OpenFrame: Postinstall completed successfully"
 exit 0

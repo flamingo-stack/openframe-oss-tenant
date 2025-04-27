@@ -23,9 +23,9 @@
     <key>WorkingDirectory</key>
     <string>/Library/Application Support/OpenFrame</string>
     <key>StandardErrorPath</key>
-    <string>/Library/Logs/OpenFrame/error.log</string>
+    <string>/Library/Logs/OpenFrame/StandardError.log</string>
     <key>StandardOutPath</key>
-    <string>/Library/Logs/OpenFrame/output.log</string>
+    <string>/Library/Logs/OpenFrame/StandardOut.log</string>
     <key>UserName</key>
     <string>root</string>
     <key>GroupName</key>

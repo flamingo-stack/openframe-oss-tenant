@@ -133,6 +133,16 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
     let mut init_result = Ok(());
 
     INIT.call_once(|| {
+        // Quick diagnostic test - create a simple file to verify we can write to the log directory
+        let _ = std::fs::create_dir_all("/Library/Logs/OpenFrame");
+        let _ = std::fs::write(
+            "/Library/Logs/OpenFrame/init_check.log",
+            format!(
+                "Logging initialization started at {}\n",
+                chrono::Local::now()
+            ),
+        );
+
         // Initialize directory manager and ensure directories exist
         let dir_manager = DirectoryManager::new();
         if let Err(e) = dir_manager.perform_health_check() {
@@ -142,6 +152,14 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             ));
             return;
         }
+
+        // Explicitly create or touch the log file to ensure it exists
+        let log_file_path = dir_manager.logs_dir().join("openframe.log");
+        let _ = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(&log_file_path);
 
         // Set up file appender with rotation
         let file_appender = tracing_appender::rolling::RollingFileAppender::new(
@@ -186,6 +204,9 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             ));
             return;
         }
+
+        // Force an initial log entry to ensure file is created
+        tracing::info!("OpenFrame logging initialized");
 
         // Store metrics for later access
         METRICS_STORE.get_or_init(|| metrics_store);

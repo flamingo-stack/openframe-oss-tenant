@@ -10,7 +10,7 @@ max_retries = 3  # Maximum number of retry attempts
 [agent]
 id = ""  # Will be auto-generated on first run if empty
 name = ""  # Custom agent name (defaults to hostname)
-log_level = "info"  # debug, info, warn, error
+log_level = "debug"  # Changed from info to debug for more verbose logging
 update_channel = "stable"  # stable, beta, nightly
 working_dir = ""  # Custom working directory (defaults to system-specific path)
 temp_dir = ""  # Custom temporary directory (defaults to system temp)
@@ -25,6 +25,7 @@ shipping_endpoint = ""  # Log shipping endpoint URL
 retention_days = 30  # Number of days to keep logs
 metrics_enabled = true  # Enable metrics collection
 console_enabled = true  # Enable console logging (for development)
+log_path = "/Library/Logs/OpenFrame"  # Explicit log path for macOS
 
 [metrics]
 enabled = true
@@ -77,7 +78,7 @@ authentik_url = ""
 authentik_token = ""
 
 [debug]
-trace_enabled = false  # Enable detailed tracing
+trace_enabled = true  # Enable detailed tracing for diagnosing issues
 profile_enabled = false  # Enable performance profiling
 heap_profile = false  # Enable heap profiling
 debug_port = 0  # Debug port (0 to disable) 
