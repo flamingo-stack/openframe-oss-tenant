@@ -1,20 +1,40 @@
 #!/bin/bash
+set -e
+
+echo "OpenFrame: Starting preinstall script..."
+
+# Remove existing app bundle if it exists
+if [ -d "/Applications/OpenFrame.app" ]; then
+    echo "Removing existing app bundle..."
+    rm -rf "/Applications/OpenFrame.app"
+    if [ -d "/Applications/OpenFrame.app" ]; then
+        echo "ERROR: Failed to remove existing app bundle"
+        exit 1
+    fi
+fi
 
 # Unload existing launch daemon if it exists
-sudo launchctl unload /Library/LaunchDaemons/com.openframe.agent.plist 2>/dev/null || true
+echo "Unloading existing launch daemon..."
+if [ -f "/Library/LaunchDaemons/com.openframe.agent.plist" ]; then
+    launchctl unload /Library/LaunchDaemons/com.openframe.agent.plist 2>/dev/null || true
+fi
 
 # Stop any running OpenFrame processes
-sudo pkill -f openframe || true
+echo "Stopping any running OpenFrame processes..."
+pkill -f openframe 2>/dev/null || true
 
 # Create necessary directories
+echo "Creating required directories..."
 mkdir -p "/Library/Logs/OpenFrame"
 mkdir -p "/Library/Application Support/OpenFrame"
 mkdir -p "/Library/Application Support/OpenFrame/run"
 
 # Set proper permissions
+echo "Setting directory permissions..."
 chown -R root:admin "/Library/Logs/OpenFrame"
 chown -R root:admin "/Library/Application Support/OpenFrame"
 chmod -R 755 "/Library/Logs/OpenFrame"
 chmod -R 755 "/Library/Application Support/OpenFrame"
 
+echo "OpenFrame: Preinstall completed successfully."
 exit 0 
