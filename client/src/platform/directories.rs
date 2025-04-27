@@ -62,19 +62,16 @@ impl From<PermissionError> for DirectoryError {
 pub struct DirectoryManager {
     logs_dir: PathBuf,
     app_support_dir: PathBuf,
-    run_dir: PathBuf,
 }
 
 impl DirectoryManager {
     pub fn new() -> Self {
         let app_support_dir = PathBuf::from("/Library/Application Support/OpenFrame");
         let logs_dir = PathBuf::from("/Library/Logs/OpenFrame");
-        let run_dir = app_support_dir.join("run");
 
         Self {
             logs_dir,
             app_support_dir,
-            run_dir,
         }
     }
 
@@ -111,9 +108,6 @@ impl DirectoryManager {
         // Create and verify application support directory
         self.create_directory_with_permissions(&self.app_support_dir, &dir_perms)?;
 
-        // Create and verify run directory
-        self.create_directory_with_permissions(&self.run_dir, &dir_perms)?;
-
         Ok(())
     }
 
@@ -148,7 +142,6 @@ impl DirectoryManager {
 
         self.validate_directory_permissions(&self.logs_dir, &dir_perms)?;
         self.validate_directory_permissions(&self.app_support_dir, &dir_perms)?;
-        self.validate_directory_permissions(&self.run_dir, &dir_perms)?;
 
         Ok(())
     }
@@ -195,7 +188,6 @@ impl DirectoryManager {
 
         self.fix_directory_permissions(&self.logs_dir, &dir_perms)?;
         self.fix_directory_permissions(&self.app_support_dir, &dir_perms)?;
-        self.fix_directory_permissions(&self.run_dir, &dir_perms)?;
 
         Ok(())
     }
@@ -244,10 +236,6 @@ impl DirectoryManager {
     pub fn app_support_dir(&self) -> &Path {
         &self.app_support_dir
     }
-
-    pub fn run_dir(&self) -> &Path {
-        &self.run_dir
-    }
 }
 
 #[cfg(test)]
@@ -263,13 +251,11 @@ mod tests {
         let test_dir = DirectoryManager {
             logs_dir: temp.path().join("logs"),
             app_support_dir: temp.path().join("app"),
-            run_dir: temp.path().join("app/run"),
         };
 
         assert!(test_dir.ensure_directories().is_ok());
         assert!(test_dir.logs_dir.exists());
         assert!(test_dir.app_support_dir.exists());
-        assert!(test_dir.run_dir.exists());
     }
 
     #[test]
@@ -278,13 +264,11 @@ mod tests {
         let test_dir = DirectoryManager {
             logs_dir: temp.path().join("logs"),
             app_support_dir: temp.path().join("app"),
-            run_dir: temp.path().join("app/run"),
         };
 
         // Create directories with wrong permissions first
         std::fs::create_dir_all(&test_dir.logs_dir).unwrap();
         std::fs::create_dir_all(&test_dir.app_support_dir).unwrap();
-        std::fs::create_dir_all(&test_dir.run_dir).unwrap();
 
         // Set wrong permissions (too open)
         std::fs::set_permissions(&test_dir.logs_dir, std::fs::Permissions::from_mode(0o777))
@@ -310,7 +294,6 @@ mod tests {
         let test_dir = DirectoryManager {
             logs_dir: temp.path().join("logs"),
             app_support_dir: temp.path().join("app"),
-            run_dir: temp.path().join("app/run"),
         };
 
         // Create directories
@@ -338,7 +321,6 @@ mod tests {
         let test_dir = DirectoryManager {
             logs_dir: temp.path().join("logs"),
             app_support_dir: temp.path().join("app"),
-            run_dir: temp.path().join("app/run"),
         };
 
         // Create a file where a directory should be
@@ -361,7 +343,6 @@ mod tests {
         let test_dir = DirectoryManager {
             logs_dir: temp.path().join("logs"),
             app_support_dir: temp.path().join("app"),
-            run_dir: temp.path().join("app/run"),
         };
 
         // Initial health check should succeed and create directories
@@ -385,7 +366,6 @@ mod tests {
         let test_dir = DirectoryManager {
             logs_dir: temp.path().join("logs"),
             app_support_dir: temp.path().join("app"),
-            run_dir: temp.path().join("app/run"),
         };
 
         test_dir.ensure_directories().unwrap();
@@ -393,6 +373,5 @@ mod tests {
         // Test write access to each directory
         assert!(test_dir.can_write_to_directory(&test_dir.logs_dir));
         assert!(test_dir.can_write_to_directory(&test_dir.app_support_dir));
-        assert!(test_dir.can_write_to_directory(&test_dir.run_dir));
     }
 }

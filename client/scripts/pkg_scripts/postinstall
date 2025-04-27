@@ -7,7 +7,17 @@ echo "OpenFrame: Starting postinstall script..."
 # Create required directories and set permissions
 echo "Creating required log directories..."
 mkdir -p "/Library/Logs/OpenFrame"
-mkdir -p "/Library/Application Support/OpenFrame/run"
+mkdir -p "/Library/Application Support/OpenFrame"
+
+# Clean up any existing compressed log files
+echo "Cleaning up any existing compressed log files..."
+rm -f "/Library/Logs/OpenFrame/daemon_error.log.gz" "/Library/Logs/OpenFrame/daemon_output.log.gz"
+
+# Remove old run directory if it exists (no longer needed with LaunchDaemon)
+if [ -d "/Library/Application Support/OpenFrame/run" ]; then
+    echo "Removing deprecated run directory..."
+    rm -rf "/Library/Application Support/OpenFrame/run"
+fi
 
 # Check for app bundle before setting permissions
 if [ -d "/Applications/OpenFrame.app" ]; then
@@ -35,6 +45,35 @@ ls -la "/Library/Application Support/OpenFrame"
 echo "Creating test log file in log directory..."
 echo "OpenFrame postinstall test log entry - $(date)" > "/Library/Logs/OpenFrame/postinstall_test.log"
 ls -la "/Library/Logs/OpenFrame/postinstall_test.log"
+
+# Create and initialize the main log file with proper permissions
+echo "Creating and initializing main log file..."
+echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"level\":\"INFO\",\"message\":\"Log file created by postinstall script\",\"source\":\"postinstall\"}" > "/Library/Logs/OpenFrame/openframe.log"
+chmod 644 "/Library/Logs/OpenFrame/openframe.log"
+chown root:wheel "/Library/Logs/OpenFrame/openframe.log"
+ls -la "/Library/Logs/OpenFrame/openframe.log"
+
+# Create and initialize the daemon log files with proper permissions
+echo "Creating daemon log files..."
+# Create log files with substantial initial content to prevent immediate compression
+echo "# OpenFrame daemon stdout log file - Created $(date)" > "/Library/Logs/OpenFrame/daemon_output.log"
+echo "# This file contains stdout from the OpenFrame daemon process" >> "/Library/Logs/OpenFrame/daemon_output.log"
+echo "# Log entries will appear below this line" >> "/Library/Logs/OpenFrame/daemon_output.log"
+echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"level\":\"INFO\",\"message\":\"Daemon output log file created\",\"source\":\"postinstall\"}" >> "/Library/Logs/OpenFrame/daemon_output.log"
+
+echo "# OpenFrame daemon stderr log file - Created $(date)" > "/Library/Logs/OpenFrame/daemon_error.log"
+echo "# This file contains stderr from the OpenFrame daemon process" >> "/Library/Logs/OpenFrame/daemon_error.log"
+echo "# Error messages will appear below this line" >> "/Library/Logs/OpenFrame/daemon_error.log"
+echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"level\":\"INFO\",\"message\":\"Daemon error log file created\",\"source\":\"postinstall\"}" >> "/Library/Logs/OpenFrame/daemon_error.log"
+
+chmod 644 "/Library/Logs/OpenFrame/daemon_error.log"
+chmod 644 "/Library/Logs/OpenFrame/daemon_output.log"
+chown root:wheel "/Library/Logs/OpenFrame/daemon_error.log"
+chown root:wheel "/Library/Logs/OpenFrame/daemon_output.log"
+
+echo "Verifying daemon log files..."
+ls -la "/Library/Logs/OpenFrame/daemon_error.log"
+ls -la "/Library/Logs/OpenFrame/daemon_output.log"
 
 # Check for LaunchDaemon plist before setting permissions
 if [ -f "/Library/LaunchDaemons/com.openframe.agent.plist" ]; then
@@ -97,6 +136,17 @@ fi
 echo "Setting ownership on log and support directories..."
 chown -R root:wheel "/Library/Logs/OpenFrame"
 chown -R root:wheel "/Library/Application Support/OpenFrame"
+
+# Add log rotation configuration to prevent OS compression
+echo "Setting up log rotation..."
+cat > "/Library/Logs/OpenFrame/newsyslog.conf" << EOF
+# OpenFrame log rotation configuration
+/Library/Logs/OpenFrame/daemon_output.log 644 3 1000 * Z
+/Library/Logs/OpenFrame/daemon_error.log 644 3 1000 * Z
+EOF
+
+chmod 644 "/Library/Logs/OpenFrame/newsyslog.conf"
+chown root:wheel "/Library/Logs/OpenFrame/newsyslog.conf"
 
 # Verify write access to log directory
 echo "Testing write access to log directory..."

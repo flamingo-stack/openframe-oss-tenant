@@ -29,11 +29,15 @@ fn main() -> Result<()> {
         process::exit(1);
     }
 
+    // Add explicit startup log entry to verify logging is working
+    info!("OpenFrame agent starting up");
+
     let cli = Cli::parse();
     let rt = Runtime::new()?;
 
     match cli.command {
         Some(Commands::Install) => {
+            info!("Running install command");
             rt.block_on(async {
                 match Service::install().await {
                     Ok(_) => {
@@ -48,6 +52,7 @@ fn main() -> Result<()> {
             });
         }
         Some(Commands::Uninstall) => {
+            info!("Running uninstall command");
             rt.block_on(async {
                 match Service::uninstall().await {
                     Ok(_) => {
@@ -62,6 +67,7 @@ fn main() -> Result<()> {
             });
         }
         Some(Commands::Run) => {
+            info!("Running in direct mode (without service wrapper)");
             // Run directly without service wrapper
             match Client::new() {
                 Ok(client) => {
@@ -78,6 +84,7 @@ fn main() -> Result<()> {
             }
         }
         None => {
+            info!("Running as service");
             // Run as service by default
             if let Err(e) = rt.block_on(Service::run()) {
                 error!("Service failed: {}", e);
@@ -85,6 +92,9 @@ fn main() -> Result<()> {
             }
         }
     }
+
+    // Add explicit shutdown log entry to verify logging is still working
+    info!("OpenFrame agent shutting down");
 
     Ok(())
 }

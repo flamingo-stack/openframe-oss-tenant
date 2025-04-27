@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use std::ffi::OsString;
 use std::path::PathBuf;
 use tokio::runtime::Runtime;
+use tokio::time::{interval, Duration};
 use tracing::{error, info};
 
 use crate::{logging, platform::DirectoryManager, Client};
@@ -90,11 +91,30 @@ impl Service {
         // Initialize the client
         let client = Client::new()?;
 
+        // Start heartbeat logging in background
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(5)); // Log every 5 minutes
+            loop {
+                interval.tick().await;
+                let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                info!("OpenFrame service is running [heartbeat: {}]", timestamp);
+            }
+        });
+
         // Start the client
         client.start().await
     }
 
-    #[cfg(unix)]
+    #[cfg(target_os = "macos")]
+    pub async fn run_as_service() -> Result<()> {
+        info!("Running as macOS LaunchDaemon service");
+
+        // For macOS, we don't need to daemonize as the LaunchDaemon system handles it
+        // Just run the main service function directly
+        Self::run().await
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
     pub async fn run_as_service() -> Result<()> {
         // Get current username
         let username = whoami::username();
@@ -109,30 +129,16 @@ impl Service {
             return Err(e.into());
         }
 
-        let mut daemonize = Daemonize::new()
-            .pid_file(
-                dir_manager
-                    .run_dir()
-                    .join("openframe.pid")
-                    .to_str()
-                    .unwrap(),
-            )
+        // For other Unix systems, create a temporary pid file in the app support directory
+        let pid_file_path = format!("/tmp/openframe_{}.pid", std::process::id());
+
+        let daemonize = Daemonize::new()
+            .pid_file(&pid_file_path)
             .chown_pid_file(true)
             .working_directory(dir_manager.app_support_dir())
             .user(username.as_str())
+            .group("wheel")
             .umask(0o022);
-
-        // Configure group based on OS
-        #[cfg(target_os = "macos")]
-        {
-            info!("Configuring for macOS with admin group");
-            daemonize = daemonize.group("admin");
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            info!("Configuring for Unix with wheel group");
-            daemonize = daemonize.group("wheel");
-        }
 
         info!("Starting daemon with configuration");
         match daemonize.start() {

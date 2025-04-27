@@ -7,7 +7,6 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Applications/OpenFrame.app/Contents/MacOS/openframe</string>
-        <string>run</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -23,9 +22,9 @@
     <key>WorkingDirectory</key>
     <string>/Library/Application Support/OpenFrame</string>
     <key>StandardErrorPath</key>
-    <string>/Library/Logs/OpenFrame/StandardError.log</string>
+    <string>/Library/Logs/OpenFrame/daemon_error.log</string>
     <key>StandardOutPath</key>
-    <string>/Library/Logs/OpenFrame/StandardOut.log</string>
+    <string>/Library/Logs/OpenFrame/daemon_output.log</string>
     <key>UserName</key>
     <string>root</string>
     <key>GroupName</key>
@@ -34,5 +33,12 @@
     <string>Interactive</string>
     <key>ExitTimeOut</key>
     <integer>10</integer>
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>4096</integer>
+    </dict>
+    <key>AbandonProcessGroup</key>
+    <false/>
 </dict>
 </plist> 

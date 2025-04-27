@@ -63,6 +63,17 @@ This task list tracks the steps to ensure OpenFrame installs and runs as root on
   - Fixed by updating configuration and ensuring proper log directory permissions
   - Added explicit log path configuration and debug log level for better diagnostics
   - Updated postinstall script to verify logging permissions and add test log entry
+- [x] Fix daemon log compression issues
+  - Added SoftResourceLimits to LaunchDaemon plist to prevent automatic log compression
+  - Created custom view-logs.sh script to decompress and manage log files
+  - Enhanced postinstall script to properly initialize log files with content
+  - Modified logging code to properly output to stdout/stderr for capture in daemon logs
+  - Added newsyslog.conf configuration for custom log rotation
+- [x] Remove unnecessary run directory functionality
+  - Removed run_dir from DirectoryManager class to simplify code
+  - Updated service.rs to use temporary PID file for non-macOS platforms
+  - Modified postinstall script to remove legacy run directory
+  - Better leveraged macOS's LaunchDaemon system for process management
 
 ## Future Tasks
 

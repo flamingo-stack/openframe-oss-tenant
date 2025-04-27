@@ -40,6 +40,48 @@ struct LogEntry {
     context: serde_json::Value,
 }
 
+// Global file logger for direct writes when tracing fails
+static LOG_FILE: std::sync::OnceLock<Arc<Mutex<Option<std::fs::File>>>> =
+    std::sync::OnceLock::new();
+
+// Get access to the global log file for manual writing
+fn get_log_file() -> Arc<Mutex<Option<std::fs::File>>> {
+    LOG_FILE.get().cloned().unwrap_or_else(|| {
+        let file = Arc::new(Mutex::new(None));
+        let _ = LOG_FILE.set(file.clone());
+        file
+    })
+}
+
+// Manual log function that writes directly to file - fallback when tracing fails
+pub fn manual_log(level: &str, message: &str) {
+    let timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true);
+    let entry = LogEntry {
+        timestamp,
+        level: level.to_string(),
+        target: "manual".to_string(),
+        module_path: None,
+        file: None,
+        line: None,
+        thread: format!("{:?}", std::thread::current().id()),
+        message: message.to_string(),
+        error: None,
+        context: serde_json::Value::Object(serde_json::Map::new()),
+    };
+
+    if let Ok(json) = serde_json::to_string(&entry) {
+        if let Ok(mut file_lock) = get_log_file().lock() {
+            if let Some(ref mut file) = *file_lock {
+                let _ = writeln!(file, "{}", json);
+                let _ = file.flush();
+            }
+        }
+
+        // Also write to stdout for capture by LaunchDaemon
+        println!("{}", json);
+    }
+}
+
 pub struct JsonLayer {
     writer: Arc<std::sync::Mutex<std::fs::File>>,
     metrics: Arc<RwLock<MetricsStore>>,
@@ -81,6 +123,9 @@ where
             metrics.record_counter("log_count", 1, labels);
         }
 
+        // Store message content in a separate variable before using it
+        let message_content = visitor.message.clone().unwrap_or_default();
+
         let log_entry = LogEntry {
             timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true),
             level,
@@ -89,7 +134,7 @@ where
             file: event.metadata().file().map(|s| s.to_string()),
             line: event.metadata().line(),
             thread: format!("{:?}", std::thread::current().id()),
-            message: visitor.message.unwrap_or_default(),
+            message: message_content.clone(),
             error: visitor.error,
             context: serde_json::Value::Object(visitor.fields),
         };
@@ -97,8 +142,20 @@ where
         if let Ok(json) = serde_json::to_string(&log_entry) {
             if let Ok(mut file) = self.writer.lock() {
                 let _ = writeln!(file, "{}", json);
+                let _ = file.flush();
+            }
+
+            // Also write to stdout for capture by LaunchDaemon
+            // Use stdout for INFO or lower level logs, stderr for warnings/errors
+            if event.metadata().level() <= &Level::INFO {
+                println!("{}", json);
+            } else {
+                eprintln!("{}", json);
             }
         }
+
+        // Also write to manual log as backup
+        manual_log(&event.metadata().level().to_string(), &message_content);
     }
 }
 
@@ -133,16 +190,6 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
     let mut init_result = Ok(());
 
     INIT.call_once(|| {
-        // Quick diagnostic test - create a simple file to verify we can write to the log directory
-        let _ = std::fs::create_dir_all("/Library/Logs/OpenFrame");
-        let _ = std::fs::write(
-            "/Library/Logs/OpenFrame/init_check.log",
-            format!(
-                "Logging initialization started at {}\n",
-                chrono::Local::now()
-            ),
-        );
-
         // Initialize directory manager and ensure directories exist
         let dir_manager = DirectoryManager::new();
         if let Err(e) = dir_manager.perform_health_check() {
@@ -153,22 +200,51 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             return;
         }
 
-        // Explicitly create or touch the log file to ensure it exists
-        let log_file_path = dir_manager.logs_dir().join("openframe.log");
-        let _ = std::fs::OpenOptions::new()
+        // Create log directory if it doesn't exist
+        let log_dir = dir_manager.logs_dir();
+        if !log_dir.exists() {
+            if let Err(e) = std::fs::create_dir_all(&log_dir) {
+                eprintln!("Failed to create log directory: {}", e);
+                init_result = Err(e);
+                return;
+            }
+        }
+
+        // Initialize global log file for manual writes
+        let log_file_path = log_dir.join("openframe.log");
+        match std::fs::OpenOptions::new()
             .create(true)
-            .write(true)
             .append(true)
-            .open(&log_file_path);
+            .open(&log_file_path)
+        {
+            Ok(file) => {
+                let _ = LOG_FILE.set(Arc::new(Mutex::new(Some(file))));
+                // Write initial entry
+                manual_log("INFO", "Manual logging system initialized");
+            }
+            Err(e) => {
+                eprintln!("Failed to open log file for manual writes: {}", e);
+            }
+        }
 
-        // Set up file appender with rotation
-        let file_appender = tracing_appender::rolling::RollingFileAppender::new(
-            Rotation::DAILY,
-            dir_manager.logs_dir(),
-            "openframe.log",
-        );
+        // Create a simple direct file logger that we know works
+        let log_path = log_dir.join("openframe.log");
 
-        // Create the JSON layer for structured logging
+        // Create and set up a non-rotating file logger - simplest, most reliable approach
+        let file_appender = match std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+        {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("Failed to open log file: {}", e);
+                init_result = Err(e);
+                return;
+            }
+        };
+
+        // Create JSON layer
         let json_layer = fmt::layer()
             .json()
             .with_file(true)
@@ -176,28 +252,24 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             .with_thread_ids(true)
             .with_target(true)
             .with_timer(SystemTime::default())
-            .with_writer(file_appender);
+            .with_writer(std::sync::Mutex::new(file_appender));
 
-        // Create a console layer for development
-        let console_layer = fmt::layer()
-            .with_target(true)
-            .with_thread_ids(true)
-            .with_line_number(true)
-            .with_file(true)
-            .with_timer(SystemTime::default());
+        // Set log level to INFO or lower (DEBUG/TRACE) from environment or default to INFO
+        let env_filter = EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| EnvFilter::new("info,openframe=debug"));
 
         // Create metrics layer
         let (metrics_layer, metrics_store) = MetricsLayer::new();
 
-        // Set up the subscriber with both layers
+        // Set up the subscriber with our layers
         let subscriber = Registry::default()
-            .with(EnvFilter::from_default_env())
+            .with(env_filter)
             .with(json_layer)
-            .with(console_layer)
             .with(metrics_layer);
 
         // Set the subscriber as the default
         if let Err(e) = tracing::subscriber::set_global_default(subscriber) {
+            eprintln!("Failed to set global subscriber: {}", e);
             init_result = Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
@@ -205,8 +277,9 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             return;
         }
 
-        // Force an initial log entry to ensure file is created
-        tracing::info!("OpenFrame logging initialized");
+        // Force an initial log entry with explicit info level to ensure logging is working
+        tracing::info!("OpenFrame logging system initialized");
+        manual_log("INFO", "BACKUP: OpenFrame logging system initialized");
 
         // Store metrics for later access
         METRICS_STORE.get_or_init(|| metrics_store);
