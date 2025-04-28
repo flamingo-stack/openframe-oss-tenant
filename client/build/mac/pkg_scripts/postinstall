@@ -2,6 +2,9 @@
 # Improved postinstall script for OpenFrame with better debugging
 set -e  # Exit immediately if any command fails
 
+# Add trap handlers to prevent termination
+trap 'echo "Caught signal - continuing execution"; sleep 1' TERM INT QUIT
+
 echo "OpenFrame: Starting postinstall script..."
 
 # Create required directories and set permissions
@@ -14,7 +17,7 @@ echo "Cleaning up any existing compressed log files..."
 rm -f "/Library/Logs/OpenFrame/daemon_error.log.gz" "/Library/Logs/OpenFrame/daemon_output.log.gz"
 
 # Remove old run directory if it exists (no longer needed with LaunchDaemon)
-if [ -d "/Library/Application Support/OpenFrame/run" ]; then
+if [ -d "/Applications/OpenFrame/run" ]; then
     echo "Removing deprecated run directory..."
     rm -rf "/Library/Application Support/OpenFrame/run"
 fi
@@ -28,8 +31,7 @@ if [ -d "/Applications/OpenFrame.app" ]; then
     # Set ownership to root
     chown -R root:wheel "/Applications/OpenFrame.app"
 else
-    echo "ERROR: OpenFrame.app not found in /Applications! Installation may be incomplete."
-    ls -la "/Applications" || true
+    echo "NOTE: OpenFrame.app not found in /Applications yet - this is normal for first installation"
 fi
 
 # Set proper permissions for support directories with detailed output
@@ -70,23 +72,6 @@ echo "Verifying daemon log files..."
 ls -la "/Library/Logs/OpenFrame/daemon_error.log"
 ls -la "/Library/Logs/OpenFrame/daemon_output.log"
 
-# NOTE: We no longer use the LaunchDaemon plist file since we're using the CrossPlatformServiceManager
-# for service management. The service will be installed when the user runs 'openframe install'.
-echo "Using CrossPlatformServiceManager for service management. No LaunchDaemon plist needed."
-
-# If there's an existing LaunchDaemon from a previous installation, remove it
-if [ -f "/Library/LaunchDaemons/com.openframe.agent.plist" ]; then
-    echo "Removing old LaunchDaemon plist from previous installation..."
-    # First unload it if it's running
-    if launchctl list | grep -q "com.openframe.agent"; then
-        echo "Unloading existing LaunchDaemon..."
-        launchctl unload "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null || true
-    fi
-    # Then remove the file
-    rm -f "/Library/LaunchDaemons/com.openframe.agent.plist"
-    echo "Old LaunchDaemon removed."
-fi
-
 # Set ownership on log and support directories
 echo "Setting ownership on log and support directories..."
 chown -R root:wheel "/Library/Logs/OpenFrame"
@@ -111,48 +96,102 @@ else
     echo "WARNING: Could not write to log directory!"
 fi
 
-echo "OpenFrame: Postinstall completed successfully"
+# =================== SERVICE MANAGEMENT SECTION (REWRITTEN) ===================
+echo "OpenFrame: Managing services..."
 
-# First uninstall any existing service to clean up
-echo "Removing any existing OpenFrame service..."
+# Disable strict error checking for service operations
+set +e
 
-# Try to uninstall using the executable
-echo "Attempting to uninstall service using openframe command..."
-if [ -f "/Applications/OpenFrame.app/Contents/MacOS/openframe" ]; then
-    /Applications/OpenFrame.app/Contents/MacOS/openframe uninstall > /dev/null 2>&1 || echo "No previous service found via CLI"
+# Clean up ALL existing OpenFrame services before installing the new one
+# Use a more comprehensive approach that will catch all possible service names
+echo "Cleaning up any existing OpenFrame services..."
+
+# Find all OpenFrame-related services currently loaded
+echo "Finding existing OpenFrame services..."
+LOADED_SERVICES=$(launchctl list | grep "com.openframe" | awk '{print $3}')
+
+# If any are found, unload them properly
+if [ -n "$LOADED_SERVICES" ]; then
+    echo "Found existing OpenFrame services: $LOADED_SERVICES"
+    for service in $LOADED_SERVICES; do
+        echo "Unloading service: $service"
+        launchctl bootout system/$service 2>/dev/null || echo "Could not unload $service via bootout"
+        sleep 1 # Brief pause to ensure the service has time to stop
+    done
+else
+    echo "No existing OpenFrame services found in launchctl"
 fi
 
-# Try to uninstall using launchctl directly
-echo "Checking for existing launchd services..."
-# Use bootout with properly formed service paths for possible service names
-for service in "com.openframe.agent" "com.openframe.openframeclient" "com.openframe.openframev2"; do
-    if launchctl list | grep -q "$service"; then
-        echo "Unloading $service..."
-        launchctl bootout system/$service > /dev/null 2>&1 || echo "Failed to unload $service, continuing anyway"
-    fi
-done
-
-# Remove any old plist files that might exist
-echo "Cleaning up any old plist files..."
-for plist in "/Library/LaunchDaemons/com.openframe.agent.plist" "/Library/LaunchDaemons/com.openframe.openframeclient.plist" "/Library/LaunchDaemons/com.openframe.openframev2.plist"; do
+# Remove ALL existing OpenFrame plist files to ensure no duplicates
+echo "Removing any existing OpenFrame plist files..."
+for plist in /Library/LaunchDaemons/com.openframe.*.plist; do
     if [ -f "$plist" ]; then
-        echo "Removing $plist..."
-        rm -f "$plist" || echo "Failed to remove $plist, continuing anyway"
+        echo "Removing plist file: $plist"
+        rm -f "$plist"
     fi
 done
 
-echo "Cleanup complete."
+# Instead of killing processes, just check if any are still running for logging purposes
+echo "Checking for running OpenFrame processes (for information only)..."
+if [ -d "/Applications/OpenFrame.app" ]; then
+    CHECK_PROCESSES=$(ps -ef | grep "/Applications/OpenFrame.app" | grep -v grep | wc -l | tr -d ' ')
+    if [ "$CHECK_PROCESSES" -gt "0" ]; then
+        echo "NOTE: Found $CHECK_PROCESSES OpenFrame processes still running - this is okay and they will be properly managed by the service system"
+    else
+        echo "No running OpenFrame application processes found"
+    fi
+else
+    echo "No OpenFrame application directory found yet"
+fi
 
-# Now install the new service
+echo "Service cleanup completed"
+
+# Now install the new service using a single defined approach
 echo "Installing OpenFrame service..."
-/Applications/OpenFrame.app/Contents/MacOS/openframe install || {
-    echo "ERROR: Service installation failed!"
-    # Display logs to help with diagnosis
-    echo "Last 10 lines of log file:"
-    tail -n 10 "/Library/Logs/OpenFrame/openframe.log" || echo "Could not read log file"
-    # Continue anyway so the package installation doesn't fail entirely
-    echo "Continuing with package installation despite service installation failure"
-}
-echo "Service installation completed (or attempted)."
+if [ -f "/Applications/OpenFrame.app/Contents/MacOS/openframe" ]; then
+    echo "Using CrossPlatformServiceManager via 'openframe install' command..."
+    # Save current directory
+    CURRENT_DIR=$(pwd)
+    
+    # Run the install command with proper error handling - wrapped in nohup and background
+    # This ensures the service install process is disconnected from the installer
+    (
+        cd /
+        nohup /Applications/OpenFrame.app/Contents/MacOS/openframe install > "/Library/Logs/OpenFrame/service_install.log" 2>&1
+    ) &
+    
+    # Give it a moment to start
+    sleep 2
+    
+    # Check the installation log
+    if [ -f "/Library/Logs/OpenFrame/service_install.log" ]; then
+        echo "Service installation log contents:"
+        cat "/Library/Logs/OpenFrame/service_install.log" || echo "Could not read service installation log"
+    fi
+    
+    # Don't verify interactively, just check for existence
+    echo "Verifying service installation..."
+    SERVICE_PLIST="/Library/LaunchDaemons/com.openframe.client.plist"
+    if [ -f "$SERVICE_PLIST" ]; then
+        echo "Service plist file exists - installation successful"
+    else
+        echo "WARNING: Service plist file not found - installation may have failed"
+    fi
+    
+    # Plist file exists, now verify the service is loaded
+    sleep 2
+    if launchctl list | grep -q "com.openframe.client"; then
+        echo "Service is loaded and running"
+    else
+        echo "Service plist exists but service not loaded - attempting to load manually"
+        launchctl load "$SERVICE_PLIST" || echo "Manual service load failed, user may need to reboot"
+    fi
+else
+    echo "ERROR: OpenFrame executable not found at /Applications/OpenFrame.app/Contents/MacOS/openframe"
+fi
 
+# Re-enable error checking
+set -e
+
+echo "OpenFrame: Installation completed"
 exit 0

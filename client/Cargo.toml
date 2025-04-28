@@ -47,6 +47,7 @@ whoami = "1.4"
 tracing-appender = "0.2"
 flate2 = "1.0"
 service-manager = "0.8"
+plist = "1.7.1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

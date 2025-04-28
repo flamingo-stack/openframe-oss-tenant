@@ -1411,6 +1411,7 @@ dependencies = [
  "futures",
  "libc",
  "log",
+ "plist",
  "reqwest",
  "semver",
  "serde",

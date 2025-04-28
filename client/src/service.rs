@@ -7,9 +7,9 @@ use tracing::{error, info, warn};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
 
-const SERVICE_NAME: &str = "openframev2";
-const DISPLAY_NAME: &str = "OpenFrame Client v2";
-const DESCRIPTION: &str = "OpenFrame client for remote management and monitoring (v2)";
+const SERVICE_NAME: &str = "client";
+const DISPLAY_NAME: &str = "OpenFrame Client Service";
+const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
 
 pub struct Service;
 
