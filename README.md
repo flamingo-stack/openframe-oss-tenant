@@ -174,6 +174,85 @@ flowchart LR
 * Docker 24.0+ and Docker Compose 2.23+
 * Kubernetes 1.28+
 * Git 2.42+
+* GitHub Personal Access Token (Classic) with required permissions
+
+## Running Locally
+
+OpenFrame provides platform-specific scripts to easily run the application locally. Choose the appropriate script based on your operating system:
+
+### Windows
+```powershell
+.\scripts\run-windows.ps1              # Run with interactive mode
+.\scripts\run-windows.ps1 -Silent      # Run in silent mode
+.\scripts\run-windows.ps1 -Help        # Show help message
+```
+
+The Windows script now includes:
+- Automatic tool installation (kind, kubectl, helm, skaffold, jq, telepresence)
+- GitHub token validation
+- Docker Desktop status check
+- Network configuration for Kind
+- Seamless integration with Git Bash for running the main script
+
+Tools are installed to `~/bin` directory. The script will remind you to add this directory to your PATH if needed.
+
+### macOS
+```bash
+./scripts/run-mac.sh              # Run with interactive mode
+./scripts/run-mac.sh --silent     # Run in silent mode
+./scripts/run-mac.sh --help       # Show help message
+```
+
+### Linux
+```bash
+./scripts/run-linux.sh              # Run with interactive mode
+./scripts/run-linux.sh --silent     # Run in silent mode
+./scripts/run-linux.sh --help       # Show help message
+```
+
+### Script Behavior
+
+The installation scripts provide two modes of operation:
+
+#### Interactive Mode (Default)
+- Prompts for user confirmation at key steps
+- Displays detailed progress information
+- Asks for cleanup preferences
+- Shows all informational messages
+
+#### Silent Mode
+- Suppresses non-essential output
+- Skips most confirmations
+- Skips cleanup prompts
+- Uses environment variables for automation
+
+Both modes will:
+- Always prompt for GitHub token (required for accessing private repositories)
+- Install required dependencies if missing
+- Set up the development environment
+- Configure network settings
+- Create and configure the Kind cluster
+
+### GitHub Token
+
+The scripts require a GitHub Personal Access Token (Classic) for authentication. You will be prompted to enter the token during execution, regardless of the mode. The token should have the following permissions:
+- `repo` - Full control of private repositories
+- `read:packages` - Read access to packages
+- `write:packages` - Write access to packages
+
+You can create a new token by following these steps:
+1. Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Select the required permissions
+4. Copy the generated token for use with the installation scripts
+
+Note: The token will be stored only for the current session and will need to be provided again for subsequent runs.
+
+You can monitor the startup progress in the console output. Once started, the application will be available at:
+- UI Dashboard: http://localhost:8080
+- GraphQL API: http://localhost:8080/graphql
+
+To stop the application, press Ctrl+C in the terminal where the script is running.
 
 ## Installation
 

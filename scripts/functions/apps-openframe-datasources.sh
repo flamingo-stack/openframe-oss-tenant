@@ -2,21 +2,21 @@
 
 # REDIS
 function openframe_datasources_redis_deploy() {
-  helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
-
-  echo "Deploying Redis"
+  helm_repo_ensure bitnami https://charts.bitnami.com/bitnami && \
+  echo "Deploying Redis" && \
   helm upgrade -i openframe-redis bitnami/redis \
     -n openframe-datasources --create-namespace \
     --version 20.11.3 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-redis/helm/redis.yaml \
-    --wait --timeout 1h
+    -f ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-redis/helm/redis.yaml \
+    --wait --timeout 1h && \
+  echo "Redis deployed"
 
     # REDIS EXPORTER
     # TODO: service montor enabled in redis chart directly, no need to istall this one
     # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts && \
     # helm upgrade -i prometheus-redis-exporter prometheus-community/prometheus-redis-exporter \
     #   --version 6.9.0 \
-    #   -f ./kind-cluster/apps/openframe-datasources/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
+    #   -f ./deploy/dev/openframe-datasources/prometheus-redis-exporter/helm/prometheus-redis-exporter.yaml
     # kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus-redis-exporter --timeout 20m
 }
 
@@ -32,15 +32,15 @@ function openframe_datasources_redis_delete() {
 
 # KAFKA
 function openframe_datasources_kafka_deploy() {
-  helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
-
-  echo "Deploying Kafka"
-    # TODO: increase memory limit for kafka-controller
+  helm_repo_ensure bitnami https://charts.bitnami.com/bitnami && \
+  echo "Deploying Kafka" && \
+  # TODO: increase memory limit for kafka-controller
   helm upgrade -i openframe-kafka bitnami/kafka \
     -n openframe-datasources --create-namespace \
     --version 31.5.0 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-kafka/helm/kafka.yaml \
-    --wait --timeout 1h
+    -f ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-kafka/helm/kafka.yaml \
+    --wait --timeout 1h && \
+  echo "Kafka deployed"
 }
 
 function openframe_datasources_kafka_wait() {
@@ -57,9 +57,9 @@ function openframe_datasources_kafka_delete() {
 function openframe_datasources_mongodb_deploy() {
   # helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
 
-  echo "Deploying MongoDB"
-  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-mongodb/manifests
-
+  echo "Deploying MongoDB" && \
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-mongodb/manifests && \
+  echo "MongoDB deployed"
   # kubectl -n infrastructure create secret generic openframe-mongodb-secrets \
   #   --from-literal=mongodb-root-password=password123456789 \
   #   --from-literal=mongodb-passwords=password123456789 \
@@ -68,7 +68,7 @@ function openframe_datasources_mongodb_deploy() {
   # helm upgrade -i openframe-mongodb bitnami/mongodb \
   #   --namespace infrastructure --create-namespace \
   #   --version 16.4.12 \
-  #   -f ./kind-cluster/apps/infrastructure/openframe-mongodb/helm/bitnami-values.yaml
+  #   -f ./deploy/dev/infrastructure/openframe-mongodb/helm/bitnami-values.yaml
 }
 
 function openframe_datasources_mongodb_wait() {
@@ -78,19 +78,19 @@ function openframe_datasources_mongodb_wait() {
 
 function openframe_datasources_mongodb_delete() {
   echo "Deleting MongoDB"
-  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-mongodb/manifests
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-mongodb/manifests
 }
 
 # MONGO EXPORTER
 function openframe_datasources_mongodb_exporter_deploy() {
-  helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts
-
-  echo "Deploying MongoDB Exporter"
+  helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts && \
+  echo "Deploying MongoDB Exporter" && \
   helm upgrade -i prometheus-mongodb-exporter prometheus-community/prometheus-mongodb-exporter \
     -n openframe-datasources --create-namespace \
     --version 3.11.1 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml \
-    --wait --timeout 1h
+    -f ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/prometheus-mongodb-exporter/helm/prometheus-mongodb-exporter.yaml \
+    --wait --timeout 1h && \
+  echo "MongoDB Exporter deployed"
 }
 
 function openframe_datasources_mongodb_exporter_wait() {
@@ -105,14 +105,14 @@ function openframe_datasources_mongodb_exporter_delete() {
 
 # CASSANDRA
 function openframe_datasources_cassandra_deploy() {
-  helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
-
-  echo "Deploying Cassandra"
+  helm_repo_ensure bitnami https://charts.bitnami.com/bitnami && \
+  echo "Deploying Cassandra" && \
   helm upgrade -i openframe-cassandra bitnami/cassandra \
     -n openframe-datasources --create-namespace \
     --version 12.2.1 \
-    -f ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-cassandra/helm/bitnami-cassandra.yaml \
-    --wait --timeout 1h
+    -f ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-cassandra/helm/bitnami-cassandra.yaml \
+    --wait --timeout 1h && \
+  echo "Cassandra deployed"
 }
 
 function openframe_datasources_cassandra_wait() {
@@ -127,8 +127,8 @@ function openframe_datasources_cassandra_delete() {
 
 # NiFi
 function openframe_datasources_nifi_deploy() {
-  echo "Deploying NiFi"
-  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-nifi
+  echo "Deploying NiFi" && \
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-nifi
 }
 
 function openframe_datasources_nifi_wait() {
@@ -138,20 +138,21 @@ function openframe_datasources_nifi_wait() {
 
 function openframe_datasources_nifi_delete() {
   echo "Deleting NiFi"
-  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-nifi
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-nifi
 }
 
 # ZOOKEEPER
 function openframe_datasources_zookeeper_deploy() {
-  echo "Deploying Zookeeper"
+  echo "Deploying Zookeeper" && \
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-zookeeper/manifests && \
+  echo "Zookeeper deployed"
 
   # helm_repo_ensure bitnami https://charts.bitnami.com/bitnami
   # https://alex.dzyoba.com/blog/jmx-exporter/
   # TODO: replace with bitnami/zookeeper and exporter with chart metrics
   # helm upgrade -i zookeeper bitnami/zookeeper \
   #   --version 13.7.4 \
-  #   -f ./kind-cluster/apps/infrastructure/zookeeper/helm/zookeeper.yaml
-  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
+  #   -f ./deploy/dev/infrastructure/zookeeper/helm/zookeeper.yaml
 }
 
 function openframe_datasources_zookeeper_wait() {
@@ -161,16 +162,14 @@ function openframe_datasources_zookeeper_wait() {
 
 function openframe_datasources_zookeeper_delete() {
   echo "Deleting Zookeeper"
-  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-zookeeper/manifests
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-zookeeper/manifests
 }
 
 # PINOT
 function openframe_datasources_pinot_deploy() {
-  echo "Deploying Pinot"
-  # Pinot Controller (depends on Zookeeper)
-  # Pinot Broker (depends on Pinot Controller)
-  # Pinot Server (depends on Pinot Controller)
-  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-pinot/manifests
+  echo "Deploying Pinot" && \
+  kubectl -n openframe-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-pinot/manifests && \
+  echo "Pinot deployed"
 
   # helm_repo_ensure openframe-pinot https://raw.githubusercontent.com/apache/pinot/master/helm
   # helm upgrade -i pinot pinot/pinot \
@@ -185,7 +184,7 @@ function openframe_datasources_pinot_wait() {
 
 function openframe_datasources_pinot_delete() {
   echo "Deleting Pinot"
-  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/kind-cluster/apps/openframe-datasources/openframe-pinot/manifests
+  kubectl -n openframe-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-datasources/openframe-pinot/manifests
 }
 
 # Wait for all openframe-datasources apps to be ready

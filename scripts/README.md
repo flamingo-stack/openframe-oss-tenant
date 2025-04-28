@@ -110,7 +110,7 @@ You can get help information at any time using the following flags:
     - `deploy`: Deploy the application
     - `delete`: Remove the application
     - `dev`: Run in development mode with live build and deploy (`skaffold`)
-    - `debug`: Enable debug mode with port forwarding (`telepresence intercept` mode)
+    - `intercept`: Enable interception with port forwarding (`telepresence intercept` mode)
 
 4. **Bootstrap Options**
 
@@ -209,8 +209,8 @@ t, client_tools               # Client tools
 ./run.sh app openframe_microservices_openframe_api dev
 ./run.sh app integrated_tools_meshcentral dev
 
-# Debug mode examples
-./run.sh app openframe_microservices_openframe_api debug 8080 http
+# intercept mode examples
+./run.sh app openframe_microservices_openframe_api intercept 8080 http
 ```
 
 ## Development Workflow
@@ -242,11 +242,11 @@ t, client_tools               # Client tools
 ./run.sh app openframe_microservices_openframe_api dev
 ```
 
-### 4. Debugging
+### 4. Intercept traffic (use local app like it is in k8s cluster)
 
 ```bash
-# Debug specific service with port forwarding
-./run.sh app openframe_microservices_openframe_api debug <local_port> <remote_port_name>
+# Intercept specific service with port forwarding
+./run.sh app openframe_microservices_openframe_api intercept <local_port> <remote_port_name>
 ```
 
 ## Environment Variables
@@ -274,3 +274,14 @@ The platform uses the following namespaces:
 - `./scripts`: root folder for all scripts
 - `./scripts/run.sh`: main script to run all other scripts (Don;t run other script individually, they will fail)
 - `./scripts/functions`: Contains individual functions to be used in scripts in `./scripts`
+
+## SSL Certificates
+
+Repository contains already created ca cert and private key to be used by cert-manager. If you want to create new certificate for CA then run below comman:
+
+```bash
+# script will generate CA key/cert in ./scripts/files/ca folder
+./scripts/run.sh generate-pki
+```
+
+Import generated certificates from [./scripts/files/ca](./files/ca/) folder to your browser, os trust store or anny tool's trust store based on your needs if you don't want to see self-signed certificate related errors or warnings.

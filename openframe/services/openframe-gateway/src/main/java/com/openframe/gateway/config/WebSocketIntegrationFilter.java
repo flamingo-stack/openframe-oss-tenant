@@ -18,7 +18,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-import java.net.URISyntaxException;
+
+import static com.openframe.gateway.config.WebSocketGatewayConfig.WS_ENDPOINT_PREFIX;
 
 @Component
 @RequiredArgsConstructor
@@ -35,47 +36,53 @@ public class WebSocketIntegrationFilter implements GatewayFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-
         String path = request.getURI().getPath();
-        String toolId = path.split("/")[4];
 
-        IntegratedTool tool = toolRepository.findById(toolId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid tool id: " + toolId));
-        if (!tool.isEnabled()) {
-            // TODO: use other exception
-            throw new IllegalArgumentException("Tool " + tool.getName() + " is not enabled");
-        }
+        String toolId = getRequestToolId(path);
+        ToolUrl toolUrl = getToolUrl(toolId);
+        URI toolUri = buildURI(toolUrl.getUrl());
 
-        ToolUrl toolUrl = toolUrlService.getUrlByToolType(tool, ToolUrlType.WS)
-                .orElseThrow(() -> new IllegalArgumentException("Tool " + tool.getName() + " have no web socket url"));
+        String proxyPath = getProxyPath(path, toolId);
 
-        URI toolUri = null;
-        try {
-            toolUri = new URI(toolUrl.getUrl());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-
-        String pathSuffix = path.replaceFirst("^/ws/tools/agent/" + toolId + "/", "");
-
-         URI modifiedUri = UriComponentsBuilder.newInstance()
+        URI proxyUri = UriComponentsBuilder.newInstance()
                  .scheme(toolUri.getScheme())
                  .host(toolUri.getHost())
                  .port(toolUrl.getPort())
-                 .replacePath(pathSuffix)
+                 .replacePath(proxyPath)
                  .build()
                  .toUri();
 
-//        URI modifiedUri = UriComponentsBuilder.newInstance()
-//                .scheme("ws")
-//                .host("tactical-nginx.integrated-tools.svc.cluster.local")
-//                .port("8000")
-//                .replacePath("natsws")
-//                .build()
-//                .toUri();
-
-        exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, modifiedUri);
+        exchange.getAttributes()
+                .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);
 
         return chain.filter(exchange);
+    }
+
+    private String getRequestToolId(String path) {
+        return path.split("/")[4];
+    }
+
+    private ToolUrl getToolUrl(String toolId) {
+        IntegratedTool tool = toolRepository.findById(toolId)
+                .orElseThrow(() -> new IllegalArgumentException("Tool not found: " + toolId));
+
+        if (!tool.isEnabled()) {
+            throw new IllegalArgumentException("Tool " + tool.getName() + " is not enabled");
+        }
+
+        return toolUrlService.getUrlByToolType(tool, ToolUrlType.WS)
+                .orElseThrow(() -> new IllegalArgumentException("Tool " + tool.getName() + " have no web socket url"));
+    }
+
+    private String getProxyPath(String path, String toolId) {
+        return path.replaceFirst(WS_ENDPOINT_PREFIX + toolId + "/", "");
+    }
+
+    private URI buildURI(String uri) {
+        try {
+            return new URI(uri);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

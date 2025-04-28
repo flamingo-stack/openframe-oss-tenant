@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-management
+  template:
+    metadata:
+      labels:
+        app: openframe-management
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+      initContainers:
+        - name: wait-for-config-server
+          image: curlimages/curl:latest
+          command: ["sh", "-c", "until curl -f http://openframe-config-server:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+      containers:
+        - name: management
+          image: ghcr.io/flamingo-cx/openframe-management:latest
+          ports:
+            - containerPort: 8095
+              name: http
+            - containerPort: 8096
+              name: management
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "k8s"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:configserver:http://openframe-config-server:8888"
+            - name: OPENFRAME_MANAGEMENT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openframe-secrets
+                  key: management-key
+          livenessProbe:
+            httpGet:
+              path: /management/v1/health
+              port: management
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /management/v1/health
+              port: management
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-management
+  labels:
+    app: openframe-management
+spec:
+  selector:
+    app: openframe-management
+  ports:
+    - port: 8095
+      targetPort: 8095
+      name: http
+    - port: 8096
+      targetPort: 8096
+      name: management
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-management
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - openframe-management.192.168.100.100.nip.io
+    secretName: openframe-management-tls-secret
+  rules:
+    - host: openframe-management.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-management
+                port:
+                  number: 8095

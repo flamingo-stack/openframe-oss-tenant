@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public interface JwtAuthenticationOperations {
 
-    String AUTHORISATION_QUERY_PARAM = "authorisation";
+    String AUTHORIZATION_QUERY_PARAM = "authorization";
 
     Logger JWT_LOGGER = LoggerFactory.getLogger(JwtAuthenticationOperations.class);
 
@@ -29,14 +29,14 @@ public interface JwtAuthenticationOperations {
             if (authorisationHeader != null) {
                 return authorisationHeader;
             }
-            return httpRequest.getParameter(AUTHORISATION_QUERY_PARAM);
+            return httpRequest.getParameter(AUTHORIZATION_QUERY_PARAM);
         } else if (request instanceof ServerWebExchange serverWebExchange) {
             ServerHttpRequest httpRequest = serverWebExchange.getRequest();
             String authorisationHeader = httpRequest.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
             if (authorisationHeader != null) {
                 return authorisationHeader;
             }
-            return httpRequest.getQueryParams().getFirst(AUTHORISATION_QUERY_PARAM);
+            return httpRequest.getQueryParams().getFirst(AUTHORIZATION_QUERY_PARAM);
         }
         return null;
     }
