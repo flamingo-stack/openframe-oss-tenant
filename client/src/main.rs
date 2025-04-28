@@ -20,6 +20,9 @@ enum Commands {
     Uninstall,
     /// Run the OpenFrame client directly (not as a service)
     Run,
+    /// Run as a service (used by service manager)
+    #[command(hide = true)] // Hide from help text as this is only for internal use
+    RunAsService,
 }
 
 fn main() -> Result<()> {
@@ -83,9 +86,17 @@ fn main() -> Result<()> {
                 }
             }
         }
+        Some(Commands::RunAsService) => {
+            info!("Running as service (called by service manager)");
+            // This command is used when started by the service manager
+            if let Err(e) = rt.block_on(Service::run_as_service()) {
+                error!("Service failed: {}", e);
+                process::exit(1);
+            }
+        }
         None => {
-            info!("Running as service");
-            // Run as service by default
+            info!("No command specified, running as service (legacy mode)");
+            // Run as service by default for backward compatibility
             if let Err(e) = rt.block_on(Service::run_as_service()) {
                 error!("Service failed: {}", e);
                 process::exit(1);

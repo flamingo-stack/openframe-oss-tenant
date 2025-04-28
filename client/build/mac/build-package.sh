@@ -186,9 +186,9 @@ cp "$TMP_CONFIG" "$APP_RESOURCES/agent.toml"
 cp "$TMP_CONFIG" "$SUPPORT_DIR/agent.toml"
 rm "$TMP_CONFIG"
 
-# Copy the LaunchDaemon plist file
-cp "$ASSETS_DIR/com.openframe.agent.plist" "$LAUNCHDAEMONS_DIR/"
-chmod 644 "$LAUNCHDAEMONS_DIR/com.openframe.agent.plist"
+# No longer copying LaunchDaemon plist file - using CrossPlatformServiceManager instead
+# The service will be installed programmatically when the user runs 'openframe install'
+echo -e "${BLUE}Using CrossPlatformServiceManager for service management...${NC}"
 
 # Set proper permissions
 chmod 755 "$APP_MACOS/openframe"

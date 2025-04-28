@@ -70,61 +70,21 @@ echo "Verifying daemon log files..."
 ls -la "/Library/Logs/OpenFrame/daemon_error.log"
 ls -la "/Library/Logs/OpenFrame/daemon_output.log"
 
-# Check for LaunchDaemon plist before setting permissions
+# NOTE: We no longer use the LaunchDaemon plist file since we're using the CrossPlatformServiceManager
+# for service management. The service will be installed when the user runs 'openframe install'.
+echo "Using CrossPlatformServiceManager for service management. No LaunchDaemon plist needed."
+
+# If there's an existing LaunchDaemon from a previous installation, remove it
 if [ -f "/Library/LaunchDaemons/com.openframe.agent.plist" ]; then
-    # Enhanced debugging - check permissions and validate plist
-    echo "LaunchDaemon plist found. Checking permissions and validity..."
-    ls -l "/Library/LaunchDaemons/com.openframe.agent.plist"
-    
-    # Validate plist format
-    echo "Validating plist format..."
-    plutil -lint "/Library/LaunchDaemons/com.openframe.agent.plist" || echo "WARNING: plist validation failed!"
-    
-    # Set proper permissions
-    echo "Setting proper permissions on LaunchDaemon plist..."
-    chmod 644 "/Library/LaunchDaemons/com.openframe.agent.plist"
-    chown root:wheel "/Library/LaunchDaemons/com.openframe.agent.plist"
-    
-    # First, check if the LaunchDaemon is already loaded
-    ALREADY_LOADED=0
+    echo "Removing old LaunchDaemon plist from previous installation..."
+    # First unload it if it's running
     if launchctl list | grep -q "com.openframe.agent"; then
-        echo "LaunchDaemon already loaded. Unloading for clean restart..."
+        echo "Unloading existing LaunchDaemon..."
         launchctl unload "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null || true
-        ALREADY_LOADED=1
     fi
-    
-    # Load the LaunchDaemon with better handling
-    echo "Loading LaunchDaemon..."
-    # Suppress stderr to avoid confusing error messages
-    # Try the bootstrap command first (modern macOS)
-    BOOTSTRAP_RESULT=1
-    LOAD_RESULT=1
-    
-    # Attempt bootstrap but don't show errors to avoid confusion
-    launchctl bootstrap system "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null
-    BOOTSTRAP_RESULT=$?
-    
-    if [ $BOOTSTRAP_RESULT -eq 0 ]; then
-        echo "Successfully loaded LaunchDaemon with bootstrap command"
-    else
-        # If bootstrap fails, try the legacy load command
-        launchctl load "/Library/LaunchDaemons/com.openframe.agent.plist" 2>/dev/null
-        LOAD_RESULT=$?
-        
-        if [ $LOAD_RESULT -eq 0 ]; then
-            echo "Successfully loaded LaunchDaemon with load command"
-        else
-            # If both methods fail, check if it's actually loaded despite errors
-            if launchctl list | grep -q "com.openframe.agent"; then
-                echo "LaunchDaemon is running despite load command errors"
-            else
-                echo "WARNING: Failed to load LaunchDaemon. Bootstrap exit code: $BOOTSTRAP_RESULT, Load exit code: $LOAD_RESULT"
-                echo "This is not critical as the LaunchDaemon will be loaded on next reboot."
-            fi
-        fi
-    fi
-else
-    echo "ERROR: LaunchDaemon plist not found! Installation may be incomplete."
+    # Then remove the file
+    rm -f "/Library/LaunchDaemons/com.openframe.agent.plist"
+    echo "Old LaunchDaemon removed."
 fi
 
 # Set ownership on log and support directories
@@ -152,4 +112,47 @@ else
 fi
 
 echo "OpenFrame: Postinstall completed successfully"
+
+# First uninstall any existing service to clean up
+echo "Removing any existing OpenFrame service..."
+
+# Try to uninstall using the executable
+echo "Attempting to uninstall service using openframe command..."
+if [ -f "/Applications/OpenFrame.app/Contents/MacOS/openframe" ]; then
+    /Applications/OpenFrame.app/Contents/MacOS/openframe uninstall > /dev/null 2>&1 || echo "No previous service found via CLI"
+fi
+
+# Try to uninstall using launchctl directly
+echo "Checking for existing launchd services..."
+# Use bootout with properly formed service paths for possible service names
+for service in "com.openframe.agent" "com.openframe.openframeclient" "com.openframe.openframev2"; do
+    if launchctl list | grep -q "$service"; then
+        echo "Unloading $service..."
+        launchctl bootout system/$service > /dev/null 2>&1 || echo "Failed to unload $service, continuing anyway"
+    fi
+done
+
+# Remove any old plist files that might exist
+echo "Cleaning up any old plist files..."
+for plist in "/Library/LaunchDaemons/com.openframe.agent.plist" "/Library/LaunchDaemons/com.openframe.openframeclient.plist" "/Library/LaunchDaemons/com.openframe.openframev2.plist"; do
+    if [ -f "$plist" ]; then
+        echo "Removing $plist..."
+        rm -f "$plist" || echo "Failed to remove $plist, continuing anyway"
+    fi
+done
+
+echo "Cleanup complete."
+
+# Now install the new service
+echo "Installing OpenFrame service..."
+/Applications/OpenFrame.app/Contents/MacOS/openframe install || {
+    echo "ERROR: Service installation failed!"
+    # Display logs to help with diagnosis
+    echo "Last 10 lines of log file:"
+    tail -n 10 "/Library/Logs/OpenFrame/openframe.log" || echo "Could not read log file"
+    # Continue anyway so the package installation doesn't fail entirely
+    echo "Continuing with package installation despite service installation failure"
+}
+echo "Service installation completed (or attempted)."
+
 exit 0

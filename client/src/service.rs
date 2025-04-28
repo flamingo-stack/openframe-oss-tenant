@@ -2,14 +2,14 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use tokio::runtime::Runtime;
 use tokio::time::{interval, Duration};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
-use crate::service_adapter::CrossPlatformServiceManager;
+use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
 
-const SERVICE_NAME: &str = "OpenFrameClient";
-const DISPLAY_NAME: &str = "OpenFrame Client";
-const DESCRIPTION: &str = "OpenFrame client for remote management and monitoring";
+const SERVICE_NAME: &str = "openframev2";
+const DISPLAY_NAME: &str = "OpenFrame Client v2";
+const DESCRIPTION: &str = "OpenFrame client for remote management and monitoring (v2)";
 
 pub struct Service;
 
@@ -30,9 +30,29 @@ impl Service {
         // Get the current executable path
         let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
 
-        // Create the service manager
-        let service =
-            CrossPlatformServiceManager::new(SERVICE_NAME, DISPLAY_NAME, DESCRIPTION, exec_path);
+        // Create a full configuration for the service with all enhanced options
+        let mut config = ServiceConfig {
+            name: SERVICE_NAME.to_string(),
+            display_name: DISPLAY_NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            exec_path,
+            run_at_load: true,
+            keep_alive: true,
+            restart_on_crash: true,
+            restart_throttle_seconds: 10,
+            working_directory: Some(dir_manager.app_support_dir().to_path_buf()),
+            stdout_path: Some(dir_manager.logs_dir().join("daemon_output.log")),
+            stderr_path: Some(dir_manager.logs_dir().join("daemon_error.log")),
+            user_name: Some("root".to_string()),
+            group_name: Some("wheel".to_string()),
+            file_limit: Some(4096),
+            exit_timeout_seconds: Some(10),
+            is_interactive: true,
+            ..ServiceConfig::default()
+        };
+
+        // Create the service manager with our enhanced configuration
+        let service = CrossPlatformServiceManager::with_config(config);
 
         // Call the cross-platform service manager to install
         service.install().context("Failed to install service")?;
@@ -50,8 +70,15 @@ impl Service {
         let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
 
         // Create the service manager
-        let service =
-            CrossPlatformServiceManager::new(SERVICE_NAME, DISPLAY_NAME, DESCRIPTION, exec_path);
+        let config = ServiceConfig {
+            name: SERVICE_NAME.to_string(),
+            display_name: DISPLAY_NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            exec_path,
+            ..ServiceConfig::default()
+        };
+
+        let service = CrossPlatformServiceManager::with_config(config);
 
         // Call the cross-platform service manager to uninstall
         service.uninstall().context("Failed to uninstall service")?;
@@ -101,13 +128,6 @@ impl Service {
 
     /// Run as a service on the current platform
     pub async fn run_as_service() -> Result<()> {
-        // Get the current executable path for service operations
-        let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
-
-        // Create the service manager for service operations if needed
-        let service =
-            CrossPlatformServiceManager::new(SERVICE_NAME, DISPLAY_NAME, DESCRIPTION, exec_path);
-
         // Log which platform we're running on
         #[cfg(target_os = "windows")]
         let platform = "Windows Service";
@@ -118,7 +138,7 @@ impl Service {
 
         info!("Running as {} service", platform);
 
-        // For all platforms, just run the main service function
+        // For all platforms, run the main service function
         Self::run().await
     }
 }
