@@ -462,7 +462,7 @@ register_tool \
     "TACTICAL_RMM" \
     "Tactical RMM" \
     "Remote Monitoring and Management Platform" \
-    '[{"url": "http://tactical-api.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://tactical-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}]' \
+    '[{"url": "http://tactical-api.192.168.100.100.nip.io", "port": "80", "type": "API"}, {"url": "http://tactical-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}, {"url": "ws://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8000", "type": "WS"}]' \
     "tactical" \
     "tactical" \
     "$TACTICAL_API_KEY" \

@@ -3,6 +3,7 @@ package com.openframe.core.model;
 public enum ToolUrlType {
     DASHBOARD,
     API,
+    WS,
     DATABASE,
     CACHE,
     BROKER,

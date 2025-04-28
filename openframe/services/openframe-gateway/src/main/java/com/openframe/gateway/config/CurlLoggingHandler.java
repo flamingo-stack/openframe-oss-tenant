@@ -71,7 +71,7 @@ public class CurlLoggingHandler extends ChannelDuplexHandler {
             }
 
             if (msg instanceof LastHttpContent) {
-                log.info("Proxied request as curl command: \n{}", curl.toString());
+                log.info("Proxied request as curl command: \n{}", curl);
                 isRequest = false;
             }
         }
