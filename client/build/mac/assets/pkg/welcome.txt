@@ -1,10 +1,7 @@
-                                             
-,---.               ,---.                    
-|   |,---.,---.,---.|__. ,---.,---.,-.-.,---.
-|   ||   ||---'|   ||    |    ,---|| | ||---'
-`---'|---'`---'`   '`    `    `---^` ' '`---'
-     |                                       
-           
+ __   __   ___       ___  __              ___ 
+/  \ |__) |__  |\ | |__  |__)  /\   |\/| |__  
+\__/ |    |___ | \| |    |  \ /~~\  |  | |___ 
+                                               
 Welcome to OpenFrame!
 
 This installer will set up OpenFrame on your Mac. OpenFrame is a powerful management solution that connects your devices to your preferred tools and platforms.
