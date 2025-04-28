@@ -116,7 +116,7 @@ impl Service {
                 interval.tick().await;
                 let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
                 info!(
-                    "Hello from the other side, this is the OpenFrame service [heartbeat: {}]",
+                    "Hey Flamingos 🦩, I'm your new Rust OpenFrame Service [heartbeat: {}]",
                     timestamp
                 );
             }

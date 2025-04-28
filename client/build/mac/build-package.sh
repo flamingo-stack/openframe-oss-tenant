@@ -258,6 +258,8 @@ echo -e "${BLUE}Creating final package with productbuild...${NC}"
 mkdir -p "$PKG_DIR/Resources"
 cp "$PKG_ASSETS_DIR/welcome.txt" "$PKG_DIR/Resources/"
 cp "$PKG_ASSETS_DIR/conclusion.txt" "$PKG_DIR/Resources/"
+cp "$PKG_ASSETS_DIR/readme.txt" "$PKG_DIR/Resources/"
+cp "$PKG_ASSETS_DIR/license.txt" "$PKG_DIR/Resources/"
 
 # Build the final package (unsigned)
 echo -e "${BLUE}Creating final package...${NC}"

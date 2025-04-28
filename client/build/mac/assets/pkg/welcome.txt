@@ -1,6 +1,14 @@
-Welcome to the OpenFrame Installer
+                                             
+,---.               ,---.                    
+|   |,---.,---.,---.|__. ,---.,---.,-.-.,---.
+|   ||   ||---'|   ||    |    ,---|| | ||---'
+`---'|---'`---'`   '`    `    `---^` ' '`---'
+     |                                       
+           
+Welcome to OpenFrame!
 
-This will install OpenFrame on your Mac.
-OpenFrame requires administrative privileges to install.
+This installer will set up OpenFrame on your Mac. OpenFrame is a powerful management solution that connects your devices to your preferred tools and platforms.
 
-Click Continue to proceed with the installation. 
+OpenFrame requires administrative privileges to install as it needs to create system service components.
+
+Click Continue to begin the installation process. 
