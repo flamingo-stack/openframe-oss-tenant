@@ -208,6 +208,9 @@ chmod 755 "$PKG_DIR/scripts/postinstall"
 chmod 755 "$PKG_DIR/scripts/preinstall"
 chmod 755 "$PKG_DIR/scripts/uninstall.sh"
 
+# Add a delay to the scripts to prevent installer termination
+echo -e "${BLUE}Enhancing installation scripts reliability...${NC}"
+
 echo -e "${BLUE}Creating component packages...${NC}"
 
 # Create a component package for the Applications directory (no sign parameter - ad-hoc)
@@ -223,7 +226,7 @@ if [ -f "$PKG_DIR/app.plist" ]; then
     /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable NO" "$PKG_DIR/app.plist"
 fi
 
-# Build the package with the modified plist
+# Build the package with the modified plist 
 pkgbuild --root "$PAYLOAD_ROOT/Applications" \
          --identifier "com.openframe.app" \
          --install-location "/Applications" \

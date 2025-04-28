@@ -189,6 +189,15 @@ This architecture follows these key principles:
   - Added proper service lifecycle management (install/uninstall/start/stop)
   - Added documentation for cross-platform service usage
 
+- [x] Consolidate and refactor build scripts
+  - Removed platform-specific build scripts in favor of a unified approach
+  - Removed `client/scripts/build-package-windows.ps1`
+  - Removed `client/scripts/build-package-linux.sh`
+  - Removed `client/scripts/mac/build-package.sh`
+  - Removed the no longer needed cross-platform check script (`client/scripts/cross-platform-check.sh`)
+  - Removed debug installation script (`client/debug-install.sh`)
+  - Implemented a more streamlined and consistent build process across platforms
+
 ## In Progress Tasks
 
 - [ ] Implement and test root/admin execution on all platforms
@@ -201,6 +210,12 @@ This architecture follows these key principles:
   - Create tests that can run on all platforms
   - Implement platform-specific test cases where needed
   - Add CI workflow to test each platform
+
+- [ ] Implement unified build system
+  - Create a single entry point for building on all platforms
+  - Integrate platform detection and selection of appropriate build procedures
+  - Add consistent error handling and reporting across build processes
+  - Ensure compatibility with CI/CD pipelines
 
 ## Future Tasks
 
@@ -258,7 +273,5 @@ This architecture follows these key principles:
 - `client/src/service.rs` - Service implementation with platform-specific code
 - `client/src/logging/mod.rs` - Main logging implementation
 - `client/src/logging/platform.rs` - **Good example** of cross-platform path handling
-- `client/scripts/build-package.sh` - macOS package building (need Windows/Linux equivalents)
-- `client/scripts/pkg_scripts/` - macOS installation scripts (need Windows/Linux equivalents)
 - `client/Cargo.toml` - Dependencies management (contains platform-specific dependencies)
 - `client/config/agent.toml` - Configuration template with some platform-specific settings 

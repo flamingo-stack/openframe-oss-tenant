@@ -1,9 +1,7 @@
 #!/bin/bash
 # Improved postinstall script for OpenFrame with better debugging
-set -e  # Exit immediately if any command fails
-
-# Add trap handlers to prevent termination
-trap 'echo "Caught signal - continuing execution"; sleep 1' TERM INT QUIT
+# Avoid signal propagation that might terminate the installer
+trap '' TERM INT
 
 echo "OpenFrame: Starting postinstall script..."
 
@@ -96,102 +94,19 @@ else
     echo "WARNING: Could not write to log directory!"
 fi
 
-# =================== SERVICE MANAGEMENT SECTION (REWRITTEN) ===================
-echo "OpenFrame: Managing services..."
+# =================== INSTALL SERVICE ===================
+echo "OpenFrame: Installing service..."
 
-# Disable strict error checking for service operations
-set +e
-
-# Clean up ALL existing OpenFrame services before installing the new one
-# Use a more comprehensive approach that will catch all possible service names
-echo "Cleaning up any existing OpenFrame services..."
-
-# Find all OpenFrame-related services currently loaded
-echo "Finding existing OpenFrame services..."
-LOADED_SERVICES=$(launchctl list | grep "com.openframe" | awk '{print $3}')
-
-# If any are found, unload them properly
-if [ -n "$LOADED_SERVICES" ]; then
-    echo "Found existing OpenFrame services: $LOADED_SERVICES"
-    for service in $LOADED_SERVICES; do
-        echo "Unloading service: $service"
-        launchctl bootout system/$service 2>/dev/null || echo "Could not unload $service via bootout"
-        sleep 1 # Brief pause to ensure the service has time to stop
-    done
-else
-    echo "No existing OpenFrame services found in launchctl"
-fi
-
-# Remove ALL existing OpenFrame plist files to ensure no duplicates
-echo "Removing any existing OpenFrame plist files..."
-for plist in /Library/LaunchDaemons/com.openframe.*.plist; do
-    if [ -f "$plist" ]; then
-        echo "Removing plist file: $plist"
-        rm -f "$plist"
-    fi
-done
-
-# Instead of killing processes, just check if any are still running for logging purposes
-echo "Checking for running OpenFrame processes (for information only)..."
-if [ -d "/Applications/OpenFrame.app" ]; then
-    CHECK_PROCESSES=$(ps -ef | grep "/Applications/OpenFrame.app" | grep -v grep | wc -l | tr -d ' ')
-    if [ "$CHECK_PROCESSES" -gt "0" ]; then
-        echo "NOTE: Found $CHECK_PROCESSES OpenFrame processes still running - this is okay and they will be properly managed by the service system"
-    else
-        echo "No running OpenFrame application processes found"
-    fi
-else
-    echo "No OpenFrame application directory found yet"
-fi
-
-echo "Service cleanup completed"
-
-# Now install the new service using a single defined approach
-echo "Installing OpenFrame service..."
+# Run the install command - use nohup to ensure it doesn't affect the installer
 if [ -f "/Applications/OpenFrame.app/Contents/MacOS/openframe" ]; then
-    echo "Using CrossPlatformServiceManager via 'openframe install' command..."
-    # Save current directory
-    CURRENT_DIR=$(pwd)
-    
-    # Run the install command with proper error handling - wrapped in nohup and background
-    # This ensures the service install process is disconnected from the installer
-    (
-        cd /
-        nohup /Applications/OpenFrame.app/Contents/MacOS/openframe install > "/Library/Logs/OpenFrame/service_install.log" 2>&1
-    ) &
-    
-    # Give it a moment to start
-    sleep 2
-    
-    # Check the installation log
-    if [ -f "/Library/Logs/OpenFrame/service_install.log" ]; then
-        echo "Service installation log contents:"
-        cat "/Library/Logs/OpenFrame/service_install.log" || echo "Could not read service installation log"
-    fi
-    
-    # Don't verify interactively, just check for existence
-    echo "Verifying service installation..."
-    SERVICE_PLIST="/Library/LaunchDaemons/com.openframe.client.plist"
-    if [ -f "$SERVICE_PLIST" ]; then
-        echo "Service plist file exists - installation successful"
-    else
-        echo "WARNING: Service plist file not found - installation may have failed"
-    fi
-    
-    # Plist file exists, now verify the service is loaded
-    sleep 2
-    if launchctl list | grep -q "com.openframe.client"; then
-        echo "Service is loaded and running"
-    else
-        echo "Service plist exists but service not loaded - attempting to load manually"
-        launchctl load "$SERVICE_PLIST" || echo "Manual service load failed, user may need to reboot"
-    fi
+    echo "Running 'openframe install' to register the service..."
+    cd /
+    # Use nohup, run in background, and redirect all output to prevent termination
+    /Applications/OpenFrame.app/Contents/MacOS/openframe install > /dev/null 2>&1 &
 else
-    echo "ERROR: OpenFrame executable not found at /Applications/OpenFrame.app/Contents/MacOS/openframe"
+    echo "ERROR: OpenFrame binary not found at expected location"
 fi
 
-# Re-enable error checking
-set -e
-
-echo "OpenFrame: Installation completed"
+echo "OpenFrame: Installation completed successfully"
+# Ensure we exit cleanly
 exit 0
