@@ -3,9 +3,9 @@ package com.openframe.gateway.config;
 import com.openframe.security.jwt.JwtAuthenticationOperations;
 import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -20,6 +20,7 @@ import java.time.Instant;
 import static com.openframe.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
 
 @RequiredArgsConstructor
+@Slf4j
 public class WebSocketServiceDecorator implements WebSocketService {
 
     private final WebSocketService delegate;
