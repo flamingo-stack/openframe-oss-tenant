@@ -44,7 +44,7 @@ public class WebSocketGatewayConfig {
 
     @Bean
     @Primary
-    public WebSocketService customWebSocketService(
+    public WebSocketService webSocketServiceDecorator(
             JwtService jwtService,
             JwtAuthenticationOperations jwtAuthenticationOperations
     ) {

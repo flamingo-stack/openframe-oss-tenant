@@ -142,7 +142,7 @@ public class RestProxyService {
 
     private Map<String, String> buildAgentRequestHeaders(ServerHttpRequest request) {
         HttpHeaders requestHeaders = request.getHeaders();
-        String toolAuthorisation = requestHeaders.getFirst("Tool-Authorisation");
+        String toolAuthorisation = requestHeaders.getFirst("Tool-Authorization");
         return Map.of(
                 "Accept", "application/json",
                 "Content-Type", "application/json",
