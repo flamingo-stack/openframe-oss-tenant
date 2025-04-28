@@ -44,16 +44,14 @@ velopack = "0.0.1213-g57cf68d"
 log = "0.4.27"
 clap = { version = "4.5", features = ["derive", "env", "std", "cargo", "string"] }
 whoami = "1.4"
-daemonize = "0.5"
 tracing-appender = "0.2"
 flate2 = "1.0"
+service-manager = "0.8"
 
 [target.'cfg(windows)'.dependencies]
-windows-service = "0.6"
 winreg = "0.52"
 
 [target.'cfg(unix)'.dependencies]
-daemonize = "0.5"
 libc = "0.2"
 
 [build-dependencies]

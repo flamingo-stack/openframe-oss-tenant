@@ -16,6 +16,13 @@ mod platform;
 pub mod logging;
 pub mod monitoring;
 pub mod service;
+/// Cross-platform service manager adapters
+///
+/// This module provides a unified interface to manage services across different
+/// operating systems (Windows, macOS, Linux) using the `service-manager` crate.
+/// It implements the adapter pattern to abstract platform-specific service
+/// management details behind a common API.
+pub mod service_adapter;
 pub mod system;
 pub mod updater;
 

@@ -1,25 +1,11 @@
 use anyhow::{Context, Result};
-use std::ffi::OsString;
 use std::path::PathBuf;
 use tokio::runtime::Runtime;
 use tokio::time::{interval, Duration};
 use tracing::{error, info};
 
+use crate::service_adapter::CrossPlatformServiceManager;
 use crate::{logging, platform::DirectoryManager, Client};
-
-#[cfg(windows)]
-use windows_service::{
-    define_windows_service,
-    service::{
-        ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus,
-        ServiceType,
-    },
-    service_control_handler::{self, ServiceControlHandlerResult},
-    service_dispatcher,
-};
-
-#[cfg(unix)]
-use daemonize::Daemonize;
 
 const SERVICE_NAME: &str = "OpenFrameClient";
 const DISPLAY_NAME: &str = "OpenFrame Client";
@@ -32,53 +18,58 @@ impl Service {
         Self
     }
 
-    #[cfg(windows)]
+    /// Install the service on the current platform
     pub async fn install() -> Result<()> {
-        // Windows-specific installation code
-        Ok(())
-    }
-
-    #[cfg(unix)]
-    pub async fn install() -> Result<()> {
-        // Initialize directory manager
+        // Common code for all platforms
+        info!("Installing OpenFrame service");
         let dir_manager = DirectoryManager::new();
-
-        // Perform health check which will create directories and set permissions
         dir_manager
             .perform_health_check()
             .map_err(|e| anyhow::anyhow!("Directory health check failed: {}", e))?;
 
-        info!("Unix daemon installation completed");
+        // Get the current executable path
+        let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
+
+        // Create the service manager
+        let service =
+            CrossPlatformServiceManager::new(SERVICE_NAME, DISPLAY_NAME, DESCRIPTION, exec_path);
+
+        // Call the cross-platform service manager to install
+        service.install().context("Failed to install service")?;
+
+        info!("OpenFrame service installed successfully");
         Ok(())
     }
 
-    #[cfg(windows)]
+    /// Uninstall the service on the current platform
     pub async fn uninstall() -> Result<()> {
-        // Windows-specific uninstallation code
-        Ok(())
-    }
+        // Common code for all platforms
+        info!("Uninstalling OpenFrame service");
 
-    #[cfg(unix)]
-    pub async fn uninstall() -> Result<()> {
-        // Initialize directory manager to get paths
+        // Get the current executable path
+        let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
+
+        // Create the service manager
+        let service =
+            CrossPlatformServiceManager::new(SERVICE_NAME, DISPLAY_NAME, DESCRIPTION, exec_path);
+
+        // Call the cross-platform service manager to uninstall
+        service.uninstall().context("Failed to uninstall service")?;
+
+        // Clean up common directories
         let dir_manager = DirectoryManager::new();
-
-        // Remove service files
         let _ = std::fs::remove_dir_all(dir_manager.app_support_dir());
         let _ = std::fs::remove_dir_all(dir_manager.logs_dir());
 
-        info!("Unix daemon uninstalled successfully");
+        info!("OpenFrame service uninstalled successfully");
         Ok(())
     }
 
-    #[cfg(windows)]
+    /// Run the service core logic
     pub async fn run() -> Result<()> {
-        // Windows-specific run code
-        Ok(())
-    }
+        // Common code for all platforms
+        info!("Starting OpenFrame service core");
 
-    #[cfg(unix)]
-    pub async fn run() -> Result<()> {
         // Initialize directory manager
         let dir_manager = DirectoryManager::new();
 
@@ -93,11 +84,14 @@ impl Service {
 
         // Start heartbeat logging in background
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(5)); // Log every 5 minutes
+            let mut interval = interval(Duration::from_secs(5)); // Log heartbeat every 5 seconds
             loop {
                 interval.tick().await;
                 let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                info!("OpenFrame service is running [heartbeat: {}]", timestamp);
+                info!(
+                    "Hello from the other side, this is the OpenFrame service [heartbeat: {}]",
+                    timestamp
+                );
             }
         });
 
@@ -105,51 +99,26 @@ impl Service {
         client.start().await
     }
 
-    #[cfg(target_os = "macos")]
+    /// Run as a service on the current platform
     pub async fn run_as_service() -> Result<()> {
-        info!("Running as macOS LaunchDaemon service");
+        // Get the current executable path for service operations
+        let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
 
-        // For macOS, we don't need to daemonize as the LaunchDaemon system handles it
-        // Just run the main service function directly
+        // Create the service manager for service operations if needed
+        let service =
+            CrossPlatformServiceManager::new(SERVICE_NAME, DISPLAY_NAME, DESCRIPTION, exec_path);
+
+        // Log which platform we're running on
+        #[cfg(target_os = "windows")]
+        let platform = "Windows Service";
+        #[cfg(target_os = "macos")]
+        let platform: &str = "macOS LaunchDaemon";
+        #[cfg(all(unix, not(target_os = "macos")))]
+        let platform = "Linux systemd";
+
+        info!("Running as {} service", platform);
+
+        // For all platforms, just run the main service function
         Self::run().await
-    }
-
-    #[cfg(all(unix, not(target_os = "macos")))]
-    pub async fn run_as_service() -> Result<()> {
-        // Get current username
-        let username = whoami::username();
-        info!("Starting service as user: {}", username);
-
-        // Initialize directory manager
-        let dir_manager = DirectoryManager::new();
-
-        // Perform health check before daemonizing
-        if let Err(e) = dir_manager.perform_health_check() {
-            error!("Directory health check failed: {}", e);
-            return Err(e.into());
-        }
-
-        // For other Unix systems, create a temporary pid file in the app support directory
-        let pid_file_path = format!("/tmp/openframe_{}.pid", std::process::id());
-
-        let daemonize = Daemonize::new()
-            .pid_file(&pid_file_path)
-            .chown_pid_file(true)
-            .working_directory(dir_manager.app_support_dir())
-            .user(username.as_str())
-            .group("wheel")
-            .umask(0o022);
-
-        info!("Starting daemon with configuration");
-        match daemonize.start() {
-            Ok(_) => {
-                info!("Daemon started successfully");
-                Self::run().await
-            }
-            Err(e) => {
-                error!("Failed to start daemon: {}", e);
-                Err(e.into())
-            }
-        }
     }
 }

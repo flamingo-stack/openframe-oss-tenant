@@ -1,3 +1,16 @@
+/// Cross-platform logging system
+///
+/// This module implements a robust, cross-platform logging system using the tracing
+/// library with JSON formatting. Key features:
+///
+/// - Platform-specific log paths (Windows, macOS, Linux)
+/// - Automatic log rotation and compression
+/// - Consistent JSON format across platforms
+/// - Metrics collection via the metrics submodule
+/// - Fallback manual logging when tracing fails
+///
+/// The logging system is initialized via the `init()` function and should be
+/// called early in the application lifecycle.
 pub mod metrics;
 pub mod shipping;
 
@@ -10,15 +23,16 @@ use serde::Serialize;
 use shipping::LogShipper;
 use std::collections::HashMap;
 use std::fs;
-use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::io::{self, Read, Write};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use tracing::{Event, Level, Metadata, Subscriber};
+use tracing::{error, info, warn, Event, Level, Metadata, Subscriber};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
-    fmt::{self, time::SystemTime},
+    fmt::{self},
     layer::SubscriberExt,
     prelude::*,
     EnvFilter, Layer, Registry,
@@ -154,8 +168,8 @@ where
             }
         }
 
-        // Also write to manual log as backup
-        manual_log(&event.metadata().level().to_string(), &message_content);
+        // Don't write to manual log as backup - this was causing duplicate entries
+        // manual_log(&event.metadata().level().to_string(), &message_content);
     }
 }
 
@@ -170,6 +184,7 @@ impl tracing::field::Visit for JsonVisitor {
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
         if field.name() == "message" {
             self.message = Some(value.to_string());
+            // Don't add message to fields as we'll use the dedicated message field
         } else if field.name() == "error" {
             self.error = Some(value.to_string());
         } else {
@@ -178,8 +193,13 @@ impl tracing::field::Visit for JsonVisitor {
     }
 
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
-        self.fields
-            .insert(field.name().to_string(), format!("{:?}", value).into());
+        if field.name() == "message" {
+            // Capture message content when it comes through record_debug as well
+            self.message = Some(format!("{:?}", value));
+        } else {
+            self.fields
+                .insert(field.name().to_string(), format!("{:?}", value).into());
+        }
     }
 }
 
@@ -195,23 +215,18 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
         if let Err(e) = dir_manager.perform_health_check() {
             init_result = Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                e.to_string(),
+                format!("Failed to initialize logging directories: {}", e),
             ));
+            eprintln!("ERROR: Failed to initialize logging directories: {}", e);
             return;
         }
 
-        // Create log directory if it doesn't exist
-        let log_dir = dir_manager.logs_dir();
-        if !log_dir.exists() {
-            if let Err(e) = std::fs::create_dir_all(&log_dir) {
-                eprintln!("Failed to create log directory: {}", e);
-                init_result = Err(e);
-                return;
-            }
-        }
+        // Get the log file path from the directory manager
+        let log_file_path = get_log_file_path(&dir_manager);
 
-        // Initialize global log file for manual writes
-        let log_file_path = log_dir.join("openframe.log");
+        eprintln!("Initializing logging to {}", log_file_path.display());
+
+        // Initialize the log file for manual writing when tracing fails
         match std::fs::OpenOptions::new()
             .create(true)
             .append(true)
@@ -219,76 +234,75 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
         {
             Ok(file) => {
                 let _ = LOG_FILE.set(Arc::new(Mutex::new(Some(file))));
-                // Write initial entry
-                manual_log("INFO", "Manual logging system initialized");
             }
             Err(e) => {
-                eprintln!("Failed to open log file for manual writes: {}", e);
+                eprintln!("ERROR: Failed to open log file: {}", e);
+                init_result = Err(e);
+                return;
             }
         }
 
-        // Create a simple direct file logger that we know works
-        let log_path = log_dir.join("openframe.log");
+        // Try to compress old log files in a background thread
+        let dir_manager_clone = dir_manager.clone();
+        std::thread::spawn(move || {
+            // This runs in a background thread so we just log any errors
+            loop {
+                if let Err(e) = compress_old_logs(&dir_manager_clone) {
+                    log::error!("Error compressing old logs: {}", e);
+                }
+                // Check for files to compress every hour
+                std::thread::sleep(std::time::Duration::from_secs(3600));
+            }
+        });
 
-        // Create and set up a non-rotating file logger - simplest, most reliable approach
-        let file_appender = match std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&log_path)
-        {
-            Ok(file) => file,
+        // Create a JSON layer for structured logging
+        let json_layer = match JsonLayer::new(log_file_path) {
+            Ok(layer) => layer,
             Err(e) => {
-                eprintln!("Failed to open log file: {}", e);
+                eprintln!("ERROR: Failed to create JSON logging layer: {}", e);
                 init_result = Err(e);
                 return;
             }
         };
 
-        // Create JSON layer
-        let json_layer = fmt::layer()
-            .json()
-            .with_file(true)
-            .with_line_number(true)
-            .with_thread_ids(true)
-            .with_target(true)
-            .with_timer(SystemTime::default())
-            .with_writer(std::sync::Mutex::new(file_appender));
+        // Create metrics layer and store
+        let (metrics_layer, metrics_store) = metrics::MetricsLayer::new();
 
-        // Set log level to INFO or lower (DEBUG/TRACE) from environment or default to INFO
-        let env_filter = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new("info,openframe=debug"));
+        // Set global metrics store for later access
+        let _ = METRICS_STORE.set(Arc::clone(&metrics_store));
 
-        // Create metrics layer
-        let (metrics_layer, metrics_store) = MetricsLayer::new();
+        // Set up the full tracing subscriber
+        let env_filter =
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
-        // Set up the subscriber with our layers
         let subscriber = Registry::default()
             .with(env_filter)
             .with(json_layer)
             .with(metrics_layer);
 
-        // Set the subscriber as the default
+        // Set the global default subscriber
         if let Err(e) = tracing::subscriber::set_global_default(subscriber) {
-            eprintln!("Failed to set global subscriber: {}", e);
+            eprintln!("ERROR: Failed to set global tracing subscriber: {}", e);
             init_result = Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                e.to_string(),
+                format!("Failed to set global tracing subscriber: {}", e),
             ));
             return;
         }
 
         // Force an initial log entry with explicit info level to ensure logging is working
         tracing::info!("OpenFrame logging system initialized");
-        manual_log("INFO", "BACKUP: OpenFrame logging system initialized");
+        manual_log("INFO", "Logging system initialized");
 
-        // Store metrics for later access
-        METRICS_STORE.get_or_init(|| metrics_store);
-
-        // Start the background compression task with directory manager
-        let dir_manager_clone = dir_manager.clone();
-        std::thread::spawn(move || {
-            compress_old_logs(&dir_manager_clone);
-        });
+        // Initialize log shipping if endpoint is provided
+        if let Some(endpoint) = log_endpoint {
+            if let Some(agent) = agent_id.clone() {
+                // Create a log shipper instance
+                let shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone());
+                // No need to do anything else, shipper already starts itself with its background task
+                tracing::info!("Log shipping initialized to endpoint: {}", endpoint);
+            }
+        }
     });
 
     init_result
@@ -302,38 +316,99 @@ pub fn get_metrics_store() -> Option<Arc<RwLock<MetricsStore>>> {
     METRICS_STORE.get().cloned()
 }
 
-/// Compress old log files that haven't been compressed yet
-fn compress_old_logs(dir_manager: &DirectoryManager) {
-    loop {
-        if let Ok(log_dir) = dir_manager.logs_dir().canonicalize() {
-            if let Ok(entries) = fs::read_dir(&log_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if let Some(ext) = path.extension() {
-                        // Only process .log files that aren't today's log
-                        if ext == "log" {
-                            let filename = path.file_name().unwrap().to_string_lossy();
-                            // Don't compress the current log file
-                            if !filename.ends_with(".gz")
-                                && !is_current_log(&filename)
-                                && filename != "openframe.log"
-                            {
-                                if let Err(e) = compress_log_file(&path) {
-                                    eprintln!(
-                                        "Failed to compress log file {}: {}",
-                                        path.display(),
-                                        e
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+/// Try to compress old log files
+fn compress_old_logs(dir_manager: &DirectoryManager) -> io::Result<()> {
+    // If we fail to open the log dir that's okay, just return
+    let log_dir = match dir_manager.logs_dir().canonicalize() {
+        Ok(dir) => dir,
+        Err(e) => {
+            log::error!("Failed to get logs directory: {}", e);
+            return Ok(());
         }
-        // Check for files to compress every hour
-        std::thread::sleep(std::time::Duration::from_secs(3600));
+    };
+
+    // Find log files older than 1 day and compress them
+    let mut entries = match fs::read_dir(log_dir) {
+        Ok(entries) => entries,
+        Err(e) => {
+            log::error!("Failed to read logs directory: {}", e);
+            return Ok(());
+        }
+    };
+
+    let one_day_ago = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+        - 86400;
+
+    while let Some(entry) = entries.next() {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) => {
+                log::error!("Failed to read directory entry: {}", e);
+                continue;
+            }
+        };
+
+        let metadata = match entry.metadata() {
+            Ok(metadata) => metadata,
+            Err(e) => {
+                log::error!(
+                    "Failed to get metadata for {}: {}",
+                    entry.path().display(),
+                    e
+                );
+                continue;
+            }
+        };
+
+        // Skip directories and non-log files
+        if metadata.is_dir() || !entry.file_name().to_string_lossy().ends_with(".log") {
+            continue;
+        }
+
+        // Skip if already compressed
+        if entry.file_name().to_string_lossy().ends_with(".gz") {
+            continue;
+        }
+
+        // Skip if modified in the last day
+        let modified = match metadata.modified() {
+            Ok(time) => match time.duration_since(UNIX_EPOCH) {
+                Ok(duration) => duration.as_secs() as i64,
+                Err(e) => {
+                    log::error!(
+                        "Failed to get modification time for {}: {}",
+                        entry.path().display(),
+                        e
+                    );
+                    continue;
+                }
+            },
+            Err(e) => {
+                log::error!(
+                    "Failed to get modification time for {}: {}",
+                    entry.path().display(),
+                    e
+                );
+                continue;
+            }
+        };
+
+        if modified > one_day_ago {
+            continue;
+        }
+
+        // Compress the file
+        if let Err(e) = compress_log_file(&entry.path()) {
+            log::error!("Failed to compress {}: {}", entry.path().display(), e);
+        } else {
+            log::info!("Compressed old log file: {}", entry.path().display());
+        }
     }
+
+    Ok(())
 }
 
 /// Check if the given log file is the current day's log

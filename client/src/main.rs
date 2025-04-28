@@ -86,7 +86,7 @@ fn main() -> Result<()> {
         None => {
             info!("Running as service");
             // Run as service by default
-            if let Err(e) = rt.block_on(Service::run()) {
+            if let Err(e) = rt.block_on(Service::run_as_service()) {
                 error!("Service failed: {}", e);
                 process::exit(1);
             }

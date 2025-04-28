@@ -155,41 +155,44 @@ This architecture follows these key principles:
   - Ensured proper permissions are set on log directories
   - Verified daemon continues to work with updated DirectoryManager
 
+- [x] Research and select a cross-platform service management library
+  - Evaluated existing usage of `daemonize` for Unix and `windows-service` for Windows
+  - Selected `service-manager` crate that supports Windows Service, Launchd (macOS), systemd and other service managers
+  - Implemented a minimal adapter pattern in `service_adapter.rs` rather than a full replacement of existing code
+
+- [x] Enhance logging framework for cross-platform consistency
+  - Updated logging module to use the improved DirectoryManager exclusively
+  - Consolidated the overlapping functionality in `logging/platform.rs` and `platform/directories.rs`
+  - Ensured consistent log file handling across platforms
+  - Added better error handling for permission issues when writing logs
+  - Added documentation for cross-platform usage
+  - Fixed critical bug in `JsonVisitor::record_debug` implementation to properly capture message fields
+  - Ensured messages are correctly captured regardless of whether they pass through `record_str` or `record_debug`
+
+- [x] Identify and list all code that is not cross-platform or is obsolete
+  - Documented platform-specific code with conditional compilation
+  - Created a `cross-platform-check.sh` script to track progress
+  - Identified service implementation has platform-specific branches
+  - Installation scripts only support macOS
+
+- [x] Create platform-specific installation packages
+  - Created Windows MSI installer script (`scripts/win/build-package-windows.ps1`)
+  - Created Linux DEB/RPM packages script (`scripts/nix/build-package-linux.sh`)
+  - Organized macOS PKG installer in `scripts/mac/build-package.sh`
+  - Included pre/post installation scripts for proper service setup on each platform
+
+- [x] Implement cross-platform service management
+  - Created `CrossPlatformServiceManager` for uniform service operations
+  - Implemented platform-agnostic service API
+  - Used adapter pattern to work with `service-manager` crate
+  - Updated `service.rs` to use the adapter across all platforms
+  - Added proper service lifecycle management (install/uninstall/start/stop)
+  - Added documentation for cross-platform service usage
+
 ## In Progress Tasks
 
-- [ ] Research and select a cross-platform service management library
-  - Evaluate existing usage of `daemonize` for Unix and `windows-service` for Windows
-  - Consider using `service-manager` crate that supports Windows Service, Launchd (macOS), systemd and other service managers
-  - Aim for a minimal adapter pattern rather than a full replacement of existing code
-
-- [ ] Enhance logging framework for cross-platform consistency
-  - Update logging module to use the improved DirectoryManager exclusively
-  - Consolidate the overlapping functionality in `logging/platform.rs` and `platform/directories.rs`
-  - Ensure consistent log file handling across platforms
-  - Add better error handling for permission issues when writing logs
-
-- [ ] Identify and list all code that is not cross-platform or is obsolete
-  - Service implementation has platform-specific branches
-  - Installation scripts only support macOS
-  - **GOOD NEWS**: `logging/platform.rs` already has proper cross-platform support
-
-## Future Tasks
-
-- [ ] Implement cross-platform service management
-  - Use a lightweight adapter pattern to maintain existing code where possible
-  - For Windows: enhance existing `windows-service` implementation
-  - For Linux: support both systemd and init.d scripts
-  - For macOS: maintain current LaunchDaemon approach
-  - Add proper support for automated installation/uninstallation on all platforms
-
-- [ ] Create platform-specific installation packages
-  - Windows: Create MSI installer
-  - Linux: Create DEB and RPM packages
-  - macOS: Maintain current PKG installer
-  - Include pre/post installation scripts for proper service setup
-
 - [ ] Implement and test root/admin execution on all platforms
-  - Windows: Ensure proper UAC handling and service elevation
+  - Windows: Add proper UAC handling and service elevation
   - Linux: Implement sudo or polkit integration with proper permissions
   - macOS: Maintain current root execution approach
   - Add capability check on startup to verify permissions
@@ -198,6 +201,8 @@ This architecture follows these key principles:
   - Create tests that can run on all platforms
   - Implement platform-specific test cases where needed
   - Add CI workflow to test each platform
+
+## Future Tasks
 
 - [ ] Update documentation for new architecture and usage
   - Document installation procedures for each platform

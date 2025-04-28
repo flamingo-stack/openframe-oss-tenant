@@ -1,3 +1,16 @@
+/// Cross-platform directory management
+///
+/// This module provides a unified interface for managing platform-specific directories
+/// across Windows, macOS, and Linux. It handles:
+///
+/// - Application support directories
+/// - Log directories
+/// - Permissions and ownership
+/// - Directory health checks
+/// - Platform-specific path resolution
+///
+/// The DirectoryManager struct provides a common API that hides platform-specific
+/// implementation details.
 use directories::BaseDirs;
 use std::fs;
 use std::io;
@@ -108,9 +121,36 @@ pub fn get_logs_directory() -> PathBuf {
 
 /// Sets the correct platform-specific permissions on a directory
 pub fn set_directory_permissions(path: &Path) -> io::Result<()> {
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, ensure everyone has read access and admins have write access
+        // This is a simplified approach - for production, consider using proper ACLs
+        // Windows permissions are complex and handled by the Windows API
+        info!(
+            "Setting Windows directory permissions for: {}",
+            path.display()
+        );
+
+        // Try to run icacls to set permissions (requires admin privileges)
+        let _ = Command::new("icacls")
+            .args([
+                path.to_str().unwrap(),
+                "/grant",
+                "Everyone:(OI)(CI)R", // Everyone gets read access
+                "/grant",
+                "Administrators:(OI)(CI)F", // Admins get full control
+            ])
+            .status();
+    }
+
     #[cfg(target_os = "macos")]
     {
         // On macOS, we need root:admin ownership and 755 permissions
+        info!(
+            "Setting macOS directory permissions for: {}",
+            path.display()
+        );
+
         // These commands will fail gracefully if not run as root
         let _ = Command::new("chown")
             .args(["-R", "root:admin", path.to_str().unwrap()])
@@ -120,17 +160,24 @@ pub fn set_directory_permissions(path: &Path) -> io::Result<()> {
             .status();
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(target_os = "linux")]
     {
-        // Windows permissions are handled through ACLs which are more complex
-        // For now, we'll just create the directory and let Windows handle permissions
-    }
+        // Set directory permissions to 755 (rwxr-xr-x) on Linux
+        info!(
+            "Setting Linux directory permissions for: {}",
+            path.display()
+        );
 
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        // Set directory permissions to 755 (rwxr-xr-x) on other Unix systems
-        let permissions = fs::Permissions::from_mode(0o755);
-        fs::set_permissions(path, permissions)?;
+        #[cfg(unix)]
+        {
+            let permissions = fs::Permissions::from_mode(0o755);
+            fs::set_permissions(path, permissions)?;
+
+            // On Linux, we typically want root:root ownership
+            let _ = Command::new("chown")
+                .args(["-R", "root:root", path.to_str().unwrap()])
+                .status();
+        }
     }
 
     Ok(())
@@ -144,6 +191,7 @@ pub struct DirectoryManager {
 }
 
 impl DirectoryManager {
+    /// Creates a new DirectoryManager with default platform-specific paths
     pub fn new() -> Self {
         Self {
             logs_dir: get_logs_directory(),
@@ -176,8 +224,9 @@ impl DirectoryManager {
         }
     }
 
-    /// Get the user-specific logs directory path based on the platform
+    /// Get the platform-specific user logs directory based on the platform
     fn get_user_logs_directory() -> PathBuf {
+        // Cross-platform implementation for user-specific logs
         #[cfg(target_os = "windows")]
         {
             if let Some(base_dirs) = BaseDirs::new() {
@@ -211,25 +260,21 @@ impl DirectoryManager {
             }
         }
 
-        // Fallback to system logs directory if home directory can't be determined
-        get_logs_directory()
+        // Fallback to temporary directory if we can't determine the home directory
+        let mut path = std::env::temp_dir();
+        path.push("OpenFrame");
+        path.push("Logs");
+        path
     }
 
-    /// Performs a comprehensive health check of all directories
+    /// Runs a health check on all managed directories
     pub fn perform_health_check(&self) -> Result<(), DirectoryError> {
-        info!("Starting directory health check...");
+        info!("Performing directory health check");
 
-        // Check and create directories if needed
+        // Create directories if they don't exist
         self.ensure_directories()?;
 
         // Validate permissions
-        if let Err(e) = self.validate_permissions() {
-            warn!("Permission validation failed: {}", e);
-            info!("Attempting to fix permissions...");
-            self.fix_permissions()?;
-        }
-
-        // Final validation
         self.validate_permissions()?;
 
         info!("Directory health check completed successfully");
@@ -386,16 +431,23 @@ impl DirectoryManager {
         Ok(())
     }
 
-    /// Checks if the directory is writable
+    /// Determines if a user can write to the given directory
+    ///
+    /// This is a cross-platform implementation that works on Windows, macOS, and Linux.
     fn can_write_to_directory(&self, path: &Path) -> bool {
-        let test_file = path.join(".__openframe_write_test");
-        match fs::write(&test_file, b"test") {
-            Ok(_) => {
-                let _ = fs::remove_file(test_file);
-                true
-            }
-            Err(_) => false,
+        // Try to create a temporary file in the directory
+        let temp_file = path.join(".write_test");
+        let result = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&temp_file);
+
+        // Clean up the test file if it was created
+        if temp_file.exists() {
+            let _ = fs::remove_file(&temp_file);
         }
+
+        result.is_ok()
     }
 
     /// Returns the logs directory path

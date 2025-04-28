@@ -8,24 +8,12 @@ RED='\033[0;31m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# Parse arguments
-FORCE_DEV_MODE=0
-
-for arg in "$@"; do
-  case $arg in
-    --dev)
-      FORCE_DEV_MODE=1
-      shift
-      ;;
-  esac
-done
-
 echo -e "${BLUE}Building OpenFrame...${NC}"
 
 # Setup directory paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLIENT_DIR="$(dirname "$SCRIPT_DIR")"
-TARGET_DIR="$CLIENT_DIR/target"
+CLIENT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
+TARGET_DIR="$CLIENT_DIR/build/mac/target"
 PKG_DIR="$TARGET_DIR/pkg_build"
 PAYLOAD_ROOT="$PKG_DIR/payload_root"
 APP_DIR="$PAYLOAD_ROOT/Applications/OpenFrame.app"
@@ -37,17 +25,37 @@ LOGS_DIR="$LIBRARY_DIR/Logs/OpenFrame"
 SUPPORT_DIR="$LIBRARY_DIR/Application Support/OpenFrame"
 LAUNCHDAEMONS_DIR="$LIBRARY_DIR/LaunchDaemons"
 DIST_DIR="$TARGET_DIR/dist"
-ASSETS_DIR="$CLIENT_DIR/assets"
+ASSETS_DIR="$CLIENT_DIR/build/mac/assets"
 PKG_ASSETS_DIR="$ASSETS_DIR/pkg"
-CA_DIR="$CLIENT_DIR/../scripts/files/ca"
+
+# Print out all directory paths
+echo "========== DIRECTORY PATHS =========="
+echo "SCRIPT_DIR       = $SCRIPT_DIR"
+echo "CLIENT_DIR       = $CLIENT_DIR"
+echo "TARGET_DIR       = $TARGET_DIR"
+echo "PKG_DIR          = $PKG_DIR"
+echo "PAYLOAD_ROOT     = $PAYLOAD_ROOT"
+echo "APP_DIR          = $APP_DIR"
+echo "APP_CONTENTS     = $APP_CONTENTS"
+echo "APP_MACOS        = $APP_MACOS"
+echo "APP_RESOURCES    = $APP_RESOURCES"
+echo "LIBRARY_DIR      = $LIBRARY_DIR"
+echo "LOGS_DIR         = $LOGS_DIR"
+echo "SUPPORT_DIR      = $SUPPORT_DIR"
+echo "LAUNCHDAEMONS_DIR= $LAUNCHDAEMONS_DIR"
+echo "DIST_DIR         = $DIST_DIR"
+echo "ASSETS_DIR       = $ASSETS_DIR"
+echo "PKG_ASSETS_DIR   = $PKG_ASSETS_DIR"
+echo "======================================"
 
 echo -e "${BLUE}Cleaning target directory...${NC}"
-# Clean the target directory
-cargo clean
+
+# Just clean and make sure our target dir exists
 if [ -d "$TARGET_DIR" ]; then
-    # Use sudo to clean up any files with permission issues
-    sudo rm -rf "$TARGET_DIR"
+    rm -rf "$TARGET_DIR"
 fi
+
+# Create all required directories
 mkdir -p "$TARGET_DIR" "$PKG_DIR" "$DIST_DIR"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"
 mkdir -p "$LOGS_DIR" "$SUPPORT_DIR/run" "$LAUNCHDAEMONS_DIR"
@@ -123,7 +131,25 @@ if [ ! -f "$CLIENT_DIR/config/agent.toml" ]; then
 fi
 
 echo -e "${BLUE}Building release version...${NC}"
-cargo build --release
+# Keep using the target dir
+export CARGO_TARGET_DIR="$TARGET_DIR"
+
+# Make absolutely sure release directory exists
+mkdir -p "$TARGET_DIR/release" 
+
+# Explicitly tell cargo where to put the build
+cargo build --release --target-dir="$TARGET_DIR"
+
+# Debug where the binary actually went
+echo -e "${BLUE}Checking for binary...${NC}"
+find "$CLIENT_DIR" -name "openframe" -type f -print
+
+# Verify the binary was created in the correct location
+if [ ! -f "$TARGET_DIR/release/openframe" ]; then
+    echo -e "${RED}Error: Binary not found at $TARGET_DIR/release/openframe${NC}"
+    echo -e "${RED}Build may have used incorrect target directory${NC}"
+    exit 1
+fi
 
 echo -e "${BLUE}Creating package structure...${NC}"
 
@@ -173,9 +199,9 @@ codesign --force --options runtime --sign - "$APP_MACOS/openframe"
 
 # Prepare scripts directory for installation scripts
 mkdir -p "$PKG_DIR/scripts"
-cp -p "$CLIENT_DIR/scripts/pkg_scripts/postinstall" "$PKG_DIR/scripts/"
-cp -p "$CLIENT_DIR/scripts/pkg_scripts/preinstall" "$PKG_DIR/scripts/"
-cp -p "$CLIENT_DIR/scripts/pkg_scripts/uninstall.sh" "$PKG_DIR/scripts/"
+cp -p "$SCRIPT_DIR/pkg_scripts/postinstall" "$PKG_DIR/scripts/"
+cp -p "$SCRIPT_DIR/pkg_scripts/preinstall" "$PKG_DIR/scripts/"
+cp -p "$SCRIPT_DIR/pkg_scripts/uninstall.sh" "$PKG_DIR/scripts/"
 
 # Ensure installation scripts are executable
 chmod 755 "$PKG_DIR/scripts/postinstall"
