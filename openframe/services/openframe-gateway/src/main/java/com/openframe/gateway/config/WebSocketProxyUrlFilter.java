@@ -5,6 +5,7 @@ import com.openframe.core.model.ToolUrl;
 import com.openframe.core.model.ToolUrlType;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
+import com.openframe.gateway.service.ProxyUrlResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -23,10 +24,11 @@ import static com.openframe.gateway.config.WebSocketGatewayConfig.WS_ENDPOINT_PR
 
 @Component
 @RequiredArgsConstructor
-public class WebSocketIntegrationFilter implements GatewayFilter, Ordered {
+public class WebSocketProxyUrlFilter implements GatewayFilter, Ordered {
 
     private final IntegratedToolRepository toolRepository;
     private final ToolUrlService toolUrlService;
+    private final ProxyUrlResolver proxyUrlResolver;
 
     @Override
     public int getOrder() {
@@ -40,15 +42,14 @@ public class WebSocketIntegrationFilter implements GatewayFilter, Ordered {
 
         String toolId = getRequestToolId(path);
         ToolUrl toolUrl = getToolUrl(toolId);
-        URI toolUri = buildURI(toolUrl.getUrl());
 
-        String proxyPath = getProxyPath(path, toolId);
+        URI toolUri = proxyUrlResolver.resolve(toolId, toolUrl, path, WS_ENDPOINT_PREFIX);
 
         URI proxyUri = UriComponentsBuilder.newInstance()
                  .scheme(toolUri.getScheme())
                  .host(toolUri.getHost())
-                 .port(toolUrl.getPort())
-                 .replacePath(proxyPath)
+                 .port(toolUri.getPort())
+                 .replacePath(toolUri.getPath())
                  .build()
                  .toUri();
 
@@ -74,15 +75,4 @@ public class WebSocketIntegrationFilter implements GatewayFilter, Ordered {
                 .orElseThrow(() -> new IllegalArgumentException("Tool " + tool.getName() + " have no web socket url"));
     }
 
-    private String getProxyPath(String path, String toolId) {
-        return path.replaceFirst(WS_ENDPOINT_PREFIX + toolId + "/", "");
-    }
-
-    private URI buildURI(String uri) {
-        try {
-            return new URI(uri);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
 }

@@ -10,15 +10,17 @@ import com.openframe.gateway.config.CurlLoggingHandler;
 import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
@@ -38,10 +40,10 @@ public class RestProxyService {
     private static final AttributeKey<URI> TARGET_URI_KEY = AttributeKey.valueOf("target_uri");
 
     private final IntegratedToolRepository toolRepository;
-    private final ToolUrlResolveService toolUrlResolveService;
+    private final ProxyUrlResolver proxyUrlResolver;
     private final ToolUrlService toolUrlService;
 
-    public Mono<ResponseEntity<String>> proxyApiRequest(String toolId, ServerHttpRequest request) {
+    public Mono<ResponseEntity<String>> proxyApiRequest(String toolId, ServerHttpRequest request, String body) {
         return toolRepository.findById(toolId)
                 .map(tool -> {
                     if (!tool.isEnabled()) {
@@ -56,12 +58,13 @@ public class RestProxyService {
                     }
                     ToolUrl toolUrl = optionalToolUrl.get();
 
-                    URI targetUri = toolUrlResolveService.resolve(toolId, toolUrl, originalUrl);
+                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUrl, "/tools");
                     log.debug("Proxying api request for tool: {}, url: {}", toolId, targetUri);
 
                     HttpMethod method = request.getMethod();
                     Map<String, String> headers = buildApiRequestHeaders(tool);
-                    return proxy(tool, targetUri, request, headers, null);
+
+                    return proxy(tool, targetUri, method, headers, body);
                 })
                 .orElseGet(() -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
     }
@@ -96,7 +99,7 @@ public class RestProxyService {
     }
 
     /*
-        Currently if one device have valid openframe machine JWT token, it can send API request for other device.
+        Currently if one device have valid open-frame machine JWT token, it can send API request for other device.
         TODO: implement device access validation after tool connection feature is implemented.
 
         Tactical RMM request format: 
@@ -111,28 +114,33 @@ public class RestProxyService {
         return toolRepository.findById(toolId)
                 .map(tool -> {
                     if (!tool.isEnabled()) {
-                        return Mono.just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
+                        ResponseEntity<String> response = ResponseEntity.badRequest()
+                                .body("Tool " + tool.getName() + " is not enabled");
+                        return Mono.just(response);
                     }
 
                     String originalUrl = request.getURI().toString();
 
                     Optional<ToolUrl> optionalToolUrl = toolUrlService.getUrlByToolType(tool, ToolUrlType.API);
                     if (optionalToolUrl.isEmpty()) {
-                        return Mono.just(ResponseEntity.badRequest().body("Tool URL not found for tool: " + toolId));
+                        ResponseEntity<String> response = ResponseEntity.badRequest()
+                                .body("Tool URL not found for tool: " + toolId);
+                        return Mono.just(response);
                     }
                     ToolUrl toolUrl = optionalToolUrl.get();
 
-                    URI targetUri = toolUrlResolveService.resolve(toolId, toolUrl, originalUrl);
+                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUrl, "/tools/agent");
                     log.debug("Proxying api request for tool: {}, url: {}", toolId, targetUri);
 
                     HttpMethod method = request.getMethod();
-                    Map<String, String> headers = buildApiRequestHeaders(tool);
-                    return proxy(tool, targetUri, request, headers, body);
+                    Map<String, String> headers = buildAgentRequestHeaders(request);
+
+                    return proxy(tool, targetUri, method, headers, body);
                 })
                 .orElseGet(() -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
     }
 
-    private Map<String, String> setAgentRequestHeaders(ServerHttpRequest request) {
+    private Map<String, String> buildAgentRequestHeaders(ServerHttpRequest request) {
         HttpHeaders requestHeaders = request.getHeaders();
         String toolAuthorisation = requestHeaders.getFirst("Tool-Authorisation");
         return Map.of(
@@ -145,15 +153,14 @@ public class RestProxyService {
     private Mono<ResponseEntity<String>> proxy(
             IntegratedTool tool,
             URI targetUri,
-            ServerHttpRequest request,
+            HttpMethod method,
             Map<String, String> proxyHeaders,
             String body
         ) {
-        HttpClient httpClient = buildHttpClient(targetUri);
         WebClient.RequestBodySpec requestSpec = WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .clientConnector(new ReactorClientHttpConnector(buildHttpClient(targetUri)))
                 .build()
-                .method(request.getMethod())
+                .method(method)
                 .uri(targetUri)
                 .headers(headers -> headers.setAll(proxyHeaders));
 
@@ -172,24 +179,6 @@ public class RestProxyService {
                         log.info("Successfully proxied request to {}", tool.getName()))
                 .doOnError(error ->
                         log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
-
-//        return getBody(request.getBody())
-//                .flatMap(body -> {
-//                    if (isNotEmpty(body)) {
-//                        requestSpec.bodyValue(body);
-//                    }
-//                    return requestSpec
-//                            .retrieve()
-//                            .onStatus(this::isErrorStatusCode, this::processErrorResponse)
-//                            .bodyToMono(String.class)
-//                            .timeout(Duration.ofSeconds(30))
-//                            .map(ResponseEntity::ok)
-//                            .onErrorResume(this::buildErrorResponse)
-//                            .doOnSuccess(response ->
-//                                    log.info("Successfully proxied request to {}", tool.getName()))
-//                            .doOnError(error ->
-//                                    log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
-//                });
     }
 
     private HttpClient buildHttpClient(URI targetUri) {
@@ -198,16 +187,6 @@ public class RestProxyService {
                     conn.channel().attr(TARGET_URI_KEY).set(targetUri);
                     conn.addHandlerFirst("curl-logger", new CurlLoggingHandler());
                 });
-    }
-
-    private Mono<String> getBody(Flux<DataBuffer> dataBufferFlux) {
-        return dataBufferFlux
-                .map(dataBuffer -> {
-                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                    dataBuffer.read(bytes);
-                    return new String(bytes);
-                })
-                .reduce(String::concat);
     }
 
     private boolean isErrorStatusCode(HttpStatusCode statusCode) {

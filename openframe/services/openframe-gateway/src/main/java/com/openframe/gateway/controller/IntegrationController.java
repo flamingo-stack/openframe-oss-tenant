@@ -65,11 +65,12 @@ public class IntegrationController {
             })
     public Mono<ResponseEntity<String>> proxyApiRequest(
             @PathVariable String toolId,
-            ServerHttpRequest request
+            ServerHttpRequest request,
+            @RequestBody String body
     ) {
         String path = request.getPath().toString();
         log.info("Proxying api request for tool: {}, path: {}", toolId, path);
-        return restProxyService.proxyApiRequest(toolId, request);
+        return restProxyService.proxyApiRequest(toolId, request, body);
     }
 
     @RequestMapping(
@@ -82,13 +83,11 @@ public class IntegrationController {
                     RequestMethod.DELETE,
                     RequestMethod.OPTIONS
             })
-//    @PreAuthorize("hasAuthority('SCOPE_agentgateway:proxy4')")
     public Mono<ResponseEntity<String>> proxyAgentRequest(
             @PathVariable String toolId,
             ServerHttpRequest request,
             @RequestBody String body,
             Authentication auth) {
-        log.info("Test log");
         String path = request.getPath().toString();
         log.info("Proxying agent request for tool: {}, path: {}", toolId, path);
         return restProxyService.proxyAgentRequest(toolId, request, body);

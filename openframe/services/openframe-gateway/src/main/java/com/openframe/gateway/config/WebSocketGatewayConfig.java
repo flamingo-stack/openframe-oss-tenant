@@ -10,23 +10,9 @@ import org.springframework.context.annotation.Primary;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.socket.HandshakeInfo;
-import org.springframework.web.reactive.socket.WebSocketHandler;
-import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.server.WebSocketService;
 import org.springframework.web.reactive.socket.server.support.HandshakeWebSocketService;
 import org.springframework.web.reactive.socket.server.upgrade.ReactorNettyRequestUpgradeStrategy;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.Disposable;
-import reactor.core.publisher.Mono;
-
-import java.time.Duration;
-import java.time.Instant;
-
-import static com.openframe.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
 
 @Configuration
 @RequiredArgsConstructor
@@ -35,8 +21,19 @@ public class WebSocketGatewayConfig {
 
     static final String WS_ENDPOINT_PREFIX = "/ws/tools/agent";
 
+    /*
+           Currently if one device have valid open-frame machine JWT token, it can send WS request,
+           make subscriptions for other device.
+           TODO: implement device access validation after tool connection feature is implemented.
+
+           Tactical ws request payload format:
+           1. {
+                "agentId": "*",
+              }
+           2. SUB {agentId}.{topic}
+     */
     @Bean
-    public RouteLocator customRouteLocator(RouteLocatorBuilder builder, WebSocketIntegrationFilter filter) {
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder, WebSocketProxyUrlFilter filter) {
         return builder.routes()
                 .route("agent_gateway_websocket_route", r -> r
                         .path(WS_ENDPOINT_PREFIX + "{toolId}/**")
