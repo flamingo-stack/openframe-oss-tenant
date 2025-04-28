@@ -29,7 +29,7 @@ public class WebSocketServiceDecorator implements WebSocketService {
 
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler webSocketHandler) {
-        WebSocketHandler wrapper = session -> {
+        return delegate.handleRequest(exchange, session -> {
             Jwt jwt = getRequestJwt(exchange);
             Instant expiresAt = jwt.getExpiresAt();
             long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
@@ -38,8 +38,7 @@ public class WebSocketServiceDecorator implements WebSocketService {
             processSessionClosedEvent(session, disposable);
 
             return webSocketHandler.handle(session);
-        };
-        return delegate.handleRequest(exchange, wrapper);
+        });
     }
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {

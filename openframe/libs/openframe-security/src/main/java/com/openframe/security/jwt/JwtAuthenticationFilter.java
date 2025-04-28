@@ -42,7 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter implements Jwt
     @Getter
     private String managementPath;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, UserDetailsService oauthClientUserDetailsService, UserRepository userRepository, OAuthClientRepository oAuthClientRepository) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            UserDetailsService userDetailsService,
+            UserDetailsService oauthClientUserDetailsService,
+            UserRepository userRepository,
+            OAuthClientRepository oAuthClientRepository
+    ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.oauthClientUserDetailsService = oauthClientUserDetailsService;

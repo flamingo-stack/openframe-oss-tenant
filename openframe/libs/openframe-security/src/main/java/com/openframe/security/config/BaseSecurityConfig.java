@@ -79,8 +79,7 @@ public abstract class BaseSecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/.well-known/userinfo").authenticated()
                                 .requestMatchers("/.well-known/openid-configuration").permitAll()
-                                .anyRequest()
-                                .authenticated());
+                                .anyRequest().hasRole("USER"));
     }
 
     @Bean

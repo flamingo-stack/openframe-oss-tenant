@@ -32,7 +32,11 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
     @Getter
     private String managementPath;
 
-    public ReactiveJwtAuthenticationFilter(JwtService jwtService, ReactiveUserDetailsService reactiveUserDetailsService, ReactiveUserDetailsService reactiveOAuthClientUserDetailsService) {
+    public ReactiveJwtAuthenticationFilter(
+            JwtService jwtService,
+            ReactiveUserDetailsService reactiveUserDetailsService,
+            ReactiveUserDetailsService reactiveOAuthClientUserDetailsService
+    ) {
         this.jwtService = jwtService;
         this.userDetailsService = reactiveUserDetailsService;
         this.reactiveOAuthClientUserDetailsService = reactiveOAuthClientUserDetailsService;
