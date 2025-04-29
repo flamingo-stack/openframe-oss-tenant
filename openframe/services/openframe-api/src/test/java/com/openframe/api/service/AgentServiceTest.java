@@ -64,7 +64,8 @@ class AgentServiceTest {
         assertEquals(MACHINE_ID, savedClient.getMachineId());
         assertEquals("agent_" + MACHINE_ID, savedClient.getClientId());
         assertArrayEquals(new String[]{"client_credentials"}, savedClient.getGrantTypes());
-        assertArrayEquals(new String[]{"metrics:write"}, savedClient.getScopes());
+        assertArrayEquals(new String[]{"metrics:write",
+                "agentgateway:proxy"}, savedClient.getScopes());
 
         verify(machineRepository).save(machineCaptor.capture());
         Machine savedMachine = machineCaptor.getValue();
