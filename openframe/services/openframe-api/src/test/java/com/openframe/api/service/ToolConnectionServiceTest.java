@@ -2,6 +2,11 @@ package com.openframe.api.service;
 
 import com.openframe.api.dto.agent.ToolConnectionResponse;
 import com.openframe.api.dto.agent.AgentToolCollectionResponse;
+import com.openframe.api.exception.ConnectionNotFoundException;
+import com.openframe.api.exception.DuplicateConnectionException;
+import com.openframe.api.exception.InvalidAgentIdException;
+import com.openframe.api.exception.InvalidToolTypeException;
+import com.openframe.api.exception.MachineNotFoundException;
 import com.openframe.core.model.ConnectionStatus;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.ToolConnection;
@@ -78,6 +83,14 @@ class ToolConnectionServiceTest {
     }
 
     @Test
+    void getToolConnectionsByMachineId_WithEmptyAgentId_ThrowsException() {
+        assertThrows(
+                InvalidAgentIdException.class,
+                () -> toolConnectionService.getToolConnectionsByMachineId("")
+        );
+    }
+
+    @Test
     void getAgentToolCollection_ReturnsToolInfo() {
         ToolConnection connection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
         when(toolConnectionRepository.findByMachineId(MACHINE_ID)).thenReturn(List.of(connection));
@@ -96,12 +109,22 @@ class ToolConnectionServiceTest {
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.of(connection));
 
-        Optional<ToolConnectionResponse> response = toolConnectionService
+        ToolConnectionResponse response = toolConnectionService
                 .getToolConnectionByMachineIdAndToolType(MACHINE_ID, TOOL_TYPE);
 
-        assertTrue(response.isPresent());
-        assertEquals(MACHINE_ID, response.get().getOpenframeAgentId());
-        assertEquals(TOOL_TYPE.toLowerCase(), response.get().getToolType());
+        assertEquals(MACHINE_ID, response.getOpenframeAgentId());
+        assertEquals(TOOL_TYPE.toLowerCase(), response.getToolType());
+    }
+
+    @Test
+    void getToolConnectionByMachineIdAndToolType_WhenNotFound_ThrowsException() {
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ConnectionNotFoundException.class,
+                () -> toolConnectionService.getToolConnectionByMachineIdAndToolType(MACHINE_ID, TOOL_TYPE)
+        );
     }
 
     @Test
@@ -128,15 +151,34 @@ class ToolConnectionServiceTest {
     void addToolConnection_WithExistingConnection_ThrowsException() {
         Machine machine = new Machine();
         machine.setMachineId(MACHINE_ID);
+        ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
+        existingConnection.setStatus(ConnectionStatus.CONNECTED);
         when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
-                .thenReturn(Optional.of(new ToolConnection()));
+                .thenReturn(Optional.of(existingConnection));
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
+        assertThrows(
+                DuplicateConnectionException.class,
                 () -> toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
         );
-        assertEquals("Tool connection already exists for this machine and tool type", exception.getMessage());
+    }
+
+    @Test
+    void addToolConnection_WithNonExistentMachine_ThrowsException() {
+        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.empty());
+
+        assertThrows(
+                MachineNotFoundException.class,
+                () -> toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
+        );
+    }
+
+    @Test
+    void addToolConnection_WithEmptyAgentId_ThrowsException() {
+        assertThrows(
+                InvalidAgentIdException.class,
+                () -> toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, "")
+        );
     }
 
     @Test
@@ -146,14 +188,24 @@ class ToolConnectionServiceTest {
                 .thenReturn(Optional.of(existingConnection));
         when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
-        Optional<ToolConnectionResponse> response = toolConnectionService
+        ToolConnectionResponse response = toolConnectionService
                 .updateToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID);
 
-        assertTrue(response.isPresent());
         verify(toolConnectionRepository).save(toolConnectionCaptor.capture());
         ToolConnection savedConnection = toolConnectionCaptor.getValue();
         assertEquals(AGENT_TOOL_ID, savedConnection.getAgentToolId());
         assertNotNull(savedConnection.getLastSyncAt());
+    }
+
+    @Test
+    void updateToolConnection_WhenNotFound_ThrowsException() {
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ConnectionNotFoundException.class,
+                () -> toolConnectionService.updateToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
+        );
     }
 
     @Test
@@ -172,12 +224,84 @@ class ToolConnectionServiceTest {
     }
 
     @Test
+    void deleteToolConnection_WhenNotFound_ThrowsException() {
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ConnectionNotFoundException.class,
+                () -> toolConnectionService.deleteToolConnection(MACHINE_ID, TOOL_TYPE)
+        );
+    }
+
+    @Test
     void getToolConnectionByMachineIdAndToolType_WithInvalidToolType_ThrowsException() {
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
+        assertThrows(
+                InvalidToolTypeException.class,
                 () -> toolConnectionService.getToolConnectionByMachineIdAndToolType(MACHINE_ID, "INVALID_TOOL")
         );
-        assertEquals("Invalid tool type: INVALID_TOOL", exception.getMessage());
+    }
+
+    @Test
+    void connectionExists_ReturnsTrueWhenFound() {
+        ToolConnection connection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.of(connection));
+
+        assertDoesNotThrow(() -> 
+            toolConnectionService.getToolConnectionByMachineIdAndToolType(MACHINE_ID, TOOL_TYPE)
+        );
+    }
+
+    @Test
+    void connectionExists_ReturnsFalseWhenNotFound() {
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+            ConnectionNotFoundException.class,
+            () -> toolConnectionService.getToolConnectionByMachineIdAndToolType(MACHINE_ID, TOOL_TYPE)
+        );
+    }
+
+    @Test
+    void addToolConnection_ReactivatesDisconnectedConnection() {
+        Machine machine = new Machine();
+        machine.setMachineId(MACHINE_ID);
+        ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, "old-agent-tool-id");
+        existingConnection.setStatus(ConnectionStatus.DISCONNECTED);
+        existingConnection.setDisconnectedAt(Instant.now().minusSeconds(3600));
+        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.of(existingConnection));
+        when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+
+        ToolConnectionResponse response = toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID);
+
+        verify(toolConnectionRepository).save(toolConnectionCaptor.capture());
+        ToolConnection savedConnection = toolConnectionCaptor.getValue();
+        assertEquals(MACHINE_ID, savedConnection.getMachineId());
+        assertEquals(ToolType.MESHCENTRAL, savedConnection.getToolType());
+        assertEquals(AGENT_TOOL_ID, savedConnection.getAgentToolId());
+        assertEquals(ConnectionStatus.CONNECTED, savedConnection.getStatus());
+        assertNotNull(savedConnection.getConnectedAt());
+        assertNull(savedConnection.getDisconnectedAt());
+    }
+
+    @Test
+    void addToolConnection_WithAlreadyConnected_ThrowsException() {
+        Machine machine = new Machine();
+        machine.setMachineId(MACHINE_ID);
+        ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
+        existingConnection.setStatus(ConnectionStatus.CONNECTED);
+        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
+        when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
+                .thenReturn(Optional.of(existingConnection));
+
+        assertThrows(
+                DuplicateConnectionException.class,
+                () -> toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
+        );
     }
 
     private ToolConnection createToolConnection(String machineId, ToolType toolType, String agentToolId) {
@@ -189,4 +313,4 @@ class ToolConnectionServiceTest {
         connection.setConnectedAt(Instant.now());
         return connection;
     }
-} 
+}

@@ -43,9 +43,7 @@ public class AgentController {
     public ResponseEntity<ToolConnectionResponse> getToolConnectionByMachineIdAndToolType(
             @PathVariable String openframeAgentId,
             @PathVariable String toolType) {
-        return toolConnectionService.getToolConnectionByMachineIdAndToolType(openframeAgentId, toolType)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(toolConnectionService.getToolConnectionByMachineIdAndToolType(openframeAgentId, toolType));
     }
 
     @PostMapping("/tool-connection")
@@ -63,10 +61,10 @@ public class AgentController {
             @PathVariable String openframeAgentId,
             @PathVariable String toolType,
             @Valid @RequestBody ToolConnectionUpdateRequest request) {
-
-        return toolConnectionService.updateToolConnection(openframeAgentId, toolType, request.getAgentToolId())
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(toolConnectionService.updateToolConnection(
+                openframeAgentId,
+                toolType,
+                request.getAgentToolId()));
     }
 
     @DeleteMapping("/tool-connections/{openframeAgentId}/{toolType}")
