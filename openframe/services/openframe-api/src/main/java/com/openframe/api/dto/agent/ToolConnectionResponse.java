@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AgentRegistrationResponse {
-    private String clientId;
-    private String clientSecret;
-} 
+public class ToolConnectionResponse {
+    private String openframeAgentId;
+    private String toolType; 
+    private String agentToolId;
+    private String status;
+}
