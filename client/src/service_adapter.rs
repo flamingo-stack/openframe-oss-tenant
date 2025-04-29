@@ -155,7 +155,7 @@ impl CrossPlatformServiceManager {
         );
 
         // Get environment variables to pass to the service
-        let mut environment = self.config.environment_vars.clone();
+        let environment = self.config.environment_vars.clone();
 
         // Create the installation context with full configuration
         let mut ctx = ServiceInstallCtx {
@@ -262,7 +262,7 @@ impl CrossPlatformServiceManager {
 
     // Platform-specific helpers
 
-    fn add_platform_specific_env(&self, environment: &mut Vec<(String, String)>) {
+    fn add_platform_specific_env(&self, _environment: &mut Vec<(String, String)>) {
         #[cfg(target_os = "macos")]
         {
             // Add any macOS-specific environment variables

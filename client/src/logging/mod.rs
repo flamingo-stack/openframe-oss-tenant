@@ -210,8 +210,16 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
     let mut init_result = Ok(());
 
     INIT.call_once(|| {
-        // Initialize directory manager and ensure directories exist
-        let dir_manager = DirectoryManager::new();
+        // Initialize directory manager based on environment
+        let dir_manager = if std::env::var("OPENFRAME_DEV_MODE").is_ok() {
+            // In development mode, use user logs directory to avoid permission issues
+            eprintln!("Running in development mode, using user logs directory");
+            DirectoryManager::for_development()
+        } else {
+            // In normal mode, use system logs directory
+            DirectoryManager::new()
+        };
+
         if let Err(e) = dir_manager.perform_health_check() {
             init_result = Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -437,7 +445,12 @@ fn compress_log_file(path: &PathBuf) -> std::io::Result<()> {
 
 /// Get the current log file path
 pub fn get_log_file_path(dir_manager: &DirectoryManager) -> PathBuf {
-    dir_manager.logs_dir().join("openframe.log")
+    // In development mode, use the user logs directory instead of system logs
+    if std::env::var("OPENFRAME_DEV_MODE").is_ok() {
+        dir_manager.user_logs_dir().join("openframe.log")
+    } else {
+        dir_manager.logs_dir().join("openframe.log")
+    }
 }
 
 #[cfg(test)]

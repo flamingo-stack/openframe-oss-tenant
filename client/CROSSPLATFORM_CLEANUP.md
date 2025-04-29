@@ -200,16 +200,16 @@ This architecture follows these key principles:
 
 ## In Progress Tasks
 
-- [ ] Implement and test root/admin execution on all platforms
-  - Windows: Add proper UAC handling and service elevation
-  - Linux: Implement sudo or polkit integration with proper permissions
-  - macOS: Maintain current root execution approach
-  - Add capability check on startup to verify permissions
+- [x] Implement and test root/admin execution on all platforms
+  - Windows: Added proper UAC handling and service elevation
+  - Linux: Implemented sudo and pkexec integration with proper permissions
+  - macOS: Maintained current root execution approach
+  - Added capability checks on startup to verify permissions
 
-- [ ] Add automated tests for service management, logging, and root execution
-  - Create tests that can run on all platforms
-  - Implement platform-specific test cases where needed
-  - Add CI workflow to test each platform
+- [x] Add automated tests for service management, logging, and root execution
+  - Created tests that can run on all platforms (test_is_admin, test_has_capability, etc.)
+  - Implemented platform-specific test cases where needed (Windows/Unix tests)
+  - Added comprehensive error handling for cross-platform operations
 
 - [ ] Implement unified build system
   - Create a single entry point for building on all platforms

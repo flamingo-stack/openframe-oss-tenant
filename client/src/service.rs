@@ -4,6 +4,7 @@ use tokio::runtime::Runtime;
 use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
 
+use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
 
@@ -20,6 +21,14 @@ impl Service {
 
     /// Install the service on the current platform
     pub async fn install() -> Result<()> {
+        // Check if we have admin privileges
+        if !PermissionUtils::is_admin() {
+            error!("Service installation requires admin/root privileges");
+            return Err(anyhow::anyhow!(
+                "Admin/root privileges required for service installation"
+            ));
+        }
+
         // Common code for all platforms
         info!("Installing OpenFrame service");
         let dir_manager = DirectoryManager::new();
@@ -30,8 +39,16 @@ impl Service {
         // Get the current executable path
         let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
 
+        // Determine platform-specific user and group values
+        let (user_name, group_name) = match std::env::consts::OS {
+            "windows" => (Some("LocalSystem".to_string()), None),
+            "macos" => (Some("root".to_string()), Some("wheel".to_string())),
+            "linux" => (Some("root".to_string()), Some("root".to_string())),
+            _ => (None, None),
+        };
+
         // Create a full configuration for the service with all enhanced options
-        let mut config = ServiceConfig {
+        let config = ServiceConfig {
             name: SERVICE_NAME.to_string(),
             display_name: DISPLAY_NAME.to_string(),
             description: DESCRIPTION.to_string(),
@@ -43,8 +60,8 @@ impl Service {
             working_directory: Some(dir_manager.app_support_dir().to_path_buf()),
             stdout_path: Some(dir_manager.logs_dir().join("daemon_output.log")),
             stderr_path: Some(dir_manager.logs_dir().join("daemon_error.log")),
-            user_name: Some("root".to_string()),
-            group_name: Some("wheel".to_string()),
+            user_name,
+            group_name,
             file_limit: Some(4096),
             exit_timeout_seconds: Some(10),
             is_interactive: true,
@@ -63,6 +80,14 @@ impl Service {
 
     /// Uninstall the service on the current platform
     pub async fn uninstall() -> Result<()> {
+        // Check if we have admin privileges
+        if !PermissionUtils::is_admin() {
+            error!("Service uninstallation requires admin/root privileges");
+            return Err(anyhow::anyhow!(
+                "Admin/root privileges required for service uninstallation"
+            ));
+        }
+
         // Common code for all platforms
         info!("Uninstalling OpenFrame service");
 
@@ -97,8 +122,21 @@ impl Service {
         // Common code for all platforms
         info!("Starting OpenFrame service core");
 
-        // Initialize directory manager
-        let dir_manager = DirectoryManager::new();
+        // Initialize directory manager based on environment
+        let dir_manager = if std::env::var("OPENFRAME_DEV_MODE").is_ok() {
+            info!("Service running in development mode, using user directories");
+            DirectoryManager::for_development()
+        } else {
+            DirectoryManager::new()
+        };
+
+        // Check if we have capability to access required resources
+        let _can_read_logs = PermissionUtils::has_capability(Capability::ReadSystemLogs);
+        let can_write_logs = PermissionUtils::has_capability(Capability::WriteSystemLogs);
+
+        if !can_write_logs {
+            warn!("Process doesn't have privileges to write to system logs");
+        }
 
         // Perform health check before starting
         if let Err(e) = dir_manager.perform_health_check() {
@@ -115,6 +153,47 @@ impl Service {
             loop {
                 interval.tick().await;
                 let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                let is_admin = PermissionUtils::is_admin();
+                info!("Running with admin/root privileges: {}", is_admin);
+
+                if !is_admin {
+                    warn!("Not running as admin/root. Attempting to execute a command with elevation.");
+                    match PermissionUtils::run_as_admin(
+                        "echo",
+                        &["Hello from elevated privileges!"],
+                    ) {
+                        Ok(_) => info!("Successfully executed elevated command"),
+                        Err(e) => warn!("Failed to execute elevated command: {}", e),
+                    }
+                } else {
+                    info!("Already running as admin/root. Executing a system command.");
+                    #[cfg(target_os = "macos")]
+                    {
+                        match PermissionUtils::run_as_admin(
+                            "system_profiler",
+                            &["SPSoftwareDataType", "-detailLevel", "mini"],
+                        ) {
+                            Ok(_) => info!("Successfully executed system command"),
+                            Err(e) => warn!("Failed to execute system command: {}", e),
+                        }
+                    }
+
+                    #[cfg(target_os = "linux")]
+                    {
+                        match PermissionUtils::run_as_admin("lsb_release", &["-a"]) {
+                            Ok(_) => info!("Successfully executed system command"),
+                            Err(e) => warn!("Failed to execute system command: {}", e),
+                        }
+                    }
+
+                    #[cfg(target_os = "windows")]
+                    {
+                        match PermissionUtils::run_as_admin("systeminfo", &["/fo", "list", "/nh"]) {
+                            Ok(_) => info!("Successfully executed system command"),
+                            Err(e) => warn!("Failed to execute system command: {}", e),
+                        }
+                    }
+                }
                 info!(
                     "Hey Flamingos 🦩, I'm your new Rust OpenFrame Service [heartbeat: {}]",
                     timestamp
@@ -128,13 +207,21 @@ impl Service {
 
     /// Run as a service on the current platform
     pub async fn run_as_service() -> Result<()> {
+        // Check if we have necessary capabilities for running as a service
+        if !PermissionUtils::has_capability(Capability::ManageServices)
+            && !PermissionUtils::has_capability(Capability::WriteSystemDirectories)
+        {
+            // Log warning but continue - we might be running as a specialized service account
+            warn!("Process doesn't have full administrative privileges");
+        }
+
         // Log which platform we're running on
-        #[cfg(target_os = "windows")]
-        let platform = "Windows Service";
-        #[cfg(target_os = "macos")]
-        let platform: &str = "macOS LaunchDaemon";
-        #[cfg(all(unix, not(target_os = "macos")))]
-        let platform = "Linux systemd";
+        let platform = match std::env::consts::OS {
+            "windows" => "Windows Service",
+            "macos" => "macOS LaunchDaemon",
+            "linux" => "Linux systemd",
+            _ => "Unknown platform",
+        };
 
         info!("Running as {} service", platform);
 

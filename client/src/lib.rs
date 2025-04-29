@@ -11,7 +11,7 @@ use uuid;
 
 mod config;
 mod metrics;
-mod platform;
+pub mod platform;
 
 pub mod logging;
 pub mod monitoring;
@@ -95,7 +95,14 @@ pub struct Client {
 impl Client {
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
-        let directory_manager = DirectoryManager::new();
+
+        // Check if in development mode
+        let directory_manager = if std::env::var("OPENFRAME_DEV_MODE").is_ok() {
+            info!("Client running in development mode, using user directories");
+            DirectoryManager::for_development()
+        } else {
+            DirectoryManager::new()
+        };
 
         // Perform initial health check
         directory_manager.perform_health_check()?;

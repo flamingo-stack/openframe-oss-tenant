@@ -70,6 +70,17 @@ impl From<PermissionError> for DirectoryError {
             PermissionError::InvalidPath(msg) => {
                 DirectoryError::ValidationFailed(PathBuf::new(), msg)
             }
+            PermissionError::AdminCheckFailed(msg) => {
+                DirectoryError::ValidationFailed(PathBuf::new(), msg)
+            }
+            PermissionError::ElevationRequired => DirectoryError::ValidationFailed(
+                PathBuf::new(),
+                "Elevation to admin/root required".to_string(),
+            ),
+            PermissionError::CommandFailed(code) => DirectoryError::ValidationFailed(
+                PathBuf::new(),
+                format!("Command failed with code: {}", code),
+            ),
         }
     }
 }
@@ -98,6 +109,26 @@ pub fn get_app_support_directory() -> PathBuf {
 
 /// Returns the platform-specific logs directory path
 pub fn get_logs_directory() -> PathBuf {
+    // First check for environment variable override
+    if let Ok(log_dir) = std::env::var("OPENFRAME_LOG_DIR") {
+        let path = PathBuf::from(log_dir);
+
+        // Ensure the directory exists
+        if !path.exists() {
+            if let Err(e) = std::fs::create_dir_all(&path) {
+                // Log error but continue with the path
+                eprintln!(
+                    "Failed to create custom log directory {}: {}",
+                    path.display(),
+                    e
+                );
+            }
+        }
+
+        return path;
+    }
+
+    // If no override, use platform-specific defaults
     #[cfg(target_os = "windows")]
     {
         let program_data =
@@ -220,6 +251,18 @@ impl DirectoryManager {
         Self {
             logs_dir: system_logs_dir,
             app_support_dir: system_app_dir,
+            user_logs_dir: Some(user_logs),
+        }
+    }
+
+    /// Creates a development mode DirectoryManager that only uses user directories
+    pub fn for_development() -> Self {
+        let user_logs = Self::get_user_logs_directory();
+
+        // In development mode, use user logs for everything to avoid permission issues
+        Self {
+            logs_dir: user_logs.clone(),
+            app_support_dir: user_logs.clone(),
             user_logs_dir: Some(user_logs),
         }
     }
