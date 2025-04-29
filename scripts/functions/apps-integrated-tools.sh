@@ -71,7 +71,7 @@ function integrated_tools_tactical_rmm_deploy() {
   kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/tactical-rmm
 }
 
-function tactical_rmm_wait() {
+function integrated_tools_tactical_rmm_wait() {
   echo "Waiting for Tactical RMM to be ready"
   wait_for_app "integrated-tools" "app=tactical-nginx"
   wait_for_app "integrated-tools" "app=tactical-frontend"

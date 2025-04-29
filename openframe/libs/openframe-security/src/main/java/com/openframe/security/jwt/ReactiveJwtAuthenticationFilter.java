@@ -1,11 +1,14 @@
 package com.openframe.security.jwt;
 
+import com.openframe.security.oauth.OAuthClientSecurity;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -23,14 +26,20 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
     @Getter
     private final JwtService jwtService;
     private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveOAuthClientUserDetailsService;
 
     @Value("${management.endpoints.web.base-path}")
     @Getter
     private String managementPath;
 
-    public ReactiveJwtAuthenticationFilter(JwtService jwtService, ReactiveUserDetailsService userDetailsService) {
+    public ReactiveJwtAuthenticationFilter(
+            JwtService jwtService,
+            ReactiveUserDetailsService reactiveUserDetailsService,
+            ReactiveUserDetailsService reactiveOAuthClientUserDetailsService
+    ) {
         this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
+        this.userDetailsService = reactiveUserDetailsService;
+        this.reactiveOAuthClientUserDetailsService = reactiveOAuthClientUserDetailsService;
     }
 
     @Override
@@ -42,7 +51,7 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
             return chain.filter(exchange);
         }
 
-        String authHeader = getAuthHeader(exchange);
+        String authHeader = getRequestAuthToken(exchange);
         logAuthAttempt(method, path, authHeader);
 
         String jwt = extractJwt(authHeader);
@@ -51,30 +60,53 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
             return exchange.getResponse().setComplete();
         }
 
-        String userEmail = extractUsername(jwt);
-        if (userEmail == null) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
+        Jwt decodedJwt = jwtService.decodeToken(jwt);
+        String grantType = decodedJwt.getClaimAsString("grant_type");
+        if ("client_credentials".equals(grantType)) {
+            String clientId = decodedJwt.getSubject();
+            if (clientId == null) {
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
+            return reactiveOAuthClientUserDetailsService.findByUsername(clientId)
+                    .flatMap(userDetails -> {
+                        if (validateToken(jwt, userDetails)) {
+                            var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                            return chain.filter(exchange)
+                                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
 
-        return userDetailsService.findByUsername(userEmail)
-                .flatMap(userDetails -> {
-                    if (validateToken(jwt, userDetails)) {
-                        var authentication = new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                        return chain.filter(exchange)
-                                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
-                    }
-                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                    return exchange.getResponse().setComplete();
-                })
-                .onErrorResume(e -> {
-                    log.error("Authentication failed: {}", e.getMessage(), e);
-                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                    return exchange.getResponse().setComplete();
-                });
+                        }
+                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                        return exchange.getResponse().setComplete();
+                    });
+        }
+        if ("password".equals(grantType)) {
+            String userEmail = extractUsername(jwt);
+            if (userEmail == null) {
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
+            return userDetailsService.findByUsername(userEmail)
+                    .flatMap(userDetails -> {
+                        if (validateToken(jwt, userDetails)) {
+                            var authentication = new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+                            return chain.filter(exchange)
+                                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                        }
+                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                        return exchange.getResponse().setComplete();
+                    })
+                    .onErrorResume(e -> {
+                        log.error("Authentication failed: {}", e.getMessage(), e);
+                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                        return exchange.getResponse().setComplete();
+                    });
+        }
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
     }
 }

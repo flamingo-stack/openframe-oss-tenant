@@ -6,6 +6,7 @@ import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.server.ServerWebExchange;
@@ -14,18 +15,28 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public interface JwtAuthenticationOperations {
 
+    String AUTHORIZATION_QUERY_PARAM = "authorization";
+
     Logger JWT_LOGGER = LoggerFactory.getLogger(JwtAuthenticationOperations.class);
 
     JwtService getJwtService();
 
     String getManagementPath();
 
-    default String getAuthHeader(Object request) {
-        if (request instanceof HttpServletRequest) {
-            return ((HttpServletRequest) request).getHeader(HttpHeaders.AUTHORIZATION);
-        } else if (request instanceof ServerWebExchange) {
-            return ((ServerWebExchange) request).getRequest()
-                    .getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+    default String getRequestAuthToken(Object request) {
+        if (request instanceof HttpServletRequest httpRequest) {
+            String authorisationHeader = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorisationHeader != null) {
+                return authorisationHeader;
+            }
+            return httpRequest.getParameter(AUTHORIZATION_QUERY_PARAM);
+        } else if (request instanceof ServerWebExchange serverWebExchange) {
+            ServerHttpRequest httpRequest = serverWebExchange.getRequest();
+            String authorisationHeader = httpRequest.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            if (authorisationHeader != null) {
+                return authorisationHeader;
+            }
+            return httpRequest.getQueryParams().getFirst(AUTHORIZATION_QUERY_PARAM);
         }
         return null;
     }
@@ -82,6 +93,7 @@ public interface JwtAuthenticationOperations {
                 || path.startsWith("/actuator")
                 || path.startsWith("/oauth/token")
                 || path.startsWith("/oauth/register")
+                || path.startsWith("/api/agents/register")
                 || path.startsWith(getManagementPath())
                 || path.equals("/.well-known/openid-configuration");
     }

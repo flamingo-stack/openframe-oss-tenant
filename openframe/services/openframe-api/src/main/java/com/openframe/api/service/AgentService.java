@@ -42,7 +42,10 @@ public class AgentService {
         client.setClientSecret(clientSecret);
         client.setMachineId(request.getMachineId());
         client.setGrantTypes(new String[]{"client_credentials"});
-        client.setScopes(new String[]{"metrics:write"});
+        client.setScopes(new String[]{
+                "metrics:write",
+                "agentgateway:proxy"
+        });
 
         oauthClientRepository.save(client);
 

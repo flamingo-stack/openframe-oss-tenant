@@ -73,13 +73,13 @@ public abstract class BaseSecurityConfig {
                                         "/metrics/**",
                                         "/oauth/token",
                                         "/oauth/register",
+                                        "/api/agents/register",
                                         managementContextPath + "/**"
                                 )
                                 .permitAll()
                                 .requestMatchers("/.well-known/userinfo").authenticated()
                                 .requestMatchers("/.well-known/openid-configuration").permitAll()
-                                .anyRequest()
-                                .authenticated());
+                                .anyRequest().hasRole("USER"));
     }
 
     @Bean

@@ -10,16 +10,18 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 import com.openframe.security.jwt.JwtConfig;
 import com.openframe.security.jwt.ReactiveJwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @Configuration
@@ -33,6 +35,29 @@ public abstract class BaseReactiveSecurityConfig {
     private final ReactiveJwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
+    public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter rolesConverter = new JwtGrantedAuthoritiesConverter();
+        rolesConverter.setAuthoritiesClaimName("roles");
+        rolesConverter.setAuthorityPrefix("ROLE_");
+
+        JwtGrantedAuthoritiesConverter scopesConverter = new JwtGrantedAuthoritiesConverter();
+        scopesConverter.setAuthoritiesClaimName("scopes");
+        scopesConverter.setAuthorityPrefix("SCOPE_");
+
+        ReactiveJwtAuthenticationConverter jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
+
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Flux<GrantedAuthority> roles = Flux.fromIterable(rolesConverter.convert(jwt));
+            Flux<GrantedAuthority> scopes = Flux.fromIterable(scopesConverter.convert(jwt));
+            return Flux.concat(roles, scopes);
+        });
+
+        jwtAuthenticationConverter.setPrincipalClaimName("sub");
+
+        return jwtAuthenticationConverter;
+    }
+
+    @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         String managementContextPath = managementProperties.getBasePath() != null
                 ? managementProperties.getBasePath() : "/actuator";
@@ -43,23 +68,23 @@ public abstract class BaseReactiveSecurityConfig {
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .addFilterAt(jwtAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .oauth2ResourceServer(oauth2 -> oauth2
-                    .jwt(jwt -> jwt.jwtAuthenticationConverter(token
-                        -> Mono.just(new JwtAuthenticationToken(token))
-                    ))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(reactiveJwtAuthenticationConverter()))
                 )
                 .authorizeExchange(exchanges -> exchanges
                     .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .pathMatchers(
-                            "/error/**",
-                            "/health/**",
-                            "/metrics/**",
-                            "/oauth/token",
-                            "/oauth/register",
-                            managementContextPath + "/**"
-                    ).permitAll()
-                    .pathMatchers("/.well-known/userinfo").authenticated()
-                    .pathMatchers("/.well-known/openid-configuration").permitAll()
-                    .anyExchange().authenticated()
+                             "/error/**",
+                             "/health/**",
+                             "/metrics/**",
+                             "/oauth/token",
+                             "/oauth/register",
+                             managementContextPath + "/**"
+                     ).permitAll()
+                     .pathMatchers("/.well-known/userinfo").authenticated()
+                     .pathMatchers("/.well-known/openid-configuration").permitAll()
+                     .pathMatchers("/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
+                     .pathMatchers("ws/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
+                     .anyExchange().hasRole("USER")
                 )
                 .build();
     }
