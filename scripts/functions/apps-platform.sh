@@ -2,21 +2,21 @@
 
 # CERT-MANAGER
 function platform_cert_manager_deploy() {
-  echo "Deploying cert-manager" && \
-  helm_repo_ensure jetstack https://charts.jetstack.io && \
-  helm upgrade -i cert-manager jetstack/cert-manager \
-    --namespace platform --create-namespace \
-    --version v1.17.1 \
-    -f ${ROOT_REPO_DIR}/deploy/dev/platform/cert-manager/helm/values.yaml \
-    --wait --timeout 1h && \
-  echo "Creating CA secret" && \
-  kubectl create secret generic ca-secret \
-    --namespace platform \
-    --from-file=tls.crt=${ROOT_REPO_DIR}/scripts/files/ca/ca.crt \
-    --from-file=tls.key=${ROOT_REPO_DIR}/scripts/files/ca/ca.key \
-    --dry-run=client -o yaml | kubectl apply -f -
-  echo "Creating Issuers" && \
-  kubectl apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/cert-manager/manifests
+  echo "Deploying cert-manager" &&
+    helm_repo_ensure jetstack https://charts.jetstack.io &&
+    helm upgrade -i cert-manager jetstack/cert-manager \
+      --namespace platform --create-namespace \
+      --version v1.17.1 \
+      -f ${ROOT_REPO_DIR}/deploy/dev/platform/cert-manager/helm/values.yaml \
+      --wait --timeout 1h &&
+    echo "Creating CA secret" &&
+    kubectl create secret generic ca-secret \
+      --namespace platform \
+      --from-file=tls.crt=${ROOT_REPO_DIR}/scripts/files/ca/ca.crt \
+      --from-file=tls.key=${ROOT_REPO_DIR}/scripts/files/ca/ca.key \
+      --dry-run=client -o yaml | kubectl apply -f -
+  echo "Creating Issuers" &&
+    kubectl apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/cert-manager/manifests
 }
 
 function platform_cert_manager_wait() {
@@ -31,13 +31,13 @@ function platform_cert_manager_delete() {
 
 # INGRESS-NGINX
 function platform_ingress_nginx_deploy() {
-  helm_repo_ensure "ingress-nginx" "https://kubernetes.github.io/ingress-nginx" && \
-  echo "Deploying ingress-nginx" && \
-  helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
-    -n platform --create-namespace \
-    --version 4.12.1 \
-    -f ${ROOT_REPO_DIR}/deploy/dev/platform/ingress-nginx/helm/values.yaml \
-    --wait --timeout 1h
+  helm_repo_ensure "ingress-nginx" "https://kubernetes.github.io/ingress-nginx" &&
+    echo "Deploying ingress-nginx" &&
+    helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
+      -n platform --create-namespace \
+      --version 4.12.1 \
+      -f ${ROOT_REPO_DIR}/deploy/dev/platform/ingress-nginx/helm/values.yaml \
+      --wait --timeout 1h
 }
 
 function platform_ingress_nginx_wait() {
@@ -52,11 +52,11 @@ function platform_ingress_nginx_delete() {
 
 # METRICS-SERVER
 function platform_metrics_server_deploy() {
-  helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server && \
-  echo "Deploying metrics-server" && \
-  helm upgrade -i metrics-server metrics-server/metrics-server \
-    --namespace kube-system --set 'args={--kubelet-insecure-tls}' \
-    --wait --timeout 1h
+  helm_repo_ensure metrics-server https://kubernetes-sigs.github.io/metrics-server &&
+    echo "Deploying metrics-server" &&
+    helm upgrade -i metrics-server metrics-server/metrics-server \
+      --namespace kube-system --set 'args={--kubelet-insecure-tls}' \
+      --wait --timeout 1h
 }
 
 function platform_metrics_server_wait() {
@@ -71,22 +71,22 @@ function platform_metrics_server_delete() {
 
 # Monitoring: GRAFANA + PROMETHEUS
 function platform_monitoring_deploy() {
-  helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts && \
-  echo "Deploying kube-prometheus-stack" && \
-  helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-    -n platform --create-namespace \
-    --version 70.4.2 \
-    -f ${ROOT_REPO_DIR}/deploy/dev/platform/monitoring/helm/values.yaml  \
-    --wait --timeout 1h && \
-  echo "Deploying dashboards" && \
-  kubectl -n platform apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/monitoring/dashboards
+  helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts &&
+    echo "Deploying kube-prometheus-stack" &&
+    helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+      -n platform --create-namespace \
+      --version 70.4.2 \
+      -f ${ROOT_REPO_DIR}/deploy/dev/platform/monitoring/helm/values.yaml \
+      --wait --timeout 1h &&
+    echo "Deploying dashboards" &&
+    kubectl -n platform apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/monitoring/dashboards
 }
 
 function platform_monitoring_wait() {
   echo "Waiting for kube-prometheus-stack to be ready"
-  wait_for_app "platform" "app.kubernetes.io/instance=kube-prometheus-stack" && \
-  wait_for_app "platform" "app.kubernetes.io/instance=kube-prometheus-stack-prometheus" && \
-  wait_for_app "platform" "app.kubernetes.io/instance=kube-prometheus-stack-alertmanager"
+  wait_for_app "platform" "app.kubernetes.io/instance=kube-prometheus-stack" &&
+    wait_for_app "platform" "app.kubernetes.io/instance=kube-prometheus-stack-prometheus" &&
+    wait_for_app "platform" "app.kubernetes.io/instance=kube-prometheus-stack-alertmanager"
 }
 
 function platform_monitoring_delete() {
@@ -96,9 +96,9 @@ function platform_monitoring_delete() {
 
 # Logging: LOKI + PROMTAIL
 function platform_logging_deploy() {
-  echo "Deploying Loki and Promtail" && \
-  kubectl -n platform apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/openframe-loki/manifests && \
-  kubectl -n platform apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/openframe-promtail/manifests
+  echo "Deploying Loki and Promtail" &&
+    kubectl -n platform apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/openframe-loki/manifests &&
+    kubectl -n platform apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/openframe-promtail/manifests
   # or
   # helm repo add grafana https://grafana.github.io/helm-charts && \
   # helm upgrade --install loki grafana/loki-stack \
@@ -116,8 +116,8 @@ function platform_logging_deploy() {
 
 function platform_logging_wait() {
   echo "Waiting for logging stack to be ready"
-  wait_for_app "platform" "app=openframe-loki" && \
-  wait_for_app "platform" "app=openframe-promtail"
+  wait_for_app "platform" "app=openframe-loki" &&
+    wait_for_app "platform" "app=openframe-promtail"
 }
 
 function platform_logging_delete() {
@@ -128,9 +128,9 @@ function platform_logging_delete() {
 
 # Logging: EFK
 function platform_efk_deploy() {
-  helm_repo_ensure elastic https://helm.elastic.co && \
-  helm_repo_ensure fluent https://fluent.github.io/helm-charts && \
-  echo "Deploying EFK stack"
+  helm_repo_ensure elastic https://helm.elastic.co &&
+    helm_repo_ensure fluent https://fluent.github.io/helm-charts &&
+    echo "Deploying EFK stack"
   # kubectl apply -k ./deploy/dev/infrastructure/logging/manifests && \
   # helm upgrade -i es elastic/elasticsearch \
   #   --version 8.5.1 \
@@ -155,8 +155,8 @@ function platform_efk_deploy() {
 
 function platform_efk_wait() {
   echo "Waiting for EFK stack to be ready"
-  wait_for_app "platform" "relapp.kubernetes.io/name=fluent-bit" && \
-  wait_for_app "platform" "release=kibana"
+  wait_for_app "platform" "relapp.kubernetes.io/name=fluent-bit" &&
+    wait_for_app "platform" "release=kibana"
 }
 
 function platform_efk_delete() {
@@ -165,9 +165,9 @@ function platform_efk_delete() {
 
 # Wait for all cluster apps to be ready
 function platform_wait_all() {
-  platform_cert_manager_wait && \
-  platform_ingress_nginx_wait && \
-  platform_metrics_server_wait && \
-  platform_monitoring_wait && \
-  platform_logging_wait
+  platform_cert_manager_wait &&
+    platform_ingress_nginx_wait &&
+    platform_metrics_server_wait &&
+    platform_monitoring_wait &&
+    platform_logging_wait
 }

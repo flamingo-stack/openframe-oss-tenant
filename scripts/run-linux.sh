@@ -34,7 +34,7 @@ write_status_message() {
 
 # Function to check if a command exists
 check_command() {
-    if ! command -v "$1" &> /dev/null; then return 1; fi
+    if ! command -v "$1" &>/dev/null; then return 1; fi
     return 0
 }
 
@@ -43,56 +43,57 @@ verify_command() {
     local cmd=$1
 
     case $cmd in
-        "git")
-            if [[ "$(grep ID_LIKE /etc/os-release)" == "debian"* ]]; then
-                sudo apt -y install git
-            elif [[ "$(grep ID_LIKE /etc/os-release)" == "rhel"* ]]; then
-                sudo yum -y install git
+    "git")
+        if [[ "$(grep ID_LIKE /etc/os-release)" == "debian"* ]]; then
+            sudo apt -y install git
+        elif [[ "$(grep ID_LIKE /etc/os-release)" == "rhel"* ]]; then
+            sudo yum -y install git
+        fi
+        ;;
+    "docker")
+        curl -fsSL https://get.docker.com | sh
+
+        # Enable and start docker service
+        sudo systemctl enable --now docker
+
+        # Add current user to docker group
+        usermod -aG docker "$SUDO_USER"
+
+        # Check docker daemon is running
+        if ! docker ps >/dev/null 2>&1; then
+            sudo systemctl start docker
+        fi
+
+        write_status_message "Docker installed successfully!" "\033[32m"
+        write_status_message "Please log out and back in for group changes to take effect." "\033[33m"
+        write_status_message "After logging back in, run this script again." "\033[33m"
+        ;;
+    "helm")
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
+        ;;
+    "kubectl")
+        curl -LOs https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        ;;
+    "telepresence")
+        curl -fsSL https://app.getambassador.io/download/tel2/linux/amd64/latest/telepresence -o /usr/local/bin/telepresence && sudo chmod a+x /usr/local/bin/telepresence
+        ;;
+    "skaffold")
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/
+        ;;
+    "jq")
+        if [[ "$(grep ID_LIKE /etc/os-release)" == "debian"* ]]; then
+            if ! command_exists git; then
+                sudo apt -y install jq
             fi
-            ;;
-        "docker")
-            curl -fsSL https://get.docker.com | sh
-
-            # Enable and start docker service
-            sudo systemctl enable --now docker
-
-            # Add current user to docker group
-            usermod -aG docker "$SUDO_USER"
-
-            # Check docker daemon is running
-            if ! docker ps > /dev/null 2>&1; then
-                sudo systemctl start docker
+        elif [[ "$(grep ID_LIKE /etc/os-release)" == "rhel"* ]]; then
+            if ! command_exists git; then
+                sudo yum -y install jq
             fi
-
-            write_status_message "Docker installed successfully!" "\033[32m"
-            write_status_message "Please log out and back in for group changes to take effect." "\033[33m"
-            write_status_message "After logging back in, run this script again." "\033[33m"
-            ;;
-        "helm")
-            curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
-            ;;
-        "kubectl")
-            curl -LOs https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-            ;;
-        "telepresence")
-            curl -fsSL https://app.getambassador.io/download/tel2/linux/amd64/latest/telepresence -o /usr/local/bin/telepresence && sudo chmod a+x /usr/local/bin/telepresence
-            ;;
-        "skaffold")
-            curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/
-            ;;
-        "jq")
-            if [[ "$(grep ID_LIKE /etc/os-release)" == "debian"* ]]; then
-                if ! command_exists git; then
-                    sudo apt -y install jq
-                fi
-            elif [[ "$(grep ID_LIKE /etc/os-release)" == "rhel"* ]]; then
-                if ! command_exists git; then
-                    sudo yum -y install jq
-                fi
-            fi
-            ;;
-        "k3d")
-            curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+        fi
+        ;;
+    "k3d")
+        curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+        ;;
     esac
 }
 
@@ -115,8 +116,8 @@ fi
 current_value=$(sysctl -n fs.inotify.max_user_instances || echo "0")
 if [[ $current_value -lt 1500 ]]; then
     echo "Setting fs.inotify.max_user_instances to 1500"
-    sudo sysctl fs.inotify.max_user_instances=1500 && \
-    sudo sysctl -p
+    sudo sysctl fs.inotify.max_user_instances=1500 &&
+        sudo sysctl -p
 fi
 
 # Main installation process
@@ -141,7 +142,7 @@ TOTAL_AVAILABLE_MEMORY=$((AVAILABLE_MEMORY + CURRENT_SWAP))
 
 if [ "$TOTAL_AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ]; then
     SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $TOTAL_AVAILABLE_MEMORY)" | bc)
-    RESERVED_SPACE=2048  # Reserve 2GB for OS
+    RESERVED_SPACE=2048 # Reserve 2GB for OS
     write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of total memory (RAM: ${AVAILABLE_MEMORY}MB, Swap: ${CURRENT_SWAP}MB)" "\033[33m"
     write_status_message "Additional swap needed: ${SWAP_SIZE}MB" "\033[33m"
     write_status_message "Current swap: ${CURRENT_SWAP}MB" "\033[33m"

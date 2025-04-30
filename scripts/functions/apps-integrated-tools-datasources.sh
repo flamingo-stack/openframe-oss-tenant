@@ -2,8 +2,8 @@
 
 # FLEET
 function integrated_tools_datasources_fleet_deploy() {
-  echo "Deploying Fleet Datasources" && \
-  kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/fleet
+  echo "Deploying Fleet Datasources" &&
+    kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/fleet
 }
 
 function integrated_tools_datasources_fleet_wait() {
@@ -20,8 +20,8 @@ function integrated_tools_datasources_fleet_delete() {
 # AUTENTIK
 function integrated_tools_datasources_authentik_deploy() {
   # helm_repo_ensure authentik https://goauthentik.io/charts
-  echo "Deploying Authentik Datasources" && \
-  kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/authentik/manifests
+  echo "Deploying Authentik Datasources" &&
+    kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/authentik/manifests
 
   # helm upgrade -i authentik-redis authentik/redis \
   # -n authentik2 --create-namespace \
@@ -46,14 +46,14 @@ function integrated_tools_datasources_authentik_wait() {
 }
 
 function integrated_tools_datasources_authentik_delete() {
-  echo "Deleting Authentik Datasources" && \
-  kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/authentik/manifests
+  echo "Deleting Authentik Datasources" &&
+    kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/authentik/manifests
 }
 
 # MESHCENTRAL
 function integrated_tools_datasources_meshcentral_deploy() {
-  echo "Deploying MeshCentral Datasources" && \
-  kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/meshcentral
+  echo "Deploying MeshCentral Datasources" &&
+    kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/meshcentral
 }
 
 function integrated_tools_datasources_meshcentral_wait() {
@@ -62,14 +62,14 @@ function integrated_tools_datasources_meshcentral_wait() {
 }
 
 function integrated_tools_datasources_meshcentral_delete() {
-  echo "Deleting MeshCentral Datasources" && \
-  kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/meshcentral
+  echo "Deleting MeshCentral Datasources" &&
+    kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/meshcentral
 }
 
 # TACTICAL RMM
 function integrated_tools_datasources_tactical_rmm_deploy() {
-  echo "Deploying Tactical RMM Datasources" && \
-  kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/tactical-rmm
+  echo "Deploying Tactical RMM Datasources" &&
+    kubectl -n integrated-tools-datasources apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/tactical-rmm
 }
 
 function integrated_tools_datasources_tactical_rmm_wait() {
@@ -79,8 +79,8 @@ function integrated_tools_datasources_tactical_rmm_wait() {
 }
 
 function integrated_tools_datasources_tactical_rmm_delete() {
-  echo "Deleting Tactical RMM Datasources" && \
-  kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/tactical-rmm
+  echo "Deleting Tactical RMM Datasources" &&
+    kubectl -n integrated-tools-datasources delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools-datasources/tactical-rmm
 }
 
 # Wait for all integrated-tools-datasources apps to be ready

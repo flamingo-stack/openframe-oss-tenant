@@ -8,7 +8,7 @@ wait_parallel() {
   # Wait for all background processes
   while true; do
     # Get all background jobs
-    jobs -p > /dev/null
+    jobs -p >/dev/null
 
     # No more jobs running? Then break
     [[ -z "$(jobs -p)" ]] && break

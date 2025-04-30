@@ -30,9 +30,9 @@ function _spin() {
 
     while true; do
         printf "${YELLOW}${FRAMES[$i]} ${BOLD}%s${NC}" "$1"
-        i=$(( (i + 1) % frames_size ))
+        i=$(((i + 1) % frames_size))
         sleep $delay
-        printf "\r\033[K"  # Clear the line
+        printf "\r\033[K" # Clear the line
     done
 }
 
@@ -60,7 +60,7 @@ function stop_spinner() {
     trap - SIGINT SIGTERM EXIT
 
     # Kill the spinner process
-    if [ -n "$_spinner_pid" ] && ps -p $_spinner_pid > /dev/null 2>&1; then
+    if [ -n "$_spinner_pid" ] && ps -p $_spinner_pid >/dev/null 2>&1; then
         kill $_spinner_pid 2>/dev/null
     fi
 

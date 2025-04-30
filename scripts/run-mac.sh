@@ -34,7 +34,7 @@ write_status_message() {
 
 # Function to check if a command exists
 check_command() {
-    if ! command -v "$1" &> /dev/null; then return 1; fi
+    if ! command -v "$1" &>/dev/null; then return 1; fi
     return 0
 }
 
@@ -43,44 +43,45 @@ verify_command() {
     local cmd=$1
 
     case $cmd in
-        "git")
-            brew install git
-            ;;
-        "docker")
-            brew install --cask docker
+    "git")
+        brew install git
+        ;;
+    "docker")
+        brew install --cask docker
 
-            # Check docker daemon is running
-            if ! docker ps > /dev/null 2>&1; then
-                docker desktop start
-            fi
+        # Check docker daemon is running
+        if ! docker ps >/dev/null 2>&1; then
+            docker desktop start
+        fi
 
-            write_status_message "Docker installed successfully!" "\033[32m"
-            write_status_message "Please log out and back in for group changes to take effect." "\033[33m"
-            write_status_message "After logging back in, run this script again." "\033[33m"
-            ;;
-        "helm")
-            brew install helm
-            ;;
-        "kubectl")
-            brew install kubectl
-            ;;
-        "telepresence")
-            brew install telepresenceio/telepresence/telepresence-oss
-            ;;
-        "skaffold")
-            brew install skaffold
-            ;;
-        "jq")
-            brew install jq
-            ;;
-        "k3d")
-            brew install k3d
+        write_status_message "Docker installed successfully!" "\033[32m"
+        write_status_message "Please log out and back in for group changes to take effect." "\033[33m"
+        write_status_message "After logging back in, run this script again." "\033[33m"
+        ;;
+    "helm")
+        brew install helm
+        ;;
+    "kubectl")
+        brew install kubectl
+        ;;
+    "telepresence")
+        brew install telepresenceio/telepresence/telepresence-oss
+        ;;
+    "skaffold")
+        brew install skaffold
+        ;;
+    "jq")
+        brew install jq
+        ;;
+    "k3d")
+        brew install k3d
+        ;;
     esac
 }
 
 # Check Homebrew installation
 write_status_message "Checking Homebrew installation..." "\033[36m"
-if ! command -v brew &> /dev/null; then
+if ! command -v brew &>/dev/null; then
     write_status_message "Homebrew not found. Installing Homebrew..." "\033[33m"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     write_status_message "Homebrew installed successfully!" "\033[32m"
@@ -126,7 +127,7 @@ TOTAL_AVAILABLE_MEMORY=$((AVAILABLE_MEMORY + CURRENT_SWAP))
 
 if [ "$TOTAL_AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ]; then
     SWAP_SIZE=$(echo "scale=2; ($RECOMMENDED_MEMORY - $TOTAL_AVAILABLE_MEMORY)" | bc)
-    RESERVED_SPACE=2048  # Reserve 2GB for OS
+    RESERVED_SPACE=2048 # Reserve 2GB for OS
     write_status_message "System has less than ${RECOMMENDED_MEMORY}MB of total memory (RAM: ${AVAILABLE_MEMORY}MB, Swap: ${CURRENT_SWAP}MB)" "\033[33m"
     write_status_message "Additional swap needed: ${SWAP_SIZE}MB" "\033[33m"
     write_status_message "Available disk space: ${FREE_SPACE}MB (Reserving ${RESERVED_SPACE}MB for OS)" "\033[33m"
@@ -236,7 +237,7 @@ if [ -n "$RUN_SCRIPT" ]; then
 
     # Execute run.sh with arguments
     cd "$(dirname "$RUN_SCRIPT")"
-    caffeinate -dimsu &  # Prevent display, idle, system, and user inactivity sleep
+    caffeinate -dimsu & # Prevent display, idle, system, and user inactivity sleep
     caffeinate_pid=$!
     ./run.sh $@
     # Cleanup

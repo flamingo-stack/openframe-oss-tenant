@@ -2,8 +2,8 @@
 
 # FLEET
 function integrated_tools_fleet_deploy() {
-  echo "Deploying Fleet" && \
-  kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/fleet
+  echo "Deploying Fleet" &&
+    kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/fleet
 }
 
 function integrated_tools_fleet_wait() {
@@ -19,8 +19,8 @@ function integrated_tools_fleet_delete() {
 # AUTENTIK
 function integrated_tools_authentik_deploy() {
   # helm_repo_ensure authentik https://goauthentik.io/charts
-  echo "Deploying Authentik" && \
-  kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/authentik/manifests
+  echo "Deploying Authentik" &&
+    kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/authentik/manifests
 
   # helm upgrade -i authentik-redis authentik/redis \
   # -n authentik2 --create-namespace \
@@ -45,14 +45,14 @@ function integrated_tools_authentik_wait() {
 }
 
 function integrated_tools_authentik_delete() {
-  echo "Deleting Authentik" && \
-  kubectl -n integrated-tools delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/authentik/manifests
+  echo "Deleting Authentik" &&
+    kubectl -n integrated-tools delete -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/authentik/manifests
 }
 
 # MESHCENTRAL
 function integrated_tools_meshcentral_deploy() {
-  echo "Deploying MeshCentral" && \
-  kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/meshcentral
+  echo "Deploying MeshCentral" &&
+    kubectl -n integrated-tools apply -k ${ROOT_REPO_DIR}/deploy/dev/integrated-tools/meshcentral
 }
 
 function integrated_tools_meshcentral_wait() {

@@ -60,13 +60,13 @@ function create_ca() {
     if [ "$(certutil -d sql:$HOME/.pki/nssdb -L | grep OpenFrame | cut -d ' ' -f 1,2)" == "OpenFrame CA" ]; then
       echo "CA certificate already imported to NSSDB"
     else
-    # Import CA certificate to NSSDB
+      # Import CA certificate to NSSDB
       certutil -d sql:$HOME/.pki/nssdb -A -n "OpenFrame CA" -i ${SCRIPT_DIR}/files/ca/ca.crt -t CT,C,C
       echo "CA certificate imported to NSSDB"
     fi
   elif [ $OS == "Darwin" ]; then
     # Check if CA certificate is already imported to Keychain
-    if security find-certificate -c "OpenFrame Root CA" -p > /dev/null 2>&1; then
+    if security find-certificate -c "OpenFrame Root CA" -p >/dev/null 2>&1; then
       echo "CA certificate already imported to Keychain"
     else
       security add-trusted-cert -e hostnameMismatch -r trustRoot -k ~/Library/Keychains/login.keychain-db ${SCRIPT_DIR}/files/ca/ca.crt
