@@ -49,9 +49,7 @@ function setup_cluster() {
             --port "443:443@loadbalancer" \
             --api-port "localhost:6550" \
             --k3s-arg "--kubelet-arg=eviction-hard="@all \
-            --k3s-arg "--kubelet-arg=eviction-soft="@all #\
-        # --k3s-arg "--kubelet-arg=eviction-max-pod-grace-period=0"@all \
-        # --k3s-arg "--kubelet-arg=imagefs-cleanup-threshold=0"@all
+            --k3s-arg "--kubelet-arg=eviction-soft="@all 
     else
         echo "Cluster already setup"
     fi
