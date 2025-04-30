@@ -56,7 +56,9 @@ public class OAuthService {
     private String generateAccessToken(User user) {
         Builder jwtClaimsSetBuilder = JwtClaimsSet.builder()
                 .subject(user.getId())
-                .claim("email", user.getEmail());
+                .claim("email", user.getEmail())
+                .claim("grant_type", "password")
+                .claim("roles", user.getRoles());
 
         if (user.getFirstName() != null) {
             jwtClaimsSetBuilder = jwtClaimsSetBuilder.claim("given_name", user.getFirstName());
@@ -64,7 +66,8 @@ public class OAuthService {
         if (user.getLastName() != null) {
             jwtClaimsSetBuilder = jwtClaimsSetBuilder.claim("family_name", user.getLastName());
         }
-        jwtClaimsSetBuilder = jwtClaimsSetBuilder.issuedAt(Instant.now())
+        jwtClaimsSetBuilder = jwtClaimsSetBuilder
+                .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds));
         return jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSetBuilder.build())).getTokenValue();
     }
@@ -419,6 +422,7 @@ public class OAuthService {
         user.setFirstName(userDTO.getFirstName());
         user.setLastName(userDTO.getLastName());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setRoles(new String[]{"USER"});
         userRepository.save(user);
 
         // Generate tokens
