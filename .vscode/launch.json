@@ -2,6 +2,69 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb",
+            "request": "launch",
+            "name": "OpenFrame Client Debug",
+            "preLaunchTask": "rust-build",
+            "program": "${workspaceFolder}/client/target/debug/openframe",
+            "args": ["run-as-service"],
+            "cwd": "${workspaceFolder}/client",
+            "sourceLanguages": ["rust"],
+            "env": {
+                "RUST_LOG": "debug",
+                "RUST_BACKTRACE": "1",
+                "OPENFRAME_DEV_MODE": "true",
+                "OPENFRAME_LOG_DIR": "${workspaceFolder}/client/logs"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "OpenFrame Client Debug (Service Mode)",
+            "preLaunchTask": "rust-build",
+            "program": "${workspaceFolder}/client/target/debug/openframe",
+            "args": ["run-as-service"],
+            "cwd": "${workspaceFolder}/client",
+            "sourceLanguages": ["rust"],
+            "env": {
+                "RUST_LOG": "debug",
+                "RUST_BACKTRACE": "1",
+                "OPENFRAME_DEV_MODE": "true",
+                "OPENFRAME_LOG_DIR": "${workspaceFolder}/client/logs"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "OpenFrame Client Release",
+            "preLaunchTask": "rust-build-release",
+            "program": "${workspaceFolder}/client/target/release/openframe",
+            "args": ["run"],
+            "cwd": "${workspaceFolder}/client",
+            "sourceLanguages": ["rust"],
+            "env": {
+                "RUST_LOG": "info",
+                "OPENFRAME_DEV_MODE": "true",
+                "OPENFRAME_LOG_DIR": "${workspaceFolder}/client/logs"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "OpenFrame Client Tests",
+            "preLaunchTask": "rust-test",
+            "program": "${workspaceFolder}/client/target/debug/openframe-test",
+            "args": [],
+            "cwd": "${workspaceFolder}/client",
+            "sourceLanguages": ["rust"],
+            "env": {
+                "RUST_LOG": "debug",
+                "RUST_BACKTRACE": "1",
+                "OPENFRAME_DEV_MODE": "true",
+                "OPENFRAME_LOG_DIR": "${workspaceFolder}/client/logs"
+            }
+        },
+        {
             "type": "java",
             "name": "Management Application",
             "request": "launch",

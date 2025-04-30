@@ -11,5 +11,19 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.autobuild.enabled": true,
     "java.debug.settings.showLogicalStructure": true,
-    "java.debug.settings.showStaticVariables": true
+    "java.debug.settings.showStaticVariables": true,
+    
+    // Rust settings
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.cargo.allFeatures": true,
+    "rust-analyzer.diagnostics.enable": true,
+    "rust-analyzer.inlayHints.enable": true,
+    "rust-analyzer.lens.enable": true,
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4
+    }
 }

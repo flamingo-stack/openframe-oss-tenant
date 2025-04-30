@@ -2,6 +2,100 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "deploy-client",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/client/scripts && ./deploy.sh",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "rust-build",
+            "type": "shell",
+            "command": "cargo build",
+            "options": {
+                "cwd": "${workspaceFolder}/client"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-build-release",
+            "type": "shell",
+            "command": "cargo build --release",
+            "options": {
+                "cwd": "${workspaceFolder}/client"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-test",
+            "type": "shell",
+            "command": "cargo test",
+            "options": {
+                "cwd": "${workspaceFolder}/client"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-watch",
+            "type": "shell",
+            "command": "cargo watch -x run",
+            "options": {
+                "cwd": "${workspaceFolder}/client"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "rust",
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "endLine": 4,
+                    "endColumn": 5,
+                    "severity": 6,
+                    "message": 7
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Compiling",
+                    "endsPattern": "^Finished|^error:"
+                }
+            }
+        },
+        {
+            "label": "rust-check",
+            "type": "shell",
+            "command": "cargo check",
+            "options": {
+                "cwd": "${workspaceFolder}/client"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust-clippy",
+            "type": "shell",
+            "command": "cargo clippy",
+            "options": {
+                "cwd": "${workspaceFolder}/client"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        },
+        {
             "label": "start-vue",
             "type": "shell",
             "command": "cd ${workspaceFolder}/openframe/services/openframe-ui && npm run dev",

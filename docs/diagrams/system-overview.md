@@ -7,7 +7,7 @@ graph TB
     subgraph Client
         UI[Web UI]
         API[API Client]
-        Agent[OpenFrame Agent]
+        Agent[OpenFrame]
     end
 
     subgraph Kubernetes Cluster
@@ -86,7 +86,7 @@ graph TB
 ### Client Layer
 - **Web UI**: Browser-based interface for users
 - **API Client**: External applications using OpenFrame API
-- **OpenFrame Agent**: Software installed on monitored devices
+- **OpenFrame**: Software installed on monitored devices
 
 ### Core Services
 - **API Gateway**: Entry point for all requests
