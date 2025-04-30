@@ -18,4 +18,5 @@ public class User {
     private String password;
     private String resetToken;
     private Instant resetTokenExpiry;
+    private String[] roles;
 } 
