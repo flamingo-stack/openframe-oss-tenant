@@ -1,31 +1,21 @@
 package com.openframe.gateway.controller;
 
-import java.net.URI;
-import java.time.Duration;
-import java.util.Optional;
-
-import com.openframe.core.model.ToolCredentials;
-import com.openframe.core.model.ToolUrl;
+import com.openframe.gateway.service.IntegrationService;
 import com.openframe.gateway.service.RestProxyService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
-import com.openframe.data.service.ToolUrlService;
-import com.openframe.gateway.config.CurlLoggingHandler;
-import com.openframe.gateway.service.IntegrationService;
-
-import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
 
 @RestController
 @RequestMapping("/tools")
@@ -33,11 +23,8 @@ import reactor.netty.http.client.HttpClient;
 @Slf4j
 public class IntegrationController {
 
-    private final IntegratedToolRepository toolRepository;
     private final IntegrationService integrationService;
-    private final ToolUrlService toolUrlService;
     private final RestProxyService restProxyService;
-    private static final AttributeKey<URI> TARGET_URI = AttributeKey.valueOf("target_uri");
 
     @GetMapping("/{toolId}/health")
     public Mono<ResponseEntity<String>> healthCheck(@PathVariable String toolId, Authentication auth) {
@@ -86,8 +73,8 @@ public class IntegrationController {
     public Mono<ResponseEntity<String>> proxyAgentRequest(
             @PathVariable String toolId,
             ServerHttpRequest request,
-            @RequestBody String body,
-            Authentication auth) {
+            @RequestBody String body
+    ) {
         String path = request.getPath().toString();
         log.info("Proxying agent request for tool: {}, path: {}", toolId, path);
         return restProxyService.proxyAgentRequest(toolId, request, body);

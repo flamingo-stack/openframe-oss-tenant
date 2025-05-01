@@ -62,6 +62,32 @@ public class JwtService {
     public String generateToken(JwtClaimsSet claims) {
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
+
+    public String extractGrantType(String token) {
+        log.debug("Extracting grantType from token");
+        try {
+            Jwt jwt = decoder.decode(token);
+            String grantType = jwt.getClaimAsString("grant_type");
+            log.debug("Extracted grantType from token: {}", grantType);
+            return grantType;
+        } catch (Exception e) {
+            log.error("Failed to extract grantType from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public String extractClientId(String token) {
+        log.debug("Extracting clientId from token");
+        try {
+            Jwt jwt = decoder.decode(token);
+            String clientId = jwt.getSubject();
+            log.debug("Extracted clientId from token: {}", clientId);
+            return clientId;
+        } catch (Exception e) {
+            log.error("Failed to extract clientId from token: {}", e.getMessage());
+            return null;
+        }
+    }
     
     public String extractUsername(String token) {
         log.debug("Extracting username from token");

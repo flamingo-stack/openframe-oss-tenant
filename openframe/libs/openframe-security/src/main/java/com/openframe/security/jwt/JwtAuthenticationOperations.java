@@ -106,6 +106,36 @@ public interface JwtAuthenticationOperations {
         return authHeader.substring(7);
     }
 
+    default String extractGrantType(String jwt) {
+        try {
+            String grantType = getJwtService().extractGrantType(jwt);
+            if (grantType == null) {
+                JWT_LOGGER.warn("No grantType found in token");
+            } else {
+                JWT_LOGGER.debug("Extracted grantType from token: {}", grantType);
+            }
+            return grantType;
+        } catch (Exception e) {
+            JWT_LOGGER.error("Error extracting grantType from JWT: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    default String extractClientId(String jwt) {
+        try {
+            String clientId = getJwtService().extractClientId(jwt);
+            if (clientId == null) {
+                JWT_LOGGER.warn("No clientId found in token");
+            } else {
+                JWT_LOGGER.debug("Extracted clientId from token: {}", clientId);
+            }
+            return clientId;
+        } catch (Exception e) {
+            JWT_LOGGER.error("Error extracting clientId from JWT: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
     default String extractUsername(String jwt) {
         try {
             String username = getJwtService().extractUsername(jwt);
