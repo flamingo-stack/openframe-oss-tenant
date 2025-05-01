@@ -60,10 +60,9 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
             return exchange.getResponse().setComplete();
         }
 
-        Jwt decodedJwt = jwtService.decodeToken(jwt);
-        String grantType = decodedJwt.getClaimAsString("grant_type");
+        String grantType = extractGrantType(jwt);
         if ("client_credentials".equals(grantType)) {
-            String clientId = decodedJwt.getSubject();
+            String clientId = extractClientId(jwt);
             if (clientId == null) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();

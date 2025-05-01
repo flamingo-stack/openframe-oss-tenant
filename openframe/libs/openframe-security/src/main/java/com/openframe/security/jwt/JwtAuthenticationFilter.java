@@ -80,10 +80,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter implements Jwt
             return;
         }
 
-        Jwt decodedJwt = jwtService.decodeToken(jwt);
-        String grantType = decodedJwt.getClaimAsString("grant_type");
+        String grantType = extractGrantType(jwt);
         if ("client_credentials".equals(grantType)) {
-            String clientId = decodedJwt.getSubject();
+            String clientId = extractClientId(jwt);
             if (clientId == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             }
