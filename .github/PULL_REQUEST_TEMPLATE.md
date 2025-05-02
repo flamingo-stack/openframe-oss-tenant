@@ -25,7 +25,7 @@ Fixes: #
 - [ ] Agents connected and visible in OpenFrame UI
 - [ ] Command execution works from both OpenFrame and Tactical RMM
 - [ ] Remote access via MeshCentral functioning
-- [ ] No critical errors in logs
+- [ ] No critical errors in logs 
 - [ ] Bootstrap script completes successfully
 
 ### Risk Assessment
