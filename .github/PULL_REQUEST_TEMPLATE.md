@@ -1,14 +1,10 @@
-<!-- Feel free to remove items that aren't applicable -->
-### Environment Setup Verification
+### OpenFrame Verification Checklist
 
-- [ ] All services deployed and running
+- [ ] All services running in k3d cluster
 - [ ] UI accessible and responsive
 - [ ] Authentication working correctly
-- [ ] All agents installed and connected
-- [ ] Agents visible in OpenFrame UI
-- [ ] Development mode configurations active
+- [ ] Agents connected and visible in OpenFrame UI
+- [ ] Command execution works from both OpenFrame and Tactical RMM
+- [ ] Remote access via MeshCentral functioning
 - [ ] No critical errors in logs
-- [ ] All integration features functional
-
-### Additional Comments
-<!-- Add any other context about the PR here -->
+- [ ] Bootstrap script completes successfully
