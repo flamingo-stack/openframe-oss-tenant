@@ -85,9 +85,8 @@ function Install-Tool {
             Remove-Item -Path "$env:TEMP/windows-amd64" -Recurse
         }
         elseif ($tool -eq "telepresence") {
-            Expand-Archive -Path $downloadPath -DestinationPath $env:TEMP
-            $telepresenceExe = Get-ChildItem -Path $env:TEMP -Filter "telepresence.exe" -Recurse | Select-Object -First 1
-            Move-Item -Path $telepresenceExe.FullName -Destination $toolInfo.installPath -Force
+            Expand-Archive -Path $downloadPath -DestinationPath $destDir -Force
+            Remove-Item -Path "$env:TEMP" -Recurse
         }
         else {
             Move-Item -Path $downloadPath -Destination $toolInfo.installPath -Force
