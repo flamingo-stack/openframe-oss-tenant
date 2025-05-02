@@ -10,33 +10,29 @@ param(
 
 # Required tools and their installation info
 $REQUIRED_TOOLS = @{
-    "kind" = @{
-        "url" = "https://kind.sigs.k8s.io/dl/v0.20.0/kind-windows-amd64"
-        "installPath" = "~/bin/kind.exe"
-    }
     "kubectl" = @{
         "url" = "https://dl.k8s.io/release/v1.28.0/bin/windows/amd64/kubectl.exe"
-        "installPath" = "~/bin/kubectl.exe"
+        "installPath" = "$env:ProgramFiles\openframe\kubectl\kubectl.exe"
     }
     "helm" = @{
         "url" = "https://get.helm.sh/helm-v3.14.0-windows-amd64.zip"
-        "installPath" = "~/bin/helm.exe"
+        "installPath" = "$env:ProgramFiles\openframe\helm\helm.exe"
     }
     "skaffold" = @{
         "url" = "https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe"
-        "installPath" = "~/bin/skaffold.exe"
+        "installPath" = "$env:ProgramFiles\openframe\skaffold\skaffold.exe"
     }
     "jq" = @{
         "url" = "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe"
-        "installPath" = "~/bin/jq.exe"
+        "installPath" = "$env:ProgramFiles\openframe\jq\jq.exe"
     }
     "telepresence" = @{
-        "url" = "https://app.getambassador.io/download/tel2/windows/amd64/latest/telepresence-setup.exe"
-        "installPath" = "~/bin/telepresence.exe"
+        "url" = "https://github.com/telepresenceio/telepresence/releases/download/v2.22.4/telepresence-windows-amd64.zip"
+        "installPath" = "$env:ProgramFiles\openframe\telepresence\telepresence.exe"
     }
     "k3d" = @{
         "url" = "https://github.com/k3d-io/k3d/releases/latest/download/k3d-windows-amd64.exe"
-        "installPath" = "~/bin/k3d.exe"
+        "installPath" = "$env:ProgramFiles\openframe\k3d\k3d.exe"
     }
 }
 
@@ -56,14 +52,8 @@ function Test-ToolInstalled {
     param (
         [string]$tool
     )
-
-    try {
-        $null = Get-Command $tool -ErrorAction Stop
-        return $true
-    }
-    catch {
-        return $false
-    }
+    $toolInfo = $REQUIRED_TOOLS[$tool]
+    return Test-Path $toolInfo.installPath
 }
 
 # Function to install a tool
@@ -73,28 +63,46 @@ function Install-Tool {
     )
 
     try {
-        # Create bin directory if it doesn't exist
-        $binPath = Resolve-Path "~/bin" -ErrorAction SilentlyContinue
-        if (-not $binPath) {
-            New-Item -ItemType Directory -Path "~/bin" | Out-Null
-        }
-
         $toolInfo = $REQUIRED_TOOLS[$tool]
-        $downloadPath = Join-Path $env:TEMP "$tool-download"
+        if ($tool -eq "helm" -or $tool -eq "telepresence") {
+            $downloadPath = Join-Path $env:TEMP "$tool-download.zip"
+        } else {
+            $downloadPath = Join-Path $env:TEMP "$tool-download"
+        }
 
         Write-Host "Downloading $tool..." -ForegroundColor Yellow
         Invoke-WebRequest -Uri $toolInfo.url -OutFile $downloadPath
 
+        # Ensure destination directory exists
+        $destDir = Split-Path $toolInfo.installPath
+        if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        }
+
         if ($tool -eq "helm") {
-            Expand-Archive -Path $downloadPath -DestinationPath $env:TEMP
+            Expand-Archive -Path $downloadPath -DestinationPath $env:TEMP -Force
             Move-Item -Path "$env:TEMP/windows-amd64/helm.exe" -Destination $toolInfo.installPath -Force
             Remove-Item -Path "$env:TEMP/windows-amd64" -Recurse
+        }
+        elseif ($tool -eq "telepresence") {
+            Expand-Archive -Path $downloadPath -DestinationPath $env:TEMP
+            $telepresenceExe = Get-ChildItem -Path $env:TEMP -Filter "telepresence.exe" -Recurse | Select-Object -First 1
+            Move-Item -Path $telepresenceExe.FullName -Destination $toolInfo.installPath -Force
         }
         else {
             Move-Item -Path $downloadPath -Destination $toolInfo.installPath -Force
         }
 
         Write-Host "$tool installed successfully" -ForegroundColor Green
+
+        # Add tool directory to PATH if not present
+        $toolDir = Split-Path $toolInfo.installPath
+        $currentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+        if (-not ($currentPath -split ';' | Where-Object { $_ -eq $toolDir })) {
+            [Environment]::SetEnvironmentVariable("Path", $currentPath + ";" + $toolDir, [EnvironmentVariableTarget]::Machine)
+            Write-Host "Added $toolDir to system PATH" -ForegroundColor Green
+        }
+
         return $true
     }
     catch {
@@ -431,6 +439,12 @@ else {
                 Write-Host "Failed to pull changes. There might be conflicts or network issues." -ForegroundColor Yellow
             }
         }
+    }
+}
+
+foreach ($tool in $REQUIRED_TOOLS.Keys) {
+    if (-not (Test-ToolInstalled $tool)) {
+        Install-Tool $tool
     }
 }
 
