@@ -29,15 +29,20 @@ register_tool() {
         credentials_parts+=("\"password\": \"$password\"")
     fi
     if [ ! -z "$token" ]; then
-        local api_key_json="{\"key\": \"$token\", \"type\": \"$api_key_type\""
-        if [ "$api_key_type" != "BEARER_TOKEN" ] && [ ! -z "$api_key_name" ]; then
-            api_key_json="$api_key_json, \"keyName\": \"$api_key_name\""
+        if [ "$api_key_type" != "NONE" ]; then
+            local api_key_json="{\"key\": \"$token\", \"type\": \"$api_key_type\""
+            if [ "$api_key_type" != "BEARER_TOKEN" ] && [ ! -z "$api_key_name" ]; then
+                api_key_json="$api_key_json, \"keyName\": \"$api_key_name\""
+            fi
+            api_key_json="$api_key_json}"
+            credentials_parts+=("\"apiKey\": $api_key_json")
         fi
-        api_key_json="$api_key_json}"
-        credentials_parts+=("\"apiKey\": $api_key_json")
     fi
 
-    local credentials_json="{$(IFS=,; echo "${credentials_parts[*]}")}"
+    local credentials_json="{$(
+        IFS=,
+        echo "${credentials_parts[*]}"
+    )}"
 
     # Prepare the full JSON payload
     local json_payload="{
@@ -70,12 +75,12 @@ register_tool() {
 
     # Send the request
     curl --cacert $SCRIPT_DIR/files/ca/ca.crt -X POST "https://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
-      -H "Content-Type: application/json" \
-      -d "$json_payload" \
-      --retry 5 \
-      --retry-delay 2 \
-      --retry-all-errors \
-      -v
+        -H "Content-Type: application/json" \
+        -d "$json_payload" \
+        --retry 5 \
+        --retry-delay 2 \
+        --retry-all-errors \
+        -v
 
     if [ $? -ne 0 ]; then
         echo "Failed to register $name. Exiting..."
@@ -362,7 +367,7 @@ register_tool \
     "#455A64" \
     "BEARER_TOKEN"
 
-    # Get MeshCentral API key
+# Get MeshCentral API key
 # echo "Getting MeshCentral API key..."
 # POD=$(kubectl -n integrated-tools get pods -o name -l app=meshcentral)
 # MESHCENTRAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/mesh/mesh_token)
@@ -377,13 +382,13 @@ register_tool \
     '[{"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "API"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
-    "" \  # removed $MESHCENTRAL_API_KEY
+    "NONE" \
     "Device Management" \
     "Integrated Tool" \
     "Integrated Tools" \
     2 \
     "#455A64" \
-    "BEARER_TOKEN"
+    "NONE"
 
 # Register Authentik with layer info
 register_tool \
