@@ -24,14 +24,6 @@ write_status_message() {
     fi
 }
 
-# Function to check if running as root
-# check_root() {
-#     if [ "$EUID" -ne 0 ]; then
-#         write_status_message "This script requires root privileges. Please run with sudo." "\033[33m" true
-#         exit 1
-#     fi
-# }
-
 # Function to check if a command exists
 check_command() {
     if ! command -v "$1" &>/dev/null; then return 1; fi
