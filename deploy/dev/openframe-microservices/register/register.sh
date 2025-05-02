@@ -204,7 +204,7 @@ register_tool \
     "ZOOKEEPER" \
     "Zookeeper Coordinator" \
     "Apache Zookeeper Distributed Coordinator" \
-    '[{"url": "http://zookeeper.openframe-datasources, "port": "2181", "type": "COORDINATOR"}]' \
+    '[{"url": "http://zookeeper.openframe-datasources", "port": "2181", "type": "COORDINATOR"}]' \
     "" \
     "" \
     "" \

@@ -25,6 +25,7 @@ input CreateEventInput {
 enum ToolUrlType {
     DASHBOARD
     API
+    WS
     DATABASE
     CACHE
     BROKER
