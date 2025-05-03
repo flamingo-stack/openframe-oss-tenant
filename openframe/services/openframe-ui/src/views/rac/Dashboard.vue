@@ -72,9 +72,9 @@
         </div>
       </div>
 
-      <!-- Recent Activity -->
+      <!-- Recent Activities -->
       <div class="dashboard-card recent-activity">
-        <h3><i class="pi pi-history"></i> Recent Activity</h3>
+        <h3><i class="pi pi-clock"></i> Recent Activities</h3>
         <template v-if="recentActivity.length > 0">
           <DataTable 
             :value="recentActivity" 
@@ -86,63 +86,36 @@
           >
             <Column field="time" header="Time">
               <template #body="{ data }">
-                <div class="flex align-items-center">
-                  <span class="text-sm">{{ formatTimestamp(data.time) }}</span>
+                <span class="text-sm">{{ formatTimestamp(data.time) }}</span>
+              </template>
+            </Column>
+
+            <Column field="etype" header="Type">
+              <template #body="{ data }">
+                <Tag :value="formatActivityType(data.etype)" :severity="getActivitySeverity(data.etype)" />
+              </template>
+            </Column>
+
+            <Column field="device" header="Device">
+              <template #body="{ data }">
+                <span class="text-sm">{{ data.device?.name || '-' }}</span>
+              </template>
+            </Column>
+
+            <Column field="msg" header="Message">
+              <template #body="{ data }">
+                <div class="message-cell">
+                  <span class="text-sm">{{ data.msg }}</span>
                 </div>
-              </template>
-            </Column>
-
-            <Column field="type" header="Type">
-              <template #body="{ data }">
-                <Tag :value="formatActivityType(data.type)" :severity="getActivitySeverity(data.type)" />
-              </template>
-            </Column>
-
-            <Column field="hostname" header="Device">
-              <template #body="{ data }">
-                <span class="text-sm">{{ data.device?.name || 'Unknown Device' }}</span>
-              </template>
-            </Column>
-
-            <Column field="username" header="User">
-              <template #body="{ data }">
-                <span class="text-sm">{{ data.username }}</span>
               </template>
             </Column>
           </DataTable>
         </template>
         <div v-else class="empty-state">
-          <i class="pi pi-history empty-icon"></i>
-          <h3>No Recent Activity</h3>
-          <p>No recent remote access activity to display.</p>
-          <p class="hint">Activity will appear here as you connect to devices.</p>
-        </div>
-      </div>
-
-      <!-- File Transfer -->
-      <div class="dashboard-card file-transfer">
-        <h3><i class="pi pi-file"></i> File Transfer</h3>
-        <template v-if="transferStats.total > 0">
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-value">{{ transferStats.total }}</span>
-              <span class="stat-label">Total Transfers</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">{{ transferStats.uploads }}</span>
-              <span class="stat-label">Uploads</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value warning">{{ transferStats.downloads }}</span>
-              <span class="stat-label">Downloads</span>
-            </div>
-          </div>
-        </template>
-        <div v-else class="empty-state">
-          <i class="pi pi-file empty-icon"></i>
-          <h3>No File Transfers</h3>
-          <p>No file transfers have been initiated yet.</p>
-          <p class="hint">File transfers will appear here once you start transferring files.</p>
+          <i class="pi pi-clock empty-icon"></i>
+          <h3>No Recent Activities</h3>
+          <p>No recent remote access activities to display.</p>
+          <p class="hint">Activities will appear here as you connect to devices.</p>
         </div>
       </div>
     </div>
@@ -157,7 +130,7 @@ import Tag from 'primevue/tag';
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
-import type { Device, ConnectionHistory } from '../../types/rac';
+import type { Device } from '../../types/rac';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
@@ -178,10 +151,25 @@ interface ConnectionStats {
   completed: number;
 }
 
-interface TransferStats {
-  total: number;
-  uploads: number;
-  downloads: number;
+interface MeshEvent {
+  etype: string;
+  action: string;
+  userid?: string;
+  username?: string;
+  nodeid?: string;
+  msg: string;
+  time: string;
+  device?: {
+    name: string;
+  };
+}
+
+interface DeviceInfo {
+  General: {
+    'Server Name': string;
+    [key: string]: any;
+  };
+  [section: string]: any;
 }
 
 const deviceStats = ref<DeviceStats>({
@@ -197,13 +185,7 @@ const connectionStats = ref<ConnectionStats>({
   completed: 0
 });
 
-const transferStats = ref<TransferStats>({
-  total: 0,
-  uploads: 0,
-  downloads: 0
-});
-
-const recentActivity = ref<ConnectionHistory[]>([]);
+const recentActivity = ref<MeshEvent[]>([]);
 const refreshInterval = ref<number | null>(null);
 
 const fetchDeviceStats = async () => {
@@ -261,75 +243,44 @@ const fetchConnectionStats = async () => {
   }
 };
 
-const fetchTransferStats = async () => {
-  try {
-    // Currently no direct API for file transfer stats, will need to be implemented
-    // when file transfer history API is available
-    
-    // For now, initialize with zeros
-    transferStats.value = {
-      total: 0,
-      uploads: 0,
-      downloads: 0
-    };
-  } catch (error) {
-    console.error('Failed to fetch transfer stats:', error);
-    toastService.showError('Failed to fetch transfer stats');
-  }
-};
-
 const fetchRecentActivity = async () => {
   try {
-    // Fetch devices to get session information
-    const response = await restClient.get(`${API_URL}/api/listdevices`);
-    const devices = Array.isArray(response) ? response : [];
+    // Fetch events from the API
+    const events = await restClient.get(`${API_URL}/api/listevents`);
     
-    // Transform active device sessions into recent activity entries
-    const activities: ConnectionHistory[] = [];
+    if (!Array.isArray(events)) {
+      console.error('Expected array of events but got:', events);
+      return;
+    }
     
-    devices.forEach(device => {
-      if (device.sessions) {
-        // Check for KVM sessions
-        if (device.sessions.kvm) {
-          Object.keys(device.sessions.kvm).forEach(userId => {
-            activities.push({
-              id: activities.length + 1,
-              time: new Date().toISOString(),
-              type: 'remote_connection',
-              username: userId.split('//')[1] || 'Unknown',
-              duration: device.sessions.kvm[userId] || 0,
-              device_id: device._id,
-              device: {
-                name: device.name || 'Unknown'
-              }
-            });
-          });
+    // Process events and fetch device info where needed
+    const processedEvents = await Promise.all(
+      events.slice(0, 10).map(async (event) => {
+        // Clone the event to avoid modifying the original
+        const processedEvent = { ...event };
+        
+        // Fetch device info if nodeid exists
+        if (event.nodeid) {
+          try {
+            const deviceInfo = await restClient.get(`${API_URL}/api/deviceinfo?id=${event.nodeid}`) as DeviceInfo;
+            if (deviceInfo && deviceInfo.General && deviceInfo.General['Server Name']) {
+              processedEvent.device = {
+                name: deviceInfo.General['Server Name']
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to fetch device info for ${event.nodeid}:`, error);
+            // Continue with the event even if device info fetch fails
+          }
         }
         
-        // Check for terminal sessions
-        if (device.sessions.terminal) {
-          Object.keys(device.sessions.terminal).forEach(userId => {
-            activities.push({
-              id: activities.length + 1,
-              time: new Date().toISOString(),
-              type: 'terminal_session',
-              username: userId.split('//')[1] || 'Unknown',
-              duration: device.sessions.terminal[userId] || 0,
-              device_id: device._id,
-              device: {
-                name: device.name || 'Unknown'
-              }
-            });
-          });
-        }
-      }
-    });
+        return processedEvent;
+      })
+    );
     
-    // Sort by timestamp (most recent first)
-    activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    
-    // Take the most recent 5 activities
-    recentActivity.value = activities.slice(0, 5);
+    // Sort by timestamp (most recent first) and take the 5 most recent events
+    processedEvents.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    recentActivity.value = processedEvents.slice(0, 5);
   } catch (error) {
     console.error('Failed to fetch recent activity:', error);
     toastService.showError('Failed to fetch recent activity');
@@ -342,7 +293,6 @@ const fetchDashboardData = async () => {
     await Promise.all([
       fetchDeviceStats(),
       fetchConnectionStats(),
-      fetchTransferStats(),
       fetchRecentActivity()
     ]);
   } catch (error) {
@@ -359,16 +309,20 @@ const formatTimestamp = (timestamp: string) => {
 
 const formatActivityType = (type: string) => {
   const typeMap: Record<string, string> = {
-    remote_connection: 'Remote Connection',
-    file_transfer: 'File Transfer'
+    'relay': 'Remote Session',
+    'node': 'Device Action',
+    'user': 'User Action',
+    'mesh': 'Group Action'
   };
   return typeMap[type.toLowerCase()] || type;
 };
 
 const getActivitySeverity = (type: string) => {
   const severityMap: Record<string, string> = {
-    remote_connection: 'info',
-    file_transfer: 'success'
+    'relay': 'info',
+    'node': 'success',
+    'user': 'warning',
+    'mesh': 'info'
   };
   return severityMap[type.toLowerCase()] || 'info';
 };
@@ -412,6 +366,10 @@ onUnmounted(() => {
   min-height: 300px;
   display: flex;
   flex-direction: column;
+}
+
+.recent-activity {
+  grid-column: span 2;
 }
 
 .dashboard-card > :not(h3) {
@@ -511,10 +469,20 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
 }
 
+.message-cell {
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+  line-height: 1.4;
+  display: block;
+  min-width: 100px;
+}
+
 :deep(.p-datatable) {
   .p-datatable-wrapper {
     border-radius: var(--border-radius);
     background: var(--surface-card);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   }
 
   .p-datatable-header {
@@ -534,6 +502,14 @@ onUnmounted(() => {
     letter-spacing: 1px;
     border: none;
     border-bottom: 2px solid var(--surface-border);
+
+    &:first-child {
+      border-top-left-radius: var(--border-radius);
+    }
+
+    &:last-child {
+      border-top-right-radius: var(--border-radius);
+    }
   }
 
   .p-datatable-tbody > tr {
@@ -543,6 +519,8 @@ onUnmounted(() => {
 
     &:hover {
       background: var(--surface-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     > td {
@@ -551,6 +529,21 @@ onUnmounted(() => {
       color: var(--text-color);
       font-size: 0.875rem;
       line-height: 1.5;
+      vertical-align: top;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    &:last-child {
+      border-bottom: none;
+      
+      > td:first-child {
+        border-bottom-left-radius: var(--border-radius);
+      }
+      
+      > td:last-child {
+        border-bottom-right-radius: var(--border-radius);
+      }
     }
   }
 }
@@ -563,25 +556,35 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
 
   &.p-tag-success {
-    background: var(--green-100);
+    background: var(--green-50);
     color: var(--green-900);
+    border: 1px solid var(--green-200);
   }
 
   &.p-tag-danger {
-    background: var(--red-100);
+    background: var(--red-50);
     color: var(--red-900);
+    border: 1px solid var(--red-200);
   }
 
   &.p-tag-warning {
-    background: var(--yellow-100);
+    background: var(--yellow-50);
     color: var(--yellow-900);
+    border: 1px solid var(--yellow-200);
   }
 
   &.p-tag-info {
-    background: var(--blue-100);
+    background: var(--blue-50);
     color: var(--blue-900);
+    border: 1px solid var(--blue-200);
   }
 }
 
@@ -590,8 +593,10 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 4rem 2rem;
   text-align: center;
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
 
   .empty-icon {
     font-size: 3rem;
