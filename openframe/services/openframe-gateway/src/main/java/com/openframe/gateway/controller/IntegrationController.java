@@ -53,7 +53,7 @@ public class IntegrationController {
     public Mono<ResponseEntity<String>> proxyApiRequest(
             @PathVariable String toolId,
             ServerHttpRequest request,
-            @RequestBody String body
+            @RequestBody(required = false) String body
     ) {
         String path = request.getPath().toString();
         log.info("Proxying api request for tool: {}, path: {}", toolId, path);
@@ -73,7 +73,7 @@ public class IntegrationController {
     public Mono<ResponseEntity<String>> proxyAgentRequest(
             @PathVariable String toolId,
             ServerHttpRequest request,
-            @RequestBody String body
+            @RequestBody(required = false) String body
     ) {
         String path = request.getPath().toString();
         log.info("Proxying agent request for tool: {}, path: {}", toolId, path);

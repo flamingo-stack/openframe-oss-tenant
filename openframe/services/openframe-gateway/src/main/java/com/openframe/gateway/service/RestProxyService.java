@@ -4,10 +4,12 @@ import com.openframe.core.model.IntegratedTool;
 import com.openframe.core.model.ToolCredentials;
 import com.openframe.core.model.ToolUrl;
 import com.openframe.core.model.ToolUrlType;
+import com.openframe.core.model.APIKeyType;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import com.openframe.gateway.config.CurlLoggingHandler;
 import io.netty.util.AttributeKey;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +31,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import javax.net.ssl.SSLException;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -78,20 +81,25 @@ public class RestProxyService {
 
         String toolId = tool.getId();
         ToolCredentials credentials = tool.getCredentials();
-        switch (credentials.getApiKey().getType()) {
+        APIKeyType apiKeyType = credentials != null 
+        && credentials.getApiKey() != null ? credentials.getApiKey().getType() : APIKeyType.NONE;
+        switch (apiKeyType) {
             case HEADER:
                 String keyName = credentials.getApiKey().getKeyName();
                 String key = credentials.getApiKey().getKey();
                 headers.put(keyName, key);
                 break;
             case BEARER_TOKEN:
+                //TODO: make this configurable
                 if (toolId.equals("tactical-rmm")) {
                     String token = credentials.getApiKey().getKey();
                     headers.put("Authorization", "Token " + token);
                 } else {
                     String token = credentials.getApiKey().getKey();
-                    headers.put("Authorisation", "Bearer" + token);
+                    headers.put("Authorization", "Bearer " + token);
                 }
+                break;
+            case NONE:
                 break;
         }
 
@@ -183,6 +191,15 @@ public class RestProxyService {
 
     private HttpClient buildHttpClient(URI targetUri) {
         return HttpClient.create()
+                .secure(sslSpec -> {
+                    try {
+                        sslSpec.sslContext(io.netty.handler.ssl.SslContextBuilder.forClient()
+                                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                                .build());
+                    } catch (SSLException e) {
+                        log.error("Error configuring SSL context: {}", e.getMessage());
+                    }
+                })
                 .doOnConnected(conn -> {
                     conn.channel().attr(TARGET_URI_KEY).set(targetUri);
                     conn.addHandlerFirst("curl-logger", new CurlLoggingHandler());
