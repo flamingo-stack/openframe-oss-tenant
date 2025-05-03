@@ -30,10 +30,13 @@ export interface DeviceResponse extends ApiResponse<Device[]> {}
 export interface ConnectionHistory {
   id: number;
   time: string;
-  type: string; // remote_connection, file_transfer
+  type: string; // remote_connection, file_transfer, terminal_session
   username: string;
   duration: number;
   device_id: string;
+  device?: {
+    name: string;
+  };
 }
 
 // Statistics interfaces for dashboard

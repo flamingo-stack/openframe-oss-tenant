@@ -100,7 +100,7 @@
 
             <Column field="hostname" header="Device">
               <template #body="{ data }">
-                <span class="text-sm">{{ data.hostname }}</span>
+                <span class="text-sm">{{ data.device?.name || 'Unknown Device' }}</span>
               </template>
             </Column>
 
@@ -150,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
+import { ref, onMounted, onUnmounted } from "@vue/runtime-core";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
@@ -163,6 +163,7 @@ const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
 const toastService = ToastService.getInstance();
+const loading = ref<boolean>(false);
 
 interface DeviceStats {
   total: number;
@@ -203,34 +204,17 @@ const transferStats = ref<TransferStats>({
 });
 
 const recentActivity = ref<ConnectionHistory[]>([]);
+const refreshInterval = ref<number | null>(null);
 
 const fetchDeviceStats = async () => {
   try {
     console.log('Fetching device stats...');
-    // For initial implementation, use mock data
-    // Later will be connected to actual MeshCentral API
-    const mockDevices = [
-      {
-        id: '1',
-        hostname: 'DESKTOP-1',
-        plat: 'windows',
-        operating_system: 'Windows 10 Pro',
-        status: 'online',
-        last_seen: new Date().toISOString()
-      },
-      {
-        id: '2',
-        hostname: 'DESKTOP-2',
-        plat: 'linux',
-        operating_system: 'Ubuntu 22.04',
-        status: 'offline',
-        last_seen: new Date().toISOString()
-      }
-    ];
     
-    const devices = mockDevices;
+    const response = await restClient.get(`${API_URL}/api/listdevices`);
+    const devices = Array.isArray(response) ? response : [];
+    
     const total = devices.length;
-    const online = devices.filter(d => d.status === 'online').length;
+    const online = devices.filter(d => d.conn === 1).length;
     const offline = total - online;
     const onlineRate = total > 0 ? Math.round((online / total) * 100) : 0;
     
@@ -242,13 +226,6 @@ const fetchDeviceStats = async () => {
       offline,
       onlineRate
     };
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
-    // const devices = Array.isArray(response) ? response : [];
-    // const total = devices.length;
-    // const online = devices.filter(d => d.status === 'online').length;
-    // ...etc
   } catch (error) {
     console.error('Failed to fetch device stats:', error);
     toastService.showError('Failed to fetch device stats');
@@ -257,14 +234,27 @@ const fetchDeviceStats = async () => {
 
 const fetchConnectionStats = async () => {
   try {
-    // Mock data for initial implementation
-    connectionStats.value = {
-      total: 10,
-      active: 2,
-      completed: 8
-    };
+    // For now we'll fetch devices and check for active sessions
+    const response = await restClient.get(`${API_URL}/api/listdevices`);
+    const devices = Array.isArray(response) ? response : [];
     
-    // In a real implementation, this would fetch from the API
+    // Count devices with active sessions for KVM or terminal
+    const active = devices.filter(d => 
+      d.sessions && (
+        (d.sessions.kvm && Object.keys(d.sessions.kvm).length > 0) || 
+        (d.sessions.terminal && Object.keys(d.sessions.terminal).length > 0)
+      )
+    ).length;
+    
+    // In the future we'll need an endpoint to get completed sessions history
+    const completed = 0;
+    const total = active + completed;
+    
+    connectionStats.value = {
+      total,
+      active,
+      completed
+    };
   } catch (error) {
     console.error('Failed to fetch connection stats:', error);
     toastService.showError('Failed to fetch connection stats');
@@ -273,14 +263,15 @@ const fetchConnectionStats = async () => {
 
 const fetchTransferStats = async () => {
   try {
-    // Mock data for initial implementation
-    transferStats.value = {
-      total: 15,
-      uploads: 8,
-      downloads: 7
-    };
+    // Currently no direct API for file transfer stats, will need to be implemented
+    // when file transfer history API is available
     
-    // In a real implementation, this would fetch from the API
+    // For now, initialize with zeros
+    transferStats.value = {
+      total: 0,
+      uploads: 0,
+      downloads: 0
+    };
   } catch (error) {
     console.error('Failed to fetch transfer stats:', error);
     toastService.showError('Failed to fetch transfer stats');
@@ -289,29 +280,56 @@ const fetchTransferStats = async () => {
 
 const fetchRecentActivity = async () => {
   try {
-    // Mock data for initial implementation
-    recentActivity.value = [
-      {
-        id: 1,
-        time: new Date().toISOString(),
-        type: 'remote_connection',
-        username: 'admin',
-        duration: 15,
-        device_id: '1',
-        hostname: 'DESKTOP-1'
-      },
-      {
-        id: 2,
-        time: new Date(Date.now() - 3600000).toISOString(),
-        type: 'file_transfer',
-        username: 'admin',
-        duration: 5,
-        device_id: '2',
-        hostname: 'DESKTOP-2'
-      }
-    ];
+    // Fetch devices to get session information
+    const response = await restClient.get(`${API_URL}/api/listdevices`);
+    const devices = Array.isArray(response) ? response : [];
     
-    // In a real implementation, this would fetch from the API
+    // Transform active device sessions into recent activity entries
+    const activities: ConnectionHistory[] = [];
+    
+    devices.forEach(device => {
+      if (device.sessions) {
+        // Check for KVM sessions
+        if (device.sessions.kvm) {
+          Object.keys(device.sessions.kvm).forEach(userId => {
+            activities.push({
+              id: activities.length + 1,
+              time: new Date().toISOString(),
+              type: 'remote_connection',
+              username: userId.split('//')[1] || 'Unknown',
+              duration: device.sessions.kvm[userId] || 0,
+              device_id: device._id,
+              device: {
+                name: device.name || 'Unknown'
+              }
+            });
+          });
+        }
+        
+        // Check for terminal sessions
+        if (device.sessions.terminal) {
+          Object.keys(device.sessions.terminal).forEach(userId => {
+            activities.push({
+              id: activities.length + 1,
+              time: new Date().toISOString(),
+              type: 'terminal_session',
+              username: userId.split('//')[1] || 'Unknown',
+              duration: device.sessions.terminal[userId] || 0,
+              device_id: device._id,
+              device: {
+                name: device.name || 'Unknown'
+              }
+            });
+          });
+        }
+      }
+    });
+    
+    // Sort by timestamp (most recent first)
+    activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    
+    // Take the most recent 5 activities
+    recentActivity.value = activities.slice(0, 5);
   } catch (error) {
     console.error('Failed to fetch recent activity:', error);
     toastService.showError('Failed to fetch recent activity');
@@ -320,6 +338,7 @@ const fetchRecentActivity = async () => {
 
 const fetchDashboardData = async () => {
   try {
+    loading.value = true;
     await Promise.all([
       fetchDeviceStats(),
       fetchConnectionStats(),
@@ -329,6 +348,8 @@ const fetchDashboardData = async () => {
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
     toastService.showError('Failed to fetch dashboard data');
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -354,6 +375,19 @@ const getActivitySeverity = (type: string) => {
 
 onMounted(async () => {
   await fetchDashboardData();
+  
+  // Set up auto-refresh every 30 seconds
+  refreshInterval.value = window.setInterval(() => {
+    fetchDashboardData();
+  }, 30000);
+});
+
+onUnmounted(() => {
+  // Clear the interval when component is unmounted
+  if (refreshInterval.value !== null) {
+    clearInterval(refreshInterval.value);
+    refreshInterval.value = null;
+  }
 });
 </script>
 
