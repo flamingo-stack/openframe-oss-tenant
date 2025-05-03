@@ -45,30 +45,73 @@
         </div>
       </div>
 
-      <!-- Connection Status -->
-      <div class="dashboard-card connection-status">
-        <h3><i class="pi pi-link"></i> Connection Status</h3>
-        <template v-if="connectionStats.total > 0">
+      <!-- OS Distribution -->
+      <div class="dashboard-card os-distribution">
+        <h3><i class="pi pi-desktop"></i> OS Distribution</h3>
+        <template v-if="osDistribution.total > 0">
           <div class="stats-grid">
             <div class="stat-item">
-              <span class="stat-value">{{ connectionStats.total }}</span>
-              <span class="stat-label">Total Connections</span>
+              <span class="stat-value windows">{{ osDistribution.windows }}</span>
+              <span class="stat-label">
+                <i class="pi pi-microsoft"></i>
+                <span class="os-name-text">Windows</span>
+              </span>
             </div>
             <div class="stat-item">
-              <span class="stat-value success">{{ connectionStats.active }}</span>
-              <span class="stat-label">Active</span>
+              <span class="stat-value mac">{{ osDistribution.mac }}</span>
+              <span class="stat-label">
+                <i class="pi pi-apple"></i>
+                <span class="os-name-text">macOS</span>
+              </span>
             </div>
             <div class="stat-item">
-              <span class="stat-value warning">{{ connectionStats.completed }}</span>
-              <span class="stat-label">Completed</span>
+              <span class="stat-value linux">{{ osDistribution.linux }}</span>
+              <span class="stat-label">
+                <i class="pi pi-desktop"></i>
+                <span class="os-name-text">Linux</span>
+              </span>
+            </div>
+          </div>
+          <div class="os-distribution-wrapper">
+            <div class="os-progress">
+              <div class="progress-track">
+                <div 
+                  v-if="osDistribution.windows > 0" 
+                  class="progress-segment windows" 
+                  :style="{ width: `${osDistribution.windowsPercentage}%` }"
+                >
+                  <span v-if="osDistribution.windowsPercentage >= 15" class="distribution-label">{{ osDistribution.windowsPercentage }}%</span>
+                </div>
+                <div 
+                  v-if="osDistribution.mac > 0" 
+                  class="progress-segment mac" 
+                  :style="{ width: `${osDistribution.macPercentage}%` }"
+                >
+                  <span v-if="osDistribution.macPercentage >= 15" class="distribution-label">{{ osDistribution.macPercentage }}%</span>
+                </div>
+                <div 
+                  v-if="osDistribution.linux > 0" 
+                  class="progress-segment linux" 
+                  :style="{ width: `${osDistribution.linuxPercentage}%` }"
+                >
+                  <span v-if="osDistribution.linuxPercentage >= 15" class="distribution-label">{{ osDistribution.linuxPercentage }}%</span>
+                </div>
+                <div 
+                  v-if="osDistribution.other > 0" 
+                  class="progress-segment other" 
+                  :style="{ width: `${osDistribution.otherPercentage}%` }"
+                >
+                  <span v-if="osDistribution.otherPercentage >= 15" class="distribution-label">{{ osDistribution.otherPercentage }}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </template>
         <div v-else class="empty-state">
-          <i class="pi pi-link empty-icon"></i>
-          <h3>No Active Connections</h3>
-          <p>No remote connections are currently active.</p>
-          <p class="hint">Connect to a device to see connection details here.</p>
+          <i class="pi pi-desktop empty-icon"></i>
+          <h3>No OS Data</h3>
+          <p>No device operating system information available.</p>
+          <p class="hint">Add devices to see their operating system distribution.</p>
         </div>
       </div>
 
@@ -145,10 +188,20 @@ interface DeviceStats {
   onlineRate: number;
 }
 
-interface ConnectionStats {
+interface OsDistribution {
   total: number;
-  active: number;
-  completed: number;
+  windows: number;
+  mac: number;
+  linux: number;
+  other: number;
+  windowsPercentage: number;
+  macPercentage: number;
+  linuxPercentage: number;
+  otherPercentage: number;
+  windowsPercentageExact: number;
+  macPercentageExact: number;
+  linuxPercentageExact: number;
+  otherPercentageExact: number;
 }
 
 interface MeshEvent {
@@ -179,10 +232,20 @@ const deviceStats = ref<DeviceStats>({
   onlineRate: 0
 });
 
-const connectionStats = ref<ConnectionStats>({
+const osDistribution = ref<OsDistribution>({
   total: 0,
-  active: 0,
-  completed: 0
+  windows: 0,
+  mac: 0,
+  linux: 0,
+  other: 0,
+  windowsPercentage: 0,
+  macPercentage: 0,
+  linuxPercentage: 0,
+  otherPercentage: 0,
+  windowsPercentageExact: 0,
+  macPercentageExact: 0,
+  linuxPercentageExact: 0,
+  otherPercentageExact: 0
 });
 
 const recentActivity = ref<MeshEvent[]>([]);
@@ -214,32 +277,84 @@ const fetchDeviceStats = async () => {
   }
 };
 
-const fetchConnectionStats = async () => {
+const fetchOsDistribution = async () => {
   try {
-    // For now we'll fetch devices and check for active sessions
+    // Get all devices
     const response = await restClient.get(`${API_URL}/api/listdevices`);
     const devices = Array.isArray(response) ? response : [];
     
-    // Count devices with active sessions for KVM or terminal
-    const active = devices.filter(d => 
-      d.sessions && (
-        (d.sessions.kvm && Object.keys(d.sessions.kvm).length > 0) || 
-        (d.sessions.terminal && Object.keys(d.sessions.terminal).length > 0)
-      )
-    ).length;
+    if (devices.length === 0) {
+      console.log('No devices found');
+      return;
+    }
     
-    // In the future we'll need an endpoint to get completed sessions history
-    const completed = 0;
-    const total = active + completed;
+    let windowsCount = 0;
+    let macCount = 0;
+    let linuxCount = 0;
+    let otherCount = 0;
     
-    connectionStats.value = {
-      total,
-      active,
-      completed
-    };
+    devices.forEach(device => {
+      const osDesc = (device.osdesc || '').toLowerCase();
+      
+      if (osDesc.includes('windows')) {
+        windowsCount++;
+      } else if (osDesc.includes('mac') || osDesc.includes('darwin') || osDesc.includes('osx')) {
+        macCount++;
+      } else if (
+        osDesc.includes('linux') || 
+        osDesc.includes('ubuntu') || 
+        osDesc.includes('debian') || 
+        osDesc.includes('fedora') || 
+        osDesc.includes('unix') ||
+        osDesc.includes('centos')
+      ) {
+        linuxCount++;
+      } else {
+        otherCount++;
+      }
+    });
+    
+    const total = windowsCount + macCount + linuxCount + otherCount;
+    
+    if (total > 0) {
+      // Calculate exact percentages
+      const windowsPercentageExact = (windowsCount / total) * 100;
+      const macPercentageExact = (macCount / total) * 100;
+      const linuxPercentageExact = (linuxCount / total) * 100;
+      const otherPercentageExact = (otherCount / total) * 100;
+      
+      // Rounded percentages for display
+      const windowsPercentage = Math.round(windowsPercentageExact);
+      const macPercentage = Math.round(macPercentageExact);
+      const linuxPercentage = Math.round(linuxPercentageExact);
+      const otherPercentage = Math.round(otherPercentageExact);
+      
+      console.log('OS distribution percentages:', {
+        windowsPercentageExact, macPercentageExact, linuxPercentageExact, otherPercentageExact,
+        windowsPercentage, macPercentage, linuxPercentage, otherPercentage
+      });
+      
+      osDistribution.value = {
+        total,
+        windows: windowsCount,
+        mac: macCount,
+        linux: linuxCount,
+        other: otherCount,
+        windowsPercentage,
+        macPercentage,
+        linuxPercentage,
+        otherPercentage,
+        windowsPercentageExact,
+        macPercentageExact,
+        linuxPercentageExact,
+        otherPercentageExact
+      };
+    }
+    
+    console.log('OS distribution data:', osDistribution.value);
   } catch (error) {
-    console.error('Failed to fetch connection stats:', error);
-    toastService.showError('Failed to fetch connection stats');
+    console.error('Failed to fetch OS distribution:', error);
+    toastService.showError('Failed to fetch OS distribution');
   }
 };
 
@@ -292,7 +407,7 @@ const fetchDashboardData = async () => {
     loading.value = true;
     await Promise.all([
       fetchDeviceStats(),
-      fetchConnectionStats(),
+      fetchOsDistribution(),
       fetchRecentActivity()
     ]);
   } catch (error) {
@@ -416,6 +531,18 @@ onUnmounted(() => {
 .stat-label {
   font-size: 0.875rem;
   color: var(--text-color-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.stat-label i {
+  font-size: 1rem;
+}
+
+.os-name-text {
+  font-weight: 600;
 }
 
 .compliance-wrapper {
@@ -623,6 +750,71 @@ onUnmounted(() => {
       opacity: 0.8;
     }
   }
+}
+
+.os-distribution {
+  display: flex;
+  flex-direction: column;
+}
+
+.os-distribution-wrapper {
+  padding: 0.5rem 0;
+}
+
+.os-progress {
+  margin: 1rem 0;
+}
+
+.progress-segment {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.progress-segment.windows {
+  background: var(--primary-color);
+}
+
+.progress-segment.mac {
+  background: var(--text-color);
+}
+
+.progress-segment.linux {
+  background: var(--blue-400);
+}
+
+.progress-segment.other {
+  background: var(--purple-500);
+}
+
+.distribution-label {
+  white-space: nowrap;
+  padding: 0 0.5rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.stat-value.windows {
+  color: var(--primary-color);
+}
+
+.stat-value.mac {
+  color: var(--text-color);
+}
+
+.stat-value.linux {
+  color: var(--blue-400);
+}
+
+.stat-value.other {
+  color: var(--purple-500);
 }
 
 @media screen and (max-width: 960px) {
