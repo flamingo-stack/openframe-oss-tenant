@@ -327,13 +327,10 @@ jobs:
       
       - name: Run environment test script
         env:
-          TERM: xterm
+          TERM: dumb
           GITHUB_TOKEN_CLASSIC: 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
         run: |
           ./scripts/run.sh platform
-          ls -lah /tmp/openframe-deployment-logs
-          cat /tmp/openframe-deployment-logs/setup-cluster.log
-          cat /tmp/openframe-deployment-logs/bases.log
       
 
 
