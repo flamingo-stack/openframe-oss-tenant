@@ -45,36 +45,79 @@
         </div>
       </div>
 
-      <!-- Connection Status -->
-      <div class="dashboard-card connection-status">
-        <h3><i class="pi pi-link"></i> Connection Status</h3>
-        <template v-if="connectionStats.total > 0">
+      <!-- OS Distribution -->
+      <div class="dashboard-card os-distribution">
+        <h3><i class="pi pi-desktop"></i> OS Distribution</h3>
+        <template v-if="osDistribution.total > 0">
           <div class="stats-grid">
             <div class="stat-item">
-              <span class="stat-value">{{ connectionStats.total }}</span>
-              <span class="stat-label">Total Connections</span>
+              <span class="stat-value windows">{{ osDistribution.windows }}</span>
+              <span class="stat-label">
+                <i class="pi pi-microsoft"></i>
+                <span class="os-name-text">Windows</span>
+              </span>
             </div>
             <div class="stat-item">
-              <span class="stat-value success">{{ connectionStats.active }}</span>
-              <span class="stat-label">Active</span>
+              <span class="stat-value mac">{{ osDistribution.mac }}</span>
+              <span class="stat-label">
+                <i class="pi pi-apple"></i>
+                <span class="os-name-text">macOS</span>
+              </span>
             </div>
             <div class="stat-item">
-              <span class="stat-value warning">{{ connectionStats.completed }}</span>
-              <span class="stat-label">Completed</span>
+              <span class="stat-value linux">{{ osDistribution.linux }}</span>
+              <span class="stat-label">
+                <i class="pi pi-desktop"></i>
+                <span class="os-name-text">Linux</span>
+              </span>
+            </div>
+          </div>
+          <div class="os-distribution-wrapper">
+            <div class="os-progress">
+              <div class="progress-track">
+                <div 
+                  v-if="osDistribution.windows > 0" 
+                  class="progress-segment windows" 
+                  :style="{ width: `${osDistribution.windowsPercentage}%` }"
+                >
+                  <span v-if="osDistribution.windowsPercentage >= 15" class="distribution-label">{{ osDistribution.windowsPercentage }}%</span>
+                </div>
+                <div 
+                  v-if="osDistribution.mac > 0" 
+                  class="progress-segment mac" 
+                  :style="{ width: `${osDistribution.macPercentage}%` }"
+                >
+                  <span v-if="osDistribution.macPercentage >= 15" class="distribution-label">{{ osDistribution.macPercentage }}%</span>
+                </div>
+                <div 
+                  v-if="osDistribution.linux > 0" 
+                  class="progress-segment linux" 
+                  :style="{ width: `${osDistribution.linuxPercentage}%` }"
+                >
+                  <span v-if="osDistribution.linuxPercentage >= 15" class="distribution-label">{{ osDistribution.linuxPercentage }}%</span>
+                </div>
+                <div 
+                  v-if="osDistribution.other > 0" 
+                  class="progress-segment other" 
+                  :style="{ width: `${osDistribution.otherPercentage}%` }"
+                >
+                  <span v-if="osDistribution.otherPercentage >= 15" class="distribution-label">{{ osDistribution.otherPercentage }}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </template>
         <div v-else class="empty-state">
-          <i class="pi pi-link empty-icon"></i>
-          <h3>No Active Connections</h3>
-          <p>No remote connections are currently active.</p>
-          <p class="hint">Connect to a device to see connection details here.</p>
+          <i class="pi pi-desktop empty-icon"></i>
+          <h3>No OS Data</h3>
+          <p>No device operating system information available.</p>
+          <p class="hint">Add devices to see their operating system distribution.</p>
         </div>
       </div>
 
-      <!-- Recent Activity -->
+      <!-- Recent Activities -->
       <div class="dashboard-card recent-activity">
-        <h3><i class="pi pi-history"></i> Recent Activity</h3>
+        <h3><i class="pi pi-clock"></i> Recent Activities</h3>
         <template v-if="recentActivity.length > 0">
           <DataTable 
             :value="recentActivity" 
@@ -86,63 +129,36 @@
           >
             <Column field="time" header="Time">
               <template #body="{ data }">
-                <div class="flex align-items-center">
-                  <span class="text-sm">{{ formatTimestamp(data.time) }}</span>
+                <span class="text-sm">{{ formatTimestamp(data.time) }}</span>
+              </template>
+            </Column>
+
+            <Column field="etype" header="Type">
+              <template #body="{ data }">
+                <Tag :value="formatActivityType(data.etype)" :severity="getActivitySeverity(data.etype)" />
+              </template>
+            </Column>
+
+            <Column field="device" header="Device">
+              <template #body="{ data }">
+                <span class="text-sm">{{ data.device?.name || '-' }}</span>
+              </template>
+            </Column>
+
+            <Column field="msg" header="Message">
+              <template #body="{ data }">
+                <div class="message-cell">
+                  <span class="text-sm">{{ data.msg }}</span>
                 </div>
-              </template>
-            </Column>
-
-            <Column field="type" header="Type">
-              <template #body="{ data }">
-                <Tag :value="formatActivityType(data.type)" :severity="getActivitySeverity(data.type)" />
-              </template>
-            </Column>
-
-            <Column field="hostname" header="Device">
-              <template #body="{ data }">
-                <span class="text-sm">{{ data.hostname }}</span>
-              </template>
-            </Column>
-
-            <Column field="username" header="User">
-              <template #body="{ data }">
-                <span class="text-sm">{{ data.username }}</span>
               </template>
             </Column>
           </DataTable>
         </template>
         <div v-else class="empty-state">
-          <i class="pi pi-history empty-icon"></i>
-          <h3>No Recent Activity</h3>
-          <p>No recent remote access activity to display.</p>
-          <p class="hint">Activity will appear here as you connect to devices.</p>
-        </div>
-      </div>
-
-      <!-- File Transfer -->
-      <div class="dashboard-card file-transfer">
-        <h3><i class="pi pi-file"></i> File Transfer</h3>
-        <template v-if="transferStats.total > 0">
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-value">{{ transferStats.total }}</span>
-              <span class="stat-label">Total Transfers</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value success">{{ transferStats.uploads }}</span>
-              <span class="stat-label">Uploads</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value warning">{{ transferStats.downloads }}</span>
-              <span class="stat-label">Downloads</span>
-            </div>
-          </div>
-        </template>
-        <div v-else class="empty-state">
-          <i class="pi pi-file empty-icon"></i>
-          <h3>No File Transfers</h3>
-          <p>No file transfers have been initiated yet.</p>
-          <p class="hint">File transfers will appear here once you start transferring files.</p>
+          <i class="pi pi-clock empty-icon"></i>
+          <h3>No Recent Activities</h3>
+          <p>No recent remote access activities to display.</p>
+          <p class="hint">Activities will appear here as you connect to devices.</p>
         </div>
       </div>
     </div>
@@ -150,19 +166,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
+import { ref, onMounted, onUnmounted } from "@vue/runtime-core";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
-import type { Device, ConnectionHistory } from '../../types/rac';
+import type { Device } from '../../types/rac';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
 const toastService = ToastService.getInstance();
+const loading = ref<boolean>(false);
 
 interface DeviceStats {
   total: number;
@@ -171,16 +188,41 @@ interface DeviceStats {
   onlineRate: number;
 }
 
-interface ConnectionStats {
+interface OsDistribution {
   total: number;
-  active: number;
-  completed: number;
+  windows: number;
+  mac: number;
+  linux: number;
+  other: number;
+  windowsPercentage: number;
+  macPercentage: number;
+  linuxPercentage: number;
+  otherPercentage: number;
+  windowsPercentageExact: number;
+  macPercentageExact: number;
+  linuxPercentageExact: number;
+  otherPercentageExact: number;
 }
 
-interface TransferStats {
-  total: number;
-  uploads: number;
-  downloads: number;
+interface MeshEvent {
+  etype: string;
+  action: string;
+  userid?: string;
+  username?: string;
+  nodeid?: string;
+  msg: string;
+  time: string;
+  device?: {
+    name: string;
+  };
+}
+
+interface DeviceInfo {
+  General: {
+    'Server Name': string;
+    [key: string]: any;
+  };
+  [section: string]: any;
 }
 
 const deviceStats = ref<DeviceStats>({
@@ -190,47 +232,34 @@ const deviceStats = ref<DeviceStats>({
   onlineRate: 0
 });
 
-const connectionStats = ref<ConnectionStats>({
+const osDistribution = ref<OsDistribution>({
   total: 0,
-  active: 0,
-  completed: 0
+  windows: 0,
+  mac: 0,
+  linux: 0,
+  other: 0,
+  windowsPercentage: 0,
+  macPercentage: 0,
+  linuxPercentage: 0,
+  otherPercentage: 0,
+  windowsPercentageExact: 0,
+  macPercentageExact: 0,
+  linuxPercentageExact: 0,
+  otherPercentageExact: 0
 });
 
-const transferStats = ref<TransferStats>({
-  total: 0,
-  uploads: 0,
-  downloads: 0
-});
-
-const recentActivity = ref<ConnectionHistory[]>([]);
+const recentActivity = ref<MeshEvent[]>([]);
+const refreshInterval = ref<number | null>(null);
 
 const fetchDeviceStats = async () => {
   try {
     console.log('Fetching device stats...');
-    // For initial implementation, use mock data
-    // Later will be connected to actual MeshCentral API
-    const mockDevices = [
-      {
-        id: '1',
-        hostname: 'DESKTOP-1',
-        plat: 'windows',
-        operating_system: 'Windows 10 Pro',
-        status: 'online',
-        last_seen: new Date().toISOString()
-      },
-      {
-        id: '2',
-        hostname: 'DESKTOP-2',
-        plat: 'linux',
-        operating_system: 'Ubuntu 22.04',
-        status: 'offline',
-        last_seen: new Date().toISOString()
-      }
-    ];
     
-    const devices = mockDevices;
+    const response = await restClient.get(`${API_URL}/api/listdevices`);
+    const devices = Array.isArray(response) ? response : [];
+    
     const total = devices.length;
-    const online = devices.filter(d => d.status === 'online').length;
+    const online = devices.filter(d => d.conn === 1).length;
     const offline = total - online;
     const onlineRate = total > 0 ? Math.round((online / total) * 100) : 0;
     
@@ -242,76 +271,131 @@ const fetchDeviceStats = async () => {
       offline,
       onlineRate
     };
-    
-    // In a real implementation, this would be:
-    // const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
-    // const devices = Array.isArray(response) ? response : [];
-    // const total = devices.length;
-    // const online = devices.filter(d => d.status === 'online').length;
-    // ...etc
   } catch (error) {
     console.error('Failed to fetch device stats:', error);
     toastService.showError('Failed to fetch device stats');
   }
 };
 
-const fetchConnectionStats = async () => {
+const fetchOsDistribution = async () => {
   try {
-    // Mock data for initial implementation
-    connectionStats.value = {
-      total: 10,
-      active: 2,
-      completed: 8
-    };
+    // Get all devices
+    const response = await restClient.get(`${API_URL}/api/listdevices`);
+    const devices = Array.isArray(response) ? response : [];
     
-    // In a real implementation, this would fetch from the API
-  } catch (error) {
-    console.error('Failed to fetch connection stats:', error);
-    toastService.showError('Failed to fetch connection stats');
-  }
-};
-
-const fetchTransferStats = async () => {
-  try {
-    // Mock data for initial implementation
-    transferStats.value = {
-      total: 15,
-      uploads: 8,
-      downloads: 7
-    };
+    if (devices.length === 0) {
+      console.log('No devices found');
+      return;
+    }
     
-    // In a real implementation, this would fetch from the API
+    let windowsCount = 0;
+    let macCount = 0;
+    let linuxCount = 0;
+    let otherCount = 0;
+    
+    devices.forEach(device => {
+      const osDesc = (device.osdesc || '').toLowerCase();
+      
+      if (osDesc.includes('windows')) {
+        windowsCount++;
+      } else if (osDesc.includes('mac') || osDesc.includes('darwin') || osDesc.includes('osx')) {
+        macCount++;
+      } else if (
+        osDesc.includes('linux') || 
+        osDesc.includes('ubuntu') || 
+        osDesc.includes('debian') || 
+        osDesc.includes('fedora') || 
+        osDesc.includes('unix') ||
+        osDesc.includes('centos')
+      ) {
+        linuxCount++;
+      } else {
+        otherCount++;
+      }
+    });
+    
+    const total = windowsCount + macCount + linuxCount + otherCount;
+    
+    if (total > 0) {
+      // Calculate exact percentages
+      const windowsPercentageExact = (windowsCount / total) * 100;
+      const macPercentageExact = (macCount / total) * 100;
+      const linuxPercentageExact = (linuxCount / total) * 100;
+      const otherPercentageExact = (otherCount / total) * 100;
+      
+      // Rounded percentages for display
+      const windowsPercentage = Math.round(windowsPercentageExact);
+      const macPercentage = Math.round(macPercentageExact);
+      const linuxPercentage = Math.round(linuxPercentageExact);
+      const otherPercentage = Math.round(otherPercentageExact);
+      
+      console.log('OS distribution percentages:', {
+        windowsPercentageExact, macPercentageExact, linuxPercentageExact, otherPercentageExact,
+        windowsPercentage, macPercentage, linuxPercentage, otherPercentage
+      });
+      
+      osDistribution.value = {
+        total,
+        windows: windowsCount,
+        mac: macCount,
+        linux: linuxCount,
+        other: otherCount,
+        windowsPercentage,
+        macPercentage,
+        linuxPercentage,
+        otherPercentage,
+        windowsPercentageExact,
+        macPercentageExact,
+        linuxPercentageExact,
+        otherPercentageExact
+      };
+    }
+    
+    console.log('OS distribution data:', osDistribution.value);
   } catch (error) {
-    console.error('Failed to fetch transfer stats:', error);
-    toastService.showError('Failed to fetch transfer stats');
+    console.error('Failed to fetch OS distribution:', error);
+    toastService.showError('Failed to fetch OS distribution');
   }
 };
 
 const fetchRecentActivity = async () => {
   try {
-    // Mock data for initial implementation
-    recentActivity.value = [
-      {
-        id: 1,
-        time: new Date().toISOString(),
-        type: 'remote_connection',
-        username: 'admin',
-        duration: 15,
-        device_id: '1',
-        hostname: 'DESKTOP-1'
-      },
-      {
-        id: 2,
-        time: new Date(Date.now() - 3600000).toISOString(),
-        type: 'file_transfer',
-        username: 'admin',
-        duration: 5,
-        device_id: '2',
-        hostname: 'DESKTOP-2'
-      }
-    ];
+    // Fetch events from the API
+    const events = await restClient.get(`${API_URL}/api/listevents`);
     
-    // In a real implementation, this would fetch from the API
+    if (!Array.isArray(events)) {
+      console.error('Expected array of events but got:', events);
+      return;
+    }
+    
+    // Process events and fetch device info where needed
+    const processedEvents = await Promise.all(
+      events.slice(0, 10).map(async (event) => {
+        // Clone the event to avoid modifying the original
+        const processedEvent = { ...event };
+        
+        // Fetch device info if nodeid exists
+        if (event.nodeid) {
+          try {
+            const deviceInfo = await restClient.get(`${API_URL}/api/deviceinfo?id=${event.nodeid}`) as DeviceInfo;
+            if (deviceInfo && deviceInfo.General && deviceInfo.General['Server Name']) {
+              processedEvent.device = {
+                name: deviceInfo.General['Server Name']
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to fetch device info for ${event.nodeid}:`, error);
+            // Continue with the event even if device info fetch fails
+          }
+        }
+        
+        return processedEvent;
+      })
+    );
+    
+    // Sort by timestamp (most recent first) and take the 5 most recent events
+    processedEvents.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    recentActivity.value = processedEvents.slice(0, 5);
   } catch (error) {
     console.error('Failed to fetch recent activity:', error);
     toastService.showError('Failed to fetch recent activity');
@@ -320,15 +404,17 @@ const fetchRecentActivity = async () => {
 
 const fetchDashboardData = async () => {
   try {
+    loading.value = true;
     await Promise.all([
       fetchDeviceStats(),
-      fetchConnectionStats(),
-      fetchTransferStats(),
+      fetchOsDistribution(),
       fetchRecentActivity()
     ]);
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
     toastService.showError('Failed to fetch dashboard data');
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -338,22 +424,39 @@ const formatTimestamp = (timestamp: string) => {
 
 const formatActivityType = (type: string) => {
   const typeMap: Record<string, string> = {
-    remote_connection: 'Remote Connection',
-    file_transfer: 'File Transfer'
+    'relay': 'Remote Session',
+    'node': 'Device Action',
+    'user': 'User Action',
+    'mesh': 'Group Action'
   };
   return typeMap[type.toLowerCase()] || type;
 };
 
 const getActivitySeverity = (type: string) => {
   const severityMap: Record<string, string> = {
-    remote_connection: 'info',
-    file_transfer: 'success'
+    'relay': 'info',
+    'node': 'success',
+    'user': 'warning',
+    'mesh': 'info'
   };
   return severityMap[type.toLowerCase()] || 'info';
 };
 
 onMounted(async () => {
   await fetchDashboardData();
+  
+  // Set up auto-refresh every 30 seconds
+  refreshInterval.value = window.setInterval(() => {
+    fetchDashboardData();
+  }, 30000);
+});
+
+onUnmounted(() => {
+  // Clear the interval when component is unmounted
+  if (refreshInterval.value !== null) {
+    clearInterval(refreshInterval.value);
+    refreshInterval.value = null;
+  }
 });
 </script>
 
@@ -378,6 +481,10 @@ onMounted(async () => {
   min-height: 300px;
   display: flex;
   flex-direction: column;
+}
+
+.recent-activity {
+  grid-column: span 2;
 }
 
 .dashboard-card > :not(h3) {
@@ -424,6 +531,18 @@ onMounted(async () => {
 .stat-label {
   font-size: 0.875rem;
   color: var(--text-color-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.stat-label i {
+  font-size: 1rem;
+}
+
+.os-name-text {
+  font-weight: 600;
 }
 
 .compliance-wrapper {
@@ -477,10 +596,20 @@ onMounted(async () => {
   letter-spacing: 0.5px;
 }
 
+.message-cell {
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+  line-height: 1.4;
+  display: block;
+  min-width: 100px;
+}
+
 :deep(.p-datatable) {
   .p-datatable-wrapper {
     border-radius: var(--border-radius);
     background: var(--surface-card);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   }
 
   .p-datatable-header {
@@ -500,6 +629,14 @@ onMounted(async () => {
     letter-spacing: 1px;
     border: none;
     border-bottom: 2px solid var(--surface-border);
+
+    &:first-child {
+      border-top-left-radius: var(--border-radius);
+    }
+
+    &:last-child {
+      border-top-right-radius: var(--border-radius);
+    }
   }
 
   .p-datatable-tbody > tr {
@@ -509,6 +646,8 @@ onMounted(async () => {
 
     &:hover {
       background: var(--surface-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     > td {
@@ -517,6 +656,21 @@ onMounted(async () => {
       color: var(--text-color);
       font-size: 0.875rem;
       line-height: 1.5;
+      vertical-align: top;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    &:last-child {
+      border-bottom: none;
+      
+      > td:first-child {
+        border-bottom-left-radius: var(--border-radius);
+      }
+      
+      > td:last-child {
+        border-bottom-right-radius: var(--border-radius);
+      }
     }
   }
 }
@@ -529,25 +683,35 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
 
   &.p-tag-success {
-    background: var(--green-100);
+    background: var(--green-50);
     color: var(--green-900);
+    border: 1px solid var(--green-200);
   }
 
   &.p-tag-danger {
-    background: var(--red-100);
+    background: var(--red-50);
     color: var(--red-900);
+    border: 1px solid var(--red-200);
   }
 
   &.p-tag-warning {
-    background: var(--yellow-100);
+    background: var(--yellow-50);
     color: var(--yellow-900);
+    border: 1px solid var(--yellow-200);
   }
 
   &.p-tag-info {
-    background: var(--blue-100);
+    background: var(--blue-50);
     color: var(--blue-900);
+    border: 1px solid var(--blue-200);
   }
 }
 
@@ -556,8 +720,10 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 4rem 2rem;
   text-align: center;
+  background: var(--surface-card);
+  border-radius: var(--border-radius);
 
   .empty-icon {
     font-size: 3rem;
@@ -584,6 +750,71 @@ onMounted(async () => {
       opacity: 0.8;
     }
   }
+}
+
+.os-distribution {
+  display: flex;
+  flex-direction: column;
+}
+
+.os-distribution-wrapper {
+  padding: 0.5rem 0;
+}
+
+.os-progress {
+  margin: 1rem 0;
+}
+
+.progress-segment {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.progress-segment.windows {
+  background: var(--primary-color);
+}
+
+.progress-segment.mac {
+  background: var(--text-color);
+}
+
+.progress-segment.linux {
+  background: var(--blue-400);
+}
+
+.progress-segment.other {
+  background: var(--purple-500);
+}
+
+.distribution-label {
+  white-space: nowrap;
+  padding: 0 0.5rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.stat-value.windows {
+  color: var(--primary-color);
+}
+
+.stat-value.mac {
+  color: var(--text-color);
+}
+
+.stat-value.linux {
+  color: var(--blue-400);
+}
+
+.stat-value.other {
+  color: var(--purple-500);
 }
 
 @media screen and (max-width: 960px) {

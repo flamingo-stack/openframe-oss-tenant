@@ -218,6 +218,10 @@ function Set-DockerConfiguration {
         Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
         Write-Host "NOTE: You may need to restart your computer to complete the Docker installation." -ForegroundColor Yellow
 
+        # Install Docker Buildx
+        Write-Host "Installing Docker Buildx..." -ForegroundColor Cyan
+        choco install docker-buildx -y
+
         $restartChoice = Read-Host "Do you want to restart your computer now? (Y/N)"
         if ($restartChoice -eq "Y" -or $restartChoice -eq "y") {
             Restart-Computer -Force

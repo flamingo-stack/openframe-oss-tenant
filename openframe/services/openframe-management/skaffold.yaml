@@ -8,7 +8,7 @@ build:
       docker: {}
   local:
     useDockerCLI: false
-    useBuildkit: false
+    useBuildkit: true
     push: false
 manifests:
   kustomize:

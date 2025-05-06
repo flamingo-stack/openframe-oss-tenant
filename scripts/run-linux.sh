@@ -64,6 +64,11 @@ verify_command() {
             sudo systemctl start docker
         fi
 
+        # Check docker buildx is installed
+        if ! docker buildx version >/dev/null 2>&1; then
+            sudo docker buildx install
+        fi
+
         write_status_message "Docker installed successfully!" "\033[32m"
         write_status_message "Please log out and back in for group changes to take effect." "\033[33m"
         write_status_message "After logging back in, run this script again." "\033[33m"

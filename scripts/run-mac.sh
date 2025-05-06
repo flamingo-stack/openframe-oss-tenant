@@ -46,6 +46,15 @@ verify_command() {
             docker desktop start
         fi
 
+        if ! docker buildx version >/dev/null 2>&1; then
+            write_status_message "Docker Buildx not found. Installing Docker Buildx..." "\033[33m"
+            mkdir -p ~/.docker/cli-plugins
+            brew install docker-buildx
+            write_status_message "Docker Buildx installed successfully!" "\033[32m"
+        else
+            write_status_message "Docker Buildx is already installed." "\033[32m"
+        fi
+
         write_status_message "Docker installed successfully!" "\033[32m"
         write_status_message "Please log out and back in for group changes to take effect." "\033[33m"
         write_status_message "After logging back in, run this script again." "\033[33m"
@@ -61,6 +70,7 @@ verify_command() {
         ;;
     "skaffold")
         brew install skaffold
+        skaffold init --platform=docker
         ;;
     "jq")
         brew install jq

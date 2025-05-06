@@ -184,7 +184,7 @@ openframe_datasources_nifi)
     openframe_datasources_nifi_delete
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying NiFi in dev mode"
-    cd ${SCRIPT_DIR}/infrastructure/nifi
+    cd ${SCRIPT_DIR}/../openframe/datasources/nifi/
     skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
   elif [ "$ACTION" == "intercept" ]; then
     echo "Interception not enabled for this app"

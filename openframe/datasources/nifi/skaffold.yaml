@@ -14,7 +14,7 @@ build:
           SINGLE_USER_CREDENTIALS_PASSWORD: password123456789
   local:
     useDockerCLI: false
-    useBuildkit: false
+    useBuildkit: true
     push: false
 manifests:
   kustomize:

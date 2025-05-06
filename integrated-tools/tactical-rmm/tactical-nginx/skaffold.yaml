@@ -49,7 +49,7 @@ build:
           WEBSOCKETS_BIND_HOST: "tactical-websockets"
   local:
     useDockerCLI: false
-    useBuildkit: false
+    useBuildkit: true
     push: false
 manifests:
   rawYaml:

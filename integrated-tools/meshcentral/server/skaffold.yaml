@@ -32,7 +32,7 @@ build:
           MESH_WEBRTC_ENABLED: "false"
   local:
     useDockerCLI: false
-    useBuildkit: false
+    useBuildkit: true
     push: false
 manifests:
   kustomize:

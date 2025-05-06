@@ -20,17 +20,17 @@
       <ModuleTable 
         :items="devices" 
         :loading="loading"
-        :searchFields="['hostname', 'plat', 'operating_system', 'status']" 
+        :searchFields="['name', 'osdesc', 'ip', 'conn']" 
         emptyIcon="pi pi-desktop"
         emptyTitle="No Devices Found" 
         emptyMessage="Add your first device to start monitoring."
-        emptyHint="Devices will appear here once they are added to your RAC server."
+        emptyHint="Devices will appear here once they are added to your MeshCentral server."
       >
-        <Column field="hostname" header="Hostname" sortable>
+        <Column field="name" header="Hostname" sortable>
           <template #body="{ data }">
             <div class="flex align-items-center">
               <i :class="getDeviceIcon(data.plat)" class="mr-2"></i>
-              <span>{{ data.hostname }}</span>
+              <span>{{ data.name }}</span>
             </div>
           </template>
         </Column>
@@ -41,21 +41,21 @@
           </template>
         </Column>
 
-        <Column field="operating_system" header="OS Version" sortable>
+        <Column field="osdesc" header="OS Version" sortable>
           <template #body="{ data }">
-            <span class="text-sm">{{ data.operating_system || 'Unknown' }}</span>
+            <span class="text-sm">{{ data.osdesc || 'Unknown' }}</span>
           </template>
         </Column>
 
-        <Column field="status" header="Status" sortable>
+        <Column field="conn" header="Status" sortable>
           <template #body="{ data }">
-            <Tag :value="data.status" :severity="getStatusSeverity(data.status)" />
+            <Tag :value="getConnectionStatus(data.conn)" :severity="getConnectionSeverity(data.conn)" />
           </template>
         </Column>
 
-        <Column field="last_seen" header="Last Seen" sortable>
+        <Column field="agct" header="Last Seen" sortable>
           <template #body="{ data }">
-            <span class="text-sm">{{ formatTimestamp(data.last_seen) }}</span>
+            <span class="text-sm">{{ formatTimestamp(data.agct) }}</span>
           </template>
         </Column>
 
@@ -94,7 +94,7 @@
       <div class="confirmation-content">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
         <span v-if="selectedDevice">
-          Are you sure you want to delete <b>{{ selectedDevice.hostname }}</b>?
+          Are you sure you want to delete <b>{{ selectedDevice.name }}</b>?
         </span>
       </div>
       <template #footer>
@@ -115,6 +115,7 @@
     <DeviceDetailsDialog
       v-model:visible="showDeviceDetailsDialog"
       :device="selectedDevice"
+      :deviceDetails="deviceDetails"
       @runCommand="handleDeviceDetailsRunCommand"
       @delete="handleDeviceDetailsDelete"
     />
@@ -143,7 +144,6 @@ import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
-import type { Device } from '../../types/rac';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
@@ -152,14 +152,15 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
-const devices = ref<Device[]>([]);
+const devices = ref<any[]>([]);
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
 const showDeviceDetailsDialog = ref(false);
 const executing = ref(false);
 const deleting = ref(false);
 
-const selectedDevice = ref<Device | null>(null);
+const selectedDevice = ref<any | null>(null);
+const deviceDetails = ref<any | null>(null);
 const command = ref('');
 const lastCommand = ref<{ cmd: string; output: string } | null>(null);
 
@@ -170,86 +171,43 @@ const filters = ref({
 const showExecutionHistory = ref(false);
 const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
 
-const getStatusSeverity = (status: string) => {
-  const severityMap: Record<string, string> = {
-    online: 'success',
-    offline: 'danger',
-    overdue: 'warning',
-    unknown: 'info'
-  };
-  return severityMap[status.toLowerCase()] || 'info';
+const getConnectionStatus = (conn: number) => {
+  switch (conn) {
+    case 1: return 'online';
+    case 0: return 'offline';
+    default: return 'unknown';
+  }
 };
 
-const formatTimestamp = (timestamp: string) => {
+const getConnectionSeverity = (conn: number) => {
+  switch (conn) {
+    case 1: return 'success';
+    case 0: return 'danger';
+    default: return 'info';
+  }
+};
+
+const formatTimestamp = (timestamp: number) => {
   return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
-};
-
-const formatBytes = (bytes: number) => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-const getIPv4Addresses = (ips: string[]) => {
-  if (!ips || !ips.length) return [];
-
-  // Filter for IPv4 addresses
-  return ips.filter(ip => {
-    const parts = ip.split('.');
-    return parts.length === 4 && parts.every(part => {
-      const num = parseInt(part, 10);
-      return num >= 0 && num <= 255;
-    });
-  });
 };
 
 const fetchDevices = async () => {
   try {
     loading.value = true;
     
-    // For initial implementation, use mock data
-    // Later will be connected to actual MeshCentral API
-    devices.value = [
-      {
-        id: '1',
-        agent_id: '1',
-        hostname: 'desktop-001',
-        plat: 'windows',
-        operating_system: 'Windows 10 Pro',
-        status: 'online',
-        last_seen: new Date().toISOString(),
-        public_ip: '192.168.1.100',
-        local_ips: ['10.0.0.1']
-      },
-      {
-        id: '2',
-        agent_id: '2',
-        hostname: 'laptop-002',
-        plat: 'darwin',
-        operating_system: 'macOS 12.6',
-        status: 'offline',
-        last_seen: new Date(Date.now() - 86400000).toISOString(),
-        public_ip: '192.168.1.101',
-        local_ips: ['10.0.0.2']
-      },
-      {
-        id: '3',
-        agent_id: '3',
-        hostname: 'server-001',
-        plat: 'linux',
-        operating_system: 'Ubuntu 22.04 LTS',
-        status: 'online',
-        last_seen: new Date().toISOString(),
-        public_ip: '192.168.1.102',
-        local_ips: ['10.0.0.3']
-      }
-    ];
+    const response = await restClient.get<any[]>(`${API_URL}/api/listdevices`);
     
-    // In a real implementation, this would be:
-    // const response = await restClient.get<Device[]>(`${API_URL}/devices/`);
-    // devices.value = Array.isArray(response) ? response : [];
+    devices.value = Array.isArray(response) ? response.map(device => {
+      // Map MeshCentral device to our format
+      return {
+        ...device,
+        id: device._id,
+        // Determine platform from osdesc
+        plat: device.osdesc?.toLowerCase().includes('windows') ? 'windows' :
+              device.osdesc?.toLowerCase().includes('mac') ? 'darwin' :
+              device.osdesc?.toLowerCase().includes('linux') ? 'linux' : 'unknown'
+      };
+    }) : [];
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
@@ -258,7 +216,19 @@ const fetchDevices = async () => {
   }
 };
 
-const runCommand = (device: Device) => {
+const fetchDeviceDetails = async (deviceId: string) => {
+  try {
+    const response = await restClient.get<any>(`${API_URL}/api/deviceinfo?id=${deviceId}`);
+    return response;
+  } catch (error) {
+    console.error('Failed to fetch device details:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
+    toastService.showError(errorMessage);
+    return null;
+  }
+};
+
+const runCommand = (device: any) => {
   selectedDevice.value = device;
   showRunCommandDialog.value = true;
 };
@@ -271,11 +241,11 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
   // Add command to execution history with pending status and close dialog immediately
   if (executionHistoryRef.value) {
     executionId = executionHistoryRef.value.addExecution({
-      deviceName: selectedDevice.value.hostname,
+      deviceName: selectedDevice.value.name,
       command: cmd,
       output: 'Executing command...',
       status: 'pending',
-      agent_id: selectedDevice.value.agent_id
+      agent_id: selectedDevice.value.id
     });
   }
 
@@ -286,34 +256,26 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
   try {
     executing.value = true;
     
-    // Determine shell based on platform and shell type
-    let shellPath = '/bin/bash';
-    if (selectedDevice.value.plat === 'windows') {
-      shellPath = shell === 'powershell' ? 'powershell' : 'cmd';
-    } else if (selectedDevice.value.plat === 'darwin' || selectedDevice.value.plat === 'linux') {
-      shellPath = '/bin/bash';
-    }
+    // Determine if we should use PowerShell based on the shell parameter and platform
+    const usePowerShell = shell === 'powershell' && selectedDevice.value.plat === 'windows';
     
-    // In a real implementation, this would be:
-    // const response = await restClient.post<string>(`${API_URL}/devices/${selectedDevice.value.id}/cmd/`, {
-    //   shell: shellPath,
-    //   cmd: cmd,
-    //   timeout: timeout,
-    //   run_as_user: runAsUser
-    // });
-    
-    // Mock response for initial implementation
-    const mockResponse = `Executed command: ${cmd} on ${selectedDevice.value.hostname}\nSuccess!`;
+    const response = await restClient.post<string>(`${API_URL}/api/runcommand`, {
+      id: selectedDevice.value.id,
+      command: cmd,
+      powershell: usePowerShell
+    });
 
+    const output = response || 'No output';
+    
     lastCommand.value = {
       cmd,
-      output: mockResponse
+      output
     };
 
     // Update execution history with success status and output
     if (executionHistoryRef.value && executionId) {
       executionHistoryRef.value.updateExecution(executionId, {
-        output: mockResponse,
+        output,
         status: 'success'
       });
     }
@@ -343,8 +305,9 @@ const updateCommandOutput = (output: string) => {
   }
 };
 
-const viewDevice = (device: Device) => {
+const viewDevice = async (device: any) => {
   selectedDevice.value = device;
+  deviceDetails.value = await fetchDeviceDetails(device.id);
   showDeviceDetailsDialog.value = true;
 };
 
@@ -355,12 +318,12 @@ const handleDeviceDetailsRunCommand = () => {
   }
 };
 
-const handleDeviceDetailsDelete = (device: Device) => {
+const handleDeviceDetailsDelete = (device: any) => {
   showDeviceDetailsDialog.value = false;
   deleteDevice(device);
 };
 
-const deleteDevice = (device: Device) => {
+const deleteDevice = (device: any) => {
   selectedDevice.value = device;
   deleteDeviceDialog.value = true;
 };
@@ -371,14 +334,12 @@ const confirmDelete = async () => {
   try {
     deleting.value = true;
     
-    // In a real implementation, this would be:
-    // await restClient.delete(`${API_URL}/devices/${selectedDevice.value.id}/`);
+    await restClient.post(`${API_URL}/api/removedevice`, {
+      id: selectedDevice.value.id
+    });
     
-    // Mock implementation for now
-    const deviceIndex = devices.value.findIndex(d => d.id === selectedDevice.value?.id);
-    if (deviceIndex !== -1) {
-      devices.value.splice(deviceIndex, 1);
-    }
+    // Refresh the device list
+    await fetchDevices();
     
     deleteDeviceDialog.value = false;
     toastService.showSuccess('Device deleted successfully');
@@ -388,16 +349,6 @@ const confirmDelete = async () => {
   } finally {
     deleting.value = false;
   }
-};
-
-const remoteConnect = (device: Device) => {
-  router.push(`/rac/remote-connection/${device.id}`);
-  toastService.showInfo(`Connecting to ${device.hostname}...`);
-};
-
-const fileTransfer = (device: Device) => {
-  router.push(`/rac/file-transfer/${device.id}`);
-  toastService.showInfo(`Opening file transfer for ${device.hostname}...`);
 };
 
 onMounted(async () => {
@@ -421,25 +372,6 @@ onMounted(async () => {
   padding: 1.5rem;
   min-height: 0;
   background: var(--surface-ground);
-}
-
-.filters-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.filters-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.search-container {
-  flex: 1;
-  min-width: 250px;
 }
 
 :deep(.p-tag) {
