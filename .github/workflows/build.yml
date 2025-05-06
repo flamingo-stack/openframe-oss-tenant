@@ -326,23 +326,17 @@ jobs:
             cd - > /dev/null
           done
       
-      - name: Debug image tags
+      - name: Run environment test script
         env:
-          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          GITHUB_TOKEN_CLASSIC: ${{ env.GH_TOKEN }}
         run: |
-          echo "$MATRIX" | jq -c '.[]' | while read item; do
-            path=$(echo "$item" | jq -r '.manifest_path')
-            cat "$path/kustomization.yaml"
-          done
-
-
-      # - name: Run environment test script
-      #   env:
-      #     GITHUB_TOKEN_CLASSIC: ${{ env.GH_TOKEN }}
-      #   run: |
-      #     ./scripts/run.sh
+          ./scripts/run.sh platform
       
+
+
       # - name: Handle failure
       #   if: failure()
       #   run: echo "The previous step failed"
 
+# if failed remove all commit_sha tags
+# if succeeded add latest tags to commit_sha tags
