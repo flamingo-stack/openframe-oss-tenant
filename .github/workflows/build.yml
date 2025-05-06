@@ -321,7 +321,9 @@ jobs:
             [ "$pushed" = "true" ] || continue
 
             echo "$name → $REGISTRY/$ORG/openframe-${name}:${COMMIT_SHA}"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORG}/openframe-${name}:${COMMIT_SHA}" -d "$path"
+            cd "$path"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORG}/openframe-${name}:${COMMIT_SHA}"
+            cd - > /dev/null
           done
       
       - name: Debug image tags
