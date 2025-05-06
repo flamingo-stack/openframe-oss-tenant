@@ -291,30 +291,37 @@ jobs:
           curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
           chmod +x get_helm.sh
           ./get_helm.sh
+          echo "Helm version: $(helm version --short)"
 
       - name: Install Kind
         run: |
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
+          echo "Kind version: $(kind version)"
 
       - name: Set inotify limit
         run: sudo sysctl fs.inotify.max_user_instances=1500
       
-      - name: Set image tags with Kustomize 
+      - name: Set image tags with Kustomize
         env:
           MATRIX: ${{ needs.matrix.outputs.matrix }}
+          CHANGES: ${{ toJSON(needs.changes.outputs) }}
           COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
           REGISTRY: ${{ env.REGISTRY }}
           ORG: ${{ env.ORGANIZATION }}
         run: |
-          echo "$MATRIX" | jq -c '.[]' | while read item; do
-            name=$(echo "$item" | jq -r '.name')
-            path=$(echo "$item" | jq -r '.manifest_path')
-            echo "Updating image in $path for $name..."
-            cd "$path"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORG}/openframe-${name}:${COMMIT_SHA}"
-            cd -
+          echo "Updating image tags for changed services..."
+
+          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+            name=$(jq -r '.name' <<< "$item")
+            path=$(jq -r '.manifest_path' <<< "$item")
+            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
+
+            [ "$pushed" = "true" ] || continue
+
+            echo "$name → $REGISTRY/$ORG/openframe-${name}:${COMMIT_SHA}"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORG}/openframe-${name}:${COMMIT_SHA}" -d "$path"
           done
       
       - name: Debug image tags
