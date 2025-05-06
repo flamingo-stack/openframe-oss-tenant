@@ -333,7 +333,8 @@ jobs:
         run: |
           ./scripts/run.sh platform
           ls -lah /tmp/openframe-deployment-logs
-          cat /tmp/openframe-deployment-logs/cluster.log
+          cat /tmp/openframe-deployment-logs/setup-cluster.log
+          cat /tmp/openframe-deployment-logs/bases.log
       
 
 
