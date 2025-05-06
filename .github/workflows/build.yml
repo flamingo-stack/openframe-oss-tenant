@@ -330,9 +330,7 @@ jobs:
           TERM: dumb
           GITHUB_TOKEN_CLASSIC: ${{ github.token }}
         run: |
-          ./scripts/run.sh platform
-      
-      
+          ./scripts/run.sh bootstrap
 
 
       # - name: Handle failure
