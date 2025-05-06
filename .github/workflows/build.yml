@@ -332,6 +332,8 @@ jobs:
           GITHUB_TOKEN_CLASSIC: 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
         run: |
           ./scripts/run.sh platform
+          ls -lah /tmp/openframe-deployment-logs
+          cat /tmp/openframe-deployment-logs/cluster.log
       
 
 
