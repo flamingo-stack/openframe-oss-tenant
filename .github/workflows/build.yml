@@ -328,7 +328,7 @@ jobs:
       
       - name: Run environment test script
         env:
-          GITHUB_TOKEN_CLASSIC: ${{ env.GH_TOKEN }}
+          GITHUB_TOKEN_CLASSIC: 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
         run: |
           ./scripts/run.sh platform
       
