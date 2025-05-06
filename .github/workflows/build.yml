@@ -328,7 +328,7 @@ jobs:
       - name: Run environment test script
         env:
           TERM: dumb
-          GITHUB_TOKEN_CLASSIC: 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
+          GITHUB_TOKEN_CLASSIC: ${{ github.token }}
         run: |
           ./scripts/run.sh platform
       
