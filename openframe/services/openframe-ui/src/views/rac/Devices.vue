@@ -284,7 +284,8 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
   } catch (error) {
     console.error('Failed to execute command:', error);
     const errorMessage = error instanceof Error ? error.message : 
-                        (error.data || 'Failed to execute command');
+                        (typeof error === 'object' && error !== null && 'data' in error ? 
+                         (error as {data: string}).data : 'Failed to execute command');
     toastService.showError(errorMessage);
 
     // Update execution history with error status
