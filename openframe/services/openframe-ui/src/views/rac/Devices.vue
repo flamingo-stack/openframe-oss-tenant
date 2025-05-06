@@ -115,7 +115,6 @@
     <DeviceDetailsDialog
       v-model:visible="showDeviceDetailsDialog"
       :device="selectedDevice"
-      :deviceDetails="deviceDetails"
       @runCommand="handleDeviceDetailsRunCommand"
       @delete="handleDeviceDetailsDelete"
     />
@@ -144,6 +143,7 @@ import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
+import { transformMeshCentralDevice } from '../../utils/meshcentralUtils';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
@@ -219,7 +219,9 @@ const fetchDevices = async () => {
 const fetchDeviceDetails = async (deviceId: string) => {
   try {
     const response = await restClient.get<any>(`${API_URL}/api/deviceinfo?id=${deviceId}`);
-    return response;
+    
+    // Transform the MeshCentral data to a standardized format matching RMM
+    return response ? transformMeshCentralDevice(response) : null;
   } catch (error) {
     console.error('Failed to fetch device details:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
@@ -308,7 +310,21 @@ const updateCommandOutput = (output: string) => {
 
 const viewDevice = async (device: any) => {
   selectedDevice.value = device;
-  deviceDetails.value = await fetchDeviceDetails(device.id);
+  
+  // Fetch detailed device information and transform it
+  const details = await fetchDeviceDetails(device.id);
+  
+  if (details) {
+    // Update selected device with the detailed information
+    // while preserving the original device ID and name for compatibility
+    selectedDevice.value = {
+      ...details,
+      id: device.id, // Preserve original ID for API calls
+      _id: device._id, // Keep original MeshCentral ID
+      name: device.name || details.hostname // Preserve display name
+    };
+  }
+  
   showDeviceDetailsDialog.value = true;
 };
 

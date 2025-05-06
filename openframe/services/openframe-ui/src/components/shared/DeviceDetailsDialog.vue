@@ -2,7 +2,7 @@
   <Dialog 
     :visible="visible"
     @update:visible="(val: boolean) => emit('update:visible', val)"
-    :header="displayDevice?.hostname"
+    :header="displayDevice?.hostname || displayDevice?.name"
     :modal="true"
     :draggable="false"
     :style="{ width: '60vw', maxWidth: '800px' }"
@@ -46,108 +46,308 @@
         </div>
       </div>
 
-      <!-- System Information -->
-      <div class="col-12 md:col-6">
-        <div class="surface-card p-3 border-round">
-          <h3 class="text-lg font-semibold mb-3">System Information</h3>
-          <div class="grid">
-            <div class="col-12">
-              <span class="text-sm text-500">Agent ID</span>
-              <p class="text-base m-0 word-break-all">{{ displayDevice.agent_id }}</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">Operating System</span>
-              <p class="text-base m-0">{{ displayDevice.operating_system || 'Unknown' }}</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">Platform</span>
-              <p class="text-base m-0">{{ formatPlatform(displayDevice.plat) }}</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">Last Seen</span>
-              <p class="text-base m-0">{{ formatTimestamp(displayDevice.last_seen) }}</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">CPU Model</span>
-              <p class="text-base m-0">{{ displayDevice.cpu_model?.[0] || 'Unknown' }}</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">Total RAM</span>
-              <p class="text-base m-0">{{ displayDevice.total_ram }} GB</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">Logged In User</span>
-              <p class="text-base m-0">{{ displayDevice.logged_in_username || 'Unknown' }}</p>
-            </div>
-            <div class="col-6">
-              <span class="text-sm text-500">Timezone</span>
-              <p class="text-base m-0">{{ displayDevice.timezone || 'Unknown' }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Network Information -->
-      <div class="col-12 md:col-6">
-        <div class="surface-card p-3 border-round">
-          <h3 class="text-lg font-semibold mb-3">Network Information</h3>
-          <div class="grid">
-            <div class="col-12">
-              <span class="text-sm text-500">IP Addresses</span>
-              <div class="flex flex-column gap-1">
-                <span v-for="(ip, index) in getIPv4Addresses(displayDevice.local_ips)" :key="index" class="text-base">
-                  {{ ip }}
-                </span>
-                <span v-if="!getIPv4Addresses(displayDevice.local_ips).length" class="text-base">N/A</span>
-              </div>
-            </div>
-            <div class="col-12">
-              <span class="text-sm text-500">Public IP</span>
-              <p class="text-base m-0">{{ displayDevice.public_ip || 'N/A' }}</p>
-            </div>
-            <div class="col-12">
-              <span class="text-sm text-500">Make/Model</span>
-              <p class="text-base m-0">{{ displayDevice.make_model || 'N/A' }}</p>
-            </div>
-            <div class="col-12">
-              <span class="text-sm text-500">Serial Number</span>
-              <p class="text-base m-0">{{ displayDevice.wmi_detail?.serialnumber || 'N/A' }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Storage Information -->
-      <div class="col-12">
-        <div class="surface-card p-3 border-round">
-          <h3 class="text-lg font-semibold mb-3">Storage Information</h3>
-          <div class="grid">
-            <div v-for="(disk, index) in displayDevice.physical_disks" :key="index" class="col-12">
-              <div class="p-2 border-round surface-ground mb-2">
-                <div class="flex align-items-center justify-content-between">
-                  <div class="flex align-items-center">
-                    <i class="pi pi-database mr-2"></i>
-                    <span class="text-base">{{ disk.split(' ').slice(0, -1).join(' ') }}</span>
-                  </div>
-                  <span class="text-base font-semibold">{{ disk.split(' ').pop() }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-if="displayDevice.disks?.length" class="col-12">
-              <h4 class="text-base font-semibold mt-3 mb-2">Volumes</h4>
+      <!-- Tabs - Only show tabs if MeshCentral data is available -->
+      <div v-if="isMeshCentralData" class="col-12">
+        <div class="card p-0 mb-3">
+          <TabView v-model:activeIndex="activeTabIndex" class="device-tabs">
+            <TabPanel header="Overview" leftIcon="pi pi-home">
               <div class="grid">
-                <div v-for="(volume, idx) in getUniqueDisks(displayDevice.disks)" :key="idx" class="col-12 md:col-4">
-                  <div class="p-2 border-round surface-ground">
-                    <div class="flex justify-content-between align-items-center mb-2">
-                      <span class="text-sm font-semibold">{{ volume.device }}</span>
-                      <span class="text-sm">{{ volume.fstype }}</span>
+                <!-- System Information -->
+                <div class="col-12 md:col-6">
+                  <div class="surface-card p-3 border-round">
+                    <h3 class="text-lg font-semibold mb-3">System Information</h3>
+                    <div class="grid">
+                      <div class="col-12">
+                        <span class="text-sm text-500">Agent ID</span>
+                        <p class="text-base m-0 word-break-all">{{ displayDevice.agent_id }}</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">Operating System</span>
+                        <p class="text-base m-0">{{ displayDevice.operating_system || 'Unknown' }}</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">Platform</span>
+                        <p class="text-base m-0">{{ formatPlatform(displayDevice.plat) }}</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">Last Seen</span>
+                        <p class="text-base m-0">{{ formatTimestamp(displayDevice.last_seen) }}</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">CPU Model</span>
+                        <p class="text-base m-0">{{ displayDevice.cpu_model?.[0] || 'Unknown' }}</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">Total RAM</span>
+                        <p class="text-base m-0">{{ displayDevice.total_ram }} GB</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">Logged In User</span>
+                        <p class="text-base m-0">{{ displayDevice.logged_in_username || 'Unknown' }}</p>
+                      </div>
+                      <div class="col-6">
+                        <span class="text-sm text-500">Timezone</span>
+                        <p class="text-base m-0">{{ displayDevice.timezone || 'Unknown' }}</p>
+                      </div>
                     </div>
-                    <div class="flex justify-content-between align-items-center">
-                      <span class="text-sm">Used: {{ volume.used }}</span>
-                      <span class="text-sm">Free: {{ volume.free }}</span>
+                  </div>
+                </div>
+
+                <!-- Network Information -->
+                <div class="col-12 md:col-6">
+                  <div class="surface-card p-3 border-round">
+                    <h3 class="text-lg font-semibold mb-3">Network Information</h3>
+                    <div class="grid">
+                      <div class="col-12">
+                        <span class="text-sm text-500">IP Addresses</span>
+                        <div class="flex flex-column gap-1">
+                          <span v-for="(ip, index) in getIPv4Addresses(displayDevice.local_ips)" :key="index" class="text-base">
+                            {{ ip }}
+                          </span>
+                          <span v-if="!getIPv4Addresses(displayDevice.local_ips).length" class="text-base">N/A</span>
+                        </div>
+                      </div>
+                      <div class="col-12">
+                        <span class="text-sm text-500">Public IP</span>
+                        <p class="text-base m-0">{{ displayDevice.public_ip || 'N/A' }}</p>
+                      </div>
+                      <div class="col-12">
+                        <span class="text-sm text-500">Make/Model</span>
+                        <p class="text-base m-0">{{ displayDevice.make_model || 'N/A' }}</p>
+                      </div>
+                      <div class="col-12">
+                        <span class="text-sm text-500">Serial Number</span>
+                        <p class="text-base m-0">{{ displayDevice.wmi_detail?.serialnumber || 'N/A' }}</p>
+                      </div>
                     </div>
-                    <div class="mt-2">
-                      <ProgressBar :value="volume.percent" :showValue="false" />
+                  </div>
+                </div>
+
+                <!-- Storage Information -->
+                <div class="col-12">
+                  <div class="surface-card p-3 border-round">
+                    <h3 class="text-lg font-semibold mb-3">Storage Information</h3>
+                    <div class="grid">
+                      <div v-for="(disk, index) in displayDevice.physical_disks" :key="index" class="col-12">
+                        <div class="p-2 border-round surface-ground mb-2">
+                          <div class="flex align-items-center justify-content-between">
+                            <div class="flex align-items-center">
+                              <i class="pi pi-database mr-2"></i>
+                              <span class="text-base">{{ disk.split(' ').slice(0, -1).join(' ') }}</span>
+                            </div>
+                            <span class="text-base font-semibold">{{ disk.split(' ').pop() }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-if="displayDevice.disks?.length" class="col-12">
+                        <h4 class="text-base font-semibold mt-3 mb-2">Volumes</h4>
+                        <div class="grid">
+                          <div v-for="(volume, idx) in getUniqueDisks(displayDevice.disks)" :key="idx" class="col-12 md:col-4">
+                            <div class="p-2 border-round surface-ground">
+                              <div class="flex justify-content-between align-items-center mb-2">
+                                <span class="text-sm font-semibold">{{ volume.device }}</span>
+                                <span class="text-sm">{{ volume.fstype }}</span>
+                              </div>
+                              <div class="flex justify-content-between align-items-center">
+                                <span class="text-sm">Used: {{ volume.used }}</span>
+                                <span class="text-sm">Free: {{ volume.free }}</span>
+                              </div>
+                              <div class="mt-2">
+                                <ProgressBar :value="volume.percent" :showValue="false" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabPanel>
+            
+            <TabPanel header="Hardware" leftIcon="pi pi-server">
+              <div class="surface-card p-3 border-round">
+                <h3 class="text-lg font-semibold mb-3">Hardware Information</h3>
+                
+                <!-- Motherboard Section -->
+                <div v-if="displayDevice.meshcentral_data?.motherboard" class="mb-4">
+                  <h4 class="text-base font-medium mb-2">Motherboard</h4>
+                  <div class="grid">
+                    <div v-for="(value, key) in displayDevice.meshcentral_data.motherboard" :key="key" class="col-12 md:col-6 mb-2">
+                      <span class="text-sm text-500">{{ formatKey(key) }}</span>
+                      <p class="text-base m-0">{{ value || 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- BIOS Section -->
+                <div v-if="displayDevice.meshcentral_data?.bios" class="mb-4">
+                  <h4 class="text-base font-medium mb-2">BIOS</h4>
+                  <div class="grid">
+                    <div v-for="(value, key) in displayDevice.meshcentral_data.bios" :key="key" class="col-12 md:col-6 mb-2">
+                      <span class="text-sm text-500">{{ formatKey(key) }}</span>
+                      <p class="text-base m-0">{{ value || 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Memory Section -->
+                <div v-if="displayDevice.meshcentral_data?.memory" class="mb-4">
+                  <h4 class="text-base font-medium mb-2">Memory</h4>
+                  <div v-for="(slot, slotName) in displayDevice.meshcentral_data.memory" :key="slotName" class="p-2 border-round surface-ground mb-2">
+                    <h5 class="text-sm font-medium m-0 mb-2">{{ formatKey(slotName) }}</h5>
+                    <div class="grid">
+                      <div v-for="(value, key) in slot" :key="key" class="col-12 md:col-6">
+                        <span class="text-sm text-500">{{ formatKey(key) }}</span>
+                        <p class="text-base m-0">{{ value || 'N/A' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabPanel>
+            
+            <TabPanel header="Network" leftIcon="pi pi-wifi">
+              <div class="surface-card p-3 border-round">
+                <h3 class="text-lg font-semibold mb-3">Network Interfaces</h3>
+                
+                <div v-if="displayDevice.meshcentral_data?.networking" class="mb-4">
+                  <div v-for="(iface, ifaceName) in displayDevice.meshcentral_data.networking" :key="ifaceName" class="p-2 border-round surface-ground mb-3">
+                    <h4 class="text-base font-medium mb-2">{{ ifaceName }}</h4>
+                    <div class="grid">
+                      <div v-for="(value, key) in iface" :key="key" class="col-12">
+                        <span class="text-sm text-500">{{ formatKey(key) }}</span>
+                        <p class="text-base m-0">{{ value || 'N/A' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabPanel>
+            
+            <TabPanel header="Agent" leftIcon="pi pi-cog">
+              <div class="surface-card p-3 border-round">
+                <h3 class="text-lg font-semibold mb-3">Mesh Agent Information</h3>
+                
+                <div v-if="displayDevice.meshcentral_data?.mesh_agent" class="mb-4">
+                  <div class="grid">
+                    <div v-for="(value, key) in displayDevice.meshcentral_data.mesh_agent" :key="key" class="col-12 md:col-6 mb-2">
+                      <span class="text-sm text-500">{{ formatKey(key) }}</span>
+                      <p class="text-base m-0">{{ value || 'N/A' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabPanel>
+          </TabView>
+        </div>
+      </div>
+
+      <!-- Main content for non-MeshCentral devices -->
+      <template v-if="!isMeshCentralData">
+        <!-- System Information -->
+        <div class="col-12 md:col-6">
+          <div class="surface-card p-3 border-round">
+            <h3 class="text-lg font-semibold mb-3">System Information</h3>
+            <div class="grid">
+              <div class="col-12">
+                <span class="text-sm text-500">Agent ID</span>
+                <p class="text-base m-0 word-break-all">{{ displayDevice.agent_id }}</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">Operating System</span>
+                <p class="text-base m-0">{{ displayDevice.operating_system || 'Unknown' }}</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">Platform</span>
+                <p class="text-base m-0">{{ formatPlatform(displayDevice.plat) }}</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">Last Seen</span>
+                <p class="text-base m-0">{{ formatTimestamp(displayDevice.last_seen) }}</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">CPU Model</span>
+                <p class="text-base m-0">{{ displayDevice.cpu_model?.[0] || 'Unknown' }}</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">Total RAM</span>
+                <p class="text-base m-0">{{ displayDevice.total_ram }} GB</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">Logged In User</span>
+                <p class="text-base m-0">{{ displayDevice.logged_in_username || 'Unknown' }}</p>
+              </div>
+              <div class="col-6">
+                <span class="text-sm text-500">Timezone</span>
+                <p class="text-base m-0">{{ displayDevice.timezone || 'Unknown' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Network Information -->
+        <div class="col-12 md:col-6">
+          <div class="surface-card p-3 border-round">
+            <h3 class="text-lg font-semibold mb-3">Network Information</h3>
+            <div class="grid">
+              <div class="col-12">
+                <span class="text-sm text-500">IP Addresses</span>
+                <div class="flex flex-column gap-1">
+                  <span v-for="(ip, index) in getIPv4Addresses(displayDevice.local_ips)" :key="index" class="text-base">
+                    {{ ip }}
+                  </span>
+                  <span v-if="!getIPv4Addresses(displayDevice.local_ips).length" class="text-base">N/A</span>
+                </div>
+              </div>
+              <div class="col-12">
+                <span class="text-sm text-500">Public IP</span>
+                <p class="text-base m-0">{{ displayDevice.public_ip || 'N/A' }}</p>
+              </div>
+              <div class="col-12">
+                <span class="text-sm text-500">Make/Model</span>
+                <p class="text-base m-0">{{ displayDevice.make_model || 'N/A' }}</p>
+              </div>
+              <div class="col-12">
+                <span class="text-sm text-500">Serial Number</span>
+                <p class="text-base m-0">{{ displayDevice.wmi_detail?.serialnumber || 'N/A' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Storage Information -->
+        <div class="col-12">
+          <div class="surface-card p-3 border-round">
+            <h3 class="text-lg font-semibold mb-3">Storage Information</h3>
+            <div class="grid">
+              <div v-for="(disk, index) in displayDevice.physical_disks" :key="index" class="col-12">
+                <div class="p-2 border-round surface-ground mb-2">
+                  <div class="flex align-items-center justify-content-between">
+                    <div class="flex align-items-center">
+                      <i class="pi pi-database mr-2"></i>
+                      <span class="text-base">{{ disk.split(' ').slice(0, -1).join(' ') }}</span>
+                    </div>
+                    <span class="text-base font-semibold">{{ disk.split(' ').pop() }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-if="displayDevice.disks?.length" class="col-12">
+                <h4 class="text-base font-semibold mt-3 mb-2">Volumes</h4>
+                <div class="grid">
+                  <div v-for="(volume, idx) in getUniqueDisks(displayDevice.disks)" :key="idx" class="col-12 md:col-4">
+                    <div class="p-2 border-round surface-ground">
+                      <div class="flex justify-content-between align-items-center mb-2">
+                        <span class="text-sm font-semibold">{{ volume.device }}</span>
+                        <span class="text-sm">{{ volume.fstype }}</span>
+                      </div>
+                      <div class="flex justify-content-between align-items-center">
+                        <span class="text-sm">Used: {{ volume.used }}</span>
+                        <span class="text-sm">Free: {{ volume.free }}</span>
+                      </div>
+                      <div class="mt-2">
+                        <ProgressBar :value="volume.percent" :showValue="false" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -155,7 +355,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </template>
     </div>
 
     <template #footer>
@@ -284,6 +484,7 @@ import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
+import TabMenu from 'primevue/tabmenu';
 import { restClient } from '../../apollo/apolloClient';
 import { ToastService } from '../../services/ToastService';
 import { ConfigService } from '../../config/config.service';
@@ -337,6 +538,7 @@ interface Device {
   site?: number;
   custom_fields?: any[];
   winupdatepolicy?: any[];
+  meshcentral_data?: any;
 }
 
 interface WinUpdatePolicy {
@@ -574,7 +776,8 @@ const showOutputDialog = (historyItem: HistoryEntry) => {
 
 // Fetch history data for the device
 const fetchDeviceHistory = async () => {
-  if (!displayDevice?.agent_id) return;
+  const deviceId = displayDevice.value && 'agent_id' in displayDevice.value ? displayDevice.value.agent_id : null;
+  if (!deviceId) return;
   
   try {
     historyLoading.value = true;
@@ -631,7 +834,7 @@ const fetchDeviceHistory = async () => {
     
     const runtimeConfig = configService.getConfig();
     const API_URL = `${runtimeConfig.gatewayUrl}/tools/tactical-rmm`;
-    const response = await restClient.get<HistoryEntry[]>(`${API_URL}/agents/${displayDevice.agent_id}/history/`);
+    const response = await restClient.get<HistoryEntry[]>(`${API_URL}/agents/${deviceId}/history/`);
     const newHistory = Array.isArray(response) ? response : [];
     
     // Only update the UI if data has changed
@@ -677,6 +880,32 @@ onUnmounted(() => {
     historyRefreshInterval.value = null;
   }
 });
+
+// Determine if the device data is from MeshCentral
+const isMeshCentralData = computed(() => {
+  return displayDevice.value && 'meshcentral_data' in displayDevice.value;
+});
+
+// Tab Menu items
+const activeTabIndex = ref(0);
+const tabItems = computed(() => [
+  { label: 'Overview', icon: 'pi pi-home' },
+  { label: 'Hardware', icon: 'pi pi-server' },
+  { label: 'Network', icon: 'pi pi-wifi' },
+  { label: 'Agent', icon: 'pi pi-cog' }
+]);
+
+// Format keys for display
+const formatKey = (key: string) => {
+  // Replace underscores with spaces and capitalize each word
+  return key
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+    // Handle other formats like 'IPv4 Layer'
+    .replace(/([A-Z])/g, ' $1')
+    .trim();
+};
 </script>
 
 <style scoped>

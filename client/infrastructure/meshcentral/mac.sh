@@ -189,8 +189,23 @@ retry 3 sudo chmod +x "$TEMP_DIR/meshagent"
 
 # Platform-specific quarantine handling
 if [ "$OS_NAME" = "macos" ]; then
-  debug_print "Quarantining downloaded MeshAgent binary (macOS specific)"
-  retry 3 sudo xattr -w com.apple.quarantine "0081;$(date +%s);curl;$(uuidgen)" "$TEMP_DIR/meshagent"
+  debug_print "Removing quarantine attribute from downloaded MeshAgent binary (macOS specific)"
+  # Suppress errors if attribute doesn't exist by using || true
+  sudo xattr -d com.apple.quarantine "$TEMP_DIR/meshagent" 2>/dev/null || true
+  # Alternative approach - set empty attribute
+  sudo xattr -w com.apple.quarantine "" "$TEMP_DIR/meshagent" 2>/dev/null || true
+  
+  # Move to a more permissive location for execution
+  INSTALL_DIR="/usr/local/bin"
+  debug_print "Moving agent to approved location: $INSTALL_DIR"
+  sudo mkdir -p "$INSTALL_DIR"
+  sudo cp "$TEMP_DIR/meshagent" "$INSTALL_DIR/meshagent"
+  sudo chmod +x "$INSTALL_DIR/meshagent"
+  
+  # Extra security approval for macOS
+  debug_print "Approving binary for execution"
+  sudo spctl --add --label "MeshAgent" "$INSTALL_DIR/meshagent" 2>/dev/null || true
+  sudo spctl --enable --label "MeshAgent" 2>/dev/null || true
 fi
 
 CONFIG_URL="https://$MESH_SERVER/openframe_public/meshagent.msh"
@@ -206,11 +221,89 @@ fi
 
 # Platform-specific quarantine handling for config file
 if [ "$OS_NAME" = "macos" ]; then
-  debug_print "Quarantining downloaded configuration file (macOS specific)"
-  retry 3 sudo xattr -w com.apple.quarantine "0081;$(date +%s);curl;$(uuidgen)" "$TEMP_DIR/meshagent.msh"
+  debug_print "Removing quarantine attribute from configuration file (macOS specific)"
+  # Suppress errors if attribute doesn't exist by using || true
+  sudo xattr -d com.apple.quarantine "$TEMP_DIR/meshagent.msh" 2>/dev/null || true
+  # Alternative approach - set empty attribute
+  sudo xattr -w com.apple.quarantine "" "$TEMP_DIR/meshagent.msh" 2>/dev/null || true
+  
+  # Copy config to same location as agent
+  sudo cp "$TEMP_DIR/meshagent.msh" "$INSTALL_DIR/meshagent.msh"
 fi
 
 echo -e "${GREEN}${CHECK} MeshAgent and configuration successfully Downloaded.${RESET}"
+
+# Request screen sharing permissions on macOS
+request_screen_permissions() {
+  if [ "$OS_NAME" = "macos" ]; then
+    debug_print "Checking screen sharing permissions"
+    
+    # Check if screen recording permission is already granted
+    # Try to capture a screenshot as a test
+    TEST_SCREENSHOT="/tmp/meshcentral_test_screenshot.png"
+    if screencapture -x "$TEST_SCREENSHOT" 2>/dev/null; then
+      debug_print "Screen recording permission already granted"
+      SCREEN_RECORDING_GRANTED=true
+      rm -f "$TEST_SCREENSHOT"
+    else
+      debug_print "Screen recording permission not granted"
+      SCREEN_RECORDING_GRANTED=false
+    fi
+    
+    # Check if full disk access is already granted
+    # Try to access a protected directory
+    if ls /Library/Application\ Support/com.apple.TCC 2>/dev/null; then
+      debug_print "Full disk access permission already granted"
+      FULL_DISK_ACCESS_GRANTED=true
+    else
+      debug_print "Full disk access permission not granted"
+      FULL_DISK_ACCESS_GRANTED=false
+    fi
+    
+    # Request screen recording permission if not granted
+    if [ "$SCREEN_RECORDING_GRANTED" = false ]; then
+      debug_print "Requesting screen recording permission"
+      osascript <<EOD
+        tell application "System Settings"
+          activate
+          delay 0.5
+          # Navigate to Privacy & Security > Screen Recording
+          do shell script "open 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'"
+          delay 1
+          # User instructions via dialog
+          display dialog "Please click the '+' button and add the MeshCentral agent to allow screen sharing." buttons {"OK"} default button "OK" with icon caution with title "Screen Sharing Permission Required"
+        end tell
+EOD
+    fi
+    
+    # Request full disk access if not granted
+    if [ "$FULL_DISK_ACCESS_GRANTED" = false ]; then
+      debug_print "Requesting full disk access permission"
+      osascript <<EOD
+        tell application "System Settings"
+          activate
+          delay 0.5
+          # Navigate to Privacy & Security > Full Disk Access
+          do shell script "open 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'"
+          delay 1
+          # User instructions via dialog
+          display dialog "Please also grant Full Disk Access to the MeshCentral agent for complete functionality." buttons {"OK"} default button "OK" with icon caution with title "Full Disk Access Required"
+        end tell
+EOD
+    fi
+    
+    # If any permissions were requested, give user time to approve
+    if [ "$SCREEN_RECORDING_GRANTED" = false ] || [ "$FULL_DISK_ACCESS_GRANTED" = false ]; then
+      echo -e "${YELLOW}${INFO} Waiting for permissions approval...${RESET}"
+      sleep 5
+    else
+      debug_print "All required permissions already granted"
+    fi
+  fi
+}
+
+# Request necessary permissions
+request_screen_permissions
 
 # Create log directory if it doesn't exist
 LOG_DIR="$(dirname "$TEMP_DIR")/meshagent_logs"
@@ -224,8 +317,12 @@ debug_print "Agent output will be logged to: $LOG_FILE"
 # Verify agent status
 debug_print "Running MeshCentral agent"
 
-# Run agent in background with output redirected to log file
-retry 5 sudo "$TEMP_DIR/meshagent" connect
+# Run agent with full path to the more permissive location
+if [ "$OS_NAME" = "macos" ]; then
+  retry 5 sudo "$INSTALL_DIR/meshagent" connect
+else
+  retry 5 sudo "$TEMP_DIR/meshagent" connect
+fi
 
 # Final debug print
 debug_print "Execution process completed successfully"
