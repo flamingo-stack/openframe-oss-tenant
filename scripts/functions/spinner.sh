@@ -25,6 +25,11 @@ function _spin() {
     local frames_size=${#FRAMES[@]}
     local i=0
 
+    # Skip spinner if TERM is explicitly 'dumb'
+    if [ "${TERM:-}" = "dumb" ]; then
+        return
+    fi
+
     # Hide cursor
     tput civis
 
@@ -62,6 +67,11 @@ function stop_spinner() {
     # Kill the spinner process
     if [ -n "$_spinner_pid" ] && ps -p $_spinner_pid >/dev/null 2>&1; then
         kill $_spinner_pid 2>/dev/null
+    fi
+    
+    # Skip spinner output only if TERM=dumb
+    if [ "${TERM:-}" = "dumb" ]; then
+        return
     fi
 
     # Show cursor again
