@@ -15,15 +15,17 @@ on:
       - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
+      - 'deploy/dev/**'
   workflow_dispatch:
   pull_request:
     types: [closed]
-    branches: [main]
+    branches: [main, feature-ci-tests-integration]
     paths:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
+      - 'deploy/dev/**'
 
 env:
   ORGANIZATION: flamingo-cx
@@ -178,6 +180,7 @@ jobs:
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
 
+
   build:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
@@ -264,12 +267,73 @@ jobs:
           build-args: |
             ${{ env.BUILD_ARGS }}
 
-      - name: Delete old versions
-        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        continue-on-error: true
-        with:
-          package: openframe-${{ matrix.name }}
-          delete-ghost-images: true
-          delete-tags: "*"
-          exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+      # - name: Delete old versions
+      #   if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+      #   uses: dataaxiom/ghcr-cleanup-action@v1
+      #   continue-on-error: true
+      #   with:
+      #     package: openframe-${{ matrix.name }}
+      #     delete-ghost-images: true
+      #     delete-tags: "*"
+      #     exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+  
+    
+  test:
+    name: Run Environment Tests
+    needs: [changes, matrix, build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod +x get_helm.sh
+          ./get_helm.sh
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Set inotify limit
+        run: sudo sysctl fs.inotify.max_user_instances=1500
+      
+      - name: Set image tags with Kustomize 
+        env:
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+          REGISTRY: ${{ env.REGISTRY }}
+          ORG: ${{ env.ORGANIZATION }}
+        run: |
+          echo "$MATRIX" | jq -c '.[]' | while read item; do
+            name=$(echo "$item" | jq -r '.name')
+            path=$(echo "$item" | jq -r '.manifest_path')
+            echo "Updating image in $path for $name..."
+            cd "$path"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORG}/openframe-${name}:${COMMIT_SHA}"
+            cd -
+          done
+      
+      - name: Debug image tags
+        env:
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+        run: |
+          echo "$MATRIX" | jq -c '.[]' | while read item; do
+            path=$(echo "$item" | jq -r '.manifest_path')
+            cat "$path/kustomization.yaml"
+          done
+
+
+      # - name: Run environment test script
+      #   env:
+      #     GITHUB_TOKEN_CLASSIC: ${{ env.GH_TOKEN }}
+      #   run: |
+      #     ./scripts/run.sh
+      
+      # - name: Handle failure
+      #   if: failure()
+      #   run: echo "The previous step failed"
+
