@@ -26,7 +26,7 @@ env:
 jobs:
 
   changes:
-    name: Check for changes
+    name: Changes check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
@@ -118,6 +118,7 @@ jobs:
 
 
   matrix:
+    name: Matrix
     uses: ./.github/workflows/matrix.yml
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
@@ -277,7 +278,7 @@ jobs:
   
     
   test:
-    name: Run Environment Tests
+    name: Tests run
     needs: [changes, matrix, build]
     runs-on: Linux-x64
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
@@ -319,12 +320,12 @@ jobs:
             cd - > /dev/null
           done
 
-      # - name: Run environment test script
-      #   env:
-      #     TERM: dumb
-      #     GITHUB_TOKEN_CLASSIC: ${{ github.token }}
-      #   run: |
-      #     ./scripts/run.sh bootstrap
+      - name: Run environment test script
+        env:
+          TERM: dumb
+          GITHUB_TOKEN_CLASSIC: ${{ github.token }}
+        run: |
+          ./scripts/run.sh bootstrap
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
