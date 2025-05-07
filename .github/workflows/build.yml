@@ -23,8 +23,8 @@ env:
   ORGANIZATION: flamingo-cx
   REGISTRY: ghcr.io
 
-
 jobs:
+
   changes:
     name: Check for changes
     runs-on: ubuntu-latest
