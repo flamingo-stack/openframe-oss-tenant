@@ -281,7 +281,7 @@ jobs:
   test:
     name: Run Environment Tests
     needs: [changes, matrix, build]
-    runs-on: ubuntu-latest
+    runs-on: Linux-x64
     # if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
@@ -333,9 +333,10 @@ jobs:
           ./scripts/run.sh bootstrap
 
 
-      # - name: Handle failure
-      #   if: failure()
-      #   run: echo "The previous step failed"
+      - name: Handle test failure
+        if: failure()
+        run: |
+          echo "The previous step failed"
 
 # if failed remove all commit_sha tags
 # if succeeded add latest tags to commit_sha tags
