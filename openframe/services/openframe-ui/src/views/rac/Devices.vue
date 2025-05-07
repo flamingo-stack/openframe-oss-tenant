@@ -152,7 +152,7 @@ const router = useRouter();
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
-const devices = ref<any[]>([]);
+const devices = ref<any[]>([]); 
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
 const showDeviceDetailsDialog = ref(false);
