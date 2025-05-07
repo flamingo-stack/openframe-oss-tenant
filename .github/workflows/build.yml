@@ -1,4 +1,4 @@
-name: OpenFrame Build Java & Container Images
+name: OpenFrame Build & Test
 
 permissions:
   contents: write
@@ -9,14 +9,6 @@ permissions:
   id-token: write
 
 on:
-  push:
-    branches: [feature-ci-tests-integration]
-    paths:
-      - 'openframe/**'
-      - 'integrated-tools/**'
-      - 'pom.xml'
-      - '.github/workflows/build.yml'
-      - 'deploy/dev/**'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [feature-ci-tests-integration]
@@ -36,7 +28,7 @@ jobs:
   changes:
     name: Check for changes
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.actor != 'web-flow') || !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
       core: ${{ steps.filter.outputs.core }}
       data: ${{ steps.filter.outputs.data }}
@@ -127,14 +119,15 @@ jobs:
 
   matrix:
     uses: ./.github/workflows/matrix.yml
-    if: (github.event_name == 'push' && github.actor != 'web-flow') || !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+
 
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.actor != 'web-flow') || !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -190,7 +183,7 @@ jobs:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.actor != 'web-flow') || !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -287,7 +280,7 @@ jobs:
     name: Run Environment Tests
     needs: [changes, matrix, build]
     runs-on: Linux-x64
-    if: (github.event_name == 'push' && github.actor != 'web-flow') || !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
 
