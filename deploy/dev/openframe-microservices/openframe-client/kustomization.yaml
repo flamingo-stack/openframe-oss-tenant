@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - secret.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - servicemonitor.yaml
+
+images:
+  - name: openframe-client
+    newName: ghcr.io/flamingo-cx/openframe-client
+    newTag: latest

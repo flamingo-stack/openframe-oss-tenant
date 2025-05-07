@@ -1,0 +1,14 @@
+spring:
+  kafka:
+    bootstrap-servers: openframe-kafka.openframe-datasources.svc.cluster.local:9092
+
+oauth:
+  client:
+    default:
+      id: openframe_client
+      secret: prod_secret
+
+openframe:
+  management:
+    url: http://openframe-management.openframe-microservices.svc.cluster.local:8095
+    key: ${OPENFRAME_MANAGEMENT_KEY:docker-management-key-123}

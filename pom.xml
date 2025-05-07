@@ -54,6 +54,7 @@
         <!-- Services -->
         <module>openframe/services/openframe-config</module>
         <module>openframe/services/openframe-api</module>
+        <module>openframe/services/openframe-client</module>
         <module>openframe/services/openframe-stream</module>
         <module>openframe/services/openframe-management</module>
         <module>openframe/services/openframe-gateway</module>
