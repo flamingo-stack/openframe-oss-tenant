@@ -92,14 +92,8 @@ public class RestProxyService {
                 headers.put(keyName, key);
                 break;
             case BEARER_TOKEN:
-                // TODO: make this configurable
-                if (toolId.equals("tactical-rmm")) {
-                    String token = credentials.getApiKey().getKey();
-                    headers.put("Authorization", "Token " + token);
-                } else {
-                    String token = credentials.getApiKey().getKey();
-                    headers.put("Authorization", "Bearer " + token);
-                }
+                String token = credentials.getApiKey().getKey();
+                headers.put("Authorization", "Bearer " + token);
                 break;
             case NONE:
                 break;
