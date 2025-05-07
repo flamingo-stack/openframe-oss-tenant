@@ -233,7 +233,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}
           tags: |
-            type=raw,value=latest
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
@@ -330,7 +329,7 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${REGISTRY}
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
