@@ -3,7 +3,7 @@
     <ModuleHeader title="Devices">
       <template #subtitle>View and manage connected devices</template>
       <template #actions>
-        <OFButton icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
+        <OFButton icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true"
           v-tooltip.left="'Script Execution History'" />
       </template>
     </ModuleHeader>
@@ -17,30 +17,16 @@
         </div>
       </div>
 
-      <UnifiedDeviceTable 
-        :devices="devices" 
-        moduleType="rmm"
-        :loading="loading"
-        emptyIcon="pi pi-desktop"
-        emptyTitle="No Devices Found" 
-        emptyMessage="Add your first device to start monitoring."
-        emptyHint="Devices will appear here once they are added to your RMM server."
-        @runCommand="runCommand"
-        @viewDetails="viewDevice"
-        @deleteDevice="deleteDevice"
-      />
+      <UnifiedDeviceTable :devices="devices" moduleType="rmm" :loading="loading" emptyIcon="pi pi-desktop"
+        emptyTitle="No Devices Found" emptyMessage="Add your first device to start monitoring."
+        emptyHint="Devices will appear here once they are added to your RMM server." @runCommand="runCommand"
+        @viewDetails="viewDevice" @deleteDevice="deleteDevice" />
     </div>
 
     <!-- Run Command Dialog -->
-    <CommandDialog
-      v-model:visible="showRunCommandDialog"
-      :loading="executing"
-      :lastCommand="lastCommand"
-      :devicePlatform="selectedDevice?.platform || selectedDevice?.moduleSpecific?.plat"
-      @run="executeCommand"
-      @update:output="updateCommandOutput"
-      @cancel="showRunCommandDialog = false"
-    />
+    <CommandDialog v-model:visible="showRunCommandDialog" :loading="executing" :lastCommand="lastCommand"
+      :devicePlatform="selectedDevice?.platform || selectedDevice?.moduleSpecific?.plat" @run="executeCommand"
+      @update:output="updateCommandOutput" @cancel="showRunCommandDialog = false" />
 
     <!-- Delete Device Confirmation -->
     <Dialog v-model:visible="deleteDeviceDialog" header="Confirm" :modal="true" :draggable="false"
@@ -63,18 +49,7 @@
     </Dialog>
 
     <!-- Script Execution History -->
-    <ScriptExecutionHistory
-      v-model:visible="showExecutionHistory"
-      ref="executionHistoryRef"
-    />
-
-    <!-- Device Details Dialog -->
-    <DeviceDetailsDialog
-      v-model:visible="showDeviceDetailsDialog"
-      :device="selectedDevice"
-      @runCommand="handleDeviceDetailsRunCommand"
-      @delete="handleDeviceDetailsDelete"
-    />
+    <ScriptExecutionHistory v-model:visible="showExecutionHistory" ref="executionHistoryRef" />
   </div>
 </template>
 
@@ -98,10 +73,9 @@ import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
-import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
 import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
-import { UnifiedDevice, getOriginalDevice } from '../../types/device';
+import { UnifiedDevice, getOriginalDevice, EnhancedUnifiedDevice } from '../../types/device';
 import { RMMDevice } from '../../utils/deviceAdapters';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 
@@ -115,7 +89,6 @@ const loading = ref(true);
 const devices = ref<RMMDevice[]>([]);
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
-const showDeviceDetailsDialog = ref(false);
 const executing = ref(false);
 const deleting = ref(false);
 
@@ -171,12 +144,16 @@ const getIPv4Addresses = (ips: string) => {
 const fetchDevices = async () => {
   try {
     loading.value = true;
-    
+
     const response = await restClient.get<RMMDevice[]>(`${API_URL}/agents/`);
+
+    // Store original RMM devices for reference
     devices.value = Array.isArray(response) ? response : [];
+
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
+    devices.value = [];
   } finally {
     loading.value = false;
   }
@@ -194,13 +171,25 @@ const runCommand = (device: UnifiedDevice) => {
 
 const executeCommand = async (cmd: string, shell: string, timeout: number, runAsUser: boolean) => {
   if (!selectedDevice.value) return;
-  
-  // Get the original RMM device to extract agent_id
-  const originalDevice = getOriginalDevice<RMMDevice>(selectedDevice.value);
-  const agentId = originalDevice.agent_id;
+
+  // Get agent ID - try originalId first, then fall back to original device
+  let agentId: string;
+
+  if ('originalId' in selectedDevice.value && selectedDevice.value.originalId) {
+    agentId = selectedDevice.value.originalId as string;
+  } else {
+    // Get the original RMM device to extract agent_id
+    const originalDevice = getOriginalDevice<RMMDevice>(selectedDevice.value);
+    agentId = originalDevice.agent_id;
+  }
+
+  if (!agentId) {
+    toastService.showError('Agent ID not available');
+    return;
+  }
 
   let executionId: string | undefined;
-  
+
   // Add command to execution history with pending status and close dialog immediately
   if (executionHistoryRef.value) {
     executionId = executionHistoryRef.value.addExecution({
@@ -218,7 +207,7 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
 
   try {
     executing.value = true;
-    
+
     // Determine shell based on platform and shell type
     let shellPath = '/bin/bash';
     if (selectedDevice.value.platform === 'windows') {
@@ -226,7 +215,7 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
     } else if (selectedDevice.value.platform === 'darwin' || selectedDevice.value.platform === 'linux') {
       shellPath = '/bin/bash';
     }
-    
+
     const response = await restClient.post<string>(`${API_URL}/agents/${agentId}/cmd/`, {
       shell: shellPath,
       cmd: cmd,
@@ -251,9 +240,9 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
     toastService.showSuccess(response || 'Command executed successfully');
   } catch (error) {
     console.error('Failed to execute command:', error);
-    const errorMessage = error instanceof Error ? error.message : 
-                        (typeof error === 'object' && error !== null && 'data' in error ? 
-                         (error as {data: string}).data : 'Failed to execute command');
+    const errorMessage = error instanceof Error ? error.message :
+      (typeof error === 'object' && error !== null && 'data' in error ?
+        (error as { data: string }).data : 'Failed to execute command');
     toastService.showError(errorMessage);
 
     // Update execution history with error status
@@ -274,21 +263,16 @@ const updateCommandOutput = (output: string) => {
   }
 };
 
-const viewDevice = (device: UnifiedDevice) => {
+const viewDevice = async (device: UnifiedDevice) => {
   selectedDevice.value = device;
-  showDeviceDetailsDialog.value = true;
-};
 
-const handleDeviceDetailsRunCommand = () => {
-  if (selectedDevice.value) {
-    showDeviceDetailsDialog.value = false;
-    runCommand(selectedDevice.value);
+  // Fetch device details from RMM API
+  const detailedDevice = await restClient.get<RMMDevice>(`${API_URL}/agents/${device.originalId}/`);
+
+  if (detailedDevice) {
+    console.log('Detailed device information:', detailedDevice);
+    toastService.showSuccess('Device details fetched successfully');
   }
-};
-
-const handleDeviceDetailsDelete = (device: UnifiedDevice) => {
-  showDeviceDetailsDialog.value = false;
-  deleteDevice(device);
 };
 
 const deleteDevice = (device: UnifiedDevice) => {
@@ -301,11 +285,23 @@ const confirmDelete = async () => {
 
   try {
     deleting.value = true;
-    
-    // Get the original RMM device to extract agent_id
-    const originalDevice = getOriginalDevice<RMMDevice>(selectedDevice.value);
-    const agentId = originalDevice.agent_id;
-    
+
+    // Get agent ID - try originalId first, then fall back to original device
+    let agentId: string;
+
+    if ('originalId' in selectedDevice.value && selectedDevice.value.originalId) {
+      agentId = selectedDevice.value.originalId as string;
+    } else {
+      // Get the original RMM device to extract agent_id
+      const originalDevice = getOriginalDevice<RMMDevice>(selectedDevice.value);
+      agentId = originalDevice.agent_id;
+    }
+
+    if (!agentId) {
+      toastService.showError('Agent ID not available');
+      return;
+    }
+
     await restClient.delete(`${API_URL}/agents/${agentId}/`);
     await fetchDevices();
     deleteDeviceDialog.value = false;

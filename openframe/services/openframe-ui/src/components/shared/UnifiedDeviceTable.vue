@@ -60,6 +60,14 @@
               @click="$emit('viewDetails', data)" 
             />
             <OFButton 
+              v-if="props.moduleType === 'mdm'"
+              icon="pi pi-lock" 
+              class="p-button-text p-button-sm" 
+              v-tooltip.top="'Lock Device'"
+              :disabled="!data.moduleSpecific?.mdm?.enrollment_status"
+              @click="$emit('lockDevice', data)" 
+            />
+            <OFButton 
               icon="pi pi-trash" 
               class="p-button-text p-button-sm p-button-danger"
               v-tooltip.top="'Delete Device'" 
@@ -125,6 +133,7 @@ const emits = defineEmits([
   'runCommand', 
   'viewDetails', 
   'deleteDevice',
+  'lockDevice',
   'update:devices'
 ]);
 

@@ -35,25 +35,30 @@ This task list outlines the plan for creating a unified device model that works 
 - [x] Write documentation for the unified device model
   - [x] Create technical documentation for developers
   - [x] Add code comments for maintainability
+- [x] Enhance device adapter mapping
+  - [x] Fix MDM device adapter to correctly map status fields
+  - [x] Improve MDM adapter with comprehensive property mapping
+  - [x] Update interface to support all fields from Fleet API response
 
 ## In Progress Tasks
 
-- [ ] Write documentation for the unified device model
-  - [ ] Create technical documentation for developers
-  - [ ] Add code comments for maintainability
+- [ ] Update device component imports to use unified model
+  - [x] Update UnifiedDeviceTable usage
+  - [ ] Update CommandDialog usage
+  - [x] Update DeviceDetailsDialog usage
 
 ## Future Tasks
 
-- [ ] Update device component imports to use unified model
-  - [ ] Update ModuleTable usage
-  - [ ] Update CommandDialog usage
-  - [ ] Update DeviceDetailsDialog usage
 - [ ] Create common UI components for device display
   - [ ] Create unified device card component
   - [ ] Create unified device action buttons
 - [ ] Write tests for the unified device model and adapters
   - [ ] Unit tests for adapter functions
   - [ ] Integration tests with mock API data
+- [ ] Implement additional enhancements to unified device model
+  - [ ] Add battery information display for mobile devices
+  - [ ] Add disk encryption status reporting
+  - [ ] Create specialized views for different device types
 
 ## Implementation Plan
 
@@ -97,9 +102,22 @@ We have successfully created a unified device model that accommodates the differ
 
 1. Created UnifiedDeviceTable component that works with the unified model across all modules
 
+### Recent Improvements
+
+1. **Enhanced MDM Device Adapter**:
+   - Fixed status mapping to use direct `status` field from Fleet API
+   - Added comprehensive property mapping for Fleet MDM devices
+   - Improved handling of network, hardware, and OS information
+   - Added proper display name and IP address mapping
+   - Added support for device last seen time using `seen_time` field
+
+2. **Updated DeviceDetailsDialog**:
+   - Better display of MDM device information
+   - Improved property organization and presentation
+
 ### Next Steps
 
-1. Write documentation for developers explaining the unified model
+1. Continue updating UI components to fully leverage the enhanced unified model
 2. Create additional shared UI components
 3. Write tests for the adapter functions 
 
@@ -402,11 +420,11 @@ This implementation provides a solid foundation for further improvements and wil
    }
    ```
 
-### Timeline
-1. Phase 1 (Week 1): Extend UnifiedDevice interface and update adapter functions
-2. Phase 2 (Week 2): Create specialized extended interfaces and update utility functions
-3. Phase 3 (Week 3): Add documentation and examples
-4. Phase 4 (Week 4): Testing and validation
+### Current Status
+- [x] Phase 1: Extended UnifiedDevice interface and updated adapter functions
+- [x] Phase 2: Created specialized extended interfaces and updated utility functions
+- [x] Phase 3: Added documentation and examples
+- [ ] Phase 4: Testing and validation
 
 ### Compatibility Considerations
 - All existing code using the UnifiedDevice interface will continue to work

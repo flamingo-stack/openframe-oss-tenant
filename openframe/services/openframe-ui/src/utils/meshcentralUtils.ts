@@ -1,12 +1,12 @@
 /**
  * Utility functions for working with MeshCentral API data
  * Used to transform MeshCentral API responses to match RMM data format
- * for visual parity in device details views
+ * for visual parity in device views
  */
 
 /**
  * Interface representing the standardized device model structure
- * Compatible with DeviceDetailsDialog component and matching RMM format
+ * Compatible with unified device format and matching RMM format
  */
 export interface StandardDeviceModel {
   // System Information - matching RMM format
@@ -64,7 +64,7 @@ export interface StandardDeviceModel {
  * that matches RMM format for visual consistency
  * 
  * @param meshcentralData - Raw response from MeshCentral API
- * @returns Standardized device model compatible with DeviceDetailsDialog
+ * @returns Standardized device model for use in the application
  */
 export function transformMeshCentralDevice(meshcentralData: any): StandardDeviceModel {
   if (!meshcentralData) {

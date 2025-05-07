@@ -248,3 +248,184 @@ export const getTaskIcon = (type: string): string => {
   };
   return iconMap[type] || 'pi pi-clock';
 };
+
+/**
+ * Enhanced Device Model Utility Functions
+ */
+
+import { EnhancedUnifiedDevice } from '../types/device';
+
+/**
+ * Format disk usage in a user-friendly way
+ */
+export function formatDiskUsage(device: EnhancedUnifiedDevice): string {
+  if (!device.hardware?.storage || device.hardware.storage.length === 0) {
+    return 'N/A';
+  }
+  
+  const mainDisk = device.hardware.storage[0];
+  return `${formatBytes(mainDisk.used || 0)} / ${formatBytes(mainDisk.total || 0)}`;
+}
+
+/**
+ * Get memory usage as a percentage
+ */
+export function getMemoryUsagePercentage(device: EnhancedUnifiedDevice): number {
+  const total = device.hardware?.memory?.total;
+  const used = device.hardware?.memory?.used;
+  
+  if (!total || !used || total === 0) {
+    return 0;
+  }
+  
+  return (used / total) * 100;
+}
+
+/**
+ * Format CPU information
+ */
+export function formatCpuInfo(device: EnhancedUnifiedDevice): string {
+  const cpuModel = device.hardware?.cpu?.model;
+  const cpuCores = device.hardware?.cpu?.cores;
+  
+  if (!cpuModel && !cpuCores) {
+    return 'N/A';
+  }
+  
+  if (cpuModel && cpuCores) {
+    return `${cpuModel} (${cpuCores} cores)`;
+  }
+  
+  return cpuModel || `${cpuCores} cores` || 'N/A';
+}
+
+/**
+ * Get CPU usage as a formatted string with percentage
+ */
+export function formatCpuUsage(device: EnhancedUnifiedDevice): string {
+  const usage = device.hardware?.cpu?.usage;
+  
+  if (usage === undefined) {
+    return 'N/A';
+  }
+  
+  return `${Math.round(usage)}%`;
+}
+
+/**
+ * Format the device operating system information
+ */
+export function formatOsInfo(device: EnhancedUnifiedDevice): string {
+  const osName = device.os?.name || formatPlatform(device.platform);
+  const osVersion = device.os?.version || device.osVersion;
+  const osBuild = device.os?.build;
+  
+  if (osBuild) {
+    return `${osName} ${osVersion} (${osBuild})`;
+  }
+  
+  return `${osName} ${osVersion}`;
+}
+
+/**
+ * Format device location information
+ */
+export function formatLocation(device: EnhancedUnifiedDevice): string {
+  if (!device.asset?.location) {
+    return 'Unknown';
+  }
+  
+  return device.asset.location;
+}
+
+/**
+ * Format device last boot time
+ */
+export function formatLastBoot(device: EnhancedUnifiedDevice): string {
+  if (!device.os?.lastBoot) {
+    return 'Unknown';
+  }
+  
+  return formatTimestamp(device.os.lastBoot);
+}
+
+/**
+ * Get security status summary
+ */
+export function getSecuritySummary(device: EnhancedUnifiedDevice): { status: string, severity: string } {
+  const security = device.security;
+  
+  if (!security) {
+    return { status: 'Unknown', severity: 'help' };
+  }
+  
+  if (security.antivirusEnabled === false) {
+    return { status: 'At Risk', severity: 'danger' };
+  }
+  
+  if (security.firewallEnabled === false) {
+    return { status: 'Warning', severity: 'warning' };
+  }
+  
+  if (security.encryptionEnabled === true) {
+    return { status: 'Protected', severity: 'success' };
+  }
+  
+  return { status: 'Unknown', severity: 'info' };
+}
+
+/**
+ * Get a list of network interfaces
+ */
+export function getNetworkInterfaces(device: EnhancedUnifiedDevice): Array<{ name: string, ip: string, mac: string }> {
+  if (!device.network?.interfaces || device.network.interfaces.length === 0) {
+    // If no detailed interfaces, create a basic one from available IP/MAC addresses
+    const ips = device.network?.ipAddresses || device.ipAddresses || [];
+    const macs = device.network?.macAddresses || [];
+    
+    // Ensure ips is an array before calling map
+    if (!Array.isArray(ips)) {
+      return [];
+    }
+    
+    return ips.map((ip, idx) => ({
+      name: `Interface ${idx + 1}`,
+      ip,
+      mac: idx < macs.length ? macs[idx] : '',
+    }));
+  }
+  
+  return device.network.interfaces.map(iface => ({
+    name: iface.name || 'Unknown',
+    ip: iface.ipAddress || '',
+    mac: iface.macAddress || '',
+  }));
+}
+
+/**
+ * Format mobile device-specific information
+ */
+export function getMobileDeviceInfo(device: EnhancedUnifiedDevice): { 
+  hasMobileInfo: boolean, 
+  batteryLevel: string,
+  enrollmentStatus: string,
+  supervised: string,
+} {
+  const mobile = device.mobile;
+  
+  if (!mobile) {
+    return { 
+      hasMobileInfo: false, 
+      batteryLevel: 'N/A', 
+      enrollmentStatus: 'N/A',
+      supervised: 'N/A',
+    };
+  }
+  
+  return {
+    hasMobileInfo: true,
+    batteryLevel: mobile.batteryLevel !== undefined ? `${mobile.batteryLevel}%` : 'N/A',
+    enrollmentStatus: mobile.mdmEnrollmentStatus || 'N/A',
+    supervised: mobile.isSupervised ? 'Yes' : 'No',
+  };
+}

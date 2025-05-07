@@ -67,14 +67,6 @@
       v-model:visible="showExecutionHistory"
       ref="executionHistoryRef"
     />
-
-    <!-- Device Details Dialog -->
-    <DeviceDetailsDialog
-      v-model:visible="showDeviceDetailsDialog"
-      :device="selectedDevice"
-      @runCommand="handleDeviceDetailsRunCommand"
-      @delete="handleDeviceDetailsDelete"
-    />
   </div>
 </template>
 
@@ -98,10 +90,9 @@ import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
-import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
-import { UnifiedDevice, getOriginalDevice } from '../../types/device';
+import { UnifiedDevice, getOriginalDevice, EnhancedUnifiedDevice } from '../../types/device';
 import { RACDevice } from '../../utils/deviceAdapters';
 import { transformMeshCentralDevice } from '../../utils/meshcentralUtils';
 
@@ -115,7 +106,6 @@ const loading = ref(true);
 const devices = ref<RACDevice[]>([]);
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
-const showDeviceDetailsDialog = ref(false);
 const executing = ref(false);
 const deleting = ref(false);
 
@@ -137,20 +127,27 @@ const fetchDevices = async () => {
     
     const response = await restClient.get<RACDevice[]>(`${API_URL}/api/listdevices`);
     
-    devices.value = Array.isArray(response) ? response.map(device => {
-      // Map MeshCentral device to our format
-      return {
+    if (Array.isArray(response)) {
+      // First prepare the RAC devices with basic platform info
+      const racDevices = response.map(device => ({
         ...device,
         id: device._id,
         // Determine platform from osdesc
         plat: device.osdesc?.toLowerCase().includes('windows') ? 'windows' :
               device.osdesc?.toLowerCase().includes('mac') ? 'darwin' :
               device.osdesc?.toLowerCase().includes('linux') ? 'linux' : 'unknown'
-      };
-    }) : [];
+      }));
+      
+      // Store original devices for reference
+      devices.value = racDevices;
+      
+    } else {
+      devices.value = [];
+    }
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
+    devices.value = [];
   } finally {
     loading.value = false;
   }
@@ -178,9 +175,21 @@ const runCommand = (device: UnifiedDevice) => {
 const executeCommand = async (cmd: string, shell: string, timeout: number, runAsUser: boolean) => {
   if (!selectedDevice.value) return;
 
-  // Get original device data to extract ID
-  const originalDevice = getOriginalDevice<RACDevice>(selectedDevice.value);
-  const deviceId = originalDevice._id || originalDevice.id;
+  // Get device ID - try originalId first, then fall back to original device
+  let deviceId: string = '';
+  
+  if ('originalId' in selectedDevice.value && selectedDevice.value.originalId) {
+    deviceId = selectedDevice.value.originalId as string;
+  } else {
+    // Get original device data to extract ID
+    const originalDevice = getOriginalDevice<RACDevice>(selectedDevice.value);
+    deviceId = (originalDevice._id || originalDevice.id || '') as string;
+  }
+  
+  if (!deviceId) {
+    toastService.showError('Device ID not available');
+    return;
+  }
   
   let executionId: string | undefined;
   
@@ -255,38 +264,13 @@ const updateCommandOutput = (output: string) => {
 const viewDevice = async (device: UnifiedDevice) => {
   selectedDevice.value = device;
   
-  // Get original device data to extract ID
-  const originalDevice = getOriginalDevice<RACDevice>(selectedDevice.value);
-  const deviceId = originalDevice._id || originalDevice.id || '';
+  // Fetch detailed device information
+  const detailedInfo = await fetchDeviceDetails(device.originalId as string);
   
-  // Fetch detailed device information and transform it
-  const details = await fetchDeviceDetails(deviceId);
-  
-  if (details) {
-    // Update selected device with the detailed information
-    // while preserving the original device ID and name for compatibility
-    selectedDevice.value = {
-      ...selectedDevice.value,
-      moduleSpecific: {
-        ...selectedDevice.value.moduleSpecific,
-        ...details
-      }
-    };
+  if (detailedInfo) {
+    console.log('Device details:', detailedInfo);
+    toastService.showSuccess('Device details fetched successfully');
   }
-  
-  showDeviceDetailsDialog.value = true;
-};
-
-const handleDeviceDetailsRunCommand = () => {
-  if (selectedDevice.value) {
-    showDeviceDetailsDialog.value = false;
-    runCommand(selectedDevice.value);
-  }
-};
-
-const handleDeviceDetailsDelete = (device: UnifiedDevice) => {
-  showDeviceDetailsDialog.value = false;
-  deleteDevice(device);
 };
 
 const deleteDevice = (device: UnifiedDevice) => {
@@ -300,9 +284,21 @@ const confirmDelete = async () => {
   try {
     deleting.value = true;
     
-    // Get original device data to extract ID
-    const originalDevice = getOriginalDevice<RACDevice>(selectedDevice.value);
-    const deviceId = originalDevice._id || originalDevice.id;
+    // Get device ID - try originalId first, then fall back to original device
+    let deviceId: string = '';
+    
+    if ('originalId' in selectedDevice.value && selectedDevice.value.originalId) {
+      deviceId = selectedDevice.value.originalId as string;
+    } else {
+      // Get original device data to extract ID
+      const originalDevice = getOriginalDevice<RACDevice>(selectedDevice.value);
+      deviceId = (originalDevice._id || originalDevice.id || '') as string;
+    }
+    
+    if (!deviceId) {
+      toastService.showError('Device ID not available');
+      return;
+    }
     
     await restClient.post(`${API_URL}/api/removedevice`, {
       id: deviceId
