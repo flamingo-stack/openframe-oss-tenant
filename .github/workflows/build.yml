@@ -124,9 +124,11 @@ jobs:
             meshcentral:
               - './integrated-tools/meshcentral/server/**'
 
+
   matrix:
     uses: ./.github/workflows/matrix.yml
     if: (github.event_name == 'push' && github.actor != 'web-flow') || !github.event.pull_request.draft
+
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
