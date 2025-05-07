@@ -12,7 +12,8 @@ import {
   RMMExtendedDevice,
   MDMExtendedDevice,
   RACExtendedDevice,
-  DeviceStatus
+  DeviceStatus,
+  DevicePlatform
 } from '../types/device';
 import { 
   determinePlatform, 
@@ -388,7 +389,6 @@ function fromRMMDevice(device: RMMDevice): EnhancedUnifiedDevice {
  */
 function fromMDMDevice(device: MDMDevice): EnhancedUnifiedDevice {
   const platform = determinePlatform(device.platform || '');
-  
   // Map status to correct DeviceStatus value
   let deviceStatus: DeviceStatus = 'offline';
   if (device.status === 'online') {
@@ -556,9 +556,37 @@ function fromMDMDevice(device: MDMDevice): EnhancedUnifiedDevice {
  * Convert RAC device to enhanced unified model
  */
 function fromRACDevice(device: RACDevice): EnhancedUnifiedDevice {
-  const platform = determinePlatform(device.plat || '') || 
-                  inferPlatformFromOS(device.osdesc || '');
+  // Determine platform - try multiple methods to ensure accuracy
+  let platform: DevicePlatform = 'unknown';
   
+  // Method 1: Use plat field if available
+  if (device.plat) {
+    platform = determinePlatform(device.plat);
+  }
+  
+  // Method 2: Use icon field as a hint (MeshCentral specific)
+  if (platform === 'unknown' && device.icon !== undefined) {
+    // MeshCentral icon mapping: 
+    // 1=Linux, 2=Mac, 3=Android, 4=iOS, 5=ChromeOS, 8=Windows
+    switch (device.icon) {
+      case 8: platform = 'windows'; break;
+      case 2: platform = 'darwin'; break;
+      case 1: platform = 'linux'; break;
+      case 3: platform = 'android'; break;
+      case 4: platform = 'ios'; break;
+    }
+  }
+
+  // Method 3: Use OS description as fallback
+  if (platform === 'unknown' && device.osdesc) {
+    platform = inferPlatformFromOS(device.osdesc);
+  }
+  
+  // Method 4: Check Operating System data if available
+  if (platform === 'unknown' && device["Operating System"]?.Version) {
+    platform = inferPlatformFromOS(device["Operating System"].Version);
+  }
+
   // Build storage information
   const storage = [];
   if (device.Storage) {

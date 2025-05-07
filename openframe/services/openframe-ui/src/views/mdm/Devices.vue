@@ -93,8 +93,9 @@ const viewDevice = async (device: UnifiedDevice) => {
     selectedDevice.value = device;
     showDeviceDetails.value = true;
 
-    // Fetch device details for reference (optional)
-    await fetchDeviceDetails(device.originalId as string);
+    let agentId = device.originalId as string;
+    const refreshedDevice = await fetchDeviceDetails(agentId);
+    selectedDevice.value = refreshedDevice as any;
   } catch (error) {
     console.error('Error viewing device details:', error);
     toastService.showError('Failed to load device details');

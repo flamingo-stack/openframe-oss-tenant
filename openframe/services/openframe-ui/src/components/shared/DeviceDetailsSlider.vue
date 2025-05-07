@@ -1,101 +1,57 @@
 <template>
   <div class="device-details-slider">
-    <div 
-      v-if="visible" 
-      class="sidebar-mask active" 
-      @click="onVisibilityChange(false)"
-    ></div>
-    <div 
-      class="sidebar" 
-      :class="{ 'active': visible }"
-    >
+    <div v-if="visible" class="sidebar-mask active" @click="onVisibilityChange(false)"></div>
+    <div class="sidebar" :class="{ 'active': visible }">
       <div class="sidebar-header">
-        <h3 class="text-xl m-0">{{ unifiedDevice ? (unifiedDevice.displayName || unifiedDevice.hostname) : 'Device Details' }}</h3>
-        <div class="flex gap-2">
-          <OFButton 
-            icon="pi pi-times" 
-            class="p-button-text p-button-rounded" 
-            @click="onVisibilityChange(false)"
-            aria-label="Close"
-          />
+        <div class="flex align-items-center">
+          <i :class="unifiedDevice ? (unifiedDevice.icon || 'pi pi-desktop') : 'pi pi-desktop'"
+            class="mr-2 text-xl"></i>
+          <h3 class="text-xl m-0">{{ unifiedDevice ? (unifiedDevice.displayName || unifiedDevice.hostname) : 'Device Details' }}</h3>
         </div>
-      </div>
+        <div class="flex gap-2">
+          <!-- Action buttons moved to header -->
+          <template v-if="unifiedDevice">
+            <!-- Common actions -->
+            <OFButton icon="pi pi-refresh" class="p-button-text p-button-rounded" v-tooltip.top="'Refresh Device'"
+              @click="$emit('refreshDevice', unifiedDevice)" />
 
-      <!-- Device Actions - Compact icons with tooltips -->
-      <div v-if="unifiedDevice" class="sidebar-actions">
-        <div class="flex flex-wrap gap-1 justify-content-start">
-          <!-- Common actions -->
-          <OFButton 
-            icon="pi pi-refresh" 
-            class="p-button-text p-button-sm"
-            v-tooltip.top="'Refresh Device'"
-            @click="$emit('refreshDevice', unifiedDevice)" 
-          />
-          
-          <!-- MDM specific actions -->
-          <template v-if="unifiedDevice.type === 'mdm'">
-            <OFButton 
-              icon="pi pi-lock" 
-              class="p-button-text p-button-sm"
-              v-tooltip.top="'Lock Device'"
-              :disabled="!unifiedDevice.moduleSpecific?.mdm?.enrollment_status"
-              @click="$emit('lockDevice', unifiedDevice)" 
-            />
-            <OFButton 
-              icon="pi pi-unlock" 
-              class="p-button-text p-button-sm"
-              v-tooltip.top="'Unlock Device'"
-              :disabled="!unifiedDevice.moduleSpecific?.mdm?.enrollment_status"
-              @click="$emit('unlockDevice', unifiedDevice)" 
-            />
-            <OFButton 
-              icon="pi pi-trash" 
-              class="p-button-text p-button-sm p-button-danger"
-              v-tooltip.top="'Erase Device'"
-              :disabled="!unifiedDevice.moduleSpecific?.mdm?.enrollment_status"
-              @click="$emit('eraseDevice', unifiedDevice)" 
-            />
+            <!-- MDM specific actions -->
+            <template v-if="unifiedDevice.type === 'mdm'">
+              <OFButton icon="pi pi-lock" class="p-button-text p-button-rounded" v-tooltip.top="'Lock Device'"
+                :disabled="!unifiedDevice.moduleSpecific?.mdm?.enrollment_status"
+                @click="$emit('lockDevice', unifiedDevice)" />
+              <OFButton icon="pi pi-unlock" class="p-button-text p-button-rounded" v-tooltip.top="'Unlock Device'"
+                :disabled="!unifiedDevice.moduleSpecific?.mdm?.enrollment_status"
+                @click="$emit('unlockDevice', unifiedDevice)" />
+              <OFButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger"
+                v-tooltip.top="'Erase Device'" :disabled="!unifiedDevice.moduleSpecific?.mdm?.enrollment_status"
+                @click="$emit('eraseDevice', unifiedDevice)" />
+            </template>
+
+            <!-- RMM specific actions -->
+            <template v-if="unifiedDevice.type === 'rmm'">
+              <OFButton icon="pi pi-code" class="p-button-text p-button-rounded" v-tooltip.top="'Run Command'"
+                @click="$emit('runCommand', unifiedDevice)" />
+              <OFButton icon="pi pi-desktop" class="p-button-text p-button-rounded" v-tooltip.top="'Reboot Device'"
+                @click="$emit('rebootDevice', unifiedDevice)" />
+            </template>
+
+            <!-- RAC specific actions -->
+            <template v-if="unifiedDevice.type === 'rac'">
+              <OFButton icon="pi pi-desktop" class="p-button-text p-button-rounded" v-tooltip.top="'Remote Access'"
+                @click="$emit('remoteAccess', unifiedDevice)" />
+              <OFButton icon="pi pi-folder" class="p-button-text p-button-rounded" v-tooltip.top="'File Transfer'"
+                @click="$emit('fileTransfer', unifiedDevice)" />
+            </template>
+
+            <!-- Delete action for all devices -->
+            <OFButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger"
+              v-tooltip.top="'Delete Device'" @click="$emit('deleteDevice', unifiedDevice)" />
           </template>
-          
-          <!-- RMM specific actions -->
-          <template v-if="unifiedDevice.type === 'rmm'">
-            <OFButton 
-              icon="pi pi-code" 
-              class="p-button-text p-button-sm"
-              v-tooltip.top="'Run Command'"
-              @click="$emit('runCommand', unifiedDevice)" 
-            />
-            <OFButton 
-              icon="pi pi-desktop" 
-              class="p-button-text p-button-sm"
-              v-tooltip.top="'Reboot Device'"
-              @click="$emit('rebootDevice', unifiedDevice)" 
-            />
-          </template>
-          
-          <!-- RAC specific actions -->
-          <template v-if="unifiedDevice.type === 'rac'">
-            <OFButton 
-              icon="pi pi-desktop" 
-              class="p-button-text p-button-sm"
-              v-tooltip.top="'Remote Access'"
-              @click="$emit('remoteAccess', unifiedDevice)" 
-            />
-            <OFButton 
-              icon="pi pi-folder" 
-              class="p-button-text p-button-sm"
-              v-tooltip.top="'File Transfer'"
-              @click="$emit('fileTransfer', unifiedDevice)" 
-            />
-          </template>
-          
-          <!-- Delete action for all devices -->
-          <OFButton 
-            icon="pi pi-trash" 
-            class="p-button-text p-button-sm p-button-danger"
-            v-tooltip.top="'Delete Device'"
-            @click="$emit('deleteDevice', unifiedDevice)" 
-          />
+
+          <!-- Close button -->
+          <OFButton icon="pi pi-times" class="p-button-text p-button-rounded" @click="onVisibilityChange(false)"
+            aria-label="Close" />
         </div>
       </div>
 
@@ -106,11 +62,6 @@
             <div class="info-section">
               <h4 class="section-title">Device Overview</h4>
               <div class="device-overview">
-                <div class="flex align-items-center mb-3">
-                  <i :class="unifiedDevice.icon || 'pi pi-desktop'" class="mr-2 text-xl"></i>
-                  <span class="font-medium text-xl">{{ unifiedDevice.displayName || unifiedDevice.hostname }}</span>
-                </div>
-                
                 <div class="grid">
                   <div class="col-12 md:col-6 info-row">
                     <span class="info-label">Hostname:</span>
@@ -122,7 +73,8 @@
                   </div>
                   <div class="col-12 md:col-6 info-row">
                     <span class="info-label">Platform:</span>
-                    <Tag :value="formatPlatform(unifiedDevice.platform)" :severity="getPlatformSeverity(unifiedDevice.platform)" />
+                    <Tag :value="formatPlatform(unifiedDevice.platform)"
+                      :severity="getPlatformSeverity(unifiedDevice.platform)" />
                   </div>
                   <div class="col-12 md:col-6 info-row">
                     <span class="info-label">OS Version:</span>
@@ -137,9 +89,11 @@
                     <Tag :value="unifiedDevice.type.toUpperCase()" severity="info" />
                   </div>
                   <!-- MDM Specific -->
-                  <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.type === 'mdm' && unifiedDevice.moduleSpecific?.mdm?.enrollment_status">
+                  <div class="col-12 md:col-6 info-row"
+                    v-if="unifiedDevice.type === 'mdm' && unifiedDevice.moduleSpecific?.mdm?.enrollment_status">
                     <span class="info-label">MDM Status:</span>
-                    <Tag :value="unifiedDevice.moduleSpecific.mdm.enrollment_status" :severity="getMDMStatusSeverity(unifiedDevice.moduleSpecific.mdm.enrollment_status)" />
+                    <Tag :value="unifiedDevice.moduleSpecific.mdm.enrollment_status"
+                      :severity="getMDMStatusSeverity(unifiedDevice.moduleSpecific.mdm.enrollment_status)" />
                   </div>
                 </div>
               </div>
@@ -161,7 +115,7 @@
                   <span class="info-label">Serial Number:</span>
                   <span class="info-value">{{ unifiedDevice.hardware.serialNumber }}</span>
                 </div>
-                
+
                 <!-- CPU Info -->
                 <div class="col-12 info-row" v-if="unifiedDevice.hardware.cpu?.model">
                   <span class="info-label">CPU:</span>
@@ -179,13 +133,14 @@
                   <span class="info-label">CPU Usage:</span>
                   <span class="info-value">{{ unifiedDevice.hardware.cpu.usage }}%</span>
                 </div>
-                
+
                 <!-- Memory Info -->
                 <div class="col-12" v-if="unifiedDevice.hardware.memory">
                   <div class="memory-section mt-2 mb-2">
                     <h5 class="subsection-title">Memory</h5>
                     <div v-if="unifiedDevice.hardware.memory.total && unifiedDevice.hardware.memory.used" class="mb-2">
-                      <ProgressBar :value="(unifiedDevice.hardware.memory.used / unifiedDevice.hardware.memory.total) * 100" />
+                      <ProgressBar
+                        :value="(unifiedDevice.hardware.memory.used / unifiedDevice.hardware.memory.total) * 100" />
                     </div>
                     <div class="grid">
                       <div class="col-12 md:col-4 info-row" v-if="unifiedDevice.hardware.memory.total">
@@ -203,7 +158,7 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <!-- GPU Info -->
                 <div class="col-12" v-if="unifiedDevice.hardware.gpu && unifiedDevice.hardware.gpu.length > 0">
                   <div class="gpu-section mt-2 mb-2">
@@ -213,28 +168,31 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <!-- Storage Info -->
                 <div class="col-12" v-if="unifiedDevice.hardware.storage && unifiedDevice.hardware.storage.length > 0">
                   <div class="storage-section mt-2">
                     <h5 class="subsection-title">Storage</h5>
-                    <div v-for="(disk, index) in unifiedDevice.hardware.storage" :key="index" class="disk-item mb-3">
-                      <div class="disk-name mb-1">{{ disk.name || `Disk ${index + 1}` }}</div>
-                      <div v-if="disk.total && disk.used" class="mb-2">
-                        <ProgressBar :value="(disk.used / disk.total) * 100" />
-                      </div>
-                      <div class="grid">
-                        <div class="col-12 md:col-4 info-row" v-if="disk.total">
-                          <span class="info-label">Total:</span>
-                          <span class="info-value">{{ formatBytes(disk.total) }}</span>
+                    <div class="flex flex-wrap gap-2">
+                      <div v-for="(disk, index) in unifiedDevice.hardware.storage" :key="index"
+                        class="disk-item mb-2 storage-card">
+                        <div class="disk-name mb-1 text-sm">{{ disk.name || `Disk ${index + 1}` }}</div>
+                        <div v-if="disk.total && disk.used" class="mb-1">
+                          <ProgressBar :value="Math.round((disk.used / disk.total) * 100)" />
                         </div>
-                        <div class="col-12 md:col-4 info-row" v-if="disk.used">
-                          <span class="info-label">Used:</span>
-                          <span class="info-value">{{ formatBytes(disk.used) }}</span>
-                        </div>
-                        <div class="col-12 md:col-4 info-row" v-if="disk.free">
-                          <span class="info-label">Free:</span>
-                          <span class="info-value">{{ formatBytes(disk.free) }}</span>
+                        <div class="grid">
+                          <div class="col-4 info-row">
+                            <span class="info-label text-xs">Total:</span>
+                            <span class="info-value text-sm">{{ formatBytes(disk.total) }}</span>
+                          </div>
+                          <div class="col-4 info-row">
+                            <span class="info-label text-xs">Used:</span>
+                            <span class="info-value text-sm">{{ formatBytes(disk.used) }}</span>
+                          </div>
+                          <div class="col-4 info-row">
+                            <span class="info-label text-xs">Free:</span>
+                            <span class="info-value text-sm">{{ formatBytes(disk.free) }}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -251,27 +209,31 @@
                   <span class="info-label">Public IP:</span>
                   <span class="info-value">{{ unifiedDevice.network.publicIp }}</span>
                 </div>
-                
+
                 <!-- IP Addresses -->
-                <div class="col-12" v-if="unifiedDevice.network.ipAddresses && unifiedDevice.network.ipAddresses.length > 0">
+                <div class="col-12"
+                  v-if="unifiedDevice.network.ipAddresses && unifiedDevice.network.ipAddresses.length > 0">
                   <h5 class="subsection-title">IP Addresses</h5>
                   <div v-for="(ip, index) in unifiedDevice.network.ipAddresses" :key="index" class="info-row">
                     <span class="info-value">{{ ip }}</span>
                   </div>
                 </div>
-                
+
                 <!-- MAC Addresses -->
-                <div class="col-12" v-if="unifiedDevice.network.macAddresses && unifiedDevice.network.macAddresses.length > 0">
+                <div class="col-12"
+                  v-if="unifiedDevice.network.macAddresses && unifiedDevice.network.macAddresses.length > 0">
                   <h5 class="subsection-title mt-2">MAC Addresses</h5>
                   <div v-for="(mac, index) in unifiedDevice.network.macAddresses" :key="index" class="info-row">
                     <span class="info-value">{{ mac }}</span>
                   </div>
                 </div>
-                
+
                 <!-- Network Interfaces -->
-                <div class="col-12" v-if="unifiedDevice.network.interfaces && unifiedDevice.network.interfaces.length > 0">
+                <div class="col-12"
+                  v-if="unifiedDevice.network.interfaces && unifiedDevice.network.interfaces.length > 0">
                   <h5 class="subsection-title mt-2">Network Interfaces</h5>
-                  <div v-for="(iface, index) in unifiedDevice.network.interfaces" :key="index" class="interface-item mb-2 p-2 border-1 border-round">
+                  <div v-for="(iface, index) in unifiedDevice.network.interfaces" :key="index"
+                    class="interface-item mb-2 p-2 border-1 border-round">
                     <div class="font-bold mb-1">{{ iface.name }}</div>
                     <div class="grid">
                       <div class="col-12 md:col-6 info-row" v-if="iface.mac">
@@ -337,34 +299,34 @@
               <div class="grid">
                 <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.security.antivirusEnabled !== undefined">
                   <span class="info-label">Antivirus:</span>
-                  <Tag :value="unifiedDevice.security.antivirusEnabled ? 'Enabled' : 'Disabled'" 
-                       :severity="unifiedDevice.security.antivirusEnabled ? 'success' : 'danger'" />
+                  <Tag :value="unifiedDevice.security.antivirusEnabled ? 'Enabled' : 'Disabled'"
+                    :severity="unifiedDevice.security.antivirusEnabled ? 'success' : 'danger'" />
                 </div>
                 <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.security.firewallEnabled !== undefined">
                   <span class="info-label">Firewall:</span>
-                  <Tag :value="unifiedDevice.security.firewallEnabled ? 'Enabled' : 'Disabled'" 
-                       :severity="unifiedDevice.security.firewallEnabled ? 'success' : 'danger'" />
+                  <Tag :value="unifiedDevice.security.firewallEnabled ? 'Enabled' : 'Disabled'"
+                    :severity="unifiedDevice.security.firewallEnabled ? 'success' : 'danger'" />
                 </div>
                 <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.security.encryptionEnabled !== undefined">
                   <span class="info-label">Disk Encryption:</span>
-                  <Tag :value="unifiedDevice.security.encryptionEnabled ? 'Enabled' : 'Disabled'" 
-                       :severity="unifiedDevice.security.encryptionEnabled ? 'success' : 'danger'" />
+                  <Tag :value="unifiedDevice.security.encryptionEnabled ? 'Enabled' : 'Disabled'"
+                    :severity="unifiedDevice.security.encryptionEnabled ? 'success' : 'danger'" />
                 </div>
                 <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.security.lastUpdated">
                   <span class="info-label">Last Update:</span>
                   <span class="info-value">{{ formatTimestamp(unifiedDevice.security.lastUpdated) }}</span>
                 </div>
               </div>
-              
+
               <!-- Vulnerabilities -->
               <div v-if="unifiedDevice.security.vulnerabilities && unifiedDevice.security.vulnerabilities.length > 0">
                 <h5 class="subsection-title mt-2">Vulnerabilities</h5>
                 <div class="vulnerability-count mb-2">
-                  <Tag :value="`${unifiedDevice.security.vulnerabilities.length} vulnerabilities found`" severity="danger" />
+                  <Tag :value="`${unifiedDevice.security.vulnerabilities.length} vulnerabilities found`"
+                    severity="danger" />
                 </div>
-                <DataTable :value="unifiedDevice.security.vulnerabilities" 
-                          class="p-datatable-sm"
-                          responsiveLayout="scroll">
+                <DataTable :value="unifiedDevice.security.vulnerabilities" class="p-datatable-sm"
+                  responsiveLayout="scroll">
                   <Column field="cve" header="CVE"></Column>
                   <Column field="severity" header="Severity"></Column>
                   <Column field="details" header="Details"></Column>
@@ -384,11 +346,11 @@
                 </div>
                 <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.mobile.mdmEnrollmentStatus">
                   <span class="info-label">MDM Status:</span>
-                  <Tag :value="unifiedDevice.mobile.mdmEnrollmentStatus" 
-                       :severity="getMDMStatusSeverity(unifiedDevice.mobile.mdmEnrollmentStatus)" />
+                  <Tag :value="unifiedDevice.mobile.mdmEnrollmentStatus"
+                    :severity="getMDMStatusSeverity(unifiedDevice.mobile.mdmEnrollmentStatus)" />
                 </div>
               </div>
-              
+
               <!-- MDM Profiles -->
               <div v-if="unifiedDevice.mobile.profiles && unifiedDevice.mobile.profiles.length > 0">
                 <h5 class="subsection-title mt-2">MDM Profiles</h5>
@@ -396,14 +358,16 @@
                   <span class="info-value">{{ profile.name }}</span>
                 </div>
               </div>
-              
+
               <!-- Location Information -->
               <div v-if="unifiedDevice.mobile.location">
                 <h5 class="subsection-title mt-2">Device Location</h5>
                 <div class="grid">
-                  <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.mobile.location.latitude && unifiedDevice.mobile.location.longitude">
+                  <div class="col-12 md:col-6 info-row"
+                    v-if="unifiedDevice.mobile.location.latitude && unifiedDevice.mobile.location.longitude">
                     <span class="info-label">Coordinates:</span>
-                    <span class="info-value">{{ unifiedDevice.mobile.location.latitude }}, {{ unifiedDevice.mobile.location.longitude }}</span>
+                    <span class="info-value">{{ unifiedDevice.mobile.location.latitude }}, {{
+                      unifiedDevice.mobile.location.longitude }}</span>
                   </div>
                   <div class="col-12 md:col-6 info-row" v-if="unifiedDevice.mobile.location.timestamp">
                     <span class="info-label">Last Update:</span>
@@ -426,7 +390,7 @@
                   <span class="info-value">{{ unifiedDevice.user.domain }}</span>
                 </div>
               </div>
-              
+
               <!-- Logged In Users -->
               <div v-if="unifiedDevice.user.loggedInUsers && unifiedDevice.user.loggedInUsers.length > 0">
                 <h5 class="subsection-title mt-2">Logged In Users</h5>
@@ -465,11 +429,8 @@
               <div class="mb-2">
                 <InputText v-model="softwareFilter" placeholder="Filter software..." class="w-full" />
               </div>
-              <DataTable :value="filteredSoftware" 
-                          class="p-datatable-sm"
-                          :paginator="true" 
-                          :rows="10"
-                          responsiveLayout="scroll">
+              <DataTable :value="filteredSoftware" class="p-datatable-sm" :paginator="true" :rows="10"
+                responsiveLayout="scroll">
                 <Column field="name" header="Name"></Column>
                 <Column field="version" header="Version"></Column>
                 <Column field="source" header="Source"></Column>
@@ -488,15 +449,14 @@ import { ref, computed, onMounted, onUnmounted } from '@vue/runtime-core';
 import ScrollPanel from 'primevue/scrollpanel';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
-import TabView from 'primevue/tabview';
-import TabPanel from 'primevue/tabpanel';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
-import Divider from 'primevue/divider';
 import { OFButton } from '../ui';
+import { autoConvertDevices, convertDevices } from '../../utils/deviceAdapters';
 import { UnifiedDevice, EnhancedUnifiedDevice } from '../../types/device';
 import { formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
+
 
 const props = defineProps({
   visible: {
@@ -514,19 +474,31 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-  'update:visible', 
-  'refreshDevice', 
-  'lockDevice', 
+  'update:visible',
+  'refreshDevice',
+  'lockDevice',
   'unlockDevice',
-  'eraseDevice', 
-  'deleteDevice', 
-  'runCommand', 
+  'eraseDevice',
+  'deleteDevice',
+  'runCommand',
   'rebootDevice',
   'remoteAccess',
   'fileTransfer'
 ]);
 
-const unifiedDevice = computed(() => props.device);
+// Convert devices to unified model
+const unifiedDevice = computed(() => {
+  if (!props.device) {
+    return null;
+  }
+
+  if (props.moduleType) {
+    return convertDevices(Array(props.device), props.moduleType)[0];
+  }
+
+  return autoConvertDevices(Array(props.device))[0];
+});
+
 const softwareFilter = ref('');
 
 interface Software {
@@ -541,9 +513,9 @@ const filteredSoftware = computed(() => {
   if (!unifiedDevice.value?.software) return [];
   const filter = softwareFilter.value.toLowerCase();
   if (!filter) return unifiedDevice.value.software;
-  
-  return unifiedDevice.value.software.filter((sw: Software) => 
-    sw.name.toLowerCase().includes(filter) || 
+
+  return unifiedDevice.value.software.filter((sw: Software) =>
+    sw.name.toLowerCase().includes(filter) ||
     sw.version.toLowerCase().includes(filter) ||
     (sw.publisher && sw.publisher.toLowerCase().includes(filter))
   );
@@ -570,23 +542,23 @@ const getStatusSeverity = (status: string) => {
 
 const getMDMStatusSeverity = (status: string) => {
   if (!status) return 'danger';
-  
+
   const statusLower = status.toLowerCase();
   if (statusLower === 'on' || statusLower.includes('active')) return 'success';
   if (statusLower === 'pending' || statusLower.includes('pending')) return 'warning';
   if (statusLower === 'off' || statusLower.includes('off')) return 'danger';
-  
+
   return 'info';
 };
 
 const formatTimestamp = (timestamp: string | number | undefined) => {
   if (!timestamp) return 'Unknown';
-  
+
   try {
-    const date = typeof timestamp === 'number' 
-      ? new Date(timestamp) 
+    const date = typeof timestamp === 'number'
+      ? new Date(timestamp)
       : new Date(timestamp);
-    
+
     return date.toLocaleString();
   } catch (e) {
     return 'Invalid Date';
@@ -595,31 +567,31 @@ const formatTimestamp = (timestamp: string | number | undefined) => {
 
 const formatBytes = (bytes: number | undefined) => {
   if (bytes === undefined) return 'Unknown';
-  
+
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
   let value = bytes;
-  
+
   while (value >= 1024 && i < units.length - 1) {
     value /= 1024;
     i++;
   }
-  
+
   return `${value.toFixed(2)} ${units[i]}`;
 };
 
 const formatUptime = (seconds: number) => {
   if (!seconds) return 'Unknown';
-  
+
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   let result = '';
   if (days > 0) result += `${days}d `;
   if (hours > 0 || days > 0) result += `${hours}h `;
   result += `${minutes}m`;
-  
+
   return result;
 };
 
@@ -654,9 +626,9 @@ onUnmounted(() => {
 /* Make tags more compact */
 :deep(.p-tag) {
   display: inline-flex;
-  width: auto;
-  min-width: min-content;
-  padding: 0.25rem 0.5rem;
+  width: fit-content;
+  min-width: 0;
+  padding: 0.15rem 0.4rem;
 }
 
 .sidebar-mask {
@@ -784,7 +756,8 @@ onUnmounted(() => {
   color: var(--text-color);
 }
 
-.disk-item, .interface-item {
+.disk-item,
+.interface-item {
   background-color: var(--surface-ground);
   border-radius: 4px;
   padding: 0.5rem;
@@ -794,4 +767,25 @@ onUnmounted(() => {
   font-weight: 600;
   color: var(--text-color);
 }
-</style> 
+
+.disk-item {
+  background-color: var(--surface-ground);
+  border-radius: 4px;
+  padding: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.storage-card {
+  width: calc(50% - 0.5rem);
+  min-width: 200px;
+  flex-grow: 0;
+}
+
+:deep(.p-progressbar) {
+  height: 0.5rem !important;
+}
+
+:deep(.p-progressbar-label) {
+  display: none !important;
+}
+</style>

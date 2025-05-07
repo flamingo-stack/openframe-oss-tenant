@@ -227,11 +227,15 @@ const updateCommandOutput = (output: string) => {
 
 const viewDevice = async (device: UnifiedDevice) => {
   try {
+    // Start with the unified device for immediate display
     selectedDevice.value = device;
     showDeviceDetails.value = true;
 
-    const refreshedDevice = await fetchDeviceDetails(device.originalId as string);
-    selectedDevice.value = refreshedDevice[0];
+    let agentId = device.originalId as string;
+    console.log('Agent ID:', agentId);
+    const refreshedDevice = await fetchDeviceDetails(agentId);
+    selectedDevice.value = refreshedDevice as any;
+    
   } catch (error) {
     console.error('Error viewing device details:', error);
     toastService.showError('Failed to load device details');

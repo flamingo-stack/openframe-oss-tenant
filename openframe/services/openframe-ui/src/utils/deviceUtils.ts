@@ -6,7 +6,6 @@
  */
 
 import { DevicePlatform, DeviceStatus } from '../types/device';
-import Tag from 'primevue/tag';
 
 /**
  * Get device icon based on platform
@@ -60,6 +59,7 @@ export function getPlatformSeverity(platform: string): string {
  * Map status to severity for PrimeVue Tag component
  */
 export function getStatusSeverity(status: string): string {
+  
   const normalizedStatus = mapStatus(status);
   
   switch(normalizedStatus) {
@@ -119,11 +119,13 @@ export function determinePlatform(platform: string | undefined): DevicePlatform 
   
   const normalizedPlatform = platform.toLowerCase();
   
-  if (normalizedPlatform.includes('win')) return 'windows';
   if (normalizedPlatform.includes('darwin') || normalizedPlatform.includes('mac')) return 'darwin';
+  if (normalizedPlatform.includes('win')) return 'windows';
   if (normalizedPlatform.includes('linux')) return 'linux';
   if (normalizedPlatform.includes('ios')) return 'ios';
   if (normalizedPlatform.includes('android')) return 'android';
+  
+
   
   return 'unknown';
 }
@@ -136,11 +138,36 @@ export function inferPlatformFromOS(osDesc: string | undefined): DevicePlatform 
   
   const normalizedDesc = osDesc.toLowerCase();
   
+  // Windows detection with version
   if (normalizedDesc.includes('windows')) return 'windows';
-  if (normalizedDesc.includes('mac') || normalizedDesc.includes('darwin') || normalizedDesc.includes('osx')) return 'darwin';
-  if (normalizedDesc.includes('linux')) return 'linux';
-  if (normalizedDesc.includes('ios')) return 'ios';
-  if (normalizedDesc.includes('android')) return 'android';
+  
+  // macOS detection with various formats
+  if (normalizedDesc.includes('macos') || 
+      normalizedDesc.includes('mac os') || 
+      normalizedDesc.includes('darwin') || 
+      normalizedDesc.includes('osx') || 
+      normalizedDesc.match(/^mac\s/) || 
+      normalizedDesc.match(/^os x\b/)) {
+    return 'darwin';
+  }
+  
+  // Linux detection
+  if (normalizedDesc.includes('linux') || 
+      normalizedDesc.includes('ubuntu') || 
+      normalizedDesc.includes('debian') || 
+      normalizedDesc.includes('centos') || 
+      normalizedDesc.includes('fedora') || 
+      normalizedDesc.includes('redhat')) {
+    return 'linux';
+  }
+  
+  // Mobile platforms
+  if (normalizedDesc.includes('ios') || normalizedDesc.includes('ipad') || normalizedDesc.includes('iphone')) {
+    return 'ios';
+  }
+  if (normalizedDesc.includes('android')) {
+    return 'android';
+  }
   
   return 'unknown';
 }
@@ -157,6 +184,7 @@ export function mapStatus(status: string | number | undefined): DeviceStatus {
   }
   
   const normalizedStatus = status.toLowerCase();
+  console.log('Status:', normalizedStatus);
   
   if (normalizedStatus.includes('online')) return 'online';
   if (normalizedStatus.includes('offline')) return 'offline';
@@ -375,35 +403,29 @@ export function getSecuritySummary(device: EnhancedUnifiedDevice): { status: str
 }
 
 /**
- * Get a list of network interfaces
+ * Get network interfaces as a simple array
  */
 export function getNetworkInterfaces(device: EnhancedUnifiedDevice): Array<{ name: string, ip: string, mac: string }> {
   if (!device.network?.interfaces || device.network.interfaces.length === 0) {
-    // If no detailed interfaces, create a basic one from available IP/MAC addresses
-    const ips = device.network?.ipAddresses || device.ipAddresses || [];
-    const macs = device.network?.macAddresses || [];
-    
-    // Ensure ips is an array before calling map
-    if (!Array.isArray(ips)) {
-      return [];
-    }
-    
-    return ips.map((ip, idx) => ({
-      name: `Interface ${idx + 1}`,
-      ip,
-      mac: idx < macs.length ? macs[idx] : '',
-    }));
+    return [];
   }
   
-  return device.network.interfaces.map(iface => ({
-    name: iface.name || 'Unknown',
-    ip: iface.ipAddress || '',
-    mac: iface.macAddress || '',
-  }));
+  return device.network.interfaces.map(iface => {
+    // Get first IP from ipv4 array or empty string
+    const ipAddress = iface.ipv4 && iface.ipv4.length > 0 ? iface.ipv4[0] : '';
+    // Get MAC address
+    const macAddress = iface.mac || '';
+    
+    return {
+      name: iface.name,
+      ip: ipAddress,
+      mac: macAddress
+    };
+  });
 }
 
 /**
- * Format mobile device-specific information
+ * Get mobile device info summary
  */
 export function getMobileDeviceInfo(device: EnhancedUnifiedDevice): { 
   hasMobileInfo: boolean, 
@@ -411,21 +433,23 @@ export function getMobileDeviceInfo(device: EnhancedUnifiedDevice): {
   enrollmentStatus: string,
   supervised: string,
 } {
-  const mobile = device.mobile;
+  const hasMobileInfo = !!device.mobile;
   
-  if (!mobile) {
-    return { 
-      hasMobileInfo: false, 
-      batteryLevel: 'N/A', 
-      enrollmentStatus: 'N/A',
-      supervised: 'N/A',
-    };
-  }
+  const batteryLevel = device.mobile?.batteryLevel !== undefined 
+    ? `${device.mobile.batteryLevel}%` 
+    : 'N/A';
+    
+  const enrollmentStatus = device.mobile?.mdmEnrollmentStatus || 'N/A';
+  
+  // Check if the device has supervision info (specific to iOS/MDM)
+  const supervised = device.mobile?.deviceStatus?.toLowerCase().includes('supervised') 
+    ? 'Yes' 
+    : 'No';
   
   return {
-    hasMobileInfo: true,
-    batteryLevel: mobile.batteryLevel !== undefined ? `${mobile.batteryLevel}%` : 'N/A',
-    enrollmentStatus: mobile.mdmEnrollmentStatus || 'N/A',
-    supervised: mobile.isSupervised ? 'Yes' : 'No',
+    hasMobileInfo,
+    batteryLevel,
+    enrollmentStatus,
+    supervised
   };
 }

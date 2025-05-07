@@ -272,26 +272,9 @@ const viewDevice = async (device: UnifiedDevice) => {
     selectedDevice.value = device;
     showDeviceDetails.value = true;
 
-    // Fetch updated device details if needed
-    let agentId: string | undefined;
-
-    if ('originalId' in device && device.originalId) {
-      agentId = device.originalId as string;
-    } else {
-      const originalDevice = getOriginalDevice<RMMDevice>(device);
-      agentId = originalDevice.agent_id;
-    }
-
-    if (agentId) {
-      const refreshedDevice = await restClient.get<RMMDevice>(`${API_URL}/agents/${agentId}/`);
-      if (refreshedDevice) {
-        // Update the selected device with fresh data
-        const convertedDevices = convertDevices([refreshedDevice], 'rmm');
-        if (convertedDevices.length > 0) {
-          selectedDevice.value = convertedDevices[0];
-        }
-      }
-    }
+    let agentId = device.originalId as string;
+    const refreshedDevice = await fetchDeviceDetails(agentId);
+    selectedDevice.value = refreshedDevice as any;
   } catch (error) {
     console.error('Error viewing device details:', error);
     toastService.showError('Failed to load device details');
