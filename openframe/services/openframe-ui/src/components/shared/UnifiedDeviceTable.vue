@@ -41,6 +41,14 @@
         <span class="text-sm">{{ formatTimestamp(data.lastSeen) }}</span>
       </template>
     </Column>
+    
+    <!-- MDM Status Column - Only show for MDM devices -->
+    <Column v-if="props.moduleType === 'mdm'" field="moduleSpecific.mdm.enrollment_status" header="MDM Status" sortable>
+      <template #body="{ data }">
+        <Tag :value="data.moduleSpecific?.mdm?.enrollment_status || 'Not enrolled'"
+          :severity="getMDMStatusSeverity(data.moduleSpecific?.mdm?.enrollment_status)" />
+      </template>
+    </Column>
 
     <Column header="Actions" :exportable="false">
       <template #body="{ data }">
@@ -153,6 +161,14 @@ const unifiedDevices = computed(() => {
 // Function to determine if command feature is available for a device
 const isCommandAvailable = (device: UnifiedDevice) => {
   return device.type === 'rmm' || device.type === 'rac';
+};
+
+// MDM status severity helper function
+const getMDMStatusSeverity = (status: string | null | undefined) => {
+  if (!status) return 'danger';
+  if (status.toLowerCase().includes('on')) return 'success';
+  if (status.toLowerCase().includes('pending')) return 'warning';
+  return 'info';
 };
 </script>
 

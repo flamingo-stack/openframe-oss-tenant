@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from '@vue/runtime-core';
+import { ref, onMounted, onUnmounted } from '@vue/runtime-core';
 import Sidebar from 'primevue/sidebar';
 import { OFButton } from '../../components/ui';
 import { restClient } from "../../apollo/apolloClient";
@@ -120,6 +120,13 @@ const toastService = ToastService.getInstance();
 const onVisibilityChange = (value: boolean) => {
   emit('update:visible', value);
   if (value) fetchAgentInfo();
+};
+
+// Handle Escape key press
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && props.visible) {
+    onVisibilityChange(false);
+  }
 };
 
 const getStatusIcon = (status: string) => {
@@ -241,10 +248,14 @@ const fetchAgentInfo = async () => {
   }
 };
 
-// Load history on mount
+// Add/remove event listeners for Escape key
 onMounted(() => {
+  document.addEventListener('keydown', handleEscapeKey);
   loadHistory();
-  // Add mock data immediately for testing
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscapeKey);
 });
 
 // Expose methods for parent component
@@ -270,6 +281,14 @@ defineExpose({
     &.active {
       display: block;
     }
+  }
+
+  /* Make tags more compact */
+  :deep(.p-tag) {
+    display: inline-flex;
+    width: auto;
+    min-width: min-content;
+    padding: 0.25rem 0.5rem;
   }
 
   .sidebar {

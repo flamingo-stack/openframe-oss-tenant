@@ -14,36 +14,28 @@
         emptyTitle="No Devices Found" emptyMessage="There are no devices enrolled in MDM yet."
         emptyHint="Devices will appear here once they are enrolled in your MDM server." @viewDetails="viewDevice"
         @deleteDevice="deleteDevice" @lockDevice="lockDevice">
-        <Column field="mdm.enrollment_status" header="MDM Status" sortable>
-          <template #body="{ data }">
-            <Tag :value="data.moduleSpecific?.mdm?.enrollment_status || 'Not enrolled'"
-              :severity="getMDMStatusSeverity(data.moduleSpecific?.mdm?.enrollment_status)" />
-          </template>
-        </Column>
       </UnifiedDeviceTable>
     </div>
+
+    <!-- Device Details Slider -->
+    <DeviceDetailsSlider v-model:visible="showDeviceDetails" :device="selectedDevice" moduleType="mdm"
+      @refreshDevice="fetchDevices" @lockDevice="lockDevice" @unlockDevice="unlockDevice" 
+      @deleteDevice="deleteDevice" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from '@vue/runtime-core';
-import { useRouter } from 'vue-router';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
 import { OFButton } from '../../components/ui';
-import InputText from 'primevue/inputtext';
-import Tag from 'primevue/tag';
-import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
-import ModuleTable from '../../components/shared/ModuleTable.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
-import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
-import { UnifiedDevice, getOriginalDevice, EnhancedUnifiedDevice } from '../../types/device';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider.vue';
+import { UnifiedDevice } from '../../types/device';
 import { MDMDevice } from '../../utils/deviceAdapters';
 
 interface FleetResponse {
@@ -55,37 +47,18 @@ const config = configService.getConfig();
 
 const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
-const router = useRouter();
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
-const error = ref('');
 const devices = ref<MDMDevice[]>([]);
 const showCreateDialog = ref(false);
+const showDeviceDetails = ref(false);
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
 const selectedDevice = ref<UnifiedDevice | null>(null);
-
-const getMDMStatusSeverity = (status: string | null | undefined) => {
-  if (!status) return 'danger';
-  if (status.toLowerCase().includes('on')) return 'success';
-  if (status.toLowerCase().includes('pending')) return 'warning';
-  return 'info';
-};
-
-const extractUrlFromMessage = (message: string) => {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const match = message.match(urlRegex);
-  if (match) {
-    const url = match[0];
-    const textWithoutUrl = message.replace(url, '');
-    return { url, text: textWithoutUrl.trim() };
-  }
-  return { text: message };
-};
 
 const fetchDevices = async () => {
   loading.value = true;
@@ -118,14 +91,10 @@ const fetchDeviceDetails = async (deviceId: string) => {
 const viewDevice = async (device: UnifiedDevice) => {
   try {
     selectedDevice.value = device;
-    
-    // Fetch device details
-    const deviceDetails = await fetchDeviceDetails(device.originalId as string);
-    
-    if (deviceDetails) {
-      console.log('Device details:', deviceDetails);
-      toastService.showSuccess('Device details fetched successfully');
-    }
+    showDeviceDetails.value = true;
+
+    // Fetch device details for reference (optional)
+    await fetchDeviceDetails(device.originalId as string);
   } catch (error) {
     console.error('Error viewing device details:', error);
     toastService.showError('Failed to load device details');
@@ -133,78 +102,16 @@ const viewDevice = async (device: UnifiedDevice) => {
 };
 
 const lockDevice = async (device: UnifiedDevice) => {
-  try {
-    let deviceUuid: string | undefined;
-
-    // Try to get the device UUID directly from the originalId or original device
-    if ('originalId' in device && device.originalId) {
-      // If we have the device ID, fetch the device to get the UUID
-      const detailedDevice = await fetchDeviceDetails(device.originalId as string);
-      deviceUuid = detailedDevice?.device_uuid;
-    } else {
-      const originalDevice = getOriginalDevice<MDMDevice>(device);
-      deviceUuid = originalDevice?.device_uuid;
-    }
-
-    if (!deviceUuid) {
-      toastService.showError('Device UUID not available');
-      return;
-    }
-
-    await restClient.post(`${API_URL}/global/devices/${deviceUuid}/lock`);
-    toastService.showSuccess('Device locked successfully');
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
+  await lockOrUnlock(device, 'lock');
 };
-
 const unlockDevice = async (device: UnifiedDevice) => {
-  try {
-    let deviceUuid: string | undefined;
-
-    // Try to get the device UUID directly from the originalId or original device
-    if ('originalId' in device && device.originalId) {
-      // If we have the device ID, fetch the device to get the UUID
-      const detailedDevice = await fetchDeviceDetails(device.originalId as string);
-      deviceUuid = detailedDevice?.device_uuid;
-    } else {
-      const originalDevice = getOriginalDevice<MDMDevice>(device);
-      deviceUuid = originalDevice?.device_uuid;
-    }
-
-    if (!deviceUuid) {
-      toastService.showError('Device UUID not available');
-      return;
-    }
-
-    await restClient.post(`${API_URL}/global/devices/${deviceUuid}/unlock`);
-    toastService.showSuccess('Device unlocked successfully');
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
+  await lockOrUnlock(device, 'unlock');
 };
 
-const eraseDevice = async (device: UnifiedDevice) => {
+const lockOrUnlock = async (device: UnifiedDevice, action: string) => {
   try {
-    let deviceUuid: string | undefined;
-
-    // Try to get the device UUID directly from the originalId or original device
-    if ('originalId' in device && device.originalId) {
-      // If we have the device ID, fetch the device to get the UUID
-      const detailedDevice = await fetchDeviceDetails(device.originalId as string);
-      deviceUuid = detailedDevice?.device_uuid;
-    } else {
-      const originalDevice = getOriginalDevice<MDMDevice>(device);
-      deviceUuid = originalDevice?.device_uuid;
-    }
-
-    if (!deviceUuid) {
-      toastService.showError('Device UUID not available');
-      return;
-    }
-
-    await restClient.post(`${API_URL}/global/devices/${deviceUuid}/erase`);
-    toastService.showSuccess('Device erase command sent successfully');
+    await restClient.post(`${API_URL}/hosts/${device.originalId}/${action}`);
+    toastService.showSuccess('Device locked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
   }
@@ -212,29 +119,14 @@ const eraseDevice = async (device: UnifiedDevice) => {
 
 const deleteDevice = async (device: UnifiedDevice) => {
   try {
-    let deviceId: number | undefined;
-
-    // Try to get the device ID directly from the originalId or original device
-    if ('originalId' in device && typeof device.originalId === 'number') {
-      deviceId = device.originalId;
-    } else {
-      const originalDevice = getOriginalDevice<MDMDevice>(device);
-      deviceId = originalDevice?.id;
-    }
-
-    if (!deviceId) {
-      toastService.showError('Device ID not available');
-      return;
-    }
-
-    await restClient.delete(`${API_URL}/global/hosts/${deviceId}`);
-    await fetchDevices();
+    await restClient.delete(`${API_URL}/hosts/${device.originalId}`);
     toastService.showSuccess('Device deleted successfully');
-  } catch (err) {
-    console.error('Error deleting device:', err);
-    toastService.showError('Failed to delete device');
+    await fetchDevices();
+  } catch (err: any) {
+    toastService.showError(err.message);
   }
 };
+
 
 onMounted(() => {
   fetchDevices();

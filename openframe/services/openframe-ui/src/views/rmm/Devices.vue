@@ -50,6 +50,11 @@
 
     <!-- Script Execution History -->
     <ScriptExecutionHistory v-model:visible="showExecutionHistory" ref="executionHistoryRef" />
+
+    <!-- Device Details Slider -->
+    <DeviceDetailsSlider v-model:visible="showDeviceDetails" :device="selectedDevice" moduleType="rmm"
+      @refreshDevice="fetchDevices" @runCommand="onRunCommand" @rebootDevice="rebootDevice"
+      @deleteDevice="deleteDevice" />
   </div>
 </template>
 
@@ -74,9 +79,10 @@ import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider.vue';
 import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
 import { UnifiedDevice, getOriginalDevice, EnhancedUnifiedDevice } from '../../types/device';
-import { RMMDevice } from '../../utils/deviceAdapters';
+import { RMMDevice, convertDevices } from '../../utils/deviceAdapters';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 
 const configService = ConfigService.getInstance();
@@ -102,6 +108,10 @@ const filters = ref({
 
 const showExecutionHistory = ref(false);
 const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
+
+const showDeviceDetails = ref(false);
+const showCreateDialog = ref(false);
+const showCommandDialog = ref(false);
 
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
@@ -159,10 +169,6 @@ const fetchDevices = async () => {
   }
 };
 
-const remoteControl = (device: Device) => {
-  // Implement remote control functionality
-  console.log('Remote control:', device);
-};
 
 const runCommand = (device: UnifiedDevice) => {
   selectedDevice.value = device;
@@ -170,26 +176,12 @@ const runCommand = (device: UnifiedDevice) => {
 };
 
 const executeCommand = async (cmd: string, shell: string, timeout: number, runAsUser: boolean) => {
-  if (!selectedDevice.value) return;
-
-  // Get agent ID - try originalId first, then fall back to original device
-  let agentId: string;
-
-  if ('originalId' in selectedDevice.value && selectedDevice.value.originalId) {
-    agentId = selectedDevice.value.originalId as string;
-  } else {
-    // Get the original RMM device to extract agent_id
-    const originalDevice = getOriginalDevice<RMMDevice>(selectedDevice.value);
-    agentId = originalDevice.agent_id;
-  }
-
-  if (!agentId) {
-    toastService.showError('Agent ID not available');
+  if (!selectedDevice.value)
     return;
-  }
 
+  let agentId: string | undefined;
+  agentId = selectedDevice.value.originalId as string;
   let executionId: string | undefined;
-
   // Add command to execution history with pending status and close dialog immediately
   if (executionHistoryRef.value) {
     executionId = executionHistoryRef.value.addExecution({
@@ -278,13 +270,27 @@ const fetchDeviceDetails = async (deviceId: string) => {
 const viewDevice = async (device: UnifiedDevice) => {
   try {
     selectedDevice.value = device;
-    
-    // Fetch device details
-    const deviceDetails = await fetchDeviceDetails(device.originalId as string);
-    
-    if (deviceDetails) {
-      console.log('Device details:', deviceDetails);
-      toastService.showSuccess('Device details fetched successfully');
+    showDeviceDetails.value = true;
+
+    // Fetch updated device details if needed
+    let agentId: string | undefined;
+
+    if ('originalId' in device && device.originalId) {
+      agentId = device.originalId as string;
+    } else {
+      const originalDevice = getOriginalDevice<RMMDevice>(device);
+      agentId = originalDevice.agent_id;
+    }
+
+    if (agentId) {
+      const refreshedDevice = await restClient.get<RMMDevice>(`${API_URL}/agents/${agentId}/`);
+      if (refreshedDevice) {
+        // Update the selected device with fresh data
+        const convertedDevices = convertDevices([refreshedDevice], 'rmm');
+        if (convertedDevices.length > 0) {
+          selectedDevice.value = convertedDevices[0];
+        }
+      }
     }
   } catch (error) {
     console.error('Error viewing device details:', error);
@@ -328,6 +334,34 @@ const confirmDelete = async () => {
     toastService.showError('Failed to delete device');
   } finally {
     deleting.value = false;
+  }
+};
+
+const onRunCommand = (device: UnifiedDevice) => {
+  runCommand(device);
+};
+
+const rebootDevice = async (device: UnifiedDevice) => {
+  try {
+    let agentId: string | undefined;
+
+    if ('originalId' in device && device.originalId) {
+      agentId = device.originalId as string;
+    } else {
+      const originalDevice = getOriginalDevice<RMMDevice>(device);
+      agentId = originalDevice.agent_id;
+    }
+
+    if (!agentId) {
+      toastService.showError('Agent ID not available');
+      return;
+    }
+
+    await restClient.post(`${API_URL}/agents/${agentId}/reboot/`);
+    toastService.showSuccess('Reboot command sent successfully');
+  } catch (error) {
+    console.error('Error rebooting device:', error);
+    toastService.showError('Failed to reboot device');
   }
 };
 

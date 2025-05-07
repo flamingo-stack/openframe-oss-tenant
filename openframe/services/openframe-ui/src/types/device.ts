@@ -45,6 +45,107 @@ export interface UnifiedDevice {
   // Network information
   ipAddresses?: string[];       // IP addresses associated with device
   
+  // Enhanced properties for detailed view
+  hardware?: {
+    manufacturer?: string;      // Hardware manufacturer
+    model?: string;             // Hardware model
+    serialNumber?: string;      // Hardware serial number
+    cpu?: {
+      model?: string;           // CPU model
+      cores?: number;           // Number of CPU cores
+      usage?: number;           // CPU usage percentage
+    };
+    memory?: {
+      total?: number;           // Total memory in bytes
+      used?: number;            // Used memory in bytes
+      free?: number;            // Free memory in bytes
+    };
+    storage?: Array<{
+      name: string;             // Disk name
+      total?: number;           // Total disk space in bytes
+      used?: number;            // Used disk space in bytes
+      free?: number;            // Free disk space in bytes
+    }>;
+    gpu?: string[];             // GPU information
+  };
+  
+  network?: {
+    ipAddresses?: string[];     // IP addresses
+    publicIp?: string;          // Public IP address
+    macAddresses?: string[];    // MAC addresses
+    interfaces?: Array<{
+      name: string;             // Interface name
+      ipv4?: string[];          // IPv4 addresses
+      ipv6?: string[];          // IPv6 addresses
+      mac?: string;             // MAC address
+    }>;
+  };
+  
+  os?: {
+    name?: string;              // OS name
+    version?: string;           // OS version
+    build?: string;             // OS build number
+    architecture?: string;      // OS architecture
+    lastBoot?: string | number; // Last boot timestamp
+    uptime?: number;            // Uptime in seconds
+  };
+  
+  security?: {
+    antivirusEnabled?: boolean; // Antivirus status
+    lastUpdated?: string;       // Last security update
+    encryptionEnabled?: boolean; // Disk encryption status
+    firewallEnabled?: boolean;  // Firewall status
+    vulnerabilities?: Array<{
+      cve: string;              // CVE ID
+      severity: string;         // Vulnerability severity
+      details?: string;         // Vulnerability details
+    }>;
+  };
+  
+  mobile?: {
+    batteryLevel?: number;      // Battery level percentage
+    mdmEnrollmentStatus?: string; // MDM enrollment status
+    profiles?: Array<{
+      id: string;
+      name: string;
+    }>;
+    location?: {
+      latitude?: number;
+      longitude?: number;
+      timestamp?: string;
+    };
+  };
+  
+  user?: {
+    currentUser?: string;       // Current logged in user
+    loggedInUsers?: string[];   // All logged in users
+    domain?: string;            // User domain
+  };
+  
+  management?: {
+    site?: string;              // Management site name
+    group?: string;             // Management group name
+    agentVersion?: string;      // Agent version
+    lastCheckin?: string | number; // Last check-in timestamp
+  };
+
+  software?: Array<{
+    name: string;               // Software name
+    version: string;            // Software version
+    installDate?: string;       // Installation date
+    publisher?: string;         // Software publisher
+    source?: string;            // Installation source
+  }>;
+  
+  asset?: {
+    purchaseDate?: string;      // Purchase date
+    warranty?: string;          // Warranty information
+    owner?: string;             // Asset owner
+    department?: string;        // Department
+    location?: string;          // Physical location
+    customFields?: Record<string, any>; // Custom asset fields
+  };
+  
   // Module-specific data preserved for specialized operations
   moduleSpecific: any;          // Original data from source module
 }
@@ -70,11 +171,25 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
       free?: number;
     };
     storage?: Array<{
-      name?: string;
+      name: string;
       total?: number;
       used?: number;
       free?: number;
+      fstype?: string;
+      percent?: number;
     }>;
+    gpu?: string[];
+    bios?: {
+      vendor?: string;
+      version?: string;
+    };
+    motherboard?: {
+      vendor?: string;
+      name?: string;
+      serial?: string;
+      version?: string;
+      identifier?: string;
+    };
   };
   
   // Network information
@@ -83,10 +198,13 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     publicIp?: string;
     macAddresses?: string[];
     interfaces?: Array<{
-      name?: string;
-      ip?: string;
+      name: string;
+      ipv4?: string[];
+      ipv6?: string[];
       mac?: string;
       status?: string;
+      gateway?: string;
+      subnet?: string;
     }>;
   };
   
@@ -95,7 +213,10 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     name?: string;
     version?: string;
     build?: string;
+    architecture?: string;
     lastBoot?: string | number;
+    uptime?: number;
+    codeName?: string;
   };
   
   // Security information
@@ -104,6 +225,18 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     firewallEnabled?: boolean;
     encryptionEnabled?: boolean;
     lastUpdated?: string;
+    vulnerabilities?: Array<{
+      cve: string;
+      severity: string;
+      details?: string;
+      detailsLink?: string;
+      createdAt?: string;
+    }>;
+    windowsSecurityCenter?: {
+      antiVirus?: string;
+      autoUpdate?: string;
+      firewall?: string;
+    };
   };
   
   // User information
@@ -111,39 +244,76 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     currentUser?: string;
     loggedInUsers?: string[];
     domain?: string;
+    users?: Array<{
+      uid?: number;
+      username: string;
+      type?: string;
+      groupname?: string;
+      shell?: string;
+    }>;
   };
   
   // Asset information
   asset?: {
     purchaseDate?: string;
-    warrantyExpiration?: string;
-    location?: string;
+    warranty?: string;
+    owner?: string;
     department?: string;
-    assignedUser?: string;
+    location?: string;
     customFields?: Record<string, any>;
   };
   
   // Mobile device specific information
   mobile?: {
-    phoneNumber?: string;
-    imei?: string;
     batteryLevel?: number;
+    batteryHealth?: string;
+    batteryCycleCount?: number;
     mdmEnrollmentStatus?: string;
+    profiles?: Array<{
+      id: string;
+      name: string;
+    }>;
+    location?: {
+      latitude?: number;
+      longitude?: number;
+      timestamp?: string;
+    };
+    deviceStatus?: string;
+    pendingAction?: string;
   };
   
-  // Management information
   management?: {
     site?: string;
     group?: string;
     agentVersion?: string;
     lastCheckin?: string | number;
+    orbitVersion?: string;
+    fleetDesktopVersion?: string;
+    osqueryVersion?: string;
+    lastEnrolledAt?: string;
   };
-  
-  // Original module-specific data
-  moduleSpecific: any;
-  
-  // Original module-specific ID for direct reference
-  originalId?: string | number;
+
+  // Software information
+  software?: Array<{
+    id?: number;
+    name: string;
+    version: string;
+    installDate?: string;
+    lastOpenedAt?: string;
+    publisher?: string;
+    source?: string;
+    bundleIdentifier?: string;
+    browser?: string;
+    generatedCpe?: string;
+    installedPaths?: string[];
+    vulnerabilities?: Array<{
+      cve: string;
+      details?: string;
+      detailsLink?: string;
+      severity?: string;
+      createdAt?: string;
+    }>;
+  }>;
 }
 
 /**
