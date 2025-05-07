@@ -341,7 +341,9 @@ jobs:
         run: |
           echo "$MATRIX" | jq -cr '.[]' | while read -r item; do
             name=$(jq -r '.name' <<< "$item")
-            [ "$(jq -r --arg n "$name" '$CHANGES[$n]' <<< "$CHANGES")" = "true" ] || continue
+
+            changed=$(jq -r --arg name "$name" --argjson changes "$CHANGES" '$changes[$name]' <<< "{}")
+            [ "$changed" = "true" ] || continue
 
             IMAGE="${REGISTRY}/${ORGANIZATION}/openframe-${name}"
             echo "Tagging $IMAGE:$COMMIT_SHA → $IMAGE:latest"
@@ -350,6 +352,7 @@ jobs:
             docker tag "$IMAGE:$COMMIT_SHA" "$IMAGE:latest"
             docker push "$IMAGE:latest"
           done
+
 
       # - name: Cleanup failed image tags
       #   if: ${{ failure() }}
