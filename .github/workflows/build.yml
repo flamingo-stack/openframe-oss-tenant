@@ -30,7 +30,6 @@ on:
 env:
   ORGANIZATION: flamingo-cx
   REGISTRY: ghcr.io
-  GH_TOKEN: ${{ github.token }}
 
 jobs:
   changes:
@@ -292,6 +291,12 @@ jobs:
           chmod +x get_helm.sh
           ./get_helm.sh
           echo "Helm version: $(helm version --short)"
+      
+      - name: Install k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          sudo mv k3d /usr/local/bin/k3d || true  # in case it's downloaded locally
+          echo "k3d version: $(k3d --version)"
 
       - name: Set inotify limit
         run: sudo sysctl fs.inotify.max_user_instances=1500
@@ -301,11 +306,7 @@ jobs:
           MATRIX: ${{ needs.matrix.outputs.matrix }}
           CHANGES: ${{ toJSON(needs.changes.outputs) }}
           COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
-          REGISTRY: ${{ env.REGISTRY }}
-          ORG: ${{ env.ORGANIZATION }}
         run: |
-          echo "Updating image tags for changed services..."
-
           jq -c '.[]' <<< "$MATRIX" | while read -r item; do
             name=$(jq -r '.name' <<< "$item")
             path=$(jq -r '.manifest_path' <<< "$item")
@@ -313,18 +314,63 @@ jobs:
 
             [ "$pushed" = "true" ] || continue
 
-            echo "$name → $REGISTRY/$ORG/openframe-${name}:${COMMIT_SHA}"
+            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
             cd "$path"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORG}/openframe-${name}:${COMMIT_SHA}"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
             cd - > /dev/null
           done
-      
+
       - name: Run environment test script
         env:
           TERM: dumb
           GITHUB_TOKEN_CLASSIC: ${{ github.token }}
         run: |
-          ./scripts/run.sh bootstrap
+          ./scripts/run.sh platform
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${REGISTRY}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Tag images as latest
+        env:
+          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          CHANGES: ${{ toJSON(needs.changes.outputs) }}
+        run: |
+          echo "$MATRIX" | jq -cr '.[]' | while read -r item; do
+            name=$(jq -r '.name' <<< "$item")
+            [ "$(jq -r --arg n "$name" '$CHANGES[$n]' <<< "$CHANGES")" = "true" ] || continue
+
+            IMAGE="${REGISTRY}/${ORGANIZATION}/openframe-${name}"
+            echo "Tagging $IMAGE:$COMMIT_SHA → $IMAGE:latest"
+
+            docker pull "$IMAGE:$COMMIT_SHA"
+            docker tag "$IMAGE:$COMMIT_SHA" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          done
+
+      # - name: Cleanup failed image tags
+      #   if: ${{ failure() }}
+      #   continue-on-error: true
+      #   run: |
+      #     echo "Deleting commit-sha tags only..."
+      #     jq -c '.[]' <<< "${{ needs.matrix.outputs.matrix }}" | while read -r item; do
+      #       name=$(jq -r '.name' <<< "$item")
+      #       pushed=$(jq -r --arg name "$name" '.[$name]' <<< "${{ toJSON(needs.changes.outputs) }}")
+      #       [ "$pushed" = "true" ] || continue
+
+      #       echo "Cleaning tag ${{ needs.changes.outputs.commit_sha }} for openframe-${name}"
+      #       gh api \
+      #         -X DELETE \
+      #         /orgs/${{ github.repository_owner }}/packages/container/openframe-${name}/versions \
+      #         --jq ".[] | select(.metadata.container.tags[] == \"${{ needs.changes.outputs.commit_sha }}\") | .id" \
+      #         | xargs -I{} gh api -X DELETE /orgs/${{ github.repository_owner }}/packages/container/openframe-${name}/versions/{}
+      #     done
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
       - name: Handle test failure
