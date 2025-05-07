@@ -80,7 +80,7 @@ const fetchDeviceDetails = async (deviceId: string) => {
   try {
     const response = await restClient.get<MDMDevice>(`${API_URL}/hosts/${deviceId}`);
     console.log("Fetched device details:", response);
-    return response || null;
+    return response.host || null;
   } catch (err) {
     console.error('Error fetching device details:', err);
     toastService.showError('Failed to fetch device details');
@@ -90,11 +90,13 @@ const fetchDeviceDetails = async (deviceId: string) => {
 
 const viewDevice = async (device: UnifiedDevice) => {
   try {
+    console.log("Viewing device:", device);
     selectedDevice.value = device;
     showDeviceDetails.value = true;
 
     let agentId = device.originalId as string;
     const refreshedDevice = await fetchDeviceDetails(agentId);
+    console.log("Refreshed device:", refreshedDevice);
     selectedDevice.value = refreshedDevice as any;
   } catch (error) {
     console.error('Error viewing device details:', error);
@@ -112,7 +114,7 @@ const unlockDevice = async (device: UnifiedDevice) => {
 const lockOrUnlock = async (device: UnifiedDevice, action: string) => {
   try {
     await restClient.post(`${API_URL}/hosts/${device.originalId}/${action}`);
-    toastService.showSuccess('Device locked successfully');
+    toastService.showSuccess(`Device ${action}ed successfully`);
   } catch (err: any) {
     toastService.showError(err.message);
   }

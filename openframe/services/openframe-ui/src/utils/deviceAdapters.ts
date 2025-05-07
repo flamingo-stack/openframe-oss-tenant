@@ -454,7 +454,7 @@ function fromMDMDevice(device: MDMDevice): EnhancedUnifiedDevice {
   
   return {
     // Base unified device properties
-    id: device.uuid || device.device_uuid || device.id.toString(),
+    id: device.uuid || device.device_uuid || (device.id !== undefined ? device.id.toString() : ''),
     hostname: device.hostname,
     displayName: device.display_name || device.computer_name,
     platform,
