@@ -229,12 +229,9 @@ const fetchAgentInfo = async () => {
         });
       } else {
         // If API returns empty, use mock data
-        addMockAgentInfo();
       }
     } catch (error) {
       console.error('API call failed, using mock data:', error);
-      // Add mock agent info if API fails
-      addMockAgentInfo();
     }
     
     console.log('Updated executions with agent info:', executions.value);
@@ -244,44 +241,10 @@ const fetchAgentInfo = async () => {
   }
 };
 
-// Add mock agent data for testing
-const addMockAgentInfo = () => {
-  console.log('Adding mock agent info to executions');
-  
-  const mockAgentData: Record<string, { platform: string; os: string; status: string; plat: string; operating_system: string; }> = {
-    'test-device': {
-      platform: 'Windows',
-      os: 'Windows 10 Pro',
-      status: 'online',
-      plat: 'windows',
-      operating_system: 'Windows 10 Pro 21H2'
-    },
-    'default': {
-      platform: 'Linux',
-      os: 'Ubuntu 22.04 LTS',
-      status: 'online',
-      plat: 'linux',
-      operating_system: 'Ubuntu 22.04.3 LTS'
-    }
-  };
-  
-  executions.value = executions.value.map(exec => {
-    const deviceName = exec.deviceName.toLowerCase();
-    const mockData = mockAgentData[deviceName] || mockAgentData.default;
-    
-    console.log('Adding mock data for', exec.deviceName, ':', mockData);
-    return { 
-      ...exec, 
-      agent_info: mockData
-    };
-  });
-};
-
 // Load history on mount
 onMounted(() => {
   loadHistory();
   // Add mock data immediately for testing
-  addMockAgentInfo();
 });
 
 // Expose methods for parent component

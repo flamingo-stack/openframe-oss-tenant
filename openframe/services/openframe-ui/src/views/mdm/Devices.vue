@@ -18,71 +18,44 @@
         placeholder="Search devices..."
       />
 
-      <ModuleTable
-        :items="devices"
+      <UnifiedDeviceTable
+        :devices="devices"
+        moduleType="mdm"
         :loading="loading"
-        :searchFields="['hostname', 'platform', 'os_version', 'status']"
         emptyIcon="pi pi-desktop"
         emptyTitle="No Devices Found"
         emptyMessage="There are no devices enrolled in MDM yet."
         emptyHint="Devices will appear here once they are enrolled in your MDM server."
+        @viewDetails="viewDeviceDetails"
+        @deleteDevice="deleteDevice"
       >
-        <Column field="hostname" header="Hostname" sortable>
-          <template #body="{ data }">
-            <div class="flex align-items-center">
-              <i :class="getDeviceIcon(data.platform)" class="mr-2"></i>
-              <span>{{ data.display_name || data.hostname }}</span>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="platform" header="Platform" sortable>
-          <template #body="{ data }">
-            <Tag :value="formatPlatform(data.platform)" 
-                 :severity="getPlatformSeverity(data.platform)" />
-          </template>
-        </Column>
-
-        <Column field="os_version" header="OS Version" sortable>
-          <template #body="{ data }">
-            <span class="text-sm">{{ data.os_version }}</span>
-          </template>
-        </Column>
-
-        <Column field="status" header="Status" sortable>
-          <template #body="{ data }">
-            <Tag :value="data.status" 
-                 :severity="getStatusSeverity(data.status)" />
-          </template>
-        </Column>
-
         <Column field="mdm.enrollment_status" header="MDM Status" sortable>
           <template #body="{ data }">
-            <Tag :value="data.mdm?.enrollment_status || 'Not enrolled'" 
-                 :severity="getMDMStatusSeverity(data.mdm?.enrollment_status)" />
+            <Tag 
+              :value="data.moduleSpecific?.mdm?.enrollment_status || 'Not enrolled'" 
+              :severity="getMDMStatusSeverity(data.moduleSpecific?.mdm?.enrollment_status)" 
+            />
           </template>
         </Column>
-
-        <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
-          <template #body="{ data }">
-            <div class="flex gap-2 justify-content-center">
-              <OFButton 
-                icon="pi pi-lock" 
-                class="p-button-text p-button-sm" 
-                :disabled="!data.mdm?.enrollment_status"
-                v-tooltip.top="'Lock Device'"
-                @click="lockDevice(data)" 
-              />
-              <OFButton 
-                icon="pi pi-trash" 
-                class="p-button-text p-button-sm p-button-danger" 
-                v-tooltip.top="'Delete Device'"
-                @click="deleteDevice(data)" 
-              />
-            </div>
-          </template>
-        </Column>
-      </ModuleTable>
+        
+        <template #actions="{ device }">
+          <div class="flex gap-2 justify-content-center">
+            <OFButton 
+              icon="pi pi-lock" 
+              class="p-button-text p-button-sm" 
+              :disabled="!device.moduleSpecific?.mdm?.enrollment_status"
+              v-tooltip.top="'Lock Device'"
+              @click="lockDevice(device)" 
+            />
+            <OFButton 
+              icon="pi pi-trash" 
+              class="p-button-text p-button-sm p-button-danger" 
+              v-tooltip.top="'Delete Device'"
+              @click="deleteDevice(device)" 
+            />
+          </div>
+        </template>
+      </UnifiedDeviceTable>
     </div>
   </div>
 </template>
@@ -103,10 +76,13 @@ import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 import ModuleTable from '../../components/shared/ModuleTable.vue';
+import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
+import { UnifiedDevice, getOriginalDevice } from '../../types/device';
+import { MDMDevice } from '../../utils/deviceAdapters';
 
 interface FleetResponse {
-  hosts: any[];
+  hosts: MDMDevice[];
 }
 
 const configService = ConfigService.getInstance();
@@ -119,25 +95,14 @@ const toastService = ToastService.getInstance();
 
 const loading = ref(true);
 const error = ref('');
-const devices = ref<any[]>([]);
+const devices = ref<MDMDevice[]>([]);
 const showCreateDialog = ref(false);
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
-
-
-const getStatusSeverity = (status: string) => {
-  const severityMap: Record<string, string> = {
-    online: 'success',
-    offline: 'danger',
-    unknown: 'warning'
-  };
-  return severityMap[status] || 'warning';
-};
-
-const getMDMStatusSeverity = (status: string | null) => {
+const getMDMStatusSeverity = (status: string | null | undefined) => {
   if (!status) return 'danger';
   if (status.toLowerCase().includes('on')) return 'success';
   if (status.toLowerCase().includes('pending')) return 'warning';
@@ -167,36 +132,45 @@ const fetchDevices = async () => {
   }
 };
 
-const lockDevice = async (device: any) => {
+const viewDeviceDetails = (device: UnifiedDevice) => {
+  // Implement device details view
+  console.log('View device details:', device);
+};
+
+const lockDevice = async (device: UnifiedDevice) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/lock`);
+    const originalDevice = getOriginalDevice<MDMDevice>(device);
+    await restClient.post(`${API_URL}/global/devices/${originalDevice.device_uuid}/lock`);
     toastService.showSuccess('Device locked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
   }
 };
 
-const unlockDevice = async (device: any) => {
+const unlockDevice = async (device: UnifiedDevice) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/unlock`);
+    const originalDevice = getOriginalDevice<MDMDevice>(device);
+    await restClient.post(`${API_URL}/global/devices/${originalDevice.device_uuid}/unlock`);
     toastService.showSuccess('Device unlocked successfully');
   } catch (err: any) {
     toastService.showError(err.message);
   }
 };
 
-const eraseDevice = async (device: any) => {
+const eraseDevice = async (device: UnifiedDevice) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/erase`);
+    const originalDevice = getOriginalDevice<MDMDevice>(device);
+    await restClient.post(`${API_URL}/global/devices/${originalDevice.device_uuid}/erase`);
     toastService.showSuccess('Device erase command sent successfully');
   } catch (err: any) {
     toastService.showError(err.message);
   }
 };
 
-const deleteDevice = async (device: any) => {
+const deleteDevice = async (device: UnifiedDevice) => {
   try {
-    await restClient.delete(`${API_URL}/global/hosts/${device.id}`);
+    const originalDevice = getOriginalDevice<MDMDevice>(device);
+    await restClient.delete(`${API_URL}/global/hosts/${originalDevice.id}`);
     await fetchDevices();
     toastService.showSuccess('Device deleted successfully');
   } catch (err) {
