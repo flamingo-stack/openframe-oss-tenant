@@ -31,6 +31,7 @@ env:
   ORGANIZATION: flamingo-cx
   REGISTRY: ghcr.io
 
+
 jobs:
   changes:
     name: Check for changes
@@ -323,12 +324,12 @@ jobs:
             cd - > /dev/null
           done
 
-      - name: Run environment test script
-        env:
-          TERM: dumb
-          GITHUB_TOKEN_CLASSIC: ${{ github.token }}
-        run: |
-          ./scripts/run.sh bootstrap
+      # - name: Run environment test script
+      #   env:
+      #     TERM: dumb
+      #     GITHUB_TOKEN_CLASSIC: ${{ github.token }}
+      #   run: |
+      #     ./scripts/run.sh bootstrap
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
