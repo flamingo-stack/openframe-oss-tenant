@@ -118,12 +118,12 @@ const fetchDeviceDetails = async (deviceId: string) => {
 const viewDevice = async (device: UnifiedDevice) => {
   try {
     selectedDevice.value = device;
-
-    // Then fetch complete device details
-    const detailedDevice = await fetchDeviceDetails(device.originalId as string);
-
-    if (detailedDevice) {
-      console.log('Device details:', detailedDevice);
+    
+    // Fetch device details
+    const deviceDetails = await fetchDeviceDetails(device.originalId as string);
+    
+    if (deviceDetails) {
+      console.log('Device details:', deviceDetails);
       toastService.showSuccess('Device details fetched successfully');
     }
   } catch (error) {

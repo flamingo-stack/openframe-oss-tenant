@@ -93,8 +93,7 @@ import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHisto
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
 import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
 import { UnifiedDevice, getOriginalDevice, EnhancedUnifiedDevice } from '../../types/device';
-import { RACDevice } from '../../utils/deviceAdapters';
-import { transformMeshCentralDevice } from '../../utils/meshcentralUtils';
+import { RACDevice, convertDevices } from '../../utils/deviceAdapters';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
@@ -158,7 +157,7 @@ const fetchDeviceDetails = async (deviceId: string) => {
     const response = await restClient.get<any>(`${API_URL}/api/deviceinfo?id=${deviceId}`);
     
     // Transform the MeshCentral data to a standardized format matching RMM
-    return response ? transformMeshCentralDevice(response) : null;
+    return response ;
   } catch (error) {
     console.error('Failed to fetch device details:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
@@ -262,14 +261,19 @@ const updateCommandOutput = (output: string) => {
 };
 
 const viewDevice = async (device: UnifiedDevice) => {
-  selectedDevice.value = device;
-  
-  // Fetch detailed device information
-  const detailedInfo = await fetchDeviceDetails(device.originalId as string);
-  
-  if (detailedInfo) {
-    console.log('Device details:', detailedInfo);
-    toastService.showSuccess('Device details fetched successfully');
+  try {
+    selectedDevice.value = device;
+    
+    // Fetch device details
+    const deviceDetails = await fetchDeviceDetails(device.originalId as string);
+    
+    if (deviceDetails) {
+      console.log('Device details:', deviceDetails);
+      toastService.showSuccess('Device details fetched successfully');
+    }
+  } catch (error) {
+    console.error('Error viewing device details:', error);
+    toastService.showError('Failed to load device details');
   }
 };
 

@@ -263,15 +263,32 @@ const updateCommandOutput = (output: string) => {
   }
 };
 
+const fetchDeviceDetails = async (deviceId: string) => {
+  try {
+    const response = await restClient.get<RMMDevice>(`${API_URL}/agents/${deviceId}/`);
+    return response || null;
+  } catch (error) {
+    console.error('Failed to fetch device details:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
+    toastService.showError(errorMessage);
+    return null;
+  }
+};
+
 const viewDevice = async (device: UnifiedDevice) => {
-  selectedDevice.value = device;
-
-  // Fetch device details from RMM API
-  const detailedDevice = await restClient.get<RMMDevice>(`${API_URL}/agents/${device.originalId}/`);
-
-  if (detailedDevice) {
-    console.log('Detailed device information:', detailedDevice);
-    toastService.showSuccess('Device details fetched successfully');
+  try {
+    selectedDevice.value = device;
+    
+    // Fetch device details
+    const deviceDetails = await fetchDeviceDetails(device.originalId as string);
+    
+    if (deviceDetails) {
+      console.log('Device details:', deviceDetails);
+      toastService.showSuccess('Device details fetched successfully');
+    }
+  } catch (error) {
+    console.error('Error viewing device details:', error);
+    toastService.showError('Failed to load device details');
   }
 };
 

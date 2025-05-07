@@ -239,8 +239,6 @@ function fromMDMDevice(device: MDMDevice): EnhancedUnifiedDevice {
   } else if (device.status === 'pending') {
     deviceStatus = 'pending';
   }
-  console.log('MDM Device:', device.display_name);
-  
   return {
     // Base unified device properties
     id: device.uuid || device.device_uuid || device.id.toString(),
