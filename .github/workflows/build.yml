@@ -293,12 +293,6 @@ jobs:
           ./get_helm.sh
           echo "Helm version: $(helm version --short)"
 
-      - name: Install k3d
-        run: |
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-          sudo mv k3d /usr/local/bin/k3d || true  # in case it's downloaded locally
-          echo "k3d version: $(k3d --version)"
-
       - name: Set inotify limit
         run: sudo sysctl fs.inotify.max_user_instances=1500
       
