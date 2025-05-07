@@ -118,6 +118,7 @@ jobs:
 
 
   matrix:
+    name: Matrix
     uses: ./.github/workflows/matrix.yml
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
