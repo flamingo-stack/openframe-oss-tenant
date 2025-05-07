@@ -26,7 +26,7 @@ env:
 jobs:
 
   changes:
-    name: Check for changes
+    name: Changes check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
@@ -277,7 +277,7 @@ jobs:
   
     
   test:
-    name: Run Tests
+    name: Tests run
     needs: [changes, matrix, build]
     runs-on: Linux-x64
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft

@@ -12,7 +12,7 @@ on:
 
 jobs:
   matrix:
-    name: Generate Matrix
+    name: Matrix generator
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.filter.outputs.matrix }}
