@@ -1,9 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 resources:
-  - base/common-config.yaml
-  - base/tactical-backend.yaml
-  - base/tactical-celery.yaml
-  - base/tactical-celerybeat.yaml
-  - base/tactical-frontend.yaml
-  - base/tactical-nats.yaml
-  - base/tactical-nginx.yaml
-  - base/tactical-websockets.yaml
+- common-config.yaml
+- ./tactical-backend
+- ./tactical-celery
+- ./tactical-celerybeat
+- ./tactical-frontend
+- ./tactical-nats
+- ./tactical-nginx
+- ./tactical-websockets
+
+images:
+- name: openframe-tactical-backend
+  newName: ghcr.io/flamingo-cx/openframe-tactical-backend
+  newTag: latest
+- name: openframe-tactical-celery
+  newName: ghcr.io/flamingo-cx/openframe-tactical-celery
+  newTag: latest
+- name: openframe-tactical-celerybeat
+  newName: ghcr.io/flamingo-cx/openframe-tactical-celerybeat
+  newTag: latest
+- name: openframe-tactical-frontend
+  newName: ghcr.io/flamingo-cx/openframe-tactical-frontend
+  newTag: latest
+- name: openframe-tactical-nats
+  newName: ghcr.io/flamingo-cx/openframe-tactical-nats
+  newTag: latest
+- name: openframe-tactical-nginx
+  newName: ghcr.io/flamingo-cx/openframe-tactical-nginx
+  newTag: latest
+- name: openframe-tactical-websockets
+  newName: ghcr.io/flamingo-cx/openframe-tactical-websockets
+  newTag: latest

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-websockets
+spec:
+  selector:
+    app: tactical-websockets
+  ports:
+  - port: 8383
+    targetPort: 8383

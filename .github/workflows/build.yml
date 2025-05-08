@@ -1,4 +1,4 @@
-name: OpenFrame Build Java & Container Images
+name: OpenFrame Build & Test
 
 permissions:
   contents: write
@@ -9,31 +9,26 @@ permissions:
   id-token: write
 
 on:
-  push:
-    paths:
-      - 'openframe/**'
-      - 'integrated-tools/**'
-      - 'pom.xml'
-      - '.github/workflows/build.yml'
-  workflow_dispatch:
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
+      - 'deploy/dev/**'
 
 env:
   ORGANIZATION: flamingo-cx
   REGISTRY: ghcr.io
-  GH_TOKEN: ${{ github.token }}
 
 jobs:
+
   changes:
-    name: Check for changes
+    name: Changes check
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
       core: ${{ steps.filter.outputs.core }}
       data: ${{ steps.filter.outputs.data }}
@@ -121,26 +116,31 @@ jobs:
             meshcentral:
               - './integrated-tools/meshcentral/server/**'
 
+
   matrix:
+    name: Matrix
     uses: ./.github/workflows/matrix.yml
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
       - name: Checkout
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
       - name: Set up Maven Central Repository with JDK 21
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -152,7 +152,7 @@ jobs:
           check-latest: true
 
       - name: Cache Maven packages
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/cache@v4
         with:
           path: |
@@ -163,11 +163,11 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Build with Maven
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
 
       - name: Upload Java artifacts
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -178,36 +178,38 @@ jobs:
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
 
+
   build:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Checkout
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: .
 
       - name: Prepare Java artifacts for Docker build
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           mkdir -p ${{ matrix.path }}/target
           mv *.jar ${{ matrix.path }}/target/
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -215,23 +217,22 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
       - name: Generate metadata
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}
           tags: |
-            type=raw,value=latest
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
@@ -241,7 +242,7 @@ jobs:
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
       - name: Format build arguments
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
         uses: ./.github/actions/format-build-args
         with:
@@ -250,7 +251,7 @@ jobs:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push image
-        if: github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -265,7 +266,7 @@ jobs:
             ${{ env.BUILD_ARGS }}
 
       - name: Delete old versions
-        if: (github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs[matrix.name], 'true')) && steps.docker_build.outcome == 'success'
+        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
@@ -273,3 +274,81 @@ jobs:
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+  
+    
+  test:
+    name: Tests run
+    needs: [changes, matrix, build]
+    runs-on: Linux-x64
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod +x get_helm.sh
+          ./get_helm.sh
+          echo "Helm version: $(helm version --short)"
+      
+      - name: Install k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          sudo mv k3d /usr/local/bin/k3d || true  # in case it's downloaded locally
+          echo "k3d version: $(k3d --version)"
+
+      - name: Set inotify limit
+        run: sudo sysctl fs.inotify.max_user_instances=1500
+      
+      - name: Set image tags with Kustomize
+        env:
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          CHANGES: ${{ toJSON(needs.changes.outputs) }}
+          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+        run: |
+          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+            name=$(jq -r '.name' <<< "$item")
+            path=$(jq -r '.manifest_path' <<< "$item")
+            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
+
+            [ "$pushed" = "true" ] || continue
+
+            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            cd "$path"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            cd - > /dev/null
+          done
+
+      - name: Run environment test script
+        env:
+          TERM: dumb
+          GITHUB_TOKEN_CLASSIC: ${{ github.token }}
+        run: |
+          ./scripts/run.sh bootstrap
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Tag images as latest
+        env:
+          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          CHANGES: ${{ toJSON(needs.changes.outputs) }}
+        run: |
+          echo "$MATRIX" | jq -cr '.[]' | while read -r item; do
+            name=$(jq -r '.name' <<< "$item")
+
+            changed=$(jq -r --arg name "$name" --argjson changes "$CHANGES" '$changes[$name]' <<< "{}")
+            [ "$changed" = "true" ] || continue
+
+            IMAGE="${REGISTRY}/${ORGANIZATION}/openframe-${name}"
+            echo "Tagging $IMAGE:$COMMIT_SHA → $IMAGE:latest"
+
+            docker pull "$IMAGE:$COMMIT_SHA"
+            docker tag "$IMAGE:$COMMIT_SHA" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          done

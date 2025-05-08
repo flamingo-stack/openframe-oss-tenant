@@ -53,7 +53,7 @@ build:
     push: false
 manifests:
   rawYaml:
-    - ../../../deploy/dev/integrated-tools/tactical-rmm/base/tactical-nginx.yaml
+    - ../../../deploy/dev/integrated-tools/tactical-rmm/base/tactical-nginx
 deploy:
   kubectl:
     flags:
