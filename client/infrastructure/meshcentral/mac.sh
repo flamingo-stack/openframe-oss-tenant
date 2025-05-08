@@ -19,6 +19,7 @@ TEMP_DIR="/tmp/mesh_install"
 BACKUP_DIR="/tmp/mesh_backup"
 NODE_ID=""
 UNINSTALL=false
+FORCE_NEW_CERT=false
 
 # Identity file preservation settings
 IDENTITY_FILES=(
@@ -378,6 +379,7 @@ show_help() {
   echo "  --server=<mesh_server_url>        (Required) URL of your MeshCentral server (without https://)"
   echo "  --nodeid=<node_id>                (Optional) NodeID to inject into the MSH file"
   echo "  --uninstall                       (Optional) Completely remove MeshAgent from this system"
+  echo "  --force-new-cert                  (Optional) Force certificate reset to resolve server certificate mismatch issues"
   echo "  --help                            Display this help message"
   echo ""
   echo "Example:"
@@ -393,6 +395,7 @@ for ARG in "$@"; do
   --server=*) MESH_SERVER="${ARG#*=}" ;;
   --nodeid=*) NODE_ID="${ARG#*=}" ;;
   --uninstall) UNINSTALL=true ;;
+  --force-new-cert) FORCE_NEW_CERT=true ;;
   --help) show_help ;;
   *)
     echo -e "${RED}${CROSS} Unknown argument: $ARG${RESET}"
@@ -445,9 +448,27 @@ if [ -f "$INSTALL_DIR/meshagent" ]; then
   HAS_EXISTING_INSTALLATION=true
   echo -e "${YELLOW}${INFO} Existing installation found. Preserving identity files...${RESET}"
   
+  # If force certificate reset is specified, modify the identity files list
+  if [ "$FORCE_NEW_CERT" = true ]; then
+    echo -e "${YELLOW}${INFO} Certificate reset requested - will not preserve certificate data${RESET}"
+    debug_print "Certificate reset mode - limiting preserved files"
+    
+    # Modified list that excludes certificate-related files
+    IDENTITY_FILES=(
+      # Keep minimal identity info, but exclude certificate data
+      "nodeinfo.json"     # Node information
+    )
+    
+    IDENTITY_DIRS=()
+  fi
+  
   if backup_identity_files "$INSTALL_DIR" "$BACKUP_DIR"; then
     HAS_IDENTITY_BACKUP=true
-    echo -e "${GREEN}${CHECK} Successfully backed up identity files.${RESET}"
+    if [ "$FORCE_NEW_CERT" = true ]; then
+      echo -e "${GREEN}${CHECK} Successfully backed up minimal identity files (certificate reset mode).${RESET}"
+    else
+      echo -e "${GREEN}${CHECK} Successfully backed up identity files.${RESET}"
+    fi
   else
     echo -e "${YELLOW}${INFO} No identity files found to backup.${RESET}"
   fi
@@ -456,7 +477,11 @@ if [ -f "$INSTALL_DIR/meshagent" ]; then
   if [ -d "$DATA_DIR" ] && [ "$HAS_IDENTITY_BACKUP" = false ]; then
     if backup_identity_files "$DATA_DIR" "$BACKUP_DIR"; then
       HAS_IDENTITY_BACKUP=true
-      echo -e "${GREEN}${CHECK} Successfully backed up identity files from data directory.${RESET}"
+      if [ "$FORCE_NEW_CERT" = true ]; then
+        echo -e "${GREEN}${CHECK} Successfully backed up minimal identity files from data directory (certificate reset mode).${RESET}"
+      else
+        echo -e "${GREEN}${CHECK} Successfully backed up identity files from data directory.${RESET}"
+      fi
     fi
   fi
 else
@@ -679,7 +704,14 @@ echo -e "${BLUE}${INFO} - Agent Location: ${YELLOW}$FINAL_AGENT_PATH${RESET}"
 echo -e "${BLUE}${INFO} - Config Location: ${YELLOW}$FINAL_CONFIG_PATH${RESET}"
 echo -e "${BLUE}${INFO} - Log Location: ${YELLOW}$LOG_FILE${RESET}"
 if [ "$HAS_IDENTITY_BACKUP" = true ]; then
-  echo -e "${BLUE}${INFO} - Identity files were preserved from previous installation${RESET}"
+  if [ "$FORCE_NEW_CERT" = true ]; then
+    echo -e "${BLUE}${INFO} - Certificate reset mode - minimal identity files were preserved${RESET}"
+  else
+    echo -e "${BLUE}${INFO} - Identity files were preserved from previous installation${RESET}"
+  fi
+fi
+if [ "$FORCE_NEW_CERT" = true ]; then
+  echo -e "${YELLOW}${INFO} Certificate reset was applied${RESET}"
 fi
 echo -e "${GREEN}${CHECK} Installation completed successfully.${RESET}"
 echo -e "${YELLOW}${INFO} Starting MeshAgent in connect mode...${RESET}"
