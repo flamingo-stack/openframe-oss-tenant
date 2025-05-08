@@ -7,7 +7,10 @@ param(
     [string]$NodeId,
     
     [Parameter(Mandatory=$false)]
-    [switch]$Help
+    [switch]$Help,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$Uninstall
 )
 
 # MeshCentral Agent Installer for Windows systems
@@ -49,6 +52,7 @@ function Show-Help {
     Write-Host "  -Server <mesh_server_url>        (Required) URL of your MeshCentral server (without https://)"
     Write-Host "  -NodeId <node_id>                (Optional) NodeID to inject into the MSH file"
     Write-Host "  -Help                            Display this help message"
+    Write-Host "  -Uninstall                       Completely remove MeshAgent from this system"
     Write-Host "  -Verbose                         Show detailed output`n"
     Write-Host "Example:"
     Write-Host "  $($MyInvocation.MyCommand.Name) -Server mesh.yourdomain.com [-Verbose]"
@@ -67,23 +71,58 @@ function Stop-MeshAgent {
 
 function Remove-Directory {
     param(
-        [string]$Path
+        [string]$Path,
+        [switch]$PreserveIdentityFiles
     )
     if (Test-Path $Path) {
         Write-VerboseMessage "Removing directory: $Path"
-        try {
-            Stop-MeshAgent
-            Remove-Item -Path $Path -Recurse -Force -ErrorAction Stop
-        }
-        catch {
-            Write-VerboseMessage "Failed to remove directory: $($_.Exception.Message)"
-            # Try to remove files individually
-            Get-ChildItem -Path $Path -Recurse | ForEach-Object {
-                try {
-                    Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+        
+        if ($PreserveIdentityFiles -and $Path -eq $InstallDir) {
+            Write-VerboseMessage "Preserving identity files during cleanup"
+            try {
+                # Remove only specific files, not the entire directory
+                $filesToRemove = Get-ChildItem -Path $Path -File | Where-Object { $_.Name -notin $IdentityFilesToPreserve }
+                foreach ($file in $filesToRemove) {
+                    try {
+                        Remove-Item $file.FullName -Force -ErrorAction SilentlyContinue
+                        Write-VerboseMessage "Removed: $($file.FullName)"
+                    }
+                    catch {
+                        Write-VerboseMessage "Could not remove: $($file.FullName)"
+                    }
                 }
-                catch {
-                    Write-VerboseMessage "Could not remove: $($_.FullName)"
+                
+                # Remove non-identity subdirectories
+                $dirsToRemove = Get-ChildItem -Path $Path -Directory | Where-Object { $_.Name -notin $IdentityDirsToPreserve }
+                foreach ($dir in $dirsToRemove) {
+                    try {
+                        Remove-Item $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                        Write-VerboseMessage "Removed directory: $($dir.FullName)"
+                    }
+                    catch {
+                        Write-VerboseMessage "Could not remove directory: $($dir.FullName)"
+                    }
+                }
+            }
+            catch {
+                Write-VerboseMessage "Error during selective removal: $($_.Exception.Message)"
+            }
+        }
+        else {
+            # Remove the entire directory
+            try {
+                Remove-Item -Path $Path -Recurse -Force -ErrorAction Stop
+            }
+            catch {
+                Write-VerboseMessage "Failed to remove directory: $($_.Exception.Message)"
+                # Try to remove files individually
+                Get-ChildItem -Path $Path -Recurse | ForEach-Object {
+                    try {
+                        Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+                    }
+                    catch {
+                        Write-VerboseMessage "Could not remove: $($_.FullName)"
+                    }
                 }
             }
         }
@@ -143,6 +182,89 @@ function Test-ServerConnection {
     }
 }
 
+function Backup-IdentityFiles {
+    param(
+        [string]$SourceDir,
+        [string]$BackupDir
+    )
+    
+    if (-not (Test-Path $SourceDir)) {
+        Write-VerboseMessage "No existing installation found to backup"
+        return $false
+    }
+    
+    # Create backup directory
+    if (-not (Test-Path $BackupDir)) {
+        New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
+    }
+    
+    # Check if any identity files exist
+    $hasIdentityFiles = $false
+    
+    # Look for database files (*.db) and mesh agent state files
+    foreach ($file in $IdentityFilesToPreserve) {
+        $sourcePath = Join-Path $SourceDir $file
+        if (Test-Path $sourcePath) {
+            $hasIdentityFiles = $true
+            $destPath = Join-Path $BackupDir $file
+            Write-VerboseMessage "Backing up identity file: $file"
+            Copy-Item -Path $sourcePath -Destination $destPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    # Backup specific subdirectories that may contain identity information
+    foreach ($dir in $IdentityDirsToPreserve) {
+        $sourceSubDir = Join-Path $SourceDir $dir
+        if (Test-Path $sourceSubDir) {
+            $hasIdentityFiles = $true
+            $destSubDir = Join-Path $BackupDir $dir
+            Write-VerboseMessage "Backing up identity directory: $dir"
+            Copy-Item -Path $sourceSubDir -Destination $destSubDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    return $hasIdentityFiles
+}
+
+function Restore-IdentityFiles {
+    param(
+        [string]$BackupDir,
+        [string]$TargetDir
+    )
+    
+    if (-not (Test-Path $BackupDir)) {
+        Write-VerboseMessage "No backup directory found to restore from"
+        return $false
+    }
+    
+    # Ensure target directory exists
+    if (-not (Test-Path $TargetDir)) {
+        New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+    }
+    
+    # Restore individual files
+    foreach ($file in $IdentityFilesToPreserve) {
+        $sourcePath = Join-Path $BackupDir $file
+        if (Test-Path $sourcePath) {
+            $destPath = Join-Path $TargetDir $file
+            Write-VerboseMessage "Restoring identity file: $file"
+            Copy-Item -Path $sourcePath -Destination $destPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    # Restore directories
+    foreach ($dir in $IdentityDirsToPreserve) {
+        $sourceSubDir = Join-Path $BackupDir $dir
+        if (Test-Path $sourceSubDir) {
+            $destSubDir = Join-Path $TargetDir $dir
+            Write-VerboseMessage "Restoring identity directory: $dir"
+            Copy-Item -Path $sourceSubDir -Destination $destSubDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    return $true
+}
+
 function Download-File {
     param(
         [string]$Url,
@@ -181,6 +303,61 @@ function Download-File {
     }
 }
 
+function Uninstall-MeshAgent {
+    param(
+        [string]$InstallDir
+    )
+    
+    Write-ColorMessage "`nUninstalling MeshCentral Agent" "Yellow"
+    
+    # Stop any running instances
+    Stop-MeshAgent
+    
+    # Try to run agent's uninstall method if available
+    $agentPath = Join-Path $InstallDir "meshagent.exe"
+    if (Test-Path $agentPath) {
+        Write-VerboseMessage "Running agent's uninstall command..."
+        try {
+            Start-Process -FilePath $agentPath -ArgumentList "uninstall" -Wait -NoNewWindow
+            Start-Sleep -Seconds 2
+        }
+        catch {
+            Write-VerboseMessage "Error running uninstall command: $($_.Exception.Message)"
+        }
+    }
+    
+    # Ensure process is stopped
+    Stop-MeshAgent
+    
+    # Remove entire directory without preserving any files
+    Write-VerboseMessage "Removing installation directory..."
+    Remove-Directory -Path $InstallDir
+    
+    # Clean up registry entries
+    $registryPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MeshAgent",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\MeshAgent"
+    )
+    
+    foreach ($path in $registryPaths) {
+        if (Test-Path $path) {
+            Write-VerboseMessage "Removing registry key: $path"
+            Remove-Item -Path $path -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    # Remove scheduled tasks if any
+    $taskName = "MeshAgent"
+    $taskExists = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($taskExists) {
+        Write-VerboseMessage "Removing scheduled task: $taskName"
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+    }
+    
+    Write-ColorMessage "MeshCentral Agent has been uninstalled." "Green"
+    exit 0
+}
+
 # Show help if requested or if no parameters provided
 if ($Help -or [string]::IsNullOrEmpty($Server)) {
     Show-Help
@@ -192,6 +369,36 @@ if (-not (Test-Administrator)) {
     exit 1
 }
 
+# Set up paths
+$TempDir = Join-Path $env:TEMP "mesh_install"
+$BackupDir = Join-Path $env:TEMP "mesh_backup"
+$LogDir = Join-Path $env:ProgramData "MeshAgent\Logs"
+$InstallDir = Join-Path $env:ProgramFiles "MeshAgent"
+$DataDir = Join-Path $env:ProgramData "MeshAgent"
+
+# Define identity files and directories to preserve during installation
+$IdentityFilesToPreserve = @(
+    "mesh.db",           # Main database file
+    "meshagent.msh",     # Configuration file
+    "meshagent.db",      # Agent database
+    "settings.json",     # Agent settings
+    "state.json",        # Agent state
+    "nodeinfo.json",     # Node information
+    "identitydata.json"  # Identity data
+)
+
+$IdentityDirsToPreserve = @(
+    "data",              # Data directory
+    "db",                # Database directory
+    "config"             # Configuration directory
+)
+
+# Process uninstall request if specified
+if ($Uninstall) {
+    Uninstall-MeshAgent -InstallDir $InstallDir
+    exit 0
+}
+
 try {
     Write-ColorMessage "`nMeshCentral Agent Installation Started" "Green"
     Write-ColorMessage "======================================" "Green"
@@ -199,14 +406,28 @@ try {
     # Stop any running instances first
     Stop-MeshAgent
 
-    # Set up paths
-    $TempDir = Join-Path $env:TEMP "mesh_install"
-    $LogDir = Join-Path $env:ProgramData "MeshAgent\Logs"
-    $InstallDir = Join-Path $env:ProgramFiles "MeshAgent"
+    # Check for existing installation and backup identity files
+    $hasExistingInstallation = Test-Path $InstallDir
+    $hasIdentityBackup = $false
+    
+    if ($hasExistingInstallation) {
+        Write-ColorMessage "Existing installation found. Preserving identity files..." "Yellow"
+        $hasIdentityBackup = Backup-IdentityFiles -SourceDir $InstallDir -BackupDir $BackupDir
+        
+        if ($hasIdentityBackup) {
+            Write-ColorMessage "  ● Successfully backed up identity files" "Green"
+        } else {
+            Write-ColorMessage "  ● No identity files found to backup" "Yellow"
+        }
+    } else {
+        Write-VerboseMessage "No existing installation found. Will perform fresh install."
+    }
 
     Write-VerboseMessage "Temporary directory: $TempDir"
+    Write-VerboseMessage "Backup directory: $BackupDir"
     Write-VerboseMessage "Log directory: $LogDir"
     Write-VerboseMessage "Installation directory: $InstallDir"
+    Write-VerboseMessage "Data directory: $DataDir"
 
     # Display file destinations for user clarity
     Write-ColorMessage "File Destinations:" "Blue"
@@ -214,9 +435,14 @@ try {
     Write-ColorMessage "  ● Log directory: $LogDir" "Yellow"
     Write-ColorMessage "  ● Installation directory: $InstallDir" "Yellow"
 
-    # Clean up existing directories
+    # Clean up existing temporary directory
     Remove-Directory $TempDir
-    Remove-Directory $InstallDir
+    
+    # Selectively clean installation directory, preserving identity files
+    if ($hasExistingInstallation) {
+        Write-VerboseMessage "Selectively cleaning installation directory while preserving identity files..."
+        Remove-Directory -Path $InstallDir -PreserveIdentityFiles
+    }
 
     # Create temporary directory
     Write-VerboseMessage "Creating temporary directory..."
@@ -297,19 +523,45 @@ try {
         New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
     }
 
+    # Create data directory if needed
+    if (-not (Test-Path $DataDir)) {
+        Write-VerboseMessage "Creating data directory: $DataDir"
+        New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
+    }
+
     # Copy files to install directory
     Write-VerboseMessage "Copying files to installation directory..."
     Copy-Item -Path $agentPath -Destination $InstallDir -Force
-    Copy-Item -Path $configPath -Destination $InstallDir -Force
+    
+    # Only copy config file if we don't already have one or if no identity backup
+    $existingConfigPath = Join-Path $InstallDir "meshagent.msh"
+    if (-not (Test-Path $existingConfigPath) -or (-not $hasIdentityBackup)) {
+        Copy-Item -Path $configPath -Destination $InstallDir -Force
+        Write-VerboseMessage "Copied new configuration file to installation directory"
+    } else {
+        Write-VerboseMessage "Preserving existing configuration file"
+    }
     
     $finalAgentPath = Join-Path $InstallDir "meshagent.exe"
     $finalConfigPath = Join-Path $InstallDir "meshagent.msh"
     Write-ColorMessage "  ● Final agent location: $finalAgentPath" "Yellow"
     Write-ColorMessage "  ● Final config location: $finalConfigPath" "Yellow"
 
+    # Restore identity files if we backed them up
+    if ($hasIdentityBackup) {
+        Write-ColorMessage "Restoring identity files from backup..." "Yellow"
+        Restore-IdentityFiles -BackupDir $BackupDir -TargetDir $InstallDir
+    }
+
     # Clean up temp files before starting agent
     Write-VerboseMessage "Cleaning up temporary directory: $TempDir"
     Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+    
+    # Clean up backup directory after successful restore
+    if ($hasIdentityBackup) {
+        Write-VerboseMessage "Cleaning up backup directory: $BackupDir"
+        Remove-Item -Path $BackupDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     # Run agent
     Write-ColorMessage "Starting MeshAgent:" "Yellow"
@@ -320,6 +572,9 @@ try {
     Write-ColorMessage "  ● Agent Location: $finalAgentPath" "Blue"
     Write-ColorMessage "  ● Config Location: $finalConfigPath" "Blue"
     Write-ColorMessage "  ● Log Location: $LogDir" "Blue"
+    if ($hasIdentityBackup) {
+        Write-ColorMessage "  ● Identity files were preserved from previous installation" "Blue"
+    }
     Write-ColorMessage "Installation completed successfully." "Green"
     Write-ColorMessage "`nStarting MeshAgent in connect mode..." "Yellow"
     Write-ColorMessage "Press Ctrl+C to exit (agent will continue running in background)" "Yellow"
