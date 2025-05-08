@@ -10,7 +10,7 @@ spring:
     gateway:
       routes:
         - id: openframe-client
-          uri: http://openframe-client.openframe-microservices:8090
+          uri: http://openframe-client.openframe-microservices:8097
           predicates:
             - Path=/clients/**
           filters:
