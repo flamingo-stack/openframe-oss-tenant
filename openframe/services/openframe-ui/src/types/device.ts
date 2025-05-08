@@ -197,6 +197,7 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     ipAddresses?: string[];
     publicIp?: string;
     macAddresses?: string[];
+    hostName?: string;
     interfaces?: Array<{
       name: string;
       ipv4?: string[];
@@ -243,6 +244,7 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
   user?: {
     currentUser?: string;
     loggedInUsers?: string[];
+    loggedOutUsers?: string[];
     domain?: string;
     users?: Array<{
       uid?: number;
@@ -282,6 +284,15 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     pendingAction?: string;
   };
   
+  // Device power status information
+  power?: {
+    state?: string;
+    battery?: {
+      state?: string;
+      isCharging?: boolean;
+    };
+  };
+  
   management?: {
     site?: string;
     group?: string;
@@ -291,6 +302,13 @@ export interface EnhancedUnifiedDevice extends UnifiedDevice {
     fleetDesktopVersion?: string;
     osqueryVersion?: string;
     lastEnrolledAt?: string;
+    meshId?: string;
+    agentDetails?: {
+      id?: number;
+      capabilities?: number;
+      core?: string;
+      isRoot?: boolean;
+    };
   };
 
   // Software information
@@ -375,11 +393,33 @@ export interface RACExtendedDevice {
     caps?: number;
     time?: number;
   };
-  sessions?: Array<{
+  agent?: {
+    ver?: number;
+    id?: number;
+    caps?: number;
+    core?: string;
+    root?: boolean;
+  };
+  lastbootuptime?: number;
+  sessions?: {
+    battery?: {
+      state?: string;
+    };
+  };
+  sessions_list?: Array<{
     id: string;
     startTime: number;
     user: string;
   }>;
+  lusers?: string[];
+  groupname?: string;
+  host?: string;
+  type?: string;
+  mtype?: number;
+  icon?: number;
+  name?: string;
+  rname?: string;
+  domain?: string;
   // Additional RAC-specific properties
 }
 

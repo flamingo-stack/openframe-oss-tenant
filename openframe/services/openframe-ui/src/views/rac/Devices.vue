@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
+import { ref, onMounted, reactive, computed } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
 import { OFButton } from '../../components/ui';
 import Dialog from 'primevue/dialog';
@@ -75,14 +75,16 @@ import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
 import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider.vue';
 import { UnifiedDevice, getOriginalDevice } from '../../types/device';
 import { RACDevice, convertDevices } from '../../utils/deviceAdapters';
+import { RACService } from '../../services/RACService';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
 const toastService = ToastService.getInstance();
+const racService = RACService.getInstance();
 
 const loading = ref(true);
-const devices = ref<RACDevice[]>([]);
+const devices = ref<UnifiedDevice[]>([]);
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
 const executing = ref(false);
@@ -103,11 +105,12 @@ const showDeviceDetails = ref(false);
 const fetchDevices = async () => {
   try {
     loading.value = true;
+    // Fetch devices from RACService
+    const response = await racService.fetchDevices();
 
-    devices.value = await restClient.get<RACDevice[]>(`${API_URL}/api/listdevices`);
-    if (!devices?.value) {
-      devices.value = [];
-    }
+    devices.value = response;
+
+    console.log('Devices:', devices.value);
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
@@ -117,58 +120,36 @@ const fetchDevices = async () => {
   }
 };
 
-const fetchDeviceDetails = async (deviceId: string) => {
-  try {
-    const response = await restClient.get<any>(`${API_URL}/api/deviceinfo?id=${deviceId}`);
-
-    // Transform the MeshCentral data to a standardized format matching RMM
-    return response;
-  } catch (error) {
-    console.error('Failed to fetch device details:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
-    toastService.showError(errorMessage);
-    return null;
-  }
-};
-
 const runCommand = (device: UnifiedDevice) => {
-  selectedDevice.value = device;
-  showRunCommandDialog.value = true;
+  try {
+    // Store selected device ID for the command dialog
+    selectedDevice.value = device;
+    // Show the command dialog
+    showRunCommandDialog.value = true;
+  } catch (error) {
+    console.error('Error preparing command execution:', error);
+    toastService.showError('Unable to prepare command execution');
+  }
 };
 
 const executeCommand = async (cmd: string, shell: string, timeout: number, runAsUser: boolean) => {
   if (!selectedDevice.value) return;
 
-  // Get device ID - try originalId first, then fall back to original device
-  let deviceId: string = '';
-
-  if ('originalId' in selectedDevice.value && selectedDevice.value.originalId) {
-    deviceId = selectedDevice.value.originalId as string;
-  } else {
-    // Get original device data to extract ID
-    const originalDevice = getOriginalDevice<RACDevice>(selectedDevice.value);
-    deviceId = (originalDevice._id || originalDevice.id || '') as string;
-  }
-
-  if (!deviceId) {
-    toastService.showError('Device ID not available');
-    return;
-  }
-
+  
   let executionId: string | undefined;
 
-  // Add command to execution history with pending status and close dialog immediately
+  // Add command to execution history with pending status
   if (executionHistoryRef.value) {
     executionId = executionHistoryRef.value.addExecution({
       deviceName: selectedDevice.value.hostname,
       command: cmd,
       output: 'Executing command...',
       status: 'pending',
-      agent_id: deviceId
+      agent_id: selectedDevice.value.originalId as string
     });
   }
 
-  // Close dialog and show history immediately
+  // Close command dialog
   showRunCommandDialog.value = false;
   showExecutionHistory.value = true;
 
@@ -178,13 +159,8 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
     // Determine if we should use PowerShell based on the shell parameter and platform
     const usePowerShell = shell === 'powershell' && selectedDevice.value.platform === 'windows';
 
-    const response = await restClient.post<string>(`${API_URL}/api/runcommand`, {
-      id: deviceId,
-      command: cmd,
-      powershell: usePowerShell
-    });
-
-    const output = response || 'No output';
+    // Execute the command via RACService
+    const output = await racService.executeCommand(selectedDevice.value.originalId as string, cmd, usePowerShell);
 
     lastCommand.value = {
       cmd,
@@ -231,11 +207,13 @@ const viewDevice = async (device: UnifiedDevice) => {
     selectedDevice.value = device;
     showDeviceDetails.value = true;
 
-    let agentId = device.originalId as string;
-    console.log('Agent ID:', agentId);
-    const refreshedDevice = await fetchDeviceDetails(agentId);
-    selectedDevice.value = refreshedDevice as any;
-    
+    // Get device ID
+    const deviceId = device.originalId as string;
+    console.log('Device ID:', deviceId);
+
+    // Fetch detailed device info using the service
+    selectedDevice.value = await racService.fetchDeviceDetails(deviceId);
+
   } catch (error) {
     console.error('Error viewing device details:', error);
     toastService.showError('Failed to load device details');
@@ -245,7 +223,7 @@ const viewDevice = async (device: UnifiedDevice) => {
 const remoteAccess = async (device: UnifiedDevice) => {
   try {
     // Open the MeshCentral remote access URL in a new tab
-    const racUrl = `${API_URL}/connect?id=${device.originalId}`;
+    const racUrl = racService.getRemoteAccessUrl(device.originalId as string);
     window.open(racUrl, '_blank');
   } catch (error) {
     console.error('Error initiating remote access:', error);
@@ -256,7 +234,7 @@ const remoteAccess = async (device: UnifiedDevice) => {
 const fileTransfer = async (device: UnifiedDevice) => {
   try {
     // Open the MeshCentral file transfer URL in a new tab
-    const fileUrl = `${API_URL}/files?id=${device.originalId}`;
+    const fileUrl = racService.getFileTransferUrl(device.originalId as string);
     window.open(fileUrl, '_blank');
   } catch (error) {
     console.error('Error initiating file transfer:', error);
@@ -275,16 +253,14 @@ const confirmDelete = async () => {
   try {
     deleting.value = true;
 
+    const success = await racService.deleteDevice(selectedDevice.value.originalId as string);
 
-    await restClient.post(`${API_URL}/api/removedevice`, {
-      id: selectedDevice.value.originalId
-    });
-
-    // Refresh the device list
-    await fetchDevices();
-
-    deleteDeviceDialog.value = false;
-    toastService.showSuccess('Device deleted successfully');
+    if (success) {
+      // Refresh the device list
+      await fetchDevices();
+      deleteDeviceDialog.value = false;
+      toastService.showSuccess('Device deleted successfully');
+    }
   } catch (error) {
     console.error('Failed to delete device:', error);
     toastService.showError('Failed to delete device');

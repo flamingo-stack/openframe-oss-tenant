@@ -22,15 +22,11 @@
           <div class="compliance-wrapper">
             <div class="compliance-progress">
               <div class="progress-track">
-                <div 
-                  class="progress-fill" 
-                  :style="{ width: `${Math.max(deviceStats.onlineRate, 8)}%` }"
-                  :class="{ 
-                    'high': deviceStats.onlineRate >= 80,
-                    'medium': deviceStats.onlineRate >= 50 && deviceStats.onlineRate < 80,
-                    'low': deviceStats.onlineRate < 50
-                  }"
-                >
+                <div class="progress-fill" :style="{ width: `${Math.max(deviceStats.onlineRate, 8)}%` }" :class="{
+                  'high': deviceStats.onlineRate >= 80,
+                  'medium': deviceStats.onlineRate >= 50 && deviceStats.onlineRate < 80,
+                  'low': deviceStats.onlineRate < 50
+                }">
                   <span class="compliance-label">{{ deviceStats.onlineRate }}% Online</span>
                 </div>
               </div>
@@ -75,33 +71,25 @@
           <div class="os-distribution-wrapper">
             <div class="os-progress">
               <div class="progress-track">
-                <div 
-                  v-if="osDistribution.windows > 0" 
-                  class="progress-segment windows" 
-                  :style="{ width: `${osDistribution.windowsPercentage}%` }"
-                >
-                  <span v-if="osDistribution.windowsPercentage >= 15" class="distribution-label">{{ osDistribution.windowsPercentage }}%</span>
+                <div v-if="osDistribution.windows > 0" class="progress-segment windows"
+                  :style="{ width: `${osDistribution.windowsPercentage}%` }">
+                  <span v-if="osDistribution.windowsPercentage >= 15" class="distribution-label">{{
+                    osDistribution.windowsPercentage }}%</span>
                 </div>
-                <div 
-                  v-if="osDistribution.mac > 0" 
-                  class="progress-segment mac" 
-                  :style="{ width: `${osDistribution.macPercentage}%` }"
-                >
-                  <span v-if="osDistribution.macPercentage >= 15" class="distribution-label">{{ osDistribution.macPercentage }}%</span>
+                <div v-if="osDistribution.mac > 0" class="progress-segment mac"
+                  :style="{ width: `${osDistribution.macPercentage}%` }">
+                  <span v-if="osDistribution.macPercentage >= 15" class="distribution-label">{{
+                    osDistribution.macPercentage }}%</span>
                 </div>
-                <div 
-                  v-if="osDistribution.linux > 0" 
-                  class="progress-segment linux" 
-                  :style="{ width: `${osDistribution.linuxPercentage}%` }"
-                >
-                  <span v-if="osDistribution.linuxPercentage >= 15" class="distribution-label">{{ osDistribution.linuxPercentage }}%</span>
+                <div v-if="osDistribution.linux > 0" class="progress-segment linux"
+                  :style="{ width: `${osDistribution.linuxPercentage}%` }">
+                  <span v-if="osDistribution.linuxPercentage >= 15" class="distribution-label">{{
+                    osDistribution.linuxPercentage }}%</span>
                 </div>
-                <div 
-                  v-if="osDistribution.other > 0" 
-                  class="progress-segment other" 
-                  :style="{ width: `${osDistribution.otherPercentage}%` }"
-                >
-                  <span v-if="osDistribution.otherPercentage >= 15" class="distribution-label">{{ osDistribution.otherPercentage }}%</span>
+                <div v-if="osDistribution.other > 0" class="progress-segment other"
+                  :style="{ width: `${osDistribution.otherPercentage}%` }">
+                  <span v-if="osDistribution.otherPercentage >= 15" class="distribution-label">{{
+                    osDistribution.otherPercentage }}%</span>
                 </div>
               </div>
             </div>
@@ -119,14 +107,8 @@
       <div class="dashboard-card recent-activity">
         <h3><i class="pi pi-clock"></i> Recent Activities</h3>
         <template v-if="recentActivity.length > 0">
-          <DataTable 
-            :value="recentActivity" 
-            :rows="5" 
-            :paginator="false" 
-            class="p-datatable-sm"
-            stripedRows
-            responsiveLayout="scroll"
-          >
+          <DataTable :value="recentActivity" :rows="5" :paginator="false" class="p-datatable-sm" stripedRows
+            responsiveLayout="scroll">
             <Column field="time" header="Time">
               <template #body="{ data }">
                 <span class="text-sm">{{ formatTimestamp(data.time) }}</span>
@@ -141,7 +123,7 @@
 
             <Column field="device" header="Device">
               <template #body="{ data }">
-                <span class="text-sm">{{ data.device?.name || '-' }}</span>
+                <span class="text-sm">{{ data.device?.displayName || '-' }}</span>
               </template>
             </Column>
 
@@ -166,19 +148,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "@vue/runtime-core";
-import DataTable from 'primevue/datatable';
+import { onMounted, onUnmounted, ref } from "@vue/runtime-core";
 import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
 import Tag from 'primevue/tag';
-import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
+import { convertDevices } from '../../utils/deviceAdapters';
+import { RACService } from '../../services/RACService';
 import { ToastService } from '../../services/ToastService';
-import type { Device } from '../../types/rac';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
 const toastService = ToastService.getInstance();
+const racService = RACService.getInstance();
 const loading = ref<boolean>(false);
 
 interface DeviceStats {
@@ -254,17 +237,16 @@ const refreshInterval = ref<number | null>(null);
 const fetchDeviceStats = async () => {
   try {
     console.log('Fetching device stats...');
-    
-    const response = await restClient.get(`${API_URL}/api/listdevices`);
-    const devices = Array.isArray(response) ? response : [];
-    
+
+    const devices = await racService.fetchDevices();
+
     const total = devices.length;
     const online = devices.filter(d => d.conn === 1).length;
     const offline = total - online;
     const onlineRate = total > 0 ? Math.round((online / total) * 100) : 0;
-    
+
     console.log('Calculated stats:', { total, online, offline, onlineRate });
-    
+
     deviceStats.value = {
       total,
       online,
@@ -280,31 +262,30 @@ const fetchDeviceStats = async () => {
 const fetchOsDistribution = async () => {
   try {
     // Get all devices
-    const response = await restClient.get(`${API_URL}/api/listdevices`);
-    const devices = Array.isArray(response) ? response : [];
-    
+    const devices = await racService.fetchDevices();
+
     if (devices.length === 0) {
       console.log('No devices found');
       return;
     }
-    
+
     let windowsCount = 0;
     let macCount = 0;
     let linuxCount = 0;
     let otherCount = 0;
-    
+
     devices.forEach(device => {
       const osDesc = (device.osdesc || '').toLowerCase();
-      
+
       if (osDesc.includes('windows')) {
         windowsCount++;
       } else if (osDesc.includes('mac') || osDesc.includes('darwin') || osDesc.includes('osx')) {
         macCount++;
       } else if (
-        osDesc.includes('linux') || 
-        osDesc.includes('ubuntu') || 
-        osDesc.includes('debian') || 
-        osDesc.includes('fedora') || 
+        osDesc.includes('linux') ||
+        osDesc.includes('ubuntu') ||
+        osDesc.includes('debian') ||
+        osDesc.includes('fedora') ||
         osDesc.includes('unix') ||
         osDesc.includes('centos')
       ) {
@@ -313,27 +294,27 @@ const fetchOsDistribution = async () => {
         otherCount++;
       }
     });
-    
+
     const total = windowsCount + macCount + linuxCount + otherCount;
-    
+
     if (total > 0) {
       // Calculate exact percentages
       const windowsPercentageExact = (windowsCount / total) * 100;
       const macPercentageExact = (macCount / total) * 100;
       const linuxPercentageExact = (linuxCount / total) * 100;
       const otherPercentageExact = (otherCount / total) * 100;
-      
+
       // Rounded percentages for display
       const windowsPercentage = Math.round(windowsPercentageExact);
       const macPercentage = Math.round(macPercentageExact);
       const linuxPercentage = Math.round(linuxPercentageExact);
       const otherPercentage = Math.round(otherPercentageExact);
-      
+
       console.log('OS distribution percentages:', {
         windowsPercentageExact, macPercentageExact, linuxPercentageExact, otherPercentageExact,
         windowsPercentage, macPercentage, linuxPercentage, otherPercentage
       });
-      
+
       osDistribution.value = {
         total,
         windows: windowsCount,
@@ -350,7 +331,7 @@ const fetchOsDistribution = async () => {
         otherPercentageExact
       };
     }
-    
+
     console.log('OS distribution data:', osDistribution.value);
   } catch (error) {
     console.error('Failed to fetch OS distribution:', error);
@@ -361,41 +342,41 @@ const fetchOsDistribution = async () => {
 const fetchRecentActivity = async () => {
   try {
     // Fetch events from the API
-    const events = await restClient.get(`${API_URL}/api/listevents`);
-    
-    if (!Array.isArray(events)) {
-      console.error('Expected array of events but got:', events);
-      return;
-    }
-    
+    const events = await racService.fetchRecentEvents();
+
     // Process events and fetch device info where needed
-    const processedEvents = await Promise.all(
-      events.slice(0, 10).map(async (event) => {
-        // Clone the event to avoid modifying the original
-        const processedEvent = { ...event };
+    const uniqueNodeIds = new Set(events.map(event => event.nodeid).filter(nodeid => nodeid));
+    const nodeIdToDeviceInfoMap = new Map();
+
+    for (const nodeId of uniqueNodeIds) {
+      try {
+        const deviceInfo = await racService.fetchDeviceDetails(nodeId);
         
-        // Fetch device info if nodeid exists
-        if (event.nodeid) {
-          try {
-            const deviceInfo = await restClient.get(`${API_URL}/api/deviceinfo?id=${event.nodeid}`) as DeviceInfo;
-            if (deviceInfo && deviceInfo.General && deviceInfo.General['Server Name']) {
-              processedEvent.device = {
-                name: deviceInfo.General['Server Name']
-              };
-            }
-          } catch (error) {
-            console.error(`Failed to fetch device info for ${event.nodeid}:`, error);
-            // Continue with the event even if device info fetch fails
-          }
+        if (deviceInfo.General == null) {
+          continue;
         }
-        
-        return processedEvent;
-      })
-    );
-    
+        const device = convertDevices([deviceInfo], 'rac')[0];
+        console.log('Device:', device);
+        nodeIdToDeviceInfoMap.set(nodeId, device);
+      } catch (error) {
+        console.error(`Failed to fetch device info for ${nodeId}:`, error);
+      }
+    }
+
+    // Process events with device information
+    const processedEvents = events.map(event => {
+      const processedEvent = { ...event };
+
+      if (event.nodeid && nodeIdToDeviceInfoMap.has(event.nodeid)) {
+        processedEvent.device = nodeIdToDeviceInfoMap.get(event.nodeid);
+      }
+
+      return processedEvent;
+    });
+
     // Sort by timestamp (most recent first) and take the 5 most recent events
     processedEvents.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    recentActivity.value = processedEvents.slice(0, 5);
+    recentActivity.value = processedEvents.slice(0, 100);
   } catch (error) {
     console.error('Failed to fetch recent activity:', error);
     toastService.showError('Failed to fetch recent activity');
@@ -444,7 +425,7 @@ const getActivitySeverity = (type: string) => {
 
 onMounted(async () => {
   await fetchDashboardData();
-  
+
   // Set up auto-refresh every 30 seconds
   refreshInterval.value = window.setInterval(() => {
     fetchDashboardData();
@@ -487,7 +468,7 @@ onUnmounted(() => {
   grid-column: span 2;
 }
 
-.dashboard-card > :not(h3) {
+.dashboard-card> :not(h3) {
   flex: 1;
 }
 
@@ -619,7 +600,7 @@ onUnmounted(() => {
     border-bottom: 1px solid var(--surface-border);
   }
 
-  .p-datatable-thead > tr > th {
+  .p-datatable-thead>tr>th {
     background: var(--surface-card);
     color: var(--text-color-secondary);
     padding: 1rem 1.5rem;
@@ -639,7 +620,7 @@ onUnmounted(() => {
     }
   }
 
-  .p-datatable-tbody > tr {
+  .p-datatable-tbody>tr {
     background: var(--surface-card);
     transition: all 0.2s ease;
     border-bottom: 1px solid var(--surface-border);
@@ -650,7 +631,7 @@ onUnmounted(() => {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    > td {
+    >td {
       padding: 1.25rem 1.5rem;
       border: none;
       color: var(--text-color);
@@ -663,12 +644,12 @@ onUnmounted(() => {
 
     &:last-child {
       border-bottom: none;
-      
-      > td:first-child {
+
+      >td:first-child {
         border-bottom-left-radius: var(--border-radius);
       }
-      
-      > td:last-child {
+
+      >td:last-child {
         border-bottom-right-radius: var(--border-radius);
       }
     }

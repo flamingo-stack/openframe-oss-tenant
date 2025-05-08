@@ -203,9 +203,25 @@ export interface RACDevice {
   agent?: {
     ver?: string;
     caps?: number;
+    id?: number;
+    core?: string;
+    root?: boolean;
   };
   meshid?: string;
   domain?: string;
+  host?: string;
+  lastbootuptime?: number;
+  pwr?: number;
+  lusers?: string[];
+  groupname?: string;
+  sessions?: {
+    battery?: {
+      state?: string;
+    };
+  };
+  type?: string;
+  icon?: number;
+  rname?: string;
   General?: {
     "Server Name"?: string;
     "Computer Name"?: string;
@@ -254,7 +270,6 @@ export interface RACDevice {
   Storage?: Record<string, {
     Capacity?: string;
   }>;
-  rname?: string;
   [key: string]: any;
 }
 
@@ -699,6 +714,44 @@ function fromRACDevice(device: RACDevice): EnhancedUnifiedDevice {
     securityInfo.windowsSecurityCenter = device.General.WindowsSecurityCenter;
   }
   
+  // Process battery information
+  const batteryInfo = device.sessions?.battery?.state || undefined;
+  const batteryStatus = batteryInfo ? {
+    state: batteryInfo,
+    isCharging: batteryInfo.toLowerCase() === 'ac'
+  } : undefined;
+  
+  // Process IP addresses
+  let ipAddresses: string[] = [];
+  
+  // First, check if device.ip exists and is an array
+  if (Array.isArray(device.ip)) {
+    ipAddresses = device.ip;
+  } 
+  // If device.ip is a string (single IP address), convert to array with that one element
+  else if (typeof device.ip === 'string') {
+    ipAddresses = [device.ip];
+  }
+  
+  // If we don't have any IPs yet, try to get the IP from General.IP Address
+  if (ipAddresses.length === 0 && device.General?.["IP Address"]) {
+    ipAddresses = [device.General["IP Address"]];
+  }
+  
+  // If we still don't have any IPs, collect them from network interfaces
+  if (ipAddresses.length === 0 && interfaces.length > 0) {
+    const collectedIPs: string[] = [];
+    interfaces.forEach(iface => {
+      if (iface.ipv4 && iface.ipv4.length > 0) {
+        collectedIPs.push(...iface.ipv4);
+      }
+    });
+    
+    if (collectedIPs.length > 0) {
+      ipAddresses = collectedIPs;
+    }
+  }
+  
   return {
     // Base unified device properties
     id: device._id || device.id || '',
@@ -710,7 +763,7 @@ function fromRACDevice(device: RACDevice): EnhancedUnifiedDevice {
     lastSeen: device.agct || device["Mesh Agent"]?.["Last agent connection"] || 0,
     type: 'rac' as DeviceModuleType,
     icon: getDeviceIcon(platform),
-    ipAddresses: device.ip || [],
+    ipAddresses: ipAddresses,
     
     // Set the original ID for direct reference
     originalId: device._id || device.id,
@@ -742,26 +795,43 @@ function fromRACDevice(device: RACDevice): EnhancedUnifiedDevice {
     },
     
     network: {
-      ipAddresses: device.ip || [],
+      ipAddresses: ipAddresses,
       macAddresses: device.mac || [],
       interfaces: interfaces.length > 0 ? interfaces : undefined,
+      hostName: device.host, // Add host field mapping
     },
     
     os: {
       name: device["Operating System"]?.Name,
       version: device["Operating System"]?.Version,
       architecture: device["Operating System"]?.Architecture,
+      lastBoot: device.lastbootuptime, // Add last boot time
     },
     
     security: securityInfo,
     
     user: {
       loggedInUsers: device.users,
+      loggedOutUsers: device.lusers, // Add logged out users
       domain: device.domain,
     },
     
     management: {
       agentVersion: device.agent?.ver || device["Mesh Agent"]?.["Mesh Agent"],
+      group: device.groupname, // Add group name
+      meshId: device.meshid, // Add mesh ID
+      agentDetails: device.agent ? {
+        id: device.agent.id,
+        capabilities: device.agent.caps,
+        core: device.agent.core,
+        isRoot: device.agent.root
+      } : undefined,
+    },
+    
+    // Add power information
+    power: {
+      state: device.pwr === 1 ? 'on' : device.pwr === 0 ? 'off' : undefined,
+      battery: batteryStatus,
     },
     
     // Preserve the original data

@@ -272,8 +272,7 @@ const viewDevice = async (device: UnifiedDevice) => {
     selectedDevice.value = device;
     showDeviceDetails.value = true;
 
-    let agentId = device.originalId as string;
-    const refreshedDevice = await fetchDeviceDetails(agentId);
+    const refreshedDevice = await fetchDeviceDetails(device.originalId as string);
     selectedDevice.value = refreshedDevice as any;
   } catch (error) {
     console.error('Error viewing device details:', error);
