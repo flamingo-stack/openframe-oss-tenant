@@ -3,7 +3,7 @@
     <ModuleHeader title="Devices">
       <template #subtitle>View and manage connected devices</template>
       <template #actions>
-        <OFButton icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true" 
+        <OFButton icon="pi pi-history" class="p-button-text" @click="showExecutionHistory = true"
           v-tooltip.left="'Script Execution History'" />
       </template>
     </ModuleHeader>
@@ -17,73 +17,16 @@
         </div>
       </div>
 
-      <ModuleTable 
-        :items="devices" 
-        :loading="loading"
-        :searchFields="['name', 'osdesc', 'ip', 'conn']" 
-        emptyIcon="pi pi-desktop"
-        emptyTitle="No Devices Found" 
-        emptyMessage="Add your first device to start monitoring."
-        emptyHint="Devices will appear here once they are added to your MeshCentral server."
-      >
-        <Column field="name" header="Hostname" sortable>
-          <template #body="{ data }">
-            <div class="flex align-items-center">
-              <i :class="getDeviceIcon(data.plat)" class="mr-2"></i>
-              <span>{{ data.name }}</span>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="plat" header="Platform" sortable>
-          <template #body="{ data }">
-            <Tag :value="formatPlatform(data.plat)" :severity="getPlatformSeverity(data.plat)" />
-          </template>
-        </Column>
-
-        <Column field="osdesc" header="OS Version" sortable>
-          <template #body="{ data }">
-            <span class="text-sm">{{ data.osdesc || 'Unknown' }}</span>
-          </template>
-        </Column>
-
-        <Column field="conn" header="Status" sortable>
-          <template #body="{ data }">
-            <Tag :value="getConnectionStatus(data.conn)" :severity="getConnectionSeverity(data.conn)" />
-          </template>
-        </Column>
-
-        <Column field="agct" header="Last Seen" sortable>
-          <template #body="{ data }">
-            <span class="text-sm">{{ formatTimestamp(data.agct) }}</span>
-          </template>
-        </Column>
-
-        <Column header="Actions" :exportable="false">
-          <template #body="{ data }">
-            <div class="flex gap-2 justify-content-center">
-              <OFButton icon="pi pi-code" class="p-button-text p-button-sm" v-tooltip.top="'Run Command'"
-                @click="runCommand(data)" />
-              <OFButton icon="pi pi-eye" class="p-button-text p-button-sm" v-tooltip.top="'View Details'"
-                @click="viewDevice(data)" />
-              <OFButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
-                v-tooltip.top="'Delete Device'" @click="deleteDevice(data)" />
-            </div>
-          </template>
-        </Column>
-      </ModuleTable>
+      <UnifiedDeviceTable :devices="devices" moduleType="rac" :loading="loading" emptyIcon="pi pi-desktop"
+        emptyTitle="No Devices Found" emptyMessage="Add your first device to start monitoring."
+        emptyHint="Devices will appear here once they are added to your MeshCentral server." @runCommand="runCommand"
+        @viewDetails="viewDevice" @deleteDevice="deleteDevice" />
     </div>
 
     <!-- Run Command Dialog -->
-    <CommandDialog
-      v-model:visible="showRunCommandDialog"
-      :loading="executing"
-      :lastCommand="lastCommand"
-      :devicePlatform="selectedDevice?.plat"
-      @run="executeCommand"
-      @update:output="updateCommandOutput"
-      @cancel="showRunCommandDialog = false"
-    />
+    <CommandDialog v-model:visible="showRunCommandDialog" :loading="executing" :lastCommand="lastCommand"
+      :devicePlatform="selectedDevice?.platform || selectedDevice?.moduleSpecific?.plat" @run="executeCommand"
+      @update:output="updateCommandOutput" @cancel="showRunCommandDialog = false" />
 
     <!-- Delete Device Confirmation -->
     <Dialog v-model:visible="deleteDeviceDialog" header="Confirm" :modal="true" :draggable="false"
@@ -94,7 +37,7 @@
       <div class="confirmation-content">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
         <span v-if="selectedDevice">
-          Are you sure you want to delete <b>{{ selectedDevice.name }}</b>?
+          Are you sure you want to delete <b>{{ selectedDevice.hostname }}</b>?
         </span>
       </div>
       <template #footer>
@@ -106,62 +49,48 @@
     </Dialog>
 
     <!-- Script Execution History -->
-    <ScriptExecutionHistory
-      v-model:visible="showExecutionHistory"
-      ref="executionHistoryRef"
-    />
+    <ScriptExecutionHistory v-model:visible="showExecutionHistory" ref="executionHistoryRef" />
 
-    <!-- Device Details Dialog -->
-    <DeviceDetailsDialog
-      v-model:visible="showDeviceDetailsDialog"
-      :device="selectedDevice"
-      :deviceDetails="deviceDetails"
-      @runCommand="handleDeviceDetailsRunCommand"
-      @delete="handleDeviceDetailsDelete"
-    />
+    <!-- Device Details Slider -->
+    <DeviceDetailsSlider v-model:visible="showDeviceDetails" :device="selectedDevice" moduleType="rac"
+      @refreshDevice="fetchDevices" @remoteAccess="remoteAccess" @fileTransfer="fileTransfer"
+      @deleteDevice="deleteDevice" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "@vue/runtime-core";
+import { ref, onMounted, reactive, computed } from "@vue/runtime-core";
 import { useRouter } from 'vue-router';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
 import { OFButton } from '../../components/ui';
 import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import Dropdown from 'primevue/dropdown';
-import Textarea from 'primevue/textarea';
-import Tag from 'primevue/tag';
 import { FilterMatchMode } from "primevue/api";
 import { restClient } from "../../apollo/apolloClient";
 import { ConfigService } from "../../config/config.service";
 import { ToastService } from "../../services/ToastService";
 import ModuleHeader from "../../components/shared/ModuleHeader.vue";
 import SearchBar from '../../components/shared/SearchBar.vue';
-import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
-import DeviceDetailsDialog from '../../components/shared/DeviceDetailsDialog.vue';
-import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
+import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider/index.vue';
+import { UnifiedDevice, getOriginalDevice } from '../../types/device';
+import { RACDevice, convertDevices } from '../../utils/deviceAdapters';
+import { RACService } from '../../services/RACService';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
 const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
-const router = useRouter();
 const toastService = ToastService.getInstance();
+const racService = RACService.getInstance();
 
 const loading = ref(true);
-const devices = ref<any[]>([]);
+const devices = ref<UnifiedDevice[]>([]);
 const showRunCommandDialog = ref(false);
 const deleteDeviceDialog = ref(false);
-const showDeviceDetailsDialog = ref(false);
 const executing = ref(false);
 const deleting = ref(false);
 
-const selectedDevice = ref<any | null>(null);
-const deviceDetails = ref<any | null>(null);
-const command = ref('');
+const selectedDevice = ref<UnifiedDevice | null>(null);
 const lastCommand = ref<{ cmd: string; output: string } | null>(null);
 
 const filters = ref({
@@ -171,102 +100,68 @@ const filters = ref({
 const showExecutionHistory = ref(false);
 const executionHistoryRef = ref<InstanceType<typeof ScriptExecutionHistory> | null>(null);
 
-const getConnectionStatus = (conn: number) => {
-  switch (conn) {
-    case 1: return 'online';
-    case 0: return 'offline';
-    default: return 'unknown';
-  }
-};
-
-const getConnectionSeverity = (conn: number) => {
-  switch (conn) {
-    case 1: return 'success';
-    case 0: return 'danger';
-    default: return 'info';
-  }
-};
-
-const formatTimestamp = (timestamp: number) => {
-  return timestamp ? new Date(timestamp).toLocaleString() : 'Never';
-};
+const showDeviceDetails = ref(false);
 
 const fetchDevices = async () => {
   try {
     loading.value = true;
-    
-    const response = await restClient.get<any[]>(`${API_URL}/api/listdevices`);
-    
-    devices.value = Array.isArray(response) ? response.map(device => {
-      // Map MeshCentral device to our format
-      return {
-        ...device,
-        id: device._id,
-        // Determine platform from osdesc
-        plat: device.osdesc?.toLowerCase().includes('windows') ? 'windows' :
-              device.osdesc?.toLowerCase().includes('mac') ? 'darwin' :
-              device.osdesc?.toLowerCase().includes('linux') ? 'linux' : 'unknown'
-      };
-    }) : [];
+    // Fetch devices from RACService
+    const response = await racService.fetchDevices();
+
+    devices.value = response;
+
+    console.log('Devices:', devices.value);
   } catch (error) {
     console.error('Failed to fetch devices:', error);
     toastService.showError('Failed to fetch devices');
+    devices.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const fetchDeviceDetails = async (deviceId: string) => {
+const runCommand = (device: UnifiedDevice) => {
   try {
-    const response = await restClient.get<any>(`${API_URL}/api/deviceinfo?id=${deviceId}`);
-    return response;
+    // Store selected device ID for the command dialog
+    selectedDevice.value = device;
+    // Show the command dialog
+    showRunCommandDialog.value = true;
   } catch (error) {
-    console.error('Failed to fetch device details:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
-    toastService.showError(errorMessage);
-    return null;
+    console.error('Error preparing command execution:', error);
+    toastService.showError('Unable to prepare command execution');
   }
-};
-
-const runCommand = (device: any) => {
-  selectedDevice.value = device;
-  showRunCommandDialog.value = true;
 };
 
 const executeCommand = async (cmd: string, shell: string, timeout: number, runAsUser: boolean) => {
   if (!selectedDevice.value) return;
 
-  let executionId: string | undefined;
   
-  // Add command to execution history with pending status and close dialog immediately
+  let executionId: string | undefined;
+
+  // Add command to execution history with pending status
   if (executionHistoryRef.value) {
     executionId = executionHistoryRef.value.addExecution({
-      deviceName: selectedDevice.value.name,
+      deviceName: selectedDevice.value.hostname,
       command: cmd,
       output: 'Executing command...',
       status: 'pending',
-      agent_id: selectedDevice.value.id
+      agent_id: selectedDevice.value.originalId as string
     });
   }
 
-  // Close dialog and show history immediately
+  // Close command dialog
   showRunCommandDialog.value = false;
   showExecutionHistory.value = true;
 
   try {
     executing.value = true;
-    
-    // Determine if we should use PowerShell based on the shell parameter and platform
-    const usePowerShell = shell === 'powershell' && selectedDevice.value.plat === 'windows';
-    
-    const response = await restClient.post<string>(`${API_URL}/api/runcommand`, {
-      id: selectedDevice.value.id,
-      command: cmd,
-      powershell: usePowerShell
-    });
 
-    const output = response || 'No output';
-    
+    // Determine if we should use PowerShell based on the shell parameter and platform
+    const usePowerShell = shell === 'powershell' && selectedDevice.value.platform === 'windows';
+
+    // Execute the command via RACService
+    const output = await racService.executeCommand(selectedDevice.value.originalId as string, cmd, usePowerShell);
+
     lastCommand.value = {
       cmd,
       output
@@ -283,8 +178,9 @@ const executeCommand = async (cmd: string, shell: string, timeout: number, runAs
     toastService.showSuccess('Command executed successfully');
   } catch (error) {
     console.error('Failed to execute command:', error);
-    const errorMessage = error instanceof Error ? error.message : 
-                        (error.data || 'Failed to execute command');
+    const errorMessage = error instanceof Error ? error.message :
+      (typeof error === 'object' && error !== null && 'data' in error ?
+        (error as { data: string }).data : 'Failed to execute command');
     toastService.showError(errorMessage);
 
     // Update execution history with error status
@@ -305,25 +201,48 @@ const updateCommandOutput = (output: string) => {
   }
 };
 
-const viewDevice = async (device: any) => {
-  selectedDevice.value = device;
-  deviceDetails.value = await fetchDeviceDetails(device.id);
-  showDeviceDetailsDialog.value = true;
-};
+const viewDevice = async (device: UnifiedDevice) => {
+  try {
+    // Start with the unified device for immediate display
+    selectedDevice.value = device;
+    showDeviceDetails.value = true;
 
-const handleDeviceDetailsRunCommand = () => {
-  if (selectedDevice.value) {
-    showDeviceDetailsDialog.value = false;
-    runCommand(selectedDevice.value);
+    // Get device ID
+    const deviceId = device.originalId as string;
+    console.log('Device ID:', deviceId);
+
+    // Fetch detailed device info using the service
+    selectedDevice.value = await racService.fetchDeviceDetails(deviceId);
+
+  } catch (error) {
+    console.error('Error viewing device details:', error);
+    toastService.showError('Failed to load device details');
   }
 };
 
-const handleDeviceDetailsDelete = (device: any) => {
-  showDeviceDetailsDialog.value = false;
-  deleteDevice(device);
+const remoteAccess = async (device: UnifiedDevice) => {
+  try {
+    // Open the MeshCentral remote access URL in a new tab
+    const racUrl = racService.getRemoteAccessUrl(device.originalId as string);
+    window.open(racUrl, '_blank');
+  } catch (error) {
+    console.error('Error initiating remote access:', error);
+    toastService.showError('Failed to start remote access session');
+  }
 };
 
-const deleteDevice = (device: any) => {
+const fileTransfer = async (device: UnifiedDevice) => {
+  try {
+    // Open the MeshCentral file transfer URL in a new tab
+    const fileUrl = racService.getFileTransferUrl(device.originalId as string);
+    window.open(fileUrl, '_blank');
+  } catch (error) {
+    console.error('Error initiating file transfer:', error);
+    toastService.showError('Failed to start file transfer session');
+  }
+};
+
+const deleteDevice = (device: UnifiedDevice) => {
   selectedDevice.value = device;
   deleteDeviceDialog.value = true;
 };
@@ -333,16 +252,15 @@ const confirmDelete = async () => {
 
   try {
     deleting.value = true;
-    
-    await restClient.post(`${API_URL}/api/removedevice`, {
-      id: selectedDevice.value.id
-    });
-    
-    // Refresh the device list
-    await fetchDevices();
-    
-    deleteDeviceDialog.value = false;
-    toastService.showSuccess('Device deleted successfully');
+
+    const success = await racService.deleteDevice(selectedDevice.value.originalId as string);
+
+    if (success) {
+      // Refresh the device list
+      await fetchDevices();
+      deleteDeviceDialog.value = false;
+      toastService.showSuccess('Device deleted successfully');
+    }
   } catch (error) {
     console.error('Failed to delete device:', error);
     toastService.showError('Failed to delete device');

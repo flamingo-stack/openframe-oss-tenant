@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from '@vue/runtime-core'
 
 export function useScrollDirection() {
   const lastScrollTop = ref(0)
