@@ -533,14 +533,9 @@ try {
     Write-VerboseMessage "Copying files to installation directory..."
     Copy-Item -Path $agentPath -Destination $InstallDir -Force
     
-    # Only copy config file if we don't already have one or if no identity backup
-    $existingConfigPath = Join-Path $InstallDir "meshagent.msh"
-    if (-not (Test-Path $existingConfigPath) -or (-not $hasIdentityBackup)) {
-        Copy-Item -Path $configPath -Destination $InstallDir -Force
-        Write-VerboseMessage "Copied new configuration file to installation directory"
-    } else {
-        Write-VerboseMessage "Preserving existing configuration file"
-    }
+    # Always override the MSH configuration file
+    Copy-Item -Path $configPath -Destination $InstallDir -Force
+    Write-VerboseMessage "Copied new configuration file to installation directory"
     
     $finalAgentPath = Join-Path $InstallDir "meshagent.exe"
     $finalConfigPath = Join-Path $InstallDir "meshagent.msh"

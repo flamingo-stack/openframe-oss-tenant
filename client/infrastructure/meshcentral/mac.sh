@@ -640,14 +640,9 @@ debug_print "Copying files to installation directory"
 sudo cp "$AGENT_PATH" "$INSTALL_DIR/meshagent"
 sudo chmod +x "$INSTALL_DIR/meshagent"
 
-# Only copy config file if we don't already have one or if no identity backup
-EXISTING_CONFIG_PATH="$INSTALL_DIR/meshagent.msh"
-if [ ! -f "$EXISTING_CONFIG_PATH" ] || [ "$HAS_IDENTITY_BACKUP" = false ]; then
-  sudo cp "$CONFIG_PATH" "$INSTALL_DIR/meshagent.msh"
-  debug_print "Copied new configuration file to installation directory"
-else
-  debug_print "Preserving existing configuration file"
-fi
+# Always override the MSH configuration file
+sudo cp "$CONFIG_PATH" "$INSTALL_DIR/meshagent.msh"
+debug_print "Copied new configuration file to installation directory"
 
 FINAL_AGENT_PATH="$INSTALL_DIR/meshagent"
 FINAL_CONFIG_PATH="$INSTALL_DIR/meshagent.msh"

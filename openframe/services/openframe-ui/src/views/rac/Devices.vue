@@ -72,7 +72,7 @@ import SearchBar from '../../components/shared/SearchBar.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
-import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider.vue';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider/index.vue';
 import { UnifiedDevice, getOriginalDevice } from '../../types/device';
 import { RACDevice, convertDevices } from '../../utils/deviceAdapters';
 import { RACService } from '../../services/RACService';

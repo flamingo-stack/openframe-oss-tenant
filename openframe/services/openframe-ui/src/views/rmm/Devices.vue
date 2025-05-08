@@ -79,7 +79,7 @@ import ModuleTable from '../../components/shared/ModuleTable.vue';
 import CommandDialog from '../../components/shared/CommandDialog.vue';
 import ScriptExecutionHistory from '../../components/shared/ScriptExecutionHistory.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
-import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider.vue';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider/index.vue';
 import type { Device, CommandResponse, DeviceResponse } from '../../types/rmm';
 import { UnifiedDevice, getOriginalDevice, EnhancedUnifiedDevice } from '../../types/device';
 import { RMMDevice, convertDevices } from '../../utils/deviceAdapters';

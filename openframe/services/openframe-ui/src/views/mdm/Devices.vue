@@ -34,7 +34,7 @@ import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
 import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
-import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider.vue';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider/index.vue';
 import { UnifiedDevice } from '../../types/device';
 import { MDMDevice } from '../../utils/deviceAdapters';
 
