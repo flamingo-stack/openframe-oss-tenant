@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-ui
+  template:
+    metadata:
+      labels:
+        app: openframe-ui
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+
+      containers:
+        - name: openframe-ui
+          image: openframe-ui
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: VITE_API_URL
+              value: "https://openframe-api.192.168.100.100.nip.io"
+            - name: VITE_GATEWAY_URL
+              value: "https://openframe-gateway.192.168.100.100.nip.io"
+            - name: VITE_CLIENT_ID
+              value: "openframe_web_dashboard"
+            - name: VITE_CLIENT_SECRET
+              value: "prod_secret"
+            - name: VITE_GRAFANA_URL
+              value: "http://grafana.192.168.100.100.nip.io"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          # resources:
+          #   requests:
+          #     memory: "256Mi"
+          #     cpu: "0.2"
+          #   limits:
+          #     memory: "512Mi"
+          #     cpu: "0.5"

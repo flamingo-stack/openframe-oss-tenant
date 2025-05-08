@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-celerybeat
+spec:
+  selector:
+    app: tactical-celerybeat
+  ports:
+  - port: 8000
+    targetPort: 8000

@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleet
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fleet.192.168.100.100.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fleet
+                port:
+                  number: 8070
