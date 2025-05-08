@@ -41,6 +41,13 @@ jobs:
               "artifact_name": "openframe-api"
             },
             {
+              "name": "client",
+              "type": ["java", "container"],
+              "path": "./openframe/services/openframe-client",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-client",
+              "artifact_name": "openframe-client"
+            },
+            {
               "name": "config",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",

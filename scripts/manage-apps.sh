@@ -240,6 +240,19 @@ openframe_microservices_openframe_api)
     intercept_app "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
   ;;
+openframe_microservices_openframe_client)
+  if [ "$ACTION" == "deploy" ]; then
+    openframe_microservices_openframe_client_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-client-deploy.log"
+  elif [ "$ACTION" == "delete" ]; then
+    openframe_microservices_openframe_client_delete
+  elif [ "$ACTION" == "dev" ]; then
+    echo "Deploying Client in dev mode"
+    cd ${ROOT_REPO_DIR}/openframe/services/openframe-client
+    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+  elif [ "$ACTION" == "intercept" ]; then
+    intercept_app "openframe-client" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+  fi
+  ;;
 openframe_microservices_openframe_management)
   if [ "$ACTION" == "deploy" ]; then
     openframe_microservices_openframe_management_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-management-deploy.log"
@@ -501,6 +514,7 @@ om | openframe_microservices)
     start_spinner "Deploying OpenFrame Microservices" &&
     $0 openframe_microservices_openframe_config_server $ACTION &&
     $0 openframe_microservices_openframe_api $ACTION &&
+    $0 openframe_microservices_openframe_client $ACTION &&
     $0 openframe_microservices_openframe_management $ACTION &&
     $0 openframe_microservices_openframe_stream $ACTION &&
     $0 openframe_microservices_openframe_gateway $ACTION &&

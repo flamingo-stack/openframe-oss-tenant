@@ -163,6 +163,7 @@ t, client_tools               # Client tools
 3. **OpenFrame Microservices (om, openframe_microservices)**
    - Config Server (`openframe_microservices_openframe_config_server`)
    - API (`openframe_microservices_openframe_api`)
+   - Client (`openframe_microservices_openframe_client`)
    - Management (`openframe_microservices_openframe_management`)
    - Stream (`openframe_microservices_openframe_stream`)
    - Gateway (`openframe_microservices_openframe_gateway`)
