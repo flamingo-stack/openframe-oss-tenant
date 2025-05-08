@@ -13,6 +13,7 @@ This feature adds a new optional `--nodeid` parameter to MeshCentral execution s
 - [x] Update parameter validation in both scripts
 - [x] Add logic to inject NodeID into MSH file in mac.sh
 - [x] Add logic to inject NodeID into MSH file in win.ps1
+- [x] Add enhanced file destination and execution location output
 - [x] Update documentation to reflect new parameter option
 
 ## Future Tasks
@@ -28,11 +29,13 @@ The feature has been implemented in both scripts, providing the ability to injec
    - Added the `--nodeid` parameter to the argument parsing section
    - Added the parameter to the help documentation with an example
    - Implemented logic to append the NodeID to the MSH file after download
+   - Added detailed output showing all file paths and execution locations
 
 2. For win.ps1:
    - Added a `NodeId` parameter to the script's parameter block
    - Added the parameter to the help documentation with an example
    - Implemented logic to append the NodeID to the MSH file after download
+   - Added detailed output showing all file paths and execution locations
 
 ### Changes Made
 
@@ -41,11 +44,15 @@ The feature has been implemented in both scripts, providing the ability to injec
 - Added parameter parsing for `--nodeid=*` option
 - Added NodeID injection code after the MSH file is downloaded
 - Updated help documentation to include the new parameter
+- Added clear output showing file destinations and execution locations
+- Improved variable consistency by using named variables for file paths
 
 #### win.ps1
 - Added a new `NodeId` parameter to the parameter block
 - Added NodeID injection code after the MSH file is downloaded
 - Updated help documentation to include the new parameter
+- Added clear output showing file destinations and execution locations
+- Improved variable consistency by using named variables for file paths
 
 ### Testing Instructions
 
@@ -61,7 +68,15 @@ sudo ./mac.sh --server=meshcentral.yourdomain.com --nodeid="node//your-custom-no
 .\win.ps1 -Server meshcentral.yourdomain.com -NodeId "node//your-custom-node-id"
 ```
 
-Verify that the NodeID gets correctly added to the MSH file.
+The output will now clearly show:
+- All file download destinations
+- Where configuration files are stored
+- Where the agent binary is located
+- Where the agent is being executed from
+
+Verify that:
+1. The NodeID gets correctly added to the MSH file
+2. All file locations are properly displayed in the output
 
 ## Implementation Plan
 

@@ -208,6 +208,12 @@ try {
     Write-VerboseMessage "Log directory: $LogDir"
     Write-VerboseMessage "Installation directory: $InstallDir"
 
+    # Display file destinations for user clarity
+    Write-ColorMessage "File Destinations:" "Blue"
+    Write-Host "  ● Temporary directory: $TempDir"
+    Write-Host "  ● Log directory: $LogDir"
+    Write-Host "  ● Installation directory: $InstallDir"
+
     # Clean up existing directories
     Remove-Directory $TempDir
     Remove-Directory $InstallDir
@@ -242,6 +248,7 @@ try {
     # Download agent
     $agentUrl = "https://$Server/meshagents?id=$($archInfo.AgentId)"
     $agentPath = Join-Path $TempDir "meshagent.exe"
+    Write-Host "  ● Agent binary location: $agentPath"
     if (-not (Download-File -Url $agentUrl -OutFile $agentPath)) {
         throw "Failed to download MeshAgent binary"
     }
@@ -249,6 +256,7 @@ try {
     # Download config
     $configUrl = "https://$Server/openframe_public/meshagent.msh"
     $configPath = Join-Path $TempDir "meshagent.msh"
+    Write-Host "  ● Config file location: $configPath"
     if (-not (Download-File -Url $configUrl -OutFile $configPath)) {
         throw "Failed to download MeshAgent configuration"
     }
@@ -257,6 +265,7 @@ try {
     if (-not [string]::IsNullOrEmpty($NodeId)) {
         Write-VerboseMessage "Adding NodeID to the MSH file: $NodeId"
         Add-Content -Path $configPath -Value "NodeID=$NodeId"
+        Write-Host "  ● Added NodeID to configuration file"
     }
 
     # Verify downloads
@@ -292,6 +301,11 @@ try {
     Write-VerboseMessage "Copying files to installation directory..."
     Copy-Item -Path $agentPath -Destination $InstallDir -Force
     Copy-Item -Path $configPath -Destination $InstallDir -Force
+    
+    $finalAgentPath = Join-Path $InstallDir "meshagent.exe"
+    $finalConfigPath = Join-Path $InstallDir "meshagent.msh"
+    Write-Host "  ● Final agent location: $finalAgentPath"
+    Write-Host "  ● Final config location: $finalConfigPath"
 
     # Clean up temp files before starting agent
     Write-VerboseMessage "Cleaning up temporary directory: $TempDir"
@@ -299,12 +313,12 @@ try {
 
     # Run agent
     Write-ColorMessage "Starting MeshAgent:" "Yellow"
-    $finalAgentPath = Join-Path $InstallDir "meshagent.exe"
     Write-VerboseMessage "Executing: $finalAgentPath connect"
+    Write-Host "  ● Executing agent from: $finalAgentPath"
     
     Write-ColorMessage "`nInstallation Summary:" "Green"
     Write-VerboseMessage "Agent Location: $finalAgentPath"
-    Write-VerboseMessage "Config Location: $(Join-Path $InstallDir 'meshagent.msh')"
+    Write-VerboseMessage "Config Location: $finalConfigPath"
     Write-VerboseMessage "Log Location: $LogDir"
     Write-ColorMessage "Installation completed successfully." "Green"
     Write-ColorMessage "`nStarting MeshAgent in connect mode..." "Yellow"

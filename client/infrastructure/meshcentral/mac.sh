@@ -178,32 +178,39 @@ cleanup
 debug_print "Creating directories: $TEMP_DIR"
 retry 3 sudo mkdir -p "$TEMP_DIR"
 
+# Display file paths for user clarity
+echo -e "${BLUE}${INFO} File Destinations:${RESET}"
+echo -e "${BLUE}${INFO} - Temporary directory: ${YELLOW}$TEMP_DIR${RESET}"
+
 # Download MeshAgent binary
 AGENT_URL="https://$MESH_SERVER/meshagents?id=$AGENT_ID"
+AGENT_PATH="$TEMP_DIR/meshagent"
 
 debug_print "Downloading MeshAgent binary from $AGENT_URL"
-retry 3 curl -k "$AGENT_URL" -o "$TEMP_DIR/meshagent"
+echo -e "${BLUE}${INFO} - Agent binary location: ${YELLOW}$AGENT_PATH${RESET}"
+retry 3 curl -k "$AGENT_URL" -o "$AGENT_PATH"
 
 if [ $? -ne 0 ]; then
   echo -e "${RED}${CROSS} Error: Unable to download MeshAgent binary. Check your server URL and network connection.${RESET}"
   exit 1
 fi
 
-retry 3 sudo chmod +x "$TEMP_DIR/meshagent"
+retry 3 sudo chmod +x "$AGENT_PATH"
 
 # Platform-specific quarantine handling
 if [ "$OS_NAME" = "macos" ]; then
   debug_print "Removing quarantine attribute from downloaded MeshAgent binary (macOS specific)"
   # Suppress errors if attribute doesn't exist by using || true
-  sudo xattr -d com.apple.quarantine "$TEMP_DIR/meshagent" 2>/dev/null || true
+  sudo xattr -d com.apple.quarantine "$AGENT_PATH" 2>/dev/null || true
   # Alternative approach - set empty attribute
-  sudo xattr -w com.apple.quarantine "" "$TEMP_DIR/meshagent" 2>/dev/null || true
+  sudo xattr -w com.apple.quarantine "" "$AGENT_PATH" 2>/dev/null || true
   
   # Move to a more permissive location for execution
   INSTALL_DIR="/usr/local/bin"
   debug_print "Moving agent to approved location: $INSTALL_DIR"
+  echo -e "${BLUE}${INFO} - Installation directory: ${YELLOW}$INSTALL_DIR${RESET}"
   sudo mkdir -p "$INSTALL_DIR"
-  sudo cp "$TEMP_DIR/meshagent" "$INSTALL_DIR/meshagent"
+  sudo cp "$AGENT_PATH" "$INSTALL_DIR/meshagent"
   sudo chmod +x "$INSTALL_DIR/meshagent"
   
   # Extra security approval for macOS
@@ -213,10 +220,12 @@ if [ "$OS_NAME" = "macos" ]; then
 fi
 
 CONFIG_URL="https://$MESH_SERVER/openframe_public/meshagent.msh"
+CONFIG_PATH="$TEMP_DIR/meshagent.msh"
 
 # Download MeshAgent configuration file
 debug_print "Downloading MeshAgent configuration file"
-retry 3 curl -k "$CONFIG_URL" -o "$TEMP_DIR/meshagent.msh"
+echo -e "${BLUE}${INFO} - Config file location: ${YELLOW}$CONFIG_PATH${RESET}"
+retry 3 curl -k "$CONFIG_URL" -o "$CONFIG_PATH"
 
 if [ $? -ne 0 ]; then
   echo -e "${RED}${CROSS} Error: Unable to download MeshAgent configuration file. Check your server URL and network connection.${RESET}"
@@ -226,19 +235,21 @@ fi
 # Add NodeID to the MSH file if provided
 if [ -n "$NODE_ID" ]; then
   debug_print "Adding NodeID to the MSH file: $NODE_ID"
-  echo "NodeID=$NODE_ID" >> "$TEMP_DIR/meshagent.msh"
+  echo "NodeID=$NODE_ID" >> "$CONFIG_PATH"
+  echo -e "${BLUE}${INFO} - Added NodeID to configuration file${RESET}"
 fi
 
 # Platform-specific quarantine handling for config file
 if [ "$OS_NAME" = "macos" ]; then
   debug_print "Removing quarantine attribute from configuration file (macOS specific)"
   # Suppress errors if attribute doesn't exist by using || true
-  sudo xattr -d com.apple.quarantine "$TEMP_DIR/meshagent.msh" 2>/dev/null || true
+  sudo xattr -d com.apple.quarantine "$CONFIG_PATH" 2>/dev/null || true
   # Alternative approach - set empty attribute
-  sudo xattr -w com.apple.quarantine "" "$TEMP_DIR/meshagent.msh" 2>/dev/null || true
+  sudo xattr -w com.apple.quarantine "" "$CONFIG_PATH" 2>/dev/null || true
   
   # Copy config to same location as agent
-  sudo cp "$TEMP_DIR/meshagent.msh" "$INSTALL_DIR/meshagent.msh"
+  sudo cp "$CONFIG_PATH" "$INSTALL_DIR/meshagent.msh"
+  echo -e "${BLUE}${INFO} - Copied config to: ${YELLOW}$INSTALL_DIR/meshagent.msh${RESET}"
 fi
 
 echo -e "${GREEN}${CHECK} MeshAgent and configuration successfully Downloaded.${RESET}"
@@ -318,20 +329,26 @@ request_screen_permissions
 # Create log directory if it doesn't exist
 LOG_DIR="$(dirname "$TEMP_DIR")/meshagent_logs"
 debug_print "Creating log directory: $LOG_DIR"
+echo -e "${BLUE}${INFO} - Log directory: ${YELLOW}$LOG_DIR${RESET}"
 retry 3 sudo mkdir -p "$LOG_DIR"
 
 # Set log file path
 LOG_FILE="$LOG_DIR/meshagent.log"
 debug_print "Agent output will be logged to: $LOG_FILE"
+echo -e "${BLUE}${INFO} - Log file: ${YELLOW}$LOG_FILE${RESET}"
 
 # Verify agent status
 debug_print "Running MeshCentral agent"
 
 # Run agent with full path to the more permissive location
 if [ "$OS_NAME" = "macos" ]; then
-  retry 5 sudo "$INSTALL_DIR/meshagent" connect
+  EXEC_PATH="$INSTALL_DIR/meshagent"
+  echo -e "${BLUE}${INFO} - Executing agent from: ${YELLOW}$EXEC_PATH${RESET}"
+  retry 5 sudo "$EXEC_PATH" connect
 else
-  retry 5 sudo "$TEMP_DIR/meshagent" connect
+  EXEC_PATH="$TEMP_DIR/meshagent"
+  echo -e "${BLUE}${INFO} - Executing agent from: ${YELLOW}$EXEC_PATH${RESET}"
+  retry 5 sudo "$EXEC_PATH" connect
 fi
 
 # Final debug print
