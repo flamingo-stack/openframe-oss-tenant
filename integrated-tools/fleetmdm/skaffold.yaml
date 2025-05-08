@@ -15,3 +15,7 @@ manifests:
   kustomize:
     paths:
     - ../../deploy/dev/integrated-tools/fleet
+deploy:
+  kubectl:
+    flags:
+      delete: ["--grace-period=0"]

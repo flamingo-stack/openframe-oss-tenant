@@ -16,6 +16,7 @@ WARN="⚠️"
 # Default parameters
 MESH_SERVER=""
 TEMP_DIR="/tmp/mesh_install"
+NODE_ID=""
 
 # OS Detection
 detect_os() {
@@ -128,10 +129,12 @@ show_help() {
   echo ""
   echo "Options:"
   echo "  --server=<mesh_server_url>        (Required) URL of your MeshCentral server (without https://)"
+  echo "  --nodeid=<node_id>                (Optional) NodeID to inject into the MSH file"
   echo "  --help                            Display this help message"
   echo ""
   echo "Example:"
   echo "  $0 --server=mesh.yourdomain.com"
+  echo "  $0 --server=mesh.yourdomain.com --nodeid=node//1E3vUyW4i1Je\$hiyT8ec87bEXPVj\$sEahRAFDtfNSKgS5XJQBotfsN9Y\$v0hw6xa"
   exit 0
 }
 
@@ -139,6 +142,7 @@ show_help() {
 for ARG in "$@"; do
   case $ARG in
   --server=*) MESH_SERVER="${ARG#*=}" ;;
+  --nodeid=*) NODE_ID="${ARG#*=}" ;;
   --help) show_help ;;
   *)
     echo -e "${RED}${CROSS} Unknown argument: $ARG${RESET}"
@@ -217,6 +221,12 @@ retry 3 curl -k "$CONFIG_URL" -o "$TEMP_DIR/meshagent.msh"
 if [ $? -ne 0 ]; then
   echo -e "${RED}${CROSS} Error: Unable to download MeshAgent configuration file. Check your server URL and network connection.${RESET}"
   exit 1
+fi
+
+# Add NodeID to the MSH file if provided
+if [ -n "$NODE_ID" ]; then
+  debug_print "Adding NodeID to the MSH file: $NODE_ID"
+  echo "NodeID=$NODE_ID" >> "$TEMP_DIR/meshagent.msh"
 fi
 
 # Platform-specific quarantine handling for config file

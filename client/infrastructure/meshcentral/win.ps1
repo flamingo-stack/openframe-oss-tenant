@@ -4,6 +4,9 @@ param(
     [string]$Server,
     
     [Parameter(Mandatory=$false)]
+    [string]$NodeId,
+    
+    [Parameter(Mandatory=$false)]
     [switch]$Help
 )
 
@@ -44,10 +47,12 @@ function Show-Help {
     Write-Host "`nUsage: $($MyInvocation.MyCommand.Name) [options]`n"
     Write-Host "Options:"
     Write-Host "  -Server <mesh_server_url>        (Required) URL of your MeshCentral server (without https://)"
+    Write-Host "  -NodeId <node_id>                (Optional) NodeID to inject into the MSH file"
     Write-Host "  -Help                            Display this help message"
     Write-Host "  -Verbose                         Show detailed output`n"
     Write-Host "Example:"
     Write-Host "  $($MyInvocation.MyCommand.Name) -Server mesh.yourdomain.com [-Verbose]"
+    Write-Host "  $($MyInvocation.MyCommand.Name) -Server mesh.yourdomain.com -NodeId 'node//1E3vUyW4i1Je`$hiyT8ec87bEXPVj`$sEahRAFDtfNSKgS5XJQBotfsN9Y`$v0hw6xa'"
     exit 1
 }
 
@@ -246,6 +251,12 @@ try {
     $configPath = Join-Path $TempDir "meshagent.msh"
     if (-not (Download-File -Url $configUrl -OutFile $configPath)) {
         throw "Failed to download MeshAgent configuration"
+    }
+
+    # Add NodeID to the MSH file if provided
+    if (-not [string]::IsNullOrEmpty($NodeId)) {
+        Write-VerboseMessage "Adding NodeID to the MSH file: $NodeId"
+        Add-Content -Path $configPath -Value "NodeID=$NodeId"
     }
 
     # Verify downloads
