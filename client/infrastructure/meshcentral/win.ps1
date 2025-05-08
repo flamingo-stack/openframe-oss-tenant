@@ -210,9 +210,9 @@ try {
 
     # Display file destinations for user clarity
     Write-ColorMessage "File Destinations:" "Blue"
-    Write-Host "  ● Temporary directory: $TempDir"
-    Write-Host "  ● Log directory: $LogDir"
-    Write-Host "  ● Installation directory: $InstallDir"
+    Write-ColorMessage "  ● Temporary directory: $TempDir" "Yellow"
+    Write-ColorMessage "  ● Log directory: $LogDir" "Yellow"
+    Write-ColorMessage "  ● Installation directory: $InstallDir" "Yellow"
 
     # Clean up existing directories
     Remove-Directory $TempDir
@@ -248,7 +248,7 @@ try {
     # Download agent
     $agentUrl = "https://$Server/meshagents?id=$($archInfo.AgentId)"
     $agentPath = Join-Path $TempDir "meshagent.exe"
-    Write-Host "  ● Agent binary location: $agentPath"
+    Write-ColorMessage "  ● Agent binary location: $agentPath" "Yellow"
     if (-not (Download-File -Url $agentUrl -OutFile $agentPath)) {
         throw "Failed to download MeshAgent binary"
     }
@@ -256,7 +256,7 @@ try {
     # Download config
     $configUrl = "https://$Server/openframe_public/meshagent.msh"
     $configPath = Join-Path $TempDir "meshagent.msh"
-    Write-Host "  ● Config file location: $configPath"
+    Write-ColorMessage "  ● Config file location: $configPath" "Yellow"
     if (-not (Download-File -Url $configUrl -OutFile $configPath)) {
         throw "Failed to download MeshAgent configuration"
     }
@@ -265,7 +265,7 @@ try {
     if (-not [string]::IsNullOrEmpty($NodeId)) {
         Write-VerboseMessage "Adding NodeID to the MSH file: $NodeId"
         Add-Content -Path $configPath -Value "NodeID=$NodeId"
-        Write-Host "  ● Added NodeID to configuration file"
+        Write-ColorMessage "  ● Added NodeID to configuration file" "Yellow"
     }
 
     # Verify downloads
@@ -304,8 +304,8 @@ try {
     
     $finalAgentPath = Join-Path $InstallDir "meshagent.exe"
     $finalConfigPath = Join-Path $InstallDir "meshagent.msh"
-    Write-Host "  ● Final agent location: $finalAgentPath"
-    Write-Host "  ● Final config location: $finalConfigPath"
+    Write-ColorMessage "  ● Final agent location: $finalAgentPath" "Yellow"
+    Write-ColorMessage "  ● Final config location: $finalConfigPath" "Yellow"
 
     # Clean up temp files before starting agent
     Write-VerboseMessage "Cleaning up temporary directory: $TempDir"
@@ -314,12 +314,12 @@ try {
     # Run agent
     Write-ColorMessage "Starting MeshAgent:" "Yellow"
     Write-VerboseMessage "Executing: $finalAgentPath connect"
-    Write-Host "  ● Executing agent from: $finalAgentPath"
+    Write-ColorMessage "  ● Executing agent from: $finalAgentPath" "Yellow"
     
     Write-ColorMessage "`nInstallation Summary:" "Green"
-    Write-VerboseMessage "Agent Location: $finalAgentPath"
-    Write-VerboseMessage "Config Location: $finalConfigPath"
-    Write-VerboseMessage "Log Location: $LogDir"
+    Write-ColorMessage "  ● Agent Location: $finalAgentPath" "Blue"
+    Write-ColorMessage "  ● Config Location: $finalConfigPath" "Blue"
+    Write-ColorMessage "  ● Log Location: $LogDir" "Blue"
     Write-ColorMessage "Installation completed successfully." "Green"
     Write-ColorMessage "`nStarting MeshAgent in connect mode..." "Yellow"
     Write-ColorMessage "Press Ctrl+C to exit (agent will continue running in background)" "Yellow"
