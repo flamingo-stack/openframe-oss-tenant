@@ -266,23 +266,7 @@ This task involves modifying the existing setup_cluster function to leverage par
    }
    ```
 
-2. **Update the `create_bases` function in `apps-common.sh` to use parallel execution**:
-   ```bash
-   function create_bases() {
-     local cmds=()
-     
-     # Prepare commands for namespace and secret creation
-     for ns in $NAMESPACES; do
-       echo "Creating namespace: $ns"
-       cmds+=("kubectl create namespace \"$ns\" --dry-run=client -o yaml | kubectl apply -f - && kubectl -n \"$ns\" create secret docker-registry github-pat-secret --docker-server=ghcr.io --docker-username=vusal-fl --docker-password=\$(echo -n \$GITHUB_TOKEN_CLASSIC) --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -")
-     done
-     
-     # Execute commands in parallel
-     parallel_exec $CONCURRENCY_LEVEL "${cmds[@]}"
-   }
-   ```
-
-3. **Parallel helm repo updates in setup_cluster**:
+2. **Parallel helm repo updates in setup_cluster**:
    ```bash
    # Update helm repos in parallel
    echo "Updating helm repos indexes in parallel"
@@ -303,7 +287,7 @@ This task involves modifying the existing setup_cluster function to leverage par
    parallel_exec $CONCURRENCY_LEVEL "${helm_cmds[@]}"
    ```
 
-4. **Add a parallel cluster health check function**:
+3. **Add a parallel cluster health check function**:
    ```bash
    # Function to check cluster health in parallel
    function check_cluster_health_parallel() {
@@ -358,7 +342,7 @@ This task involves modifying the existing setup_cluster function to leverage par
    }
    ```
 
-5. **Implement parallel resource creation during cluster setup**:
+4. **Implement parallel resource creation during cluster setup**:
    ```bash
    # Function to parallelize core Kubernetes resource creation
    function setup_core_resources_parallel() {
@@ -380,7 +364,7 @@ This task involves modifying the existing setup_cluster function to leverage par
    }
    ```
 
-6. **Add benchmarking function to measure performance improvements**:
+5. **Add benchmarking function to measure performance improvements**:
    ```bash
    # Function to measure and log cluster setup time
    function benchmark_cluster_setup() {
