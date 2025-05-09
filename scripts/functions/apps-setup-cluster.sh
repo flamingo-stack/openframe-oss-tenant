@@ -152,7 +152,7 @@ options:
     extraArgs:
       - arg: --disable=traefik
         nodeFilters:
-          - server:0
+          - server:*
       - arg: --kubelet-arg=eviction-hard=
         nodeFilters:
           - all
