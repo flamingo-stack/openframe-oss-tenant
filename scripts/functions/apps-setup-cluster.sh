@@ -5,6 +5,47 @@ function setup_cluster() {
     helm repo update
 
     add_loopback_ip
+    
+    # Check for port availability
+    check_port_availability() {
+        local port=$1
+        local service=$2
+        if command -v nc >/dev/null 2>&1; then
+            if nc -z 127.0.0.1 "$port" >/dev/null 2>&1; then
+                echo "Warning: Port $port for $service is already in use."
+                return 1
+            fi
+        elif command -v lsof >/dev/null 2>&1; then
+            if lsof -i:"$port" >/dev/null 2>&1; then
+                echo "Warning: Port $port for $service is already in use."
+                return 1
+            fi
+        else
+            echo "Note: Cannot check if port $port is available (nc or lsof not found)."
+        fi
+        return 0
+    }
+    
+    # Default ports
+    HTTP_PORT=80
+    HTTPS_PORT=443
+    API_PORT=6550
+    
+    # Check if default ports are available, use alternatives if needed
+    if ! check_port_availability $HTTP_PORT "HTTP"; then
+        HTTP_PORT=8080
+        echo "Using alternative HTTP port: $HTTP_PORT"
+    fi
+    
+    if ! check_port_availability $HTTPS_PORT "HTTPS"; then
+        HTTPS_PORT=8443
+        echo "Using alternative HTTPS port: $HTTPS_PORT"
+    fi
+    
+    if ! check_port_availability $API_PORT "Kubernetes API"; then
+        API_PORT=6551
+        echo "Using alternative Kubernetes API port: $API_PORT"
+    fi
 
     # Set default number of agents based on CPU cores
     if [ "$(uname)" = "Darwin" ]; then
@@ -51,15 +92,37 @@ function setup_cluster() {
     # Simple formula: 1 agent per 2 cores, minimum 1, maximum TOTAL_CPU/2
     OPTIMAL_AGENTS=$((TOTAL_CPU / 2))
     [ "$OPTIMAL_AGENTS" -lt 1 ] && OPTIMAL_AGENTS=1
+    SERVERS=3
 
     echo "System has $TOTAL_CPU CPU cores and ${TOTAL_MEM}GB memory"
-    echo "Creating cluster with $OPTIMAL_AGENTS agent nodes"
+    echo "Planning to create cluster with $OPTIMAL_AGENTS agent nodes"
 
-    # Delete any existing cluster first to avoid conflicts
+    # Clean up any leftover resources
+    echo "Cleaning up any existing resources..."
+    
+    # Delete any existing cluster
     if k3d cluster list 2>/dev/null | grep -q "openframe-dev"; then
-        echo "Removing existing openframe-dev cluster to avoid API port binding issues..."
+        echo "Removing existing openframe-dev cluster..."
         k3d cluster delete openframe-dev
+        # Wait a bit to ensure all resources are released
+        sleep 5
     fi
+    
+    # Force cleanup of potential stuck Docker containers
+    echo "Cleaning up any stuck containers..."
+    docker rm -f $(docker ps -a | grep 'k3d-openframe-dev' | awk '{print $1}') 2>/dev/null || true
+    
+    # Check if registry exists
+    if k3d registry list 2>/dev/null | grep -q "openframe-registry"; then
+        echo "Removing existing openframe-registry to avoid conflicts..."
+        k3d registry delete openframe-registry
+        sleep 2
+    fi
+
+    # Create local registry
+    echo "Creating local registry 'openframe-registry'..."
+    k3d registry create openframe-registry --port 5000
+    sleep 2
 
     # Select appropriate image based on architecture
     if [ "$IS_ARM64" = true ]; then
@@ -70,30 +133,118 @@ function setup_cluster() {
 
     echo "Using image: $K3S_IMAGE"
 
-    # Bootstrap cluster with explicit API port binding
-    k3d cluster create openframe-dev \
-        --servers 1 \
-        --agents $OPTIMAL_AGENTS \
-        --image "$K3S_IMAGE" \
-        --k3s-arg "--disable=traefik@server:0" \
-        --port "80:80@loadbalancer" \
-        --port "443:443@loadbalancer" \
-        --api-port "127.0.0.1:6550" \
-        --k3s-arg "--kubelet-arg=eviction-hard=@all" \
-        --k3s-arg "--kubelet-arg=eviction-soft=@all" \
-        --timeout 120s
+    # Create a temporary k3d config file with registry mirrors
+    TMP_CONFIG_FILE=$(mktemp)
+    cat > "$TMP_CONFIG_FILE" <<EOF
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+metadata:
+  name: openframe-dev
+servers: $SERVERS
+agents: $OPTIMAL_AGENTS
+image: $K3S_IMAGE
+kubeAPI:
+  host: "127.0.0.1"
+  hostIP: "127.0.0.1" 
+  hostPort: "$API_PORT"
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:0
+      - arg: --kubelet-arg=eviction-hard=
+        nodeFilters:
+          - all
+      - arg: --kubelet-arg=eviction-soft=
+        nodeFilters:
+          - all
+ports:
+  - port: $HTTP_PORT:80
+    nodeFilters:
+      - loadbalancer
+  - port: $HTTPS_PORT:443
+    nodeFilters:
+      - loadbalancer
+registries:
+  use:
+    - k3d-openframe-registry:5000
+  config: |
+    mirrors:
+      "docker.io":
+        endpoint:
+          - "https://mirror.gcr.io"
+          - "https://registry-1.docker.io"
+          - "https://docker.mirrors.ustc.edu.cn"
+      "quay.io":
+        endpoint:
+          - "https://quay.mirror.censorshipwhat.com"
+          - "https://quay.mirrors.ustc.edu.cn"
+      "gcr.io":
+        endpoint:
+          - "https://gcr.mirrors.ustc.edu.cn"
+      "k8s.gcr.io":
+        endpoint:
+          - "https://registry.k8s.io"
+      "ghcr.io":
+        endpoint:
+          - "https://ghcr.io"
+EOF
 
-    # Ensure kubeconfig is properly configured
-    k3d kubeconfig merge openframe-dev --kubeconfig-switch-context
-
-    # Verify cluster is accessible
+    # Step 1: Create server node first using config file
+    echo "Creating cluster from config file..."
+    k3d cluster create --config "$TMP_CONFIG_FILE" --timeout 180s
+    
+    # Clean up temp file
+    rm -f "$TMP_CONFIG_FILE"
+    
+    # Set up kubeconfig explicitly
+    echo "Setting up kubeconfig..."
+    KUBECONFIG_FILE="$HOME/.kube/config"
+    mkdir -p "$HOME/.kube"
+    
+    # Generate k3d kubeconfig and ensure it's the active one
+    k3d kubeconfig get openframe-dev > "$HOME/.k3d-openframe-dev.config"
+    
+    # If a kubeconfig already exists, merge it, otherwise use the new one
+    if [ -f "$KUBECONFIG_FILE" ]; then
+        echo "Merging with existing kubeconfig..."
+        KUBECONFIG="$KUBECONFIG_FILE:$HOME/.k3d-openframe-dev.config" kubectl config view --flatten > "$HOME/.kube/config.new"
+        mv "$HOME/.kube/config.new" "$KUBECONFIG_FILE"
+    else
+        echo "Creating new kubeconfig..."
+        cp "$HOME/.k3d-openframe-dev.config" "$KUBECONFIG_FILE"
+    fi
+    
+    # Ensure permissions are correct
+    chmod 600 "$KUBECONFIG_FILE"
+    
+    # Switch context to the new cluster
+    kubectl config use-context k3d-openframe-dev
+    
+    # Explicitly verify we're pointing to the right server
+    echo "Verifying cluster API server address..."
+    CURRENT_SERVER=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "k3d-openframe-dev")].cluster.server}')
+    if [[ "$CURRENT_SERVER" != *"127.0.0.1:$API_PORT"* ]]; then
+        echo "Fixing API server address in kubeconfig..."
+        kubectl config set-cluster k3d-openframe-dev --server=http://127.0.0.1:$API_PORT
+    else
+        echo "API server address is correctly set to $CURRENT_SERVER"
+    fi
+    
+    # Print the current context to verify
+    echo "Current kubectl context: $(kubectl config current-context)"
+    
+    # Verify cluster is accessible with explicit command to prevent localhost:8080 fallback
     echo "Waiting for cluster API to become accessible..."
-    timeout=60
+    timeout=90
     counter=0
-    until kubectl cluster-info &>/dev/null; do
+    until kubectl --context=k3d-openframe-dev cluster-info &>/dev/null; do
         if [ $counter -ge $timeout ]; then
             echo "ERROR: Timed out waiting for cluster API to become accessible"
             echo "Try restarting Docker Desktop and running this script again"
+            echo "Current kubectl config:"
+            kubectl config view
             exit 1
         fi
         echo "Waiting for cluster API... ($counter/$timeout)"
@@ -101,18 +252,40 @@ function setup_cluster() {
         ((counter++))
     done
     echo "Cluster API is accessible!"
-    
+
     # Verify the namespace creation works properly
     echo "Testing namespace creation..."
-    if ! kubectl create namespace test-namespace; then
+    if ! kubectl --context=k3d-openframe-dev create namespace test-namespace 2>/dev/null; then
         echo "WARNING: Failed to create test namespace. Checking kubeconfig..."
         # Fix kubeconfig if needed
-        if ! kubectl config view -o jsonpath='{.clusters[?(@.name == "k3d-openframe-dev")].cluster.server}' | grep -q "127.0.0.1:6550"; then
-            echo "Fixing kubeconfig to use correct server address..."
-            kubectl config set-cluster k3d-openframe-dev --server=https://127.0.0.1:6550
+        kubectl config set-cluster k3d-openframe-dev --server=http://127.0.0.1:$API_PORT
+        if ! kubectl --context=k3d-openframe-dev create namespace test-namespace 2>/dev/null; then
+            echo "ERROR: Still unable to create namespace after fixing kubeconfig."
+            echo "Current kubectl config:"
+            kubectl config view
+            echo "Cluster status:"
+            kubectl get nodes
+            exit 1
         fi
-    else
-        kubectl delete namespace test-namespace
-        echo "Namespace creation successful!"
+    fi
+    
+    # Clean up test namespace if it was created
+    kubectl --context=k3d-openframe-dev delete namespace test-namespace 2>/dev/null || true
+    echo "Namespace creation test successful!"
+
+    # Print cluster info for verification
+    echo "Cluster information:"
+    kubectl --context=k3d-openframe-dev get nodes -o wide
+
+    echo "Local registry is available at localhost:5000"
+    echo "You can push images to it using: docker tag your-image:tag localhost:5000/your-image:tag"
+    echo "Then push with: docker push localhost:5000/your-image:tag"
+    echo "In Kubernetes manifests, reference images as: k3d-openframe-registry:5000/your-image:tag"
+    
+    if [ "$HTTP_PORT" != "80" ] || [ "$HTTPS_PORT" != "443" ]; then
+        echo ""
+        echo "NOTE: Using non-standard ports:"
+        [ "$HTTP_PORT" != "80" ] && echo "  - HTTP: localhost:$HTTP_PORT"
+        [ "$HTTPS_PORT" != "443" ] && echo "  - HTTPS: localhost:$HTTPS_PORT"
     fi
 }
