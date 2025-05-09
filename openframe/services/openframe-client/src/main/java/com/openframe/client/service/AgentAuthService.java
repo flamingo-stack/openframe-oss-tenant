@@ -4,6 +4,8 @@ import com.openframe.client.dto.AgentTokenResponse;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.security.jwt.JwtService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Service;
@@ -11,7 +13,9 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class AgentAuthService {
 
     private final OAuthClientRepository clientRepository;
@@ -19,11 +23,6 @@ public class AgentAuthService {
 
     @Value("${security.oauth2.token.access.expiration-seconds:3600}")
     private int accessTokenExpirationSeconds;
-
-    public AgentAuthService(OAuthClientRepository clientRepository, JwtService jwtService) {
-        this.clientRepository = clientRepository;
-        this.jwtService = jwtService;
-    }
 
     public AgentTokenResponse authenticateAndIssueToken(String clientId, String clientSecret) {
         OAuthClient client = validateClient(clientId, clientSecret);
@@ -53,4 +52,4 @@ public class AgentAuthService {
                 })
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
     }
-} 
+}

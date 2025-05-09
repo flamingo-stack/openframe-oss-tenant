@@ -4,9 +4,17 @@ server:
 spring:
   main:
     web-application-type: servlet
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthContributorAutoConfiguration
   data:
     mongodb:
       enabled: true
+    cassandra:
+      enabled: false
   redis:
     enabled: true
     timeout: 2000
@@ -35,6 +43,13 @@ management:
   endpoint:
     health:
       show-details: always
+      group:
+        readiness:
+          include: mongo,redis
+          show-details: always
+        liveness:
+          include: ping
+          show-details: always
 
 jwt:
   issuer: openframe

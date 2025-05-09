@@ -13,6 +13,20 @@ spring:
   cloud:
     config:
       fail-fast: false
+    gateway:
+      routes:
+        - id: openframe-client
+          uri: http://openframe-client.openframe-microservices:8097
+          predicates:
+            - Path=/clients/**
+          filters:
+            - StripPrefix=1
+        - id: openframe-api
+          uri: http://openframe-api.openframe-microservices:8090
+          predicates:
+            - Path=/dashboard/**
+          filters:
+            - StripPrefix=1
 
 # Management server configuration
 management:

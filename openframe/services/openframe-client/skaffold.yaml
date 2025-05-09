@@ -1,0 +1,16 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: openframe-client
+build:
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe-client
+      docker: {}
+  local:
+    useDockerCLI: false
+    useBuildkit: true
+    push: false
+manifests:
+  kustomize:
+    paths:
+      - ../../../deploy/dev/openframe-microservices/openframe-client

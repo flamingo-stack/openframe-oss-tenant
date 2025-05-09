@@ -90,6 +90,18 @@
         },
         {
             "type": "java",
+            "name": "Client Application",
+            "request": "launch",
+            "mainClass": "com.openframe.client.ClientApplication",
+            "projectName": "openframe-client",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-client",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "k8s"
+            },
+            "vmArgs": "-Dspring.profiles.active=k8s"
+        },
+        {
+            "type": "java",
             "name": "Config Server Application",
             "request": "launch",
             "mainClass": "com.openframe.config.ConfigServerApplication",

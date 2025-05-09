@@ -35,12 +35,6 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <!-- GraphQL -->
-        <dependency>
-            <groupId>com.netflix.graphql.dgs</groupId>
-            <artifactId>graphql-dgs-spring-boot-starter</artifactId>
-            <version>${netflix.dgs.version}</version>
-        </dependency>
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
