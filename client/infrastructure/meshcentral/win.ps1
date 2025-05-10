@@ -10,7 +10,10 @@ param(
     [switch]$Help,
     
     [Parameter(Mandatory=$false)]
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$ForceNewCert
 )
 
 # MeshCentral Agent Installer for Windows systems
@@ -53,6 +56,7 @@ function Show-Help {
     Write-Host "  -NodeId <node_id>                (Optional) NodeID to inject into the MSH file"
     Write-Host "  -Help                            Display this help message"
     Write-Host "  -Uninstall                       Completely remove MeshAgent from this system"
+    Write-Host "  -ForceNewCert                    Force certificate reset to resolve server certificate mismatch issues"
     Write-Host "  -Verbose                         Show detailed output`n"
     Write-Host "Example:"
     Write-Host "  $($MyInvocation.MyCommand.Name) -Server mesh.yourdomain.com [-Verbose]"
@@ -412,10 +416,30 @@ try {
     
     if ($hasExistingInstallation) {
         Write-ColorMessage "Existing installation found. Preserving identity files..." "Yellow"
+        
+        # If ForceNewCert is specified, modify the identity files list to exclude certificate-related files
+        if ($ForceNewCert) {
+            Write-ColorMessage "  ● Certificate reset requested - will not preserve certificate data" "Yellow"
+            
+            # Modified list that excludes certificate-related files
+            $IdentityFilesToPreserve = @(
+                # Keep only non-certificate related files
+                "nodeinfo.json"     # Node information
+            )
+            
+            $IdentityDirsToPreserve = @(
+                # No directories to preserve when forcing cert reset
+            )
+        }
+        
         $hasIdentityBackup = Backup-IdentityFiles -SourceDir $InstallDir -BackupDir $BackupDir
         
         if ($hasIdentityBackup) {
-            Write-ColorMessage "  ● Successfully backed up identity files" "Green"
+            if ($ForceNewCert) {
+                Write-ColorMessage "  ● Successfully backed up minimal identity files (certificate reset mode)" "Green"
+            } else {
+                Write-ColorMessage "  ● Successfully backed up identity files" "Green"
+            }
         } else {
             Write-ColorMessage "  ● No identity files found to backup" "Yellow"
         }
