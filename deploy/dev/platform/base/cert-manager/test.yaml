@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-server
+  namespace: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo-server
+  template:
+    metadata:
+      labels:
+        app: echo-server
+    spec:
+      containers:
+      - name: echo
+        image: hashicorp/http-echo
+        args:
+        - "-text=hello from TLS"
+        ports:
+        - containerPort: 5678
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-server
+  namespace: platform
+spec:
+  selector:
+    app: echo-server
+  ports:
+  - port: 80
+    targetPort: 5678
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-server
+  namespace: platform
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - echo.127.0.0.1.nip.io
+    secretName: echo-localtest-certificate
+  rules:
+  - host: echo.127.0.0.1.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: echo-server
+            port:
+              number: 80
