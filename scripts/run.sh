@@ -8,7 +8,6 @@ fi
 
 export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
-export OS=$(uname)
 
 # Convert Windows paths to Git Bash paths if running on Windows
 if [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
@@ -24,12 +23,6 @@ source "${SCRIPT_DIR}/functions/spinner.sh"
 while IFS= read -r func; do
   [[ "$func" == _spin* || "$func" == *spinner* ]] && export -f "$func"
 done < <(declare -F | awk '{print $3}')
-
-stop_spinner_and_return_code() {
-    local code=$1
-    stop_spinner $code
-    return $code
-}
 
 source "${SCRIPT_DIR}/functions/flamingo.sh"
 export -f flamingo
