@@ -165,6 +165,8 @@ function Set-LoopbackAdapter {
         }
 
         # Create a new internal virtual switch if it doesn't exist
+        Import-Module Hyper-V
+        Write-Host "Checking for virtual switch '$switchName'..." -ForegroundColor Cyan
         $virtualSwitch = Get-VMSwitch -Name $switchName -ErrorAction SilentlyContinue
         if (-not $virtualSwitch) {
             Write-Host "Creating new virtual switch '$switchName'..." -ForegroundColor Yellow
