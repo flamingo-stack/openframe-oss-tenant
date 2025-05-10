@@ -64,10 +64,15 @@ function Install-Tool {
 
     try {
         $toolInfo = $REQUIRED_TOOLS[$tool]
+        $tempDir = Join-Path $env:TEMP "openframe-tools"
+        if (-not (Test-Path $tempDir)) {
+            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+        }
+
         if ($tool -eq "helm" -or $tool -eq "telepresence") {
-            $downloadPath = Join-Path $env:TEMP "$tool-download.zip"
+            $downloadPath = Join-Path $tempDir "$tool-download.zip"
         } else {
-            $downloadPath = Join-Path $env:TEMP "$tool-download"
+            $downloadPath = Join-Path $tempDir "$tool-download"
         }
 
         Write-Host "Downloading $tool..." -ForegroundColor Yellow
@@ -80,16 +85,32 @@ function Install-Tool {
         }
 
         if ($tool -eq "helm") {
-            Expand-Archive -Path $downloadPath -DestinationPath $env:TEMP -Force
-            Move-Item -Path "$env:TEMP/windows-amd64/helm.exe" -Destination $toolInfo.installPath -Force
-            Remove-Item -Path "$env:TEMP/windows-amd64" -Recurse
+            $extractPath = Join-Path $tempDir "helm-extract"
+            if (Test-Path $extractPath) {
+                Remove-Item -Path $extractPath -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
+            Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+            Move-Item -Path "$extractPath/windows-amd64/helm.exe" -Destination $toolInfo.installPath -Force
+            Remove-Item -Path $extractPath -Recurse -Force
         }
         elseif ($tool -eq "telepresence") {
-            Expand-Archive -Path $downloadPath -DestinationPath $destDir -Force
-            Remove-Item -Path "$env:TEMP" -Recurse
+            $extractPath = Join-Path $tempDir "telepresence-extract"
+            if (Test-Path $extractPath) {
+                Remove-Item -Path $extractPath -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
+            Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+            Move-Item -Path "$extractPath/*" -Destination $destDir -Force
+            Remove-Item -Path $extractPath -Recurse -Force
         }
         else {
             Move-Item -Path $downloadPath -Destination $toolInfo.installPath -Force
+        }
+
+        # Clean up our temporary files
+        if (Test-Path $downloadPath) {
+            Remove-Item -Path $downloadPath -Force
         }
 
         Write-Host "$tool installed successfully" -ForegroundColor Green
@@ -108,6 +129,17 @@ function Install-Tool {
         Write-Host "Failed to install $tool" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         return $false
+    }
+    finally {
+        # Clean up our temporary directory if it exists and is empty
+        $tempDir = Join-Path $env:TEMP "openframe-tools"
+        if (Test-Path $tempDir) {
+            try {
+                Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {
+                Write-Host "Note: Could not clean up temporary directory. This is not critical." -ForegroundColor Yellow
+            }
+        }
     }
 }
 
@@ -139,6 +171,83 @@ function Install-Chocolatey {
     }
 }
 
+# Function to check Hyper-V requirements
+function Test-HyperVRequirements {
+    Write-Host "Checking Hyper-V Requirements..." -ForegroundColor Cyan
+
+    # Check CPU virtualization support
+    $cpuInfo = Get-WmiObject -Class Win32_Processor
+    $virtualizationEnabled = $cpuInfo.VirtualizationFirmwareEnabled
+    $virtualizationSupported = $cpuInfo.VirtualizationFirmwareSupported
+
+    if (-not $virtualizationEnabled) {
+        Write-Host "CPU Virtualization is not enabled in BIOS!" -ForegroundColor Red
+        Write-Host "Please enable Virtualization Technology (VT-x) in your BIOS/UEFI settings." -ForegroundColor Yellow
+        Write-Host "You will need to restart your computer to enter BIOS settings." -ForegroundColor Yellow
+        return $false
+    }
+
+    # Check Windows Features
+    $features = @(
+        "Microsoft-Hyper-V",
+        "Microsoft-Hyper-V-Management-PowerShell",
+        "Microsoft-Hyper-V-Tools-All",
+        "Microsoft-Hyper-V-Hypervisor"
+    )
+
+    $missingFeatures = @()
+    foreach ($feature in $features) {
+        $state = (Get-WindowsOptionalFeature -Online -FeatureName $feature -ErrorAction SilentlyContinue).State
+        if ($state -ne "Enabled") {
+            $missingFeatures += $feature
+        }
+    }
+
+    if ($missingFeatures.Count -gt 0) {
+        Write-Host "Missing Hyper-V features:" -ForegroundColor Yellow
+        $missingFeatures | ForEach-Object { Write-Host "  - $_" }
+        return $false
+    }
+
+    return $true
+}
+
+# Function to enable Hyper-V
+function Enable-HyperV {
+    Write-Host "Enabling Hyper-V and required features..." -ForegroundColor Cyan
+
+    $features = @(
+        "Microsoft-Hyper-V",
+        "Microsoft-Hyper-V-Management-PowerShell",
+        "Microsoft-Hyper-V-Tools-All",
+        "Microsoft-Hyper-V-Hypervisor"
+    )
+
+    $restartNeeded = $false
+    foreach ($feature in $features) {
+        Write-Host "Enabling $feature..." -ForegroundColor Yellow
+        $result = Enable-WindowsOptionalFeature -Online -FeatureName $feature -All -NoRestart
+        if ($result.RestartNeeded) {
+            $restartNeeded = $true
+        }
+    }
+
+    if ($restartNeeded) {
+        Write-Host "`nA system restart is required to complete Hyper-V installation." -ForegroundColor Yellow
+        if (-not $Silent) {
+            $restart = Read-Host "Would you like to restart now? (Y/N)"
+            if ($restart -eq "Y" -or $restart -eq "y") {
+                Write-Host "Restarting system..." -ForegroundColor Yellow
+                Restart-Computer -Force
+                exit
+            }
+        } else {
+            Write-Host "Please restart your system to complete the installation." -ForegroundColor Yellow
+            exit
+        }
+    }
+}
+
 # Function to configure loopback adapter
 function Set-LoopbackAdapter {
     try {
@@ -146,6 +255,12 @@ function Set-LoopbackAdapter {
         $ip = '192.168.100.100'
         $switchName = "OpenFrameSwitch"
         $vAdapterName = "vEthernet ($switchName)"
+
+        # Check if Hyper-V is properly installed
+        if (-not (Get-Command Get-VMSwitch -ErrorAction SilentlyContinue)) {
+            Write-Host "Hyper-V is not properly installed. Please restart your system if you just enabled Hyper-V." -ForegroundColor Red
+            return $false
+        }
 
         # Remove the IP from Ethernet or Wi-Fi if present
         $badAdapters = Get-NetAdapter | Where-Object { $_.Name -match 'Ethernet|Wi-Fi' }
@@ -303,6 +418,106 @@ function Disable-SystemSleep {
     }
 }
 
+# Function to verify Docker Desktop
+function Test-DockerDesktop {
+    Write-Host "Verifying Docker Desktop..." -ForegroundColor Cyan
+    
+    # Check if Docker Desktop is running
+    try {
+        $dockerInfo = docker info 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Docker Desktop is not running!" -ForegroundColor Red
+            Write-Host "Please start Docker Desktop and try again." -ForegroundColor Yellow
+            return $false
+        }
+        
+        # Check if Docker Desktop is using WSL2 backend
+        if (-not ($dockerInfo -match "WSL 2")) {
+            Write-Host "Docker Desktop is not using WSL2 backend!" -ForegroundColor Red
+            Write-Host "Please enable WSL2 backend in Docker Desktop settings." -ForegroundColor Yellow
+            return $false
+        }
+        
+        Write-Host "Docker Desktop is running and using WSL2 backend." -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "Failed to verify Docker Desktop: $_" -ForegroundColor Red
+        return $false
+    }
+}
+
+# Function to verify k3d installation
+function Test-K3dInstallation {
+    Write-Host "Verifying k3d installation..." -ForegroundColor Cyan
+    
+    # Check if k3d is in PATH
+    if (-not (Get-Command k3d -ErrorAction SilentlyContinue)) {
+        Write-Host "k3d is not found in PATH!" -ForegroundColor Red
+        Write-Host "Adding k3d to PATH..." -ForegroundColor Yellow
+        
+        $k3dPath = "$env:ProgramFiles\openframe\k3d"
+        if (Test-Path "$k3dPath\k3d.exe") {
+            $currentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+            if (-not ($currentPath -split ';' | Where-Object { $_ -eq $k3dPath })) {
+                [Environment]::SetEnvironmentVariable("Path", $currentPath + ";" + $k3dPath, [EnvironmentVariableTarget]::Machine)
+                $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+            }
+        } else {
+            Write-Host "k3d executable not found at expected location!" -ForegroundColor Red
+            return $false
+        }
+    }
+    
+    # Verify k3d works
+    try {
+        $k3dVersion = k3d version
+        Write-Host "k3d is installed and working: $k3dVersion" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "Failed to verify k3d: $_" -ForegroundColor Red
+        return $false
+    }
+}
+
+# Function to configure Helm
+function Set-HelmConfiguration {
+    Write-Host "Configuring Helm..." -ForegroundColor Cyan
+    
+    try {
+        # Add default repositories
+        Write-Host "Adding default Helm repositories..." -ForegroundColor Yellow
+        helm repo add stable https://charts.helm.sh/stable
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo update
+        
+        Write-Host "Helm repositories configured successfully." -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "Failed to configure Helm repositories: $_" -ForegroundColor Red
+        return $false
+    }
+}
+
+# Function to check port availability
+function Test-PortAvailability {
+    param (
+        [int]$port
+    )
+    
+    try {
+        $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Any, $port)
+        $listener.Start()
+        $listener.Stop()
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
 # Show help information and exit if -Help is specified
 if ($Help -and $RunArgs.Count -eq 0) {
     Write-Host @"
@@ -346,6 +561,44 @@ if (-not $isAdmin) {
 
 Write-Host "Starting OpenFrame installation process..." -ForegroundColor Green
 
+# Check Hyper-V requirements and enable if needed
+if (-not (Test-HyperVRequirements)) {
+    Write-Host "Enabling Hyper-V..." -ForegroundColor Yellow
+    Enable-HyperV
+}
+
+# Verify Docker Desktop
+if (-not (Test-DockerDesktop)) {
+    Write-Host "Please start Docker Desktop and ensure it's using WSL2 backend." -ForegroundColor Red
+    exit 1
+}
+
+# Verify k3d installation
+if (-not (Test-K3dInstallation)) {
+    Write-Host "Failed to verify k3d installation. Please check the installation." -ForegroundColor Red
+    exit 1
+}
+
+# Configure Helm
+if (-not (Set-HelmConfiguration)) {
+    Write-Host "Failed to configure Helm. Please check the configuration." -ForegroundColor Red
+    exit 1
+}
+
+# Check required ports
+$requiredPorts = @(80, 443, 6550)
+$unavailablePorts = @()
+foreach ($port in $requiredPorts) {
+    if (-not (Test-PortAvailability $port)) {
+        $unavailablePorts += $port
+    }
+}
+
+if ($unavailablePorts.Count -gt 0) {
+    Write-Host "The following ports are not available: $($unavailablePorts -join ', ')" -ForegroundColor Red
+    Write-Host "Please ensure these ports are not in use by other applications." -ForegroundColor Yellow
+    exit 1
+}
 
 #   Check for GitHub token first
 # Always ask for GitHub token
@@ -469,7 +722,6 @@ if ($runShFiles.Count -gt 0) {
 
     if (Test-Path $gitBashPath) {
         Write-Host "Executing $scriptRelativePath with args: $RunArgs" -ForegroundColor Green
-
 
         # Set environment variables for silent mode
         $silentEnv = ""
