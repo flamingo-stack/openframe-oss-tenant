@@ -47,8 +47,9 @@ wait_for_cluster() {
 function wait_for_app() {
     local NAMESPACE=$1
     local LABEL=$2
+    local RESOURCE=${3:-pod}
 
-    kubectl -n $NAMESPACE wait --for=condition=Ready pod -l $LABEL --timeout=20m
+    kubectl -n $NAMESPACE wait --for=condition=Ready $RESOURCE -l $LABEL --timeout=20m
 }
 
 # Export functions

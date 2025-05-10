@@ -8,6 +8,7 @@ fi
 
 export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
+export OS=$(uname)
 
 # Convert Windows paths to Git Bash paths if running on Windows
 if [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
@@ -92,13 +93,7 @@ if [ "$ACTION" == "intercept" ]; then
 fi
 
 case "$ARG" in
-  pki)
-    start_spinner "Generating PKI certificates"
-    create_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
-    stop_spinner $?
-    ;;
   k|cluster)
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
     if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^openframe-dev$"; then
       start_spinner "Using existing 'openframe-dev' cluster."
       stop_spinner_and_return_code $? || exit 1

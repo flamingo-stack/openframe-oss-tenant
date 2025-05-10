@@ -23,8 +23,12 @@ platform_cert_manager)
       start_spinner "Waiting for Platform Cert Manager to be ready"
     platform_cert_manager_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
     echo "Platform Cert Manager deployed" >>"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
+    stop_spinner $? &&
+      start_spinner "Add Trusted PKI certificates"
+    trust_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
     stop_spinner $?
   elif [ "$ACTION" == "delete" ]; then
+    untrust_ca
     platform_cert_manager_delete
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
