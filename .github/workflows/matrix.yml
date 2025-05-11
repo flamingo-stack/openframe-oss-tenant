@@ -12,7 +12,7 @@ on:
 
 jobs:
   matrix:
-    name: Generate Matrix
+    name: Generate matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.filter.outputs.matrix }}
@@ -38,6 +38,7 @@ jobs:
               "name": "api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-api",
               "artifact_name": "openframe-api"
             },
             {
@@ -51,35 +52,41 @@ jobs:
               "name": "config",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-config",
               "artifact_name": "openframe-config"
             },
             {
               "name": "gateway",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-gateway",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-gateway",
               "artifact_name": "openframe-gateway"
             },
             {
               "name": "management",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-management",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-management",
               "artifact_name": "openframe-management"
             },
             {
               "name": "stream",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-stream",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-stream",
               "artifact_name": "openframe-stream"
             },
             {
               "name": "ui",
               "type": ["container"],
-              "path": "./openframe/services/openframe-ui"
+              "path": "./openframe/services/openframe-ui",
+              "manifest_path": "./deploy/dev/openframe-microservices/openframe-ui"
             },
             {
               "name": "nifi",
               "type": ["container"],
               "path": "./openframe/datasources/nifi",
+              "manifest_path": "./deploy/dev/openframe-datasources/openframe-nifi",
               "build_args": {
                 "NIFI_WEB_HTTPS_PORT": "8443",
                 "NIFI_WEB_HTTP_HOST": "0.0.0.0",
@@ -91,10 +98,47 @@ jobs:
               "name": "authentik-postgresql",
               "type": ["container"],
               "path": "./integrated-tools/authentik/postgresql",
+              "manifest_path": "./deploy/dev/integrated-tools-datasources/authentik/manifests",
               "build_args": {
                 "POSTGRES_USER": "authentik-user",
                 "POSTGRES_PASSWORD": "authentik-password-1234",
                 "POSTGRES_MULTIPLE_DATABASES": "authentik-database,authentik-database-authentik"
+              }
+            },
+            { 
+              "name": "fleetmdm",
+              "type": ["container"],
+              "path": "./integrated-tools/fleetmdm",
+              "manifest_path": "./deploy/dev/integrated-tools/fleet"
+            },
+            {
+              "name": "meshcentral",
+              "type": ["container"],
+              "path": "./integrated-tools/meshcentral/server",
+              "manifest_path": "./deploy/dev/integrated-tools/meshcentral",
+              "build_args": {
+                "MESH_DIR": "/opt/mesh",
+                "MESH_TEMP_DIR": "/tmp/mesh",
+                "MONGO_INITDB_ROOT_USERNAME": "mongouser",
+                "MONGO_INITDB_ROOT_PASSWORD": "mongopass",
+                "MONGO_INITDB_DATABASE": "meshcentral",
+                "MONGODB_HOST": "openframe-meshcentral-mongodb",
+                "MONGODB_PORT": "27017",
+                "MESH_USER": "mesh@openframe.io",
+                "MESH_PASS": "meshpass@1234",
+                "MESH_DEVICE_GROUP": "OpenFrame",
+                "MESH_PORT": "8383",
+                "MESH_HOST": "openframe-meshcentral-server",
+                "MESH_EXTERNAL_HOST": "localhost",
+                "MESH_EXTERNAL_PORT": "8383",
+                "MESH_NGINX_HOST": "openframe-meshcentral-nginx",
+                "MESH_NGINX_NAT_HOST": "michaels-macbook-pro.local",
+                "MESH_NGINX_PORT": "8383",
+                "MESH_PROTOCOL": "wss",
+                "MESH_PERSISTENT_CONFIG": "0",
+                "MESH_DISABLE_SSL": "1",
+                "MESH_COMPRESSION_ENABLED": "true",
+                "MESH_WEBRTC_ENABLED": "false"
               }
             },
             {
@@ -102,6 +146,7 @@ jobs:
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-frontend",
               "context": "./integrated-tools/tactical-rmm",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -148,6 +193,7 @@ jobs:
               "name": "tactical-nginx",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-nginx",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -195,6 +241,7 @@ jobs:
               "name": "tactical-backend",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -242,6 +289,7 @@ jobs:
               "name": "tactical-nats",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -289,6 +337,7 @@ jobs:
               "name": "tactical-websockets",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -336,6 +385,7 @@ jobs:
               "name": "tactical-celery",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -383,6 +433,7 @@ jobs:
               "name": "tactical-celerybeat",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
+              "manifest_path": "./deploy/dev/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -424,40 +475,6 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
-            },
-            {
-              "name": "fleetmdm",
-              "type": ["container"],
-              "path": "./integrated-tools/fleetmdm"
-            },
-            {
-              "name": "meshcentral",
-              "type": ["container"],
-              "path": "./integrated-tools/meshcentral/server",
-              "build_args": {
-                "MESH_DIR": "/opt/mesh",
-                "MESH_TEMP_DIR": "/tmp/mesh",
-                "MONGO_INITDB_ROOT_USERNAME": "mongouser",
-                "MONGO_INITDB_ROOT_PASSWORD": "mongopass",
-                "MONGO_INITDB_DATABASE": "meshcentral",
-                "MONGODB_HOST": "openframe-meshcentral-mongodb",
-                "MONGODB_PORT": "27017",
-                "MESH_USER": "mesh@openframe.io",
-                "MESH_PASS": "meshpass@1234",
-                "MESH_DEVICE_GROUP": "OpenFrame",
-                "MESH_PORT": "8383",
-                "MESH_HOST": "openframe-meshcentral-server",
-                "MESH_EXTERNAL_HOST": "localhost",
-                "MESH_EXTERNAL_PORT": "8383",
-                "MESH_NGINX_HOST": "openframe-meshcentral-nginx",
-                "MESH_NGINX_NAT_HOST": "michaels-macbook-pro.local",
-                "MESH_NGINX_PORT": "8383",
-                "MESH_PROTOCOL": "wss",
-                "MESH_PERSISTENT_CONFIG": "0",
-                "MESH_DISABLE_SSL": "1",
-                "MESH_COMPRESSION_ENABLED": "true",
-                "MESH_WEBRTC_ENABLED": "false"
               }
             }
           ]'

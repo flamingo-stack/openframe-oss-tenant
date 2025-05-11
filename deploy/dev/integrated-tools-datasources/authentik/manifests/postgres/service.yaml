@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-postgresql
+spec:
+  selector:
+    app: authentik-postgresql
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP

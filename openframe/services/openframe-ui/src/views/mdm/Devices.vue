@@ -3,110 +3,43 @@
     <ModuleHeader title="Devices">
       <template #subtitle>Manage and monitor mobile devices</template>
       <template #actions>
-        <OFButton 
-          label="Add Device" 
-          icon="pi pi-plus" 
-          @click="showCreateDialog = true"
-          class="p-button-primary" 
-        />
+        <OFButton label="Add Device" icon="pi pi-plus" @click="showCreateDialog = true" class="p-button-primary" />
       </template>
     </ModuleHeader>
 
     <div class="devices-content">
-      <SearchBar
-        v-model="filters['global'].value"
-        placeholder="Search devices..."
-      />
+      <SearchBar v-model="filters['global'].value" placeholder="Search devices..." />
 
-      <ModuleTable
-        :items="devices"
-        :loading="loading"
-        :searchFields="['hostname', 'platform', 'os_version', 'status']"
-        emptyIcon="pi pi-desktop"
-        emptyTitle="No Devices Found"
-        emptyMessage="There are no devices enrolled in MDM yet."
-        emptyHint="Devices will appear here once they are enrolled in your MDM server."
-      >
-        <Column field="hostname" header="Hostname" sortable>
-          <template #body="{ data }">
-            <div class="flex align-items-center">
-              <i :class="getDeviceIcon(data.platform)" class="mr-2"></i>
-              <span>{{ data.display_name || data.hostname }}</span>
-            </div>
-          </template>
-        </Column>
-
-        <Column field="platform" header="Platform" sortable>
-          <template #body="{ data }">
-            <Tag :value="formatPlatform(data.platform)" 
-                 :severity="getPlatformSeverity(data.platform)" />
-          </template>
-        </Column>
-
-        <Column field="os_version" header="OS Version" sortable>
-          <template #body="{ data }">
-            <span class="text-sm">{{ data.os_version }}</span>
-          </template>
-        </Column>
-
-        <Column field="status" header="Status" sortable>
-          <template #body="{ data }">
-            <Tag :value="data.status" 
-                 :severity="getStatusSeverity(data.status)" />
-          </template>
-        </Column>
-
-        <Column field="mdm.enrollment_status" header="MDM Status" sortable>
-          <template #body="{ data }">
-            <Tag :value="data.mdm?.enrollment_status || 'Not enrolled'" 
-                 :severity="getMDMStatusSeverity(data.mdm?.enrollment_status)" />
-          </template>
-        </Column>
-
-        <Column field="actions" header="Actions" :sortable="false" style="width: 100px">
-          <template #body="{ data }">
-            <div class="flex gap-2 justify-content-center">
-              <OFButton 
-                icon="pi pi-lock" 
-                class="p-button-text p-button-sm" 
-                :disabled="!data.mdm?.enrollment_status"
-                v-tooltip.top="'Lock Device'"
-                @click="lockDevice(data)" 
-              />
-              <OFButton 
-                icon="pi pi-trash" 
-                class="p-button-text p-button-sm p-button-danger" 
-                v-tooltip.top="'Delete Device'"
-                @click="deleteDevice(data)" 
-              />
-            </div>
-          </template>
-        </Column>
-      </ModuleTable>
+      <UnifiedDeviceTable :devices="devices" moduleType="mdm" :loading="loading" emptyIcon="pi pi-desktop"
+        emptyTitle="No Devices Found" emptyMessage="There are no devices enrolled in MDM yet."
+        emptyHint="Devices will appear here once they are enrolled in your MDM server." @viewDetails="viewDevice"
+        @deleteDevice="deleteDevice" @lockDevice="lockDevice">
+      </UnifiedDeviceTable>
     </div>
+
+    <!-- Device Details Slider -->
+    <DeviceDetailsSlider v-model:visible="showDeviceDetails" :device="selectedDevice" moduleType="mdm"
+      @refreshDevice="fetchDevices" @lockDevice="lockDevice" @unlockDevice="unlockDevice" 
+      @deleteDevice="deleteDevice" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from '@vue/runtime-core';
-import { useRouter } from 'vue-router';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
 import { OFButton } from '../../components/ui';
-import InputText from 'primevue/inputtext';
-import Tag from 'primevue/tag';
-import Tooltip from 'primevue/tooltip';
 import { FilterMatchMode } from 'primevue/api';
 import { restClient } from '../../apollo/apolloClient';
 import { ConfigService } from '../../config/config.service';
 import { ToastService } from '../../services/ToastService';
 import ModuleHeader from '../../components/shared/ModuleHeader.vue';
 import SearchBar from '../../components/shared/SearchBar.vue';
-import ModuleTable from '../../components/shared/ModuleTable.vue';
-import { getDeviceIcon, formatPlatform, getPlatformSeverity } from '../../utils/deviceUtils';
+import UnifiedDeviceTable from '../../components/shared/UnifiedDeviceTable.vue';
+import DeviceDetailsSlider from '../../components/shared/DeviceDetailsSlider/index.vue';
+import { UnifiedDevice } from '../../types/device';
+import { MDMDevice } from '../../utils/deviceAdapters';
 
 interface FleetResponse {
-  hosts: any[];
+  hosts: MDMDevice[];
 }
 
 const configService = ConfigService.getInstance();
@@ -114,96 +47,89 @@ const config = configService.getConfig();
 
 const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
 
-const router = useRouter();
 const toastService = ToastService.getInstance();
 
 const loading = ref(true);
-const error = ref('');
-const devices = ref<any[]>([]);
+const devices = ref<MDMDevice[]>([]);
 const showCreateDialog = ref(false);
+const showDeviceDetails = ref(false);
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS },
 });
 
-
-
-const getStatusSeverity = (status: string) => {
-  const severityMap: Record<string, string> = {
-    online: 'success',
-    offline: 'danger',
-    unknown: 'warning'
-  };
-  return severityMap[status] || 'warning';
-};
-
-const getMDMStatusSeverity = (status: string | null) => {
-  if (!status) return 'danger';
-  if (status.toLowerCase().includes('on')) return 'success';
-  if (status.toLowerCase().includes('pending')) return 'warning';
-  return 'info';
-};
-
-const extractUrlFromMessage = (message: string) => {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const match = message.match(urlRegex);
-  if (match) {
-    const url = match[0];
-    const textWithoutUrl = message.replace(url, '');
-    return { url, text: textWithoutUrl.trim() };
-  }
-  return { text: message };
-};
+const selectedDevice = ref<UnifiedDevice | null>(null);
 
 const fetchDevices = async () => {
   loading.value = true;
   try {
     const response = await restClient.get(`${API_URL}/hosts`) as FleetResponse;
+
+    // Store original MDM devices for reference
     devices.value = response.hosts || [];
+
   } catch (err: any) {
     toastService.showError(err.message);
+    devices.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const lockDevice = async (device: any) => {
+const fetchDeviceDetails = async (deviceId: string) => {
   try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/lock`);
-    toastService.showSuccess('Device locked successfully');
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
-};
-
-const unlockDevice = async (device: any) => {
-  try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/unlock`);
-    toastService.showSuccess('Device unlocked successfully');
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
-};
-
-const eraseDevice = async (device: any) => {
-  try {
-    await restClient.post(`${API_URL}/global/devices/${device.device_uuid}/erase`);
-    toastService.showSuccess('Device erase command sent successfully');
-  } catch (err: any) {
-    toastService.showError(err.message);
-  }
-};
-
-const deleteDevice = async (device: any) => {
-  try {
-    await restClient.delete(`${API_URL}/global/hosts/${device.id}`);
-    await fetchDevices();
-    toastService.showSuccess('Device deleted successfully');
+    const response = await restClient.get<MDMDevice>(`${API_URL}/hosts/${deviceId}`);
+    console.log("Fetched device details:", response);
+    return response.host || null;
   } catch (err) {
-    console.error('Error deleting device:', err);
-    toastService.showError('Failed to delete device');
+    console.error('Error fetching device details:', err);
+    toastService.showError('Failed to fetch device details');
+    return null;
   }
 };
+
+const viewDevice = async (device: UnifiedDevice) => {
+  try {
+    console.log("Viewing device:", device);
+    selectedDevice.value = device;
+    showDeviceDetails.value = true;
+
+    let agentId = device.originalId as string;
+    const refreshedDevice = await fetchDeviceDetails(agentId);
+    console.log("Refreshed device:", refreshedDevice);
+    selectedDevice.value = refreshedDevice as any;
+  } catch (error) {
+    console.error('Error viewing device details:', error);
+    toastService.showError('Failed to load device details');
+  }
+};
+
+const lockDevice = async (device: UnifiedDevice) => {
+  await lockOrUnlock(device, 'lock');
+};
+const unlockDevice = async (device: UnifiedDevice) => {
+  await lockOrUnlock(device, 'unlock');
+};
+
+const lockOrUnlock = async (device: UnifiedDevice, action: string) => {
+  try {
+    await restClient.post(`${API_URL}/hosts/${device.originalId}/${action}`);
+    toastService.showSuccess(`Device ${action}ed successfully`);
+  } catch (err: any) {
+    toastService.showError(err.message);
+  }
+};
+
+const deleteDevice = async (device: UnifiedDevice) => {
+  try {
+    await restClient.delete(`${API_URL}/hosts/${device.originalId}`);
+    toastService.showSuccess('Device deleted successfully');
+    await fetchDevices();
+  } catch (err: any) {
+    toastService.showError(err.message);
+  }
+};
+
 
 onMounted(() => {
   fetchDevices();
@@ -231,4 +157,4 @@ onMounted(() => {
   min-width: 75px;
   justify-content: center;
 }
-</style>                                                                
+</style>

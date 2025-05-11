@@ -18,12 +18,8 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/Flamingo-CX/openframe
-          username: ${GITHUB_USERNAME:michaelassraf}
-          password: ${GITHUB_TOKEN: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}
+          uri: https://github.com/Flamingo-CX/openframe-config
           clone-on-start: true
-          searchPaths:
-            - config
           default-label: ${CONFIG_GIT_BRANCH:main}
 
 # Management server configuration

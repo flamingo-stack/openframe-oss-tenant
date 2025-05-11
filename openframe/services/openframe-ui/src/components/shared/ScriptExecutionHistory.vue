@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from '@vue/runtime-core';
+import { ref, onMounted, onUnmounted } from '@vue/runtime-core';
 import Sidebar from 'primevue/sidebar';
 import { OFButton } from '../../components/ui';
 import { restClient } from "../../apollo/apolloClient";
@@ -120,6 +120,13 @@ const toastService = ToastService.getInstance();
 const onVisibilityChange = (value: boolean) => {
   emit('update:visible', value);
   if (value) fetchAgentInfo();
+};
+
+// Handle Escape key press
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && props.visible) {
+    onVisibilityChange(false);
+  }
 };
 
 const getStatusIcon = (status: string) => {
@@ -229,12 +236,9 @@ const fetchAgentInfo = async () => {
         });
       } else {
         // If API returns empty, use mock data
-        addMockAgentInfo();
       }
     } catch (error) {
       console.error('API call failed, using mock data:', error);
-      // Add mock agent info if API fails
-      addMockAgentInfo();
     }
     
     console.log('Updated executions with agent info:', executions.value);
@@ -244,44 +248,14 @@ const fetchAgentInfo = async () => {
   }
 };
 
-// Add mock agent data for testing
-const addMockAgentInfo = () => {
-  console.log('Adding mock agent info to executions');
-  
-  const mockAgentData: Record<string, { platform: string; os: string; status: string; plat: string; operating_system: string; }> = {
-    'test-device': {
-      platform: 'Windows',
-      os: 'Windows 10 Pro',
-      status: 'online',
-      plat: 'windows',
-      operating_system: 'Windows 10 Pro 21H2'
-    },
-    'default': {
-      platform: 'Linux',
-      os: 'Ubuntu 22.04 LTS',
-      status: 'online',
-      plat: 'linux',
-      operating_system: 'Ubuntu 22.04.3 LTS'
-    }
-  };
-  
-  executions.value = executions.value.map(exec => {
-    const deviceName = exec.deviceName.toLowerCase();
-    const mockData = mockAgentData[deviceName] || mockAgentData.default;
-    
-    console.log('Adding mock data for', exec.deviceName, ':', mockData);
-    return { 
-      ...exec, 
-      agent_info: mockData
-    };
-  });
-};
-
-// Load history on mount
+// Add/remove event listeners for Escape key
 onMounted(() => {
+  document.addEventListener('keydown', handleEscapeKey);
   loadHistory();
-  // Add mock data immediately for testing
-  addMockAgentInfo();
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscapeKey);
 });
 
 // Expose methods for parent component
@@ -307,6 +281,14 @@ defineExpose({
     &.active {
       display: block;
     }
+  }
+
+  /* Make tags more compact */
+  :deep(.p-tag) {
+    display: inline-flex;
+    width: auto;
+    min-width: min-content;
+    padding: 0.25rem 0.5rem;
   }
 
   .sidebar {

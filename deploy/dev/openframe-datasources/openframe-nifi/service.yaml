@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-nifi
+  labels:
+    app: openframe-nifi
+spec:
+  selector:
+    app: openframe-nifi
+  ports:
+    - port: 8443
+      targetPort: 8443
+      name: https
+    - port: 8080
+      targetPort: 8080
+      name: http
+    - port: 9096
+      targetPort: 9096
+      name: metrics
+  type: ClusterIP

@@ -24,6 +24,12 @@ while IFS= read -r func; do
   [[ "$func" == _spin* || "$func" == *spinner* ]] && export -f "$func"
 done < <(declare -F | awk '{print $3}')
 
+stop_spinner_and_return_code() {
+    local code=$1
+    stop_spinner $code
+    return $code
+}
+
 source "${SCRIPT_DIR}/functions/flamingo.sh"
 export -f flamingo
 
@@ -72,7 +78,7 @@ if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
   if [ "$1" != "" ]; then
     start_spinner "Create log directory for deployment (${DEPLOY_LOG_DIR})"
     mkdir -p "${DEPLOY_LOG_DIR}"
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
   fi
 fi
 
@@ -95,23 +101,23 @@ case "$ARG" in
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
     if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^openframe-dev$"; then
       start_spinner "Using existing 'openframe-dev' cluster."
-      stop_spinner $?
+      stop_spinner_and_return_code $? || exit 1
     else
       start_spinner "Setting up cluster"
       setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
-      stop_spinner $?
+      stop_spinner_and_return_code $? || exit 1
     fi
     start_spinner "Checking bases"
     if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
       create_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1
     fi
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
     ;;
   d|delete)
     start_spinner "Deleting cluster"
     telepresence quit > "${DEPLOY_LOG_DIR}/telepresence-quit.log" 2>&1 && \
     k3d cluster delete openframe-dev > "${DEPLOY_LOG_DIR}/k3d-cluster-delete.log" 2>&1
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
     ;;
   a|app)
     # Deploy app one by one
@@ -141,13 +147,13 @@ case "$ARG" in
     start_spinner "Starting cluster"
     add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     k3d cluster start openframe-dev > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
     ;;
   stop)
     start_spinner "Stopping cluster"
     telepresence quit > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1 && \
     k3d cluster stop openframe-dev > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
     ;;
   -h|--help|-Help|help)
     show_help

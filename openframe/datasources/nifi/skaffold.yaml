@@ -20,3 +20,7 @@ manifests:
   kustomize:
     paths:
     - ../../../deploy/dev/openframe-datasources/openframe-nifi
+deploy:
+  kubectl:
+    flags:
+      delete: ["--grace-period=0"]

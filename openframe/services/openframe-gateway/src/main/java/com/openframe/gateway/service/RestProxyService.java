@@ -50,7 +50,8 @@ public class RestProxyService {
         return toolRepository.findById(toolId)
                 .map(tool -> {
                     if (!tool.isEnabled()) {
-                        return Mono.just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
+                        return Mono
+                                .just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
                     }
 
                     String originalUrl = request.getURI().toString();
@@ -69,7 +70,8 @@ public class RestProxyService {
 
                     return proxy(tool, targetUri, method, headers, body);
                 })
-                .orElseGet(() -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
+                .orElseGet(
+                        () -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
     }
 
     private Map<String, String> buildApiRequestHeaders(IntegratedTool tool) {
@@ -81,8 +83,8 @@ public class RestProxyService {
 
         String toolId = tool.getId();
         ToolCredentials credentials = tool.getCredentials();
-        APIKeyType apiKeyType = credentials != null 
-        && credentials.getApiKey() != null ? credentials.getApiKey().getType() : APIKeyType.NONE;
+        APIKeyType apiKeyType = credentials != null
+                && credentials.getApiKey() != null ? credentials.getApiKey().getType() : APIKeyType.NONE;
         switch (apiKeyType) {
             case HEADER:
                 String keyName = credentials.getApiKey().getKeyName();
@@ -101,16 +103,18 @@ public class RestProxyService {
     }
 
     /*
-        Currently if one device have valid open-frame machine JWT token, it can send API request for other device.
-        TODO: implement device access validation after tool connection feature is implemented.
-
-        Tactical RMM request format: 
-            - GET /{agentId}/**
-            - POST /**
-              {
-                "agentId": "*",
-              }
-            }
+     * Currently if one device have valid open-frame machine JWT token, it can send
+     * API request for other device.
+     * TODO: implement device access validation after tool connection feature is
+     * implemented.
+     * 
+     * Tactical RMM request format:
+     * - GET /{agentId}/**
+     * - POST /**
+     * {
+     * "agentId": "*",
+     * }
+     * }
      */
     public Mono<ResponseEntity<String>> proxyAgentRequest(String toolId, ServerHttpRequest request, String body) {
         return toolRepository.findById(toolId)
@@ -139,7 +143,8 @@ public class RestProxyService {
 
                     return proxy(tool, targetUri, method, headers, body);
                 })
-                .orElseGet(() -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
+                .orElseGet(
+                        () -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
     }
 
     private Map<String, String> buildAgentRequestHeaders(ServerHttpRequest request) {
@@ -148,8 +153,7 @@ public class RestProxyService {
         return Map.of(
                 "Accept", "application/json",
                 "Content-Type", "application/json",
-                "Authorization", toolAuthorisation
-        );
+                "Authorization", toolAuthorisation);
     }
 
     private Mono<ResponseEntity<String>> proxy(
@@ -157,11 +161,17 @@ public class RestProxyService {
             URI targetUri,
             HttpMethod method,
             Map<String, String> proxyHeaders,
-            String body
-        ) {
-        WebClient.RequestBodySpec requestSpec = WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(buildHttpClient(targetUri)))
-                .build()
+            String body) {
+        HttpClient httpClient = buildHttpClient(targetUri);
+        
+        WebClient webClient = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .maxInMemorySize(16 * 1024 * 1024)) // Increase to 16MB
+                .build();
+                
+        WebClient.RequestBodySpec requestSpec = webClient
                 .method(method)
                 .uri(targetUri)
                 .headers(headers -> headers.setAll(proxyHeaders));
@@ -170,21 +180,33 @@ public class RestProxyService {
             requestSpec.bodyValue(body);
         }
 
-        return requestSpec
-                .retrieve()
-                .onStatus(this::isErrorStatusCode, this::processErrorResponse)
-                .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(30))
-                .map(ResponseEntity::ok)
-                .onErrorResume(this::buildErrorResponse)
-                .doOnSuccess(response ->
-                        log.info("Successfully proxied request to {}", tool.getName()))
-                .doOnError(error ->
-                        log.error("Failed to proxy request to {}: {}", tool.getName(), error.getMessage()));
+        Mono<ResponseEntity<String>> monoResponseEntity = null;
+        try {
+            monoResponseEntity = requestSpec
+                    .retrieve()
+                    .onStatus(this::isErrorStatusCode, this::processErrorResponse)
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(60))
+                    .map(ResponseEntity::ok)
+                    .onErrorResume(this::buildErrorResponse)
+                    .doOnSuccess(response -> log.info("Successfully proxied request to {}", tool.getName()))
+                    .doOnError(error -> log.error("Failed to proxy request to {}: {}", tool.getName(),
+                            error.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to proxy request to {}: {}", tool.getName(), e.getMessage());
+            return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage()));
+        }
+        return monoResponseEntity;
     }
 
     private HttpClient buildHttpClient(URI targetUri) {
         return HttpClient.create()
+                .responseTimeout(Duration.ofSeconds(60))
+                .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)
+                // Configure decoder for larger responses
+                .httpResponseDecoder(spec -> spec
+                        .maxHeaderSize(16384)
+                        .maxInitialLineLength(16384))
                 .secure(sslSpec -> {
                     try {
                         sslSpec.sslContext(io.netty.handler.ssl.SslContextBuilder.forClient()
@@ -212,8 +234,7 @@ public class RestProxyService {
                                 response.statusCode().toString(),
                                 response.headers().asHttpHeaders(),
                                 errorBody.getBytes(),
-                                null)
-                ));
+                                null)));
     }
 
     private Mono<ResponseEntity<String>> buildErrorResponse(Throwable e) {

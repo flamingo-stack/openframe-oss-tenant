@@ -40,6 +40,9 @@ function start_spinner() {
     _message="${1:-Processing...} "
     _start_time=$(date +%s)
 
+    # Skip spinner if TERM=dumb
+    [ "${TERM:-}" = "dumb" ] && return
+
     # Set up trap before starting spinner
     trap 'kill $_spinner_pid 2>/dev/null; stop_spinner 1; exit 1' SIGINT SIGTERM EXIT
 

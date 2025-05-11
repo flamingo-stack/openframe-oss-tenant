@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-frontend
+  template:
+    metadata:
+      labels:
+        app: tactical-frontend
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+
+      containers:
+      - name: openframe-tactical-frontend
+        image: openframe-tactical-frontend
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: tactical-common-config
+        volumeMounts:
+        - name: frontend-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: frontend-data
+        persistentVolumeClaim:
+          claimName: tactical-frontend-data
