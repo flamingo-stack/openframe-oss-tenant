@@ -21,3 +21,4 @@ deploy:
     env:
       - name: CONFIG_GIT_BRANCH
         value: main
+

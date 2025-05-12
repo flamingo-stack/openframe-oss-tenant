@@ -13,3 +13,16 @@ podDisruptionBudget:
   minAvailable: 1
   
 disableAutoApproval: false
+
+# config:
+#   apiVersion: controller.config.cert-manager.io/v1alpha1
+#   kind: ControllerConfiguration
+#   enableGatewayAPI: true
+
+resources:
+  requests:
+    cpu: 75m
+    memory: 150Mi
+  limits:
+    cpu: 75m
+    memory: 150Mi
