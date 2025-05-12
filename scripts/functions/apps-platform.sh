@@ -3,18 +3,17 @@
 # CERT-MANAGER
 function platform_cert_manager_deploy() {
   echo "Deploying cert-manager" 
-  kustomize build --enable-helm ${ROOT_REPO_DIR}/deploy/dev/platform/base/cert-manager | kubectl apply -f -
-}
-
-function platform_cert_manager_wait() {
-  echo "Waiting for cert-manager to be ready"
+  kustomize build --enable-helm ${ROOT_REPO_DIR}/deploy/dev/platform/helm-charts | kubectl apply -f -
   wait_for_app "platform" "app.kubernetes.io/instance=cert-manager"
+  kubectl apply -k ${ROOT_REPO_DIR}/deploy/dev/platform/base
   wait_for_app "platform" "app.kubernetes.io/instance=cert-manager" "certificate"
+  echo "Platform Cert Manager deployed"
 }
 
 function platform_cert_manager_delete() {
   echo "Deleting cert-manager"
-  kustomize build --enable-helm ${ROOT_REPO_DIR}/deploy/dev/platform/base/cert-manager | kubectl delete -f -
+  kubectl delete -k ${ROOT_REPO_DIR}/deploy/dev/platform/base
+  kustomize build --enable-helm ${ROOT_REPO_DIR}/deploy/dev/platform/helm-charts | kubectl delete -f -
 }
 
 # INGRESS-NGINX
@@ -153,7 +152,6 @@ function platform_efk_delete() {
 
 # Wait for all cluster apps to be ready
 function platform_wait_all() {
-  platform_cert_manager_wait &&
     platform_ingress_nginx_wait &&
     platform_metrics_server_wait &&
     platform_monitoring_wait &&

@@ -20,11 +20,6 @@ platform_cert_manager)
     start_spinner "Deploying Platform Cert Manager"
     platform_cert_manager_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
     stop_spinner_and_return_code $? || exit 1 
-    
-    start_spinner "Waiting for Platform Cert Manager to be ready"
-    platform_cert_manager_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
-    echo "Platform Cert Manager deployed" >>"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
-    stop_spinner_and_return_code $? || exit 1 
 
     start_spinner "Add Trusted PKI certificates"
     trust_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
