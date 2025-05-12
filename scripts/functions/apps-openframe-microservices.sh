@@ -39,6 +39,10 @@ function openframe_microservices_openframe_management_deploy() {
 }
 
 function openframe_microservices_openframe_management_wait() {
+  kubectl -n openframe-microservices get pods
+  kubectl -n openframe-microservices logs -l app=openframe-config
+  kubectl -n openframe-microservices logs -l app=openframe-management
+  kubectl -n openframe-microservices get pods
   echo "Waiting for Management to be ready"
   wait_for_app "openframe-microservices" "app=openframe-management"
 }
