@@ -327,7 +327,16 @@ jobs:
           TERM: dumb
           GITHUB_TOKEN_CLASSIC: ${{ github.token }}
         run: |
-          ./scripts/run.sh bootstrap
+          kubectl create secret docker-registry github-pat-secret \
+            --docker-server=ghcr.io \
+            --docker-username=vusal-fl \
+            --docker-password="$GITHUB_TOKEN_CLASSIC" \
+            --docker-email=vusal@flamingo.cx --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f ./deploy/dev/openframe-microservices/openframe-config/deployment.yaml
+          sleep 20
+          kubectl get pods
+          kubectl logs -l app=openframe-config-server
+
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
