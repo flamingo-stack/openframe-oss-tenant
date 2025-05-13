@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: infra-helm-apps
+spec:
+  generators:
+  - list:  # appName == namespace == chart
+      elements: 
+      - appName: cert-manager
+        repoURL: https://charts.jetstack.io
+        targetRevision: 1.17.1
+        path: deploy/dev/platform/base/cert-manager
+        syncWave: "-1"       
+      
+  template:
+    spec:
+      destination:
+        name: "in-cluster"
