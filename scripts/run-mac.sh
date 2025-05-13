@@ -78,6 +78,9 @@ verify_command() {
     "k3d")
         brew install k3d
         ;;
+    "kustomize")
+        brew install kustomize
+        ;;
     esac
 }
 
@@ -93,7 +96,7 @@ fi
 
 # Check all commands and collect results
 missing_commands=()
-commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d")
+commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d" "kustomize")
 
 for cmd in "${commands[@]}"; do
     if ! check_command "$cmd"; then

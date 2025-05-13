@@ -99,12 +99,15 @@ verify_command() {
     "k3d")
         curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
         ;;
+    "kustomize")
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        ;;
     esac
 }
 
 # Check all commands and collect results
 missing_commands=()
-commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d")
+commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d" "kustomize")
 
 for cmd in "${commands[@]}"; do
     if ! check_command "$cmd"; then
