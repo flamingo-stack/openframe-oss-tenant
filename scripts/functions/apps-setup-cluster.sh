@@ -121,7 +121,7 @@ function setup_cluster() {
 
     # Create local registry
     echo "Creating local registry 'openframe-registry'..."
-    k3d registry create openframe-registry --port 5000
+    k3d registry create openframe-registry --port 5001
     sleep 2
 
     # Select appropriate image based on architecture
@@ -168,7 +168,7 @@ ports:
       - loadbalancer
 registries:
   use:
-    - k3d-openframe-registry:5000
+    - k3d-openframe-registry:5001
   config: |
     mirrors:
       "docker.io":

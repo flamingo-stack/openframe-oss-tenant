@@ -18,7 +18,4 @@ deploy:
   kubectl:
     flags:
       delete: ["--grace-period=0"]
-    env:
-      - name: CONFIG_GIT_BRANCH
-        value: main
 
