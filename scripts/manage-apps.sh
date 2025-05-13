@@ -43,10 +43,6 @@ platform_ingress_nginx)
     platform_ingress_nginx_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
     stop_spinner_and_return_code $? || exit 1
     
-    start_spinner "Waiting for Platform Ingress Nginx to be ready"
-    platform_ingress_nginx_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
-    echo "Platform Ingress Nginx deployed" >>"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
     platform_ingress_nginx_delete
   elif [ "$ACTION" == "dev" ]; then

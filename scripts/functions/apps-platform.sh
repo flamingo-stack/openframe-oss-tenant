@@ -18,19 +18,8 @@ function platform_cert_manager_delete() {
 
 # INGRESS-NGINX
 function platform_ingress_nginx_deploy() {
-  helm_repo_ensure "ingress-nginx" "https://kubernetes.github.io/ingress-nginx" &&
-    echo "Deploying ingress-nginx" &&
-    helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
-      -n platform --create-namespace \
-      --version 4.12.1 \
-      -f ${ROOT_REPO_DIR}/deploy/dev/platform/ingress-nginx/helm/values.yaml \
-      --wait --timeout 1h
-  # Wait for the admission webhook endpoints to be ready before any dependent deployments
-  wait_for_service_endpoints platform ingress-nginx-controller-admission 180
-}
-
-function platform_ingress_nginx_wait() {
-  echo "Waiting for ingress-nginx to be ready"
+  echo "Deploying ingress-nginx"
+  kustomize build --enable-helm ${ROOT_REPO_DIR}/deploy/dev/platform/helm-charts | kubectl apply -f -
   wait_for_app "platform" "app.kubernetes.io/instance=ingress-nginx"
   # Wait for the admission webhook endpoints to be ready before any dependent deployments
   wait_for_service_endpoints platform ingress-nginx-controller-admission 180
@@ -38,7 +27,7 @@ function platform_ingress_nginx_wait() {
 
 function platform_ingress_nginx_delete() {
   echo "Deleting ingress-nginx"
-  helm -n platform uninstall ingress-nginx
+  kustomize build --enable-helm ${ROOT_REPO_DIR}/deploy/dev/platform/helm-charts | kubectl delete -f -
 }
 
 # METRICS-SERVER
