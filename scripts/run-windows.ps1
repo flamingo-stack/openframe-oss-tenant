@@ -104,6 +104,9 @@ function Install-Tool {
                 Remove-Item -Path $extractPath -Recurse -Force
             }
             New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
+            Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+            Move-Item -Path (Join-Path $extractPath "kustomize.exe") -Destination $toolInfo.installPath -Force
+            Remove-Item -Path $extractPath -Recurse -Force
         }elseif ($tool -eq "telepresence") {
             $extractPath = Join-Path $tempDir "telepresence-extract"
             if (Test-Path $extractPath) {
