@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>openframe-core</artifactId>
-    <packaging>jar</packaging>
+    <packaging>jar</packaging> 
     <name>OpenFrame Core Library</name>
     <description>Core library for OpenFrame platform</description>
 
