@@ -17,6 +17,10 @@ register_tool() {
     local layer_color=${13}
     local api_key_type=${14:-"BEARER_TOKEN"}
     local api_key_name=${15:-""}
+    local CA_SECRET="platform-certificate"
+    local CA_NAMESPACE="platform"
+    local TMP_CA_PATH
+    TMP_CA_PATH=$(mktemp)
 
     echo "Registering $name with OpenFrame API..."
 
@@ -68,13 +72,20 @@ register_tool() {
             \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"]
         }
     }"
+    
+    # Extract CA certificate for the request
+    kubectl get secret "$CA_SECRET" -n "$CA_NAMESPACE" -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d > "$TMP_CA_PATH" || {
+    echo "Failed to extract or decode CA cert"
+    rm -f "$TMP_CA_PATH"; return 1
+    }
+    [ -s "$TMP_CA_PATH" ] || { echo "CA cert is empty"; rm -f "$TMP_CA_PATH"; return 1; }
 
     # Print the JSON payload for debugging
     echo "JSON Payload:"
     echo "$json_payload" | jq '.'
 
     # Send the request
-    curl --cacert $SCRIPT_DIR/files/ca/ca.crt -X POST "https://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
+    curl --cacert "$TMP_CA_PATH" -X POST "https://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
         -H "Content-Type: application/json" \
         -d "$json_payload" \
         --retry 5 \

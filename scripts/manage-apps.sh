@@ -19,12 +19,13 @@ platform_cert_manager)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Cert Manager"
     platform_cert_manager_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
-    stop_spinner $? &&
-      start_spinner "Waiting for Platform Cert Manager to be ready"
-    platform_cert_manager_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
-    echo "Platform Cert Manager deployed" >>"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1 
+
+    start_spinner "Add Trusted PKI certificates"
+    trust_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
+    stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
+    untrust_ca
     platform_cert_manager_delete
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
@@ -37,11 +38,12 @@ platform_ingress_nginx)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Ingress Nginx"
     platform_ingress_nginx_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
-    stop_spinner $? &&
-      start_spinner "Waiting for Platform Ingress Nginx to be ready"
+    stop_spinner_and_return_code $? || exit 1
+    
+    start_spinner "Waiting for Platform Ingress Nginx to be ready"
     platform_ingress_nginx_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
     echo "Platform Ingress Nginx deployed" >>"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
     platform_ingress_nginx_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -55,11 +57,12 @@ platform_monitoring)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Monitoring"
     platform_monitoring_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-monitoring-deploy.log"
-    stop_spinner $? &&
-      start_spinner "Waiting for Platform Monitoring to be ready"
+    stop_spinner_and_return_code $? || exit 1
+
+    start_spinner "Waiting for Platform Monitoring to be ready"
     platform_monitoring_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-monitoring-deploy.log"
     echo "Platform Monitoring deployed" >>"${DEPLOY_LOG_DIR}/platform-monitoring-deploy.log"
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
     platform_monitoring_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -73,11 +76,12 @@ platform_logging)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Logging"
     platform_logging_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-logging-deploy.log"
-    stop_spinner $? &&
-      start_spinner "Waiting for Platform Logging to be ready"
+    stop_spinner_and_return_code $? || exit 1
+
+    start_spinner "Waiting for Platform Logging to be ready"
     platform_logging_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-logging-deploy.log"
     echo "Platform Logging deployed" >>"${DEPLOY_LOG_DIR}/platform-logging-deploy.log"
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
     platform_logging_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -103,11 +107,12 @@ platform_efk)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform EFK"
     platform_efk_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-efk-deploy.log"
-    stop_spinner $? &&
-      start_spinner "Waiting for Platform EFK to be ready"
+    stop_spinner_and_return_code $? || exit 1
+
+    start_spinner "Waiting for Platform EFK to be ready"
     platform_efk_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-efk-deploy.log"
     echo "Platform EFK deployed" >>"${DEPLOY_LOG_DIR}/platform-efk-deploy.log"
-    stop_spinner $?
+    stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
     platform_efk_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -299,7 +304,7 @@ openframe_microservices_register_apps)
   openframe_microservices_openframe_management_wait >/dev/null 2>&1 &&
     integrated_tools_wait_all >/dev/null 2>&1 &&
       ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/register/register.sh >"${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
-  stop_spinner $?
+  stop_spinner_and_return_code $? || exit 1
   echo
   sed -n '/Fleet MDM Credentials:/,/All ingresses/p' "${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" | sed '$d'
   ;;
@@ -482,7 +487,7 @@ od | openframe_datasources)
     $0 openframe_datasources_nifi $ACTION &&
     $0 openframe_datasources_zookeeper $ACTION &&
     $0 openframe_datasources_pinot $ACTION
-  stop_spinner $?
+  stop_spinner_and_return_code $? || exit 1
   ;;
 om | openframe_microservices)
   ACTION=${2}
@@ -497,7 +502,8 @@ om | openframe_microservices)
     openframe_datasources_zookeeper_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-zookeeper-deploy.log" &&
     openframe_datasources_nifi_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-nifi-deploy.log" &&
     openframe_datasources_pinot_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-pinot-deploy.log" &&
-    stop_spinner $? &&
+    stop_spinner_and_return_code $? || exit 1
+
     start_spinner "Deploying OpenFrame Microservices" &&
     $0 openframe_microservices_openframe_config_server $ACTION &&
     $0 openframe_microservices_openframe_api $ACTION &&
@@ -505,7 +511,7 @@ om | openframe_microservices)
     $0 openframe_microservices_openframe_stream $ACTION &&
     $0 openframe_microservices_openframe_gateway $ACTION &&
     $0 openframe_microservices_openframe_ui $ACTION
-  stop_spinner $?
+  stop_spinner_and_return_code $? || exit 1
   ;;
 itd | integrated_tools_datasources)
   ACTION=${2}
@@ -516,7 +522,7 @@ itd | integrated_tools_datasources)
     $0 integrated_tools_datasources_authentik $ACTION &&
     $0 integrated_tools_datasources_meshcentral $ACTION &&
     $0 integrated_tools_datasources_tactical_rmm $ACTION
-  stop_spinner $?
+  stop_spinner_and_return_code $? || exit 1
   ;;
 it | integrated_tools)
   ACTION=${2}
@@ -527,7 +533,7 @@ it | integrated_tools)
     $0 integrated_tools_authentik $ACTION &&
     $0 integrated_tools_meshcentral $ACTION &&
     $0 integrated_tools_tactical_rmm $ACTION
-  stop_spinner $?
+  stop_spinner_and_return_code $? || exit 1
   ;;
 dat | datasources)
   ACTION=${2}

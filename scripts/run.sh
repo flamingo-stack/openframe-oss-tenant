@@ -24,12 +24,6 @@ while IFS= read -r func; do
   [[ "$func" == _spin* || "$func" == *spinner* ]] && export -f "$func"
 done < <(declare -F | awk '{print $3}')
 
-stop_spinner_and_return_code() {
-    local code=$1
-    stop_spinner $code
-    return $code
-}
-
 source "${SCRIPT_DIR}/functions/flamingo.sh"
 export -f flamingo
 
@@ -92,13 +86,7 @@ if [ "$ACTION" == "intercept" ]; then
 fi
 
 case "$ARG" in
-  pki)
-    start_spinner "Generating PKI certificates"
-    create_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
-    stop_spinner $?
-    ;;
   k|cluster)
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
     if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^openframe-dev$"; then
       start_spinner "Using existing 'openframe-dev' cluster."
       stop_spinner_and_return_code $? || exit 1

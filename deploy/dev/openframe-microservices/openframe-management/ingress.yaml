@@ -7,6 +7,7 @@ metadata:
     cert-manager.io/cluster-issuer: "cluster-issuer"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
     - openframe-management.192.168.100.100.nip.io

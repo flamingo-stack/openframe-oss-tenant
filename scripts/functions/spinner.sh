@@ -82,6 +82,12 @@ function stop_spinner() {
     _start_time=
 }
 
+stop_spinner_and_return_code() {
+    local code=$1
+    stop_spinner $code
+    return $code
+}
+
 # # Ensure spinner is stopped on script exit
 # trap 'stop_spinner 1' SIGINT SIGTERM
 
