@@ -7,14 +7,18 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v$
 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath={.data.password} | base64 -d)
 
+# Step is necessary untill https://github.com/Flamingo-CX/openframe.git will be public
 kubectl run argocd-client -it --rm \
   --image=quay.io/argoproj/argocd:v3.0.0 \
   --namespace argocd \
   --restart=Never \
   --env ARGOCD_PASSWORD="$ARGOCD_PASSWORD" \
+  --env GIT_PASSWORD="$GITHUB_TOKEN_CLASSIC"\
   -- sh
 
 argocd login argocd-server.argocd.svc.cluster.local  --username=admin --password "$ARGOCD_PASSWORD" --insecure
+
+argocd repo add https://github.com/Flamingo-CX/openframe.git --username "local_dev" --password "$GIT_PASSWORD"
 
 kubectl -n argocd apply -f - <<EOF
 

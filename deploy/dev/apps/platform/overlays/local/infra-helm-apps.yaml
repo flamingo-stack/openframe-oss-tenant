@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: infra-helm-apps
+  name: platform-apps
 spec:
   generators:
   - list:  # appName == namespace == chart
