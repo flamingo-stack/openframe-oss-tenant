@@ -4,5 +4,4 @@ resources:
 - ../../base
 
 patches:
-- path: infra-apps.yaml
 - path: infra-helm-apps.yaml

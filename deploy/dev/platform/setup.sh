@@ -1,5 +1,20 @@
-kubectl create namespace argocd 
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.6.4/manifests/install.yaml
+#!/bin/bash
+
+ARGOCD_VERSION="3.0.0"
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v$ARGOCD_VERSION/manifests/install.yaml
+
+ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath={.data.password} | base64 -d)
+
+kubectl run argocd-client -it --rm \
+  --image=quay.io/argoproj/argocd:v3.0.0 \
+  --namespace argocd \
+  --restart=Never \
+  --env ARGOCD_PASSWORD="$ARGOCD_PASSWORD" \
+  -- sh
+
+argocd login argocd-server.argocd.svc.cluster.local  --username=admin --password "$ARGOCD_PASSWORD" --insecure
 
 kubectl -n argocd apply -f - <<EOF
 
