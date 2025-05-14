@@ -18,6 +18,8 @@ spec:
         - resources-finalizer.argocd.argoproj.io
 
     spec:
+      project: default
+
       sources:
         # Helm chart
         - repoURL: '{{.repoURL}}'
