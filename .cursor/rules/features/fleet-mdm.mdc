@@ -1,7 +1,7 @@
 ---
-description: Fleet MDM integration and usage in OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Fleet MDM Integration
 

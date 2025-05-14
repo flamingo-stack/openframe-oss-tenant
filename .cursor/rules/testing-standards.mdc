@@ -1,7 +1,7 @@
 ---
-description: Testing standards and best practices for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Testing Standards
 

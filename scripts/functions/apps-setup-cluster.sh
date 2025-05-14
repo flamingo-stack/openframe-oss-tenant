@@ -90,9 +90,9 @@ function setup_cluster() {
     fi
 
     # Simple formula: 1 agent per 2 cores, minimum 1, maximum TOTAL_CPU/2
-    OPTIMAL_AGENTS=$((TOTAL_CPU / 2))
+    OPTIMAL_AGENTS=$((TOTAL_CPU / 3))
     [ "$OPTIMAL_AGENTS" -lt 1 ] && OPTIMAL_AGENTS=1
-    SERVERS=3
+    SERVERS=1
 
     echo "System has $TOTAL_CPU CPU cores and ${TOTAL_MEM}GB memory"
     echo "Planning to create cluster with $OPTIMAL_AGENTS agent nodes"
@@ -114,15 +114,12 @@ function setup_cluster() {
     
     # Check if registry exists
     if k3d registry list 2>/dev/null | grep -q "openframe-registry"; then
-        echo "Removing existing openframe-registry to avoid conflicts..."
-        k3d registry delete openframe-registry
+        echo "Local registry 'openframe-registry' already exists. Skipping creation."
+    else
+        echo "Creating local registry 'openframe-registry'..."
+        k3d registry create openframe-registry --port ${REGISTRY_PORT}
         sleep 2
     fi
-
-    # Create local registry
-    echo "Creating local registry 'openframe-registry'..."
-    k3d registry create openframe-registry --port 5001
-    sleep 2
 
     # Select appropriate image based on architecture
     if [ "$IS_ARM64" = true ]; then
@@ -133,7 +130,7 @@ function setup_cluster() {
 
     echo "Using image: $K3S_IMAGE"
 
-    # Create a temporary k3d config file with registry mirrors
+    # Create a temporary k3d config file (without inlined registry config)
     TMP_CONFIG_FILE=$(mktemp)
     cat > "$TMP_CONFIG_FILE" <<EOF
 apiVersion: k3d.io/v1alpha4
@@ -166,35 +163,12 @@ ports:
   - port: $HTTPS_PORT:443
     nodeFilters:
       - loadbalancer
-registries:
-  use:
-    - k3d-openframe-registry:5001
-  config: |
-    mirrors:
-      "docker.io":
-        endpoint:
-          - "https://mirror.gcr.io"
-          - "https://registry-1.docker.io"
-          - "https://docker.mirrors.ustc.edu.cn"
-      "quay.io":
-        endpoint:
-          - "https://quay.mirror.censorshipwhat.com"
-          - "https://quay.mirrors.ustc.edu.cn"
-      "gcr.io":
-        endpoint:
-          - "https://gcr.mirrors.ustc.edu.cn"
-      "k8s.gcr.io":
-        endpoint:
-          - "https://registry.k8s.io"
-      "ghcr.io":
-        endpoint:
-          - "https://ghcr.io"
 EOF
 
-    # Step 1: Create server node first using config file
-    echo "Creating cluster from config file..."
+    # Step 1: Create server node first using config file and external registry mirror config
+    echo "Creating cluster from config file with external registry mirror config..."
     k3d cluster create --config "$TMP_CONFIG_FILE" --timeout 180s
-    
+
     # Clean up temp file
     rm -f "$TMP_CONFIG_FILE"
     
@@ -277,15 +251,34 @@ EOF
     echo "Cluster information:"
     kubectl --context=k3d-openframe-dev get nodes -o wide
 
-    echo "Local registry is available at localhost:5000"
-    echo "You can push images to it using: docker tag your-image:tag localhost:5000/your-image:tag"
-    echo "Then push with: docker push localhost:5000/your-image:tag"
-    echo "In Kubernetes manifests, reference images as: k3d-openframe-registry:5000/your-image:tag"
-    
     if [ "$HTTP_PORT" != "80" ] || [ "$HTTPS_PORT" != "443" ]; then
         echo ""
         echo "NOTE: Using non-standard ports:"
         [ "$HTTP_PORT" != "80" ] && echo "  - HTTP: localhost:$HTTP_PORT"
         [ "$HTTPS_PORT" != "443" ] && echo "  - HTTPS: localhost:$HTTPS_PORT"
     fi
+
+    # Ensure local registry is running and connected to k3d network
+    REGISTRY_NAME="k3d-openframe-registry"
+    REGISTRY_PORT=5050
+    K3D_NETWORK="k3d-openframe-dev"
+
+    if ! docker ps -a --format '{{.Names}}' | grep -q "^${REGISTRY_NAME}$"; then
+        echo "Creating local registry '${REGISTRY_NAME}' on port ${REGISTRY_PORT}..."
+        docker run -d --restart=always -p ${REGISTRY_PORT}:5000 --name ${REGISTRY_NAME} registry:2
+    else
+        echo "Local registry '${REGISTRY_NAME}' already exists."
+    fi
+
+    # Connect registry to k3d network if not already connected
+    if ! docker network inspect ${K3D_NETWORK} | grep -q ${REGISTRY_NAME}; then
+        echo "Connecting registry to k3d network '${K3D_NETWORK}'..."
+        docker network connect ${K3D_NETWORK} ${REGISTRY_NAME} || true
+    else
+        echo "Registry already connected to k3d network '${K3D_NETWORK}'."
+    fi
+
+    echo "You can push images to the local registry using:"
+    echo "  docker tag your-image:tag k3d-openframe-registry:5050/your-image:tag"
+    echo "  docker push k3d-openframe-registry:5050/your-image:tag"
 }

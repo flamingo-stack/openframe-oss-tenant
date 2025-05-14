@@ -1,7 +1,7 @@
 ---
-description: Authentik SSO integration in OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Authentik SSO Integration
 

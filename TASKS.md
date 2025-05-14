@@ -1,71 +1,173 @@
-# OpenFrame Windows Setup Fixes
+# Local Registry Integration for Skaffold
 
-This task list tracks the fixes needed for OpenFrame setup on Windows, specifically addressing Hyper-V and related configuration issues.
-
-## Current Issues
-- CPU Virtualization is disabled in BIOS
-- Hyper-V module not found
-- Virtual switch configuration failing
-- Network adapter setup incomplete
-- Hyper-V services not running (pending restart)
+Re-add local Docker registry creation for k3d and update all Skaffold configs to use the local registry for image builds and pushes.
 
 ## Completed Tasks
 
-- [x] Initial error analysis and task list creation
-- [x] Run diagnostic script to identify issues
-- [x] Enable Hyper-V Windows features (pending restart)
+- [x] Remove old registry and mirror configuration (previously done)
+- [x] Clean up registry references in scripts and docs
 
 ## In Progress Tasks
 
-- [ ] System Restart Required
-  1. Save all work
-  2. Restart computer to complete Hyper-V installation
-  3. Verify Hyper-V services after restart
-
-- [ ] Enable CPU Virtualization in BIOS
-  1. After restart, enter BIOS/UEFI settings
-  2. Look for "Virtualization Technology" or "VT-x" setting
-  3. Enable the setting
-  4. Save and exit BIOS
-
-- [ ] Configure network adapter settings
-  1. Verify Hyper-V network adapter creation
-  2. Configure IP settings for OpenFrameSwitch
-  3. Test network connectivity
-
-- [ ] Verify Docker Desktop configuration
-  1. Check WSL2 integration
-  2. Ensure Docker service is running
-  3. Test Docker functionality
+- [ ] Draft task plan and get approval
+- [ ] Identify all Skaffold config files in the repo
+- [ ] Decide on registry naming convention (`k3d-openframe-registry:5050` vs `localhost:5050`)
+- [x] Update cluster setup script to create the local registry container if missing
+- [x] Update cluster setup script to connect registry to k3d network
+- [x] Update all Skaffold files to use the local registry for image builds
+- [ ] Update documentation to reflect new registry usage
+- [ ] Test: Build and deploy a service using Skaffold to ensure images are pushed/pulled from the local registry
 
 ## Future Tasks
 
-- [ ] Document Windows-specific setup requirements
-- [ ] Create troubleshooting guide for common Windows issues
+- [ ] (Optional) Add registry health check to setup script
+- [ ] (Optional) Add cleanup logic for registry container
+- [ ] (Optional) Add support for registry mirrors if needed in the future
 
 ## Implementation Plan
 
-### 1. Complete Hyper-V Installation
-- Restart system to complete Hyper-V feature installation
-- Verify Hyper-V services are running after restart
+1. **Registry Creation**
+   - In `apps-setup-cluster.sh` (or equivalent), add logic to:
+     - Check if `k3d-openframe-registry` is running; if not, create it:
+       ```bash
+       docker run -d --restart=always -p 5050:5000 --name k3d-openframe-registry registry:2
+       ```
+     - Connect the registry to the k3d network:
+       ```bash
+       docker network connect k3d-openframe-dev k3d-openframe-registry || true
+       ```
+   - Print instructions for pushing images if needed.
 
-### 2. BIOS Configuration
-- Enter BIOS/UEFI after restart
-- Enable CPU Virtualization
-- Save changes and restart again
+2. **Skaffold Config Update**
+   - Find all `skaffold.yaml` files in the repo.
+   - For each, update the `build.artifacts.image` to use `k3d-openframe-registry:5050/<image-name>`.
+   - Set `local.push: true` to ensure images are pushed to the registry.
 
-### 3. Network Configuration
-- Create OpenFrameSwitch
-- Configure IP settings
-- Test network connectivity
+3. **Documentation**
+   - Update `scripts/README.md` and any other relevant docs to describe the new registry workflow.
 
-### 4. Docker Configuration
-- Verify Docker Desktop installation
-- Check WSL2 integration
-- Test Docker functionality
+4. **Testing**
+   - Build and deploy at least one service using Skaffold.
+   - Verify the image is pushed to and pulled from the local registry.
 
 ### Relevant Files
-- `scripts/run-windows.ps1` - Main Windows setup script
-- `scripts/diagnose-hyperv.ps1` - Diagnostic script
-- `scripts/enable-hyperv.ps1` - Hyper-V enablement script
-- `TASKS.md` - This task tracking file 
+
+- `scripts/functions/apps-setup-cluster.sh` – Add registry creation logic
+- `services/*/skaffold.yaml` – Update image names and push settings
+- `scripts/README.md` – Update documentation
+
+# Local Registry Integration for Skaffold
+
+Re-add local Docker registry creation for k3d and update all Skaffold configs to use the local registry for image builds and pushes.
+
+## Completed Tasks
+
+- [x] Remove old registry and mirror configuration (previously done)
+- [x] Clean up registry references in scripts and docs
+
+## In Progress Tasks
+
+- [ ] Draft task plan and get approval
+- [ ] Identify all Skaffold config files in the repo
+- [ ] Decide on registry naming convention (`k3d-openframe-registry:5050` vs `localhost:5050`)
+- [x] Update cluster setup script to create the local registry container if missing
+- [x] Update cluster setup script to connect registry to k3d network
+- [x] Update all Skaffold files to use the local registry for image builds
+- [ ] Update documentation to reflect new registry usage
+- [ ] Test: Build and deploy a service using Skaffold to ensure images are pushed/pulled from the local registry
+
+## Future Tasks
+
+- [ ] (Optional) Add registry health check to setup script
+- [ ] (Optional) Add cleanup logic for registry container
+- [ ] (Optional) Add support for registry mirrors if needed in the future
+
+## Implementation Plan
+
+1. **Registry Creation**
+   - In `apps-setup-cluster.sh` (or equivalent), add logic to:
+     - Check if `k3d-openframe-registry` is running; if not, create it:
+       ```bash
+       docker run -d --restart=always -p 5050:5000 --name k3d-openframe-registry registry:2
+       ```
+     - Connect the registry to the k3d network:
+       ```bash
+       docker network connect k3d-openframe-dev k3d-openframe-registry || true
+       ```
+   - Print instructions for pushing images if needed.
+
+2. **Skaffold Config Update**
+   - Find all `skaffold.yaml` files in the repo.
+   - For each, update the `build.artifacts.image` to use `k3d-openframe-registry:5050/<image-name>`.
+   - Set `local.push: true` to ensure images are pushed to the registry.
+
+3. **Documentation**
+   - Update `scripts/README.md` and any other relevant docs to describe the new registry workflow.
+
+4. **Testing**
+   - Build and deploy at least one service using Skaffold.
+   - Verify the image is pushed to and pulled from the local registry.
+
+### Relevant Files
+
+- `scripts/functions/apps-setup-cluster.sh` – Add registry creation logic
+- `services/*/skaffold.yaml` – Update image names and push settings
+- `scripts/README.md` – Update documentation
+
+# Local Registry Integration for Skaffold
+
+Re-add local Docker registry creation for k3d and update all Skaffold configs to use the local registry for image builds and pushes.
+
+## Completed Tasks
+
+- [x] Remove old registry and mirror configuration (previously done)
+- [x] Clean up registry references in scripts and docs
+
+## In Progress Tasks
+
+- [ ] Draft task plan and get approval
+- [ ] Identify all Skaffold config files in the repo
+- [ ] Decide on registry naming convention (`k3d-openframe-registry:5050` vs `localhost:5050`)
+- [x] Update cluster setup script to create the local registry container if missing
+- [x] Update cluster setup script to connect registry to k3d network
+- [x] Update all Skaffold files to use the local registry for image builds
+- [ ] Update documentation to reflect new registry usage
+- [ ] Test: Build and deploy a service using Skaffold to ensure images are pushed/pulled from the local registry
+
+## Future Tasks
+
+- [ ] (Optional) Add registry health check to setup script
+- [ ] (Optional) Add cleanup logic for registry container
+- [ ] (Optional) Add support for registry mirrors if needed in the future
+
+## Implementation Plan
+
+1. **Registry Creation**
+   - In `apps-setup-cluster.sh` (or equivalent), add logic to:
+     - Check if `k3d-openframe-registry` is running; if not, create it:
+       ```bash
+       docker run -d --restart=always -p 5050:5000 --name k3d-openframe-registry registry:2
+       ```
+     - Connect the registry to the k3d network:
+       ```bash
+       docker network connect k3d-openframe-dev k3d-openframe-registry || true
+       ```
+   - Print instructions for pushing images if needed.
+
+2. **Skaffold Config Update**
+   - Find all `skaffold.yaml` files in the repo.
+   - For each, update the `build.artifacts.image` to use `k3d-openframe-registry:5050/<image-name>`.
+   - Set `local.push: true` to ensure images are pushed to the registry.
+
+3. **Documentation**
+   - Update `scripts/README.md` and any other relevant docs to describe the new registry workflow.
+
+4. **Testing**
+   - Build and deploy at least one service using Skaffold.
+   - Verify the image is pushed to and pulled from the local registry.
+
+### Relevant Files
+
+- `scripts/functions/apps-setup-cluster.sh` – Add registry creation logic
+- `services/*/skaffold.yaml` – Update image names and push settings
+- `scripts/README.md` – Update documentation 

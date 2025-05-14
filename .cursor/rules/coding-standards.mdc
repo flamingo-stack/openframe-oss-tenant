@@ -1,7 +1,7 @@
 ---
-description: General coding standards across all technologies in OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Coding Standards
 
