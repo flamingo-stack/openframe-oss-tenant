@@ -10,6 +10,7 @@ spec:
         repoURL: https://charts.jetstack.io
         targetRevision: 1.17.1
         path: deploy/dev/platform/base/cert-manager
+        branch: feature-restructure-platform
         syncWave: "-1"       
       
   template:
