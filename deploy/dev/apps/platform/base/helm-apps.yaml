@@ -18,7 +18,7 @@ spec:
         - resources-finalizer.argocd.argoproj.io
 
     spec:
-      project: default
+      project: platform
 
       sources:
         # Helm chart
@@ -37,7 +37,7 @@ spec:
           path: '{{.path}}'
 
       destination:
-        name: '{{or .namespace "in-cluster"}}'  
+        name: '{{or .cluster "in-cluster"}}'  
         namespace: '{{or .namespace .appName}}'  
 
       syncPolicy:

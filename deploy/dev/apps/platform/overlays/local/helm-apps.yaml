@@ -6,12 +6,21 @@ spec:
   generators:
   - list:  # appName == namespace == chart
       elements: 
+
       - appName: cert-manager
         repoURL: https://charts.jetstack.io
         targetRevision: 1.17.1
         path: deploy/dev/platform/base/cert-manager
         branch: feature-restructure-platform
-        syncWave: "-1"       
+        syncWave: "-1"   
+
+      - appName: ingress-nginx
+        repoURL: https://kubernetes.github.io/ingress-nginx
+        targetRevision: 4.12.1
+        path: deploy/dev/platform/base/ingress-nginx
+        branch: feature-restructure-platform
+        syncWave: "-1"     
+        
       
   template:
     spec:

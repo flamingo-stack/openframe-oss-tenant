@@ -4,10 +4,10 @@ ARGOCD_VERSION="3.0.0"
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v$ARGOCD_VERSION/manifests/install.yaml
 
+# Step is necessary untill https://github.com/Flamingo-CX/openframe.git will be public
 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath={.data.password} | base64 -d)
 
-# Step is necessary untill https://github.com/Flamingo-CX/openframe.git will be public
 kubectl run argocd-client -it --rm \
   --image=quay.io/argoproj/argocd:v3.0.0 \
   --namespace argocd \
@@ -26,11 +26,13 @@ kubectl -n argocd apply -f - <<EOF
     kind: ApplicationSet
     metadata:
       name: argocd-apps
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
     spec:
       goTemplate: true
       generators:
       - list: 
-          elements:  
+          elements:
         
           # in-cluster apps
           - appName: platform
