@@ -90,10 +90,10 @@ This document tracks the plan to enable and configure MongoDB replica set for Me
 - **[DONE]** Updated `integrated-tools/meshcentral/server/config.json`:
   - The MongoDB connection string now uses the replica set URI, listing all three members and specifying `replicaSet=rs0` and `authSource=admin`.
   - This ensures MeshCentral can connect to the replica set and handle failover.
-- **[NEXT]** Test the deployment:
-  - Apply the StatefulSet, headless Service, and replica set init Job manifests.
-  - Verify the replica set is healthy (`rs.status()`), MeshCentral can connect, and failover works as expected.
-  - Document any issues and update operational runbooks as needed.
+- **[NEXT]** Prepare detailed instructions for applying the manifests and testing the deployment:
+  - Include `kubectl` commands for applying the StatefulSet, Service, and Job.
+  - Include commands for checking replica set status and MeshCentral connectivity.
+  - Stage these instructions for user review before execution.
 
 ## Relevant Files
 - `deploy/dev/integrated-tools-datasources/meshcentral/base/mongodb.yaml` - MongoDB deployment manifest (to be converted to StatefulSet and replica set aware)
@@ -102,3 +102,55 @@ This document tracks the plan to enable and configure MongoDB replica set for Me
 - `integrated-tools/meshcentral/server/entrypoint.sh` - May need updates for new config
 - `scripts/` (new or updated) - For replica set initialization
 - `deploy/dev/integrated-tools-datasources/meshcentral/base/mongodb-init-replicaset.yaml` - Kubernetes Job manifest for initializing the replica set 
+
+# Deployment & Testing Instructions (Staged for Review)
+
+**Do not execute until reviewed and approved.**
+
+## 1. Apply MongoDB StatefulSet and Headless Service
+```sh
+kubectl apply -f deploy/dev/integrated-tools-datasources/meshcentral/base/mongodb.yaml
+```
+
+## 2. Wait for All MongoDB Pods to be Ready
+```sh
+kubectl get pods -l app=meshcentral-mongodb
+# Wait until meshcentral-mongodb-0, -1, and -2 are all Running and Ready
+```
+
+## 3. Initialize the Replica Set
+```sh
+kubectl apply -f deploy/dev/integrated-tools-datasources/meshcentral/base/mongodb-init-replicaset.yaml
+kubectl logs job/meshcentral-mongodb-init-replicaset
+# Confirm you see 'Replica set initialization command issued.' or 'Replica set already initialized.'
+```
+
+## 4. Check Replica Set Status
+```sh
+kubectl exec -it meshcentral-mongodb-0 -- mongo -u mongouser -p mongopass --authenticationDatabase admin --eval 'rs.status()'
+```
+
+## 5. Deploy/Restart MeshCentral (if needed)
+- Ensure MeshCentral is using the updated config.json with the replica set URI.
+- Restart the MeshCentral pod/deployment if it was already running.
+
+## 6. Verify MeshCentral Connectivity
+- Check MeshCentral logs for successful MongoDB connection.
+- Perform basic UI/API operations to confirm data is being read/written.
+
+## 7. Test Failover
+- Delete one MongoDB pod (e.g., meshcentral-mongodb-1) and confirm MeshCentral remains operational:
+```sh
+kubectl delete pod meshcentral-mongodb-1
+# Wait for it to restart, check MeshCentral and MongoDB logs
+```
+
+## 8. Clean Up (if needed)
+- Remove the init Job after successful initialization:
+```sh
+kubectl delete job meshcentral-mongodb-init-replicaset
+```
+
+---
+
+**Review these instructions before proceeding.** 
