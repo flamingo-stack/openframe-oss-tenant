@@ -1,7 +1,7 @@
 ---
-description: CI/CD pipeline configuration and best practices for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # CI/CD Pipeline
 

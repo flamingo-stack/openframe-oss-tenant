@@ -1,7 +1,7 @@
 ---
-description: OpenFrame project structure and organization
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Project Structure
 

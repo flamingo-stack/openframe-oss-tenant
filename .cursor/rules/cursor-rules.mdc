@@ -1,7 +1,7 @@
 ---
-description: How to add or edit Cursor rules in OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Cursor Rules in OpenFrame
 

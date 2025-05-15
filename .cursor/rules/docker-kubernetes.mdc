@@ -1,7 +1,7 @@
 ---
-description: Container and orchestration best practices for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Docker and Kubernetes
 

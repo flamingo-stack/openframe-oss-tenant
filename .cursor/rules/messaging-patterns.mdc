@@ -1,7 +1,7 @@
 ---
-description: Messaging and event-driven architecture patterns for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Messaging Patterns
 

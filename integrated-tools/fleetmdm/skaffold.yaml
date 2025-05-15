@@ -3,6 +3,9 @@ kind: Config
 metadata:
   name: fleet
 build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-fleetmdm
       docker:
@@ -15,7 +18,3 @@ manifests:
   kustomize:
     paths:
     - ../../deploy/dev/integrated-tools/fleet
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]

@@ -39,11 +39,32 @@ verify_command() {
         brew install git
         ;;
     "docker")
-        brew install --cask docker
+        # Detect Apple Silicon (arm64)
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "arm64" ]; then
+            write_status_message "Detected Apple Silicon (arm64). Downloading Docker Desktop for Apple Silicon..." "\033[36m"
+            DOCKER_DMG_URL="https://desktop.docker.com/mac/main/arm64/Docker.dmg"
+            TMP_DMG="/tmp/Docker.dmg"
+            curl -L "$DOCKER_DMG_URL" -o "$TMP_DMG"
+            hdiutil attach "$TMP_DMG"
+            cp -R "/Volumes/Docker/Docker.app" /Applications
+            hdiutil detach "/Volumes/Docker"
+            rm "$TMP_DMG"
+            write_status_message "Docker Desktop (Apple Silicon) installed successfully!" "\033[32m"
+        else
+            brew install --cask docker
+            write_status_message "Docker Desktop (Intel) installed successfully!" "\033[32m"
+        fi
 
         # Check docker daemon is running
         if ! docker ps >/dev/null 2>&1; then
-            docker desktop start
+            open -a Docker
+            write_status_message "Starting Docker Desktop..." "\033[36m"
+            # Wait for Docker to start
+            while ! docker system info > /dev/null 2>&1; do
+                sleep 1
+            done
+            write_status_message "Docker Desktop is running." "\033[32m"
         fi
 
         if ! docker buildx version >/dev/null 2>&1; then
@@ -78,6 +99,9 @@ verify_command() {
     "k3d")
         brew install k3d
         ;;
+    "kustomize")
+        brew install kustomize
+        ;;
     esac
 }
 
@@ -93,7 +117,7 @@ fi
 
 # Check all commands and collect results
 missing_commands=()
-commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d")
+commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d" "kustomize")
 
 for cmd in "${commands[@]}"; do
     if ! check_command "$cmd"; then

@@ -3,6 +3,9 @@ kind: Config
 metadata:
   name: openframe-meshcentral
 build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-meshcentral
       docker:
@@ -33,12 +36,8 @@ build:
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: false
+    push: true
 manifests:
   kustomize:
     paths:
     - ../../../deploy/dev/integrated-tools/meshcentral
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]

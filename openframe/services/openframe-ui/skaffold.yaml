@@ -9,12 +9,8 @@ build:
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: false
+    push: true
 manifests:
   kustomize:
     paths:
     - ../../../deploy/dev/openframe-microservices/openframe-ui
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]

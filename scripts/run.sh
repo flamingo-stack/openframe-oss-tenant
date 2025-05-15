@@ -87,8 +87,8 @@ fi
 
 case "$ARG" in
   k|cluster)
-    if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^openframe-dev$"; then
-      start_spinner "Using existing 'openframe-dev' cluster."
+    if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^$K3D_CLUSTER_NAME$"; then
+      start_spinner "Using existing '$K3D_CLUSTER_NAME' cluster."
       stop_spinner_and_return_code $? || exit 1
     else
       start_spinner "Setting up cluster"
@@ -104,7 +104,8 @@ case "$ARG" in
   d|delete)
     start_spinner "Deleting cluster"
     telepresence quit > "${DEPLOY_LOG_DIR}/telepresence-quit.log" 2>&1 && \
-    k3d cluster delete openframe-dev > "${DEPLOY_LOG_DIR}/k3d-cluster-delete.log" 2>&1
+    k3d cluster delete $K3D_CLUSTER_NAME --all > "${DEPLOY_LOG_DIR}/k3d-cluster-delete.log" 2>&1
+    docker network prune -f > "${DEPLOY_LOG_DIR}/network-prune.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
     ;;
   a|app)
@@ -134,13 +135,13 @@ case "$ARG" in
   s|start)
     start_spinner "Starting cluster"
     add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
-    k3d cluster start openframe-dev > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
+    k3d cluster start $K3D_CLUSTER_NAME > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     stop_spinner_and_return_code $? || exit 1
     ;;
   stop)
     start_spinner "Stopping cluster"
     telepresence quit > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1 && \
-    k3d cluster stop openframe-dev > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
+    k3d cluster stop $K3D_CLUSTER_NAME > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
     ;;
   -h|--help|-Help|help)
