@@ -12,7 +12,7 @@ RUN apk add --no-cache iputils bind-tools netcat-openbsd curl && rm -rf /var/cac
 
 EXPOSE 8888
 
-# Healthcheck
+# Healthcheck  
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8888/management/v1/health || exit 1
 
 # Create a non-root user

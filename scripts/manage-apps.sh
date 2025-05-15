@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Source variables for cluster/registry names
+. "$(dirname "$0")/functions/variables.sh"
+
 # Source spinner functions
 source "${SCRIPT_DIR}/functions/spinner.sh"
 export -f start_spinner stop_spinner _spin
@@ -91,18 +94,6 @@ platform_logging)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-# platform_metrics_server)
-#   if [ "$ACTION" == "deploy" ]; then
-#     platform_metrics_server_deploy
-#   elif [ "$ACTION" == "delete" ]; then
-#     platform_metrics_server_delete
-#   elif [ "$ACTION" == "dev" ]; then
-#     echo "$APP is not supported in dev mode"
-#     exit 0
-#   elif [ "$ACTION" == "intercept" ]; then
-#     echo "$APP is not supported for debug mode"
-#   fi
-#   ;;
 platform_efk)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform EFK"
@@ -190,7 +181,7 @@ openframe_datasources_nifi)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying NiFi in dev mode"
     cd ${SCRIPT_DIR}/../openframe/datasources/nifi/
-    skaffold dev --no-prune=false --cache-artifacts=false -n infrastructure
+    skaffold dev --cache-artifacts=false -n openframe-datasources
   elif [ "$ACTION" == "intercept" ]; then
     echo "Interception not enabled for this app"
   fi
@@ -227,7 +218,7 @@ openframe_microservices_openframe_config_server)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying Config Server in dev mode"
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
-    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    skaffold dev --cache-artifacts=false -n openframe-microservices
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "openframe-config-server" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
@@ -240,7 +231,7 @@ openframe_microservices_openframe_api)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying API in dev mode"
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
-    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    skaffold dev --cache-artifacts=false -n openframe-microservices
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "openframe-api" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
@@ -253,7 +244,7 @@ openframe_microservices_openframe_management)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying Management in dev mode"
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
-    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    skaffold dev --cache-artifacts=false -n openframe-microservices
   elif [ "$ACTION" == "intercept" ]; then
     echo "Interception not enabled for this app"
   fi
@@ -266,7 +257,7 @@ openframe_microservices_openframe_stream)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying Stream in dev mode"
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
-    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    skaffold dev --cache-artifacts=false -n openframe-microservices
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "openframe-stream" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
@@ -279,7 +270,7 @@ openframe_microservices_openframe_gateway)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying Gateway in dev mode"
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
-    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    skaffold dev --cache-artifacts=false -n openframe-microservices
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "openframe-gateway" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
@@ -292,7 +283,7 @@ openframe_microservices_openframe_ui)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying OpenFrame UI in dev mode"
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
-    skaffold dev --no-prune=false --cache-artifacts=false -n openframe-microservices
+    skaffold dev --cache-artifacts=false -n openframe-microservices
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "openframe-ui" "openframe-microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
@@ -316,7 +307,7 @@ integrated_tools_datasources_fleet)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying Fleet in dev mode"
     cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-    skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    skaffold dev --cache-artifacts=false -n integrated-tools-datasources
   elif [ "$ACTION" == "intercept" ]; then
     echo "Interception not enabled for this app"
   fi
@@ -330,7 +321,7 @@ integrated_tools_fleet)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying Fleet in dev mode"
     cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-    skaffold dev --no-prune=false --cache-artifacts=false -n fleet
+    skaffold dev --cache-artifacts=false -n integrated-tools
   elif [ "$ACTION" == "intercept" ]; then
     echo "Interception not enabled for this app"
   fi
@@ -381,7 +372,7 @@ integrated_tools_meshcentral)
   elif [ "$ACTION" == "dev" ]; then
     echo "Deploying MeshCentral in dev mode"
     cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
-    skaffold dev --no-prune=false --cache-artifacts=false -n integrated-tools
+    skaffold dev --cache-artifacts=false -n integrated-tools
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "meshcentral" "integrated-tools" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi

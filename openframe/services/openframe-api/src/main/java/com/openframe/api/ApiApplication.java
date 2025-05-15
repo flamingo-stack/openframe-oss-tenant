@@ -5,12 +5,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.kafka.annotation.EnableKafka;
 
+import lombok.extern.slf4j.Slf4j;
+
 @SpringBootApplication
 @EnableKafka
 @ComponentScan(basePackages = {"com.openframe.api", "com.openframe.data", "com.openframe.core", "com.openframe.security"})
+@Slf4j
 public class ApiApplication {
 
     public static void main(String[] args) {
+        log.info("Starting OpenFrame API");
         SpringApplication.run(ApiApplication.class, args);
     }
 }

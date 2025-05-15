@@ -3,6 +3,9 @@ kind: Config
 metadata:
   name: tactical-frontend
 build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-tactical-frontend
       docker:

@@ -14,3 +14,5 @@ export SILENT="${SILENT:-false}"
 export DEPLOY_LOG_DIR=/tmp/openframe-deployment-logs
 
 export REGISTRY_PORT=5050
+
+export K3D_CLUSTER_NAME="openframe-dev"

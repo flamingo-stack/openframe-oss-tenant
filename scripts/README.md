@@ -279,3 +279,9 @@ The platform uses the following namespaces:
 ## SSL Certificates
 
 Repository contains already created ca cert and private key to be used by cert-manager. 
+
+## k3d Cluster and Registry Naming
+
+- The canonical k3d cluster name is `openframe-dev`.
+- The canonical k3d registry name is `k3d-openframe-registry`.
+- If you add or update scripts, always use these variables (see `scripts/functions/variables.sh`).

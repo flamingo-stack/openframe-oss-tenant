@@ -9,7 +9,7 @@ build:
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: false
+    push: true
 manifests:
   kustomize:
     paths:

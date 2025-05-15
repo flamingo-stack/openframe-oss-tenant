@@ -1,4 +1,7 @@
 #!/bin/bash
+# Source variables for cluster/registry names
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/variables.sh"
+
 function setup_cluster() {
 
     echo "Updating helm repos indexes"
@@ -101,31 +104,22 @@ function setup_cluster() {
     echo "Cleaning up any existing resources..."
     
     # Delete any existing cluster
-    if k3d cluster list 2>/dev/null | grep -q "openframe-dev"; then
-        echo "Removing existing openframe-dev cluster..."
-        k3d cluster delete openframe-dev
+    if k3d cluster list 2>/dev/null | grep -q "$K3D_CLUSTER_NAME"; then
+        echo "Removing existing $K3D_CLUSTER_NAME cluster..."
+        k3d cluster delete $K3D_CLUSTER_NAME
         # Wait a bit to ensure all resources are released
         sleep 5
     fi
     
     # Force cleanup of potential stuck Docker containers
     echo "Cleaning up any stuck containers..."
-    docker rm -f $(docker ps -a | grep 'k3d-openframe-dev' | awk '{print $1}') 2>/dev/null || true
+    docker rm -f $(docker ps -a | grep 'k3d-$K3D_CLUSTER_NAME' | awk '{print $1}') 2>/dev/null || true
     
-    # Check if registry exists
-    if k3d registry list 2>/dev/null | grep -q "openframe-registry"; then
-        echo "Local registry 'openframe-registry' already exists. Skipping creation."
-    else
-        echo "Creating local registry 'openframe-registry'..."
-        k3d registry create openframe-registry --port ${REGISTRY_PORT}
-        sleep 2
-    fi
-
     # Select appropriate image based on architecture
     if [ "$IS_ARM64" = true ]; then
-        K3S_IMAGE="rancher/k3s:v1.32.3-k3s1-arm64"
+        K3S_IMAGE="rancher/k3s:v1.33.0-k3s1-arm64"
     else
-        K3S_IMAGE="rancher/k3s:v1.32.3-k3s1"
+        K3S_IMAGE="rancher/k3s:v1.33.0-k3s1"
     fi
 
     echo "Using image: $K3S_IMAGE"
@@ -136,7 +130,7 @@ function setup_cluster() {
 apiVersion: k3d.io/v1alpha4
 kind: Simple
 metadata:
-  name: openframe-dev
+  name: $K3D_CLUSTER_NAME
 servers: $SERVERS
 agents: $OPTIMAL_AGENTS
 image: $K3S_IMAGE
@@ -165,9 +159,10 @@ ports:
       - loadbalancer
 EOF
 
-    # Step 1: Create server node first using config file and external registry mirror config
-    echo "Creating cluster from config file with external registry mirror config..."
-    k3d cluster create --config "$TMP_CONFIG_FILE" --timeout 180s
+    # Step 1: Create server node first using config file and external registry config
+    REGISTRIES_CONFIG_PATH="$(cd $(dirname "${BASH_SOURCE[0]}")/../../deploy/dev && pwd)/registries.yaml"
+    echo "Creating cluster from config file with k3d registry integration..."
+    k3d cluster create --config $TMP_CONFIG_FILE --timeout 180s --registry-config $REGISTRIES_CONFIG_PATH
 
     # Clean up temp file
     rm -f "$TMP_CONFIG_FILE"
@@ -178,78 +173,73 @@ EOF
     mkdir -p "$HOME/.kube"
     
     # Generate k3d kubeconfig and ensure it's the active one
-    k3d kubeconfig get openframe-dev > "$HOME/.k3d-openframe-dev.config"
+    k3d kubeconfig get $K3D_CLUSTER_NAME > "$HOME/.k3d-$K3D_CLUSTER_NAME.config"
     
     # If a kubeconfig already exists, merge it, otherwise use the new one
     if [ -f "$KUBECONFIG_FILE" ]; then
         echo "Merging with existing kubeconfig..."
-        KUBECONFIG="$KUBECONFIG_FILE:$HOME/.k3d-openframe-dev.config" kubectl config view --flatten > "$HOME/.kube/config.new"
+        KUBECONFIG="$KUBECONFIG_FILE:$HOME/.k3d-$K3D_CLUSTER_NAME.config" kubectl config view --flatten > "$HOME/.kube/config.new"
         mv "$HOME/.kube/config.new" "$KUBECONFIG_FILE"
     else
         echo "Creating new kubeconfig..."
-        cp "$HOME/.k3d-openframe-dev.config" "$KUBECONFIG_FILE"
+        cp "$HOME/.k3d-$K3D_CLUSTER_NAME.config" "$KUBECONFIG_FILE"
     fi
     
     # Ensure permissions are correct
     chmod 600 "$KUBECONFIG_FILE"
     
     # Switch context to the new cluster
-    kubectl config use-context k3d-openframe-dev
+    kubectl config use-context k3d-$K3D_CLUSTER_NAME
     
     # Explicitly verify we're pointing to the right server
     echo "Verifying cluster API server address..."
-    CURRENT_SERVER=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "k3d-openframe-dev")].cluster.server}')
-    if [[ "$CURRENT_SERVER" != *"127.0.0.1:$API_PORT"* ]]; then
-        echo "Fixing API server address in kubeconfig..."
-        kubectl config set-cluster k3d-openframe-dev --server=http://127.0.0.1:$API_PORT
-    else
-        echo "API server address is correctly set to $CURRENT_SERVER"
-    fi
+    # CURRENT_SERVER=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "k3d-$K3D_CLUSTER_NAME")].cluster.server}')
+    # if [[ "$CURRENT_SERVER" != *"127.0.0.1:$API_PORT"* ]]; then
+    #     echo "Fixing API server address in kubeconfig..."
+    #     kubectl config set-cluster k3d-$K3D_CLUSTER_NAME --server=http://127.0.0.1:$API_PORT
+    # else
+    #     echo "API server address is correctly set to $CURRENT_SERVER"
+    # fi
     
-    # Print the current context to verify
-    echo "Current kubectl context: $(kubectl config current-context)"
-    
-    # Verify cluster is accessible with explicit command to prevent localhost:8080 fallback
-    echo "Waiting for cluster API to become accessible..."
-    timeout=90
-    counter=0
-    until kubectl --context=k3d-openframe-dev cluster-info &>/dev/null; do
-        if [ $counter -ge $timeout ]; then
-            echo "ERROR: Timed out waiting for cluster API to become accessible"
-            echo "Try restarting Docker Desktop and running this script again"
-            echo "Current kubectl config:"
-            kubectl config view
-            exit 1
-        fi
-        echo "Waiting for cluster API... ($counter/$timeout)"
-        sleep 1
-        ((counter++))
+    # Wait for at least one node to be Ready
+    max_retries=30
+    retry_count=0
+    until kubectl --context=k3d-$K3D_CLUSTER_NAME get nodes 2>/dev/null | grep -q ' Ready '; do
+      retry_count=$((retry_count+1))
+      if [ $retry_count -ge $max_retries ]; then
+        echo "ERROR: No Ready nodes after $max_retries attempts."
+        kubectl --context=k3d-$K3D_CLUSTER_NAME get nodes
+        exit 1
+      fi
+      echo "Waiting for a Ready node ($retry_count/$max_retries)..."
+      sleep 2
     done
-    echo "Cluster API is accessible!"
 
     # Verify the namespace creation works properly
     echo "Testing namespace creation..."
-    if ! kubectl --context=k3d-openframe-dev create namespace test-namespace 2>/dev/null; then
-        echo "WARNING: Failed to create test namespace. Checking kubeconfig..."
-        # Fix kubeconfig if needed
-        kubectl config set-cluster k3d-openframe-dev --server=http://127.0.0.1:$API_PORT
-        if ! kubectl --context=k3d-openframe-dev create namespace test-namespace 2>/dev/null; then
-            echo "ERROR: Still unable to create namespace after fixing kubeconfig."
+    max_retries=10
+    retry_count=0
+    while ! kubectl --context=k3d-$K3D_CLUSTER_NAME create namespace test-namespace; do
+        retry_count=$((retry_count+1))
+        if [ $retry_count -ge $max_retries ]; then
+            echo "ERROR: Unable to create test namespace after $max_retries attempts."
             echo "Current kubectl config:"
             kubectl config view
             echo "Cluster status:"
             kubectl get nodes
             exit 1
         fi
-    fi
+        echo "Retrying namespace creation ($retry_count/$max_retries)..."
+        sleep 2
+    done
     
     # Clean up test namespace if it was created
-    kubectl --context=k3d-openframe-dev delete namespace test-namespace 2>/dev/null || true
+    kubectl --context=k3d-$K3D_CLUSTER_NAME delete namespace test-namespace 2>/dev/null || true
     echo "Namespace creation test successful!"
 
     # Print cluster info for verification
     echo "Cluster information:"
-    kubectl --context=k3d-openframe-dev get nodes -o wide
+    kubectl --context=k3d-$K3D_CLUSTER_NAME get nodes -o wide
 
     if [ "$HTTP_PORT" != "80" ] || [ "$HTTPS_PORT" != "443" ]; then
         echo ""
@@ -258,27 +248,4 @@ EOF
         [ "$HTTPS_PORT" != "443" ] && echo "  - HTTPS: localhost:$HTTPS_PORT"
     fi
 
-    # Ensure local registry is running and connected to k3d network
-    REGISTRY_NAME="k3d-openframe-registry"
-    REGISTRY_PORT=5050
-    K3D_NETWORK="k3d-openframe-dev"
-
-    if ! docker ps -a --format '{{.Names}}' | grep -q "^${REGISTRY_NAME}$"; then
-        echo "Creating local registry '${REGISTRY_NAME}' on port ${REGISTRY_PORT}..."
-        docker run -d --restart=always -p ${REGISTRY_PORT}:5000 --name ${REGISTRY_NAME} registry:2
-    else
-        echo "Local registry '${REGISTRY_NAME}' already exists."
-    fi
-
-    # Connect registry to k3d network if not already connected
-    if ! docker network inspect ${K3D_NETWORK} | grep -q ${REGISTRY_NAME}; then
-        echo "Connecting registry to k3d network '${K3D_NETWORK}'..."
-        docker network connect ${K3D_NETWORK} ${REGISTRY_NAME} || true
-    else
-        echo "Registry already connected to k3d network '${K3D_NETWORK}'."
-    fi
-
-    echo "You can push images to the local registry using:"
-    echo "  docker tag your-image:tag k3d-openframe-registry:5050/your-image:tag"
-    echo "  docker push k3d-openframe-registry:5050/your-image:tag"
 }

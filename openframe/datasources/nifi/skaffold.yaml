@@ -3,6 +3,9 @@ kind: Config
 metadata:
   name: openframe-nifi
 build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-nifi
       docker:
@@ -15,7 +18,7 @@ build:
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: false
+    push: true
 manifests:
   kustomize:
     paths:
