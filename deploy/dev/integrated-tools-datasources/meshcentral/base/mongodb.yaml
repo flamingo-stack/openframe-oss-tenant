@@ -1,9 +1,29 @@
-apiVersion: apps/v1
-kind: Deployment
+# MongoDB Replica Set for MeshCentral
+# This manifest replaces the single-node Deployment with a 3-node StatefulSet and a headless Service for replica set support.
+
+---
+# Headless Service for MongoDB StatefulSet (enables stable DNS for replica set members)
+apiVersion: v1
+kind: Service
 metadata:
   name: meshcentral-mongodb
 spec:
-  replicas: 1
+  ports:
+    - port: 27017
+      targetPort: 27017
+  clusterIP: None  # Headless service
+  selector:
+    app: meshcentral-mongodb
+
+---
+# StatefulSet for MongoDB Replica Set
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meshcentral-mongodb
+spec:
+  serviceName: meshcentral-mongodb
+  replicas: 3  # 3-node replica set
   selector:
     matchLabels:
       app: meshcentral-mongodb
@@ -15,12 +35,11 @@ spec:
       containers:
       - name: mongodb
         image: mongo:4.4.18
-        command: ["bash", "-c"]
+        command: ["mongod"]
         args:
-          - |
-            chown -R mongodb:mongodb /data/db &&
-            chmod -R 0700 /data/db &&
-            exec docker-entrypoint.sh mongod --auth
+          - "--replSet=rs0"
+          - "--auth"
+          - "--bind_ip_all"
         ports:
         - containerPort: 27017
         env:
@@ -41,29 +60,17 @@ spec:
             - "db.adminCommand('ping')"
           initialDelaySeconds: 30
           periodSeconds: 10
-      volumes:
-      - name: mongo-data
-        persistentVolumeClaim:
-          claimName: meshcentral-mongo-data
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: meshcentral-mongo-data
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: meshcentral-mongodb
-spec:
-  selector:
-    app: meshcentral-mongodb
-  ports:
-  - port: 27017
-    targetPort: 27017
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+
+# Notes:
+# - Each pod will be accessible at meshcentral-mongodb-0.meshcentral-mongodb, meshcentral-mongodb-1.meshcentral-mongodb, etc.
+# - Replica set initialization will be handled by a separate Job or init container in a later step.
+# - Authentication is enabled; credentials are set via env vars.
+# - MeshCentral should use the replica set URI: mongodb://mongouser:mongopass@meshcentral-mongodb-0.meshcentral-mongodb:27017,meshcentral-mongodb-1.meshcentral-mongodb:27017,meshcentral-mongodb-2.meshcentral-mongodb:27017/meshcentral?replicaSet=rs0&authSource=admin

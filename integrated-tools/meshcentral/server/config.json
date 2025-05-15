@@ -4,7 +4,7 @@
     "plugins": {
       "enabled": false
     },
-    "mongodb": "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}/${MONGO_INITDB_DATABASE}?authSource=admin",
+    "mongodb": "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@meshcentral-mongodb-0.meshcentral-mongodb:27017,meshcentral-mongodb-1.meshcentral-mongodb:27017,meshcentral-mongodb-2.meshcentral-mongodb:27017/${MONGO_INITDB_DATABASE}?replicaSet=rs0&authSource=admin",
     "certUrl": [
       "${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}",
       "${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}"

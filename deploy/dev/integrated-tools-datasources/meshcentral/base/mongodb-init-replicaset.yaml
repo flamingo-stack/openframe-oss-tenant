@@ -1,0 +1,42 @@
+# MongoDB Replica Set Initialization Job for MeshCentral
+# This Job initializes the replica set by connecting to the first pod and running rs.initiate()/rs.add() as needed.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: meshcentral-mongodb-init-replicaset
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongo-init
+        image: mongo:4.4.18
+        command: ["bash", "-c"]
+        args:
+          - |
+            echo "Waiting for MongoDB primary pod to be ready..."
+            until mongo --host meshcentral-mongodb-0.meshcentral-mongodb --eval "db.adminCommand('ping')"; do sleep 5; done
+            echo "Checking replica set status..."
+            RS_STATUS=$(mongo --host meshcentral-mongodb-0.meshcentral-mongodb -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval "rs.status().ok" --quiet || echo 0)
+            if [ "$RS_STATUS" = "1" ]; then
+              echo "Replica set already initialized. Exiting."
+              exit 0
+            fi
+            echo "Initializing replica set..."
+            mongo --host meshcentral-mongodb-0.meshcentral-mongodb -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval '
+              rs.initiate({
+                _id: "rs0",
+                members: [
+                  { _id: 0, host: "meshcentral-mongodb-0.meshcentral-mongodb:27017" },
+                  { _id: 1, host: "meshcentral-mongodb-1.meshcentral-mongodb:27017" },
+                  { _id: 2, host: "meshcentral-mongodb-2.meshcentral-mongodb:27017" }
+                ]
+              })
+            '
+            echo "Replica set initialization command issued."
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "mongouser"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: "mongopass" 
