@@ -160,9 +160,8 @@ ports:
 EOF
 
     # Step 1: Create server node first using config file and external registry config
-    REGISTRIES_CONFIG_PATH="$(cd $(dirname "${BASH_SOURCE[0]}")/../../deploy/dev && pwd)/registries.yaml"
     echo "Creating cluster from config file with k3d registry integration..."
-    k3d cluster create --config $TMP_CONFIG_FILE --timeout 180s --registry-config $REGISTRIES_CONFIG_PATH
+    k3d cluster create --config $TMP_CONFIG_FILE --timeout 180s
 
     # Clean up temp file
     rm -f "$TMP_CONFIG_FILE"
