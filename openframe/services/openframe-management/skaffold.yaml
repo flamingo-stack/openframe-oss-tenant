@@ -3,21 +3,23 @@ kind: Config
 metadata:
   name: openframe-management
 build:
-  tagPolicy:
-    customTemplate:
-      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-management
-      docker: {}
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: true
+    push: false
 manifests:
   kustomize:
     paths:
     - ../../../deploy/dev/openframe-microservices/openframe-management
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]

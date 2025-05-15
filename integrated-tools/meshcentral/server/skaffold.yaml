@@ -41,7 +41,3 @@ manifests:
   kustomize:
     paths:
     - ../../../deploy/dev/integrated-tools/meshcentral
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]

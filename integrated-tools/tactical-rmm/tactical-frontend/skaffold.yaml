@@ -57,7 +57,3 @@ build:
 manifests:
   rawYaml:
     - ../../../deploy/dev/integrated-tools/tactical-rmm/base/tactical-frontend.yaml
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]

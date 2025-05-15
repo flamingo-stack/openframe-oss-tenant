@@ -5,16 +5,21 @@ metadata:
 build:
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-stream
-      docker: {}
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: true
+    push: false
 manifests:
   kustomize:
     paths:
     - ../../../deploy/dev/openframe-microservices/openframe-stream
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]
