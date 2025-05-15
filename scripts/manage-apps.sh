@@ -18,18 +18,30 @@ if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
 fi
 
 case "$APP" in
-platform_cert_manager)
+platform_pki)
   if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform Cert Manager"
-    platform_cert_manager_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-cert-manager-deploy.log"
-    stop_spinner_and_return_code $? || exit 1 
-
     start_spinner "Add Trusted PKI certificates"
     trust_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
     untrust_ca
-    platform_cert_manager_delete
+  elif [ "$ACTION" == "dev" ]; then
+    echo "$APP is not supported in dev mode"
+    exit 0
+  elif [ "$ACTION" == "debug" ]; then
+    echo "$APP is not supported for debug mode"
+  fi
+  ;;
+platform_addons)
+  if [ "$ACTION" == "deploy" ]; then
+    start_spinner "Deploying Platform Addons"
+    deploy_argocd 2>&1 >"${DEPLOY_LOG_DIR}/platform-addons-deploy.log"
+    argocd_client 2>&1 >"${DEPLOY_LOG_DIR}/platform-addons-deploy.log"
+    kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" 2>&1 >"${DEPLOY_LOG_DIR}/platform-addons-deploy.log"
+    stop_spinner_and_return_code $? || exit 1 
+  elif [ "$ACTION" == "delete" ]; then
+    kubectl -n argocd delete -f "${SCRIPT_DIR}/functions/argocd-apps.yaml"
+    delete_argocd
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
@@ -449,8 +461,7 @@ p | platform)
   ACTION=${2}
   IFWAIT=${3:-}
 
-  $0 platform_cert_manager $ACTION &&
-    $0 platform_ingress_nginx $ACTION &&
+  $0 platform_addons $ACTION &&
     $0 observability $ACTION
   ;;
 t | client_tools)
@@ -542,6 +553,7 @@ a | all)
   IFWAIT=${3:-}
 
   $0 platform $ACTION &&
+    $0 platform_pki $ACTION &&
     $0 datasources $ACTION &&
     $0 stateless $ACTION &&
     $0 openframe_microservices_register_apps $ACTION
