@@ -25,11 +25,15 @@ function platform_ingress_nginx_deploy() {
       --version 4.12.1 \
       -f ${ROOT_REPO_DIR}/deploy/dev/platform/ingress-nginx/helm/values.yaml \
       --wait --timeout 1h
+  # Wait for the admission webhook endpoints to be ready before any dependent deployments
+  wait_for_service_endpoints platform ingress-nginx-controller-admission 180
 }
 
 function platform_ingress_nginx_wait() {
   echo "Waiting for ingress-nginx to be ready"
   wait_for_app "platform" "app.kubernetes.io/instance=ingress-nginx"
+  # Wait for the admission webhook endpoints to be ready before any dependent deployments
+  wait_for_service_endpoints platform ingress-nginx-controller-admission 180
 }
 
 function platform_ingress_nginx_delete() {
@@ -58,6 +62,8 @@ function platform_metrics_server_delete() {
 
 # Monitoring: GRAFANA + PROMETHEUS
 function platform_monitoring_deploy() {
+  # Ensure ingress-nginx admission webhook is ready before deploying monitoring (which may create ingresses)
+  wait_for_service_endpoints platform ingress-nginx-controller-admission 180
   helm_repo_ensure prometheus-community https://prometheus-community.github.io/helm-charts &&
     echo "Deploying kube-prometheus-stack" &&
     helm upgrade -i kube-prometheus-stack prometheus-community/kube-prometheus-stack \
