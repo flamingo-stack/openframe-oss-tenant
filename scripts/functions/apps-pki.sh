@@ -8,17 +8,17 @@ function trust_ca() {
 
   echo "Extracting CA certificate from Kubernetes secret..."
   echo "Executing: kubectl get secret \"$CA_SECRET\" -n \"$CA_NAMESPACE\" -o jsonpath='{.data.ca\\.crt}' | base64 -d >\"$TMP_CA_PATH\""
-  for i in {1..30}; do
+  for i in {1..60}; do
     TMP_OUT=$(mktemp)
     if kubectl get secret "$CA_SECRET" -n "$CA_NAMESPACE" -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d >"$TMP_OUT" && [ -s "$TMP_OUT" ]; then
       mv "$TMP_OUT" "$TMP_CA_PATH"
       break
     else
       rm -f "$TMP_OUT"
-      echo "Retrying to extract CA certificate... ($i/30)"
+      echo "Retrying to extract CA certificate... ($i/60)"
       sleep 2
     fi
-    if [ "$i" -eq 30 ]; then
+    if [ "$i" -eq 60 ]; then
       echo "Failed to extract or decode CA cert from '$CA_SECRET' in namespace '$CA_NAMESPACE'"
       return 1
     fi
