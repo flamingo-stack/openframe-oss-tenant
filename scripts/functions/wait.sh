@@ -136,6 +136,48 @@ function wait_for_app() {
     done
 }
 
+# Wait for a service to have at least one endpoint
+function wait_for_service_endpoints() {
+    local NAMESPACE=$1
+    local SERVICE=$2
+    local TIMEOUT=${3:-120}
+    local waited=0
+    local interval=3
+    echo "Waiting for service $SERVICE in namespace $NAMESPACE to have endpoints (timeout: $TIMEOUT seconds)..."
+    while true; do
+        endpoints=$(kubectl -n "$NAMESPACE" get endpoints "$SERVICE" -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null)
+        if [[ -n "$endpoints" ]]; then
+            echo "Service $SERVICE has endpoints: $endpoints"
+            return 0
+        fi
+        if (( waited >= TIMEOUT )); then
+            echo "Timeout waiting for service $SERVICE in namespace $NAMESPACE to have endpoints."
+            return 1
+        fi
+        echo "Still waiting for endpoints for $SERVICE... ($waited/$TIMEOUT)"
+        sleep $interval
+        waited=$((waited + interval))
+    done
+}
+
+# Usage examples for wait_for_service_endpoints:
+#
+# Wait for the NGINX Ingress admission webhook service endpoints before deploying ingresses:
+#   wait_for_service_endpoints platform ingress-nginx-controller-admission 180
+#
+# Wait for another service:
+#   wait_for_service_endpoints my-namespace my-service 120
+
 # Export functions
 export -f wait_for_cluster
 export -f wait_for_app
+export -f wait_for_service_endpoints
+
+# ---
+# Example waits for critical services (uncomment to use in your scripts):
+#
+# Wait for NGINX Ingress admission webhook endpoints before deploying ingresses
+# wait_for_service_endpoints platform ingress-nginx-controller-admission 180
+#
+# Wait for NGINX Ingress controller endpoints before deploying ingresses
+# wait_for_service_endpoints platform ingress-nginx-controller 180
