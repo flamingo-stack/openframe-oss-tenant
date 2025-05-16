@@ -62,25 +62,75 @@ function wait_for_app() {
 
         if [[ "$owner_kind" == "Job" ]]; then
             echo "Pod $pod_name is managed by Job $owner_name. Waiting for Job to complete..."
+            echo "kubectl -n $NAMESPACE wait --for=condition=Complete job/$owner_name --timeout=$TIMEOUT"
             kubectl -n "$NAMESPACE" wait --for=condition=Complete job/"$owner_name" --timeout="$TIMEOUT" || return 1
         elif [[ "$owner_kind" == "StatefulSet" ]]; then
-            echo "Pod $pod_name is managed by StatefulSet $owner_name. Waiting for StatefulSet to be ready..."
-            kubectl -n "$NAMESPACE" wait --for=condition=Ready statefulset/"$owner_name" --timeout="$TIMEOUT" || return 1
+            echo "Pod $pod_name is managed by StatefulSet $owner_name. Waiting for all replicas to be ready..."
+            # Convert TIMEOUT to seconds (default 20m = 1200)
+            local timeout_sec=1200
+            if [[ "$TIMEOUT" =~ ^([0-9]+)m$ ]]; then
+                timeout_sec=$((BASH_REMATCH[1] * 60))
+            elif [[ "$TIMEOUT" =~ ^([0-9]+)s$ ]]; then
+                timeout_sec=${BASH_REMATCH[1]}
+            fi
+            local waited=0
+            local interval=5
+            while true; do
+                ready=$(kubectl -n "$NAMESPACE" get statefulset "$owner_name" -o jsonpath='{.status.readyReplicas}')
+                replicas=$(kubectl -n "$NAMESPACE" get statefulset "$owner_name" -o jsonpath='{.spec.replicas}')
+                echo "Checking: readyReplicas=$ready, spec.replicas=$replicas"
+                if [[ "$ready" == "$replicas" && -n "$ready" ]]; then
+                    echo "StatefulSet $owner_name is ready ($ready/$replicas replicas)."
+                    break
+                fi
+                if (( waited >= timeout_sec )); then
+                    echo "Timeout waiting for StatefulSet $owner_name to be ready."
+                    return 1
+                fi
+                sleep $interval
+                waited=$((waited + interval))
+            done
         elif [[ "$owner_kind" == "DaemonSet" ]]; then
-            echo "Pod $pod_name is managed by DaemonSet $owner_name. Waiting for DaemonSet to be ready..."
-            kubectl -n "$NAMESPACE" wait --for=condition=Ready daemonset/"$owner_name" --timeout="$TIMEOUT" || return 1
+            echo "Pod $pod_name is managed by DaemonSet $owner_name. Waiting for all pods to be ready..."
+            # Convert TIMEOUT to seconds (default 20m = 1200)
+            local timeout_sec=1200
+            if [[ "$TIMEOUT" =~ ^([0-9]+)m$ ]]; then
+                timeout_sec=$((BASH_REMATCH[1] * 60))
+            elif [[ "$TIMEOUT" =~ ^([0-9]+)s$ ]]; then
+                timeout_sec=${BASH_REMATCH[1]}
+            fi
+            local waited=0
+            local interval=5
+            while true; do
+                ready=$(kubectl -n "$NAMESPACE" get daemonset "$owner_name" -o jsonpath='{.status.numberReady}')
+                desired=$(kubectl -n "$NAMESPACE" get daemonset "$owner_name" -o jsonpath='{.status.desiredNumberScheduled}')
+                echo "Checking: numberReady=$ready, desiredNumberScheduled=$desired"
+                if [[ "$ready" == "$desired" && -n "$ready" ]]; then
+                    echo "DaemonSet $owner_name is ready ($ready/$desired pods)."
+                    break
+                fi
+                if (( waited >= timeout_sec )); then
+                    echo "Timeout waiting for DaemonSet $owner_name to be ready."
+                    return 1
+                fi
+                sleep $interval
+                waited=$((waited + interval))
+            done
         elif [[ "$owner_kind" == "ReplicaSet" ]]; then
             # Try to get Deployment name from ReplicaSet owner
             deployment_name=$(kubectl -n "$NAMESPACE" get replicaset "$owner_name" -o jsonpath='{.metadata.ownerReferences[0].name}' 2>/dev/null)
             if [[ -n "$deployment_name" ]]; then
                 echo "Pod $pod_name is managed by Deployment $deployment_name. Waiting for Deployment to be available..."
+                echo "kubectl -n $NAMESPACE wait --for=condition=Available deployment/$deployment_name --timeout=$TIMEOUT"
                 kubectl -n "$NAMESPACE" wait --for=condition=Available deployment/"$deployment_name" --timeout="$TIMEOUT" || return 1
             else
                 echo "Pod $pod_name is managed by ReplicaSet $owner_name (no Deployment owner). Waiting for pod to be ready..."
+                echo "kubectl -n $NAMESPACE wait --for=condition=Ready pod/$pod_name --timeout=$TIMEOUT"
                 kubectl -n "$NAMESPACE" wait --for=condition=Ready pod/"$pod_name" --timeout="$TIMEOUT" || return 1
             fi
         else
             echo "Pod $pod_name is standalone. Waiting for pod to be ready..."
+            echo "kubectl -n $NAMESPACE wait --for=condition=Ready pod/$pod_name --timeout=$TIMEOUT"
             kubectl -n "$NAMESPACE" wait --for=condition=Ready pod/"$pod_name" --timeout="$TIMEOUT" || return 1
         fi
     done
