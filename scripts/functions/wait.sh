@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Wait for cluster to be ready
 wait_for_cluster() {
     local timeout=${1:-300} # Default timeout 300 seconds
