@@ -1,0 +1,62 @@
+grafana:
+  enabled: false
+
+
+alertmanager:
+  enabled: true
+
+  ingress:
+    enabled: false
+    hosts:
+      - alertmanager.192.168.100.100.nip.io
+    annotations:
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+      - secretName: alertmanager-tls-secret
+        hosts: 
+          - alertmanager.192.168.100.100.nip.io
+
+
+prometheus:
+  ingress:
+    enabled: false
+    ingressClassName: nginx
+    annotations: 
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts: 
+      - prometheus.192.168.100.100.nip.io
+    tls:
+      - secretName: prometheus-tls-secret
+        hosts:
+          - prometheus.192.168.100.100.nip.io
+
+      
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    externalPrefixNilUsesHelmValues: false
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 15d  
+    
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1
+    
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: 
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

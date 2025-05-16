@@ -19,10 +19,36 @@ spec:
         targetRevision: 4.12.1
         path: deploy/dev/platform/base/ingress-nginx
         branch: feature-restructure-platform
-        syncWave: "-1"     
-        
+        syncWave: "-1"    
+
+      # - appName: prometheus
+      #   repoURL: https://prometheus-community.github.io/helm-charts
+      #   targetRevision: 27.14.0
+      #   path: deploy/dev/platform/base/prometheus
+      #   branch: feature-restructure-platform
+      #   syncWave: "0"   
       
-  template:
-    spec:
-      destination:
-        name: "in-cluster"
+      - appName: grafana
+        repoURL: https://grafana.github.io/helm-charts
+        targetRevision: 8.13.1
+        path: deploy/dev/platform/base/grafana
+        branch: feature-restructure-platform
+        syncWave: "0"
+
+
+
+
+
+      # - appName: loki
+      #   repoURL: https://grafana.github.io/helm-charts
+      #   targetRevision: 6.12.0
+      #   path: deploy/dev/platform/base/loki
+      #   branch: feature-restructure-platform
+      #   syncWave: "0"   
+        
+      # - appName: promtail
+      #   repoURL: https://grafana.github.io/helm-charts
+      #   targetRevision: 6.16.5
+      #   path: deploy/dev/platform/base/promtail   
+      #   branch: feature-restructure-platform
+      #   syncWave: "0"   

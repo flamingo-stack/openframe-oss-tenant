@@ -66,40 +66,4 @@ grafana:
       uid: loki
   prune: true
 
-alertmanager:
-  ingress:
-    enabled: true
-    hosts: ["alertmanager.192.168.100.100.nip.io"]
-    annotations:
-      cert-manager.io/cluster-issuer: "cluster-issuer"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    tls:
-    - secretName: alertmanager-tls-secret
-      hosts: ["alertmanager.192.168.100.100.nip.io"]
 
-prometheus:
-  ingress:
-    enabled: true
-    hosts: ["prometheus.192.168.100.100.nip.io"]
-    annotations:
-      cert-manager.io/cluster-issuer: "cluster-issuer"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    tls:
-    - secretName: prometheus-tls-secret
-      hosts: ["prometheus.192.168.100.100.nip.io"]
-  prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
-    probeSelectorNilUsesHelmValues: false
-    scrapeConfigSelectorNilUsesHelmValues: false
-    ruleSelectorNilUsesHelmValues: false
-    externalPrefixNilUsesHelmValues: false
-    scrapeInterval: 15s
-    evaluationInterval: 15s
-    storageSpec:
-      volumeClaimTemplate:
-        spec:
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 1Gi

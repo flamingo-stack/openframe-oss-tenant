@@ -49,21 +49,6 @@ platform_addons)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-platform_ingress_nginx)
-  if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform Ingress Nginx"
-    platform_ingress_nginx_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-ingress-nginx-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-    
-  elif [ "$ACTION" == "delete" ]; then
-    platform_ingress_nginx_delete
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
 platform_monitoring)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Monitoring"
