@@ -7,11 +7,22 @@ function trust_ca() {
   TMP_CA_PATH=$(mktemp)
 
   echo "Extracting CA certificate from Kubernetes secret..."
-  if ! kubectl get secret "$CA_SECRET" -n "$CA_NAMESPACE" -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d >"$TMP_CA_PATH"; then
-    echo "Failed to extract or decode CA cert from '$CA_SECRET' in namespace '$CA_NAMESPACE'"
-    rm -f "$TMP_CA_PATH"
-    return 1
-  fi
+  echo "Executing: kubectl get secret \"$CA_SECRET\" -n \"$CA_NAMESPACE\" -o jsonpath='{.data.ca\\.crt}' | base64 -d >\"$TMP_CA_PATH\""
+  for i in {1..20}; do
+    TMP_OUT=$(mktemp)
+    if kubectl get secret "$CA_SECRET" -n "$CA_NAMESPACE" -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d >"$TMP_OUT" && [ -s "$TMP_OUT" ]; then
+      mv "$TMP_OUT" "$TMP_CA_PATH"
+      break
+    else
+      rm -f "$TMP_OUT"
+      echo "Retrying to extract CA certificate... ($i/10)"
+      sleep 2
+    fi
+    if [ "$i" -eq 10 ]; then
+      echo "Failed to extract or decode CA cert from '$CA_SECRET' in namespace '$CA_NAMESPACE'"
+      return 1
+    fi
+  done
 
   if [ ! -s "$TMP_CA_PATH" ]; then
     echo "Extracted CA cert is empty"
