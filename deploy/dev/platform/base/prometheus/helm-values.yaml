@@ -3,7 +3,7 @@ grafana:
 
 
 alertmanager:
-  enabled: true
+  enabled: false
 
   ingress:
     enabled: false
