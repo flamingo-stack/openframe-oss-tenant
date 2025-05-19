@@ -39,6 +39,8 @@ grafana.ini:
   auth.anonymous:
     enabled: true
     org_role: Viewer
+    hide_version: true
+    org_name: Openframe
   auth.basic:
     enabled: true
   auth:
@@ -48,9 +50,6 @@ grafana.ini:
     cookie_samesite: strict
   server:
     domain: grafana.192.168.100.100.nip.io
-    # root_url: "%(protocol)s://%(domain)s/"
-  # dashboards:
-  #   default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
 
 serviceMonitor:
   enabled: true
