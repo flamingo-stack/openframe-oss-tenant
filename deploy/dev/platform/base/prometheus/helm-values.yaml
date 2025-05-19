@@ -17,14 +17,6 @@ alertmanager:
         hosts: 
           - alertmanager.192.168.100.100.nip.io
 
-crds:
-  enabled: true
-  upgradeJob:
-    enabled: true
-
-prometheusOperator:
-  enabled: true
-
 prometheus:
   ingress:
     enabled: false
