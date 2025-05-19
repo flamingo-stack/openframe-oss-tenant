@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Loki Overview",
+      "title": "Loki",
       "type": "row"
     },
     {
@@ -439,8 +439,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Loki Overview",
-  "uid": "loki-overview",
+  "title": "Loki",
+  "uid": "loki",
   "version": 1,
   "weekStart": ""
 }

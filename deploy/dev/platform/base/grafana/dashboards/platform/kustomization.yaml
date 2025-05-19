@@ -7,23 +7,10 @@ kind: Kustomization
 configMapGenerator:
   - name: platform
     files:
-      - ./cassandra.json
-      - ./home.json
-      - ./kafka.json
+      - ./argocd.json
       - ./loki.json
-      - ./mongodb.json
-      - ./nifi.json
-      - ./openframe-api.json
-      - ./openframe-config-server.json
-      - ./openframe-gateway.json
-      - ./openframe-management.json
-      - ./openframe-stream.json
-      - ./pinot-broker.json
-      - ./pinot-controller.json
-      - ./pinot-server.json
       - ./prometheus.json
-      - ./redis.json
-      - ./zookeeper.json
+      - ./promtail.json
 
 generatorOptions:
   disableNameSuffixHash: true

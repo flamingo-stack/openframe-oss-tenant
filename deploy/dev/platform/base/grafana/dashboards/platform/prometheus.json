@@ -678,7 +678,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Prometheus Overview",
-  "uid": "prometheus-overview",
+  "title": "Prometheus",
+  "uid": "prometheus",
   "version": 1
 }
