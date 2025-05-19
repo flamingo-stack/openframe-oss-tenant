@@ -49,63 +49,6 @@ platform_addons)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-platform_monitoring)
-  if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform Monitoring"
-    platform_monitoring_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-monitoring-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-
-    start_spinner "Waiting for Platform Monitoring to be ready"
-    platform_monitoring_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-monitoring-deploy.log"
-    echo "Platform Monitoring deployed" >>"${DEPLOY_LOG_DIR}/platform-monitoring-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-  elif [ "$ACTION" == "delete" ]; then
-    platform_monitoring_delete
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
-platform_logging)
-  if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform Logging"
-    platform_logging_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-logging-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-
-    start_spinner "Waiting for Platform Logging to be ready"
-    platform_logging_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-logging-deploy.log"
-    echo "Platform Logging deployed" >>"${DEPLOY_LOG_DIR}/platform-logging-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-  elif [ "$ACTION" == "delete" ]; then
-    platform_logging_delete
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
-platform_efk)
-  if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform EFK"
-    platform_efk_deploy 2>&1 >"${DEPLOY_LOG_DIR}/platform-efk-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-
-    start_spinner "Waiting for Platform EFK to be ready"
-    platform_efk_wait 2>&1 >>"${DEPLOY_LOG_DIR}/platform-efk-deploy.log"
-    echo "Platform EFK deployed" >>"${DEPLOY_LOG_DIR}/platform-efk-deploy.log"
-    stop_spinner_and_return_code $? || exit 1
-  elif [ "$ACTION" == "delete" ]; then
-    platform_efk_delete
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
 openframe_datasources_redis)
   if [ "$ACTION" == "deploy" ]; then
     openframe_datasources_redis_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-redis-deploy.log"
@@ -434,14 +377,6 @@ tools_telepresence)
   fi
   ;;
 # BUNDLE APPS
-o | observability)
-  ACTION=${2}
-  IFWAIT=${3:-}
-
-  $0 platform_monitoring $ACTION &&
-    $0 platform_logging $ACTION
-  # $0 platform_metrics_server $ACTION
-  ;;
 p | platform)
   ACTION=${2}
   IFWAIT=${3:-}
