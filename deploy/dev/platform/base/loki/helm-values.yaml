@@ -52,20 +52,20 @@ singleBinary:
     size: 2Gi
     mountPath: /var/loki
 
-  # resources:
-  #   limits:
-  #     cpu: 2
-  #     memory: 2Gi
-  #   requests:
-  #     cpu: 300m
-  #     memory: 500Mi
+  resources:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 500
+      memory: 500Mi
   extraEnv:
     # Keep a little bit lower than memory limits
     - name: GOMEMLIMIT
       value: 1750MiB
 
 chunksCache:
-  allocatedMemory: 1000
+  allocatedMemory: 1000  # in Mb
   writebackSizeLimit: 10MB  # default is 500MB, with limited memory keep this smaller
 
 test:
