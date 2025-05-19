@@ -26,8 +26,8 @@ spec:
         chart: kube-prometheus-stack
         targetRevision: 72.5.1
         path: deploy/dev/platform/base/prometheus
-        branch: feature-restructure-platform
         serverSideApply: "true"
+        branch: feature-restructure-platform
         syncWave: "0"   
 
       - appName: loki
@@ -48,5 +48,6 @@ spec:
         repoURL: https://grafana.github.io/helm-charts
         targetRevision: 8.13.1
         path: deploy/dev/platform/base/grafana
+        serverSideApply: "true"
         branch: feature-restructure-platform
         syncWave: "0"
