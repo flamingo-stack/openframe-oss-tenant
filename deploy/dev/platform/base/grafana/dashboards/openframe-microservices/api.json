@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Application Overview",
+      "title": "Application",
       "type": "row"
     },
     {
@@ -693,8 +693,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "OpenFrame API Overview",
-  "uid": "openframe-api-overview",
+  "title": "API",
+  "uid": "api",
   "version": 1,
   "weekStart": ""
 }

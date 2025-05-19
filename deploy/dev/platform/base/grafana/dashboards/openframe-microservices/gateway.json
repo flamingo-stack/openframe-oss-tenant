@@ -18,7 +18,7 @@
         },
         "id": 1,
         "panels": [],
-        "title": "Application Overview",
+        "title": "Application",
         "type": "row"
       },
       {
@@ -693,8 +693,8 @@
     },
     "timepicker": {},
     "timezone": "",
-    "title": "Openframe Gateway Overview",
-    "uid": "openframe-gateway-overview",
+    "title": "Gateway",
+    "uid": "gateway",
     "version": 1,
     "weekStart": ""
 }

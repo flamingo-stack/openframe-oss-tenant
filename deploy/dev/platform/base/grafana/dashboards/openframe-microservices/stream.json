@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Application Overview",
+      "title": "Application",
       "type": "row"
     },
     {
@@ -621,8 +621,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "OpenFrame Stream Service Overview",
-  "uid": "openframe-stream-overview",
+  "title": "OpenFrame Stream Service",
+  "uid": "openframe-stream",
   "version": 1,
   "weekStart": ""
 }

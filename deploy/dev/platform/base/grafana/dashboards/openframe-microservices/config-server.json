@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Config Server Overview",
+      "title": "Config Server",
       "type": "row"
     },
     {
@@ -622,8 +622,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "OpenFrame Config Server Overview",
-  "uid": "openframe-config-server-overview",
+  "title": "Config Server",
+  "uid": "config-server",
   "version": 1,
   "weekStart": ""
 }
