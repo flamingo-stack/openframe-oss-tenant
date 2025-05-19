@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: platform-helm-apps
+  name: platform-apps
 spec:
   goTemplate: true
   generators:
@@ -21,16 +21,6 @@ spec:
       project: platform
 
       sources:
-        # Helm chart
-        - repoURL: '{{.repoURL}}'
-          targetRevision: '{{.targetRevision}}'
-          chart: '{{or .chart .appName}}'
-          helm:
-            valueFiles:
-            - '$values/{{.path}}/helm-values.yaml'  # name is hardcoded
-        - repoURL: https://github.com/Flamingo-CX/{{or .repoName "openframe"}}.git
-          targetRevision: '{{or .branch "main"}}'
-          ref: values
         # Extra resources
         - repoURL: 'https://github.com/Flamingo-CX/{{or .repoName "openframe"}}.git' 
           targetRevision: '{{or .branch "main"}}'

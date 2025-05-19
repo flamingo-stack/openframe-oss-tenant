@@ -4,4 +4,5 @@ resources:
 - ../../base
 
 patches:
+- path: apps.yaml
 - path: helm-apps.yaml
