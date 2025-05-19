@@ -23,7 +23,7 @@ spec:
       
       - appName: prometheus
         repoURL: https://prometheus-community.github.io/helm-charts
-        targetRevision: 27.14.0
+        targetRevision: 72.5.1
         path: deploy/dev/platform/base/prometheus
         branch: feature-restructure-platform
         syncWave: "0"   
