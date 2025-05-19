@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Prometheus Overview",
+      "title": "MongoDB Status",
       "type": "row"
     },
     {
@@ -31,32 +31,47 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "green",
+                "value": 1
               }
             ]
           }
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 8,
         "x": 0,
         "y": 1
       },
       "id": 2,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -66,14 +81,19 @@
         },
         "textMode": "auto"
       },
+      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "prometheus_tsdb_head_series",
-          "legendFormat": "Active Series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "mongodb_up",
+          "legendFormat": "MongoDB Status",
           "refId": "A"
         }
       ],
-      "title": "Active Series",
+      "title": "MongoDB Status",
       "type": "stat"
     },
     {
@@ -127,12 +147,13 @@
             ]
           },
           "unit": "bytes"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 9,
-        "x": 6,
+        "w": 8,
+        "x": 8,
         "y": 1
       },
       "id": 3,
@@ -150,12 +171,25 @@
       },
       "targets": [
         {
-          "expr": "prometheus_tsdb_storage_blocks_bytes",
-          "legendFormat": "Storage Size",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_network_transmit_bytes_total[5m])",
+          "legendFormat": "Transmit",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_network_receive_bytes_total[5m])",
+          "legendFormat": "Receive",
+          "refId": "B"
         }
       ],
-      "title": "Storage Size",
+      "title": "Network Traffic",
       "type": "timeseries"
     },
     {
@@ -197,13 +231,24 @@
             "thresholdsStyle": {
               "mode": "off"
             }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 9,
-        "x": 15,
+        "w": 8,
+        "x": 16,
         "y": 1
       },
       "id": 4,
@@ -221,12 +266,16 @@
       },
       "targets": [
         {
-          "expr": "rate(prometheus_tsdb_head_samples_appended_total[5m])",
-          "legendFormat": "Samples/sec",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_cpu_seconds_total[5m])",
+          "legendFormat": "CPU Usage",
           "refId": "A"
         }
       ],
-      "title": "Sample Ingestion Rate",
+      "title": "CPU Usage",
       "type": "timeseries"
     },
     {
@@ -239,7 +288,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Query Performance",
+      "title": "Memory & Resources",
       "type": "row"
     },
     {
@@ -282,8 +331,19 @@
               "mode": "off"
             }
           },
-          "unit": "s"
-        }
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
@@ -306,12 +366,25 @@
       },
       "targets": [
         {
-          "expr": "rate(prometheus_engine_query_duration_seconds_sum[5m])",
-          "legendFormat": "Query Duration",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "go_memstats_heap_alloc_bytes",
+          "legendFormat": "Heap Allocated",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "go_memstats_heap_inuse_bytes",
+          "legendFormat": "Heap In Use",
+          "refId": "B"
         }
       ],
-      "title": "Query Duration",
+      "title": "Heap Memory Usage",
       "type": "timeseries"
     },
     {
@@ -353,8 +426,19 @@
             "thresholdsStyle": {
               "mode": "off"
             }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
@@ -377,175 +461,32 @@
       },
       "targets": [
         {
-          "expr": "rate(prometheus_engine_queries[5m])",
-          "legendFormat": "Queries/sec",
-          "refId": "A"
-        }
-      ],
-      "title": "Query Rate",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 18
-      },
-      "id": 8,
-      "panels": [],
-      "title": "Target Management",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          }
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 19
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "expr": "go_goroutines",
+          "legendFormat": "Goroutines",
+          "refId": "A"
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
         {
-          "expr": "prometheus_sd_discovered_targets",
-          "legendFormat": "{{name}}",
-          "refId": "A"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "go_threads",
+          "legendFormat": "Threads",
+          "refId": "B"
         }
       ],
-      "title": "Discovered Targets",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "unit": "s"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 19
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "prometheus_target_interval_length_seconds",
-          "legendFormat": "{{interval}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Scrape Interval Length",
+      "title": "Goroutines and Threads",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["prometheus", "monitoring", "metrics"],
+  "tags": ["mongodb", "database", "storage"],
   "templating": {
     "list": []
   },
@@ -555,8 +496,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Prometheus Overview",
-  "uid": "prometheus-overview",
+  "title": "MongoDB",
+  "uid": "mongodb",
   "version": 1,
   "weekStart": ""
-} 
+}

@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "MongoDB Status",
+      "title": "ZooKeeper",
       "type": "row"
     },
     {
@@ -31,47 +31,28 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
-              },
-              {
                 "color": "green",
-                "value": 1
+                "value": null
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 1
       },
       "id": 2,
       "options": {
         "colorMode": "value",
-        "graphMode": "none",
+        "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -81,19 +62,14 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "mongodb_up",
-          "legendFormat": "MongoDB Status",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_NumAliveConnections:.*\", job=\"zookeeper\"}",
+          "legendFormat": "Active Connections",
           "refId": "A"
         }
       ],
-      "title": "MongoDB Status",
+      "title": "Active Connections",
       "type": "stat"
     },
     {
@@ -147,50 +123,36 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 6,
+        "x": 6,
         "y": 1
       },
       "id": 3,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Transmit",
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_DataDirSize:.*\", job=\"zookeeper\"}",
+          "legendFormat": "Data Size",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Receive",
-          "refId": "B"
         }
       ],
-      "title": "Network Traffic",
-      "type": "timeseries"
+      "title": "Data Directory Size",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -242,13 +204,12 @@
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 12,
+        "x": 12,
         "y": 1
       },
       "id": 4,
@@ -266,16 +227,17 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "rate(process_network_receive_bytes_total[5m])",
+          "legendFormat": "Bytes Received/sec",
           "refId": "A"
+        },
+        {
+          "expr": "rate(process_network_transmit_bytes_total[5m])",
+          "legendFormat": "Bytes Transmitted/sec",
+          "refId": "B"
         }
       ],
-      "title": "CPU Usage",
+      "title": "Network Traffic",
       "type": "timeseries"
     },
     {
@@ -288,7 +250,178 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Memory & Resources",
+      "title": "Performance Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_AvgRequestLatency:.*\", job=\"zookeeper\"} * 1000",
+          "legendFormat": "Average Request Latency",
+          "refId": "A"
+        },
+        {
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_MaxRequestLatency:.*\", job=\"zookeeper\"} * 1000",
+          "legendFormat": "Max Request Latency",
+          "refId": "B"
+        }
+      ],
+      "title": "Request Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_OutstandingRequests:.*\", job=\"zookeeper\"}",
+          "legendFormat": "Outstanding Requests",
+          "refId": "A"
+        }
+      ],
+      "title": "Outstanding Requests",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 8,
+      "panels": [],
+      "title": "JVM Metrics",
       "type": "row"
     },
     {
@@ -342,16 +475,15 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 19
       },
-      "id": 6,
+      "id": 9,
       "options": {
         "legend": {
           "calcs": [],
@@ -366,25 +498,17 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_memstats_heap_alloc_bytes",
-          "legendFormat": "Heap Allocated",
+          "expr": "jvm_memory_bytes_used{area=\"heap\",job=\"zookeeper\"}",
+          "legendFormat": "Heap Used",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_memstats_heap_inuse_bytes",
-          "legendFormat": "Heap In Use",
+          "expr": "jvm_memory_bytes_max{area=\"heap\",job=\"zookeeper\"}",
+          "legendFormat": "Heap Max",
           "refId": "B"
         }
       ],
-      "title": "Heap Memory Usage",
+      "title": "JVM Heap Memory",
       "type": "timeseries"
     },
     {
@@ -426,27 +550,16 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 19
       },
-      "id": 7,
+      "id": 10,
       "options": {
         "legend": {
           "calcs": [],
@@ -461,32 +574,19 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_goroutines",
-          "legendFormat": "Goroutines",
+          "expr": "rate(jvm_gc_collection_seconds_sum{job=\"zookeeper\"}[5m])",
+          "legendFormat": "{{gc}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_threads",
-          "legendFormat": "Threads",
-          "refId": "B"
         }
       ],
-      "title": "Goroutines and Threads",
+      "title": "GC Collection Time",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["mongodb", "database", "storage"],
+  "tags": ["zookeeper", "coordination", "service"],
   "templating": {
     "list": []
   },
@@ -496,8 +596,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "MongoDB Overview",
-  "uid": "mongodb-overview",
+  "title": "ZooKeeper",
+  "uid": "zookeeper",
   "version": 1,
   "weekStart": ""
 }

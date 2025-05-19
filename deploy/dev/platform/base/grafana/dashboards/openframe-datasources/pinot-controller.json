@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "ZooKeeper Overview",
+      "title": "Pinot Controller",
       "type": "row"
     },
     {
@@ -64,13 +64,94 @@
       },
       "targets": [
         {
-          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_NumAliveConnections:.*\", job=\"zookeeper\"}",
-          "legendFormat": "Active Connections",
+          "expr": "jvm_threads_current",
+          "legendFormat": "Current Threads",
           "refId": "A"
         }
       ],
-      "title": "Active Connections",
+      "title": "Current Threads",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 6,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total[5m])",
+          "legendFormat": "CPU Usage",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Usage",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -127,89 +208,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 1
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_DataDirSize:.*\", job=\"zookeeper\"}",
-          "legendFormat": "Data Size",
-          "refId": "A"
-        }
-      ],
-      "title": "Data Directory Size",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
+        "w": 9,
+        "x": 15,
         "y": 1
       },
       "id": 4,
@@ -227,17 +227,17 @@
       },
       "targets": [
         {
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Bytes Received/sec",
+          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
+          "legendFormat": "Heap Used",
           "refId": "A"
         },
         {
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Bytes Transmitted/sec",
+          "expr": "jvm_memory_bytes_committed{area=\"heap\"}",
+          "legendFormat": "Heap Committed",
           "refId": "B"
         }
       ],
-      "title": "Network Traffic",
+      "title": "JVM Heap Memory",
       "type": "timeseries"
     },
     {
@@ -250,7 +250,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "Performance Metrics",
+      "title": "Thread States & GC",
       "type": "row"
     },
     {
@@ -302,8 +302,7 @@
                 "value": null
               }
             ]
-          },
-          "unit": "ms"
+          }
         }
       },
       "gridPos": {
@@ -327,17 +326,12 @@
       },
       "targets": [
         {
-          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_AvgRequestLatency:.*\", job=\"zookeeper\"} * 1000",
-          "legendFormat": "Average Request Latency",
+          "expr": "jvm_threads_state",
+          "legendFormat": "{{state}}",
           "refId": "A"
-        },
-        {
-          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_MaxRequestLatency:.*\", job=\"zookeeper\"} * 1000",
-          "legendFormat": "Max Request Latency",
-          "refId": "B"
         }
       ],
-      "title": "Request Latency",
+      "title": "Thread States",
       "type": "timeseries"
     },
     {
@@ -379,7 +373,18 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
         }
       },
       "gridPos": {
@@ -403,12 +408,12 @@
       },
       "targets": [
         {
-          "expr": "{__name__=~\"zookeeper_StandaloneServer_port2181_OutstandingRequests:.*\", job=\"zookeeper\"}",
-          "legendFormat": "Outstanding Requests",
+          "expr": "rate(jvm_gc_collection_seconds_sum[5m])",
+          "legendFormat": "{{gc}}",
           "refId": "A"
         }
       ],
-      "title": "Outstanding Requests",
+      "title": "GC Collection Time",
       "type": "timeseries"
     },
     {
@@ -421,7 +426,7 @@
       },
       "id": 8,
       "panels": [],
-      "title": "JVM Metrics",
+      "title": "Memory Details",
       "type": "row"
     },
     {
@@ -498,17 +503,12 @@
       },
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\",job=\"zookeeper\"}",
-          "legendFormat": "Heap Used",
+          "expr": "jvm_memory_pool_bytes_used{pool=~\"G1.*\"}",
+          "legendFormat": "{{pool}} Used",
           "refId": "A"
-        },
-        {
-          "expr": "jvm_memory_bytes_max{area=\"heap\",job=\"zookeeper\"}",
-          "legendFormat": "Heap Max",
-          "refId": "B"
         }
       ],
-      "title": "JVM Heap Memory",
+      "title": "G1 GC Memory Pools",
       "type": "timeseries"
     },
     {
@@ -550,7 +550,18 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
         }
       },
       "gridPos": {
@@ -574,19 +585,24 @@
       },
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{job=\"zookeeper\"}[5m])",
-          "legendFormat": "{{gc}}",
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "Resident Memory",
           "refId": "A"
+        },
+        {
+          "expr": "process_virtual_memory_bytes",
+          "legendFormat": "Virtual Memory",
+          "refId": "B"
         }
       ],
-      "title": "GC Collection Time",
+      "title": "Process Memory",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["zookeeper", "coordination", "service"],
+  "tags": ["pinot", "controller", "analytics", "database"],
   "templating": {
     "list": []
   },
@@ -596,8 +612,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "ZooKeeper Overview",
-  "uid": "zookeeper-overview",
+  "title": "Pinot Controller",
+  "uid": "pinot-controller",
   "version": 1,
   "weekStart": ""
 }

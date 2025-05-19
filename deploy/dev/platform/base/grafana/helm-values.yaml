@@ -91,24 +91,48 @@ dashboardProviders:
         editable: true
         options:
           path: /var/lib/grafana/dashboards/platform
-      # - name: 'integrated-tools'
-      #   folder: 'integrated-tools'
-      #   type: file
-      #   disableDeletion: false
-      #   editable: true
-      #   options:
-      #     path: /var/lib/grafana/dashboards/integrated-tools
+      - name: 'openframe-microservices'
+        folder: 'openframe-microservices'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/openframe-microservices
+      - name: 'openframe-datasources'
+        folder: 'openframe-datasources'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/openframe-datasources
+      - name: 'integrated-tools'
+        folder: 'integrated-tools'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/integrated-tools
 
 extraVolumeMounts:
   - name: platform
     mountPath: /var/lib/grafana/dashboards/platform
-  # - name: integrated-tools
-  #   mountPath: /var/lib/grafana/dashboards/integrated-tools
+  - name: openframe-microservices
+    mountPath: /var/lib/grafana/dashboards/openframe-microservices
+  - name: openframe-datasources
+    mountPath: /var/lib/grafana/dashboards/openframe-datasources
+  - name: integrated-tools
+    mountPath: /var/lib/grafana/dashboards/integrated-tools
 
 extraVolumes:
   - name: platform
     configMap:
       name: platform
-  # - name: integrated-tools
-  #   configMap:
-  #     name: integrated-tools
+  - name: openframe-microservices
+    configMap:
+      name: openframe-microservices
+  - name: openframe-datasources
+    configMap:
+      name: openframe-datasources
+  - name: integrated-tools
+    configMap:
+      name: integrated-tools

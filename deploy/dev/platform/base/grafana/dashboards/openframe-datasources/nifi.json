@@ -18,7 +18,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Kafka Cluster Health",
+      "title": "NiFi",
       "type": "row"
     },
     {
@@ -38,10 +38,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
               }
             ]
           }
@@ -50,7 +46,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 1
       },
@@ -61,27 +57,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "kafka_cluster_partition_underreplicated_topic_consumer_offsets_partition_1",
-          "legendFormat": "Under-replicated Partitions",
+          "expr": "jvm_threads_current",
+          "legendFormat": "Current Threads",
           "refId": "A"
         }
       ],
-      "title": "Under-replicated Partitions",
+      "title": "Current Threads",
       "type": "stat"
     },
     {
@@ -99,22 +88,19 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
-              },
-              {
                 "color": "green",
-                "value": 1
+                "value": null
               }
             ]
-          }
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 6,
+        "x": 6,
         "y": 1
       },
       "id": 3,
@@ -124,27 +110,20 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "kafka_cluster_partition_insyncreplicascount_topic_consumer_offsets_partition_11",
-          "legendFormat": "In-sync Replicas",
+          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
+          "legendFormat": "Heap Used",
           "refId": "A"
         }
       ],
-      "title": "Average In-sync Replicas",
+      "title": "Heap Memory Used",
       "type": "stat"
     },
     {
@@ -196,15 +175,14 @@
                 "value": null
               }
             ]
-          },
-          "unit": "bytes"
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 12,
+        "x": 12,
         "y": 1
       },
       "id": 4,
@@ -222,16 +200,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "kafka_log_log_size_topic_consumer_offsets_partition_6",
-          "legendFormat": "Log Size",
+          "expr": "rate(process_cpu_seconds_total[5m])",
+          "legendFormat": "CPU Usage",
           "refId": "A"
         }
       ],
-      "title": "Total Log Size",
+      "title": "CPU Usage",
       "type": "timeseries"
     },
     {
@@ -244,7 +218,7 @@
       },
       "id": 5,
       "panels": [],
-      "title": "JVM Metrics",
+      "title": "Memory & GC Metrics",
       "type": "row"
     },
     {
@@ -298,8 +272,7 @@
             ]
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -322,25 +295,22 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "jvm_memory_bytes_used{area=\"heap\"}",
-          "legendFormat": "Heap Memory",
+          "legendFormat": "Heap Used",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "jvm_memory_bytes_used{area=\"nonheap\"}",
-          "legendFormat": "Non-Heap Memory",
+          "expr": "jvm_memory_bytes_committed{area=\"heap\"}",
+          "legendFormat": "Heap Committed",
           "refId": "B"
+        },
+        {
+          "expr": "jvm_memory_bytes_max{area=\"heap\"}",
+          "legendFormat": "Heap Max",
+          "refId": "C"
         }
       ],
-      "title": "JVM Memory Usage",
+      "title": "JVM Heap Memory",
       "type": "timeseries"
     },
     {
@@ -394,8 +364,7 @@
             ]
           },
           "unit": "s"
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -418,13 +387,14 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(jvm_gc_collection_seconds_sum[5m])",
-          "legendFormat": "GC Collection Time",
+          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Young Generation\"}[5m])",
+          "legendFormat": "G1 Young Gen",
           "refId": "A"
+        },
+        {
+          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Old Generation\"}[5m])",
+          "legendFormat": "G1 Old Gen",
+          "refId": "B"
         }
       ],
       "title": "GC Collection Time",
@@ -440,7 +410,7 @@
       },
       "id": 8,
       "panels": [],
-      "title": "System Metrics",
+      "title": "Thread & Class Loading",
       "type": "row"
     },
     {
@@ -493,8 +463,7 @@
               }
             ]
           }
-        },
-        "overrides": []
+        }
       },
       "gridPos": {
         "h": 8,
@@ -517,16 +486,12 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "jvm_threads_state{state!=\"\"}",
+          "legendFormat": "{{state}}",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "Thread States",
       "type": "timeseries"
     },
     {
@@ -578,10 +543,8 @@
                 "value": null
               }
             ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
+          }
+        }
       },
       "gridPos": {
         "h": 8,
@@ -604,32 +567,24 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_transmit_bytes_total[5m])",
-          "legendFormat": "Network Transmit",
+          "expr": "jvm_classes_loaded_total",
+          "legendFormat": "Classes Loaded",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(process_network_receive_bytes_total[5m])",
-          "legendFormat": "Network Receive",
+          "expr": "jvm_classes_unloaded_total",
+          "legendFormat": "Classes Unloaded",
           "refId": "B"
         }
       ],
-      "title": "Network I/O",
+      "title": "Class Loading",
       "type": "timeseries"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["kafka", "messaging", "streaming"],
+  "tags": ["nifi", "dataflow", "integration"],
   "templating": {
     "list": []
   },
@@ -639,8 +594,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Kafka Overview",
-  "uid": "kafka-overview",
+  "title": "NiFi",
+  "uid": "nifi",
   "version": 1,
   "weekStart": ""
 }
