@@ -621,8 +621,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "OpenFrame Stream Service",
-  "uid": "openframe-stream",
+  "title": "Stream",
+  "uid": "stream",
   "version": 1,
   "weekStart": ""
 }

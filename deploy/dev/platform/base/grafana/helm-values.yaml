@@ -84,6 +84,13 @@ dashboardProviders:
   dashboardproviders.yaml:
     apiVersion: 1
     providers:
+      - name: 'home'
+        folder: 'home'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/home
       - name: 'platform'
         folder: 'platform'
         type: file
@@ -114,6 +121,8 @@ dashboardProviders:
           path: /var/lib/grafana/dashboards/integrated-tools
 
 extraVolumeMounts:
+  - name: home
+    mountPath: /var/lib/grafana/dashboards/home
   - name: platform
     mountPath: /var/lib/grafana/dashboards/platform
   - name: openframe-microservices
@@ -124,6 +133,9 @@ extraVolumeMounts:
     mountPath: /var/lib/grafana/dashboards/integrated-tools
 
 extraVolumes:
+  - name: home
+    configMap:
+      name: home
   - name: platform
     configMap:
       name: platform
