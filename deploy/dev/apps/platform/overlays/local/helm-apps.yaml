@@ -27,6 +27,7 @@ spec:
         targetRevision: 72.5.1
         path: deploy/dev/platform/base/prometheus
         branch: feature-restructure-platform
+        serverSideApply: "true"
         syncWave: "0"   
 
       - appName: loki
