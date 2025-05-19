@@ -19,7 +19,10 @@ alertmanager:
 
 crds:
   enabled: true
-  
+
+prometheusOperator:
+  enabled: true
+
 prometheus:
   ingress:
     enabled: false
