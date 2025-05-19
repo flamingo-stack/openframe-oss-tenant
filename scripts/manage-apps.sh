@@ -397,13 +397,7 @@ od | openframe_datasources)
 
   start_spinner "Deploying OpenFrame Datasources"
   $0 openframe_datasources_redis $ACTION &&
-    $0 openframe_datasources_kafka $ACTION &&
-    $0 openframe_datasources_mongodb $ACTION &&
-    $0 openframe_datasources_mongodb_exporter $ACTION &&
-    $0 openframe_datasources_cassandra $ACTION &&
-    $0 openframe_datasources_nifi $ACTION &&
-    $0 openframe_datasources_zookeeper $ACTION &&
-    $0 openframe_datasources_pinot $ACTION
+    $0 openframe_datasources_kafka $ACTION
   stop_spinner_and_return_code $? || exit 1
   ;;
 om | openframe_microservices)
