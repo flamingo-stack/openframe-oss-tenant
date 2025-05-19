@@ -9,7 +9,7 @@ loki:
   
   limits_config:
     allow_structured_metadata: false
-    
+
   storage:
     type: filesystem
 
@@ -60,7 +60,7 @@ singleBinary:
       cpu: 2
       memory: 2Gi
     requests:
-      cpu: 500
+      cpu: 500m
       memory: 500Mi
   extraEnv:
     # Keep a little bit lower than memory limits
