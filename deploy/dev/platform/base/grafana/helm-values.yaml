@@ -48,7 +48,7 @@ grafana.ini:
     cookie_samesite: strict
   server:
     domain: grafana.192.168.100.100.nip.io
-    # root_url: "%(protocol)s://%(domain)s/"
+    root_url: "%(protocol)s://%(domain)s/"
   # dashboards:
   #   default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
 
