@@ -446,8 +446,7 @@ p | platform)
   ACTION=${2}
   IFWAIT=${3:-}
 
-  $0 platform_addons $ACTION &&
-    $0 observability $ACTION
+  $0 platform_addons $ACTION 
   ;;
 t | client_tools)
   ACTION=${2}

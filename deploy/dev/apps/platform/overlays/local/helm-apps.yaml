@@ -35,20 +35,16 @@ spec:
         branch: feature-restructure-platform
         syncWave: "0"
 
+      - appName: loki
+        repoURL: https://grafana.github.io/helm-charts
+        targetRevision: 6.29.0
+        path: deploy/dev/platform/base/loki
+        branch: feature-restructure-platform
+        syncWave: "0"   
 
-
-
-
-      # - appName: loki
-      #   repoURL: https://grafana.github.io/helm-charts
-      #   targetRevision: 6.12.0
-      #   path: deploy/dev/platform/base/loki
-      #   branch: feature-restructure-platform
-      #   syncWave: "0"   
-        
-      # - appName: promtail
-      #   repoURL: https://grafana.github.io/helm-charts
-      #   targetRevision: 6.16.5
-      #   path: deploy/dev/platform/base/promtail   
-      #   branch: feature-restructure-platform
-      #   syncWave: "0"   
+      - appName: promtail
+        repoURL: https://grafana.github.io/helm-charts
+        targetRevision: 6.16.6
+        path: deploy/dev/platform/base/promtail
+        branch: feature-restructure-platform
+        syncWave: "0"   

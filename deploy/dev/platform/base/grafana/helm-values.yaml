@@ -1,62 +1,125 @@
-grafana:
-  enabled: false
 
-
-alertmanager:
+ingress:
   enabled: true
-
-  ingress:
-    enabled: false
-    hosts:
-      - alertmanager.192.168.100.100.nip.io
-    annotations:
+  ingressClassName: nginx
+  annotations: 
       cert-manager.io/cluster-issuer: "cluster-issuer"
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    tls:
-      - secretName: alertmanager-tls-secret
-        hosts: 
-          - alertmanager.192.168.100.100.nip.io
+  hosts: 
+    - grafana.192.168.100.100.nip.io
+  tls: 
+    - secretName: grafana-server-tls
+      hosts:
+        - grafana.192.168.100.100.nip.io
 
+revisionHistoryLimit: 2
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
-prometheus:
-  ingress:
-    enabled: false
-    ingressClassName: nginx
-    annotations: 
-      cert-manager.io/cluster-issuer: "cluster-issuer"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    hosts: 
-      - prometheus.192.168.100.100.nip.io
-    tls:
-      - secretName: prometheus-tls-secret
-        hosts:
-          - prometheus.192.168.100.100.nip.io
+deploymentStrategy:  # fix bug Multi-Attach Error for Volume
+  type: Recreate
 
-      
-  prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
-    probeSelectorNilUsesHelmValues: false
-    scrapeConfigSelectorNilUsesHelmValues: false
-    ruleSelectorNilUsesHelmValues: false
-    externalPrefixNilUsesHelmValues: false
-    scrapeInterval: 15s
-    evaluationInterval: 15s
-    retention: 15d  
-    
-    resources:
-      requests:
-        memory: 1Gi
-        cpu: 500m
-      limits:
-        memory: 2Gi
-        cpu: 1
-    
-    storageSpec:
-      volumeClaimTemplate:
-        spec:
-          accessModes: 
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+
+admin: # pre applyed 
+  existingSecret: "grafana"
+  userKey: user         
+  passwordKey: password
+
+grafana.ini:
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer
+    hide_version: true
+    org_name: Openframe
+  auth.basic:
+    enabled: true
+  auth:
+    disable_login_form: false
+    login_maximum_inactive_lifetime_duration: 7d
+    login_maximum_lifetime_duration: 30d
+    token_rotation_interval_minutes: 10
+  security:
+    allow_embedding: true
+    cookie_samesite: strict
+    allow_embedding_from_anywhere: true
+    cookie_secure: false
+    disable_initial_admin_creation: false
+  server:
+    domain: grafana.192.168.100.100.nip.io
+    # root_url: "%(protocol)s://%(domain)s/"
+  # dashboards:
+  #   default_home_dashboard_path: /tmp/dashboards/home-dashboard.json
+
+serviceMonitor:
+  enabled: true
+  path: "/metrics"
+  relabelings:
+    - action: replace
+      sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - action: replace
+      sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - action: replace
+      sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      targetLabel: app
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-server.prometheus.svc.cluster.local
+        access: proxy
+        isDefault: true
+      - name: Loki
+        type: loki
+        url: http://loki.loki.svc.cluster.local:3100
+        access: proxy
+        jsonData:
+          timeout: 60
+          maxLines: 1000
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'platform'
+        folder: 'platform'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/platform
+      # - name: 'integrated-tools'
+      #   folder: 'integrated-tools'
+      #   type: file
+      #   disableDeletion: false
+      #   editable: true
+      #   options:
+      #     path: /var/lib/grafana/dashboards/integrated-tools
+
+extraVolumeMounts:
+  - name: platform
+    mountPath: /var/lib/grafana/dashboards/platform
+  # - name: integrated-tools
+  #   mountPath: /var/lib/grafana/dashboards/integrated-tools
+
+extraVolumes:
+  - name: platform
+    configMap:
+      name: platform
+  # - name: integrated-tools
+  #   configMap:
+  #     name: integrated-tools
