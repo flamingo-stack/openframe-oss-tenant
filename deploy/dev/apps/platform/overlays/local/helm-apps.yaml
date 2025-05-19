@@ -21,19 +21,12 @@ spec:
         branch: feature-restructure-platform
         syncWave: "-1"    
 
-      # - appName: prometheus
-      #   repoURL: https://prometheus-community.github.io/helm-charts
-      #   targetRevision: 27.14.0
-      #   path: deploy/dev/platform/base/prometheus
-      #   branch: feature-restructure-platform
-      #   syncWave: "0"   
-      
-      - appName: grafana
-        repoURL: https://grafana.github.io/helm-charts
-        targetRevision: 8.13.1
-        path: deploy/dev/platform/base/grafana
+      - appName: prometheus
+        repoURL: https://prometheus-community.github.io/helm-charts
+        targetRevision: 27.14.0
+        path: deploy/dev/platform/base/prometheus
         branch: feature-restructure-platform
-        syncWave: "0"
+        syncWave: "0"   
 
       - appName: loki
         repoURL: https://grafana.github.io/helm-charts
@@ -48,3 +41,10 @@ spec:
         path: deploy/dev/platform/base/promtail
         branch: feature-restructure-platform
         syncWave: "0"   
+      
+      - appName: grafana
+        repoURL: https://grafana.github.io/helm-charts
+        targetRevision: 8.13.1
+        path: deploy/dev/platform/base/grafana
+        branch: feature-restructure-platform
+        syncWave: "0"
