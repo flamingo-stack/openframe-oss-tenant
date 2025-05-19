@@ -16,7 +16,7 @@ loki:
   storage_config:
     filesystem:
       directory: /var/loki
-    tsdb_shipper:
+    boltdb_shipper:
       active_index_directory: /var/loki/index
       cache_location: /var/loki/index_cache
       cache_ttl: 24h

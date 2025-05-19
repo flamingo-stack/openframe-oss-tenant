@@ -14,12 +14,12 @@ ingress:
 
 revisionHistoryLimit: 2
 resources:
-  limits:
-    cpu: 100m
-    memory: 128Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 200m
+    memory: 250Mi
+  limits:
+    cpu: 400m
+    memory: 500Mi
 
 deploymentStrategy:  # fix bug Multi-Attach Error for Volume
   type: Recreate
