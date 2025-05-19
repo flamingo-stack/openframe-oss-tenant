@@ -65,6 +65,7 @@ singleBinary:
       value: 1750MiB
 
 chunksCache:
+  allocatedMemory: 1000
   writebackSizeLimit: 10MB  # default is 500MB, with limited memory keep this smaller
 
 test:
