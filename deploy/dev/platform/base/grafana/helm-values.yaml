@@ -39,7 +39,6 @@ grafana.ini:
   auth.anonymous:
     enabled: true
     org_role: Viewer
-    org_name: Openframe
   auth.basic:
     enabled: true
   auth:
@@ -70,7 +69,7 @@ datasources:
     datasources:
       - name: Prometheus
         type: prometheus
-        url: http://prometheus-server.prometheus.svc.cluster.local
+        url: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
         access: proxy
         isDefault: true
       - name: Loki
