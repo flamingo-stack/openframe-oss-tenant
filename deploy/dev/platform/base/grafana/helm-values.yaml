@@ -39,8 +39,6 @@ grafana.ini:
   auth.anonymous:
     enabled: true
     org_role: Viewer
-    hide_version: true
-    org_name: Openframe
   auth.basic:
     enabled: true
   auth:
