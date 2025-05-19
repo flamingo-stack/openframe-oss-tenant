@@ -1,21 +1,8 @@
 grafana:
   enabled: false
 
-
 alertmanager:
   enabled: false
-
-  ingress:
-    enabled: false
-    hosts:
-      - alertmanager.192.168.100.100.nip.io
-    annotations:
-      cert-manager.io/cluster-issuer: "cluster-issuer"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    tls:
-      - secretName: alertmanager-tls-secret
-        hosts: 
-          - alertmanager.192.168.100.100.nip.io
 
 prometheus:
   ingress:
@@ -30,7 +17,6 @@ prometheus:
       - secretName: prometheus-tls-secret
         hosts:
           - prometheus.192.168.100.100.nip.io
-
       
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false
