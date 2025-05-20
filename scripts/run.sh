@@ -127,7 +127,9 @@ case "$ARG" in
   p|platform)
     # Bootstrap whole cluster with base apps
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app argocd deploy
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform deploy
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform_pki deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
