@@ -17,7 +17,7 @@ on:
       - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/workflows/build.yml'
-      - 'deploy/dev/**'
+      - 'manifests/**'
       - 'scripts/**'
 
 env:
