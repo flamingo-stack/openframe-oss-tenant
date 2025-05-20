@@ -1,9 +1,5 @@
 crds:
   enabled: true
-  
-global:
-  leaderElection:
-    namespace: "platform"
 
 webhook:
   timeoutSeconds: 4
