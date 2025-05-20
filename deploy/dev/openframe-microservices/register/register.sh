@@ -424,7 +424,7 @@ register_tool \
     "GRAFANA" \
     "Grafana" \
     "Grafana Monitoring Dashboard" \
-    '[{"url": "https://", "port": "80", "type": "DASHBOARD"}, {"url": "http://", "port": "80", "type": "API"}]' \
+    '[{"url": "https://grafana.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD"}, {"url": "https://grafana.192.168.100.100.nip.io", "port": "80", "type": "API"}]' \
     "openframe" \
     "password123456789" \
     "" \
@@ -511,7 +511,7 @@ echo "- Tactical RMM Websockets: http://localhost:8384"
 echo "- Kafka UI: http://kafka-ui.192.168.100.100.nip.io"
 echo "- MongoDB Express: http://mongo-express.192.168.100.100.nip.io"
 echo "- NiFi: https://openframe-nifi.192.168.100.100.nip.io/"
-echo "- Grafana: https://"
+echo "- Grafana: https://grafana.192.168.100.100.nip.io"
 echo "- Prometheus: http://prometheus.192.168.100.100.nip.io"
 echo "- Fleet MDM: http://fleet.192.168.100.100.nip.io"
 echo "- MeshCentral: https://meshcentral.192.168.100.100.nip.io"
