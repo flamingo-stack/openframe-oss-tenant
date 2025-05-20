@@ -9,7 +9,7 @@ spec:
 
       - appName: cert-manager
         repoURL: https://charts.jetstack.io
-        targetRevision: 1.17.1
+        targetRevision: 1.17.2
         path: deploy/dev/platform/base/cert-manager
         branch: feature-restructure-platform
         syncWave: "-1"   
