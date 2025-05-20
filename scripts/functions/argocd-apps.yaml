@@ -11,7 +11,7 @@ spec:
       # in-cluster apps
       - appName: platform
         path: deploy/dev/apps/platform/overlays/local
-        branch: feature-restructure-platform
+        branch: main
         syncWave: "-1"
 
   template:
