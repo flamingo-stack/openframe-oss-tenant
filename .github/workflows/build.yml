@@ -284,6 +284,11 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install certutil (NSS tools)
+        run: |
+          sudo apt-get update && sudo apt-get install -y libnss3-tools
+          certutil -V -?
 
       - name: Install Helm
         run: |
