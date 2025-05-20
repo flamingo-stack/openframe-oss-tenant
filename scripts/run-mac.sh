@@ -83,6 +83,9 @@ verify_command() {
     "helm")
         brew install helm
         ;;
+    "argocd")
+        brew install argocd
+        ;;
     "kubectl")
         brew install kubectl
         ;;
@@ -117,7 +120,7 @@ fi
 
 # Check all commands and collect results
 missing_commands=()
-commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d" "kustomize")
+commands=("docker" "helm" "argocd" "kubectl" "telepresence" "skaffold" "jq" "k3d")
 
 for cmd in "${commands[@]}"; do
     if ! check_command "$cmd"; then

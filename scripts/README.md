@@ -10,7 +10,7 @@ Before using these scripts, ensure you have:
    - k3d
    - docker
    - helm
-   - kustomize
+   - argocd
    - kubectl
    - telepresence
    - skaffold

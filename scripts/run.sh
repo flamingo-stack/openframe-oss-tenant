@@ -48,8 +48,8 @@ export -f wait_parallel
 source "${SCRIPT_DIR}/functions/intercept.sh"
 export -f intercept_app
 
-source "${SCRIPT_DIR}/functions/setup-argocd.sh"
-export -f deploy_argocd delete_argocd argocd_client
+source "${SCRIPT_DIR}/functions/argocd.sh"
+export -f deploy_argocd delete_argocd argocd_client wait_for_argocd_apps
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do

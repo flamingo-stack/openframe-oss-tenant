@@ -34,13 +34,16 @@ platform_pki)
   ;;
 platform_addons)
   if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform Addons"
-    deploy_argocd 2>&1 >"${DEPLOY_LOG_DIR}/platform-addons-deploy.log"
-    argocd_client 2>&1 >"${DEPLOY_LOG_DIR}/platform-addons-deploy.log"
-    kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" 2>&1 >"${DEPLOY_LOG_DIR}/platform-addons-deploy.log"
+    start_spinner "Deploying ArgoCD"
+    deploy_argocd >"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
+    argocd_client >"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
+    stop_spinner_and_return_code $? || exit 1 
+
+    start_spinner "Deploying ArgoCD Apps"
+    kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 2>&1
+    wait_for_argocd_apps >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 2>&1
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
-    kubectl -n argocd delete -f "${SCRIPT_DIR}/functions/argocd-apps.yaml"
     delete_argocd
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
