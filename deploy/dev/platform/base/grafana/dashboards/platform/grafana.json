@@ -3,121 +3,70 @@
     "uid": "grafana",
     "schemaVersion": 41,
     "version": 1,
-    "refresh": "30s",
     "tags": ["grafana", "monitoring"],
-    "timezone": "",
-    "time": { "from": "now-6h", "to": "now" },
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
     "panels": [
       {
         "type": "stat",
-        "title": "Grafana Up",
-        "id": 1,
-        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "title": "HTTP 2xx Count",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
         "targets": [
           {
-            "expr": "sum(up{job=\"grafana-metrics\"})",
+            "expr": "sum(increase(grafana_http_request_total{status_code=~\"2..\"}[5m]))",
             "refId": "A"
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "unit": "none",
-            "color": { "mode": "thresholds" },
+            "unit": "req",
+            "color": {"mode": "thresholds"},
             "thresholds": {
               "mode": "absolute",
-              "steps": [
-                { "color": "red", "value": null },
-                { "color": "green", "value": 1 }
-              ]
+              "steps": [{"color": "green", "value": null}]
             }
           },
           "overrides": []
         },
         "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
           "reduceOptions": {
             "calcs": ["lastNotNull"],
             "fields": "",
             "values": false
           },
-          "textMode": "auto",
-          "colorMode": "value",
-          "graphMode": "none",
-          "justifyMode": "center"
+          "textMode": "auto"
         }
-      },
-      {
-        "type": "timeseries",
-        "title": "HTTP Request Rate",
-        "id": 2,
-        "gridPos": { "x": 6, "y": 0, "w": 9, "h": 6 },
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-        "targets": [
-          {
-            "expr": "rate(grafana_http_request_total[5m])",
-            "refId": "A"
-          }
-        ]
       },
       {
         "type": "timeseries",
         "title": "Active Users",
-        "id": 3,
-        "gridPos": { "x": 15, "y": 0, "w": 9, "h": 6 },
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
         "targets": [
           {
             "expr": "grafana_active_users",
-            "refId": "A"
+            "refId": "B"
           }
         ]
       },
       {
         "type": "timeseries",
-        "title": "Dashboard Render Errors",
-        "id": 4,
-        "gridPos": { "x": 0, "y": 6, "w": 12, "h": 6 },
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "title": "HTTP Request Duration (p95)",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6},
+        "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
         "targets": [
           {
-            "expr": "rate(grafana_rendering_dashes_failed_total[5m])",
-            "refId": "A"
+            "expr": "histogram_quantile(0.95, sum(rate(grafana_http_request_duration_seconds_bucket[5m])) by (le))",
+            "refId": "C"
           }
         ]
-      },
-      {
-        "type": "timeseries",
-        "title": "Memory Usage",
-        "id": 5,
-        "gridPos": { "x": 12, "y": 6, "w": 12, "h": 6 },
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-        "targets": [
-          {
-            "expr": "process_resident_memory_bytes{job=\"grafana-metrics\"}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "bytes"
-          },
-          "overrides": []
-        }
       }
-    ],
-    "templating": { "list": [] },
-    "annotations": {
-      "list": [
-        {
-          "type": "dashboard",
-          "name": "Annotations & Alerts",
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "builtIn": 1,
-          "datasource": { "type": "grafana", "uid": "-- Grafana --" }
-        }
-      ]
-    }
-  }
-  
+    ]
+}

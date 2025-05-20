@@ -4,7 +4,6 @@ kind: Kustomization
 configMapGenerator:
   - name: platform
     files:
-      - ./argocd.json
       - ./grafana.json
       - ./loki.json
       - ./prometheus.json
