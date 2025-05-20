@@ -1,9 +1,10 @@
-package com.openframe.gateway.config;
+package com.openframe.gateway.config.ws;
 
 import com.openframe.security.jwt.JwtAuthenticationOperations;
 import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.util.MultiValueMap;
@@ -18,6 +19,8 @@ import java.time.Duration;
 import java.time.Instant;
 
 import static com.openframe.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -25,7 +28,6 @@ public class WebSocketServiceDecorator implements WebSocketService {
 
     private final WebSocketService delegate;
     private final JwtService jwtService;
-    private final JwtAuthenticationOperations jwtAuthenticationOperations;
 
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler webSocketHandler) {
@@ -43,10 +45,28 @@ public class WebSocketServiceDecorator implements WebSocketService {
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {
         ServerHttpRequest request = exchange.getRequest();
-        MultiValueMap<String, String> queryParams = request.getQueryParams();
-        String authorisation = queryParams.getFirst(AUTHORIZATION_QUERY_PARAM);
-        String jwt = jwtAuthenticationOperations.extractJwt(authorisation);
+        String jwt = getRequestToken(request);
         return jwtService.decodeToken(jwt);
+    }
+
+    private String getRequestToken(ServerHttpRequest request) {
+        String authorisation = extractAuthorisation(request);
+        if (!authorisation.startsWith("Bearer ")) {
+            throw new IllegalStateException("No bearer token found");
+        }
+        return authorisation.substring(7);
+    }
+
+    private String extractAuthorisation(ServerHttpRequest request) {
+        String authorisationHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (isNotEmpty(authorisationHeader)) {
+            return authorisationHeader;
+        }
+        String authorisationParam = request.getQueryParams().getFirst(AUTHORIZATION_QUERY_PARAM);
+        if (isNotEmpty(authorisationParam)) {
+            return authorisationParam;
+        }
+        throw new IllegalStateException("No authorization data found");
     }
 
     private Disposable scheduleSessionRemoveJob(WebSocketSession session, long secondsUntilExpiration) {

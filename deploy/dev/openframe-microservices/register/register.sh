@@ -390,7 +390,7 @@ register_tool \
     "MESHCENTRAL" \
     "MeshCentral" \
     "MeshCentral Remote Management Platform" \
-    '[{"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "API"}]' \
+    '[{"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "DASHBOARD"}, {"url": "https://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "API"}, {"url": "wss://meshcentral.192.168.100.100.nip.io", "port": "443", "type": "WS"}]' \
     "mesh@openframe.io" \
     "meshpass@1234" \
     "NONE" \

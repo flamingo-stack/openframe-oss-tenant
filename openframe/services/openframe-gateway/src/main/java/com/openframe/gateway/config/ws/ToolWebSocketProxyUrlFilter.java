@@ -1,4 +1,4 @@
-package com.openframe.gateway.config;
+package com.openframe.gateway.config.ws;
 
 import com.openframe.core.model.IntegratedTool;
 import com.openframe.core.model.ToolUrl;
@@ -13,18 +13,14 @@ import org.springframework.cloud.gateway.filter.RouteToRequestUrlFilter;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
 
-import static com.openframe.gateway.config.WebSocketGatewayConfig.WS_ENDPOINT_PREFIX;
-
-@Component
 @RequiredArgsConstructor
-public class WebSocketProxyUrlFilter implements GatewayFilter, Ordered {
+public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Ordered {
 
     private final IntegratedToolRepository toolRepository;
     private final ToolUrlService toolUrlService;
@@ -43,24 +39,13 @@ public class WebSocketProxyUrlFilter implements GatewayFilter, Ordered {
         String toolId = getRequestToolId(path);
         ToolUrl toolUrl = getToolUrl(toolId);
 
-        URI toolUri = proxyUrlResolver.resolve(toolId, toolUrl, path, WS_ENDPOINT_PREFIX);
-
-        URI proxyUri = UriComponentsBuilder.newInstance()
-                 .scheme(toolUri.getScheme())
-                 .host(toolUri.getHost())
-                 .port(toolUri.getPort())
-                 .replacePath(toolUri.getPath())
-                 .build()
-                 .toUri();
+        String endpointPrefix = getEndpointPrefix();
+        URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, path, endpointPrefix);
 
         exchange.getAttributes()
                 .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);
 
         return chain.filter(exchange);
-    }
-
-    private String getRequestToolId(String path) {
-        return path.split("/")[4];
     }
 
     private ToolUrl getToolUrl(String toolId) {
@@ -74,5 +59,9 @@ public class WebSocketProxyUrlFilter implements GatewayFilter, Ordered {
         return toolUrlService.getUrlByToolType(tool, ToolUrlType.WS)
                 .orElseThrow(() -> new IllegalArgumentException("Tool " + tool.getName() + " have no web socket url"));
     }
+
+    protected abstract String getRequestToolId(String path);
+
+    protected abstract String getEndpointPrefix();
 
 }
