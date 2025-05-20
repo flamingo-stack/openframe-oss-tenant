@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - ./home
-  - ./integrated-tools
+  # - ./integrated-tools
   - ./openframe-datasources
   - ./openframe-microservices
   - ./platform

@@ -4,7 +4,7 @@ kind: Kustomization
 configMapGenerator:
   - name: integrated-tools
     files:
-      - ./home.json
+      - ./app.json
 
 generatorOptions:
   disableNameSuffixHash: true

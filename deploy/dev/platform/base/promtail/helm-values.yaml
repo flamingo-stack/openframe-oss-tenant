@@ -4,6 +4,11 @@ podsecurityContext:
   runAsUser: 1000
   runAsGroup: 1000
 
+service:
+  enabled: true
+  labels:
+    app.kubernetes.io/instance: promtail
+
 resources: 
   limits:
     cpu: 200m
