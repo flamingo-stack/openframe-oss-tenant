@@ -1,0 +1,150 @@
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations: 
+      cert-manager.io/cluster-issuer: "cluster-issuer"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts: 
+    - grafana.192.168.100.100.nip.io
+  tls: 
+    - secretName: grafana-server-tls
+      hosts:
+        - grafana.192.168.100.100.nip.io
+
+revisionHistoryLimit: 2
+resources:
+  requests:
+    cpu: 200m
+    memory: 250Mi
+  limits:
+    cpu: 400m
+    memory: 500Mi
+
+deploymentStrategy:  # fix bug Multi-Attach Error for Volume
+  type: Recreate
+
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+
+admin: # pre applyed 
+  existingSecret: "grafana"
+  userKey: user         
+  passwordKey: password
+
+grafana.ini:
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer
+  auth.basic:
+    enabled: true
+  auth:
+    disable_login_form: false
+  security:
+    allow_embedding: true
+    cookie_samesite: strict
+  server:
+    domain: grafana.192.168.100.100.nip.io
+
+serviceMonitor:
+  enabled: true
+  path: "/metrics"
+  relabelings:
+    - action: replace
+      sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - action: replace
+      sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - action: replace
+      sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      targetLabel: app
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+      - name: Loki
+        type: loki
+        url: http://loki.loki.svc.cluster.local:3100
+        access: proxy
+        jsonData:
+          timeout: 60
+          maxLines: 1000
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'home'
+        folder: 'home'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/home
+      - name: 'platform'
+        folder: 'platform'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/platform
+      - name: 'openframe-microservices'
+        folder: 'openframe-microservices'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/openframe-microservices
+      - name: 'openframe-datasources'
+        folder: 'openframe-datasources'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/openframe-datasources
+      - name: 'integrated-tools'
+        folder: 'integrated-tools'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/integrated-tools
+
+extraVolumeMounts:
+  - name: home
+    mountPath: /var/lib/grafana/dashboards/home
+  - name: platform
+    mountPath: /var/lib/grafana/dashboards/platform
+  - name: openframe-microservices
+    mountPath: /var/lib/grafana/dashboards/openframe-microservices
+  - name: openframe-datasources
+    mountPath: /var/lib/grafana/dashboards/openframe-datasources
+  - name: integrated-tools
+    mountPath: /var/lib/grafana/dashboards/integrated-tools
+
+extraVolumes:
+  - name: home
+    configMap:
+      name: home
+  - name: platform
+    configMap:
+      name: platform
+  - name: openframe-microservices
+    configMap:
+      name: openframe-microservices
+  - name: openframe-datasources
+    configMap:
+      name: openframe-datasources
+  - name: integrated-tools
+    configMap:
+      name: integrated-tools

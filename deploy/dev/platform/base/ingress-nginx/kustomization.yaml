@@ -3,6 +3,3 @@ kind: Kustomization
 
 resources:
   - ns.yaml
-  - bootstrap-issuer.yaml
-  - platform-certificate.yaml
-  - cluster-issuer.yaml

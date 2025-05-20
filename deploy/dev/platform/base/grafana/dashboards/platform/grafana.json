@@ -1,0 +1,72 @@
+{
+    "title": "Grafana",
+    "uid": "grafana",
+    "schemaVersion": 41,
+    "version": 1,
+    "tags": ["grafana", "monitoring"],
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "type": "stat",
+        "title": "HTTP 2xx Count",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+        "targets": [
+          {
+            "expr": "sum(increase(grafana_http_request_total{status_code=~\"2..\"}[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "req",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [{"color": "green", "value": null}]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Active Users",
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+        "targets": [
+          {
+            "expr": "grafana_active_users",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "HTTP Request Duration (p95)",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6},
+        "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(grafana_http_request_duration_seconds_bucket[5m])) by (le))",
+            "refId": "C"
+          }
+        ]
+      }
+    ]
+}

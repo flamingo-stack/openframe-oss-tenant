@@ -284,17 +284,22 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install certutil (NSS tools)
+        run: |
+          sudo apt-get update && sudo apt-get install -y libnss3-tools
+          echo "certutil version: $(certutil --version)"
 
       - name: Install Helm
         run: |
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- --version v3.17.3
           echo "Helm version: $(helm version --short)"
 
-      - name: Install Kustomize
+      - name: Install ArgoCD
         run: |
-          curl -sL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.6.0/kustomize_v5.6.0_linux_amd64.tar.gz | tar xz
-          sudo mv kustomize /usr/local/bin
-          echo "Kustomize version: $(kustomize version --short)"
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 
+          sudo chmod +x argocd && sudo mv argocd /usr/local/bin/
+          echo "ArgoCD version: $(argocd version)"
       
       - name: Install k3d
         run: |
