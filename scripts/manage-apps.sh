@@ -18,30 +18,11 @@ if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
 fi
 
 case "$APP" in
-platform_pki)
-  if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Add Trusted PKI certificates"
-    trust_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
-    stop_spinner_and_return_code $? || exit 1
-  elif [ "$ACTION" == "delete" ]; then
-    untrust_ca
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
-platform_addons)
+argocd)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying ArgoCD"
-    deploy_argocd >"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
-    argocd_client >"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
-    stop_spinner_and_return_code $? || exit 1 
-
-    start_spinner "Deploying ArgoCD Apps"
-    kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 2>&1
-    wait_for_argocd_apps >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 2>&1
+    deploy_argocd >"${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    argocd_client >"${DEPLOY_LOG_DIR}/deploy-argocd.log"
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
     delete_argocd
@@ -52,9 +33,38 @@ platform_addons)
     echo "$APP is not supported for debug mode"
   fi
   ;;
+platform_pki)
+  if [ "$ACTION" == "deploy" ]; then
+    start_spinner "Add Trusted PKI certificates"
+    trust_ca > "${DEPLOY_LOG_DIR}/pki.log"
+    stop_spinner_and_return_code $? || exit 1
+  elif [ "$ACTION" == "delete" ]; then
+    untrust_ca
+  elif [ "$ACTION" == "dev" ]; then
+    echo "$APP is not supported in dev mode"
+    exit 0
+  elif [ "$ACTION" == "debug" ]; then
+    echo "$APP is not supported for debug mode"
+  fi
+  ;;
+platform)
+  if [ "$ACTION" == "deploy" ]; then
+    start_spinner "Deploying Platform Apps"
+    kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    wait_for_argocd_apps >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    stop_spinner_and_return_code $? || exit 1 
+  elif [ "$ACTION" == "delete" ]; then
+    kubectl -n argocd delete -f "${SCRIPT_DIR}/functions/argocd-apps.yaml"
+  elif [ "$ACTION" == "dev" ]; then
+    echo "$APP is not supported in dev mode"
+    exit 0
+  elif [ "$ACTION" == "debug" ]; then
+    echo "$APP is not supported for debug mode"
+  fi
+  ;;
 openframe_datasources_redis)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_redis_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-redis-deploy.log"
+    openframe_datasources_redis_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-redis-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_redis_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -66,7 +76,7 @@ openframe_datasources_redis)
   ;;
 openframe_datasources_kafka)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_kafka_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-kafka-deploy.log"
+    openframe_datasources_kafka_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-kafka-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_kafka_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -78,7 +88,7 @@ openframe_datasources_kafka)
   ;;
 openframe_datasources_mongodb)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_mongodb_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-deploy.log"
+    openframe_datasources_mongodb_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_mongodb_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -90,7 +100,7 @@ openframe_datasources_mongodb)
   ;;
 openframe_datasources_mongodb_exporter)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_mongodb_exporter_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-exporter-deploy.log"
+    openframe_datasources_mongodb_exporter_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-exporter-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_mongodb_exporter_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -102,7 +112,7 @@ openframe_datasources_mongodb_exporter)
   ;;
 openframe_datasources_cassandra)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_cassandra_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-cassandra-deploy.log"
+    openframe_datasources_cassandra_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-cassandra-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_cassandra_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -114,7 +124,7 @@ openframe_datasources_cassandra)
   ;;
 openframe_datasources_nifi)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_nifi_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-nifi-deploy.log"
+    openframe_datasources_nifi_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-nifi-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_nifi_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -127,7 +137,7 @@ openframe_datasources_nifi)
   ;;
 openframe_datasources_zookeeper)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_zookeeper_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-zookeeper-deploy.log"
+    openframe_datasources_zookeeper_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-zookeeper-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_zookeeper_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -139,7 +149,7 @@ openframe_datasources_zookeeper)
   ;;
 openframe_datasources_pinot)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_pinot_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-datasources-pinot-deploy.log"
+    openframe_datasources_pinot_deploy >"${DEPLOY_LOG_DIR}/openframe-datasources-pinot-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_datasources_pinot_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -151,7 +161,7 @@ openframe_datasources_pinot)
   ;;
 openframe_microservices_openframe_config_server)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_microservices_openframe_config_server_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-config-server-deploy.log"
+    openframe_microservices_openframe_config_server_deploy >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-config-server-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_microservices_openframe_config_server_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -164,7 +174,7 @@ openframe_microservices_openframe_config_server)
   ;;
 openframe_microservices_openframe_api)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_microservices_openframe_api_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-api-deploy.log"
+    openframe_microservices_openframe_api_deploy  >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-api-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_microservices_openframe_api_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -177,7 +187,7 @@ openframe_microservices_openframe_api)
   ;;
 openframe_microservices_openframe_management)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_microservices_openframe_management_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-management-deploy.log"
+    openframe_microservices_openframe_management_deploy  >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-management-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_microservices_openframe_management_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -190,7 +200,7 @@ openframe_microservices_openframe_management)
   ;;
 openframe_microservices_openframe_stream)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_microservices_openframe_stream_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-stream-deploy.log"
+    openframe_microservices_openframe_stream_deploy  >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-stream-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_microservices_openframe_stream_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -203,7 +213,7 @@ openframe_microservices_openframe_stream)
   ;;
 openframe_microservices_openframe_gateway)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_microservices_openframe_gateway_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-gateway-deploy.log"
+    openframe_microservices_openframe_gateway_deploy  >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-gateway-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_microservices_openframe_gateway_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -216,7 +226,7 @@ openframe_microservices_openframe_gateway)
   ;;
 openframe_microservices_openframe_ui)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_microservices_openframe_ui_deploy 2>&1 >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-ui-deploy.log"
+    openframe_microservices_openframe_ui_deploy  >"${DEPLOY_LOG_DIR}/openframe-microservices-openframe-ui-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     openframe_microservices_openframe_ui_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -231,8 +241,8 @@ openframe_microservices_register_apps)
   # kubectl -n infrastructure apply -f ./deploy/dev/jobs/register-tools.yaml && \
   # kubectl -n infrastructure wait --for=condition=Ready pod -l app=register-tools --timeout 20m
   start_spinner "Registering apps"
-  openframe_microservices_openframe_management_wait >/dev/null 2>&1 &&
-    integrated_tools_wait_all >/dev/null 2>&1 &&
+  openframe_microservices_openframe_management_wait >/dev/null  &&
+    integrated_tools_wait_all >/dev/null  &&
       ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/register/register.sh >"${DEPLOY_LOG_DIR}/openframe-microservices-register-apps-deploy.log" 2>&1
   stop_spinner_and_return_code $? || exit 1
   echo
@@ -240,7 +250,7 @@ openframe_microservices_register_apps)
   ;;
 integrated_tools_datasources_fleet)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_fleet_deploy 2>&1 >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-fleet-deploy.log"
+    integrated_tools_datasources_fleet_deploy  >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-fleet-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_datasources_fleet_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -253,8 +263,8 @@ integrated_tools_datasources_fleet)
   ;;
 integrated_tools_fleet)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_fleet_wait 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-fleet-deploy.log" &&
-      integrated_tools_fleet_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-fleet-deploy.log"
+    integrated_tools_datasources_fleet_wait  >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-fleet-deploy.log" &&
+      integrated_tools_fleet_deploy  >>"${DEPLOY_LOG_DIR}/integrated-tools-fleet-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_fleet_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -267,7 +277,7 @@ integrated_tools_fleet)
   ;;
 integrated_tools_datasources_authentik)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_authentik_deploy 2>&1 >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-authentik-deploy.log"
+    integrated_tools_datasources_authentik_deploy  >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-authentik-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_datasources_authentik_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -279,8 +289,8 @@ integrated_tools_datasources_authentik)
   ;;
 integrated_tools_authentik)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_authentik_wait 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-authentik-deploy.log" &&
-      integrated_tools_authentik_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-authentik-deploy.log"
+    integrated_tools_datasources_authentik_wait  >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-authentik-deploy.log" &&
+      integrated_tools_authentik_deploy  >>"${DEPLOY_LOG_DIR}/integrated-tools-authentik-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_authentik_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -292,7 +302,7 @@ integrated_tools_authentik)
   ;;
 integrated_tools_datasources_meshcentral)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_meshcentral_deploy 2>&1 >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-meshcentral-deploy.log"
+    integrated_tools_datasources_meshcentral_deploy  >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-meshcentral-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_datasources_meshcentral_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -304,8 +314,8 @@ integrated_tools_datasources_meshcentral)
   ;;
 integrated_tools_meshcentral)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_meshcentral_wait 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-meshcentral-deploy.log" &&
-      integrated_tools_meshcentral_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-meshcentral-deploy.log"
+    integrated_tools_datasources_meshcentral_wait  >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-meshcentral-deploy.log" &&
+      integrated_tools_meshcentral_deploy  >>"${DEPLOY_LOG_DIR}/integrated-tools-meshcentral-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_meshcentral_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -318,7 +328,7 @@ integrated_tools_meshcentral)
   ;;
 integrated_tools_datasources_tactical_rmm)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_tactical_rmm_deploy 2>&1 >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-tactical-rmm-deploy.log"
+    integrated_tools_datasources_tactical_rmm_deploy  >"${DEPLOY_LOG_DIR}/integrated-tools-datasources-tactical-rmm-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_datasources_tactical_rmm_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -330,8 +340,8 @@ integrated_tools_datasources_tactical_rmm)
   ;;
 integrated_tools_tactical_rmm)
   if [ "$ACTION" == "deploy" ]; then
-    integrated_tools_datasources_tactical_rmm_wait 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-tactical-rmm-deploy.log" &&
-      integrated_tools_tactical_rmm_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/integrated-tools-tactical-rmm-deploy.log"
+    integrated_tools_datasources_tactical_rmm_wait  >>"${DEPLOY_LOG_DIR}/integrated-tools-datasources-tactical-rmm-deploy.log" &&
+      integrated_tools_tactical_rmm_deploy  >>"${DEPLOY_LOG_DIR}/integrated-tools-tactical-rmm-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     integrated_tools_tactical_rmm_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -343,8 +353,8 @@ integrated_tools_tactical_rmm)
   ;;
 tools_kafka_ui)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_kafka_wait >/dev/null 2>&1 &&
-      tools_kafka_ui_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/tools-kafka-ui-deploy.log"
+    openframe_datasources_kafka_wait >/dev/null  &&
+      tools_kafka_ui_deploy  >>"${DEPLOY_LOG_DIR}/tools-kafka-ui-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     tools_kafka_ui_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -356,8 +366,8 @@ tools_kafka_ui)
   ;;
 tools_mongo_express)
   if [ "$ACTION" == "deploy" ]; then
-    openframe_datasources_mongodb_wait >/dev/null 2>&1 &&
-      tools_mongo_express_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/tools-mongo-express-deploy.log"
+    openframe_datasources_mongodb_wait >/dev/null  &&
+      tools_mongo_express_deploy  >>"${DEPLOY_LOG_DIR}/tools-mongo-express-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     tools_mongo_express_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -369,7 +379,7 @@ tools_mongo_express)
   ;;
 tools_telepresence)
   if [ "$ACTION" == "deploy" ]; then
-    tools_telepresence_deploy 2>&1 >>"${DEPLOY_LOG_DIR}/tools-telepresence-deploy.log"
+    tools_telepresence_deploy  >>"${DEPLOY_LOG_DIR}/tools-telepresence-deploy.log"
   elif [ "$ACTION" == "delete" ]; then
     tools_telepresence_delete
   elif [ "$ACTION" == "dev" ]; then
@@ -380,12 +390,6 @@ tools_telepresence)
   fi
   ;;
 # BUNDLE APPS
-p | platform)
-  ACTION=${2}
-  IFWAIT=${3:-}
-
-  $0 platform_addons $ACTION 
-  ;;
 t | client_tools)
   ACTION=${2}
   IFWAIT=${3:-}
@@ -408,14 +412,14 @@ om | openframe_microservices)
   IFWAIT=${3:-}
 
   start_spinner "Waiting for OpenFrame Datasources to be ready" &&
-    openframe_datasources_redis_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-redis-deploy.log" &&
-    openframe_datasources_kafka_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-kafka-deploy.log" &&
-    openframe_datasources_mongodb_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-deploy.log" &&
-    openframe_datasources_mongodb_exporter_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-exporter-deploy.log" &&
-    openframe_datasources_cassandra_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-cassandra-deploy.log" &&
-    openframe_datasources_zookeeper_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-zookeeper-deploy.log" &&
-    openframe_datasources_nifi_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-nifi-deploy.log" &&
-    openframe_datasources_pinot_wait 2>&1 >>"${DEPLOY_LOG_DIR}/openframe-datasources-pinot-deploy.log" &&
+    openframe_datasources_redis_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-redis-deploy.log" &&
+    openframe_datasources_kafka_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-kafka-deploy.log" &&
+    openframe_datasources_mongodb_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-deploy.log" &&
+    openframe_datasources_mongodb_exporter_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-mongodb-exporter-deploy.log" &&
+    openframe_datasources_cassandra_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-cassandra-deploy.log" &&
+    openframe_datasources_zookeeper_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-zookeeper-deploy.log" &&
+    openframe_datasources_nifi_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-nifi-deploy.log" &&
+    openframe_datasources_pinot_wait >>"${DEPLOY_LOG_DIR}/openframe-datasources-pinot-deploy.log" &&
     stop_spinner_and_return_code $? || exit 1
 
     start_spinner "Deploying OpenFrame Microservices" &&
@@ -468,7 +472,8 @@ a | all)
   ACTION=${2}
   IFWAIT=${3:-}
 
-  $0 platform $ACTION &&
+  $0 argocd $ACTION &&
+    $0 platform $ACTION &&
     $0 platform_pki $ACTION &&
     $0 datasources $ACTION &&
     $0 stateless $ACTION &&
