@@ -17,4 +17,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../deploy/dev/integrated-tools/fleet
+    - ../../manifests/integrated-tools/fleet

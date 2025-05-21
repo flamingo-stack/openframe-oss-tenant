@@ -10,7 +10,7 @@ spec:
     
       # in-cluster apps
       - appName: platform
-        path: deploy/dev/apps/platform/overlays/local
+        path: manifests/apps/platform/overlays/local
         branch: main
         syncWave: "-1"
 

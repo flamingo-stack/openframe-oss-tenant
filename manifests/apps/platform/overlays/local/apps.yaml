@@ -8,7 +8,7 @@ spec:
       elements: 
 
       - appName: argocd-ingress
-        path: deploy/dev/platform/base/argocd-ingress
+        path: manifests/platform/base/argocd-ingress
         namespace: argocd
         branch: main
         syncWave: "0"   

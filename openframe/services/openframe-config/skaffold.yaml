@@ -22,4 +22,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../deploy/dev/openframe-microservices/openframe-config
+    - ../../../manifests/openframe-microservices/openframe-config

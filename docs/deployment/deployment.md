@@ -83,7 +83,7 @@ Or deploy specific applications:
 
 ## Service Configuration
 
-Each service is configured through its respective Kubernetes manifest in the `deploy/dev/infrastructure/` directory. For example, the API service configuration includes:
+Each service is configured through its respective Kubernetes manifest in the `manifests/infrastructure/` directory. For example, the API service configuration includes:
 
 ```yaml
 # Example from openframe-api/api.yaml
