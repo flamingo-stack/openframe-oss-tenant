@@ -34,7 +34,7 @@ function argocd_client() {
       argocd login argocd-server.argocd.svc.cluster.local \
         --username admin --password "$ARGOCD_PASSWORD" --insecure && \
       argocd repo add https://github.com/Flamingo-CX/openframe.git \
-        --username local_dev --password "$GIT_PASSWORD"
+        --username local_dev --password "$GIT_PASSWORD" --upsert
     '
 }
 
