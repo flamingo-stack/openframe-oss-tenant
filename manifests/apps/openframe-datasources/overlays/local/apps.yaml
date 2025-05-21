@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: openframe-datasources-apps
+spec:
+  generators:
+  - list:  # appName == namespace
+      elements: 
+
+      - appName: argocd-ingress
+        path: manifests/platform/base/argocd-ingress
+        namespace: argocd
+        branch: feature-restructure-openframe-datasources
+        syncWave: "0"   
