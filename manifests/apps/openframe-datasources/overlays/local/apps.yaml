@@ -7,8 +7,8 @@ spec:
   - list:  # appName == namespace
       elements: 
 
-      - appName: argocd-ingress
-        path: manifests/platform/base/argocd-ingress
-        namespace: argocd
+      - appName: namespace-openframe-datasources
+        path: manifests/openframe-datasources/base/namespace
+        namespace: openframe-datasources
         branch: feature-restructure-openframe-datasources
         syncWave: "0"   

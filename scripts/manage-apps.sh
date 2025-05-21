@@ -22,9 +22,10 @@ argocd)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying ArgoCD"
     deploy_argocd >"${DEPLOY_LOG_DIR}/deploy-argocd.log"
-    argocd_client >>"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
+    kubectl -n argocd apply -f "${SCRIPT_DIR}/manifests/repo-secret.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd.log" 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
+    kubectl -n argocd delete -f "${SCRIPT_DIR}/manifests/repo-secret.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd.log" 
     delete_argocd
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
@@ -50,11 +51,11 @@ pki_cert)
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Apps"
-    kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    kubectl -n argocd apply -f "${SCRIPT_DIR}/manifests/argocd-apps.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
     wait_for_argocd_apps >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
-    kubectl -n argocd delete -f "${SCRIPT_DIR}/functions/argocd-apps.yaml"
+    kubectl -n argocd delete -f "${SCRIPT_DIR}/manifests/argocd-apps.yaml"
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0

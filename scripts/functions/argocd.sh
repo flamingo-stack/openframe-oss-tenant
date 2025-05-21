@@ -21,27 +21,6 @@ function delete_argocd() {
   kubectl delete namespace argocd
 }
 
-
-# Function is necessary untill https://github.com/Flamingo-CX/openframe.git will be public
-function argocd_client() {
-  echo "Adding Openframe private repo to ArgoCD..."
-  ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath={.data.password} | base64 -d)
-
-  kubectl run argocd-client --attach --rm \
-    --image=quay.io/argoproj/argocd:v$ARGOCD_VERSION \
-    --namespace argocd \
-    --restart=Never \
-    --env ARGOCD_PASSWORD="$ARGOCD_PASSWORD" \
-    --env GIT_PASSWORD="$GITHUB_TOKEN_CLASSIC" \
-    --command -- sh -c '
-      argocd login argocd-server.argocd.svc.cluster.local \
-        --username admin --password "$ARGOCD_PASSWORD" --insecure && \
-      argocd repo add https://github.com/Flamingo-CX/openframe.git \
-        --username local_dev --password "$GIT_PASSWORD" --upsert
-    '
-}
-
   
 wait_for_argocd_apps() {
   sleep 30  # Platform App to bootstrap
