@@ -16,8 +16,8 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     # Force SSL redirect
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-ingressClassName: nginx
 spec:
+  ingressClassName: nginx
   rules:
     - host: meshcentral.192.168.100.100.nip.io
       http:
