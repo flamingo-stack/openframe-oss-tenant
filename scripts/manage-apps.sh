@@ -22,7 +22,7 @@ argocd)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying ArgoCD"
     deploy_argocd >"${DEPLOY_LOG_DIR}/deploy-argocd.log"
-    argocd_client >"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
+    argocd_client >>"${DEPLOY_LOG_DIR}/deploy-argocd.log" 2>&1
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
     delete_argocd
