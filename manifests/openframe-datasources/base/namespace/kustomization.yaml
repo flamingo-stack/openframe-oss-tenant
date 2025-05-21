@@ -9,5 +9,6 @@ secretGenerator:
     type: kubernetes.io/dockerconfigjson
     files:
       - .dockerconfigjson=ghcr-docker-config.json
-  generatorOptions:
-    disableNameSuffixHash: true
+
+generatorOptions:
+  disableNameSuffixHash: true
