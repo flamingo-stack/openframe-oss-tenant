@@ -20,6 +20,7 @@ metadata:
     # nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     # nginx.ingress.kubernetes.io/websocket-services: "tactical-nginx"
     # nginx.ingress.kubernetes.io/use-regex: "true"
+ingressClassName: nginx
 spec:
   rules:
     - host: tactical-ui.192.168.100.100.nip.io
