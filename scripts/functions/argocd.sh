@@ -6,8 +6,12 @@ function deploy_argocd() {
   kubectl create namespace argocd
   kubectl -n argocd apply -f https://raw.githubusercontent.com/argoproj/argo-cd/v$ARGOCD_VERSION/manifests/install.yaml
 
-  echo "Waiting for ArgoCD server to become ready..."
-  kubectl -n argocd wait --for=condition=Ready pods --all --timeout=300s
+  echo "Waiting for ArgoCD to become ready..."
+  for i in {1..100}; do
+    kubectl -n argocd get pods -o json | jq -e '(.items|length>0) and ([.items[]|select(.status.phase=="Running")|.status.containerStatuses[]?|select(.ready)]|length)==([.items[]|.status.containerStatuses[]?]|length)' > /dev/null && return
+    sleep 3
+  done
+  kubectl -n argocd get pods && exit 1
 }
 
 
