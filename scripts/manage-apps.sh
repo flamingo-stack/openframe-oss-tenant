@@ -33,7 +33,7 @@ argocd)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-platform_pki)
+pki_cert)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Add Trusted PKI certificates"
     trust_ca > "${DEPLOY_LOG_DIR}/pki.log"
@@ -47,7 +47,7 @@ platform_pki)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-platform)
+argocd_apps)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying Platform Apps"
     kubectl -n argocd apply -f "${SCRIPT_DIR}/functions/argocd-apps.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
@@ -493,8 +493,8 @@ a | all)
   IFWAIT=${3:-}
 
   $0 argocd $ACTION &&
-    $0 platform $ACTION &&
-    $0 platform_pki $ACTION &&
+    $0 argocd_apps $ACTION &&
+    $0 pki_cert $ACTION &&
     $0 datasources $ACTION &&
     $0 stateless $ACTION &&
     $0 openframe_microservices_register_apps $ACTION

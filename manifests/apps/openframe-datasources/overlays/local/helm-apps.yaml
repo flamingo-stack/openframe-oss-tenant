@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: openframe-datasources-helm-apps
+spec:
+  generators:
+  - list:  # appName == namespace == chart
+      elements: 
+
+      - appName: cert-manager
+        repoURL: https://charts.jetstack.io
+        targetRevision: 1.17.2
+        path: manifests/platform/base/cert-manager
+        branch: feature-restructure-openframe-datasources
+        syncWave: "-1"   

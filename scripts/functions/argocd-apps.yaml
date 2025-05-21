@@ -8,11 +8,18 @@ spec:
   - list: 
       elements:
     
+
       # in-cluster apps
       - appName: platform
         path: manifests/apps/platform/overlays/local
-        branch: main
+        branch: feature-restructure-openframe-datasources
         syncWave: "-1"
+      
+      - appName: openframe-datasources
+        path: manifests/apps/openframe-datasources/overlays/local
+        branch: feature-restructure-openframe-datasources
+        syncWave: "-1"
+
 
   template:
     metadata:

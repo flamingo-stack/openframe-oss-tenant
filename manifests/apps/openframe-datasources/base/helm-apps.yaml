@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: openframe-datasources-helm-apps
+spec:
+  goTemplate: true
+  generators:
+  - list:  
+      elements:
+
+
+  template:
+    metadata:
+      name: '{{.appName}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{or .syncWave "0"}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+
+    spec:
+      project: platform
+
+      sources:
+        # Helm chart
+        - repoURL: '{{.repoURL}}'
+          targetRevision: '{{.targetRevision}}'
+          chart: '{{or .chart .appName}}'
+          helm:
+            valueFiles:
+            - '$values/{{.path}}/helm-values.yaml'  # name is hardcoded
+        - repoURL: https://github.com/Flamingo-CX/{{or .repoName "openframe"}}.git
+          targetRevision: '{{or .branch "main"}}'
+          ref: values
+        # Extra resources
+        - repoURL: 'https://github.com/Flamingo-CX/{{or .repoName "openframe"}}.git' 
+          targetRevision: '{{or .branch "main"}}'
+          path: '{{.path}}'
+
+      destination:
+        name: '{{or .cluster "in-cluster"}}'  
+        namespace: '{{or .namespace .appName}}'  
+
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
+        syncOptions:
+        - CreateNamespace={{or .createNamespace "false"}}
+        - ServerSideApply={{or .serverSideApply "false"}}
