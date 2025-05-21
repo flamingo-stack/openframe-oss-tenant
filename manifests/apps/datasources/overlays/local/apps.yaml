@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: openframe-datasources-apps
+  name: datasources-apps
 spec:
   generators:
   - list:  # appName == namespace
       elements: 
 
-      - appName: namespace-openframe-datasources
-        path: manifests/openframe-datasources/base/namespace
-        namespace: openframe-datasources
+      - appName: namespace-datasources
+        path: manifests/datasources/base/namespace
+        namespace: datasources
         branch: feature-restructure-openframe-datasources
         syncWave: "0"   

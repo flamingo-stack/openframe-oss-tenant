@@ -16,7 +16,7 @@ spec:
         syncWave: "-1"
       
       - appName: openframe-datasources
-        path: manifests/apps/openframe-datasources/overlays/local
+        path: manifests/apps/datasources/overlays/local
         branch: feature-restructure-openframe-datasources
         syncWave: "-1"
 
