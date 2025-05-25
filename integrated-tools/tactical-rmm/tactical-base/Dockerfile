@@ -9,7 +9,7 @@ ENV TACTICAL_DIR=/opt/tactical
 ENV TACTICAL_TMP_DIR=/tmp/tactical
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
-ENV REDIS_HOST=tactical-redis.integrated-tools-datasources.svc.cluster.local
+ENV REDIS_HOST=tactical-redis.integrated-tools.svc.cluster.local
 
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]

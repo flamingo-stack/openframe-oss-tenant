@@ -32,10 +32,10 @@ spec:
         image: busybox:1.28
         command: ['sh', '-c', '
           echo "Waiting for PostgreSQL..." &&
-          until nc -z tactical-postgres.integrated-tools-datasources.svc.cluster.local 5432; do sleep 2; done &&
+          until nc -z tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
           echo "PostgreSQL is ready!" &&
           echo "Waiting for Redis..." &&
-          until nc -z tactical-redis.integrated-tools-datasources.svc.cluster.local 6379; do sleep 2; done &&
+          until nc -z tactical-redis.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
           echo "Redis is ready!" &&
           echo "Waiting for Nginx..." &&
           until nc -z tactical-nginx.integrated-tools.svc.cluster.local 8080; do sleep 2; done &&
