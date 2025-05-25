@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: datasources-helm-apps
+  name: openframe-helm-apps
 spec:
   generators:
   - list:  # appName == chart, namespace == project

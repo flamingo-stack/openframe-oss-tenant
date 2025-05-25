@@ -33,14 +33,8 @@ export -f show_help
 source "${SCRIPT_DIR}/functions/add_loopback_ip.sh"
 export -f add_loopback_ip
 
-source "${SCRIPT_DIR}/functions/build-app.sh"
-export -f build_app
-
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
-
-source "${SCRIPT_DIR}/functions/wait-parallel.sh"
-export -f wait_parallel
 
 source "${SCRIPT_DIR}/functions/intercept.sh"
 export -f intercept_app
@@ -95,11 +89,6 @@ case "$ARG" in
       setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
       stop_spinner_and_return_code $? || exit 1
     fi
-    start_spinner "Checking bases"
-    if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
-      create_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1
-    fi
-    stop_spinner_and_return_code $? || exit 1
     ;;
   d|delete)
     start_spinner "Deleting cluster"
