@@ -74,7 +74,7 @@ datasources:
         isDefault: true
       - name: Loki
         type: loki
-        url: http://loki.loki.svc.cluster.local:3100
+        url: http://loki.platform.svc.cluster.local:3100
         access: proxy
         jsonData:
           timeout: 60

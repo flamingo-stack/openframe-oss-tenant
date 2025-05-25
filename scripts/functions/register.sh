@@ -472,7 +472,7 @@ register_tool \
     "LOKI" \
     "Loki" \
     "Loki Log Aggregation System" \
-    '[{"url": "http://loki.loki.svc", "port": "3100", "type": "API"}]' \
+    '[{"url": "http://loki.platform.svc", "port": "3100", "type": "API"}]' \
     "" \
     "" \
     "" \
