@@ -10,14 +10,14 @@ spec:
       - appName: cassandra
         repoURL: https://charts.bitnami.com/bitnami
         targetRevision: 12.2.1
-        path: manifests/datasources/base/cassandra
+        path: manifests/openframe/base/cassandra
         namespace: datasources
         branch: feature-restructure-manifests
       
       - appName: kafka
         repoURL: https://charts.bitnami.com/bitnami
         targetRevision: 31.5.0
-        path: manifests/datasources/base/kafka
+        path: manifests/openframe/base/kafka
         namespace: datasources
         branch: feature-restructure-manifests
       
@@ -25,14 +25,14 @@ spec:
         repoURL: https://prometheus-community.github.io/helm-charts
         chart: prometheus-mongodb-exporter
         targetRevision: 3.11.1
-        path: manifests/datasources/base/mongodb-exporter
+        path: manifests/openframe/base/mongodb-exporter
         namespace: datasources
         branch: feature-restructure-manifests
       
       - appName: redis
         repoURL: https://charts.bitnami.com/bitnami
         targetRevision: 20.11.3
-        path: manifests/datasources/base/redis
+        path: manifests/openframe/base/redis
         namespace: datasources
         branch: feature-restructure-manifests
       
@@ -40,6 +40,6 @@ spec:
       #   repoURL: https://prometheus-community.github.io/helm-charts
       #   chart: prometheus-redis-exporter
       #   targetRevision: 6.9.0
-      #   path: manifests/datasources/base/redis-exporter
+      #   path: manifests/openframe/base/redis-exporter
       #   namespace: datasources
       #   branch: feature-restructure-manifests
