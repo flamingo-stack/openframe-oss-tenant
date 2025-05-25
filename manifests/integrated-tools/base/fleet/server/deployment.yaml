@@ -32,7 +32,7 @@ spec:
         - name: FLEET_SETUP_AUTO_INIT
           value: "true"
         - name: FLEET_MYSQL_ADDRESS
-          value: "fleet-mdm-mysql.integrated-tools-datasources.svc:3306"
+          value: "fleet-mdm-mysql.integrated-tools.svc:3306"
         - name: FLEET_MYSQL_DATABASE
           value: "fleet-mdm-database"
         - name: FLEET_MYSQL_USERNAME
@@ -40,7 +40,7 @@ spec:
         - name: FLEET_MYSQL_PASSWORD
           value: "fleet-mdm-password-1234"
         - name: FLEET_REDIS_ADDRESS
-          value: "fleet-mdm-redis.integrated-tools-datasources.svc:6379"
+          value: "fleet-mdm-redis.integrated-tools.svc:6379"
         - name: FLEET_AUTH_JWT_KEY
           value: "fleet-jwt-secret-123"
         - name: FLEET_ENROLL_SECRET
