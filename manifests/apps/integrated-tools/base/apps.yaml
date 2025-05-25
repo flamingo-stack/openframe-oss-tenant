@@ -28,7 +28,7 @@ spec:
 
       destination:
         name: '{{or .cluster "in-cluster"}}'  
-        namespace: '{{.namespace "integrated-tools"}}'  
+        namespace: '{{or .namespace "integrated-tools"}}'  
 
       syncPolicy:
         automated:
