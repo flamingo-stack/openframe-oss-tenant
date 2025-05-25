@@ -6,6 +6,11 @@ spec:
   generators:
   - list:  # appName == namespace
       elements: 
+      
+      - appName: namespace-platform
+        path: manifests/platform/base/namespace
+        branch: feature-restructure-manifests
+        syncWave: "0" 
 
       - appName: argocd-ingress
         path: manifests/platform/base/argocd-ingress
