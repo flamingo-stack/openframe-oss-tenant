@@ -70,7 +70,7 @@ spec:
         branch: feature-restructure-manifests
         syncWave: "2"
       
-      - appName: openframe-gateway
+      - appName: openframe-stream
         path: manifests/openframe/base/openframe-stream
         namespace: microservices
         branch: feature-restructure-manifests
