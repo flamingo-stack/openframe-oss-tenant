@@ -136,11 +136,3 @@ case "$ARG" in
     show_help
     exit 0
 esac
-
-  # p|platform)
-  #   # Bootstrap whole cluster with base apps
-  #   OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
-  #   OPENFRAME_RECURSIVE_CALL=1 bash "$0" app argocd deploy
-  #   OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform deploy
-  #   OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform_pki deploy
-  #   ;;
