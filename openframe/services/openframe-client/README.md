@@ -1,3 +1,4 @@
+
 # OpenFrame Client Service
 
 This microservice is responsible for handling all client and machine (agent) related operations in the OpenFrame platform. It manages:
