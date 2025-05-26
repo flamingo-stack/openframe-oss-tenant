@@ -47,3 +47,9 @@ spec:
         syncOptions:
         - CreateNamespace={{or .createNamespace "false"}}
         - ServerSideApply={{or .serverSideApply "false"}}
+        retry:
+          limit: -1 
+          backoff:
+            duration: 5s 
+            factor: 2
+            maxDuration: 30m

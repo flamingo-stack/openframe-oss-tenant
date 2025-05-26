@@ -19,13 +19,13 @@ spec:
         path: manifests/apps/openframe/overlays/local
         branch: feature-restructure-manifests
       
-      - appName: integrated-tools
-        path: manifests/apps/integrated-tools/overlays/local
-        branch: feature-restructure-manifests
+      # - appName: integrated-tools
+      #   path: manifests/apps/integrated-tools/overlays/local
+      #   branch: feature-restructure-manifests
       
-      - appName: client-tools
-        path: manifests/apps/client-tools/overlays/local
-        branch: feature-restructure-manifests
+      # - appName: client-tools
+      #   path: manifests/apps/client-tools/overlays/local
+      #   branch: feature-restructure-manifests
       
 
   template:

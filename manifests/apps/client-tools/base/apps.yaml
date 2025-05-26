@@ -36,3 +36,9 @@ spec:
           prune: true
         syncOptions:
         - CreateNamespace={{or .createNamespace "false"}}
+        retry:
+          limit: -1 
+          backoff:
+            duration: 5s 
+            factor: 2
+            maxDuration: 30m
