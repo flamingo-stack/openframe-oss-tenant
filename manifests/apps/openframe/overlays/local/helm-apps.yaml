@@ -14,12 +14,12 @@ spec:
         namespace: datasources
         branch: feature-restructure-manifests
       
-      # - appName: kafka
-      #   repoURL: https://charts.bitnami.com/bitnami
-      #   targetRevision: 31.5.0
-      #   path: manifests/openframe/base/kafka
-      #   namespace: datasources
-      #   branch: feature-restructure-manifests
+      - appName: kafka
+        repoURL: https://charts.bitnami.com/bitnami
+        targetRevision: 31.5.0
+        path: manifests/openframe/base/kafka
+        namespace: datasources
+        branch: feature-restructure-manifests
       
       - appName: mongodb-exporter
         repoURL: https://prometheus-community.github.io/helm-charts

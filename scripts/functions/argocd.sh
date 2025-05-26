@@ -23,7 +23,7 @@ function delete_argocd() {
 
   
 wait_for_argocd_apps() {
-  sleep 30  # Platform App to bootstrap
+  sleep 30  # ArgoCD Apps to bootstrap
   echo "Waiting for ArgoCD apps to be Healthy and Synced..."
   printed="$(mktemp)"
 

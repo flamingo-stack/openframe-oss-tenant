@@ -34,11 +34,8 @@ argocd)
   ;;
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying ArgoCD Apps"
     kubectl -n argocd apply -f "${SCRIPT_DIR}/manifests/repo-secret.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
     kubectl -n argocd apply -f "${SCRIPT_DIR}/manifests/argocd-apps.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
-    stop_spinner_and_return_code $? || exit 1 
-
     wait_for_argocd_apps
   elif [ "$ACTION" == "delete" ]; then
     kubectl -n argocd delete -f "${SCRIPT_DIR}/manifests/repo-secret.yaml"
