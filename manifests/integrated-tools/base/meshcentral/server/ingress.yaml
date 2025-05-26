@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: meshcentral
   annotations:
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     # WebSocket support
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "60"

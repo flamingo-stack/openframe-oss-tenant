@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: mongo-express-ingress
   annotations:
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx

@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: nifi
   annotations:
+    cert-manager.io/cluster-issuer: "cluster-issuer"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"

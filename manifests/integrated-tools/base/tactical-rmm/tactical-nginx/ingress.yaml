@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: tactical-rmm
   annotations:
+    cert-manager.io/cluster-issuer: "cluster-issuer"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
     nginx.ingress.kubernetes.io/proxy-set-header-connection: "Upgrade"
     nginx.ingress.kubernetes.io/proxy-set-header-upgrade: "$http_upgrade"
