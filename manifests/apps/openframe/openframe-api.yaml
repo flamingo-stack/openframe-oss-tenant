@@ -3,7 +3,7 @@ kind: Application
 metadata:
   name: openframe-api
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 
