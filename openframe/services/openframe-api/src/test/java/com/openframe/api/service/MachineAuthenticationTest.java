@@ -39,7 +39,7 @@ class MachineAuthenticationTest {
         client.setScopes(new String[]{"metrics:write"});
 
         when(clientRepository.findByClientId("test_machine")).thenReturn(Optional.of(client));
-        when(jwtService.generateToken(any(JwtClaimsSet.class))).thenReturn("test.jwt.token");
+        when(jwtService.generateToken(any(JwtClaimsSet.class))).thenReturn("test.security.token");
 
         // Act
         TokenResponse response = oauthService.token(

@@ -2,6 +2,7 @@ package com.openframe.api.service;
 
 import java.util.Arrays;
 
+import com.openframe.api.dto.oidc.UserInfoRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -9,15 +10,13 @@ import org.springframework.stereotype.Service;
 
 import com.openframe.api.dto.oidc.OpenIDConfiguration;
 import com.openframe.api.dto.oidc.UserInfo;
-import com.openframe.core.model.User;
-import com.openframe.security.UserSecurity;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class OpenIDService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(OpenIDService.class);
 
     public ResponseEntity<?> getOpenIDConfiguration() {
@@ -36,29 +35,26 @@ public class OpenIDService {
             .build());
     }
 
-    public ResponseEntity<?> getUserInfo(UserSecurity userSecurity) {
-        if (userSecurity == null || userSecurity.getUser() == null) {
-            log.warn("No authenticated user found");
+    public ResponseEntity<?> getUserInfo(UserInfoRequest userInfoRequest) {
+        if (userInfoRequest.getUserId() == null) {
+            log.warn("No user info found in request");
             return ResponseEntity.status(401)
-                .body(UserInfo.builder()
-                    .error("invalid_token")
-                    .errorDescription("Invalid or missing token")
-                    .build());
+                    .body(UserInfo.builder()
+                            .error("invalid_token")
+                            .errorDescription("Invalid or missing token")
+                            .build());
         }
 
-        User user = userSecurity.getUser();
-        log.debug("Found user: {}", user);
-        
-        String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + 
-                         (user.getLastName() != null ? " " + user.getLastName() : "").trim();
+        String fullName = (userInfoRequest.getFirstName() != null ? userInfoRequest.getFirstName() : "") +
+                (userInfoRequest.getLastName() != null ? " " + userInfoRequest.getLastName() : "").trim();
 
         return ResponseEntity.ok(UserInfo.builder()
-            .sub(user.getId())
-            .name(fullName.isEmpty() ? null : fullName)
-            .givenName(user.getFirstName())
-            .familyName(user.getLastName())
-            .email(user.getEmail())
-            .emailVerified(true)
-            .build());
+                .sub(userInfoRequest.getUserId())
+                .name(fullName.isEmpty() ? null : fullName)
+                .givenName(userInfoRequest.getFirstName())
+                .familyName(userInfoRequest.getLastName())
+                .email(userInfoRequest.getEmail())
+                .emailVerified(true)
+                .build());
     }
 } 

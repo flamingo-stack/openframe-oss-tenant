@@ -2,7 +2,6 @@ package com.openframe.client.service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 
 import com.openframe.core.model.User;
-import com.openframe.security.UserSecurity;
+import com.openframe.security.adapter.UserSecurity;
 import com.openframe.security.jwt.JwtService;
 
 @ExtendWith(MockitoExtension.class)

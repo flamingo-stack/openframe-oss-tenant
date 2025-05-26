@@ -65,11 +65,12 @@ public class OAuthController {
             @RequestParam("client_id") String clientId,
             @RequestParam("redirect_uri") String redirectUri,
             @RequestParam(value = "scope", required = false) String scope,
-            @RequestParam(value = "state", required = false) String state) {
+            @RequestParam(value = "state", required = false) String state,
+            @RequestHeader("X-User-Id") String userId) {
         
-        log.debug("Authorization request - response_type: {}, client_id: {}", responseType, clientId);
+        log.debug("Authorization request - response_type: {}, client_id: {}, user_id: {}", responseType, clientId, userId);
         try {
-            AuthorizationResponse response = oauthService.authorize(responseType, clientId, redirectUri, scope, state);
+            AuthorizationResponse response = oauthService.authorize(responseType, clientId, redirectUri, scope, state, userId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401)

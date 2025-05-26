@@ -49,7 +49,7 @@
         <!-- Libraries -->
         <module>openframe/libs/openframe-core</module>
         <module>openframe/libs/openframe-data</module>
-        <module>openframe/libs/openframe-security</module>
+        <module>openframe/libs/openframe-jwt</module>
 
         <!-- Services -->
         <module>openframe/services/openframe-config</module>
@@ -165,7 +165,7 @@
             </dependency>
             <dependency>
                 <groupId>com.openframe</groupId>
-                <artifactId>openframe-security</artifactId>
+                <artifactId>openframe-jwt</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

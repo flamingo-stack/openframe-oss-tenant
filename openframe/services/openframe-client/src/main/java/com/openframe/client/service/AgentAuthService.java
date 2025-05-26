@@ -11,7 +11,6 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -21,11 +20,24 @@ public class AgentAuthService {
     private final OAuthClientRepository clientRepository;
     private final JwtService jwtService;
 
-    @Value("${security.oauth2.token.access.expiration-seconds:3600}")
+    @Value("${security.oauth2.token.access.expiration-seconds}")
     private int accessTokenExpirationSeconds;
 
-    public AgentTokenResponse authenticateAndIssueToken(String clientId, String clientSecret) {
-        OAuthClient client = validateClient(clientId, clientSecret);
+    public AgentTokenResponse issueClientToken(String clientId, String clientSecret) {
+        log.debug("Validating client - ID: {}", clientId);
+        OAuthClient client = clientRepository.findByClientId(clientId)
+                .map(foundClient -> {
+                    if (foundClient.getClientSecret() == null || !foundClient.getClientSecret().equals(clientSecret)) {
+                        log.error("Invalid client secret for client: {}", clientId);
+                        throw new IllegalArgumentException("Invalid client secret");
+                    }
+                    log.debug("Client validation successful for: {}", clientId);
+                    return foundClient;
+                })
+                .orElseThrow(() -> {
+                    log.error("Client not found: {}", clientId);
+                    return new IllegalArgumentException("Client not found");
+                });
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("https://auth.openframe.com")
@@ -34,22 +46,12 @@ public class AgentAuthService {
                 .subject(client.getClientId())
                 .claim("grant_type", "client_credentials")
                 .claim("scopes", client.getScopes())
-                .claim("roles", List.of("USER"))
                 .build();
 
-        String accessToken = jwtService.generateToken(claims);
-
-        return new AgentTokenResponse(accessToken, "Bearer", accessTokenExpirationSeconds);
-    }
-
-    private OAuthClient validateClient(String clientId, String clientSecret) {
-        return clientRepository.findByClientId(clientId)
-                .map(client -> {
-                    if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
-                        throw new IllegalArgumentException("Invalid client secret");
-                    }
-                    return client;
-                })
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        return new AgentTokenResponse(
+                jwtService.generateToken(claims),
+                "Bearer",
+                accessTokenExpirationSeconds
+        );
     }
 }

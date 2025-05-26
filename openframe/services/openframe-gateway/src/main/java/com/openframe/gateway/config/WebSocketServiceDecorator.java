@@ -1,6 +1,6 @@
 package com.openframe.gateway.config;
 
-import com.openframe.security.jwt.JwtAuthenticationOperations;
+import com.openframe.gateway.security.jwt.JwtAuthenticationOperations;
 import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +16,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.Instant;
+import static com.openframe.gateway.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
 
-import static com.openframe.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
 
 @RequiredArgsConstructor
 @Slf4j

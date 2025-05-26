@@ -1,45 +1,43 @@
 package com.openframe.client.security;
 
+import com.openframe.client.config.WebSocketAuthInterceptor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
 
-import com.openframe.security.WebSocketAuthInterceptor;
-import com.openframe.security.jwt.JwtService;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class WebSocketAuthenticationTest {
 
     @Mock
-    private JwtService jwtService;
+    private MessageChannel messageChannel;
 
     @InjectMocks
     private WebSocketAuthInterceptor interceptor;
 
     @Test
-    void whenValidToken_ShouldAuthenticateConnection() {
-        // Arrange
+    void whenValidHeaders_ShouldAuthenticateConnection() {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
-        accessor.addNativeHeader("Authorization", "Bearer valid.jwt.token");
+        accessor.setLeaveMutable(true);
+        accessor.addNativeHeader("X-User-Id", "test-user-id");
+        accessor.addNativeHeader("X-User-Email", "test@example.com");
+        accessor.addNativeHeader("X-User-Roles", "USER");
+        Message<?> message = MessageBuilder.createMessage("payload", accessor.getMessageHeaders());
 
-        Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+        Message<?> result = interceptor.preSend(message, messageChannel);
 
-        when(jwtService.isTokenValid("valid.jwt.token", null)).thenReturn(true);
-        when(jwtService.extractUsername("valid.jwt.token")).thenReturn("test_user");
-
-        // Act
-        interceptor.preSend(message, null);
-
-        // Assert
-        verify(jwtService).isTokenValid("valid.jwt.token", null);
-        verify(jwtService).extractUsername("valid.jwt.token");
+        assertNotNull(result);
+        StompHeaderAccessor resultAccessor = StompHeaderAccessor.wrap(result);
+        assertNotNull(resultAccessor);
+        assertNotNull(resultAccessor.getUser());
+        assertEquals("test-user-id", resultAccessor.getUser().getName());
     }
-} 
+}

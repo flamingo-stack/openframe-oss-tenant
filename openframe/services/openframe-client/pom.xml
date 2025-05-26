@@ -21,7 +21,11 @@
     <dependencies>
         <dependency>
             <groupId>com.openframe</groupId>
-            <artifactId>openframe-security</artifactId>
+            <artifactId>openframe-data</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-jwt</artifactId>
         </dependency>
         <!-- Spring Boot starters with Jackson excluded -->
         <dependency>

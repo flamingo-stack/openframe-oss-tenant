@@ -43,6 +43,7 @@ class OAuthServiceTest {
         String redirectUri = "http://localhost:3000/callback";
         String scope = "read write";
         String state = "xyz";
+        String userId = "test_user";
         
         OAuthClient client = new OAuthClient();
         client.setClientId(clientId);
@@ -53,7 +54,7 @@ class OAuthServiceTest {
         
         // Act
         AuthorizationResponse response = oauthService.authorize(
-            "code", clientId, redirectUri, scope, state);
+            "code", clientId, redirectUri, scope, state, userId);
         
         // Assert
         assertThat(response).isNotNull();
