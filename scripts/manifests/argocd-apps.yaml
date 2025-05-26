@@ -1,56 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
+kind: Application
 metadata:
   name: argocd-apps
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
 spec:
-  goTemplate: true
-  generators:
-  - list: 
-      elements:
-    
+  project: default
 
-      # in-cluster apps
-      - appName: platform
-        path: manifests/apps/platform/overlays/local
-        branch: feature-restructure-manifests
-        syncWave: "-1"
-      
-      - appName: openframe
-        path: manifests/apps/openframe/overlays/local
-        branch: feature-restructure-manifests
-      
-      # - appName: integrated-tools
-      #   path: manifests/apps/integrated-tools/overlays/local
-      #   branch: feature-restructure-manifests
-      
-      # - appName: client-tools
-      #   path: manifests/apps/client-tools/overlays/local
-      #   branch: feature-restructure-manifests
-      
+  source:
+    repoURL: https://github.com/Flamingo-CX/openframe.git
+    targetRevision: feature-restructure-manifests
+    path: manifests/apps
 
-  template:
-    metadata:
-      name: '{{.appName}}'
-      annotations:
-        argocd.argoproj.io/sync-wave: '{{.syncWave}}'
-      finalizers:
-        - resources-finalizer.argocd.argoproj.io
+  destination:
+    name: in-cluster
+    namespace: argocd
 
-    spec:
-      project: default
-
-      source:
-        repoURL: 'https://github.com/Flamingo-CX/{{or .repoName "openframe"}}.git' 
-        targetRevision: '{{or .branch "main"}}'
-        path: '{{.path}}'
-
-      destination:
-        name: '{{or .cluster "in-cluster"}}'
-        namespace: '{{or .namespace "argocd"}}'
-
-      syncPolicy:
-        automated: 
-          prune: true 
-          selfHeal: true  
-        retry:
-          limit: -1  # unlimited
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: -1

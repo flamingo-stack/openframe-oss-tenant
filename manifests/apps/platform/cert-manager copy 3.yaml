@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: platform
+
+  sources:
+    # Helm chart
+    - repoURL: https://charts.jetstack.io
+      targetRevision: 1.17.2
+      chart: cert-manager
+      helm:
+        valueFiles:
+          - "$values/manifests/platform/base/cert-manager/helm-values.yaml"  # name is hardcoded
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: feature-restructure-manifests
+      ref: values
+    # Extra resources
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: feature-restructure-manifests
+      path: manifests/platform/base/cert-manager
+
+  destination:
+    name: in-cluster
+    namespace: platform
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m
