@@ -18,7 +18,7 @@ register_tool() {
     local api_key_type=${14:-"BEARER_TOKEN"}
     local api_key_name=${15:-""}
     local CA_SECRET="platform-certificate"
-    local CA_NAMESPACE="cert-manager"
+    local CA_NAMESPACE="platform"
     local TMP_CA_PATH
     TMP_CA_PATH=$(mktemp)
 

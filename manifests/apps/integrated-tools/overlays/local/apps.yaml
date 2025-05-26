@@ -13,20 +13,20 @@ spec:
         syncWave: "-1"   
 
 
-      # - appName: authentik
-      #   path: manifests/integrated-tools/base/authentik
-      #   branch: feature-restructure-manifests
-      #   syncWave: "0"
+      - appName: authentik
+        path: manifests/integrated-tools/base/authentik
+        branch: feature-restructure-manifests
+        syncWave: "0"
       
-      # - appName: fleet
-      #   path: manifests/integrated-tools/base/fleet
-      #   branch: feature-restructure-manifests
-      #   syncWave: "0"
+      - appName: fleet
+        path: manifests/integrated-tools/base/fleet
+        branch: feature-restructure-manifests
+        syncWave: "0"
       
-      # - appName: meshcentral
-      #   path: manifests/integrated-tools/base/meshcentral
-      #   branch: feature-restructure-manifests
-      #   syncWave: "0"
+      - appName: meshcentral
+        path: manifests/integrated-tools/base/meshcentral
+        branch: feature-restructure-manifests
+        syncWave: "0"
       
       - appName: tactical-rmm
         path: manifests/integrated-tools/base/tactical-rmm
