@@ -35,7 +35,7 @@ function openframe_microservices_openframe_api_delete() {
 # OPENFRAME CLIENT
 function openframe_microservices_openframe_client_deploy() {
   echo "Deploying API" &&
-    kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-client
+    kubectl -n openframe-microservices apply -k ${ROOT_REPO_DIR}/manifests/openframe-microservices/openframe-client
 }
 
 function openframe_microservices_openframe_client_wait() {
@@ -45,7 +45,7 @@ function openframe_microservices_openframe_client_wait() {
 
 function openframe_microservices_openframe_client_delete() {
   echo "Deleting API" &&
-    kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/deploy/dev/openframe-microservices/openframe-client
+    kubectl -n openframe-microservices delete -k ${ROOT_REPO_DIR}/manifests/openframe-microservices/openframe-client
 }
 
 # OPENFRAME MANAGEMENT (depends on Config Server, MongoDB)
