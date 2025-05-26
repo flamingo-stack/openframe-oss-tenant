@@ -4,12 +4,10 @@ kind: Kustomization
 resources:   
   # wave 0
   - ./namespace.yaml   
-
-  # wave 1
   - ./cert-manager.yaml   
   - ./ingress-nginx.yaml  
 
-  # wave 2
+  # wave 1
   - ./argocd-ingress.yaml   
   - ./promtail.yaml
   - ./loki.yaml           

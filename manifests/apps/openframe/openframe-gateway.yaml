@@ -3,7 +3,7 @@ kind: Application
 metadata:
   name: openframe-gateway
   annotations:
-    argocd.argoproj.io/sync-wave: "13"
+    argocd.argoproj.io/sync-wave: "3"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 

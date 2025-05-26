@@ -2,11 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:   
-  # wave 10              
+  # wave 2           
   - ./namespace-microservices.yaml 
   - ./namespace-datasources.yaml
-
-  # wave 11
   - ./cassandra.yaml   
   - ./kafka.yaml  
   - ./mongodb-exporter.yaml    
@@ -17,11 +15,9 @@ resources:
   - ./redis.yaml
   - ./zookeeper.yaml
   
-  # wave 12
+  # wave 3
   - ./openframe-config.yaml  
-  
-  # wave 13
-  - ./openframe-management.yaml   
+    - ./openframe-management.yaml   
   - ./openframe-stream.yaml  
   - ./openframe-ui.yaml    
   - ./openframe-api.yaml   
