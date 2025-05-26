@@ -33,14 +33,12 @@ argocd)
   fi
   ;;
 argocd_apps)
-  if [ "$ACTION" == "deploy" ]; then
-    kubectl -n argocd apply -f "${SCRIPT_DIR}/argocd-manifests/repo-secret.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
+  if [ "$ACTION" == "deploy" ]; then 
     kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${SCRIPT_DIR}/argocd-manifests/patch-argocd-cm.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-    kubectl -n argocd apply -f "${SCRIPT_DIR}/argocd-manifests/argocd-apps.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    kubectl -n argocd apply -k "${SCRIPT_DIR}/argocd-manifests" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
     wait_for_argocd_apps
   elif [ "$ACTION" == "delete" ]; then
-    kubectl -n argocd delete -f "${SCRIPT_DIR}/argocd-manifests/repo-secret.yaml"
-    kubectl -n argocd delete -f "${SCRIPT_DIR}/argocd-manifests/argocd-apps.yaml"
+    kubectl -n argocd delete -k "${SCRIPT_DIR}/argocd-manifests"
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0

@@ -3,8 +3,8 @@ kind: Kustomization
 
 resources:   
   # wave 2           
-  - ./namespace-microservices.yaml 
-  - ./namespace-datasources.yaml
+  - namespace-microservices.yaml 
+  - namespace-datasources.yaml
   - ./cassandra.yaml   
   - ./kafka.yaml  
   - ./mongodb-exporter.yaml    
