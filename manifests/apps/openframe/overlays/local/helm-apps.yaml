@@ -7,34 +7,34 @@ spec:
   - list:  # appName == chart, namespace == project
       elements: 
 
-      # - appName: cassandra
-      #   repoURL: https://charts.bitnami.com/bitnami
-      #   targetRevision: 12.2.1
-      #   path: manifests/openframe/base/cassandra
-      #   namespace: datasources
-      #   branch: feature-restructure-manifests
+      - appName: cassandra
+        repoURL: https://charts.bitnami.com/bitnami
+        targetRevision: 12.2.1
+        path: manifests/openframe/base/cassandra
+        namespace: datasources
+        branch: feature-restructure-manifests
       
-      # - appName: kafka
-      #   repoURL: https://charts.bitnami.com/bitnami
-      #   targetRevision: 31.5.0
-      #   path: manifests/openframe/base/kafka
-      #   namespace: datasources
-      #   branch: feature-restructure-manifests
+      - appName: kafka
+        repoURL: https://charts.bitnami.com/bitnami
+        targetRevision: 31.5.0
+        path: manifests/openframe/base/kafka
+        namespace: datasources
+        branch: feature-restructure-manifests
       
-      # - appName: mongodb-exporter
-      #   repoURL: https://prometheus-community.github.io/helm-charts
-      #   chart: prometheus-mongodb-exporter
-      #   targetRevision: 3.11.1
-      #   path: manifests/openframe/base/mongodb-exporter
-      #   namespace: datasources
-      #   branch: feature-restructure-manifests
+      - appName: mongodb-exporter
+        repoURL: https://prometheus-community.github.io/helm-charts
+        chart: prometheus-mongodb-exporter
+        targetRevision: 3.11.1
+        path: manifests/openframe/base/mongodb-exporter
+        namespace: datasources
+        branch: feature-restructure-manifests
       
-      # - appName: redis
-      #   repoURL: https://charts.bitnami.com/bitnami
-      #   targetRevision: 20.11.3
-      #   path: manifests/openframe/base/redis
-      #   namespace: datasources
-      #   branch: feature-restructure-manifests
+      - appName: redis
+        repoURL: https://charts.bitnami.com/bitnami
+        targetRevision: 20.11.3
+        path: manifests/openframe/base/redis
+        namespace: datasources
+        branch: feature-restructure-manifests
       
       # - appName: redis-exporter
       #   repoURL: https://prometheus-community.github.io/helm-charts
