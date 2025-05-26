@@ -17,7 +17,7 @@ resources:
   
   # wave 3
   - ./openframe-config.yaml  
-    - ./openframe-management.yaml   
+  - ./openframe-management.yaml   
   - ./openframe-stream.yaml  
   - ./openframe-ui.yaml    
   - ./openframe-api.yaml   
