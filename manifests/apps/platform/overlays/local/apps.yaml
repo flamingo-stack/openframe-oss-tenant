@@ -15,5 +15,5 @@ spec:
       - appName: argocd-ingress
         path: manifests/platform/base/argocd-ingress
         namespace: argocd
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "0"   
