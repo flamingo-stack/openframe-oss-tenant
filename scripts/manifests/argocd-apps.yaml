@@ -15,9 +15,9 @@ spec:
         branch: feature-restructure-manifests
         syncWave: "-1"
       
-      - appName: openframe
-        path: manifests/apps/openframe/overlays/local
-        branch: feature-restructure-manifests
+      # - appName: openframe
+      #   path: manifests/apps/openframe/overlays/local
+      #   branch: feature-restructure-manifests
       
       - appName: integrated-tools
         path: manifests/apps/integrated-tools/overlays/local
