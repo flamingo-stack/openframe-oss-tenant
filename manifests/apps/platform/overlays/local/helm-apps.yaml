@@ -11,14 +11,14 @@ spec:
         repoURL: https://charts.jetstack.io
         targetRevision: 1.17.2
         path: manifests/platform/base/cert-manager
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "-1"   
 
       - appName: ingress-nginx
         repoURL: https://kubernetes.github.io/ingress-nginx
         targetRevision: 4.12.1
         path: manifests/platform/base/ingress-nginx
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "-1"    
       
       - appName: prometheus
@@ -27,21 +27,21 @@ spec:
         targetRevision: 72.5.1
         path: manifests/platform/base/prometheus
         serverSideApply: "true"
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "0"   
 
       - appName: loki
         repoURL: https://grafana.github.io/helm-charts
         targetRevision: 6.29.0
         path: manifests/platform/base/loki
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "0"   
 
       - appName: promtail
         repoURL: https://grafana.github.io/helm-charts
         targetRevision: 6.16.6
         path: manifests/platform/base/promtail
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "0"   
       
       - appName: grafana
@@ -49,5 +49,5 @@ spec:
         targetRevision: 8.13.1
         path: manifests/platform/base/grafana
         serverSideApply: "true"
-        branch: main
+        branch: feature-restructure-manifests
         syncWave: "0"

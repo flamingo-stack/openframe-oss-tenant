@@ -34,21 +34,6 @@ $REQUIRED_TOOLS = @{
         "url" = "https://github.com/k3d-io/k3d/releases/latest/download/k3d-windows-amd64.exe"
         "installPath" = "$env:ProgramFiles\openframe\k3d\k3d.exe"
     }
-    "kustomize" = @{
-        "url" = "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_windows_amd64.tar.gz"
-        "installPath" = "$env:ProgramFiles\openframe\kustomize\kustomize.exe"
-    }
-}
-
-# Function to check if GitHub token is set and valid
-function Test-GitHubToken {
-    if (-not $env:GITHUB_TOKEN_CLASSIC) {
-        Write-Host "GitHub Personal Access Token (Classic) is required." -ForegroundColor Yellow
-        Write-Host "This token needs repo and packages permissions." -ForegroundColor Yellow
-        $token = Read-Host "Please enter your GitHub token" -AsSecureString
-        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($token)
-        $env:GITHUB_TOKEN_CLASSIC = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-    }
 }
 
 # Function to check if a tool is installed
@@ -613,16 +598,6 @@ if ($unavailablePorts.Count -gt 0) {
     exit 1
 }
 
-#   Check for GitHub token first
-# Always ask for GitHub token
-$githubToken = Read-Host "Please enter your GitHub token (leave empty if not needed)"
-
-$tokenCommand = ""
-if (-not [string]::IsNullOrWhiteSpace($githubToken)) {
-    $tokenCommand = "export GITHUB_TOKEN_CLASSIC='$githubToken'; "
-    Write-Host "GitHub token will be set for this session." -ForegroundColor Green
-}
-
 # 1. Check/install Chocolatey
 if (-not (Test-Chocolatey)) {
     if (-not (Install-Chocolatey)) {
@@ -750,7 +725,7 @@ export OPENFRAME_AUTO_APPROVE=true;
         $runArgs = if ($RunArgs.Count -gt 0) { $RunArgs -join ' ' } else { '--help' }
 
         # Create a more interactive experience by opening a proper Git Bash window that stays open
-        $bashArgs = "-c `"$tokenCommand $silentEnv cd '$repoPath' && { { ./$scriptRelativePath $runArgs; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
+        $bashArgs = "-c `"$silentEnv cd '$repoPath' && { { ./$scriptRelativePath $runArgs; } || { echo -e '\n\n========== ERROR OCCURRED =========='; echo 'Review the errors above.'; }; }; echo -e '\n\nPress any key to close this window...'; read -n 1`""
         Start-Process -FilePath $gitBashPath -ArgumentList "--login", "-i", $bashArgs -Wait
 
         if (-not $Silent) {
