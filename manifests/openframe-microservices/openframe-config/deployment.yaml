@@ -27,7 +27,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: CONFIG_GIT_BRANCH
-              value: "feature/client-service-auth-routing"
+              value: "new-client-and-routings"
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
