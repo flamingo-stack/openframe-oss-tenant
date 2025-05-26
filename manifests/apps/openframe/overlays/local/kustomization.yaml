@@ -5,4 +5,4 @@ resources:
 
 patches:
 - path: apps.yaml
-# - path: helm-apps.yaml
+- path: helm-apps.yaml

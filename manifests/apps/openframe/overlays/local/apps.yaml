@@ -32,17 +32,17 @@ spec:
         branch: feature-restructure-manifests
         syncWave: "0"
       
-      - appName: pinot
-        path: manifests/openframe/base/pinot
-        namespace: datasources
-        branch: feature-restructure-manifests
-        syncWave: "0"
+      # - appName: pinot
+      #   path: manifests/openframe/base/pinot
+      #   namespace: datasources
+      #   branch: feature-restructure-manifests
+      #   syncWave: "0"
       
-      - appName: zookeeper
-        path: manifests/openframe/base/zookeeper
-        namespace: datasources
-        branch: feature-restructure-manifests
-        syncWave: "0"
+      # - appName: zookeeper
+      #   path: manifests/openframe/base/zookeeper
+      #   namespace: datasources
+      #   branch: feature-restructure-manifests
+      #   syncWave: "0"
 
 
       - appName: openframe-config

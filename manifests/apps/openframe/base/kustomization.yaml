@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - project.yaml
   - apps.yaml
-  # - helm-apps.yaml
+  - helm-apps.yaml
