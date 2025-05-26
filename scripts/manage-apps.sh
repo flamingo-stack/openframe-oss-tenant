@@ -34,11 +34,12 @@ argocd)
   ;;
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Deploying Platform Apps"
+    start_spinner "Deploying ArgoCD Apps"
     kubectl -n argocd apply -f "${SCRIPT_DIR}/manifests/repo-secret.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
     kubectl -n argocd apply -f "${SCRIPT_DIR}/manifests/argocd-apps.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
-    wait_for_argocd_apps >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
     stop_spinner_and_return_code $? || exit 1 
+
+    wait_for_argocd_apps
   elif [ "$ACTION" == "delete" ]; then
     kubectl -n argocd delete -f "${SCRIPT_DIR}/manifests/repo-secret.yaml"
     kubectl -n argocd delete -f "${SCRIPT_DIR}/manifests/argocd-apps.yaml"
@@ -128,9 +129,7 @@ openframe_microservices_openframe_ui)
   ;;
 openframe_microservices_register_apps)
   start_spinner "Registering apps"
-  openframe_microservices_openframe_management_wait >/dev/null &&
-    integrated_tools_wait_all >/dev/null &&
-      ${ROOT_REPO_DIR}/scripts/functions/register.sh >"${DEPLOY_LOG_DIR}/register-apps-deploy.log"
+  ${ROOT_REPO_DIR}/scripts/functions/register.sh >"${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   stop_spinner_and_return_code $? || exit 1
   echo
   sed -n '/Fleet MDM Credentials:/,/All ingresses/p' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" | sed '$d'

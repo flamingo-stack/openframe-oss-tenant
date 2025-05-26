@@ -8,4 +8,4 @@ resources:
 images:
 - name: openframe-meshcentral
   newName: ghcr.io/flamingo-cx/openframe-meshcentral
-  newTag: latest
+  newTag: 13d1f34c

@@ -8,4 +8,4 @@ resources:
 images:
 - name: openframe-ui
   newName: ghcr.io/flamingo-cx/openframe-ui
-  newTag: latest
+  newTag: 13d1f34c
