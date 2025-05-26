@@ -3,3 +3,12 @@ kind: Kustomization
 
 resources:
   - ns.yaml
+
+secretGenerator:
+  - name: github-pat-secret
+    type: kubernetes.io/dockerconfigjson
+    files:
+      - .dockerconfigjson=ghcr-docker-config.json
+
+generatorOptions:
+  disableNameSuffixHash: true
