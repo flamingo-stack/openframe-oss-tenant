@@ -68,25 +68,30 @@ http {
             autoindex on;
         }
 
-        location /api/tunnel {
-            # Define the proxy URL as a variable with escaped parameters
-            set $proxy_mesh_url "https://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}/meshrelay.ashx?$args&user=${MESH_USER_ENCODED}&pass=${MESH_PASS_ENCODED}";
+        # WebSocket endpoint
+        location ~ ^/api/ws/(.*)$ {
+            # Store the target path before any rewrites
+            set $target_path $1;
             
-            # Log the proxy_pass URL before substitution
-            add_header X-Debug-ProxyPass-Original $proxy_mesh_url;
+            # Define the proxy URL
+            set $query_sep "";
+            if ($is_args) {
+                set $query_sep "&";
+            }
+            if ($args = "") {
+                set $query_sep "?";
+            }
+            set $proxy_mesh_url "https://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}/$target_path$is_args$args${query_sep}user=${MESH_USER}&pass=${MESH_PASS}";
             
+            # Define proxy configuration
             proxy_pass $proxy_mesh_url;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
             proxy_set_header Host $host;
-            proxy_read_timeout 86400;
-            
-            # Log details about the proxy connection
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Debug-URI $uri;
-            proxy_set_header X-Debug-Args $args;
+
+            proxy_connect_timeout 60;
+            proxy_read_timeout 3600;
         }
         
         # Unified API endpoint

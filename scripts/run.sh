@@ -24,12 +24,6 @@ while IFS= read -r func; do
   [[ "$func" == _spin* || "$func" == *spinner* ]] && export -f "$func"
 done < <(declare -F | awk '{print $3}')
 
-stop_spinner_and_return_code() {
-    local code=$1
-    stop_spinner $code
-    return $code
-}
-
 source "${SCRIPT_DIR}/functions/flamingo.sh"
 export -f flamingo
 
@@ -53,6 +47,9 @@ export -f wait_parallel
 
 source "${SCRIPT_DIR}/functions/intercept.sh"
 export -f intercept_app
+
+source "${SCRIPT_DIR}/functions/argocd.sh"
+export -f deploy_argocd delete_argocd argocd_client wait_for_argocd_apps
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -92,15 +89,9 @@ if [ "$ACTION" == "intercept" ]; then
 fi
 
 case "$ARG" in
-  pki)
-    start_spinner "Generating PKI certificates"
-    create_ca > "${DEPLOY_LOG_DIR}/pki.log" 2>&1
-    stop_spinner $?
-    ;;
   k|cluster)
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" pki && \
-    if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^openframe-dev$"; then
-      start_spinner "Using existing 'openframe-dev' cluster."
+    if k3d cluster list 2>/dev/null | awk '{print $1}' | grep -q "^$K3D_CLUSTER_NAME$"; then
+      start_spinner "Using existing '$K3D_CLUSTER_NAME' cluster."
       stop_spinner_and_return_code $? || exit 1
     else
       start_spinner "Setting up cluster"
@@ -116,7 +107,8 @@ case "$ARG" in
   d|delete)
     start_spinner "Deleting cluster"
     telepresence quit > "${DEPLOY_LOG_DIR}/telepresence-quit.log" 2>&1 && \
-    k3d cluster delete openframe-dev > "${DEPLOY_LOG_DIR}/k3d-cluster-delete.log" 2>&1
+    k3d cluster delete $K3D_CLUSTER_NAME --all > "${DEPLOY_LOG_DIR}/k3d-cluster-delete.log" 2>&1
+    docker network prune -f > "${DEPLOY_LOG_DIR}/network-prune.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
     ;;
   a|app)
@@ -135,7 +127,9 @@ case "$ARG" in
   p|platform)
     # Bootstrap whole cluster with base apps
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app argocd deploy
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform deploy
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform_pki deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
@@ -146,13 +140,13 @@ case "$ARG" in
   s|start)
     start_spinner "Starting cluster"
     add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
-    k3d cluster start openframe-dev > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
+    k3d cluster start $K3D_CLUSTER_NAME > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     stop_spinner_and_return_code $? || exit 1
     ;;
   stop)
     start_spinner "Stopping cluster"
     telepresence quit > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1 && \
-    k3d cluster stop openframe-dev > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
+    k3d cluster stop $K3D_CLUSTER_NAME > "${DEPLOY_LOG_DIR}/cluster-stop.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
     ;;
   -h|--help|-Help|help)

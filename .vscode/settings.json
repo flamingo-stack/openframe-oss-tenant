@@ -25,5 +25,6 @@
         "editor.defaultFormatter": "rust-lang.rust-analyzer",
         "editor.formatOnSave": true,
         "editor.tabSize": 4
-    }
+    },
+    "java.compile.nullAnalysis.mode": "automatic"
 }

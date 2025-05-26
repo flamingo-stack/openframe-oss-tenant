@@ -1,7 +1,7 @@
 ---
-description: API design patterns and standards for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # API Design
 

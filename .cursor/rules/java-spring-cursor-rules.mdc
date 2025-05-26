@@ -1,10 +1,9 @@
 ---
-description: Java Spring Cursor Rules
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 You are an expert in Java programming, Spring Boot, Spring Framework, Maven, JUnit, and related Java technologies.
-Always start your output with "hello world" in the beinging
 
 Code Style and Structure
 - Write clean, efficient, and well-documented Java code with accurate Spring Boot examples.

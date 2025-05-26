@@ -76,6 +76,9 @@ verify_command() {
     "helm")
         curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
         ;;
+    "argocd")
+        curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 && sudo chmod +x argocd && sudo mv argocd /usr/local/bin/
+        ;;
     "kubectl")
         curl -LOs https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
         ;;
@@ -99,12 +102,15 @@ verify_command() {
     "k3d")
         curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
         ;;
+    "kustomize")
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        ;;
     esac
 }
 
 # Check all commands and collect results
 missing_commands=()
-commands=("docker" "helm" "kubectl" "telepresence" "skaffold" "jq" "k3d")
+commands=("docker" "helm" "argocd" "kubectl" "telepresence" "skaffold" "jq" "k3d")
 
 for cmd in "${commands[@]}"; do
     if ! check_command "$cmd"; then

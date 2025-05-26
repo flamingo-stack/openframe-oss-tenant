@@ -5,7 +5,16 @@ metadata:
 build:
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-gateway
-      docker: {}
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
   local:
     useDockerCLI: false
     useBuildkit: true
@@ -13,8 +22,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../deploy/dev/openframe-microservices/openframe-gateway
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]
+    - ../../../manifests/openframe-microservices/openframe-gateway

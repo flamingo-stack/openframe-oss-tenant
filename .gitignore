@@ -11,17 +11,25 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 .project
 .classpath
+
+# Helm
+**/charts/**
+
+# DS_Store
 **/.DS_Store
 **.DS_Store
 **.DS_Store**
 **/.DS_Store**
 **/.DS_Store/**
 openframe/.DS_Store
+
+# Loki
 **/loki-wal
 **/loki-cache
 **/loki-chunks
-**/openframe-stream/logs
 **/loki-index
+
+**/openframe-stream/logs
 **/jmx_exporter/jmx_prometheus_javaagent.jar
 **/target/
 .idea/

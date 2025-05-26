@@ -1,7 +1,7 @@
 ---
-description: Frontend data fetching patterns and best practices for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Frontend Data Fetching
 

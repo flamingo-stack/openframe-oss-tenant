@@ -34,6 +34,10 @@ $REQUIRED_TOOLS = @{
         "url" = "https://github.com/k3d-io/k3d/releases/latest/download/k3d-windows-amd64.exe"
         "installPath" = "$env:ProgramFiles\openframe\k3d\k3d.exe"
     }
+    "kustomize" = @{
+        "url" = "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_windows_amd64.tar.gz"
+        "installPath" = "$env:ProgramFiles\openframe\kustomize\kustomize.exe"
+    }
 }
 
 # Function to check if GitHub token is set and valid
@@ -94,7 +98,16 @@ function Install-Tool {
             Move-Item -Path "$extractPath/windows-amd64/helm.exe" -Destination $toolInfo.installPath -Force
             Remove-Item -Path $extractPath -Recurse -Force
         }
-        elseif ($tool -eq "telepresence") {
+        elseif ($tool -eq "kustomize") {
+            $extractPath = Join-Path $tempDir "kustomize-extract"
+            if (Test-Path $extractPath) {
+                Remove-Item -Path $extractPath -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
+            Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+            Move-Item -Path (Join-Path $extractPath "kustomize.exe") -Destination $toolInfo.installPath -Force
+            Remove-Item -Path $extractPath -Recurse -Force
+        }elseif ($tool -eq "telepresence") {
             $extractPath = Join-Path $tempDir "telepresence-extract"
             if (Test-Path $extractPath) {
                 Remove-Item -Path $extractPath -Recurse -Force

@@ -1,8 +1,0 @@
-ingress:
-  enabled: true
-  className: "nginx"
-  pathtype: ImplementationSpecific
-  hosts:
-    - host: kibana.192.168.100.100.nip.io
-      paths:
-        - path: /

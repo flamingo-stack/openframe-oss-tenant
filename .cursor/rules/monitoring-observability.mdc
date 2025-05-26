@@ -1,7 +1,7 @@
 ---
-description: Monitoring and observability best practices for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Monitoring and Observability
 

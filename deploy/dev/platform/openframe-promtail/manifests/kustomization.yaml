@@ -1,8 +1,0 @@
-resources:
-  - base/clusterrole.yaml
-  - base/clusterrolebinding.yaml
-  - base/configmap.yaml
-  - base/daemonset.yaml
-  - base/service.yaml
-  - base/serviceaccount.yaml
-  - base/servicemonitor.yaml

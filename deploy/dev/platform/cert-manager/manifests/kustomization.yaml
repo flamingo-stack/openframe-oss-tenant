@@ -1,3 +1,0 @@
-resources:
-  - base/Issuer.yaml
-  - base/ClusterIssuer.yaml

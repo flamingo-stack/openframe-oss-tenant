@@ -3,6 +3,9 @@ kind: Config
 metadata:
   name: tactical-frontend
 build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-tactical-nginx
       docker:
@@ -53,8 +56,4 @@ build:
     push: false
 manifests:
   rawYaml:
-    - ../../../deploy/dev/integrated-tools/tactical-rmm/base/tactical-nginx
-deploy:
-  kubectl:
-    flags:
-      delete: ["--grace-period=0"]
+    - ../../../manifests/integrated-tools/tactical-rmm/base/tactical-nginx

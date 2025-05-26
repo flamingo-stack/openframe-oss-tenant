@@ -1,7 +1,7 @@
 ---
-description: Security best practices for OpenFrame
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Security Practices
 

@@ -7,9 +7,10 @@ This guide explains how to use the OpenFrame scripts for development, deployment
 Before using these scripts, ensure you have:
 
 1. Required tools installed (script will check and help install if missing):
-   - kind (Kubernetes in Docker)
+   - k3d
    - docker
    - helm
+   - argocd
    - kubectl
    - telepresence
    - skaffold
@@ -278,11 +279,10 @@ The platform uses the following namespaces:
 
 ## SSL Certificates
 
-Repository contains already created ca cert and private key to be used by cert-manager. If you want to create new certificate for CA then run below comman:
+Repository contains already created ca cert and private key to be used by cert-manager. 
 
-```bash
-# script will generate CA key/cert in ./scripts/files/ca folder
-./scripts/run.sh generate-pki
-```
+## k3d Cluster and Registry Naming
 
-Import generated certificates from [./scripts/files/ca](./files/ca/) folder to your browser, os trust store or anny tool's trust store based on your needs if you don't want to see self-signed certificate related errors or warnings.
+- The canonical k3d cluster name is `openframe-dev`.
+- The canonical k3d registry name is `k3d-openframe-registry`.
+- If you add or update scripts, always use these variables (see `scripts/functions/variables.sh`).
