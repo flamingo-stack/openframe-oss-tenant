@@ -3,14 +3,17 @@ kind: Config
 metadata:
   name: openframe-client
 build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe-client
       docker: {}
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: false
+    push: true
 manifests:
   kustomize:
     paths:
-      - ../../../deploy/dev/openframe-microservices/openframe-client
+    - ../../../manifests/openframe-microservices/openframe-client
