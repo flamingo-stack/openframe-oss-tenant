@@ -26,58 +26,58 @@ spec:
         branch: feature-restructure-manifests
         syncWave: "0"
       
-      - appName: nifi
-        path: manifests/openframe/base/nifi
-        namespace: datasources
-        branch: feature-restructure-manifests
-        syncWave: "0"
+      # - appName: nifi
+      #   path: manifests/openframe/base/nifi
+      #   namespace: datasources
+      #   branch: feature-restructure-manifests
+      #   syncWave: "0"
       
-      - appName: pinot
-        path: manifests/openframe/base/pinot
-        namespace: datasources
-        branch: feature-restructure-manifests
-        syncWave: "0"
+      # - appName: pinot
+      #   path: manifests/openframe/base/pinot
+      #   namespace: datasources
+      #   branch: feature-restructure-manifests
+      #   syncWave: "0"
       
-      - appName: zookeeper
-        path: manifests/openframe/base/zookeeper
-        namespace: datasources
-        branch: feature-restructure-manifests
-        syncWave: "0"
+      # - appName: zookeeper
+      #   path: manifests/openframe/base/zookeeper
+      #   namespace: datasources
+      #   branch: feature-restructure-manifests
+      #   syncWave: "0"
 
 
-      - appName: openframe-config
-        path: manifests/openframe/base/openframe-config
-        namespace: microservices
-        branch: feature-restructure-manifests
-        syncWave: "1"
+      # - appName: openframe-config
+      #   path: manifests/openframe/base/openframe-config
+      #   namespace: microservices
+      #   branch: feature-restructure-manifests
+      #   syncWave: "1"
 
 
-      - appName: openframe-api
-        path: manifests/openframe/base/openframe-api
-        namespace: microservices
-        branch: feature-restructure-manifests
-        syncWave: "2"
+      # - appName: openframe-api
+      #   path: manifests/openframe/base/openframe-api
+      #   namespace: microservices
+      #   branch: feature-restructure-manifests
+      #   syncWave: "2"
       
-      - appName: openframe-gateway
-        path: manifests/openframe/base/openframe-gateway
-        namespace: microservices
-        branch: feature-restructure-manifests
-        syncWave: "2"
+      # - appName: openframe-gateway
+      #   path: manifests/openframe/base/openframe-gateway
+      #   namespace: microservices
+      #   branch: feature-restructure-manifests
+      #   syncWave: "2"
       
-      - appName: openframe-management
-        path: manifests/openframe/base/openframe-management
-        namespace: microservices
-        branch: feature-restructure-manifests
-        syncWave: "2"
+      # - appName: openframe-management
+      #   path: manifests/openframe/base/openframe-management
+      #   namespace: microservices
+      #   branch: feature-restructure-manifests
+      #   syncWave: "2"
       
-      - appName: openframe-stream
-        path: manifests/openframe/base/openframe-stream
-        namespace: microservices
-        branch: feature-restructure-manifests
-        syncWave: "2"
+      # - appName: openframe-stream
+      #   path: manifests/openframe/base/openframe-stream
+      #   namespace: microservices
+      #   branch: feature-restructure-manifests
+      #   syncWave: "2"
       
-      - appName: openframe-ui
-        path: manifests/openframe/base/openframe-ui
-        namespace: microservices
-        branch: feature-restructure-manifests
-        syncWave: "2"
+      # - appName: openframe-ui
+      #   path: manifests/openframe/base/openframe-ui
+      #   namespace: microservices
+      #   branch: feature-restructure-manifests
+      #   syncWave: "2"
