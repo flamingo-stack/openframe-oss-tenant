@@ -89,7 +89,7 @@ jobs:
             stream:
               - './openframe/services/openframe-stream/**'
             ui:
-              - './openframe/services/openframe-ui/**'
+              - 'openframe/.github/actions/**'
             nifi:
               - './openframe/datasources/nifi/**'
             postgresql:
