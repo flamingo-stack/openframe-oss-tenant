@@ -1,14 +1,13 @@
-# Pull Request Template
-
-## Change Description
+## Description
 <!-- Provide a clear, concise description of what this PR changes -->
 
-## Purpose
-<!-- Explain the business or technical need for this change -->
+## Improvements
+- <!-- Step by step improvements -->
+- 
 
-## Related Issues
-<!-- Link to any related tickets, issues, or requirements -->
-Fixes: #
+## Task
+[Link](https://app.clickup.com/t/example)
+<!-- Links to any related tickets, issues, or requirements -->
 
 ## SOC 2 Compliance Verification
 
