@@ -3,7 +3,7 @@ kind: Application
 metadata:
   name: fleet
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "3"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 
