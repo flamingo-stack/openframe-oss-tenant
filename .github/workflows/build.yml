@@ -218,7 +218,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ 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 }}
 
       - name: Set up QEMU
         if: contains(needs.changes.outputs[matrix.name], 'true')
