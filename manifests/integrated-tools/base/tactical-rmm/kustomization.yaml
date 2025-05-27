@@ -31,7 +31,7 @@ images:
   newTag: 567fe982
 - name: openframe-tactical-nginx
   newName: ghcr.io/flamingo-cx/openframe-tactical-nginx
-  newTag: 567fe982
+  newTag: 85cacef1
 - name: openframe-tactical-websockets
   newName: ghcr.io/flamingo-cx/openframe-tactical-websockets
   newTag: 567fe982
