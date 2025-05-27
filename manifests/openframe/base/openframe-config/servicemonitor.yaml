@@ -9,7 +9,7 @@ spec:
       interval: 30s
   namespaceSelector:
     matchNames:
-    - openframe-microservices
+    - microservices
   selector:
     matchLabels:
       app: openframe-config-server
