@@ -11,4 +11,4 @@ resources:
 images:
 - name: openframe-nifi
   newName: ghcr.io/flamingo-cx/openframe-nifi
-  newTag: 567fe982
+  newTag: latest
