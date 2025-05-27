@@ -1,4 +1,8 @@
 
+global:
+  imagePullSecrets:
+    - name: docker-pat-secret
+
 ingress:
   enabled: true
   ingressClassName: nginx

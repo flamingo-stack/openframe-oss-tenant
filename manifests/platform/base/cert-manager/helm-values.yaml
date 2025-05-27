@@ -1,6 +1,9 @@
 crds:
   enabled: true
 
+imagePullSecrets:
+  - name: docker-pat-secret
+
 webhook:
   timeoutSeconds: 4
 
