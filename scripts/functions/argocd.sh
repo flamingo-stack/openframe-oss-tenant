@@ -43,7 +43,13 @@ wait_for_argocd_apps() {
     done
 
     [ "$(wc -l < "$printed")" -eq "$(kubectl -n argocd get applications -o name | wc -l)" ] && break
-    sleep 3
+    sleep 5
+
+    for pod in $(kubectl get pods -n <namespace> -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep '^openframe-config'); do
+      echo "=== Logs for $pod ==="
+      kubectl logs -n <namespace> --all-containers "$pod"
+    done
+
   done
 
   rm -f "$printed"

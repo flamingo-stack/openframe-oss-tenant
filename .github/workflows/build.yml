@@ -315,14 +315,12 @@ jobs:
             echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
             cd "$path"
             kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
-            cat kustomization.yaml
             cd - > /dev/null
           done
 
       - name: Run environment test script
         env:
           TERM: dumb
-          GITHUB_TOKEN_CLASSIC: ${{ github.token }}
         run: |
           ./scripts/run.sh bootstrap
     
