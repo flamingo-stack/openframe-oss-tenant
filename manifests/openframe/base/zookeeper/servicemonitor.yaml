@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: zookeeper
+spec:
+  endpoints:
+    - port: jmx
+      path: /metrics
+      interval: 30s
+      relabelings:
+        - action: replace
+          sourceLabels: [__address__]
+          targetLabel: service
+          replacement: 'zookeeper'
+  namespaceSelector:
+    matchNames:
+    - datasources
+  selector:
+    matchLabels:
+      app: zookeeper

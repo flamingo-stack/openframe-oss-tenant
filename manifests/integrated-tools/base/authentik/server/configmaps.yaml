@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-media
+data:
+  # Empty ConfigMap for media directory
+  
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-templates
+data:
+  # Empty ConfigMap for custom templates
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-certs
+data:
+  # Empty for now, can be populated with certificates later

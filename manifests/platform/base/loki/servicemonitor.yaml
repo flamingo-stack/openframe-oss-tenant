@@ -1,7 +1,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: openframe-loki
+  name: loki
   labels:
     app.kubernetes.io/instance: loki
 spec:
@@ -12,7 +12,7 @@ spec:
       scrapeTimeout: 10s
   namespaceSelector:
     matchNames:
-      - loki
+      - platform
   selector:
     matchLabels:
       app.kubernetes.io/instance: loki

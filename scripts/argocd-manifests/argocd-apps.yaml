@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-apps
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Flamingo-CX/openframe.git
+    targetRevision: feature-restructure-manifests
+    path: manifests/apps
+
+  destination:
+    name: in-cluster
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: -1

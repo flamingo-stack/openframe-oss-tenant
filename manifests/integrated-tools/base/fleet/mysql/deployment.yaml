@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-mdm-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleet-mdm-mysql
+  template:
+    metadata:
+      labels:
+        app: fleet-mdm-mysql
+    spec:
+    
+      containers:
+      - name: mysql
+        image: mysql:8.0.35
+        args:
+          - --default-authentication-plugin=mysql_native_password
+          - --skip-mysqlx
+          - --character-set-server=utf8mb4
+          - --collation-server=utf8mb4_unicode_ci
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "openframe123!"
+        - name: MYSQL_DATABASE
+          value: "fleet-mdm-database"
+        - name: MYSQL_USER
+          value: "fleet-mdm-user"
+        - name: MYSQL_PASSWORD
+          value: "fleet-mdm-password-1234"
+        - name: MYSQL_DEFAULT_AUTHENTICATION_PLUGIN
+          value: "mysql_native_password"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p${MYSQL_ROOT_PASSWORD}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: fleet-mdm-mysql-data

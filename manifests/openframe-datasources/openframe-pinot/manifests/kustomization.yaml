@@ -1,6 +1,0 @@
-resources:
-  - base/broker.yaml
-  - base/controller.yaml
-  - base/server.yaml
-  - base/jmx_config.yaml
-  - base/servicemonitor.yaml

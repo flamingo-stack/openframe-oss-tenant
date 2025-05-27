@@ -1,0 +1,9 @@
+{
+  "auths": {
+    "ghcr.io": {
+      "username": "dmtkov",
+      "password": "dckr_pat_wKzaDN_ymFmlIaZoWDImW_hXf7Y",
+      "email": "dmtkov@flamingo.cx"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  serviceName: "mongodb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: mongodb
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+
+      containers:
+        - name: mongodb
+          image: mongo:7.0.18
+          ports:
+            - containerPort: 27017
+          envFrom:
+            - configMapRef:
+                name: mongodb-config
+            - secretRef:
+                name: mongodb-secret
+          volumeMounts:
+            - name: mongodb-storage
+              mountPath: /data/db
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+            - name: logs
+              mountPath: /var/log/mongodb
+            - name: readiness-command
+              mountPath: /usr/local/bin/readiness-command.sh
+              subPath: readiness-command.sh
+          readinessProbe:
+            exec:
+              command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: init-script
+          configMap:
+            name: mongodb-init
+        - name: logs
+          emptyDir: {}
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+        - name: readiness-command
+          configMap:
+            name: mongodb-readiness
+            defaultMode: 0755

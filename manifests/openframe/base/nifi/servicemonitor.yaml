@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nifi
+spec:
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+  namespaceSelector:
+    matchNames:
+    - datasources
+  selector:
+    matchLabels:
+      app: nifi

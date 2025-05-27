@@ -261,17 +261,6 @@ echo $RUN_SCRIPT
 if [ -n "$RUN_SCRIPT" ]; then
     write_status_message "Found run.sh at: $RUN_SCRIPT" "\033[32m"
 
-    # Handle GitHub token
-    if [ -z "$GITHUB_TOKEN_CLASSIC" ]; then
-        read -p "Please enter your GitHub token (leave empty if not needed): " GITHUB_TOKEN_CLASSIC
-        if [ -n "$GITHUB_TOKEN_CLASSIC" ]; then
-            export GITHUB_TOKEN_CLASSIC
-            write_status_message "GitHub token has been set for this session." "\033[32m"
-        fi
-    else
-        write_status_message "Using existing GITHUB_TOKEN_CLASSIC from environment." "\033[32m"
-    fi
-
     # Set environment variables for silent mode
     if [ "$SILENT" = true ]; then
         write_status_message "Setting environment variables for silent mode..." "\033[32m"

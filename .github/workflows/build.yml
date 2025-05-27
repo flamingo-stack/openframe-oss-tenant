@@ -34,6 +34,7 @@ jobs:
       core: ${{ steps.filter.outputs.core }}
       data: ${{ steps.filter.outputs.data }}
       api: ${{ steps.filter.outputs.api }}
+      client: ${{ steps.filter.outputs.client }}
       config: ${{ steps.filter.outputs.config }}
       gateway: ${{ steps.filter.outputs.gateway }}
       management: ${{ steps.filter.outputs.management }}
@@ -217,7 +218,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: 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
 
       - name: Set up QEMU
         if: contains(needs.changes.outputs[matrix.name], 'true')

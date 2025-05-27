@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleet-mdm-redis
+spec:
+  selector:
+    app: fleet-mdm-redis
+  ports:
+  - port: 6379
+    targetPort: 6379

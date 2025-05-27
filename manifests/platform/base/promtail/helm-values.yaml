@@ -29,7 +29,7 @@ extraVolumeMounts:
 
 config:
   clients:
-    - url: http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
+    - url: http://loki.platform.svc.cluster.local:3100/loki/api/v1/push
   
   snippets:
     extraRelabelConfigs: 
