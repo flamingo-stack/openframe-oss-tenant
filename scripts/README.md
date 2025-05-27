@@ -265,9 +265,8 @@ t, client_tools               # Client tools
 The platform uses the following namespaces:
 
 - `platform`: Core platform services
-- `openframe-datasources`: Database and messaging services
-- `openframe-microservices`: OpenFrame services
-- `integrated-tools-datasources`: External tool dependencies
+- `datasources`: Database and messaging services
+- `microservices`: OpenFrame services
 - `integrated-tools`: Integrated external tools
 - `client-tools`: Development and monitoring tools
 

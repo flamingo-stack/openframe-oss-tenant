@@ -22,4 +22,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/openframe-microservices/openframe-stream
+    - ../../../manifests/openframe/base/openframe-stream

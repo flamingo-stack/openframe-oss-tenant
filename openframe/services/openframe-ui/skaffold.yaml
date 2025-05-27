@@ -13,4 +13,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/openframe-microservices/openframe-ui
+    - ../../../manifests/openframe/base/openframe-ui

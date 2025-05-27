@@ -22,5 +22,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/openframe-microservices/openframe-management
-
+    - ../../../manifests/openframe/base/openframe-management

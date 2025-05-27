@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: integrated-tools
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Project for k8s integrated-tools apps.
+  sourceRepos:
+  - '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'

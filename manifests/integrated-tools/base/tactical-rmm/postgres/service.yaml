@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-postgres
+spec:
+  selector:
+    app: tactical-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432

@@ -36,9 +36,6 @@ export -f add_loopback_ip
 source "${SCRIPT_DIR}/functions/build-app.sh"
 export -f build_app
 
-source "${SCRIPT_DIR}/functions/helm-repo-ensure.sh"
-export -f helm_repo_ensure
-
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 

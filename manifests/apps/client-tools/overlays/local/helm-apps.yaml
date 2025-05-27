@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: client-tools-helm-apps
+spec:
+  generators:
+  - list:  # appName == chart
+      elements: 
+
+      - appName: kafka-ui
+        repoURL: https://kafbat.github.io/helm-charts
+        targetRevision: 1.4.12
+        path: manifests/client-tools/base/kafka-ui
+        branch: feature-restructure-manifests
+        syncWave: "0"   

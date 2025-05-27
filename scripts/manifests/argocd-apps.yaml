@@ -12,14 +12,24 @@ spec:
       # in-cluster apps
       - appName: platform
         path: manifests/apps/platform/overlays/local
-        branch: feature-restructure-openframe-datasources
+        branch: feature-restructure-manifests
         syncWave: "-1"
       
-      - appName: openframe-datasources
-        path: manifests/apps/datasources/overlays/local
-        branch: feature-restructure-openframe-datasources
+      - appName: openframe
+        path: manifests/apps/openframe/overlays/local
+        branch: feature-restructure-manifests
         syncWave: "-1"
-
+      
+      - appName: integrated-tools
+        path: manifests/apps/integrated-tools/overlays/local
+        branch: feature-restructure-manifests
+        syncWave: "-1"
+      
+      # - appName: client-tools
+      #   path: manifests/apps/client-tools/overlays/local
+      #   branch: feature-restructure-manifests
+      #   syncWave: "-1"
+      
 
   template:
     metadata:
