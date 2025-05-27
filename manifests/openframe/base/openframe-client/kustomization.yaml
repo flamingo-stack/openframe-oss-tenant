@@ -10,4 +10,4 @@ resources:
 images:
   - name: openframe-client
     newName: ghcr.io/flamingo-cx/openframe-client
-    newTag: 567fe982
+    newTag: 85cacef1
