@@ -3,23 +3,23 @@ kind: Kustomization
 
 resources:   
   # wave 1           
-  - namespace-microservices.yaml 
-  - namespace-datasources.yaml
-  - cassandra.yaml   
-  - kafka.yaml  
-  - mongodb-exporter.yaml    
-  - mongodb.yaml    
-  - nifi.yaml    
-  - pinot.yaml
-  - redis-exporter.yaml
-  - redis.yaml
-  - zookeeper.yaml
+  # - namespace-datasources.yaml
+  # - cassandra.yaml   
+  # - kafka.yaml  
+  # - mongodb-exporter.yaml    
+  # - mongodb.yaml    
+  # - nifi.yaml    
+  # - pinot.yaml
+  # - redis-exporter.yaml
+  # - redis.yaml
+  # - zookeeper.yaml
   
   # wave 2
+  - namespace-microservices.yaml 
   - openframe-config.yaml  
-  - openframe-management.yaml   
-  - openframe-stream.yaml  
-  - openframe-ui.yaml    
-  - openframe-api.yaml   
-  - openframe-client.yaml
-  - openframe-gateway.yaml       
+  # - openframe-management.yaml   
+  # - openframe-stream.yaml  
+  # - openframe-ui.yaml    
+  # - openframe-api.yaml   
+  # - openframe-client.yaml
+  # - openframe-gateway.yaml       
