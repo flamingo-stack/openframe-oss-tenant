@@ -1,0 +1,521 @@
+/* Основные стили */
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #f5f5f5;
+    margin: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* Стили для конфигурации */
+.config {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.config h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.config form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-group input::placeholder {
+    color: #999;
+}
+
+/* Стили для кнопок */
+.config button {
+    background: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    align-self: flex-start;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.config button:hover {
+    background: #0056b3;
+}
+
+.config button:active {
+    transform: translateY(1px);
+}
+
+/* Стили для таблицы */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    font-size: 14px;
+    color: #555;
+}
+
+tr:hover {
+    background-color: #f5f5f5;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Стили для контейнера кнопок действий */
+.action-cell {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+/* Общие стили для всех кнопок действий */
+.action-btn {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 60px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.action-btn:hover {
+    background-color: #e9ecef;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для кнопки Control */
+.control-btn {
+    border-color: #007bff;
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.control-btn:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+/* Стили для кнопки Tunel */
+.tunel-btn {
+    border-color: #28a745;
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.tunel-btn:hover {
+    background-color: #28a745;
+    color: white;
+    border-color: #1e7e34;
+}
+
+/* Стили для кнопки Relay */
+.relay-btn {
+    border-color: #ffc107;
+    color: #856404;
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.relay-btn:hover {
+    background-color: #ffc107;
+    color: #212529;
+    border-color: #e0a800;
+}
+
+/* Стили для состояний загрузки и ошибок */
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.loading::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error {
+    color: #dc3545;
+    padding: 15px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.error::before {
+    content: '⚠ ';
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+    
+    .config {
+        padding: 10px;
+    }
+    
+    .form-group input {
+        font-size: 16px; /* Предотвращает зум на iOS */
+    }
+    
+    table {
+        font-size: 12px;
+    }
+    
+    th, td {
+        padding: 8px;
+    }
+    
+    .config button {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-top: 10px;
+    }
+    
+    .action-cell {
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+    }
+    
+    .action-btn {
+        width: 100%;
+        min-width: auto;
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 24px;
+    }
+    
+    .config h3 {
+        font-size: 18px;
+    }
+    
+    table {
+        font-size: 11px;
+    }
+    
+    th, td {
+        padding: 6px;
+    }
+    
+    .action-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}
+
+/* Улучшенные стили для фокуса и доступности */
+button:focus,
+input:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Стили для скрытых элементов */
+[style*="display: none"] {
+    display: none !important;
+}
+
+/* Дополнительные утилитарные классы */
+.text-center {
+    text-align: center;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+.p-10 {
+    padding: 10px;
+}
+
+/* Стили для улучшения UX */
+.config button[style*="background: #6c757d"] {
+    background: #6c757d !important;
+}
+
+.config button[style*="background: #6c757d"]:hover {
+    background: #5a6268 !important;
+}
+
+/* Стили для таблицы (если их еще нет) */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Стили для состояний загрузки и ошибок */
+#loading {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    color: #666;
+}
+
+#error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* Стили для ячейки с Node ID */
+td[title] {
+    cursor: help;
+    position: relative;
+}
+
+td[title]:hover {
+    background-color: #e3f2fd;
+}
+
+/* Стили для tooltip при наведении на Node ID */
+td[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 5px;
+}
+
+/* Стрелочка для tooltip */
+td[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #333;
+    z-index: 1000;
+}
+
+/* Анимация появления кнопок */
+.action-btn {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Connection Status Display */
+.connection-status {
+    margin: 20px 0;
+    padding: 15px;
+    background: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 5px;
+    animation: fadeIn 0.3s ease;
+}
+
+.connection-status h4 {
+    margin: 0 0 10px 0;
+    color: #0c5460;
+    font-size: 16px;
+}
+
+.connection-status p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #495057;
+}
+
+.connection-status span {
+    font-weight: normal;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+/* Status color coding */
+#controlStatus.connected,
+#relayStatus.connected {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+#controlStatus.disconnected,
+#relayStatus.disconnected {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+#tunnelStatus.sent {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+#tunnelStatus.not-sent {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+#sessionIdDisplay {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+} 

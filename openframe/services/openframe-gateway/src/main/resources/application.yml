@@ -6,3 +6,13 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config-server.microservices.svc.cluster.local:8888"
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600

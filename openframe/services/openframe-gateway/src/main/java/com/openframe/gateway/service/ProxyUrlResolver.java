@@ -6,8 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -29,15 +31,32 @@ public class ProxyUrlResolver {
                 pathToProxy = "/";
             }
 
-            return UriComponentsBuilder.newInstance()
+            // Create a new UriComponentsBuilder for the target URL
+            UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                     .scheme(integratedToolUri.getScheme())
                     .host(isLocalProfile() ? "localhost" : integratedToolUri.getHost())
                     .port(toolUrl.getPort())
-                    .path(pathToProxy)
-                    .query(originalUrlUri.getQuery())
-                    .fragment(originalUrlUri.getFragment())
-                    .build(true)
-                    .toUri();
+                    .path(pathToProxy);
+
+            // Properly encode query parameters
+            if (originalUrlUri.getQuery() != null) {
+                String[] queryParams = originalUrlUri.getQuery().split("&");
+                for (String param : queryParams) {
+                    String[] keyValue = param.split("=", 2);
+                    if (keyValue.length == 2) {
+                        String key = UriUtils.encode(keyValue[0], StandardCharsets.UTF_8);
+                        String value = UriUtils.encode(keyValue[1], StandardCharsets.UTF_8);
+                        builder.queryParam(key, value);
+                    }
+                }
+            }
+
+            // Add fragment if present
+            if (originalUrlUri.getFragment() != null) {
+                builder.fragment(UriUtils.encode(originalUrlUri.getFragment(), StandardCharsets.UTF_8));
+            }
+
+            return builder.build(true).toUri();
         } catch (Exception e) {
             log.error("Failed to resolve tool url: {}", originalUrl, e);
             throw new RuntimeException("Failed to resolve tool url", e);

@@ -42,10 +42,18 @@ public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Orde
         String endpointPrefix = getEndpointPrefix();
         URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, path, endpointPrefix);
 
+        // Create a new request without the origin header
+        ServerHttpRequest newRequest = request.mutate()
+                .headers(headers -> {
+                    headers.remove("Origin");
+                    headers.add("Origin", "https://meshcentral.192.168.100.100.nip.io");
+                })
+                .build();
+
         exchange.getAttributes()
                 .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);
 
-        return chain.filter(exchange);
+        return chain.filter(exchange.mutate().request(newRequest).build());
     }
 
     private ToolUrl getToolUrl(String toolId) {

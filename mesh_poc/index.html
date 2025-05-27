@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeshCentral Integration POC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1, h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus, input[type="url"]:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0,123,255,0.3);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+            transform: translateY(-1px);
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+            transform: translateY(-1px);
+        }
+        
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background-color: #117a8b;
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #bd2130;
+            transform: translateY(-1px);
+        }
+        
+        .status-container {
+            display: none;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .status-label {
+            font-weight: bold;
+            color: #6c757d;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .status-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .connected {
+            color: #28a745;
+        }
+        
+        .disconnected {
+            color: #dc3545;
+        }
+        
+        .sent {
+            color: #28a745;
+        }
+        
+        .not-sent {
+            color: #6c757d;
+        }
+        
+        .node-actions {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .node-actions h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .help-text {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border-left: 4px solid #bee5eb;
+        }
+        
+        .help-text h4 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        
+        @media (max-width: 768px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>MeshCentral Integration POC</h1>
+    
+    <div class="container">
+        <h2>Configuration</h2>
+        <form id="apiConfigForm">
+            <div class="form-group">
+                <label for="apiUrl">OpenFrame API URL:</label>
+                <input type="url" id="apiUrl" placeholder="https://openframe.example.com/tools/meshcentral" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="openframeToken">OpenFrame Token:</label>
+                <input type="text" id="openframeToken" placeholder="Your OpenFrame authentication token" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="authToken">MeshCentral Auth Token:</label>
+                <input type="text" id="authToken" placeholder="MeshCentral authentication token" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="relayAuthToken">MeshCentral Relay Auth Token:</label>
+                <input type="text" id="relayAuthToken" placeholder="MeshCentral relay authentication token" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">Load Configuration</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Connection Status</h2>
+        <div id="connectionStatus" class="status-container">
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-label">Current Node</div>
+                    <div id="currentNodeDisplay" class="status-value">None</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Session ID</div>
+                    <div id="sessionIdDisplay" class="status-value">None</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Control Status</div>
+                    <div id="controlStatus" class="status-value disconnected">Disconnected</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Tunnel Status</div>
+                    <div id="tunnelStatus" class="status-value not-sent">Not Sent</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Relay Status</div>
+                    <div id="relayStatus" class="status-value disconnected">Disconnected</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Actions</h2>
+        
+        <div class="help-text">
+            <h4>Quick Actions:</h4>
+            <p><strong>Full Connection:</strong> Establishes complete connection sequence automatically</p>
+            <p><strong>Disconnect All:</strong> Closes all active connections</p>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="handleAction('your-node-id-here')" class="btn-success">
+                Full Connection
+            </button>
+            <button onclick="disconnectAll()" class="btn-danger">
+                Disconnect All
+            </button>
+        </div>
+
+        <div class="node-actions">
+            <h3>Step-by-Step Actions</h3>
+            <div class="help-text">
+                <p><strong>Control:</strong> Establish control WebSocket connection</p>
+                <p><strong>Tunnel:</strong> Send tunnel message (requires Control connection)</p>
+                <p><strong>Relay:</strong> Connect to MeshRelay (requires Control and Tunnel)</p>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="handleControlButton('your-node-id-here')" class="btn-primary">
+                    1. Control
+                </button>
+                <button onclick="handleTunnelButton('your-node-id-here')" class="btn-warning">
+                    2. Tunnel
+                </button>
+                <button onclick="handleRelayButton('your-node-id-here')" class="btn-info">
+                    3. Relay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Instructions</h2>
+        <div class="help-text">
+            <h4>Setup:</h4>
+            <ol>
+                <li>Enter your OpenFrame API URL (e.g., https://openframe.example.com/tools/meshcentral)</li>
+                <li>Provide your OpenFrame authentication token</li>
+                <li>Provide your MeshCentral authentication token</li>
+                <li>Provide your MeshCentral relay authentication token</li>
+                <li>Replace 'your-node-id-here' in the buttons with actual node IDs</li>
+            </ol>
+            
+            <h4>Usage:</h4>
+            <ul>
+                <li><strong>Full Connection:</strong> Use this for automatic setup of all connections</li>
+                <li><strong>Step-by-Step:</strong> Use individual buttons for debugging or manual control</li>
+                <li>Monitor the connection status panel for real-time updates</li>
+                <li>Check browser console for detailed logging</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Load the main module -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
