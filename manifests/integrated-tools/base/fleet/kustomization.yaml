@@ -9,4 +9,4 @@ resources:
 images:
 - name: openframe-fleetmdm
   newName: ghcr.io/flamingo-cx/openframe-fleetmdm
-  newTag: 8e78d6b2
+  newTag: ca3a5f96

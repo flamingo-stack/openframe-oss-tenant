@@ -8,4 +8,4 @@ resources:
 images:
 - name: openframe-stream
   newName: ghcr.io/flamingo-cx/openframe-stream
-  newTag: 8e78d6b2
+  newTag: ca3a5f96
