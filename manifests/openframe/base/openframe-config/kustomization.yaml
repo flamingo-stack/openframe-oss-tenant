@@ -8,4 +8,4 @@ resources:
 images:
 - name: openframe-config
   newName: ghcr.io/flamingo-cx/openframe-config
-  newTag: latest
+  newTag: 934fc791
