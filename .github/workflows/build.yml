@@ -264,8 +264,6 @@ jobs:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
           provenance: false
-          no-cache: true        # <-- force fresh build
-          pull: false  
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
