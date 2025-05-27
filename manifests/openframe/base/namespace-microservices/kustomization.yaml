@@ -8,7 +8,7 @@ secretGenerator:
   - name: github-pat-secret
     type: kubernetes.io/dockerconfigjson
     files:
-      - .dockerconfigjson=ghcr-docker-config.json
+      - .dockerconfigjson=ghcr-dockerconfig.json
 
 generatorOptions:
   disableNameSuffixHash: true
