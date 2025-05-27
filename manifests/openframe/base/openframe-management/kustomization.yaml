@@ -9,4 +9,4 @@ resources:
 images:
 - name: openframe-management
   newName: ghcr.io/flamingo-cx/openframe-management
-  newTag: 85cacef1
+  newTag: latest
