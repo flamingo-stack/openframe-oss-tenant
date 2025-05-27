@@ -95,30 +95,23 @@ jobs:
             postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
-              - './integrated-tools/tactical-rmm/tactical-frontend/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             tactical-nginx:
-              - './integrated-tools/tactical-rmm/tactical-nginx/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             tactical-backend:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             tactical-nats:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             tactical-websockets:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             tactical-celery:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             tactical-celerybeat:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
+              - 'openframe/.github/actions/**'
             fleetmdm:
-              - './integrated-tools/fleetmdm/**'
+              - 'openframe/.github/actions/**'
             meshcentral:
-              - './integrated-tools/meshcentral/server/**'
+              - 'openframe/.github/actions/**'
 
 
   matrix:
