@@ -69,7 +69,7 @@ datasources:
     datasources:
       - name: Prometheus
         type: prometheus
-        url: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
+        url: http://prometheus-kube-prometheus-prometheus.platform.svc.cluster.local:9090
         access: proxy
         isDefault: true
       - name: Loki

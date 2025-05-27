@@ -1,9 +1,9 @@
 {
   "auths": {
     "ghcr.io": {
-      "username": "CI",
-      "password": "dckr_pat_To2LSTMXG7260ll4qVBBBNK6AGk",
-      "email": "CI@flamingo.cx"
+      "username": "dmtkov",
+      "password": "dckr_pat_wKzaDN_ymFmlIaZoWDImW_hXf7Y",
+      "email": "dmtkov@flamingo.cx"
     }
   }
 }
