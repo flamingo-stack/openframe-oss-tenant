@@ -27,8 +27,8 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
-            - name: CONFIG_GIT_BRANCH
-              value: "feature-restructure-manifests"
+            # - name: CONFIG_GIT_BRANCH
+            #   value: "feature-restructure-manifests"
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
