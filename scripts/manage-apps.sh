@@ -193,3 +193,4 @@ a | all)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
   ;;
 esac
+
