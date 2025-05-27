@@ -204,13 +204,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: .
-
-      - name: Prepare Java artifacts for Docker build
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          mkdir -p ${{ matrix.path }}/target
-          mv *.jar ${{ matrix.path }}/target/
+          path: ${{ matrix.path }}/target
 
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
