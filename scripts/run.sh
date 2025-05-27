@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Get the directory where the script is located
 # Add environment variable to detect recursive calls
 if [ -z "$OPENFRAME_RECURSIVE_CALL" ]; then
