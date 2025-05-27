@@ -32,41 +32,6 @@ public class GlobalExceptionHandler {
             .status(HttpStatus.BAD_REQUEST)
             .body(new ErrorResponse("bad_request", "Required header '" + ex.getHeaderName() + "' is missing"));
     }
-    @ExceptionHandler(InvalidAgentIdException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidAgentIdException(InvalidAgentIdException ex) {
-        log.error("Invalid agent ID: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("bad_request", ex.getMessage()));
-    }
-    @ExceptionHandler(InvalidToolTypeException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidToolTypeException(InvalidToolTypeException ex) {
-        log.error("Invalid tool type: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("bad_request", ex.getMessage()));
-    }
-    @ExceptionHandler(ConnectionNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleConnectionNotFoundException(ConnectionNotFoundException ex) {
-        log.error("Connection not found: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse("not_found", ex.getMessage()));
-    }
-    @ExceptionHandler(MachineNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleMachineNotFoundException(MachineNotFoundException ex) {
-        log.error("Machine not found: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse("not_found", ex.getMessage()));
-    }
-    @ExceptionHandler(DuplicateConnectionException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateConnectionException(DuplicateConnectionException ex) {
-        log.error("Duplicate connection: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse("conflict", ex.getMessage()));
-    }
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.error("Invalid request: ", ex);

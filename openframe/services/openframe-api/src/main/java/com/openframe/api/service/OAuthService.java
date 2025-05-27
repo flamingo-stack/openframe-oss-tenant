@@ -3,18 +3,15 @@ package com.openframe.api.service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.openframe.security.jwt.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet.Builder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
 import com.openframe.api.dto.UserDTO;
@@ -26,8 +23,7 @@ import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
 import com.openframe.data.repository.mongo.UserRepository;
-import com.openframe.security.UserSecurity;
-import com.openframe.security.jwt.JwtService;
+
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +36,6 @@ public class OAuthService {
     private final OAuthClientRepository clientRepository;
     private final OAuthTokenRepository tokenRepository;
     private final UserRepository userRepository;
-    private final JwtEncoder jwtEncoder;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
@@ -69,37 +64,12 @@ public class OAuthService {
         jwtClaimsSetBuilder = jwtClaimsSetBuilder
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds));
-        return jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSetBuilder.build())).getTokenValue();
+        return jwtService.generateToken(jwtClaimsSetBuilder.build());
     }
 
-    public ResponseEntity<?> handleTokenRequest(String grantType, String code, String refreshToken,
-            String username, String password, String clientId, String clientSecret) {
-        try {
-            TokenResponse response = token(grantType, code, refreshToken,
-                    username, password, clientId, clientSecret);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            log.warn("Token request failed: {}", e.getMessage());
-            return ResponseEntity.status(401)
-                    .body(Map.of(
-                            "error", "invalid_token",
-                            "error_description", e.getMessage(),
-                            "error_uri", "/docs/errors/token"
-                    ));
-        } catch (Exception e) {
-            log.error("Token error: {}", e.getMessage(), e);
-            return ResponseEntity.status(400)
-                    .body(Map.of(
-                            "error", "invalid_request",
-                            "error_description", "An error occurred processing the request",
-                            "error_uri", "/docs/errors/server"
-                    ));
-        }
-    }
 
     public ResponseEntity<?> handleRegistration(UserDTO userDTO, String authHeader) {
         try {
-            // Extract client credentials from Basic auth
             if (!authHeader.startsWith("Basic ")) {
                 throw new IllegalArgumentException("Client authentication required");
             }
@@ -129,22 +99,6 @@ public class OAuthService {
                     .body(Map.of(
                             "error", "invalid_request",
                             "error_description", "An error occurred processing the request"
-                    ));
-        }
-    }
-
-    public ResponseEntity<?> handleAuthorization(String responseType, String clientId,
-            String redirectUri, String scope, String state) {
-        try {
-            AuthorizationResponse response = authorize(responseType, clientId, redirectUri, scope, state);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Authorization error", e);
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "error", "invalid_request",
-                            "error_description", e.getMessage(),
-                            "state", state
                     ));
         }
     }
@@ -335,13 +289,18 @@ public class OAuthService {
     }
 
     public AuthorizationResponse authorize(String responseType, String clientId,
-            String redirectUri, String scope, String state) {
+            String redirectUri, String scope, String state, String userId) {
         validateClient(clientId, null);
+
+        if (userId == null || userId.isEmpty()) {
+            throw new IllegalArgumentException("User authentication required");
+        }
 
         String code = UUID.randomUUID().toString();
         OAuthToken token = new OAuthToken();
         token.setAccessToken(code);
         token.setClientId(clientId);
+        token.setUserId(userId);
         token.setScopes(new String[]{scope});
         token.setAccessTokenExpiry(Instant.now().plus(10, ChronoUnit.MINUTES));
         tokenRepository.save(token);

@@ -1,13 +1,11 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.security.jwt.JwtAuthenticationOperations;
 import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.server.WebSocketService;
@@ -18,8 +16,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.Instant;
 
-import static com.openframe.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static com.openframe.gateway.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor

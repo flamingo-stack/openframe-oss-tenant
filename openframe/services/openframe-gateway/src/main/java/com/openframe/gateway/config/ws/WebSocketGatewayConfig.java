@@ -1,6 +1,6 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.security.jwt.JwtAuthenticationOperations;
+import com.openframe.gateway.security.jwt.JwtAuthenticationOperations;
 import com.openframe.security.jwt.JwtService;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;

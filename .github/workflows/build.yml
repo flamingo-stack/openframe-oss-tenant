@@ -77,6 +77,8 @@ jobs:
               - './openframe/libs/openframe-data/**'
             api:
               - './openframe/services/openframe-api/**'
+            client:
+              - './openframe/services/openframe-client/**'
             config:
               - './openframe/services/openframe-config/**'
             gateway:

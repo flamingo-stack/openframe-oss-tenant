@@ -150,6 +150,22 @@ register_tool \
     2 \
     "#455A64"
 
+# Register OpenFrame API Service with layer info
+register_tool \
+    "openframe-client" \
+    "OPENFRAME" \
+    "OpenFrame Client" \
+    "OpenFrame Client Gateway Service" \
+    '[{"url": "http://openframe-client.openframe-microservices.svc", "port": "8097", "type": "API"}]' \
+    "" \
+    "" \
+    "" \
+    "API Gateway" \
+    "OpenFrame Core" \
+    "Application" \
+    3 \
+    "#455A64"
+
 # Register OpenFrame Stream Service with layer info
 register_tool \
     "openframe-stream" \
@@ -163,7 +179,7 @@ register_tool \
     "Stream Processing" \
     "OpenFrame Core" \
     "Application" \
-    3 \
+    4 \
     "#455A64"
 
 # Register OpenFrame Management Service with layer info
@@ -179,7 +195,7 @@ register_tool \
     "Management" \
     "OpenFrame Core" \
     "Application" \
-    4 \
+    5 \
     "#455A64"
 
 # Register OpenFrame Config Service with layer info

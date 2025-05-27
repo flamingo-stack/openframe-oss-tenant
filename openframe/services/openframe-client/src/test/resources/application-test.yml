@@ -1,0 +1,32 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
+  cloud:
+    config:
+      enabled: false
+  data:
+    mongodb:
+      auto-index-creation: false
+    redis:
+      enabled: false
+    cassandra:
+      enabled: false
+  kafka:
+    enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+pinot:
+  enabled: false
+
+jwt:
+  secret: test-secret-key
+  expiration: 3600000
+
+logging:
+  level:
+    org.springframework.test: INFO
+    com.openframe: DEBUG 

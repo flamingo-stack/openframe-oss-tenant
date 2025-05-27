@@ -39,13 +39,14 @@ class OAuthControllerTest {
 
     @Test
     void authorize_WithValidRequest_ShouldReturnAuthCode() throws Exception {
-        when(oauthService.authorize(any(), any(), any(), any(), any()))
+        when(oauthService.authorize(any(), any(), any(), any(), any(),any()))
             .thenReturn(TestUtils.createTestAuthResponse());
 
         mockMvc.perform(post("/oauth/authorize")
-                .param("response_type", "code")
-                .param("client_id", "test_client")
-                .param("redirect_uri", "http://localhost/callback"))
+                        .param("response_type", "code")
+                        .param("client_id", "test_client")
+                        .param("redirect_uri", "http://localhost/callback")
+                        .header("X-User-Id", "test-user-id"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").exists());
     }
