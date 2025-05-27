@@ -9,4 +9,4 @@ resources:
 images:
 - name: openframe-gateway
   newName: ghcr.io/flamingo-cx/openframe-gateway
-  newTag: ca3a5f96
+  newTag: latest

@@ -16,22 +16,22 @@ resources:
 images:
 - name: openframe-tactical-backend
   newName: ghcr.io/flamingo-cx/openframe-tactical-backend
-  newTag: ca3a5f96
+  newTag: latest
 - name: openframe-tactical-celery
   newName: ghcr.io/flamingo-cx/openframe-tactical-celery
-  newTag: ca3a5f96
+  newTag: latest
 - name: openframe-tactical-celerybeat
   newName: ghcr.io/flamingo-cx/openframe-tactical-celerybeat
-  newTag: ca3a5f96
+  newTag: latest
 - name: openframe-tactical-frontend
   newName: ghcr.io/flamingo-cx/openframe-tactical-frontend
-  newTag: ca3a5f96
+  newTag: latest
 - name: openframe-tactical-nats
   newName: ghcr.io/flamingo-cx/openframe-tactical-nats
-  newTag: ca3a5f96
+  newTag: latest
 - name: openframe-tactical-nginx
   newName: ghcr.io/flamingo-cx/openframe-tactical-nginx
-  newTag: ca3a5f96
+  newTag: latest
 - name: openframe-tactical-websockets
   newName: ghcr.io/flamingo-cx/openframe-tactical-websockets
-  newTag: ca3a5f96
+  newTag: latest
