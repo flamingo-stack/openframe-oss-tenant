@@ -12,6 +12,8 @@ spec:
       labels:
         app: fleet-mdm-redis
     spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
     
       containers:
       - name: redis

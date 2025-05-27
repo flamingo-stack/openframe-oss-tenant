@@ -12,6 +12,8 @@ spec:
       labels:
         app: authentik-server
     spec:
+      imagePullSecrets: 
+        - name: github-pat-secret
 
       initContainers:
       - name: wait-for-postgres

@@ -12,6 +12,8 @@ spec:
       labels:
         app: tactical-postgres
     spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
     
       containers:
       - name: postgres

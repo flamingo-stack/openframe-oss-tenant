@@ -1,5 +1,8 @@
-# resourcesPreset: medium
+global:
+  imagePullSecrets: 
+    - name: docker-pat-secret
 
+# resourcesPreset: medium
 resources:
   # requests:
   #   cpu: 2

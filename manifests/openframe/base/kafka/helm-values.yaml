@@ -1,3 +1,7 @@
+global:
+  imagePullSecrets: 
+    - name: docker-pat-secret
+
 broker:
   resourcesPreset: medium
   replicaCount: 1

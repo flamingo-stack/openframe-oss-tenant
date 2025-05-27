@@ -12,6 +12,8 @@ spec:
       labels:
         app: meshcentral-mongodb
     spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
     
       containers:
       - name: mongodb

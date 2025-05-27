@@ -9,6 +9,10 @@ secretGenerator:
     type: kubernetes.io/dockerconfigjson
     files:
       - .dockerconfigjson=ghcr-docker-config.json
-
+  - name: docker-pat-secret
+    type: kubernetes.io/dockerconfigjson
+    files:
+      - .dockerconfigjson=docker-dockerconfig.json
+      
 generatorOptions:
   disableNameSuffixHash: true

@@ -12,7 +12,9 @@ spec:
       labels:
         app: zookeeper
     spec:
-    
+      imagePullSecrets:
+        - name: docker-pat-secret
+
       initContainers:
       - name: init-jmx
         image: busybox

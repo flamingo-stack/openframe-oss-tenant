@@ -36,6 +36,8 @@ spec:
         app: pinot
         component: controller
     spec:
+      imagePullSecrets:
+        - name: docker-pat-secret
 
       initContainers:
       - name: wait-for-zookeeper

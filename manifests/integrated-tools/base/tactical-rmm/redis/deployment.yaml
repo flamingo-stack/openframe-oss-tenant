@@ -12,6 +12,8 @@ spec:
       labels:
         app: tactical-redis
     spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
     
       containers:
       - name: redis
