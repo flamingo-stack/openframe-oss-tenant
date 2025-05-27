@@ -45,7 +45,7 @@ jobs:
               "name": "client",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-client",
-              "manifest_path": "./manifests/openframe-microservices/openframe-client",
+              "manifest_path": "./manifests/openframe/base/openframe-client",
               "artifact_name": "openframe-client"
             },
             {

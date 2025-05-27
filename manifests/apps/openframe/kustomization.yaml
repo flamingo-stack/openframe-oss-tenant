@@ -21,4 +21,5 @@ resources:
   - openframe-stream.yaml  
   - openframe-ui.yaml    
   - openframe-api.yaml   
+  - openframe-client.yaml
   - openframe-gateway.yaml       
