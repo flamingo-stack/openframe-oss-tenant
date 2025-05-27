@@ -10,4 +10,4 @@ resources:
 images:
 - name: openframe-api
   newName: ghcr.io/flamingo-cx/openframe-api
-  newTag: latest
+  newTag: 567fe982

@@ -12,6 +12,8 @@ spec:
       labels:
         app: mongo-express
     spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
     
       containers:
         - name: mongo-express

@@ -5,10 +5,10 @@ resources:
   - ns.yaml
 
 secretGenerator:
-  - name: github-pat-secret
+  - name: docker-pat-secret
     type: kubernetes.io/dockerconfigjson
     files:
-      - .dockerconfigjson=ghcr-docker-config.json
+      - .dockerconfigjson=docker-dockerconfig.json
 
 generatorOptions:
   disableNameSuffixHash: true
