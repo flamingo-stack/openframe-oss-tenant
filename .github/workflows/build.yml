@@ -322,21 +322,7 @@ jobs:
       - name: Run environment test script
         env:
           TERM: dumb
-          MATRIX: ${{ needs.matrix.outputs.matrix }}
-          CHANGES: ${{ toJSON(needs.changes.outputs) }}
-          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
         run: |
-          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
-            name=$(jq -r '.name' <<< "$item")
-            path=$(jq -r '.manifest_path' <<< "$item")
-            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
-
-            [ "$pushed" = "true" ] || continue
-
-            cd "$path"
-            cat kustomization.yaml
-            cd - > /dev/null
-          done
           ./scripts/run.sh bootstrap
     
       - name: Log in to GitHub Container Registry
