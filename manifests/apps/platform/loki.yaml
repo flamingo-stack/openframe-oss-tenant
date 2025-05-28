@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/platform/base/loki/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature-restructure-manifests
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature-restructure-manifests
+      targetRevision: main
       path: manifests/platform/base/loki
 
   destination:
