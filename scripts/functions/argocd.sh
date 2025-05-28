@@ -45,10 +45,8 @@ wait_for_argocd_apps() {
     [ "$(wc -l < "$printed")" -eq "$(kubectl -n argocd get applications -o name | wc -l)" ] && break
     sleep 5
 
-    for pod in $(kubectl get pods -n microservices -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep '^openframe-config'); do
-      echo "=== Image for $pod ==="
-      kubectl get pod "$pod" -n microservices -o jsonpath='{.spec.containers[*].image}'
-    done
+    echo "$(wc -l < "$printed")"
+    echo "$(kubectl -n argocd get applications -o name | wc -l)"
 
   done
 

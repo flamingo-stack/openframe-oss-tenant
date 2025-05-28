@@ -311,7 +311,7 @@ jobs:
         run: |
           git config --global user.email "CI@flamingo.cx"
           git config --global user.name "CI Account"
-          git checkout -b "${GITHUB_HEAD_REF}-test"
+          git checkout -b "${GITHUB_HEAD_REF}-ci"
 
           jq -c '.[]' <<< "$MATRIX" | while read -r item; do
             name=$(jq -r '.name' <<< "$item")
@@ -327,12 +327,12 @@ jobs:
           done
           
           find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i "s/${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-test/g" "$f"
+            sed -i "s/${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-ci/g" "$f"
           done
           
           git add .
-          git commit -m "Replace placeholder with test branch name [skip ci]" || echo "No changes"
-          git push origin "${GITHUB_HEAD_REF}-test"
+          git commit -m "Replace placeholder with ci branch name [skip ci]" || echo "No changes"
+          git push origin "${GITHUB_HEAD_REF}-ci" --force
 
       - name: Run environment test script
         env:
@@ -367,10 +367,10 @@ jobs:
             docker push "$IMAGE:latest"
           done
 
-      - name: Delete remote test branch (always runs)
+      - name: Delete remote ci branch (always runs)
         if: always()
         run: |
-          git push origin --delete "${GITHUB_HEAD_REF}-test" || true
+          git push origin --delete "${GITHUB_HEAD_REF}-ci" || true
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
 
