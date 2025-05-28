@@ -13,7 +13,7 @@ spec:
   sources:
     # Helm chart
     - repoURL: https://getambassador.io
-      targetRevision: 2.20.3
+      targetRevision: 2.20.2
       chart: telepresence
       helm:
         releaseName: traffic-manager
