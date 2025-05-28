@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.SSLException;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Service
@@ -148,12 +149,16 @@ public class RestProxyService {
     }
 
     private Map<String, String> buildAgentRequestHeaders(ServerHttpRequest request) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Accept", "application/json");
+        headers.put("Content-Type", "application/json");
+
         HttpHeaders requestHeaders = request.getHeaders();
         String toolAuthorisation = requestHeaders.getFirst("Tool-Authorization");
-        return Map.of(
-                "Accept", "application/json",
-                "Content-Type", "application/json",
-                "Authorization", toolAuthorisation);
+        if (isNotBlank(toolAuthorisation)) {
+            headers.put("Authorization", toolAuthorisation);
+        }
+        return headers;
     }
 
     private Mono<ResponseEntity<String>> proxy(
