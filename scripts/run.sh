@@ -42,6 +42,9 @@ export -f intercept_app
 source "${SCRIPT_DIR}/functions/argocd.sh"
 export -f deploy_argocd delete_argocd wait_for_argocd_apps
 
+source "${SCRIPT_DIR}/functions/meshcentral-mongo.sh"
+export -f check_deployment
+
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   if [ -f "$s" ]; then

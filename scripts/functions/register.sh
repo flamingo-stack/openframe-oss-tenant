@@ -17,6 +17,7 @@ register_tool() {
     local layer_color=${13}
     local api_key_type=${14:-"BEARER_TOKEN"}
     local api_key_name=${15:-""}
+    local debezium_connector=${16}
     local CA_SECRET="platform-certificate"
     local CA_NAMESPACE="platform"
     local TMP_CA_PATH
@@ -69,10 +70,11 @@ register_tool() {
             \"healthCheckInterval\": 30,
             \"connectionTimeout\": 5000,
             \"readTimeout\": 5000,
-            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"]
+            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
+            \"debeziumConnector\": $debezium_connector
         }
     }"
-    
+
     # Extract CA certificate for the request
     kubectl get secret "$CA_SECRET" -n "$CA_NAMESPACE" -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d > "$TMP_CA_PATH" || {
     echo "Failed to extract or decode CA cert"
@@ -415,7 +417,24 @@ register_tool \
     "Integrated Tools" \
     2 \
     "#455A64" \
-    "NONE"
+    "NONE" \
+    "NONE" \
+    '{
+       "name": "mesh-central-mongo-connector",
+       "config": {
+         "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+         "mongodb.connection.string": "mongodb://mongouser:mongopass@meshcentral-mongodb.integrated-tools-datasources:27017/admin?replicaSet=rs0",
+         "mongodb.name": "meshcentral",
+         "mongodb.user": "mongouser",
+         "mongodb.password": "mongopass",
+         "topic.prefix": "mesh-central",
+         "collection.include.list": "meshcentral.power,meshcentral.events",
+         "transforms": "route",
+         "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+         "transforms.route.regex": ".*",
+         "transforms.route.replacement": "mesh-central-debezium"
+       }
+     }'
 
 # Register Authentik with layer info
 register_tool \
@@ -504,7 +523,26 @@ register_tool \
     3 \
     "#455A64" \
     "HEADER" \
-    "X-API-KEY"
+    "X-API-KEY" \
+    '{
+       "name": "trmm-psql-connector",
+       "config": {
+         "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+         "tasks.max": "1",
+         "database.hostname": "tactical-postgres.integrated-tools-datasources.svc.cluster.local",
+         "database.port": "5432",
+         "database.user": "postgres",
+         "database.password": "postgrespass",
+         "database.dbname" : "tacticalrmm",
+         "topic.prefix": "trmm_clients_users",
+         "table.include.list": "public.clients_client,public.accounts_user",
+         "plugin.name": "pgoutput",
+         "topic.creation.default.replication.factor": 1,
+         "topic.creation.default.partitions": 10,
+         "topic.creation.default.cleanup.policy": "compact",
+         "topic.creation.default.compression.type": "lz4"
+       }
+     }'
 
 echo "Tactical RMM registered successfully!"
 

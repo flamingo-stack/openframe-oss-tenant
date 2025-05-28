@@ -1,5 +1,7 @@
 package com.openframe.core.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -22,12 +24,12 @@ public class IntegratedTool {
     private String platformCategory;
     private boolean enabled;
     private ToolCredentials credentials;
-    
+
     // Layer information
     private String layer;
     private Integer layerOrder;
     private String layerColor;
-    
+
     // Monitoring configuration
     private String metricsPath;
     private String healthCheckEndpoint;
@@ -35,4 +37,10 @@ public class IntegratedTool {
     private Integer connectionTimeout;
     private Integer readTimeout;
     private String[] allowedEndpoints;
+    @JsonProperty("debeziumConnector")
+    private JsonNode debeziumConnector;
+
+    public String getDebeziumConnectorAsJson() {
+        return debeziumConnector != null ? debeziumConnector.toString() : null;
+    }
 }

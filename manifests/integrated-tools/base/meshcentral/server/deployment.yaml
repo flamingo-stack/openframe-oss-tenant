@@ -28,7 +28,7 @@ spec:
           containerPort: 80
         env:
         - name: MONGODB_HOST
-          value: "meshcentral-mongodb.integrated-tools"
+          value: "meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources"
         - name: MONGODB_PORT
           value: "27017"
         - name: MONGO_INITDB_ROOT_USERNAME

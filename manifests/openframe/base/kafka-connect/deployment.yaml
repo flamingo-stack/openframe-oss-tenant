@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debezium-connect
+  namespace: openframe-datasources
+  labels:
+    app: debezium-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debezium-connect
+  template:
+    metadata:
+      labels:
+        app: debezium-connect
+    spec:
+      containers:
+        - name: debezium-connect
+          image: quay.io/debezium/connect:3.1.1.Final
+          ports:
+            - containerPort: 8083
+              name: connect-api
+          env:
+            - name: BOOTSTRAP_SERVERS
+              value: "openframe-kafka-broker-headless.openframe-datasources:9092"
+            - name: GROUP_ID
+              value: "1"
+            - name: CONFIG_STORAGE_TOPIC
+              value: "connect-configs"
+            - name: OFFSET_STORAGE_TOPIC
+              value: "connect-offsets"
+            - name: STATUS_STORAGE_TOPIC
+              value: "connect-status"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"

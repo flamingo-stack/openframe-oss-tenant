@@ -12,9 +12,6 @@ mkdir -p ${MESH_DIR}/nginx-api
 touch ${MESH_DIR}/nginx-api/api.log
 chmod 666 ${MESH_DIR}/nginx-api/api.log
 
-echo "Substituting environment variables in config.json (excluding \$schema)"
-envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
-
 echo "Setting up directory permissions..."
 chmod -R 755 ${MESH_DIR}  # Make all folders readable and executable
 chmod -R 644 ${MESH_DIR}  # Make all files readable
@@ -23,6 +20,9 @@ chmod -R 664 ${MESH_DIR}  # Make all files writable
 chmod -R 755 ${MESH_DIR}  # Make all folders executable
 chmod -R 755 ${MESH_DIR}  # Make all files executable
 chown -R node:node ${MESH_DIR}
+
+echo "Substituting environment variables in config.json (excluding \$schema)"
+envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1 | grep -v '^schema$'))" <${MESH_TEMP_DIR}/config.json >${MESH_DIR}/config.json
 
 echo "Installing MeshCentral..."
 npm install meshcentral --prefix ${MESH_DIR} || { echo "Failed to install MeshCentral"; exit 1; }

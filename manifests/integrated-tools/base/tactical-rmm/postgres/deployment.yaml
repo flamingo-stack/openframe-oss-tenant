@@ -38,6 +38,9 @@ spec:
             - postgres
           initialDelaySeconds: 30
           periodSeconds: 10
+        args:
+          - "-c"
+          - "wal_level=logical"
       volumes:
       - name: postgres-data
         persistentVolumeClaim:
