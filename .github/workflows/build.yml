@@ -275,6 +275,8 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       
       - name: Install certutil (NSS tools)
         run: |
@@ -306,6 +308,10 @@ jobs:
           CHANGES: ${{ toJSON(needs.changes.outputs) }}
           COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
         run: |
+          git config --global user.email "CI@flamingo.cx"
+          git config --global user.name "CI Account"
+          git checkout -b "${GITHUB_HEAD_REF}-test"
+
           jq -c '.[]' <<< "$MATRIX" | while read -r item; do
             name=$(jq -r '.name' <<< "$item")
             path=$(jq -r '.manifest_path' <<< "$item")
@@ -318,17 +324,13 @@ jobs:
             kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
             cd - > /dev/null
           done
-
-          git config --global user.email "CI@flamingo.cx"
-          git config --global user.name "CI Account"
           
-          git fetch origin "${GITHUB_HEAD_REF}"
-          git checkout "${GITHUB_HEAD_REF}"
-
-          git add . 
-          git commit -m "sxff [skip ci]"
-          git push origin feature-restructure-manifests
-
+          find . -type f -name '*.yaml' -not -path '*/.git/*' \
+            -exec sed -i "s/\${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-test/g" {} +
+          
+          git add .
+          git commit -m "Replace placeholder with test branch name [skip ci]" || echo "No changes"
+          git push origin "${GITHUB_HEAD_REF}-test"
 
       - name: Run environment test script
         env:
