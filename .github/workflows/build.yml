@@ -326,8 +326,8 @@ jobs:
             cd - > /dev/null
           done
           
-          for f in $(find . -type f -name '*.yaml' -not -path '*/.git/*'); do
-            sed -i "s/\${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-test/g" "$f"
+          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
+            sed -i "s/${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-test/g" "$f"
           done
           
           git add .
@@ -366,3 +366,11 @@ jobs:
             docker tag "$IMAGE:$COMMIT_SHA" "$IMAGE:latest"
             docker push "$IMAGE:latest"
           done
+
+      - name: Delete remote test branch (always runs)
+        if: always()
+        run: |
+          git push origin --delete "${GITHUB_HEAD_REF}-test" || true
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+
