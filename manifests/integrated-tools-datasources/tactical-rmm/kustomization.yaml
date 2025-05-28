@@ -1,3 +1,0 @@
-resources:
-  - base/postgres.yaml
-  - base/redis.yaml

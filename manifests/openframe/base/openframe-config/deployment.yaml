@@ -1,0 +1,54 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-config-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-config-server
+  template:
+    metadata:
+      labels:
+        app: openframe-config-server
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+
+      containers:
+        - name: openframe-config
+          image: openframe-config
+          ports:
+            - containerPort: 8888
+              name: http
+            - containerPort: 8889
+              name: management
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "k8s"
+            # - name: CONFIG_GIT_BRANCH
+            #   value: "feature-restructure-manifests"
+          livenessProbe:
+            httpGet:
+              path: /xml/shared-logback-spring.xml
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /xml/shared-logback-spring.xml
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"

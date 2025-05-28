@@ -22,4 +22,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/openframe-datasources/openframe-nifi
+    - ../../../manifests/openframe/base/nifi

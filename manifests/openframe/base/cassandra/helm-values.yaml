@@ -1,0 +1,74 @@
+global:
+  imagePullSecrets: 
+    - name: docker-pat-secret
+
+# resourcesPreset: medium
+resources:
+  # requests:
+  #   cpu: 2
+  #   memory: 512Mi
+  limits:
+    cpu: 1
+    memory: 2048Mi
+
+extraEnvVars:
+  - name: CASSANDRA_AUTHENTICATOR
+    value: AllowAllAuthenticator
+  - name: CASSANDRA_AUTHORIZER
+    value: AllowAllAuthorizer
+  - name: CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS
+    value: "128"
+  # - name: CASSANDRA_NATIVE_TRANSPORT_PORT_SSL
+  #   value: "9142"
+  - name: CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE
+    value: "256MB"
+  - name: CASSANDRA_STARTUP_TIMEOUT
+    value: "300"
+  - name: CASSANDRA_SYSTEM_AUTH_BOOTSTRAP_DELAY
+    value: "0"
+  - name: GOSSIP_WAIT_TIME_IN_MS
+    value: "0"
+
+initDB:
+  cassandra-init.cql: |
+    CREATE KEYSPACE IF NOT EXISTS openframe_events
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+    USE openframe_events;
+
+    CREATE TABLE IF NOT EXISTS event_streams (
+        user_id text,
+        stream_id text,
+        event_id uuid,
+        timestamp timestamp,
+        payload text,
+        event_type text,    -- Fixed column name
+        metadata map<text, text>,
+        PRIMARY KEY ((user_id), stream_id, event_id, timestamp)
+    ) WITH CLUSTERING ORDER BY (stream_id ASC, event_id ASC, timestamp DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_event_type ON event_streams(event_type);
+
+# initDBConfigMap: ""
+
+cluster:
+  name: cassandra
+  seedCount: 1
+  numTokens: 256
+  datacenter: dc1
+  rack: rack1
+  endpointSnitch: SimpleSnitch
+  clientEncryption: false
+  ## eg:
+  ## extraSeeds:
+  ##   - hostname/IP
+  ##   - hostname/IP
+  ##
+  extraSeeds: []
+  enableUDF: false
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: datasources

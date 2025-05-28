@@ -1,0 +1,98 @@
+global:
+  imagePullSecrets: 
+    - name: docker-pat-secret
+
+broker:
+  resourcesPreset: medium
+  replicaCount: 1
+  podAntiAffinityPreset: hard
+  resources:
+    # requests:
+    #   cpu: 2
+    #   memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2048Mi
+
+listeners:
+  client:
+    protocol: PLAINTEXT
+  controller:
+    protocol: PLAINTEXT
+  interbroker:
+    protocol: PLAINTEXT
+  external:
+    protocol: PLAINTEXT
+  # Do we need to create external access ??? https://github.com/bitnami/charts/issues/25030
+  # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
+  # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+
+# externalAccess:
+#   enabled: true
+#   service:
+#     type: LoadBalancer
+#   ports:
+#     external: 29092
+
+extraEnv:
+  - name: KAFKA_BROKER_ID
+    value: "1"
+  # see JMX section
+  # replace custom jmx exporter with helm builtin, this needs also extra service port 9308
+  # - name: KAFKA_OPTS
+  #   value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9308:/opt/jmx_exporter/config.yml -Dzookeeper.connect.timeout.ms=60000 -Dzookeeper.session.timeout.ms=60000"
+
+controller:
+  resourcesPreset: medium
+  replicaCount: 1
+
+  resources:
+    # requests:
+    #   cpu: 2
+    #   memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2048Mi
+
+kraft:
+  enabled: true
+
+# # Zookeeper mode - Controller nodes not supported
+# controller:
+#   replicaCount: 0
+
+# kraft:
+#   enabled: false
+
+# zookeeper:
+#   enabled: true
+#   replicaCount: 1
+#   podAntiAffinityPreset: hard  # make sure that no two broker/zookeeper pods are on the same node
+#   auth:
+#     client:
+#       enabled: false
+
+provisioning:
+  enabled: true
+  replicationFactor: 1
+  topics:
+    - name: pinot-events
+      partitions: 1
+      replicationFactor: 1
+      ## https://kafka.apache.org/documentation/#topicconfigs
+      # config:
+      #   max.message.bytes: 64000
+      #   flush.messages: 1
+
+metrics:
+  jmx:
+    enabled: true
+    kafkaJmxPort: 5555
+    extraRules: |-
+      - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
+        name: kafka_$1_$2_$3
+  serviceMonitor:
+      enabled: true
+  prometheusRule:
+    enabled: true
+    namespace: datasources

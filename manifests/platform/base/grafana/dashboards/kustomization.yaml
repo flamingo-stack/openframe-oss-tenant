@@ -4,6 +4,6 @@ kind: Kustomization
 resources:
   - ./home
   - ./integrated-tools
-  - ./openframe-datasources
-  - ./openframe-microservices
+  - ./datasources
+  - ./microservices
   - ./platform

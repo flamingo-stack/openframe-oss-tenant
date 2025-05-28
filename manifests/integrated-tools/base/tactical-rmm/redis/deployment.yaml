@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-redis
+  template:
+    metadata:
+      labels:
+        app: tactical-redis
+    spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
+    
+      containers:
+      - name: redis
+        image: redis:6.0-alpine
+        command: ["redis-server", "--save", "3600", "1", "300", "100", "60", "10000"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: tactical-redis-data

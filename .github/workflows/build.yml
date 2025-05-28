@@ -13,6 +13,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
+      - '.github/**'
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
@@ -34,6 +35,7 @@ jobs:
       core: ${{ steps.filter.outputs.core }}
       data: ${{ steps.filter.outputs.data }}
       api: ${{ steps.filter.outputs.api }}
+      client: ${{ steps.filter.outputs.client }}
       config: ${{ steps.filter.outputs.config }}
       gateway: ${{ steps.filter.outputs.gateway }}
       management: ${{ steps.filter.outputs.management }}
@@ -119,7 +121,6 @@ jobs:
             meshcentral:
               - './integrated-tools/meshcentral/server/**'
 
-
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
@@ -203,13 +204,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: .
-
-      - name: Prepare Java artifacts for Docker build
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          mkdir -p ${{ matrix.path }}/target
-          mv *.jar ${{ matrix.path }}/target/
+          path: ${{ matrix.path }}/target
 
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -286,6 +281,8 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       
       - name: Install certutil (NSS tools)
         run: |
@@ -316,7 +313,12 @@ jobs:
           MATRIX: ${{ needs.matrix.outputs.matrix }}
           CHANGES: ${{ toJSON(needs.changes.outputs) }}
           COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
+          git config --global user.email "CI@flamingo.cx"
+          git config --global user.name "CI Account"
+          git checkout -b "${GITHUB_HEAD_REF}-ci"
+
           jq -c '.[]' <<< "$MATRIX" | while read -r item; do
             name=$(jq -r '.name' <<< "$item")
             path=$(jq -r '.manifest_path' <<< "$item")
@@ -329,11 +331,18 @@ jobs:
             kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
             cd - > /dev/null
           done
+          
+          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
+            sed -i "s/${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-ci/g" "$f"
+          done
+          
+          git add .
+          git commit -m "Replace placeholder with ci branch name [skip ci]" || echo "No changes"
+          git push origin "${GITHUB_HEAD_REF}-ci" --force
 
       - name: Run environment test script
         env:
           TERM: dumb
-          GITHUB_TOKEN_CLASSIC: ${{ github.token }}
         run: |
           ./scripts/run.sh bootstrap
     
@@ -363,3 +372,11 @@ jobs:
             docker tag "$IMAGE:$COMMIT_SHA" "$IMAGE:latest"
             docker push "$IMAGE:latest"
           done
+
+      - name: Delete remote ci branch (always runs)
+        if: always()
+        run: |
+          git push origin --delete "${GITHUB_HEAD_REF}-ci" || true
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+

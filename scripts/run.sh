@@ -33,23 +33,14 @@ export -f show_help
 source "${SCRIPT_DIR}/functions/add_loopback_ip.sh"
 export -f add_loopback_ip
 
-source "${SCRIPT_DIR}/functions/build-app.sh"
-export -f build_app
-
-source "${SCRIPT_DIR}/functions/helm-repo-ensure.sh"
-export -f helm_repo_ensure
-
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
-
-source "${SCRIPT_DIR}/functions/wait-parallel.sh"
-export -f wait_parallel
 
 source "${SCRIPT_DIR}/functions/intercept.sh"
 export -f intercept_app
 
 source "${SCRIPT_DIR}/functions/argocd.sh"
-export -f deploy_argocd delete_argocd argocd_client wait_for_argocd_apps
+export -f deploy_argocd delete_argocd wait_for_argocd_apps
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -98,11 +89,6 @@ case "$ARG" in
       setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
       stop_spinner_and_return_code $? || exit 1
     fi
-    start_spinner "Checking bases"
-    if ! check_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1; then
-      create_bases > "${DEPLOY_LOG_DIR}/bases.log" 2>&1
-    fi
-    stop_spinner_and_return_code $? || exit 1
     ;;
   d|delete)
     start_spinner "Deleting cluster"
@@ -123,13 +109,6 @@ case "$ARG" in
     # Bootstrap whole cluster with all apps
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" app all deploy
-    ;;
-  p|platform)
-    # Bootstrap whole cluster with base apps
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app argocd deploy
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform deploy
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app platform_pki deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do

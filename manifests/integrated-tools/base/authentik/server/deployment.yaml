@@ -1,0 +1,268 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentik-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentik-server
+  template:
+    metadata:
+      labels:
+        app: authentik-server
+    spec:
+      imagePullSecrets: 
+        - name: github-pat-secret
+
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:latest
+        command: ['sh', '-c',
+          'until pg_isready -h authentik-postgresql.integrated-tools -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+        env:
+        - name: PGPASSWORD
+          value: "authentik-password-1234"
+
+      containers:
+      - name: server
+        image: ghcr.io/goauthentik/server:latest
+        args: ["server"]
+        ports:
+        - containerPort: 9000
+          name: http
+          protocol: TCP
+        env:
+        - name: AUTHENTIK_API_URL
+          value: "http://authentik-server:9000"
+        - name: AUTHENTIK_BOOTSTRAP_EMAIL
+          value: "akadmin@openframe.local"
+        - name: AUTHENTIK_BOOTSTRAP_PASSWORD
+          value: "openframe123!"
+        - name: AUTHENTIK_BOOTSTRAP_TOKEN
+          value: "openframe-api-token-123456789"
+        - name: AUTHENTIK_REDIS__HOST
+          value: "authentik-redis.integrated-tools"
+        - name: AUTHENTIK_POSTGRESQL__HOST
+          value: "authentik-postgresql.integrated-tools"
+        - name: AUTHENTIK_POSTGRESQL__USER
+          value: "authentik-user"
+        - name: AUTHENTIK_POSTGRESQL__NAME
+          value: authentik-database-authentik
+        - name: AUTHENTIK_POSTGRESQL__PASSWORD
+          value: "authentik-password-1234"
+        # https://github.com/goauthentik/authentik/issues/9454
+        # https://github.com/goauthentik/authentik/issues/5746#issuecomment-1875219192
+        - name: AUTHENTIK_REDIS__DB
+          value: "1"
+        - name: AUTHENTIK_SECRET_KEY
+          value: "X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA"
+        - name: AUTHENTIK_ERROR_REPORTING__ENABLED
+          value: "false"
+        - name: AUTHENTIK_DISABLE_STARTUP_ANALYTICS
+          value: "true"
+        - name: AUTHENTIK_DISABLE_UPDATE_CHECK
+          value: "true"
+        - name: AUTHENTIK_EMAIL__HOST
+          value: "localhost"
+        - name: AUTHENTIK_EMAIL__PORT
+          value: "25"
+        - name: AUTHENTIK_EMAIL__USERNAME
+          value: ""
+        - name: AUTHENTIK_EMAIL__PASSWORD
+          value: ""
+        - name: AUTHENTIK_EMAIL__USE_TLS
+          value: "false"
+        - name: AUTHENTIK_EMAIL__USE_SSL
+          value: "false"
+        - name: AUTHENTIK_EMAIL__TIMEOUT
+          value: "10"
+        - name: AUTHENTIK_EMAIL__FROM
+          value: "authentik@localhost"
+        - name: TMPDIR
+          value: /tmp
+        volumeMounts:
+        - name: media-tmp
+          mountPath: /media
+        - name: certs
+          mountPath: /certs
+        - name: templates
+          mountPath: /templates
+        startupProbe:
+          httpGet:
+            path: /-/health/live/
+            port: http
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        livenessProbe:
+          httpGet:
+            path: /-/health/live/
+            port: http
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /-/health/ready/
+            port: http
+            scheme: HTTP
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          # requests:
+          #   cpu: 150m
+          #   memory: 512Mi
+          limits:
+            cpu: 150m
+            memory: 1024Mi
+      volumes:
+      - name: media-tmp
+        emptyDir: {}
+      - name: certs
+        configMap:
+          name: authentik-certs
+      - name: templates
+        configMap:
+          name: authentik-templates
+          
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentik-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentik-worker
+  template:
+    metadata:
+      labels:
+        app: authentik-worker
+    spec:
+    
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:latest
+        command: ['sh', '-c',
+          'until pg_isready -h authentik-postgresql.integrated-tools -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+        env:
+        - name: PGPASSWORD
+          value: "authentik-password-1234"
+
+      - name: wait-for-server
+        image: curlimages/curl:latest
+        command: ['sh', '-c',
+          'until curl -s http://authentik-server:9000/-/health/ready/; do echo waiting for authentik-server; sleep 2; done;']
+
+      containers:
+      - name: worker
+        image: ghcr.io/goauthentik/server:latest
+        args: ["worker"]
+        env:
+        - name: AUTHENTIK_API_URL
+          value: "http://authentik-server:9000"
+        - name: AUTHENTIK_BOOTSTRAP_PASSWORD
+          value: "openframe123!"
+        - name: AUTHENTIK_BOOTSTRAP_TOKEN
+          value: "openframe-api-token-123456789"
+        - name: AUTHENTIK_BOOTSTRAP_EMAIL
+          value: "akadmin@openframe.local"
+        - name: AUTHENTIK_REDIS__HOST
+          value: "authentik-redis.integrated-tools"
+        - name: AUTHENTIK_POSTGRESQL__HOST
+          value: "authentik-postgresql.integrated-tools"
+        - name: AUTHENTIK_POSTGRESQL__USER
+          value: "authentik-user"
+        - name: AUTHENTIK_POSTGRESQL__NAME
+          value: authentik-database-authentik
+        - name: AUTHENTIK_POSTGRESQL__PASSWORD
+          value: "authentik-password-1234"
+        - name: AUTHENTIK_REDIS__DB
+          value: "1"
+        - name: AUTHENTIK_SECRET_KEY
+          value: "X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA"
+        - name: AUTHENTIK_ERROR_REPORTING__ENABLED
+          value: "false"
+        - name: AUTHENTIK_DISABLE_STARTUP_ANALYTICS
+          value: "true"
+        - name: AUTHENTIK_DISABLE_UPDATE_CHECK
+          value: "true"
+        - name: AUTHENTIK_EMAIL__HOST
+          value: "localhost"
+        - name: AUTHENTIK_EMAIL__PORT
+          value: "25"
+        - name: AUTHENTIK_EMAIL__USERNAME
+          value: ""
+        - name: AUTHENTIK_EMAIL__PASSWORD
+          value: ""
+        - name: AUTHENTIK_EMAIL__USE_TLS
+          value: "false"
+        - name: AUTHENTIK_EMAIL__USE_SSL
+          value: "false"
+        - name: AUTHENTIK_EMAIL__TIMEOUT
+          value: "10"
+        - name: AUTHENTIK_EMAIL__FROM
+          value: "authentik@localhost"
+        startupProbe:
+          exec:
+            command:
+              - ak
+              - healthcheck
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+              - ak
+              - healthcheck
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+              - ak
+              - healthcheck
+          failureThreshold: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          # requests:
+          #   cpu: 150m
+          #   memory: 512Mi
+          limits:
+            cpu: 150m
+            memory: 1024Mi
+        volumeMounts:
+        - name: media-tmp
+          mountPath: /media
+        - name: certs
+          mountPath: /certs
+        - name: templates
+          mountPath: /templates
+      volumes:
+      - name: media-tmp
+        emptyDir: {}
+      - name: certs
+        configMap:
+          name: authentik-certs
+      - name: templates
+        configMap:
+          name: authentik-templates

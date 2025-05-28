@@ -1,4 +1,8 @@
 
+global:
+  imagePullSecrets:
+    - name: docker-pat-secret
+
 ingress:
   enabled: true
   ingressClassName: nginx
@@ -69,12 +73,12 @@ datasources:
     datasources:
       - name: Prometheus
         type: prometheus
-        url: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
+        url: http://prometheus-kube-prometheus-prometheus.platform.svc.cluster.local:9090
         access: proxy
         isDefault: true
       - name: Loki
         type: loki
-        url: http://loki.loki.svc.cluster.local:3100
+        url: http://loki.platform.svc.cluster.local:3100
         access: proxy
         jsonData:
           timeout: 60
@@ -98,20 +102,20 @@ dashboardProviders:
         editable: true
         options:
           path: /var/lib/grafana/dashboards/platform
-      - name: 'openframe-microservices'
-        folder: 'openframe-microservices'
+      - name: 'microservices'
+        folder: 'microservices'
         type: file
         disableDeletion: false
         editable: true
         options:
-          path: /var/lib/grafana/dashboards/openframe-microservices
-      - name: 'openframe-datasources'
-        folder: 'openframe-datasources'
+          path: /var/lib/grafana/dashboards/microservices
+      - name: 'datasources'
+        folder: 'datasources'
         type: file
         disableDeletion: false
         editable: true
         options:
-          path: /var/lib/grafana/dashboards/openframe-datasources
+          path: /var/lib/grafana/dashboards/datasources
       - name: 'integrated-tools'
         folder: 'integrated-tools'
         type: file
@@ -125,10 +129,10 @@ extraVolumeMounts:
     mountPath: /var/lib/grafana/dashboards/home
   - name: platform
     mountPath: /var/lib/grafana/dashboards/platform
-  - name: openframe-microservices
-    mountPath: /var/lib/grafana/dashboards/openframe-microservices
-  - name: openframe-datasources
-    mountPath: /var/lib/grafana/dashboards/openframe-datasources
+  - name: microservices
+    mountPath: /var/lib/grafana/dashboards/microservices
+  - name: datasources
+    mountPath: /var/lib/grafana/dashboards/datasources
   - name: integrated-tools
     mountPath: /var/lib/grafana/dashboards/integrated-tools
 
@@ -139,12 +143,12 @@ extraVolumes:
   - name: platform
     configMap:
       name: platform
-  - name: openframe-microservices
+  - name: microservices
     configMap:
-      name: openframe-microservices
-  - name: openframe-datasources
+      name: microservices
+  - name: datasources
     configMap:
-      name: openframe-datasources
+      name: datasources
   - name: integrated-tools
     configMap:
       name: integrated-tools

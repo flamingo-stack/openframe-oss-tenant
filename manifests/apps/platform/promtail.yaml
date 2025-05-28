@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: promtail
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: platform
+
+  sources:
+    # Helm chart
+    - repoURL: https://grafana.github.io/helm-charts
+      targetRevision: 6.16.6
+      chart: promtail
+      helm:
+        valueFiles:
+          - "$values/manifests/platform/base/promtail/helm-values.yaml"  # name is hardcoded
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: feature-restructure-manifests
+      ref: values
+    # Extra resources
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: feature-restructure-manifests
+      path: manifests/platform/base/promtail
+
+  destination:
+    name: in-cluster
+    namespace: platform
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m

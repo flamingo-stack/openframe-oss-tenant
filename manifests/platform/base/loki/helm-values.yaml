@@ -46,6 +46,9 @@ loki:
 #   service:
 #     type: LoadBalancer
 
+imagePullSecrets:
+  - name: docker-pat-secret
+
 deploymentMode: SingleBinary
 
 singleBinary:

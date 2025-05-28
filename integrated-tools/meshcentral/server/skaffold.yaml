@@ -40,4 +40,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/integrated-tools/meshcentral
+    - ../../../manifests/integrated-tools/base/meshcentral
