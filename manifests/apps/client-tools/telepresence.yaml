@@ -12,9 +12,9 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: https://getambassador.io
-      targetRevision: 2.20.2
-      chart: telepresence
+    - repoURL: oci://ghcr.io/telepresenceio
+      targetRevision: 2.22.5
+      chart: telepresence-oss
       helm:
         releaseName: traffic-manager
         valueFiles:
