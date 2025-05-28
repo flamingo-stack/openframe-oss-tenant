@@ -12,10 +12,11 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: ghcr.io/telepresenceio/telepresence-oss
-      targetRevision: 2.22.5
-      chart: telepresence-oss
+    - repoURL: https://getambassador.io
+      targetRevision: 2.20.2
+      chart: telepresence
       helm:
+        releaseName: traffic-manager
         valueFiles:
           - "$values/manifests/client-tools/base/telepresence/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
