@@ -12,8 +12,8 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: https://app.getambassador.io
-      targetRevision: 2.22.4
+    - repoURL: https://appgetambassador.io
+      targetRevision: 2.20.3
       chart: telepresence
       helm:
         valueFiles:
