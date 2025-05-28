@@ -46,8 +46,7 @@ wait_for_argocd_apps() {
     sleep 5
 
     for pod in $(kubectl get pods -n microservices -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep '^openframe-config'); do
-      echo "=== Logs for $pod ==="
-      kubectl logs -n microservices --all-containers "$pod"
+      echo "=== Image for $pod ==="
       kubectl get pod "$pod" -n microservices -o jsonpath='{.spec.containers[*].image}'
     done
 
