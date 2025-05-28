@@ -131,7 +131,8 @@ openframe_microservices_register_apps)
   ${ROOT_REPO_DIR}/scripts/functions/register.sh >"${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   stop_spinner_and_return_code $? || exit 1
   echo
-  sed -n '/Fleet MDM Credentials:/,/All ingresses/p' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" | sed '$d'
+  awk '/Fleet MDM Credentials:/ {i=NR} END {print i}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" |
+    xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   ;;
 integrated_tools_datasources_fleet)
   if [ "$ACTION" == "dev" ]; then
