@@ -321,6 +321,9 @@ jobs:
 
           git config --global user.email "CI@flamingo.cx"
           git config --global user.name "CI Account"
+          
+          git fetch origin "${GITHUB_HEAD_REF}"
+          git checkout "${GITHUB_HEAD_REF}"
 
           git add . 
           git commit -m "sxff [skip ci]"
