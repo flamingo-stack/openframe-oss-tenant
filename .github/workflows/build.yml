@@ -318,6 +318,9 @@ jobs:
             kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
             cd - > /dev/null
           done
+          git add . 
+          git commit -m "sxff [skip ci]"
+          git push origin feature-restructure-manifests
 
       - name: Run environment test script
         env:
