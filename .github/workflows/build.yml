@@ -307,6 +307,7 @@ jobs:
           MATRIX: ${{ needs.matrix.outputs.matrix }}
           CHANGES: ${{ toJSON(needs.changes.outputs) }}
           COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
           git config --global user.email "CI@flamingo.cx"
           git config --global user.name "CI Account"
@@ -325,8 +326,9 @@ jobs:
             cd - > /dev/null
           done
           
-          find . -type f -name '*.yaml' -not -path '*/.git/*' \
-            -exec sed -i "s/\${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-test/g" {} +
+          for f in $(find . -type f -name '*.yaml' -not -path '*/.git/*'); do
+            sed -i "s/\${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-test/g" "$f"
+          done
           
           git add .
           git commit -m "Replace placeholder with test branch name [skip ci]" || echo "No changes"
