@@ -12,7 +12,7 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: oci://ghcr.io/telepresenceio/telepresence
+    - repoURL: ghcr.io/telepresenceio/telepresence
       targetRevision: 2.22.5
       chart: telepresence-oss
       helm:
