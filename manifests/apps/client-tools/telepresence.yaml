@@ -13,8 +13,8 @@ spec:
   sources:
     # Helm chart
     - repoURL: https://getambassador.io
-      targetRevision: 2.20.3
-      chart: telepresence
+      targetRevision: 2.20.3-test.0
+      chart: datawire/telepresence
       helm:
         valueFiles:
           - "$values/manifests/client-tools/base/telepresence/helm-values.yaml"  # name is hardcoded
