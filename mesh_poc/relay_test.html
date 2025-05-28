@@ -1,0 +1,98 @@
+<html>
+    <head>
+        <style>
+            body {
+                margin: 0;
+                padding: 20px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background-color: #f5f5f5;
+                font-family: Arial, sans-serif;
+            }
+            
+            #remoteCanvas {
+                order: none;
+                display: block;
+                max-width: 100%;
+                max-height: 80vh;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            }
+        </style>
+    </head>
+    <body>
+    <div class="viewer">
+        <canvas id="remoteCanvas" width="800" height="600">
+            Ваш браузер не поддерживает Canvas
+        </canvas>
+    </div>
+    </body>
+</html>
+<script src="binary_handler.js"></script>
+<script src="mesh_desctop.js"></script>
+<script>
+// Mesh Relay WebSocket Test with Canvas Drawing
+let socket = null;
+let connectionStatus = 'disconnected';
+let canvas = null;
+let ctx = null;
+
+// Initialize canvas when page loads
+window.addEventListener('load', function() {
+    // const renderer = new MeshDesktopRenderer('canvas', {
+    //     debugMode: true
+    // });
+
+    const wsUrl = prompt('Enter WebSocket URL for mesh relay connection:', 'ws://localhost:8080');
+    
+    connectToRelay(wsUrl);
+});
+
+// Connect to the WebSocket relay
+function connectToRelay(url) {
+    var canvas = document.getElementById('remoteCanvas');
+    var client = new RemoteDesktopClient(canvas, {debugMode: 2});
+
+    console.log(`Attempting to connect to: ${url}`);
+    socket = new WebSocket(url);
+    
+    // Important: Set binary type to handle binary data
+    socket.binaryType = 'arraybuffer'; // or 'blob'
+    
+    socket.onopen = function(event) {
+        connectionStatus = 'connected';
+        console.log('✅ Connected to mesh relay:', url);
+        
+        // Send initial handshake
+        sendMessage({
+            type: 'handshake',
+            clientId: generateClientId(),
+            timestamp: new Date().toISOString()
+        });
+        
+        sendMessage("2");
+    };
+    
+    socket.onmessage = function(event) {
+        client.processMessage(event.data);
+    };
+}
+
+// Send message through the relay
+function sendMessage(data) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        const message = typeof data === 'string' ? data : JSON.stringify(data);
+        socket.send(message);
+        console.log('📤 Message sent:', message);
+    } else {
+        console.warn('Cannot send message - WebSocket not connected');
+    }
+}
+
+// Generate unique client ID
+function generateClientId() {
+    return 'client_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+}
+
+</script>
