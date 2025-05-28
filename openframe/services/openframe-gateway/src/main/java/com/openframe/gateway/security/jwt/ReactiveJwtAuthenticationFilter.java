@@ -2,6 +2,7 @@ package com.openframe.gateway.security.jwt;
 
 import com.openframe.security.jwt.JwtService;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -24,19 +25,19 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
     private final JwtService jwtService;
     private final ReactiveUserDetailsService userDetailsService;
     private final ReactiveUserDetailsService reactiveOAuthClientUserDetailsService;
-
-    @Value("${management.endpoints.web.base-path}")
     @Getter
-    private String managementPath;
+    private final String managementPath;
 
     public ReactiveJwtAuthenticationFilter(
             JwtService jwtService,
             ReactiveUserDetailsService reactiveUserDetailsService,
-            ReactiveUserDetailsService reactiveOAuthClientUserDetailsService
+            ReactiveUserDetailsService reactiveOAuthClientUserDetailsService,
+            @Value("${management.endpoints.web.base-path}") String managementPath
     ) {
         this.jwtService = jwtService;
         this.userDetailsService = reactiveUserDetailsService;
         this.reactiveOAuthClientUserDetailsService = reactiveOAuthClientUserDetailsService;
+        this.managementPath = managementPath;
     }
 
     @Override
