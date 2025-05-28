@@ -322,6 +322,7 @@ jobs:
           git commit -m "sxff [skip ci]"
           git push origin feature-restructure-manifests
 
+
       - name: Run environment test script
         env:
           TERM: dumb
