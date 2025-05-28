@@ -35,8 +35,8 @@ argocd)
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then 
     kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${SCRIPT_DIR}/argocd-manifests/patch-argocd-cm.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-    kubectl -n argocd patch deployment argocd-server --type='merge' \
-      -p='{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"ghcr-credentials"}]}}}}' >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
+    kubectl -n argocd patch deployment argocd-repo-server --type='merge' \
+      -p='{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"github-pat-secret"}, {"name":"docker-pat-secret"}]}}}}' >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
     kubectl -n argocd apply -k "${SCRIPT_DIR}/argocd-manifests" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
 
     start_spinner "Waiting for ArgoCD Apps to become Healthy"
