@@ -212,7 +212,7 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: ${{ fromJSON('["linux/amd64"]') if matrix.name == 'fleetmdm' else fromJSON('["linux/amd64","linux/arm64"]') }}
+          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
