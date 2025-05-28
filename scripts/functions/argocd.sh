@@ -44,10 +44,6 @@ wait_for_argocd_apps() {
 
     [ "$(wc -l < "$printed")" -eq "$(kubectl -n argocd get applications -o name | wc -l)" ] && break
     sleep 5
-
-    echo "$(wc -l < "$printed")"
-    echo "$(kubectl -n argocd get applications -o name | wc -l)"
-
   done
 
   rm -f "$printed"

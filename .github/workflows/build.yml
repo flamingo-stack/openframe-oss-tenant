@@ -90,30 +90,36 @@ jobs:
             stream:
               - './openframe/services/openframe-stream/**'
             ui:
-              - 'openframe/.github/actions/**'
+              - './openframe/services/openframe-ui/**'
             nifi:
               - './openframe/datasources/nifi/**'
             postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-frontend/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-nginx:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-nginx/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-backend:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-nats:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-websockets:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-celery:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             tactical-celerybeat:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
             fleetmdm:
-              - 'openframe/.github/actions/**'
+              - './integrated-tools/fleetmdm/**'
             meshcentral:
-              - 'openframe/.github/actions/**'
-
+              - './integrated-tools/meshcentral/server/**'
 
   matrix:
     name: Matrix
