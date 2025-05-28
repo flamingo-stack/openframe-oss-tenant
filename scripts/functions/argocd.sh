@@ -49,7 +49,6 @@ wait_for_argocd_apps() {
       echo "=== Logs for $pod ==="
       kubectl logs -n microservices --all-containers "$pod"
       kubectl get pod "$pod" -n microservices -o jsonpath='{.spec.containers[*].image}'
-      kubectl get "$pod" -n microservices -o yaml
     done
 
   done
