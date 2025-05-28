@@ -27,6 +27,7 @@ import java.io.IOException;
 @Slf4j
 @Component
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+// TODO: remove as spring skip it inside reactive environment
 public class GatewayJwtAuthenticationFilter extends OncePerRequestFilter implements JwtAuthenticationOperations {
     @Getter
     private final JwtService jwtService;

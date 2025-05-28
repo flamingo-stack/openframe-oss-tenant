@@ -3,6 +3,7 @@ package com.openframe.gateway.security;
 import com.openframe.gateway.security.jwt.ReactiveJwtAuthenticationFilter;
 import com.openframe.security.jwt.JwtConfig;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
@@ -20,6 +21,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Flux;
+
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @Configuration
@@ -54,10 +57,18 @@ public class GatewaySecurityConfig {
         return jwtAuthenticationConverter;
     }
 
+    /* TODO:
+      - Have common registry of permitted path(now it's duplicated at JwtAuthenticationOperations and this class
+      - API service can be used with user JWT only
+      - Client service can be used with client(agent) JWT only
+     */
     @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        String managementContextPath = managementProperties.getBasePath() != null
-                ? managementProperties.getBasePath() : "/actuator";
+    public SecurityWebFilterChain springSecurityFilterChain(
+            ServerHttpSecurity http,
+            @Value("${management.endpoints.web.base-path}") String managementBasePath
+    ) {
+        String managementContextPath = isNotBlank(managementBasePath)
+                ? managementBasePath: "/actuator";
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
@@ -68,20 +79,24 @@ public class GatewaySecurityConfig {
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(reactiveJwtAuthenticationConverter()))
                 )
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .pathMatchers(HttpMethod.OPTIONS,    "/**").permitAll()
                         .pathMatchers(
                                 "/error/**",
                                 "/health/**",
-                                "/metrics/**",
-                                "/oauth/token",
-                                "/oauth/register",
-                                managementContextPath + "/**"
+                                "/clients/metrics/**",
+                                "/clients/oauth/token",
+                                "/api/oauth/token",
+                                "/api/oauth/register",
+                                managementContextPath + "/**",
+                                "/api/.well-known/openid-configuration"
                         ).permitAll()
-                        .pathMatchers("/.well-known/userinfo").authenticated()
-                        .pathMatchers("/.well-known/openid-configuration").permitAll()
+                        .pathMatchers("/api/.well-known/userinfo").authenticated()
+//                        // Agent tools
                         .pathMatchers("/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
-                        .pathMatchers("ws/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
-                        .anyExchange().hasRole("USER")
+                        .pathMatchers("/ws/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
+//                        // Api tools
+                        .pathMatchers("/tools/**").hasRole("USER")
+                        .pathMatchers("/ws/tools/**").hasRole("USER")
                 )
                 .build();
     }
