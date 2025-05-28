@@ -12,9 +12,9 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: https://appgetambassador.io
+    - repoURL: https://getambassador.io
       targetRevision: 2.20.3
-      chart: datawire/telepresence
+      chart: telepresence
       helm:
         valueFiles:
           - "$values/manifests/client-tools/base/telepresence/helm-values.yaml"  # name is hardcoded
