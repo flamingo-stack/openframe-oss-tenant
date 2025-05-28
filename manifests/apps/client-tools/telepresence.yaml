@@ -12,9 +12,9 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: ghcr.io/telepresenceio/telepresence-oss
+    - repoURL: https://app.getambassador.io
       targetRevision: 2.22.5
-      chart: telepresence-oss
+      chart: telepresence
       helm:
         valueFiles:
           - "$values/manifests/client-tools/base/telepresence/helm-values.yaml"  # name is hardcoded
