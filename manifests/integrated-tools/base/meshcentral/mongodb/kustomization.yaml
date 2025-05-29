@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - statefulset.yaml
   - service.yaml
-  - mongodb-init-replicaset.yaml
+  - mongodb-init-job.yaml
