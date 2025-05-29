@@ -15,43 +15,17 @@ spec:
     spec:
       imagePullSecrets: 
         - name: docker-pat-secret
-      
-      initContainers:
-        - name: init-auth-key
-          image: busybox
-          command: ['sh', '-c', 'echo $INTERNAL_AUTH_KEY > /data/key/internal-auth.key; chmod 400 /data/key/internal-auth.key']
-          env:
-            - name: INTERNAL_AUTH_KEY
-              value: "openframe123456789"
-          volumeMounts:
-            - name: internal-auth-key
-              mountPath: /data/key
 
       containers:
         - name: mongodb
-          image: mongo:4.4.18
+          image: mongo:6.0
           command: ["mongod"]
-          args:
-            - "--replSet=rs0"
-            - "--bind_ip_all"
-            - "--auth"
-            - "--keyFile=/data/key/internal-auth.key"
           ports:
-            - containerPort: 27017
-              name: mongodb
-          env:
-            - name: MONGO_INITDB_ROOT_USERNAME
-              value: "mongouser"
-            - name: MONGO_INITDB_ROOT_PASSWORD
-              value: "mongopass"
-            - name: MONGO_INITDB_DATABASE
-              value: "meshcentral"
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: INTERNAL_AUTH_KEY
-              value: "openframe123456789"
+            - name: mongodb
+              containerPort: 27017
+          envFrom:
+            - secretRef:
+                name: mongodb-secret
           readinessProbe:
             exec:
               command:
@@ -76,16 +50,10 @@ spec:
             failureThreshold: 3
 
           volumeMounts:
-            - name: internal-auth-key
-              mountPath: /data/key
             - name: mongo-data
               mountPath: /data/db
 
       volumes:
-        - name: internal-auth-key
-          secret:
-            secretName: internal-auth-key
-            defaultMode: 0400
         - name: mongo-data
           persistentVolumeClaim:
             claimName: meshcentral-mongo-data

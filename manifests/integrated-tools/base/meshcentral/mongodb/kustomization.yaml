@@ -6,4 +6,4 @@ resources:
   - pvc.yaml
   - statefulset.yaml
   - service.yaml
-  - mongodb-init-replicaset.yaml
+  # - mongodb-init-replicaset.yaml

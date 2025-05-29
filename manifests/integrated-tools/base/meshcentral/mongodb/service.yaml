@@ -10,7 +10,7 @@ spec:
   selector:
     app: meshcentral-mongodb
   ports:
-    - port: 27017
+    - name: mongodb
+      port: 27017
       targetPort: 27017
       protocol: TCP
-      name: mongodb
