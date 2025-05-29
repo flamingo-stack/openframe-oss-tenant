@@ -17,6 +17,29 @@ spec:
 
       securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
         runAsUser: 0
+      
+      initContainers:
+      - name: init-clean-meshcentral
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            echo "[Init] Cleaning up MeshCentral working directory..."
+
+            # Remove stale or corrupted install artifacts
+            rm -rf /opt/mesh/node_modules/meshcentral
+            rm -rf /opt/mesh/node_modules
+            rm -f /opt/mesh/package-lock.json
+
+            # Optional: set safe permissions for non-root containers
+            echo "[Init] Setting ownership..."
+            chown -R 1000:1000 /opt/mesh || echo "[Init] chown failed (non-blocking)"
+
+            echo "[Init] Cleanup complete."
+        volumeMounts:
+          - name: meshcentral-data
+            mountPath: /opt/mesh
 
       containers:
       - name: openframe-meshcentral
