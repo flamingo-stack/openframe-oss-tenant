@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/client-tools/base/kafka-ui/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: debezium
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: debezium
       path: manifests/client-tools/base/kafka-ui
 
   destination:
