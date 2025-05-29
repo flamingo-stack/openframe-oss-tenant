@@ -90,8 +90,7 @@ register_tool() {
         -d "$json_payload" \
         --retry 5 \
         --retry-delay 2 \
-        --retry-all-errors \
-        -v
+        --retry-all-errors 
 
     if [ $? -ne 0 ]; then
         echo "Failed to register $name. Exiting..."
