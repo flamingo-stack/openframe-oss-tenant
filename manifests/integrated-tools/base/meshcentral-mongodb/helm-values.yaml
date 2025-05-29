@@ -1,6 +1,7 @@
 architecture: standalone
 
 image:
+  repository: mongo
   tag: 8.0.9
   pullSecrets:
     - name: docker-pat-secret
