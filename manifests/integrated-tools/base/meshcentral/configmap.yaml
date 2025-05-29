@@ -3,5 +3,7 @@ kind: ConfigMap
 metadata:
   name: mongodb-config
 data:
-  MONGO_INITDB_ROOT_USERNAME: root
-  MONGO_INITDB_ROOT_PASSWORD: example-password
+  - name: MONGODB_HOST
+    value: "meshcentral-mongodb.integrated-tools.svc.cluster.local"
+  - name: MONGODB_PORT
+    value: "27017"

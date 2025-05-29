@@ -55,10 +55,6 @@ spec:
           - configMapRef:
             name: mongodb-config
         env:
-        - name: MONGODB_HOST
-          value: "meshcentral-mongodb.integrated-tools.svc.cluster.local"
-        - name: MONGODB_PORT
-          value: "27017"
         - name: MONGO_INITDB_DATABASE
           value: "meshcentral"
         - name: MESH_USER
