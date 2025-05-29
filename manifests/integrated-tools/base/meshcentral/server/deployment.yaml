@@ -51,9 +51,9 @@ spec:
           containerPort: 80
         envFrom:
           - secretRef:
-            name: mongodb-secret
+              name: mongodb-secret
           - configMapRef:
-            name: mongodb-config
+              name: mongodb-config
         env:
         - name: MONGO_INITDB_DATABASE
           value: "meshcentral"
