@@ -1,8 +1,8 @@
 architecture: replicaset
 
 image:
-  repository: mongo
-  tag: 8.0.9
+  repository: bitnami/mongodb
+  tag: 8.0.9-debian-12-r0
   pullSecrets:
     - name: docker-pat-secret
 
