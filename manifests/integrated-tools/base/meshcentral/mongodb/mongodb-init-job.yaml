@@ -20,7 +20,7 @@ spec:
         - |
           echo "Waiting for MongoDB replica set to be ready..."
           for i in {1..30}; do
-            if mongosh --quiet --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" | grep -q 1; then
+            if mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" | grep -q 1; then
               break
             fi
             echo "Retry $i: MongoDB not ready yet..."
