@@ -6,6 +6,6 @@ resources:
   - namespace.yaml 
   - authentik.yaml   
   - fleet.yaml  
-  - meshcentral-mongodb.yaml
+  # - meshcentral-mongodb.yaml
   - meshcentral.yaml    
   - tactical-rmm.yaml    
