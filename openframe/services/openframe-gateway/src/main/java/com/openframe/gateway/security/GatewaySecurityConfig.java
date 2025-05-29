@@ -59,7 +59,6 @@ public class GatewaySecurityConfig {
 
     /* TODO:
       - Have common registry of permitted path(now it's duplicated at JwtAuthenticationOperations and this class
-      - API service can be used with user JWT only
       - Client service can be used with client(agent) JWT only
      */
     @Bean
@@ -90,7 +89,7 @@ public class GatewaySecurityConfig {
                                 managementContextPath + "/**",
                                 "/api/.well-known/openid-configuration"
                         ).permitAll()
-                        .pathMatchers("/api/.well-known/userinfo").authenticated()
+                        .pathMatchers("/api/**").hasRole("USER")
 //                        // Agent tools
                         .pathMatchers("/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
                         .pathMatchers("/ws/tools/agent/**").hasAuthority("SCOPE_agentgateway:proxy")
