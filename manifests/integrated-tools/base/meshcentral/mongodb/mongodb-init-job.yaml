@@ -14,8 +14,7 @@ spec:
         envFrom:
           - secretRef:
             name: mongodb-secret
-        envFrom:
-          - configMapRef:
+            configMapRef:
             name: mongodb-config
         env:
         - name: MONGO_HOST
