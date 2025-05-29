@@ -32,9 +32,9 @@ spec:
         - name: MONGODB_PORT
           value: "27017"
         - name: MONGO_INITDB_ROOT_USERNAME
-          value: "mongouser"
+          value: "root"
         - name: MONGO_INITDB_ROOT_PASSWORD
-          value: "mongopass"
+          value: "example-password"
         - name: MONGO_INITDB_DATABASE
           value: "meshcentral"
         - name: MESH_USER
