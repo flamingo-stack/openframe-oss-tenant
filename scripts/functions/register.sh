@@ -156,7 +156,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Client" \
     "OpenFrame Client Gateway Service" \
-    '[{"url": "http://openframe-client.openframe-microservices.svc", "port": "8097", "type": "API"}]' \
+    '[{"url": "http://openframe-client.microservices.svc", "port": "8097", "type": "API"}]' \
     "" \
     "" \
     "" \
