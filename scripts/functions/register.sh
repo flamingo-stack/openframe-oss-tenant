@@ -17,7 +17,7 @@ register_tool() {
     local layer_color=${13}
     local api_key_type=${14:-"BEARER_TOKEN"}
     local api_key_name=${15:-""}
-    local debezium_connector=${16}
+    local debezium_connector=${16:-""}
     local CA_SECRET="platform-certificate"
     local CA_NAMESPACE="platform"
     local TMP_CA_PATH
@@ -61,7 +61,7 @@ register_tool() {
             \"category\": \"$category\",
             \"platformCategory\": \"$platform_category\",
             \"enabled\": true,
-            \"credentials\": $credentials_json,
+            \"credentials\": \"$credentials_json\",
             \"layer\": \"$layer\",
             \"layerOrder\": $layer_order,
             \"layerColor\": \"$layer_color\",
@@ -71,7 +71,7 @@ register_tool() {
             \"connectionTimeout\": 5000,
             \"readTimeout\": 5000,
             \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
-            \"debeziumConnector\": $debezium_connector
+            \"debeziumConnector\": \"$debezium_connector\"
         }
     }"
 
@@ -423,7 +423,7 @@ register_tool \
        "name": "mesh-central-mongo-connector",
        "config": {
          "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
-         "mongodb.connection.string": "mongodb://mongouser:mongopass@meshcentral-mongodb.integrated-tools-datasources:27017/admin?replicaSet=rs0",
+         "mongodb.connection.string": "mongodb://mongouser:mongopass@meshcentral-mongodb.integrated-tools:27017/admin?replicaSet=rs0",
          "mongodb.name": "meshcentral",
          "mongodb.user": "mongouser",
          "mongodb.password": "mongopass",
@@ -529,7 +529,7 @@ register_tool \
        "config": {
          "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
          "tasks.max": "1",
-         "database.hostname": "tactical-postgres.integrated-tools-datasources.svc.cluster.local",
+         "database.hostname": "tactical-postgres.integrated-tools.svc.cluster.local",
          "database.port": "5432",
          "database.user": "postgres",
          "database.password": "postgrespass",
