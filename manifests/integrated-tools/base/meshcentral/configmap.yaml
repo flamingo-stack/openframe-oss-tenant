@@ -3,7 +3,5 @@ kind: ConfigMap
 metadata:
   name: mongodb-config
 data:
-  - name: MONGODB_HOST
-    value: "meshcentral-mongodb.integrated-tools.svc.cluster.local"
-  - name: MONGODB_PORT
-    value: "27017"
+  MONGODB_HOST: "meshcentral-mongodb.integrated-tools.svc.cluster.local"
+  MONGODB_PORT: "27017"
