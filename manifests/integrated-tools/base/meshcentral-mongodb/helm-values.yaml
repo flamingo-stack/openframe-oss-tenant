@@ -15,6 +15,9 @@ auth:
   database: meshcentral
   key: openframe123456789
 
+arbiter:
+  enabled: false
+
 replicaSet:
   enabled: true
   name: rs0
