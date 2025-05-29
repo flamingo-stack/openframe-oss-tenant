@@ -12,9 +12,9 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: https://charts.bitnami.com/bitnami
-      targetRevision: 16.5.11
-      chart: mongodb
+    - repoURL: https://mongodb.github.io/helm-charts
+      targetRevision: 0.13.0
+      chart: community-operator
       helm:
         valueFiles:
           - "$values/manifests/integrated-tools/base/meshcentral-mongodb/helm-values.yaml"  # name is hardcoded
