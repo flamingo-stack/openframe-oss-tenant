@@ -192,6 +192,7 @@ public class OAuthService {
                 .subject(client.getClientId())
                 .claim("grant_type", "client_credentials")
                 .claim("scopes", client.getScopes())
+                .claim("roles", client.getRoles())
                 .build();
 
         return TokenResponse.builder()

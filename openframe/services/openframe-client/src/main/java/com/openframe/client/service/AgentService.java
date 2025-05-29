@@ -46,6 +46,7 @@ public class AgentService {
                 "metrics:write",
                 "agentgateway:proxy"
         });
+        client.setRoles(new String[]{"AGENT"});
 
         oauthClientRepository.save(client);
 
