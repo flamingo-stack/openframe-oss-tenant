@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - secret.yaml
+  - configmap.yaml
   - ./mongodb
   - ./server
 

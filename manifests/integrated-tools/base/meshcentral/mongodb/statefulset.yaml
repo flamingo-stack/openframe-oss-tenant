@@ -29,7 +29,9 @@ spec:
               containerPort: 27017
           envFrom:
             - secretRef:
-                name: mongodb-secret
+              name: mongodb-secret
+            - configMapRef:
+              name: mongodb-config
           readinessProbe:
             tcpSocket:
               port: 27017

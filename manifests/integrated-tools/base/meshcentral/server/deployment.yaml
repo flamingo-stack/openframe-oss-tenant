@@ -51,7 +51,9 @@ spec:
           containerPort: 80
         envFrom:
           - secretRef:
-              name: mongodb-secret
+            name: mongodb-secret
+          - configMapRef:
+            name: mongodb-config
         env:
         - name: MONGODB_HOST
           value: "meshcentral-mongodb.integrated-tools.svc.cluster.local"
