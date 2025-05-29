@@ -53,7 +53,11 @@ spec:
             - name: mongo-data
               mountPath: /data/db
 
-      volumes:
-        - name: mongo-data
-          persistentVolumeClaim:
-            claimName: meshcentral-mongo-data
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
