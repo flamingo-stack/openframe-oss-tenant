@@ -15,11 +15,15 @@ spec:
     spec:
       imagePullSecrets: 
         - name: docker-pat-secret
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
 
       containers:
         - name: mongodb
           image: mongo:6.0
-          command: ["mongod"]
+          command: ["mongod", "--bind_ip_all", "--auth"]
           ports:
             - name: mongodb
               containerPort: 27017

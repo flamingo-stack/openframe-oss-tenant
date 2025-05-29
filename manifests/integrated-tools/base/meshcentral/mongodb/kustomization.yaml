@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - secret.yaml
-  - pvc.yaml
   - statefulset.yaml
   - service.yaml
   # - mongodb-init-replicaset.yaml
