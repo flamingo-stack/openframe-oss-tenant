@@ -1,4 +1,4 @@
-architecture: standalone
+architecture: replicaset
 
 image:
   repository: mongo
