@@ -18,6 +18,9 @@ spec:
       containers:
       - name: postgres
         image: postgres:13-alpine
+        args:
+          - "-c"
+          - "wal_level=logical"
         ports:
         - containerPort: 5432
         env:
@@ -38,9 +41,6 @@ spec:
             - postgres
           initialDelaySeconds: 30
           periodSeconds: 10
-        args:
-          - "-c"
-          - "wal_level=logical"
       volumes:
       - name: postgres-data
         persistentVolumeClaim:

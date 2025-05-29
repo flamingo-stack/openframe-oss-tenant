@@ -1,9 +1,7 @@
-# StatefulSet for MongoDB Replica Set
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: meshcentral-mongodb
-  namespace: integrated-tools-datasources
 spec:
   serviceName: meshcentral-mongodb
   replicas: 1
@@ -15,6 +13,20 @@ spec:
       labels:
         app: meshcentral-mongodb
     spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
+      
+      initContainers:
+        - name: init-auth-key
+          image: busybox
+          command: ['sh', '-c', 'echo $INTERNAL_AUTH_KEY > /data/key/internal-auth.key; chmod 400 /data/key/internal-auth.key']
+          env:
+            - name: INTERNAL_AUTH_KEY
+              value: "openframe123456789"
+          volumeMounts:
+            - name: internal-auth-key
+              mountPath: /data/key
+
       containers:
         - name: mongodb
           image: mongo:4.4.18
@@ -38,11 +50,6 @@ spec:
                   fieldPath: status.podIP
             - name: INTERNAL_AUTH_KEY
               value: "openframe123456789"
-          volumeMounts:
-            - name: mongo-data
-              mountPath: /data/db
-            - name: internal-auth-key
-              mountPath: /data/key
           readinessProbe:
             exec:
               command:
@@ -65,29 +72,16 @@ spec:
             timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 3
-      initContainers:
-        - name: init-auth-key
-          image: busybox
-          command: ['sh', '-c', 'echo $INTERNAL_AUTH_KEY > /data/key/internal-auth.key; chmod 400 /data/key/internal-auth.key']
-          env:
-            - name: INTERNAL_AUTH_KEY
-              value: "openframe123456789"
+
           volumeMounts:
             - name: internal-auth-key
               mountPath: /data/key
+            - name: mongo-data
+              mountPath: /data/db
+
       volumes:
         - name: internal-auth-key
           emptyDir: {}
-  volumeClaimTemplates:
-    - metadata:
-        name: meshcentral-mongo-data
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 10Gi
-
-# Notes:
-# - Single instance replica set configuration
-# - Pod will be accessible at meshcentral-mongodb-0.meshcentral-mongodb
-# - MeshCentral should use the replica set URI: mongodb://mongouser:mongopass@meshcentral-mongodb-0.meshcentral-mongodb:27017/meshcentral?replicaSet=rs0&authSource=admin
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: meshcentral-mongo-data

@@ -5,7 +5,6 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: mongodb-init-replicaset
-  namespace: integrated-tools-datasources
 spec:
   template:
     spec:

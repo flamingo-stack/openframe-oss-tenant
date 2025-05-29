@@ -4,9 +4,9 @@ kind: Kustomization
 resources:   
   # wave 1           
   - namespace-datasources.yaml
-  - cassandra.yaml   
+  - cassandra.yaml  
+  - kafka-connect.yaml 
   - kafka.yaml
-  - kafka-connect.yaml
   - mongodb-exporter.yaml    
   - mongodb.yaml    
   - nifi.yaml    

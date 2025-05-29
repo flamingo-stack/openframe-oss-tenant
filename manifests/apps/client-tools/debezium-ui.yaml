@@ -8,7 +8,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 
 spec:
-  project: debezium-ui
+  project: client-tools
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git

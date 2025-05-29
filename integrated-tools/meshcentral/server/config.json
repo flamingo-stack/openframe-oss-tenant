@@ -4,13 +4,13 @@
     "plugins": {
       "enabled": false
     },
-    "mongodb": "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017/${MONGO_INITDB_DATABASE}?replicaSet=rs0&authSource=admin",
+    "mongodb": "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@meshcentral-mongodb.integrated-tools.svc.cluster.local:27017/${MONGO_INITDB_DATABASE}?replicaSet=rs0&authSource=admin",
     "certUrl": [
       "${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}",
       "${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}"
     ],
-    "port": ${MESH_PORT},
-    "aliasPort": ${MESH_EXTERNAL_PORT},
+    "port": "${MESH_PORT}",
+    "aliasPort": "${MESH_EXTERNAL_PORT}",
     "alias": [
       "${MESH_NGINX_HOST}",
       "${MESH_NGINX_NAT_HOST}",
