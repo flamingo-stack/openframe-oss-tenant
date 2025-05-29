@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mongodb-init-replicaset
+  name: mongodb-init
   namespace: integrated-tools
 spec:
   backoffLimit: 4
@@ -36,7 +36,7 @@ spec:
                 members: [
                   { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
                 ]
-              })
+              })    
             '
             sleep 10
           else
