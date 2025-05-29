@@ -1,0 +1,38 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: meshcentral-mongodb
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.6"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: mongouser
+      db: admin
+      passwordSecretRef:
+        name: mongouser-password
+      roles:
+        - name: root
+          db: admin
+  statefulSet:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+            - name: docker-pat-secret
+          containers:
+            - name: mongod
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 512Mi
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+  persistent: true
+  additionalMongodConfig:
+    net.bindIpAll: true
+    replication.replSetName: rs0
