@@ -5,7 +5,7 @@ resources:
   # wave 1           
   - namespace-datasources.yaml
   - cassandra.yaml  
-  - kafka-connect.yaml 
+  - debezium-connect.yaml
   - kafka.yaml
   - mongodb-exporter.yaml    
   - mongodb.yaml    
