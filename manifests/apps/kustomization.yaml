@@ -3,6 +3,6 @@ kind: Kustomization
 
 resources:
   - ./platform
-  # - ./openframe
+  - ./openframe
   - ./integrated-tools
-  # - ./client-tools
+  - ./client-tools

@@ -423,7 +423,7 @@ register_tool \
        "name": "mesh-central-mongo-connector",
        "config": {
          "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
-         "mongodb.connection.string": "mongodb://mongouser:mongopass@meshcentral-mongodb.integrated-tools:27017/admin?replicaSet=rs0",
+         "mongodb.connection.string": "mongodb://mongouser:mongopass@meshcentral-mongodb.integrated-tools.svc.cluster.local:27017/admin?replicaSet=rs0",
          "mongodb.name": "meshcentral",
          "mongodb.user": "mongouser",
          "mongodb.password": "mongopass",

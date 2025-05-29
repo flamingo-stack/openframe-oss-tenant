@@ -4,8 +4,7 @@ kind: Kustomization
 resources:   
   # wave 3              
   - namespace.yaml 
-  # - authentik.yaml   
-  # - fleet.yaml  
-  ## - meshcentral-mongodb.yaml
+  - authentik.yaml   
+  - fleet.yaml  
   - meshcentral.yaml    
-  # - tactical-rmm.yaml    
+  - tactical-rmm.yaml    
