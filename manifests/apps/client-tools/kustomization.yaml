@@ -6,3 +6,4 @@ resources:
   - namespace.yaml 
   - mongo-express.yaml   
   - kafka-ui.yaml  
+  - telepresence.yaml
