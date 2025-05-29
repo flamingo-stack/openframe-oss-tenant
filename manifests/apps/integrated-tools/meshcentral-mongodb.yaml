@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: meshcentral-mongodb
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: integrated-tools
+
+  sources:
+    # Helm chart
+    - repoURL: https://charts.bitnami.com/bitnami
+      targetRevision: 16.5.11
+      chart: mongodb
+      helm:
+        valueFiles:
+          - "$values/manifests/integrated-tools/base/meshcentral-mongodb/helm-values.yaml"  # name is hardcoded
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: main
+      ref: values
+    # Extra resources
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: main
+      path: manifests/integrated-tools/base/meshcentral-mongodb
+
+  destination:
+    name: in-cluster
+    namespace: integrated-tools
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m

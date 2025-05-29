@@ -34,6 +34,8 @@ spec:
           args:
             - "--replSet=rs0"
             - "--bind_ip_all"
+            - "--auth"
+            - "--keyFile=/data/key/internal-auth.key"
           ports:
             - containerPort: 27017
               name: mongodb
@@ -81,7 +83,9 @@ spec:
 
       volumes:
         - name: internal-auth-key
-          emptyDir: {}
+          secret:
+            secretName: internal-auth-key
+            defaultMode: 0400
         - name: mongo-data
           persistentVolumeClaim:
             claimName: meshcentral-mongo-data

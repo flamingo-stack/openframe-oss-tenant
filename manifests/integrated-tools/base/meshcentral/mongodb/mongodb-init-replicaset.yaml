@@ -15,19 +15,19 @@ spec:
         - /bin/bash
         - -ec
         - |
-          until mongo --host meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017 --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+          until mongo --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
             echo "Waiting for MongoDB to be ready..."
             sleep 5
           done
 
           echo "Checking replica set status..."
-          if ! mongo --host meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017 --eval "rs.status()" 2>/dev/null | grep -q '"ok" : 1'; then
+          if ! mongo --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval "rs.status()" 2>/dev/null | grep -q '"ok" : 1'; then
             echo "Initializing replica set..."
-            mongo --host meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017 --eval '
+            mongo --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval '
               rs.initiate({
                 _id: "rs0",
                 members: [
-                  { _id: 0, host: "meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017" }
+                  { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
                 ]
               })
             '
@@ -38,9 +38,9 @@ spec:
           fi
 
           echo "Checking admin user..."
-          if ! mongo --host meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017 -u mongouser -p mongopass --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
+          if ! mongo --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 -u mongouser -p mongopass --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
             echo "Creating admin user..."
-            mongo --host meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017 --eval '
+            mongo --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval '
               db.getSiblingDB("admin").createUser({
                 user: "mongouser",
                 pwd: "mongopass",
@@ -57,7 +57,7 @@ spec:
           fi
 
           echo "Verifying replica set status..."
-          mongo --host meshcentral-mongodb-0.meshcentral-mongodb.integrated-tools-datasources:27017 \
+          mongo --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 \
             -u mongouser -p mongopass --authenticationDatabase admin \
             --eval "rs.status()"
       restartPolicy: OnFailure
