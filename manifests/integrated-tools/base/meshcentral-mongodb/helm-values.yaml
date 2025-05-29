@@ -1,7 +1,7 @@
 architecture: standalone
 
 image:
-  tag: 4.4.18
+  tag: 4.4.15
   pullSecrets:
     - name: docker-pat-secret
 
