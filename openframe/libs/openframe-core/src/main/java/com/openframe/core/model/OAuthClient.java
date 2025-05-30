@@ -16,4 +16,6 @@ public class OAuthClient {
     private String[] redirectUris;
     private String[] grantTypes;  // "authorization_code", "password", "client_credentials", "refresh_token"
     private String[] scopes;
+    private String[] roles = new String[]{};
+    private boolean enabled = true;
 } 

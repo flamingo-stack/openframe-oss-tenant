@@ -34,12 +34,15 @@ argocd)
   ;;
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then 
-    kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${SCRIPT_DIR}/argocd-manifests/patch-argocd-cm.yaml" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-    kubectl -n argocd patch deployment argocd-server --type='merge' \
-      -p='{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"ghcr-credentials"}]}}}}' >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-
+    kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${SCRIPT_DIR}/argocd-manifests/patch-argocd-cm.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
+    kubectl -n argocd patch deployment argocd-repo-server --type='merge' \
+      -p='{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"docker-pat-secret"}]}}}}' >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
     kubectl -n argocd apply -k "${SCRIPT_DIR}/argocd-manifests" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
-    wait_for_argocd_apps
+
+    start_spinner "Waiting for ArgoCD Apps to become Healthy"
+    wait_for_argocd_apps >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    stop_spinner_and_return_code $? || exit 1 
+    
   elif [ "$ACTION" == "delete" ]; then
     kubectl -n argocd delete -k "${SCRIPT_DIR}/argocd-manifests"
   elif [ "$ACTION" == "dev" ]; then
@@ -131,7 +134,8 @@ openframe_microservices_register_apps)
   ${ROOT_REPO_DIR}/scripts/functions/register.sh >"${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   stop_spinner_and_return_code $? || exit 1
   echo
-  sed -n '/Fleet MDM Credentials:/,/All ingresses/p' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" | sed '$d'
+  awk '/Fleet MDM Credentials:/ {i=NR} END {print i}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" |
+    xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   ;;
 integrated_tools_datasources_fleet)
   if [ "$ACTION" == "dev" ]; then

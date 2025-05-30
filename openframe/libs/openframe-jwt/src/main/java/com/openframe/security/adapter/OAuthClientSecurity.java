@@ -3,6 +3,7 @@ package com.openframe.security.adapter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,8 +22,14 @@ public class OAuthClientSecurity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Arrays.stream(client.getScopes())
-            .map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
+        // Combine scopes and roles into a single collection of authorities
+        Stream<GrantedAuthority> scopeAuthorities = Arrays.stream(client.getScopes() != null ? client.getScopes() : new String[0])
+            .map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope));
+        
+        Stream<GrantedAuthority> roleAuthorities = Arrays.stream(client.getRoles() != null ? client.getRoles() : new String[0])
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role));
+        
+        return Stream.concat(scopeAuthorities, roleAuthorities)
             .collect(Collectors.toList());
     }
 

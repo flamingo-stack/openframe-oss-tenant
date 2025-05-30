@@ -273,16 +273,78 @@ jobs:
           delete-tags: "*"
           exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
   
+
+  pre-test:
+    name: Test Branch Creation
+    needs: [changes, matrix]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    outputs:
+      GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      
+      - name: Checkout new CI branch
+        id: create_branch
+        env:
+          GITHUB_HEAD_REF_CI: ${{ github.head_ref }}-CI
+        run: |
+          git config --global user.email "CI@flamingo.cx"
+          git config --global user.name "CI Account"
+          git checkout -b "${GITHUB_HEAD_REF_CI}"
+          git push origin "${GITHUB_HEAD_REF_CI}" --force
+          echo "GITHUB_HEAD_REF_CI=${GITHUB_HEAD_REF_CI}" >> $GITHUB_OUTPUT
+
+      - name: Change branch tags 
+        env:
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          CHANGES: ${{ toJSON(needs.changes.outputs) }}
+          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+        run: |
+          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+            name=$(jq -r '.name' <<< "$item")
+            path=$(jq -r '.manifest_path' <<< "$item")
+            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
+
+            [ "$pushed" = "true" ] || continue
+
+            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            cd "$path"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            cd - > /dev/null
+          done
+          
+      - name: Change branch targetRevision paths 
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
+        run: |
+          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
+            sed -i "s|${GITHUB_HEAD_REF}|${GITHUB_HEAD_REF_CI}|g" "$f"
+          done
+      
+      - name: Commit changes
+        env:
+          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
+        run: |
+          git add .
+          git commit -m "Tags and targeRevision changes [skip ci]" || echo "No changes"
+          git push origin "${GITHUB_HEAD_REF_CI}" --force
     
+
   test:
-    name: Tests run
-    needs: [changes, matrix, build]
+    name: Run Tests
+    needs: [pre-test, build]
     runs-on: Linux-x64
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
       
       - name: Install certutil (NSS tools)
         run: |
@@ -307,46 +369,27 @@ jobs:
 
       - name: Set inotify limit
         run: sudo sysctl fs.inotify.max_user_instances=1500
-      
-      - name: Set image tags with Kustomize
-        env:
-          MATRIX: ${{ needs.matrix.outputs.matrix }}
-          CHANGES: ${{ toJSON(needs.changes.outputs) }}
-          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-        run: |
-          git config --global user.email "CI@flamingo.cx"
-          git config --global user.name "CI Account"
-          git checkout -b "${GITHUB_HEAD_REF}-ci"
-
-          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
-            name=$(jq -r '.name' <<< "$item")
-            path=$(jq -r '.manifest_path' <<< "$item")
-            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
-
-            [ "$pushed" = "true" ] || continue
-
-            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
-            cd "$path"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
-            cd - > /dev/null
-          done
-          
-          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i "s/${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}-ci/g" "$f"
-          done
-          
-          git add .
-          git commit -m "Replace placeholder with ci branch name [skip ci]" || echo "No changes"
-          git push origin "${GITHUB_HEAD_REF}-ci" --force
 
       - name: Run environment test script
         env:
           TERM: dumb
         run: |
           ./scripts/run.sh bootstrap
-    
-      - name: Log in to GitHub Container Registry
+  
+
+  # !!!post-test logic should be migrated to "PR closed" event
+  post-test:
+    name: Push latest and Cleanup
+    needs: [changes, matrix, pre-test, test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      
+      - name: Login to GitHub Registry
+        if: ${{ needs.test.result == 'success' }}
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -354,6 +397,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Tag images as latest
+        if: ${{ needs.test.result == 'success' }}
         env:
           COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
           MATRIX: ${{ needs.matrix.outputs.matrix }}
@@ -361,7 +405,6 @@ jobs:
         run: |
           echo "$MATRIX" | jq -cr '.[]' | while read -r item; do
             name=$(jq -r '.name' <<< "$item")
-
             changed=$(jq -r --arg name "$name" --argjson changes "$CHANGES" '$changes[$name]' <<< "{}")
             [ "$changed" = "true" ] || continue
 
@@ -373,10 +416,8 @@ jobs:
             docker push "$IMAGE:latest"
           done
 
-      - name: Delete remote ci branch (always runs)
-        if: always()
-        run: |
-          git push origin --delete "${GITHUB_HEAD_REF}-ci" || true
+      - name: Delete CI branch
         env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-
+          GITHUB_HEAD_REF_CI: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
+        run: |
+          git push origin --delete "${GITHUB_HEAD_REF_CI}" || true
