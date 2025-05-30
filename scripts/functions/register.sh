@@ -485,7 +485,7 @@ register_tool \
 # Get Tactical RMM API key
 echo "Getting Tactical RMM API key..."
 POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
-TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/tactical/api_key.txt)
+TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c openframe-tactical-backend -- cat /opt/tactical/api_key.txt)
 echo "Tactical RMM API key: $TACTICAL_API_KEY"
 
 # Register Tactical RMM with layer info
