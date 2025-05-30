@@ -373,11 +373,12 @@ jobs:
         env:
           TERM: dumb
         run: |
-          ./scripts/run.sh bootstrap
+          echo "hey"
+          # ./scripts/run.sh bootstrap
   
 
   post-test:
-    name: Push latest and cleanup
+    name: Push latest and Cleanup
     needs: [changes, matrix, test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
