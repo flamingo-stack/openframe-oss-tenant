@@ -317,7 +317,7 @@ jobs:
             cd - > /dev/null
           done
           
-       - name: Change branch targetRevision paths 
+      - name: Change branch targetRevision paths 
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
