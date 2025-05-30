@@ -1,38 +1,56 @@
+# OpenFrame Client
 
-# OpenFrame Client Service
+OpenFrame Client is the service responsible for agent management, authentication, and tool connections in the OpenFrame ecosystem.
 
-This microservice is responsible for handling all client and machine (agent) related operations in the OpenFrame platform. It manages:
+## Purpose
 
-- Machine/agent registration and authentication
-- Client management (CRUD)
-- WebSocket endpoints for real-time agent/metrics data
-- Any endpoints related to device or client management
+* Manages agent registration and authentication via JWT token issuance
+* Provides agent authentication through a simplified token endpoint
+* Handles tool connections between agents and various tools
+* Provides REST APIs for client and agent management
+* Supports WebSocket connections for real-time metrics
 
-## Structure
+## Key Components
 
-- `src/main/java/com/openframe/client/` — Main Java source code
-  - `config/` — Configuration classes
-  - `controller/` — REST controllers
-  - `service/` — Business logic
-  - `repository/` — Data access
-  - `model/` — Domain models
-  - `exception/` — Custom exceptions
-  - `ClientApplication.java` — Main Spring Boot application class
-- `src/main/resources/` — Service configuration (e.g., `application.yml`)
-- `pom.xml` — Maven configuration
+* **Agent Authentication**: Simple JWT token generation for agent security
+* **Tool Connections**: Managing connections between agents and various tools (MeshCentral, Fleet, etc.)
+* **Client Credentials**: APIs for creating and managing authentication client entries
+* **Tagging System**: Categorization and organization of machines
 
-## Dependencies
-- openframe-core
-- openframe-data
-- openframe-security
-- Spring Boot, Spring Cloud, Micrometer
+## Key Files
 
-## Getting Started
+* `AgentController.java`: Handles agent registration and tool connections
+* `AgentAuthController.java`: Implements token endpoints for agents
+* `ClientManagementController.java`: Manages authentication clients
+* `MetricsWebSocketController.java`: Processes real-time metrics via WebSockets
+* `AgentService.java`: Core business logic for agent operations
+* `ToolConnectionService.java`: Manages tool connection states and operations
+* `TagService.java`: Implements machine tagging functionality
 
-```bash
-cd services/openframe-client
-mvn spring-boot:run
-```
+## Running Locally
 
-## Deployment
-See the main OpenFrame deployment documentation for details on deploying this service as part of the platform. 
+1. Ensure MongoDB is running (required for storing agents, clients, and tool connections).
+2. Before running locally, be sure that Telepresence is connected for Kubernetes integration:
+   ```
+   mvn spring-boot:run -Dspring-boot.run.profiles=k8s
+   ```
+
+## Endpoints
+
+* Agent Management: `/api/agents/**` (registration, tool connections)
+* Authentication: `/oauth/token` (agent token issuance)
+* Client Management: `/api/clients/**` (client credential CRUD)
+* WebSocket: Support for real-time metric reporting
+
+## Architecture
+
+* The Client service is accessed through the Gateway, which routes requests with the `/clients/**` path pattern.
+* Integrates with MongoDB for persistence of agents, clients, and tool connections.
+* Uses JWT for secure authentication.
+* Implements WebSocket protocol for real-time agent communication.
+
+## Additional Notes
+
+* **Logging**: Uses SLF4J with Lombok @Slf4j annotations for standardized logging.
+* **Security**: Provides JWT token generation for agent authentication via a simplified token endpoint.
+* **Tool Types**: Supports connections to different tool types through the ToolType enumeration.

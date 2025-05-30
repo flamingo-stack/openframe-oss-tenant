@@ -91,7 +91,8 @@ public interface  JwtAuthenticationOperations {
     }
 
     default boolean isPathPermitted(String path) {
-        return path.startsWith("/health")
+        return 
+                path.startsWith("/health")
                 || path.startsWith("/actuator")
                 || path.startsWith(CLIENTS_PREFIX+"/metrics")
                 || path.startsWith(CLIENTS_PREFIX+"/oauth/token")
@@ -99,7 +100,8 @@ public interface  JwtAuthenticationOperations {
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth/register")
                 || path.startsWith(CLIENTS_PREFIX+"/api/agents/register")
                 || path.startsWith(getManagementPath())
-                || path.equals(DASHBOARD_PREFIX+"/.well-known/openid-configuration");
+                || path.equals(DASHBOARD_PREFIX+"/.well-known/openid-configuration")
+                || (!path.startsWith(CLIENTS_PREFIX) && !path.startsWith(DASHBOARD_PREFIX) && !path.startsWith("/tools"));
     }
 
     default String extractJwt(String authHeader) {

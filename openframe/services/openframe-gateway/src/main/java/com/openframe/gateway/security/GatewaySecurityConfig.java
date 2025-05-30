@@ -96,6 +96,7 @@ public class GatewaySecurityConfig {
 //                        // Api tools
                         .pathMatchers("/tools/**").hasRole("USER")
                         .pathMatchers("/ws/tools/**").hasRole("USER")
+                                .pathMatchers("/**").permitAll()
                 )
                 .build();
     }

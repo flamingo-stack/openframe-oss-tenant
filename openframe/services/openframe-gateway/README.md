@@ -1,29 +1,64 @@
 # OpenFrame Gateway
 
-OpenFrame Gateway is an authentication proxy and unified entry point for multiple open-source tools and microservices in the OpenFrame ecosystem.
+OpenFrame Gateway is an authentication proxy and unified entry point for multiple microservices and integrated tools in the OpenFrame ecosystem.
 
 ## Purpose
-• Layer an OAuth-based security mechanism over third-party dashboards and APIs (e.g., Grafana, Fleet, or custom tools).  
-• Route and load-balance requests to each service from a single domain.  
-• Optionally unify endpoints (GraphQL, REST) for external consumers.  
+
+* Validates JWT tokens for all incoming requests to OpenFrame services
+* Serves as the central routing layer for all OpenFrame services and integrated tools
+* Proxies requests to integrated tools through a unified interface
+* Supports both REST and WebSocket communication protocols
+* Provides headers translation from JWT claims to downstream services
+
+## Key Components
+
+* **JWT Validation**: Authenticates requests using JWT tokens from OpenFrame services
+* **Service Routing**: Routes requests to appropriate microservices based on path patterns
+* **Tool Proxying**: Provides transparent access to integrated tools
+* **WebSocket Support**: Handles WebSocket connections for real-time communication
+* **Header Translation**: Extracts JWT claims and forwards as HTTP headers
 
 ## Key Files
-- GatewayApplication.java: Spring Boot application entry point.  
-- SecurityConfig.java: Configures OAuth and other security aspects.  
-- IntegrationService.java: Example logic for discovering or proxying integrated tools.  
 
-## Running
-• Use openframe-gateway-docker.yml with Docker Compose, or run locally via Spring Boot:  
-  » mvn spring-boot:run  
+* `GatewaySecurityConfig.java`: Configures security and authentication
+* `ReactiveJwtAuthenticationFilter.java`: Validates JWT tokens for requests
+* `JwtToHeadersFilter.java`: Converts JWT claims to HTTP headers
+* `RestProxyService.java`: Proxies REST requests to integrated tools
+* `WebSocketGatewayConfig.java`: Manages WebSocket routing and connections
+* `IntegrationService.java`: Provides tool integration and discovery functionality
+* `ProxyUrlResolver.java`: Resolves target URLs for tool proxying
 
-## Configuration
-• May read from config/openframe-gateway-*.yml files to set up route definitions, OAuth providers, or integrated tool endpoints.  
-• Typically sits behind a domain like gateway.openframe.local.
+## Running Locally
 
-## Observability
-• Exposes standard Spring Boot actuator endpoints and custom metrics for gateway traffic.  
-• Includes logs for inbound and outbound requests to integrated tools.
+1. Before running locally, be sure that Telepresence is connected:
+   ```
+   mvn spring-boot:run -Dspring-boot.run.profiles=k8s
+   ```
 
-## Security Notes
-• The OAuth integration can be extended to specific user roles or scopes.  
-• Access tokens can be validated at the gateway before proxying requests to integrated tools.
+## Endpoints
+
+* Service Routing:
+  * `/api/**`: Routes to OpenFrame API service
+  * `/clients/**`: Routes to OpenFrame Client service
+  * `/`: Routes to OpenFrame UI service
+
+* Tool Integration:
+  * `/tools/{toolId}/**`: Proxies API requests to integrated tools
+  * `/tools/agent/{toolId}/**`: Proxies agent requests to integrated tools
+  * `/ws/tools/{toolId}/**`: Manages WebSocket connections to integrated tools
+  * `/ws/tools/agent/{toolId}/**`: Manages agent WebSocket connections
+
+## Architecture
+
+* Acts as a central entry point for all services within the OpenFrame ecosystem
+* Implements reactive programming model using Spring WebFlux
+* Uses JWT-based security with different authentication models for users and agents
+* Forwards authenticated requests to appropriate microservices
+* Maintains secure connections to integrated tools
+
+## Additional Notes
+
+* **CORS Support**: Implements cross-origin resource sharing for web clients
+* **Security**: Supports different authorization scopes for API vs agent access
+* **Logging**: Includes detailed request logging with curl command generation
+* **Timeout Management**: Configures appropriate timeouts for proxied connections
