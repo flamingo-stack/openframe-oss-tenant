@@ -281,7 +281,7 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
       GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-      
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
