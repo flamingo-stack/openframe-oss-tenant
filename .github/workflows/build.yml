@@ -282,7 +282,7 @@ jobs:
     outputs:
       GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
 
-    steps:
+    step:
       - name: Checkout
         uses: actions/checkout@v4
         with:
