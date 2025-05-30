@@ -24,6 +24,11 @@
             <artifactId>openframe-jwt</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-data</artifactId>
+        </dependency>
+
         <!-- Spring Cloud -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
