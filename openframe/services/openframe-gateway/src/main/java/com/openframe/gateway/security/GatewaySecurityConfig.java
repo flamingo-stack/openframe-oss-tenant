@@ -85,7 +85,8 @@ public class GatewaySecurityConfig {
                                 "/clients/oauth/token",
                                 "/api/oauth/token",
                                 "/api/oauth/register",
-                                managementContextPath + "/**"
+                                managementContextPath + "/**",
+                                "/api/.well-known/openid-configuration"
                         ).permitAll()
                         .pathMatchers("/api/**").hasRole("USER")
                         .pathMatchers("/clients/**").hasRole("AGENT")
