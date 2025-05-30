@@ -280,14 +280,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
-      GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
+      GITHUB_HEAD_REF_CI: ${{ steps.branch.outputs.GITHUB_HEAD_REF_CI }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
       
       - name: Checkout new CI branch
-        id: create_branch
+        id: branch
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
