@@ -282,7 +282,7 @@ jobs:
     outputs:
       GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
 
-    step:
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -297,43 +297,7 @@ jobs:
           git config --global user.name "CI Account"
           git checkout -b "${GITHUB_HEAD_REF_CI}"
           echo "GITHUB_HEAD_REF_CI=${GITHUB_HEAD_REF_CI}" >> $GITHUB_OUTPUT
-
-      - name: Change branch tags 
-        env:
-          MATRIX: ${{ needs.matrix.outputs.matrix }}
-          CHANGES: ${{ toJSON(needs.changes.outputs) }}
-          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
-        run: |
-          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
-            name=$(jq -r '.name' <<< "$item")
-            path=$(jq -r '.manifest_path' <<< "$item")
-            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
-
-            [ "$pushed" = "true" ] || continue
-
-            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
-            cd "$path"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
-            cd - > /dev/null
-          done
           
-       - name: Change branch targetRevision paths 
-        env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i "s|${GITHUB_HEAD_REF}|${GITHUB_HEAD_REF_CI}|g" "$f"
-          done
-      
-      - name: Commit changes
-        env:
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          git add .
-          git commit -m "Tags and targeRevision changes [skip ci]" || echo "No changes"
-          git push origin "${GITHUB_HEAD_REF_CI}" --force
-    
 
   test:
     name: Run Tests
