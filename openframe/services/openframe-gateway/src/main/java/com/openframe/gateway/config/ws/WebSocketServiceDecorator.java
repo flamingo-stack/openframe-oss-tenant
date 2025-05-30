@@ -31,27 +31,25 @@ public class WebSocketServiceDecorator implements WebSocketService {
 
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler webSocketHandler) {
-        return delegate.handleRequest(exchange, session -> {
-            proccessSecurity(exchange, session);
-            return webSocketHandler.handle(session);
-        });
-    }
-
-    private void proccessSecurity(ServerWebExchange exchange, WebSocketSession session) {
         String path = exchange.getRequest().getPath().value();
+        
         if (isSecuredEndpoint(path)) {
-            Jwt jwt = getRequestJwt(exchange);
-            Instant expiresAt = jwt.getExpiresAt();
-            long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
-            Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
-            processSessionClosedEvent(session, disposable);
+            return delegate.handleRequest(exchange, session -> {
+                Jwt jwt = getRequestJwt(exchange);
+                Instant expiresAt = jwt.getExpiresAt();
+                long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
+                Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
+                processSessionClosedEvent(session, disposable);
+                return webSocketHandler.handle(session);
+            });
+        } else {
+            return delegate.handleRequest(exchange, webSocketHandler);
         }
     }
 
     private boolean isSecuredEndpoint(String path) {
-        boolean isSecured = Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX).stream()
+        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX).stream()
                 .anyMatch(path::startsWith);
-        return isSecured;
     }
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {

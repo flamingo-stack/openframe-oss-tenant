@@ -101,7 +101,6 @@ public interface  JwtAuthenticationOperations {
                 || path.startsWith(CLIENTS_PREFIX+"/api/agents/register")
                 || path.startsWith(getManagementPath())
                 || path.equals(DASHBOARD_PREFIX+"/.well-known/openid-configuration")
-                // Permit all paths that do NOT start with /clients, /api, or /tools
                 || (!path.startsWith(CLIENTS_PREFIX) && !path.startsWith(DASHBOARD_PREFIX) && !path.startsWith("/tools"));
     }
 
