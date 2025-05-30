@@ -415,7 +415,7 @@ jobs:
             docker push "$IMAGE:latest"
           done
 
-      - name: Delete remote CI branch (always runs)
+      - name: Delete CI branch
         env:
           GITHUB_HEAD_REF_CI: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
         run: |
