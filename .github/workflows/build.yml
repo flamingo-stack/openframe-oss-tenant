@@ -373,8 +373,7 @@ jobs:
         env:
           TERM: dumb
         run: |
-          eexit 1
-          # ./scripts/run.sh bootstrap
+          ./scripts/run.sh bootstrap
   
 
   post-test:
