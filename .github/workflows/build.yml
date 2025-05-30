@@ -376,6 +376,7 @@ jobs:
           ./scripts/run.sh bootstrap
   
 
+  # !!!post-test logic should be migrated to "PR closed" event
   post-test:
     name: Push latest and Cleanup
     needs: [changes, matrix, pre-test, test]
