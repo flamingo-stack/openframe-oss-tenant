@@ -320,11 +320,12 @@ jobs:
        - name: Change branch targetRevision paths 
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
         run: |
+          GITHUB_HEAD_REF_CI="${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}"
           find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
             sed -i "s|${GITHUB_HEAD_REF}|${GITHUB_HEAD_REF_CI}|g" "$f"
           done
+      
       
 
   test:
