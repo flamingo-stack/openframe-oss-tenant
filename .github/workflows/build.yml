@@ -280,7 +280,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     outputs:
-      ci_ref: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
+      GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -341,7 +341,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.pre-test.outputs.ci_ref }}
+          ref: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
       
       - name: Install certutil (NSS tools)
         run: |
