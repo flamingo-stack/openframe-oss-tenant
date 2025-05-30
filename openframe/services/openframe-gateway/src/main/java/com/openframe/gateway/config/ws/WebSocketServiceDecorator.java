@@ -15,7 +15,10 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_AGENT_WS_ENDPOINT_PREFIX;
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_API_WS_ENDPOINT_PREFIX;
 import static com.openframe.gateway.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -29,15 +32,26 @@ public class WebSocketServiceDecorator implements WebSocketService {
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler webSocketHandler) {
         return delegate.handleRequest(exchange, session -> {
+            proccessSecurity(exchange, session);
+            return webSocketHandler.handle(session);
+        });
+    }
+
+    private void proccessSecurity(ServerWebExchange exchange, WebSocketSession session) {
+        String path = exchange.getRequest().getPath().value();
+        if (isSecuredEndpoint(path)) {
             Jwt jwt = getRequestJwt(exchange);
             Instant expiresAt = jwt.getExpiresAt();
             long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
-
             Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
             processSessionClosedEvent(session, disposable);
+        }
+    }
 
-            return webSocketHandler.handle(session);
-        });
+    private boolean isSecuredEndpoint(String path) {
+        boolean isSecured = Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX).stream()
+                .anyMatch(path::startsWith);
+        return isSecured;
     }
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {
