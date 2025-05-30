@@ -373,7 +373,7 @@ jobs:
         env:
           TERM: dumb
         run: |
-          echo "hey"
+          eexit 1
           # ./scripts/run.sh bootstrap
   
 
