@@ -296,6 +296,7 @@ jobs:
           git config --global user.email "CI@flamingo.cx"
           git config --global user.name "CI Account"
           git checkout -b "${GITHUB_HEAD_REF_CI}"
+          git push origin "${GITHUB_HEAD_REF_CI}" --force
           echo "GITHUB_HEAD_REF_CI=${GITHUB_HEAD_REF_CI}" >> $GITHUB_OUTPUT
 
       - name: Change branch tags 
