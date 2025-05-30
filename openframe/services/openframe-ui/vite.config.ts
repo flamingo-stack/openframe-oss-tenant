@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
         protocol: 'wss',
         host: 'openframe-gateway.192.168.100.100.nip.io',
         clientPort: 443,
-        // path: '/ws'
       }
     },
     resolve: {
