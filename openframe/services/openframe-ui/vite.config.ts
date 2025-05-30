@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       hmr: {
         protocol: 'wss',
         host: 'openframe-gateway.192.168.100.100.nip.io',
-        clientPort: 443,
+        clientPort: 443
       }
     },
     resolve: {
