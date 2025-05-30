@@ -289,8 +289,9 @@ jobs:
       - name: Checkout new CI branch
         id: create_branch
         env:
-          GITHUB_HEAD_REF_CI: ${{ github.head_ref }}-CI
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
+          GITHUB_HEAD_REF_CI="${GITHUB_HEAD_REF}-CI"
           git config --global user.email "CI@flamingo.cx"
           git config --global user.name "CI Account"
           git checkout -b "${GITHUB_HEAD_REF_CI}"
