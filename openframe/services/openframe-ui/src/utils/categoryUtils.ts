@@ -69,7 +69,7 @@ export const getCategoryClass = (category: string): string => {
     'Data Integration': 'integration',
     'Datasource': 'datasource',
     'Integrated Tools': 'integrated-tools',
-    'Integrated Tools Datasource': 'integrated-tools-datasource',
+    'Integrated Tools Datasource': 'integrated-tools',
     'Monitoring': 'monitoring'
   };
   return categoryMap[category] || '';

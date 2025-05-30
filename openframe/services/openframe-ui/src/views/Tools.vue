@@ -918,7 +918,7 @@ h2 {
   border-left: 4px solid var(--yellow-400);
 }
 
-.tool-card-inner.integrated-tools-datasource {
+.tool-card-inner.integrated-tools {
   border-left: 4px solid var(--gray-500);
 }
 

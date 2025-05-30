@@ -200,7 +200,7 @@ const getNodeClass = (tool: IntegratedTool) => {
     case 'Integrated Tools':
       return 'integrated-tools';
     case 'Integrated Tools Datasource':
-      return 'integrated-tools-datasource';
+      return 'integrated-tools';
     case 'Monitoring':
       return 'monitoring';
     default:
@@ -579,7 +579,7 @@ watch(result, (newResult) => {
   .node-label { color: var(--bluegray-900) !important; }
   .node-logo { filter: brightness(0) !important; }
 }
-:deep(.vue-flow__node.integrated-tools-datasource) { 
+:deep(.vue-flow__node.integrated-tools) { 
   background-color: var(--gray-500);
 }
 :deep(.vue-flow__node.monitoring) { 

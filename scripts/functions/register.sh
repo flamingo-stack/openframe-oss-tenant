@@ -91,7 +91,7 @@ register_tool() {
         --retry 5 \
         --retry-delay 2 \
         --retry-all-errors \
-        -v
+        --silent --show-error
 
     if [ $? -ne 0 ]; then
         echo "Failed to register $name. Exiting..."
@@ -156,7 +156,7 @@ register_tool \
     "OPENFRAME" \
     "OpenFrame Client" \
     "OpenFrame Client Gateway Service" \
-    '[{"url": "http://openframe-client.openframe-microservices.svc", "port": "8097", "type": "API"}]' \
+    '[{"url": "http://openframe-client.microservices.svc", "port": "8097", "type": "API"}]' \
     "" \
     "" \
     "" \
@@ -485,7 +485,7 @@ register_tool \
 # Get Tactical RMM API key
 echo "Getting Tactical RMM API key..."
 POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
-TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -- cat /opt/tactical/api_key.txt)
+TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c openframe-tactical-backend -- cat /opt/tactical/api_key.txt)
 echo "Tactical RMM API key: $TACTICAL_API_KEY"
 
 # Register Tactical RMM with layer info
