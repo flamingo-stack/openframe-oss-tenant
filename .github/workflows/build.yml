@@ -326,13 +326,13 @@ jobs:
             sed -i "s|${GITHUB_HEAD_REF}|${GITHUB_HEAD_REF_CI}|g" "$f"
           done
       
-      # - name: Commit changes
-      #   env:
-      #     GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-      #   run: |
-      #     git add .
-      #     git commit -m "Tags and targeRevision changes [skip ci]" || echo "No changes"
-      #     git push origin "${GITHUB_HEAD_REF_CI}" --force
+      - name: Commit changes
+        env:
+          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
+        run: |
+          git add .
+          git commit -m "Tags and targeRevision changes [skip ci]" || echo "No changes"
+          git push origin "${GITHUB_HEAD_REF_CI}" --force
     
 
   test:
