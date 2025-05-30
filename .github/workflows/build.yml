@@ -297,6 +297,25 @@ jobs:
           git config --global user.name "CI Account"
           git checkout -b "${GITHUB_HEAD_REF_CI}"
           echo "GITHUB_HEAD_REF_CI=${GITHUB_HEAD_REF_CI}" >> $GITHUB_OUTPUT
+
+      - name: Change branch tags 
+        env:
+          MATRIX: ${{ needs.matrix.outputs.matrix }}
+          CHANGES: ${{ toJSON(needs.changes.outputs) }}
+          COMMIT_SHA: ${{ needs.changes.outputs.commit_sha }}
+        run: |
+          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+            name=$(jq -r '.name' <<< "$item")
+            path=$(jq -r '.manifest_path' <<< "$item")
+            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
+
+            [ "$pushed" = "true" ] || continue
+
+            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            cd "$path"
+            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            cd - > /dev/null
+          done
           
 
   test:
