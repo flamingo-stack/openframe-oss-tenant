@@ -32,29 +32,37 @@ spec:
           echo "MongoDB service is accessible, waiting additional time for startup..."
           sleep 10
 
-          echo "Waiting for MongoDB replica set to be ready..."
-          for i in {1..30}; do
-            if mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" | grep -q 1; then
-              break
-            fi
-            echo "Retry $i: MongoDB not ready yet..."
-            sleep 5
-          done
+          echo "Checking if replica set is already initialized..."
+          INIT_STATUS=$(mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
+          echo "Current replica set status: $INIT_STATUS"
 
-          echo "Checking replica set status..."
-          if ! mongosh --host "$MONGO_HOST" --eval "rs.status()" 2>/dev/null | grep -q '"ok" : 1'; then
-            echo "Initializing replica set..."
-            mongosh --host "$MONGO_HOST" --eval '
+          if [ "$INIT_STATUS" != "1" ]; then
+            echo "Replica set not initialized. Running rs.initiate()..."
+            INIT_RESULT=$(mongosh --host "$MONGO_HOST" --eval '
               rs.initiate({
                 _id: "rs0",
                 members: [
                   { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
                 ]
-              })    
-            '
+              });
+            ' --quiet)
+            echo "rs.initiate() result: $INIT_RESULT"
+            
+            echo "Waiting for replica set to stabilize..."
             sleep 10
+            
+            echo "Checking replica set status after initialization..."
+            for i in {1..30}; do
+              STATUS=$(mongosh --host "$MONGO_HOST" --eval "rs.status().ok" --quiet)
+              if [ "$STATUS" = "1" ]; then
+                echo "Replica set is ready!"
+                break
+              fi
+              echo "Retry $i: Waiting for replica set to be ready (current status: $STATUS)..."
+              sleep 5
+            done
           else
-            echo "Replica set already initialized"
+            echo "Replica set is already initialized"
           fi
 
           echo "Checking admin user..."
@@ -77,4 +85,4 @@ spec:
           fi
 
           echo "Final replica set status:"
-          mongosh --host "$MONGO_HOST" -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "rs.status()"
+          mongosh --host "$MONGO_HOST" --eval "rs.status()" --quiet

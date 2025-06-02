@@ -5,3 +5,4 @@ resources:
   - statefulset.yaml
   - service.yaml
   - mongodb-init-job.yaml
+  - mongodb-auth-job.yaml

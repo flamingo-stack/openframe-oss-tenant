@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-auth-enable
+  namespace: integrated-tools
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongo-auth
+        image: mongo:8.0.9
+        envFrom:
+          - secretRef:
+              name: mongodb-secret
+          - configMapRef:
+              name: mongodb-config
+        env:
+        - name: MONGO_HOST
+          value: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017"
+        command:
+        - /bin/bash
+        - -ec
+        - |
+          echo "Checking if admin user exists..."
+          if ! mongosh --host "$MONGO_HOST" -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
+            echo "Error: Admin user does not exist. Please run mongodb-init-job first."
+            exit 1
+          fi
+          
+          echo "Admin user exists, enabling authentication..."
+          kubectl patch statefulset meshcentral-mongodb -n integrated-tools --type='json' -p='[
+            {"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--auth"}
+          ]'
+          
+          echo "Waiting for MongoDB StatefulSet to be updated..."
+          kubectl rollout status statefulset/meshcentral-mongodb -n integrated-tools --timeout=300s
+          
+          echo "Checking if authentication is enabled..."
+          for i in {1..30}; do
+            if mongosh --host "$MONGO_HOST" --eval "db.adminCommand('ping')" 2>&1 | grep -q "Authentication failed"; then
+              echo "Authentication is enabled!"
+              break
+            fi
+            echo "Retry $i: Waiting for authentication to be enabled..."
+            sleep 5
+          done 
