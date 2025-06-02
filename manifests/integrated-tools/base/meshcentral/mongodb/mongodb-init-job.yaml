@@ -24,7 +24,7 @@ spec:
         - -ec
         - |
           echo "Waiting for MongoDB service to be ready..."
-          until nc -z meshcentral-mongodb.integrated-tools.svc.cluster.local 27017; do
+          until mongosh --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
             echo "Waiting for MongoDB to be accessible..."
             sleep 5
           done
