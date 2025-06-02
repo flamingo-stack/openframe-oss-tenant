@@ -57,7 +57,7 @@ public class IntegratedToolService {
         HttpEntity<String> requestEntity = new HttpEntity<>(debeziumConnector, headers);
 
         // URL for the request
-        String url = "http://debezium-connect.openframe-datasources:8083/connectors";
+        String url = "http://debezium-connect.datasources:8083/connectors";
 
         // Send POST request and get response
         try {

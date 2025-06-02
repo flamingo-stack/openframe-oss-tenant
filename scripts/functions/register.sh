@@ -49,31 +49,53 @@ register_tool() {
         echo "${credentials_parts[*]}"
     )}"
 
-    # Prepare the full JSON payload
-    local json_payload="{
-        \"tool\": {
-            \"id\": \"$tool_id\",
-            \"toolType\": \"$tool_type\",
-            \"name\": \"$name\",
-            \"description\": \"$description\",
-            \"toolUrls\": $urls_json,
-            \"type\": \"$tool_type\",
-            \"category\": \"$category\",
-            \"platformCategory\": \"$platform_category\",
-            \"enabled\": true,
-            \"credentials\": \"$credentials_json\",
-            \"layer\": \"$layer\",
-            \"layerOrder\": $layer_order,
-            \"layerColor\": \"$layer_color\",
-            \"metricsPath\": \"/metrics\",
-            \"healthCheckEndpoint\": \"/health\",
-            \"healthCheckInterval\": 30,
-            \"connectionTimeout\": 5000,
-            \"readTimeout\": 5000,
-            \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
-            \"debeziumConnector\": \"$debezium_connector\"
-        }
-    }"
+    # Prepare the full JSON payload using jq
+    local json_payload=$(jq -n \
+        --arg id "$tool_id" \
+        --arg type "$tool_type" \
+        --arg name "$name" \
+        --arg desc "$description" \
+        --argjson urls "$urls_json" \
+        --arg cat "$category" \
+        --arg pcat "$platform_category" \
+        --argjson creds "$credentials_json" \
+        --arg layer "$layer" \
+        --arg order "$layer_order" \
+        --arg color "$layer_color" \
+        --arg dbconn "$debezium_connector" \
+        '{
+            tool: {
+                id: $id,
+                toolType: $type,
+                name: $name,
+                description: $desc,
+                toolUrls: $urls,
+                type: $type,
+                category: $cat,
+                platformCategory: $pcat,
+                enabled: true,
+                credentials: $creds,
+                layer: $layer,
+                layerOrder: ($order | tonumber),
+                layerColor: $color,
+                metricsPath: "/metrics",
+                healthCheckEndpoint: "/health",
+                healthCheckInterval: 30,
+                connectionTimeout: 5000,
+                readTimeout: 5000,
+                allowedEndpoints: ["/api/v1/*", "/metrics"],
+                debeziumConnector: (if $dbconn == "" then null else $dbconn end)
+            }
+        }')
+
+    # Print the JSON payload for debugging
+    echo "JSON Payload:"
+    echo "$json_payload"
+
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to create JSON payload"
+        return 1
+    fi
 
     # Extract CA certificate for the request
     kubectl get secret "$CA_SECRET" -n "$CA_NAMESPACE" -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d > "$TMP_CA_PATH" || {
@@ -81,10 +103,6 @@ register_tool() {
     rm -f "$TMP_CA_PATH"; return 1
     }
     [ -s "$TMP_CA_PATH" ] || { echo "CA cert is empty"; rm -f "$TMP_CA_PATH"; return 1; }
-
-    # Print the JSON payload for debugging
-    echo "JSON Payload:"
-    echo "$json_payload" | jq '.'
 
     # Send the request
     curl --cacert "$TMP_CA_PATH" -X POST "https://openframe-management.192.168.100.100.nip.io/v1/tools/$tool_id" \
