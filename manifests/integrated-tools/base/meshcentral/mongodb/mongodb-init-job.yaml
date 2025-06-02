@@ -36,13 +36,13 @@ spec:
           RS_STATUS=$(mongosh --host "$MONGO_HOST" --eval '
             try {
               let status = rs.status();
-              if (status && status.ok) {
+              if (status && status.ok && status.members && status.members[0].stateStr === "PRIMARY") {
                 print("initialized");
               } else {
                 print("not_initialized");
               }
             } catch(e) {
-              if(e.message.includes("not initialized")) {
+              if(e.message.includes("not initialized") || e.message.includes("invalid") || e.message.includes("not a member")) {
                 print("not_initialized");
               } else {
                 print("error: " + e.message);
