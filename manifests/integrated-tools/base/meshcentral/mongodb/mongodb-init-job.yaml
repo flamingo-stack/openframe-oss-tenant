@@ -32,66 +32,37 @@ spec:
           echo "MongoDB service is accessible, waiting additional time for startup..."
           sleep 10
 
-          echo "Checking replica set status..."
-          RS_STATUS=$(mongosh --host "$MONGO_HOST" --eval '
-            try {
-              let status = rs.status();
-              if (status && status.ok && status.members && status.members[0].stateStr === "PRIMARY") {
-                print("initialized");
-              } else {
-                print("not_initialized");
-              }
-            } catch(e) {
-              if(e.message.includes("not initialized") || e.message.includes("invalid") || e.message.includes("not a member")) {
-                print("not_initialized");
-              } else {
-                print("error: " + e.message);
-              }
-            }
-          ' --quiet)
-          echo "Replica set status check result: $RS_STATUS"
+          echo "Checking if replica set is already initialized..."
+          INIT_STATUS=$(mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
+          echo "Current replica set status: $INIT_STATUS"
 
-          if [ "$RS_STATUS" = "not_initialized" ]; then
-            echo "Initializing replica set..."
-            mongosh --host "$MONGO_HOST" --eval '
+          if [ "$INIT_STATUS" != "1" ]; then
+            echo "Replica set not initialized. Running rs.initiate()..."
+            INIT_RESULT=$(mongosh --host "$MONGO_HOST" --eval '
               rs.initiate({
                 _id: "rs0",
                 members: [
                   { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
                 ]
               });
-            ' --quiet
+            ' --quiet)
+            echo "rs.initiate() result: $INIT_RESULT"
             
             echo "Waiting for replica set to stabilize..."
             sleep 10
             
-            echo "Waiting for replica set to be ready..."
+            echo "Checking replica set status after initialization..."
             for i in {1..30}; do
-              STATUS=$(mongosh --host "$MONGO_HOST" --eval '
-                try {
-                  let status = rs.status();
-                  if(status && status.ok && status.members && status.members[0].stateStr === "PRIMARY") {
-                    print("ready");
-                  } else {
-                    print("not_ready");
-                  }
-                } catch(e) {
-                  print("error: " + e.message);
-                }
-              ' --quiet)
-              
-              if [ "$STATUS" = "ready" ]; then
+              STATUS=$(mongosh --host "$MONGO_HOST" --eval "rs.status().ok" --quiet)
+              if [ "$STATUS" = "1" ]; then
                 echo "Replica set is ready!"
                 break
               fi
-              echo "Retry $i: Waiting for replica set to be ready (status: $STATUS)..."
+              echo "Retry $i: Waiting for replica set to be ready (current status: $STATUS)..."
               sleep 5
             done
-          elif [ "$RS_STATUS" = "initialized" ]; then
-            echo "Replica set is already initialized and healthy"
           else
-            echo "Error checking replica set status: $RS_STATUS"
-            exit 1
+            echo "Replica set is already initialized"
           fi
 
           echo "Checking admin user..."
