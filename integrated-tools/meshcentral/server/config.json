@@ -9,8 +9,8 @@
       "${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}",
       "${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}"
     ],
-    "port": "${MESH_PORT}",
-    "aliasPort": "${MESH_EXTERNAL_PORT}",
+    "port": ${MESH_PORT},
+    "aliasPort": ${MESH_EXTERNAL_PORT},
     "alias": [
       "${MESH_NGINX_HOST}",
       "${MESH_NGINX_NAT_HOST}",
