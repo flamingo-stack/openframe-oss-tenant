@@ -23,6 +23,8 @@ spec:
         - /bin/bash
         - -ec
         - |
+          apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
+          
           echo "Waiting for MongoDB service to be ready..."
           until mongosh --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
             echo "Waiting for MongoDB to be accessible..."
