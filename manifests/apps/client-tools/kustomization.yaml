@@ -6,5 +6,4 @@ resources:
   - namespace.yaml 
   - mongo-express.yaml   
   - kafka-ui.yaml
-  - debezium-ui.yaml
   - telepresence.yaml
