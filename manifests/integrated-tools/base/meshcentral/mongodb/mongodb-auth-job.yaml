@@ -36,27 +36,4 @@ spec:
           curl -fsSL https://pgp.mongodb.com/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
           echo "deb [signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg] http://repo.mongodb.org/apt/debian bullseye/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
           apt-get update && apt-get install -y mongodb-mongosh
-
-          echo "Checking if admin user exists..."
-          if ! mongosh --host "$MONGO_HOST" -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
-            echo "Error: Admin user does not exist. Please run mongodb-init-job first."
-            exit 1
-          fi
-          
-          echo "Admin user exists, enabling authentication..."
-          kubectl patch statefulset meshcentral-mongodb -n integrated-tools --type='json' -p='[
-            {"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--auth"}
-          ]'
-          
-          echo "Waiting for MongoDB StatefulSet to be updated..."
-          kubectl rollout status statefulset/meshcentral-mongodb -n integrated-tools --timeout=300s
-          
-          echo "Checking if authentication is enabled..."
-          for i in {1..30}; do
-            if mongosh --host "$MONGO_HOST" --eval "db.adminCommand('ping')" 2>&1 | grep -q "Authentication failed"; then
-              echo "Authentication is enabled!"
-              break
-            fi
-            echo "Retry $i: Waiting for authentication to be enabled..."
-            sleep 5
           done 
