@@ -7,10 +7,11 @@ spec:
   backoffLimit: 4
   template:
     spec:
+      serviceAccountName: mongodb-admin
       restartPolicy: OnFailure
       containers:
       - name: mongo-auth
-        image: mongo:8.0.9
+        image: debian:bullseye-slim
         envFrom:
           - secretRef:
               name: mongodb-secret
@@ -23,6 +24,19 @@ spec:
         - /bin/bash
         - -ec
         - |
+          # Install required packages
+          apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
+
+          # Install kubectl
+          curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+          apt-get update && apt-get install -y kubectl
+
+          # Install MongoDB Shell
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+          echo "deb [signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg] http://repo.mongodb.org/apt/debian bullseye/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          apt-get update && apt-get install -y mongodb-mongosh
+
           echo "Checking if admin user exists..."
           if ! mongosh --host "$MONGO_HOST" -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
             echo "Error: Admin user does not exist. Please run mongodb-init-job first."
