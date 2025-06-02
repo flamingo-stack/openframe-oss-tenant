@@ -23,6 +23,15 @@ spec:
         - /bin/bash
         - -ec
         - |
+          echo "Waiting for MongoDB service to be ready..."
+          until nc -z meshcentral-mongodb.integrated-tools.svc.cluster.local 27017; do
+            echo "Waiting for MongoDB to be accessible..."
+            sleep 5
+          done
+
+          echo "MongoDB service is accessible, waiting additional time for startup..."
+          sleep 10
+
           echo "Waiting for MongoDB replica set to be ready..."
           for i in {1..30}; do
             if mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" | grep -q 1; then
