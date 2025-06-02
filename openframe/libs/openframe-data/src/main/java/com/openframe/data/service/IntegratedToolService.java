@@ -3,6 +3,7 @@ package com.openframe.data.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
@@ -35,7 +36,7 @@ public class IntegratedToolService {
 
     public IntegratedTool saveTool(IntegratedTool tool) {
         if (tool.getDebeziumConnector() != null) {
-            createDebeziumConnector(tool.getDebeziumConnectorAsJson());
+            createDebeziumConnector(tool.getDebeziumConnector());
         }
         return toolRepository.save(tool);
     }
@@ -48,13 +49,13 @@ public class IntegratedToolService {
         return tool.get().getCredentials().getApiKey().getKey();
     }
 
-    private void createDebeziumConnector(String debeziumConnector) {
+    private void createDebeziumConnector(JsonNode debeziumConnector) {
         log.info("Add debezium connector");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // Create HTTP entity with headers and body
-        HttpEntity<String> requestEntity = new HttpEntity<>(debeziumConnector, headers);
+        HttpEntity<JsonNode> requestEntity = new HttpEntity<>(debeziumConnector, headers);
 
         // URL for the request
         String url = "http://debezium-connect.datasources:8083/connectors";
