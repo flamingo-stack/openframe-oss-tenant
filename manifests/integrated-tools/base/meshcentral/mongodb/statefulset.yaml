@@ -23,7 +23,7 @@ spec:
       containers:
         - name: mongodb
           image: mongo:8.0.9
-          command: ["mongod", "--bind_ip_all", "--auth"]
+          command: ["mongod", "--bind_ip_all"]
           ports:
             - name: mongodb
               containerPort: 27017
