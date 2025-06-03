@@ -34,13 +34,14 @@ public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Orde
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String path = request.getURI().getPath();
+        URI requestUri = request.getURI();
+        String path = requestUri.getPath();
 
         String toolId = getRequestToolId(path);
         ToolUrl toolUrl = getToolUrl(toolId);
 
         String endpointPrefix = getEndpointPrefix();
-        URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, path, endpointPrefix);
+        URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, requestUri, endpointPrefix);
 
         exchange.getAttributes()
                 .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);
