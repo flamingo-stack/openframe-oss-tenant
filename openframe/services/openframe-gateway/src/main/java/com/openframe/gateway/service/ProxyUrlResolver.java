@@ -16,13 +16,12 @@ public class ProxyUrlResolver {
 
     private final Environment environment;
 
-    public URI resolve(String toolId, ToolUrl toolUrl, String originalUrl, String prefix) {
+    public URI resolve(String toolId, ToolUrl toolUrl, URI originalUri, String prefix) {
         try {
             URI integratedToolUri = new URI(toolUrl.getUrl());
-            URI originalUrlUri = new URI(originalUrl);
 
             // Extract the path after prefix
-            String fullPath = originalUrlUri.getPath();
+            String fullPath = originalUri.getPath();
             String toolPath = prefix + "/" + toolId;
             String pathToProxy = fullPath.substring(fullPath.indexOf(toolPath) + toolPath.length());
             if (pathToProxy.isEmpty()) {
@@ -34,12 +33,11 @@ public class ProxyUrlResolver {
                     .host(isLocalProfile() ? "localhost" : integratedToolUri.getHost())
                     .port(toolUrl.getPort())
                     .path(pathToProxy)
-                    .query(originalUrlUri.getQuery())
-                    .fragment(originalUrlUri.getFragment())
-                    .build(true)
+                    .query(originalUri.getQuery())
+                    .build()
                     .toUri();
         } catch (Exception e) {
-            log.error("Failed to resolve tool url: {}", originalUrl, e);
+            log.error("Failed to resolve tool url: {}", originalUri, e);
             throw new RuntimeException("Failed to resolve tool url", e);
         }
     }

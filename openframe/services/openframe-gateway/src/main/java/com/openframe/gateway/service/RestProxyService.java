@@ -55,7 +55,7 @@ public class RestProxyService {
                                 .just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
                     }
 
-                    String originalUrl = request.getURI().toString();
+                    URI originalUri = request.getURI();
 
                     Optional<ToolUrl> optionalToolUrl = toolUrlService.getUrlByToolType(tool, ToolUrlType.API);
                     if (optionalToolUrl.isEmpty()) {
@@ -63,7 +63,7 @@ public class RestProxyService {
                     }
                     ToolUrl toolUrl = optionalToolUrl.get();
 
-                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUrl, "/tools");
+                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUri, "/tools");
                     log.debug("Proxying api request for tool: {}, url: {}", toolId, targetUri);
 
                     HttpMethod method = request.getMethod();
@@ -126,7 +126,7 @@ public class RestProxyService {
                         return Mono.just(response);
                     }
 
-                    String originalUrl = request.getURI().toString();
+                    URI originalUri = request.getURI();
 
                     Optional<ToolUrl> optionalToolUrl = toolUrlService.getUrlByToolType(tool, ToolUrlType.API);
                     if (optionalToolUrl.isEmpty()) {
@@ -136,7 +136,7 @@ public class RestProxyService {
                     }
                     ToolUrl toolUrl = optionalToolUrl.get();
 
-                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUrl, "/tools/agent");
+                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUri, "/tools/agent");
                     log.debug("Proxying api request for tool: {}, url: {}", toolId, targetUri);
 
                     HttpMethod method = request.getMethod();

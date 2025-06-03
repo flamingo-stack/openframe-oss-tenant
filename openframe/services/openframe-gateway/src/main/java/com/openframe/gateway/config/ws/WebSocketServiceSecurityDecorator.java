@@ -24,26 +24,26 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor
 @Slf4j
-public class WebSocketServiceDecorator implements WebSocketService {
+public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
-    private final WebSocketService delegate;
+    private final WebSocketService defaultWebSocketService;
     private final JwtService jwtService;
 
     @Override
-    public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler webSocketHandler) {
+    public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler defaultWebSocketHandler) {
         String path = exchange.getRequest().getPath().value();
         
         if (isSecuredEndpoint(path)) {
-            return delegate.handleRequest(exchange, session -> {
+            return defaultWebSocketService.handleRequest(exchange, session -> {
                 Jwt jwt = getRequestJwt(exchange);
                 Instant expiresAt = jwt.getExpiresAt();
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
                 Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
                 processSessionClosedEvent(session, disposable);
-                return webSocketHandler.handle(session);
+                return defaultWebSocketHandler.handle(session);
             });
         } else {
-            return delegate.handleRequest(exchange, webSocketHandler);
+            return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
         }
     }
 
