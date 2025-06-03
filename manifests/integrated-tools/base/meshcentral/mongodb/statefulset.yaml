@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meshcentral-mongodb
+spec:
+  serviceName: meshcentral-mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshcentral-mongodb
+  template:
+    metadata:
+      labels:
+        app: meshcentral-mongodb
+    spec:
+      imagePullSecrets: 
+        - name: docker-pat-secret
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: mongodb
+          image: mongo:8.0.9
+          command: 
+            - "mongod"
+            - "--bind_ip_all"
+            - "--replSet"
+            - "rs0"
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          envFrom:
+            - secretRef:
+                name: mongodb-secret
+            - configMapRef:
+                name: mongodb-config
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
