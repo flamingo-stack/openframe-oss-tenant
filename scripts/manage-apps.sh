@@ -99,7 +99,7 @@ openframe_microservices_openframe_management)
     cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
     skaffold dev --cache-artifacts=false -n microservices
   elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
+    intercept_app "openframe-management" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
   ;;
 openframe_microservices_openframe_stream)

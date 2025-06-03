@@ -49,13 +49,13 @@ public class IntegratedToolService {
         return tool.get().getCredentials().getApiKey().getKey();
     }
 
-    private void createDebeziumConnector(JsonNode debeziumConnector) {
+    private void createDebeziumConnector(Object debeziumConnector) {
         log.info("Add debezium connector");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // Create HTTP entity with headers and body
-        HttpEntity<JsonNode> requestEntity = new HttpEntity<>(debeziumConnector, headers);
+        HttpEntity<Object> requestEntity = new HttpEntity<>(debeziumConnector, headers);
 
         // URL for the request
         String url = "http://debezium-connect.datasources:8083/connectors";

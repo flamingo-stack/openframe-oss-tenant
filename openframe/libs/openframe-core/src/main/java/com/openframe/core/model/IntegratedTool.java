@@ -37,10 +37,5 @@ public class IntegratedTool {
     private Integer connectionTimeout;
     private Integer readTimeout;
     private String[] allowedEndpoints;
-    @JsonProperty("debeziumConnector")
-    private JsonNode debeziumConnector;
-
-    public String getDebeziumConnectorAsJson() {
-        return debeziumConnector != null ? debeziumConnector.toString() : null;
-    }
+    private Object debeziumConnector;
 }
