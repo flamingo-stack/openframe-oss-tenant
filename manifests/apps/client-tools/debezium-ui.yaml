@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: debezium
+      targetRevision: main
       path: manifests/client-tools/base/debezium-ui
 
   destination:
