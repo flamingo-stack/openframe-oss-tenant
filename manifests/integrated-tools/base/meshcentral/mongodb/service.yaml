@@ -2,9 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: meshcentral-mongodb
+  labels:
+    app: meshcentral-mongodb
 spec:
+  clusterIP: None 
+  publishNotReadyAddresses: true  # Important for replica set discovery
   selector:
     app: meshcentral-mongodb
   ports:
-  - port: 27017
-    targetPort: 27017
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+      protocol: TCP

@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: debezium-connect
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: datasources
+
+  sources:
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: main
+      path: manifests/openframe/base/debezium-connect
+
+  destination:
+    name: in-cluster
+    namespace: datasources
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m

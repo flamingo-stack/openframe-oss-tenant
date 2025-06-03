@@ -5,5 +5,5 @@ resources:
   # wave 2            
   - namespace.yaml 
   - mongo-express.yaml   
-  - kafka-ui.yaml  
+  - kafka-ui.yaml
   - telepresence.yaml
