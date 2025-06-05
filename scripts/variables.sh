@@ -1,4 +1,4 @@
 #!/bin/bash
 
-# Common variables used across run scripts
-RECOMMENDED_MEMORY=25600  # 25GB in MB
+# Common variables used across OpenFrame scripts
+RECOMMENDED_MEMORY=24576 # 24GB in MB
