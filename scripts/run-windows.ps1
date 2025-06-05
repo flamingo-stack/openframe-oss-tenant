@@ -1,6 +1,10 @@
 # OpenFrame Installation Script
 # This script checks for and installs the required components for OpenFrame
 
+# Source common variables
+$scriptsPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+. "$scriptsPath\variables.ps1"
+
 param(
     [switch]$Help,
     [switch]$Silent,
@@ -516,10 +520,7 @@ function Test-PortAvailability {
     }
 }
 
-
-# Docker memory limit check
-$RECOMMENDED_MEMORY = 20480  # 20GB in MB
-
+# Check Docker memory limits
 Write-Host "Checking Docker memory allocation..." -ForegroundColor Cyan
 try {
     $dockerInfo = docker info --format '{{.MemTotal}}'
