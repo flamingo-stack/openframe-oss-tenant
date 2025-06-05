@@ -432,15 +432,6 @@ function Test-DockerDesktop {
             Write-Host "Please start Docker Desktop and try again." -ForegroundColor Yellow
             return $false
         }
-        
-        # Check if Docker Desktop is using WSL2 backend
-        if (-not ($dockerInfo -match "WSL 2")) {
-            Write-Host "Docker Desktop is not using WSL2 backend!" -ForegroundColor Red
-            Write-Host "Please enable WSL2 backend in Docker Desktop settings." -ForegroundColor Yellow
-            return $false
-        }
-        
-        Write-Host "Docker Desktop is running and using WSL2 backend." -ForegroundColor Green
         return $true
     }
     catch {
@@ -647,8 +638,6 @@ if (-not (Set-LoopbackAdapter)) {
 
 # 3. Configure Docker
 Set-DockerConfiguration
-
-Setup-WSLConfig
 
 # 4. Prevent system sleep
 if (-not (Disable-SystemSleep)) {
