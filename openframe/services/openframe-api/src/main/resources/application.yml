@@ -6,3 +6,8 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config-server.microservices.svc.cluster.local:8888"
+
+security:
+  oauth2:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
