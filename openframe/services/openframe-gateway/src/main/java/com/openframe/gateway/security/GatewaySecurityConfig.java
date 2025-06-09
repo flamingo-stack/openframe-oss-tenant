@@ -82,6 +82,7 @@ public class GatewaySecurityConfig {
                                 "/error/**",
                                 "/health/**",
                                 "/clients/metrics/**",
+                                "/clients/api/agents/register",
                                 "/clients/oauth/token",
                                 "/api/oauth/token",
                                 "/api/oauth/register",

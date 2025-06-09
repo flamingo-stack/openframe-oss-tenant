@@ -74,6 +74,7 @@ public interface  JwtAuthenticationOperations {
         return null;
     }
 
+    // TODO: revise validate permitted path approach
     default boolean isPermittedPath(String path, String method) {
         // Skip JWT check for OPTIONS requests (CORS preflight)
         if ("OPTIONS".equals(method)) {
@@ -101,7 +102,10 @@ public interface  JwtAuthenticationOperations {
                 || path.startsWith(CLIENTS_PREFIX+"/api/agents/register")
                 || path.startsWith(getManagementPath())
                 || path.equals(DASHBOARD_PREFIX+"/.well-known/openid-configuration")
-                || (!path.startsWith(CLIENTS_PREFIX) && !path.startsWith(DASHBOARD_PREFIX) && !path.startsWith("/tools"));
+                || (!path.startsWith(CLIENTS_PREFIX)
+                        && !path.startsWith(DASHBOARD_PREFIX)
+                        && !path.startsWith("/tools")
+                        && !path.startsWith("/ws/tools"));
     }
 
     default String extractJwt(String authHeader) {
