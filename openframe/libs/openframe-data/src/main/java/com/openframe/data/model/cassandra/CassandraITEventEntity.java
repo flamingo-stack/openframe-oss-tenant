@@ -28,8 +28,11 @@ public class CassandraITEventEntity implements DownstreamEntity {
         @PrimaryKeyColumn(name = "id", type = PrimaryKeyType.PARTITIONED)
         private String id;
 
-        @PrimaryKeyColumn(name = "timestamp", ordinal = 2, ordering = Ordering.DESCENDING)
+        @PrimaryKeyColumn(name = "timestamp", ordinal = 0, ordering = Ordering.DESCENDING)
         private Instant timestamp;
+
+        @PrimaryKeyColumn(name = "tool_name", ordinal = 1, ordering = Ordering.ASCENDING)
+        private String toolName;
     }
 
 }

@@ -36,19 +36,16 @@ initDB:
 
     USE openframe_events;
 
-    CREATE TABLE IF NOT EXISTS event_streams (
-        user_id text,
-        stream_id text,
-        event_id uuid,
+    CREATE TABLE IF NOT EXISTS integrated_tool_event (
+        id text,
+        tool_name text,
+        event_type text,
         timestamp timestamp,
-        payload text,
-        event_type text,    -- Fixed column name
-        metadata map<text, text>,
-        PRIMARY KEY ((user_id), stream_id, event_id, timestamp)
-    ) WITH CLUSTERING ORDER BY (stream_id ASC, event_id ASC, timestamp DESC);
+        payload map<text, text>
+        PRIMARY KEY ((id), tool_name, timestamp)
+    ) WITH CLUSTERING ORDER BY (id ASC, tool_name ASC, timestamp DESC);
 
-    CREATE INDEX IF NOT EXISTS idx_event_type ON event_streams(event_type);
-
+    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_type ON integrated_tool_event(event_type);
 # initDBConfigMap: ""
 
 cluster:
