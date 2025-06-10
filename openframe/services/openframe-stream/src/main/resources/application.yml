@@ -6,16 +6,3 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config-server.microservices.svc.cluster.local:8888"
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-broker-headless.datasources:9092}
-    consumer:
-      group-id: openframe-stream-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-kafka:
-  topic:
-    event:
-      meshcentral:
-        name: ${KAFKA_TOPIC_EVENT_MESHCENTRAL_NAME:meshcentral.mongodb.events}

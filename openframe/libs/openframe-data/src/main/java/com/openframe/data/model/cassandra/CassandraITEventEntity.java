@@ -10,27 +10,25 @@ import java.time.Instant;
 import java.util.Map;
 
 @Table("integrated_tool_event")
+@Data
 public class CassandraITEventEntity implements DownstreamEntity {
 
     @PrimaryKey
-    private EventKey key;
+    private CassandraITEventEntity.CassandraITEventKey key;
 
     @Column("payload")
-    private String payload;
+    private Map<String, String> payload;
 
-    @Column("event_type")
+    @Column("event_type")  // Fixed column name to match database
     private String eventType;
-
-    @Column("metadata")
-    private Map<String, String> metadata;
 
     @PrimaryKeyClass
     @Data
-    public static class EventKey {
+    public static class CassandraITEventKey {
         @PrimaryKeyColumn(name = "id", type = PrimaryKeyType.PARTITIONED)
         private String id;
 
-        @PrimaryKeyColumn(name = "timestamp", ordinal = 0, ordering = Ordering.DESCENDING)
+        @PrimaryKeyColumn(name = "timestamp", ordinal = 2, ordering = Ordering.DESCENDING)
         private Instant timestamp;
     }
 

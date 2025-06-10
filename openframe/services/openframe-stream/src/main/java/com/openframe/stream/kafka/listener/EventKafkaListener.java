@@ -1,5 +1,6 @@
 package com.openframe.stream.kafka.listener;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.stream.DownstreamTool;
 import com.openframe.data.model.DownstreamEntity;
 import com.openframe.stream.service.IntegratedToolEventTransformationService;
@@ -22,14 +23,14 @@ public abstract class EventKafkaListener {
         this.pushDataServiceFactory = pushDataServiceFactory;
     }
 
-    public abstract void listen(String message);
+    public abstract void listen(Map<String, Object> message);
 
-    protected void process(String message) {
+    protected void process(JsonNode message) {
         Map<DownstreamTool, DownstreamEntity> transformedEventMap = transform(message);
         pushData(transformedEventMap);
     }
 
-    protected Map<DownstreamTool, DownstreamEntity> transform(String message) {
+    protected Map<DownstreamTool, DownstreamEntity> transform(JsonNode message) {
         Map<DownstreamTool, DownstreamEntity> downstreamEntityMap = new HashMap<>();
         downstreamEntityMap.put(DownstreamTool.CASSANDRA, transformationService.transformForCassandra(message));
 //        downstreamEntityMap.put(DownstreamTool.PINOT, transformationService.transformForPinot(message));
