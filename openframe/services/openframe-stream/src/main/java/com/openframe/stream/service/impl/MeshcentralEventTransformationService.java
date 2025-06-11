@@ -16,6 +16,7 @@ import java.util.UUID;
 @Slf4j
 public class MeshcentralEventTransformationService implements IntegratedToolEventTransformationService {
 
+    private final String TOOL_NAME = "meshcentral";
 
     @Override
     public CassandraITEventEntity transformForCassandra(JsonNode rootNode) {
@@ -23,6 +24,7 @@ public class MeshcentralEventTransformationService implements IntegratedToolEven
         try {
             CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
             key.setId(UUID.randomUUID().toString());
+            key.setToolName(TOOL_NAME);
             key.setTimestamp(Instant.now());
             entity.setKey(key);
             if (rootNode.has("eventType")) {
