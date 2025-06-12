@@ -12,18 +12,17 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class MeshcentralEventKafkaListener extends EventKafkaListener {
+public class TacticalRmmEventKafkaListener extends EventKafkaListener {
 
-
-    protected MeshcentralEventKafkaListener(PushDataServiceFactory pushDataServiceFactory,
-                                            ITEventTransformationServiceFactory itEventTransformationServiceFactory,
+    protected TacticalRmmEventKafkaListener(PushDataServiceFactory pushDataServiceFactory,
+                                            ITEventTransformationServiceFactory iEventTransformationServiceFactory,
                                             ObjectMapper objectMapper) {
-        super(pushDataServiceFactory, itEventTransformationServiceFactory, objectMapper);
+        super(pushDataServiceFactory, iEventTransformationServiceFactory, objectMapper);
     }
 
     @Override
-    @KafkaListener(topics = "${kafka.topic.event.meshcentral.name}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "${kafka.topic.event.tactical-rmm.name}", groupId = "${spring.kafka.consumer.group-id}")
     public void listen(Map<String, Object> message) {
-        process(message, IntegratedTool.MESHCENTRAL);
+        process(message, IntegratedTool.TACTICAL);
     }
-} 
+}

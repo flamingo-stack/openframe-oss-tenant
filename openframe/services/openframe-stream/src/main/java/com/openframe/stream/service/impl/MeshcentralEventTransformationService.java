@@ -3,6 +3,7 @@ package com.openframe.stream.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
 import com.openframe.data.model.pinot.PinotEventEntity;
+import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.service.IntegratedToolEventTransformationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,12 @@ import java.util.UUID;
 @Slf4j
 public class MeshcentralEventTransformationService implements IntegratedToolEventTransformationService {
 
-    private final String TOOL_NAME = "meshcentral";
+    private final IntegratedTool TOOL_NAME = IntegratedTool.MESHCENTRAL;
+
+    @Override
+    public IntegratedTool getIntegratedTool() {
+        return TOOL_NAME;
+    }
 
     @Override
     public CassandraITEventEntity transformForCassandra(JsonNode rootNode) {
@@ -24,7 +30,7 @@ public class MeshcentralEventTransformationService implements IntegratedToolEven
         try {
             CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
             key.setId(UUID.randomUUID().toString());
-            key.setToolName(TOOL_NAME);
+            key.setToolName(TOOL_NAME.getName());
             key.setTimestamp(Instant.now());
             entity.setKey(key);
             if (rootNode.has("eventType")) {

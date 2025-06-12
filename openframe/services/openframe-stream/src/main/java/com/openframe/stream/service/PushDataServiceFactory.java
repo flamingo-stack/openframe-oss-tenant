@@ -1,6 +1,6 @@
 package com.openframe.stream.service;
 
-import com.openframe.stream.DownstreamTool;
+import com.openframe.stream.enumeration.DownstreamTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

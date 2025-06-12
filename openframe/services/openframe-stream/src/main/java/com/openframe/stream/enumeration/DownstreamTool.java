@@ -1,4 +1,4 @@
-package com.openframe.stream;
+package com.openframe.stream.enumeration;
 
 public enum DownstreamTool {
 
