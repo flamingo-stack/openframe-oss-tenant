@@ -17,6 +17,15 @@
         <div class="of-form-group">
           <OFButton type="submit" :loading="loading" class="of-button w-full">Sign In</OFButton>
         </div>
+        
+        <div class="of-divider">
+          <span class="of-divider-text">or</span>
+        </div>
+        
+        <div class="of-form-group">
+          <GoogleLoginButton @error="handleOAuthError" />
+        </div>
+        
         <div class="of-text-center">
           <p class="of-text-secondary">
             Don't have an account? <router-link to="/register" class="of-link">Create one</router-link>
@@ -35,6 +44,7 @@ import { ToastService } from '../services/ToastService'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import { OFButton } from '../components/ui'
+import GoogleLoginButton from '../components/auth/GoogleLoginButton.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -43,6 +53,41 @@ const toastService = ToastService.getInstance()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
+
+// Check for OAuth debug info
+const checkOAuthDebugInfo = () => {
+  const debugInfo = localStorage.getItem('oauth_debug');
+  const configDebug = localStorage.getItem('oauth_config_debug');
+  const errorDebug = localStorage.getItem('oauth_error_debug');
+  const redirectDebug = localStorage.getItem('oauth_redirect_debug');
+  const initiateErrorDebug = localStorage.getItem('oauth_initiate_error_debug');
+  
+  if (debugInfo) {
+    console.log('🔍 [Login] OAuth Debug Info:', JSON.parse(debugInfo));
+  }
+  if (configDebug) {
+    console.log('🔍 [Login] OAuth Config Debug:', JSON.parse(configDebug));
+  }
+  if (errorDebug) {
+    console.log('🔍 [Login] OAuth Error Debug:', JSON.parse(errorDebug));
+  }
+  if (redirectDebug) {
+    console.log('🔍 [Login] OAuth Redirect Debug:', JSON.parse(redirectDebug));
+  }
+  if (initiateErrorDebug) {
+    console.log('🔍 [Login] OAuth Initiate Error Debug:', JSON.parse(initiateErrorDebug));
+  }
+  
+  // Clear debug info after reading
+  localStorage.removeItem('oauth_debug');
+  localStorage.removeItem('oauth_config_debug');
+  localStorage.removeItem('oauth_error_debug');
+  localStorage.removeItem('oauth_redirect_debug');
+  localStorage.removeItem('oauth_initiate_error_debug');
+};
+
+// Check debug info on component load
+checkOAuthDebugInfo();
 
 const copyToClipboard = async (text: string) => {
   try {
@@ -80,6 +125,7 @@ const handleSubmit = async () => {
 };
 
 const handleOAuthError = (error: any) => {
+  console.log('🔥 [Login] OAuth error received:', error);
   toastService.showError(error.message || 'Authentication failed')
 }
 </script>
@@ -181,6 +227,34 @@ const handleOAuthError = (error: any) => {
 
 .of-link:hover {
   text-decoration: underline;
+}
+
+.of-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.of-divider::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--surface-border);
+}
+
+.of-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--surface-border);
+}
+
+.of-divider-text {
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  background: var(--surface-card);
 }
 
 @media screen and (max-width: 640px) {

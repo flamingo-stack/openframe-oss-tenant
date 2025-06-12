@@ -37,9 +37,35 @@ import './assets/styles/theme.css'
 const token = localStorage.getItem('access_token')
 const currentPath = window.location.pathname
 
-if (!token && currentPath !== '/login' && currentPath !== '/register') {
+if (!token && currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/oauth2/callback/google') {
     window.location.href = '/login'
 } else {
+    // Global URL change tracking
+    console.log('�� [Main] Initial URL:', window.location.href);
+
+    // Track URL changes
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(...args) {
+        console.log('🌐 [Main] URL changed via pushState:', args[2] || window.location.href);
+        return originalPushState.apply(history, args);
+    };
+
+    history.replaceState = function(...args) {
+        console.log('🌐 [Main] URL changed via replaceState:', args[2] || window.location.href);
+        return originalReplaceState.apply(history, args);
+    };
+
+    window.addEventListener('popstate', (event) => {
+        console.log('🌐 [Main] URL changed via popstate:', window.location.href);
+    });
+
+    // Track hash changes
+    window.addEventListener('hashchange', (event) => {
+        console.log('🌐 [Main] Hash changed:', { oldURL: event.oldURL, newURL: event.newURL });
+    });
+
     const app = createApp({
         setup() {
             provide(DefaultApolloClient, apolloClient)

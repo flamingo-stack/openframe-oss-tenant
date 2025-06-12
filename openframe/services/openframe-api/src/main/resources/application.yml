@@ -10,4 +10,11 @@ spring:
 security:
   oauth2:
     google:
-      client-id: ${GOOGLE_CLIENT_ID}
+      client-id: ${GOOGLE_CLIENT_ID:917413073630-dv15s3ckllsl07rc1qt8bl7sopei4ttl.apps.googleusercontent.com}
+      client-secret: ${GOOGLE_CLIENT_SECRET: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}
+    token:
+      access:
+        expiration-seconds: 3600
+      refresh:
+        expiration-seconds: 2592000
+        max-refresh-count: 10

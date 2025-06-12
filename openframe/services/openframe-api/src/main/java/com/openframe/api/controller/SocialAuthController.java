@@ -1,8 +1,8 @@
 package com.openframe.api.controller;
 
+import com.openframe.api.dto.oauth.SocialAuthRequest;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.api.service.SocialAuthService;
-import com.openframe.core.dto.SocialAuthRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/oauth/social")
+@RequestMapping("/oauth2")
 @RequiredArgsConstructor
 public class SocialAuthController {
     private final SocialAuthService socialAuthService;
@@ -21,7 +21,7 @@ public class SocialAuthController {
             @PathVariable String provider,
             @RequestBody SocialAuthRequest request) {
         log.debug("Social authentication request - provider: {}", provider);
-        TokenResponse response = socialAuthService.authenticate(provider, request.getToken());
+        TokenResponse response = socialAuthService.authenticate(provider, request);
         return ResponseEntity.ok(response);
     }
 } 
