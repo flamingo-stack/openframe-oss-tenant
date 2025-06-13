@@ -1,4 +1,4 @@
-package com.openframe.stream.service;
+package com.openframe.stream;
 
 import com.openframe.stream.enumeration.DownstreamTool;
 import com.openframe.data.model.DownstreamEntity;

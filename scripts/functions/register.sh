@@ -541,7 +541,7 @@ register_tool \
     "HEADER" \
     "X-API-KEY" \
     '{
-       "name": "trmm-psql-connector",
+       "name": "tactical-rmm-psql-connector",
        "config": {
          "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
          "tasks.max": "1",
@@ -551,12 +551,16 @@ register_tool \
          "database.password": "postgrespass",
          "database.dbname" : "tacticalrmm",
          "topic.prefix": "trmm_clients_users",
-         "table.include.list": "public.clients_client,public.accounts_user",
+         "table.include.list": "public.logs_auditlog",
          "plugin.name": "pgoutput",
          "topic.creation.default.replication.factor": 1,
          "topic.creation.default.partitions": 10,
          "topic.creation.default.cleanup.policy": "compact",
-         "topic.creation.default.compression.type": "lz4"
+         "topic.creation.default.compression.type": "lz4",
+         "transforms": "route",
+         "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
+         "transforms.route.topic.regex": "trmm_clients_users\\.(.*)",
+         "transforms.route.topic.replacement": "tactical-rmm.postgres.events"
        }
      }'
 

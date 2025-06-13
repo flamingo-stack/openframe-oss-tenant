@@ -9,6 +9,6 @@ public interface IntegratedToolEventTransformationService {
 
     IntegratedTool getIntegratedTool();
     CassandraITEventEntity transformForCassandra(JsonNode message);
-    PinotEventEntity transformForPinot(JsonNode message);
+    PinotEventEntity transformForKafka(JsonNode message);
 
 }

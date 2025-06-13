@@ -4,7 +4,7 @@ import com.openframe.data.model.DownstreamEntity;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
 import com.openframe.data.repository.cassandra.CassandraITEventRepository;
 import com.openframe.stream.enumeration.DownstreamTool;
-import com.openframe.stream.service.PushDataService;
+import com.openframe.stream.PushDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

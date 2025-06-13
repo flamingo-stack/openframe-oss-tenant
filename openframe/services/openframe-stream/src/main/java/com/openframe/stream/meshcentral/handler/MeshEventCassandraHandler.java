@@ -1,36 +1,35 @@
-package com.openframe.stream.service.impl;
+package com.openframe.stream.meshcentral.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
-import com.openframe.data.model.pinot.PinotEventEntity;
+import com.openframe.data.repository.cassandra.CassandraITEventRepository;
 import com.openframe.stream.enumeration.IntegratedTool;
-import com.openframe.stream.service.IntegratedToolEventTransformationService;
+import com.openframe.stream.enumeration.MessageType;
+import com.openframe.stream.handler.CassandraMessageHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Service
+@Component
 @Slf4j
-public class MeshcentralEventTransformationService implements IntegratedToolEventTransformationService {
+public class MeshEventCassandraHandler extends CassandraMessageHandler<CassandraITEventEntity> {
 
-    private final IntegratedTool TOOL_NAME = IntegratedTool.MESHCENTRAL;
-
-    @Override
-    public IntegratedTool getIntegratedTool() {
-        return TOOL_NAME;
+    public MeshEventCassandraHandler(CassandraITEventRepository repository, ObjectMapper objectMapper) {
+        super(repository, objectMapper);
     }
 
     @Override
-    public CassandraITEventEntity transformForCassandra(JsonNode rootNode) {
+    protected CassandraITEventEntity transform(JsonNode rootNode) {
         CassandraITEventEntity entity = new CassandraITEventEntity();
         try {
             CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
             key.setId(UUID.randomUUID().toString());
-            key.setToolName(TOOL_NAME.getName());
+            key.setToolName(IntegratedTool.MESHCENTRAL.getName());
             key.setTimestamp(Instant.now());
             entity.setKey(key);
             if (rootNode.has("eventType")) {
@@ -54,8 +53,7 @@ public class MeshcentralEventTransformationService implements IntegratedToolEven
     }
 
     @Override
-    public PinotEventEntity transformForKafka(JsonNode message) {
-        return null;
+    public MessageType getType() {
+        return MessageType.MESH_MONGO_EVENT_TO_CASSANDRA;
     }
-
 }
