@@ -1,4 +1,4 @@
-package com.openframe.stream.meshcentral.handler;
+package com.openframe.stream.events.handler.meshcentral;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

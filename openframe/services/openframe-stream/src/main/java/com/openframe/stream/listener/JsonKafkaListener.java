@@ -17,8 +17,14 @@ public class JsonKafkaListener {
     }
 
     @KafkaListener(topics = "${kafka.consumer.topic.event.meshcentral.name}", groupId = "${spring.kafka.consumer.group-id}")
-    public void listen(Map<String, Object> message) {
+    public void listenMeshEvents(Map<String, Object> message) {
         messageProcessor.process(message, MessageType.MESH_MONGO_EVENT_TO_CASSANDRA);
         messageProcessor.process(message, MessageType.MESH_MONGO_EVENT_TO_KAFKA);
+    }
+
+    @KafkaListener(topics = "${kafka.consumer.topic.event.tactical-rmm.name}", groupId = "${spring.kafka.consumer.group-id}")
+    public void listenTrmmEvents(Map<String, Object> message) {
+        messageProcessor.process(message, MessageType.TRMM_PSQL_AUDIT_LOG_TO_CASSANDRA);
+        messageProcessor.process(message, MessageType.TRMM_PSQL_AUDIT_LOG_TO_KAFKA);
     }
 }
