@@ -1,5 +1,5 @@
 mongodb:
-  uri: "mongodb://openframe:password123456789@mongodb:27017/openframe?authSource=admin"
+  uri: "mongodb://mongodb:27017/openframe"
 
 # use below for storig uri with password
 # existingSecret:

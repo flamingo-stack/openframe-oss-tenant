@@ -4,5 +4,4 @@ metadata:
   name: mongodb-config
 data:
   MONGO_INITDB_DATABASE: "openframe"
-  MONGO_APP_USERNAME: "openframe"
   DATA_DIR: "/data"

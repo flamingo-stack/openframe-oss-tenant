@@ -6,35 +6,26 @@ set -a
 set +a
 
 # Ensure environment variables are set
-: "${MONGO_INITDB_ROOT_USERNAME:?Required}"
-: "${MONGO_INITDB_ROOT_PASSWORD:?Required}"
 : "${MONGO_INITDB_DATABASE:?Required}"
-: "${MONGO_APP_USERNAME:?Required}"
-: "${MONGO_APP_PASSWORD:?Required}"
 
-if [ ! -f "$DATA_DIR/db/s.mongodb_password_set" ]; then
+if [ ! -f "$DATA_DIR/db/.mongodb_initialized" ]; then
     echo "First time initialization..."
 
-    # mkdir -p $DATA_DIR/.mongodb
+    # Initialize MongoDB with replica set
+    mongosh --eval <<EOF
+// Initialize replica set
+rs.initiate({
+    _id: "rs0",
+    members: [
+        { _id: 0, host: "mongodb-0.mongodb:27017" }
+    ]
+});
 
-    # Initialize MongoDB with users
-    mongosh admin -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --eval <<EOF
+// Wait for replica set to initialize
+sleep(10);
+
+// Create database and collections
 db = db.getSiblingDB('$MONGO_INITDB_DATABASE');
-
-// Create the database explicitly
-db.createCollection('system.users');
-
-// Only create app user if username is not 'root'
-if ('$MONGO_APP_USERNAME' !== 'root') {
-    db.createUser({
-        user: '$MONGO_APP_USERNAME',
-        pwd: '$MONGO_APP_PASSWORD',
-        roles: [
-            { role: 'readWrite', db: '$MONGO_INITDB_DATABASE' },
-            { role: 'dbAdmin', db: '$MONGO_INITDB_DATABASE' }
-        ]
-    });
-}
 
 db.createCollection('events');
 db.events.insertMany([
@@ -67,5 +58,5 @@ db.events.createIndex({ 'type': 1 });
 EOF
 
     # Mark initialization as complete
-    touch $DATA_DIR/db/.mongodb_password_set
+    touch $DATA_DIR/db/.mongodb_initialized
 fi
