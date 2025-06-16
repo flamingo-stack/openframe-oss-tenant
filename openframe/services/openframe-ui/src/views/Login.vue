@@ -5,6 +5,8 @@
         <h1 class="of-title">Welcome back</h1>
       </div>
       <p class="of-text-secondary">Sign in to access your account</p>
+      
+      <!-- Regular login form -->
       <form @submit.prevent="handleSubmit" class="of-form">
         <div class="of-form-group">
           <label for="email" class="of-form-label">Email</label>
@@ -17,21 +19,26 @@
         <div class="of-form-group">
           <OFButton type="submit" :loading="loading" class="of-button w-full">Sign In</OFButton>
         </div>
-        
-        <div class="of-divider">
-          <span class="of-divider-text">or</span>
-        </div>
-        
+      </form>
+      
+      <div class="of-divider">
+        <span class="of-divider-text">or</span>
+      </div>
+      
+      <!-- Google OAuth form -->
+      <div class="of-form">
         <div class="of-form-group">
           <GoogleLoginButton @error="handleOAuthError" />
         </div>
-        
-        <div class="of-text-center">
-          <p class="of-text-secondary">
-            Don't have an account? <router-link to="/register" class="of-link">Create one</router-link>
-          </p>
-        </div>
-      </form>
+      </div>
+      
+      <div class="of-spacer"></div>
+      
+      <div class="of-text-center">
+        <p class="of-text-secondary">
+          Don't have an account? <router-link to="/register" class="of-link">Create one</router-link>
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -175,6 +182,10 @@ const handleOAuthError = (error: any) => {
   color: var(--text-color);
   font-weight: 500;
   font-size: 0.875rem;
+}
+
+.of-spacer {
+  height: 2rem;
 }
 
 :deep(.p-inputtext) {
