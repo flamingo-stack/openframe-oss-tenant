@@ -1,0 +1,149 @@
+name: Generate Changes
+
+on:
+  workflow_call:
+    outputs:      
+      core: 
+        value: ${{ jobs.changes.outputs.core }}
+      data: 
+        value: ${{ jobs.changes.outputs.data }}
+      api: 
+        value: ${{ jobs.changes.outputs.api }}
+      client: 
+        value: ${{ jobs.changes.outputs.client }}
+      config: 
+        value: ${{ jobs.changes.outputs.config }}
+      gateway: 
+        value: ${{ jobs.changes.outputs.gateway }}
+      management: 
+        value: ${{ jobs.changes.outputs.management }}
+      stream: 
+        value: ${{ jobs.changes.outputs.stream }}
+      mongodb: 
+        value: ${{ jobs.changes.outputs.mongodb }}
+      cassandra: 
+        value: ${{ jobs.changes.outputs.cassandra }}
+      nifi: 
+        value: ${{ jobs.changes.outputs.nifi }}
+      postgresql: 
+        value: ${{ jobs.changes.outputs.postgresql }}
+      tactical-frontend: 
+        value: ${{ jobs.changes.outputs.tactical-frontend }}
+      tactical-nginx: 
+        value: ${{ jobs.changes.outputs.tactical-nginx }}
+      tactical-backend: 
+        value: ${{ jobs.changes.outputs.tactical-backend }}
+      tactical-nats: 
+        value: ${{ jobs.changes.outputs.tactical-nats }}
+      tactical-websockets: 
+        value: ${{ jobs.changes.outputs.tactical-websockets }}
+      tactical-celery: 
+        value: ${{ jobs.changes.outputs.tactical-celery }}
+      tactical-celerybeat: 
+        value: ${{ jobs.changes.outputs.tactical-celerybeat }}
+      fleetmdm: 
+        value: ${{ jobs.changes.outputs.fleetmdm }}
+      meshcentral: 
+        value: ${{ jobs.changes.outputs.meshcentral }}
+      ui: 
+        value: ${{ jobs.changes.outputs.ui }}
+      timestamp: 
+        value: ${{ jobs.changes.outputs.timestamp }}
+      timestamp_tag: 
+        value: ${{ jobs.changes.outputs.timestamp_tag }}
+      commit_sha: 
+        value: ${{ jobs.changes.outputs.commit_sha }}
+
+jobs:
+  changes:
+    name: Changes check
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      data: ${{ steps.filter.outputs.data }}
+      api: ${{ steps.filter.outputs.api }}
+      client: ${{ steps.filter.outputs.client }}
+      config: ${{ steps.filter.outputs.config }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      management: ${{ steps.filter.outputs.management }}
+      stream: ${{ steps.filter.outputs.stream }}
+      mongodb: ${{ steps.filter.outputs.mongodb }}
+      cassandra: ${{ steps.filter.outputs.cassandra }}
+      nifi: ${{ steps.filter.outputs.nifi }}
+      postgresql: ${{ steps.filter.outputs.postgresql }}
+      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
+      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
+      tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
+      tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
+      tactical-websockets: ${{ steps.filter.outputs.tactical-websockets }}
+      tactical-celery: ${{ steps.filter.outputs.tactical-celery }}
+      tactical-celerybeat: ${{ steps.filter.outputs.tactical-celerybeat }}
+      fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
+      meshcentral: ${{ steps.filter.outputs.meshcentral }}
+      ui: ${{ steps.filter.outputs.ui }}
+      timestamp: ${{ steps.setup_env.outputs.timestamp }}
+      timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
+      commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up environment
+        id: setup_env
+        run: |
+          echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> $GITHUB_OUTPUT
+          echo "commit_sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            core:
+              - './openframe/libs/openframe-core/**'
+            data:
+              - './openframe/libs/openframe-data/**'
+            api:
+              - './openframe/services/openframe-api/**'
+            client:
+              - './openframe/services/openframe-client/**'
+            config:
+              - './openframe/services/openframe-config/**'
+            gateway:
+              - './openframe/services/openframe-gateway/**'
+            management:
+              - './openframe/services/openframe-management/**'
+            stream:
+              - './openframe/services/openframe-stream/**'
+            ui:
+              - './openframe/services/openframe-ui/**'
+            nifi:
+              - './openframe/datasources/nifi/**'
+            postgresql:
+              - './integrated-tools/authentik/postgresql/**'
+            tactical-frontend:
+              - './integrated-tools/tactical-rmm/tactical-frontend/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-nginx:
+              - './integrated-tools/tactical-rmm/tactical-nginx/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-backend:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-nats:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-websockets:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-celery:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            tactical-celerybeat:
+              - './integrated-tools/tactical-rmm/tactical-base/**'
+              - './integrated-tools/tactical-rmm/shared/**'
+            fleetmdm:
+              - './integrated-tools/fleetmdm/**'
+            meshcentral:
+              - './integrated-tools/meshcentral/server/**'

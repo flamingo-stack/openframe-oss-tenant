@@ -1,4 +1,4 @@
-name: OpenFrame Build and Push Latest
+name: OpenFrame Integration Tests
 
 permissions:
   contents: write
@@ -9,12 +9,16 @@ permissions:
   id-token: write
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
+      - '.github/workflows/**'
+      - 'manifests/**'
+      - 'scripts/**'
 
 env:
   ORGANIZATION: flamingo-cx
