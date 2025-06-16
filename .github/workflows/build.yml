@@ -25,20 +25,20 @@ jobs:
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'push'
 
 
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'push'
 
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -94,7 +94,7 @@ jobs:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
