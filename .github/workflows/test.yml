@@ -276,7 +276,7 @@ jobs:
         env:
           TERM: dumb
         run: |
-          echo "hey there"
+          exit 1 
   
 
   post-test:
