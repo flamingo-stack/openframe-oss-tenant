@@ -172,16 +172,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-
-      - name: Delete old versions
-        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        continue-on-error: true
-        with:
-          package: openframe-${{ matrix.name }}
-          delete-ghost-images: true
-          delete-tags: test-${{ needs.changes.outputs.commit_sha }}
-          exclude-tags: latest
   
 
   pre-test:
