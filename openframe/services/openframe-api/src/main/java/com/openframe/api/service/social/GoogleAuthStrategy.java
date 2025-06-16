@@ -7,9 +7,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.openframe.api.dto.SSOConfigStatusResponse;
 import com.openframe.api.dto.oauth.SocialAuthRequest;
 import com.openframe.api.exception.SocialAuthException;
 import com.openframe.api.service.OAuthService;
+import com.openframe.api.service.SSOConfigService;
 import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,20 +21,15 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class GoogleAuthStrategy implements SocialAuthStrategy {
-    private final GoogleIdTokenVerifier googleVerifier;
     private final OAuthService oauthService;
     private final UserRepository userRepository;
-
-    @Value("${security.oauth2.google.client-id}")
-    private String clientId;
-
-    @Value("${security.oauth2.google.client-secret}")
-    private String clientSecret;
+    private final SSOConfigService ssoConfigService;
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
     private int accessTokenExpirationSeconds;
@@ -40,10 +37,17 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
     @Override
     public com.openframe.api.dto.oauth.TokenResponse authenticate(SocialAuthRequest request) {
         validateRequest(request);
+
+        SSOConfigStatusResponse googleConfig = getGoogleConfig();
+        String clientSecret = ssoConfigService.getDecryptedClientSecret("google");
+
+        if (clientSecret == null) {
+            throw new SocialAuthException("client_secret_not_found", "Client secret not found or could not be decrypted");
+        }
         
         try {
-            TokenResponse tokenResponse = exchangeCodeForToken(request);
-            GoogleIdToken googleIdToken = verifyAndParseIdToken(tokenResponse);
+            TokenResponse tokenResponse = exchangeCodeForToken(request, googleConfig.getClientId(), clientSecret);
+            GoogleIdToken googleIdToken = verifyAndParseIdToken(tokenResponse, googleConfig.getClientId());
             User user = findOrCreateUser(googleIdToken.getPayload());
             return generateAppTokens(user);
         } catch (IOException | GeneralSecurityException e) {
@@ -57,13 +61,22 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
         return "google";
     }
 
+    private SSOConfigStatusResponse getGoogleConfig() {
+        SSOConfigStatusResponse config = ssoConfigService.getConfigStatus("google");
+        if (!config.isConfigured() || !config.isEnabled()) {
+            throw new SocialAuthException("provider_not_configured",
+                    "Google OAuth is not configured or disabled");
+        }
+        return config;
+    }
+
     private void validateRequest(SocialAuthRequest request) {
-        if (request.getCode() == null || request.getCode_verifier() == null || request.getRedirect_uri() == null) {
+        if (request.getCode() == null || request.getCodeVerifier() == null || request.getRedirectUri() == null) {
             throw new SocialAuthException("invalid_request", "Code, code_verifier and redirect_uri are required");
         }
     }
 
-    private TokenResponse exchangeCodeForToken(SocialAuthRequest request) throws IOException {
+    private TokenResponse exchangeCodeForToken(SocialAuthRequest request, String clientId, String clientSecret) throws IOException {
         return new GoogleAuthorizationCodeTokenRequest(
             new NetHttpTransport(),
             new GsonFactory(),
@@ -71,15 +84,20 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
             clientId,
             clientSecret,
             request.getCode(),
-            request.getRedirect_uri()
+                request.getRedirectUri()
         )
-        .set("code_verifier", request.getCode_verifier())
+                .set("code_verifier", request.getCodeVerifier())
         .execute();
     }
 
-    private GoogleIdToken verifyAndParseIdToken(TokenResponse tokenResponse) throws GeneralSecurityException, IOException {
+    private GoogleIdToken verifyAndParseIdToken(TokenResponse tokenResponse, String clientId) throws GeneralSecurityException, IOException {
         String idToken = (String) tokenResponse.get("id_token");
-        GoogleIdToken googleIdToken = googleVerifier.verify(idToken);
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections.singletonList(clientId))
+                .build();
+
+        GoogleIdToken googleIdToken = verifier.verify(idToken);
         if (googleIdToken == null) {
             throw new SocialAuthException("invalid_token", "Invalid ID token");
         }

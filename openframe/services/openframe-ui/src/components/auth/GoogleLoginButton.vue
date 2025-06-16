@@ -1,9 +1,9 @@
 <template>
-  <div class="google-login-container">
+  <div v-if="shouldShowButton" class="google-login-container">
     <button 
       @click="handleGoogleLogin" 
       class="google-login-button"
-      :disabled="!isConfigValid"
+      :disabled="!isConfigured"
     >
       <svg class="google-icon" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -13,60 +13,61 @@
       </svg>
       Continue with Google
     </button>
-    
-    <div v-if="!isConfigValid" class="config-error">
-      Google OAuth is not properly configured
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { GoogleOAuthService } from '../../services/GoogleOAuthService';
-import { OAuthConfigService } from '../../config/oauth.config';
+import { ssoService } from '@/services/SSOService';
+import type { SSOConfigStatus } from '@/types/sso';
 
-const oauthConfig = OAuthConfigService.getInstance();
-const isConfigValid = ref(false);
+const isLoading = ref(true);
+const configStatus = ref<SSOConfigStatus | null>(null);
 
-onMounted(() => {
-  isConfigValid.value = oauthConfig.validateGoogleConfig();
-  console.log('🔑 [GoogleLoginButton] Component mounted, config valid:', isConfigValid.value);
+// Computed properties
+const isConfigured = computed(() => 
+  configStatus.value?.configured === true && 
+  configStatus.value?.enabled === true
+);
+
+const shouldShowButton = computed(() => 
+  !isLoading.value && isConfigured.value
+);
+
+onMounted(async () => {
+  await loadSSOConfig();
 });
+
+async function loadSSOConfig() {
+  isLoading.value = true;
+  
+  try {
+    configStatus.value = await ssoService.getConfigStatus('google');
+    console.log('🔑 [GoogleLoginButton] Config loaded:', configStatus.value);
+  } catch (err) {
+    console.error('Failed to load SSO configuration:', err);
+  } finally {
+    isLoading.value = false;
+  }
+}
 
 const handleGoogleLogin = async () => {
   try {
     console.log('🔑 [GoogleLoginButton] Button clicked');
     
-    // Store button click debug info
-    localStorage.setItem('button_clicked', new Date().toISOString());
-    
-    if (!isConfigValid.value) {
+    if (!isConfigured.value) {
       console.error('❌ [GoogleLoginButton] Google OAuth configuration is invalid');
       return;
     }
-    
-    // Store config validation debug info
-    localStorage.setItem('config_validated', JSON.stringify({
-      timestamp: new Date().toISOString(),
-      redirectUri: oauthConfig.getConfig().google.redirectUri,
-      clientId: oauthConfig.getConfig().google.clientId.substring(0, 20) + '...'
-    }));
     
     console.log('🚀 [GoogleLoginButton] Initiating Google OAuth flow');
     await GoogleOAuthService.initiateLogin();
     
   } catch (error) {
     console.error('❌ [GoogleLoginButton] Error initiating Google login:', error);
-    
-    // Store error debug info
-    localStorage.setItem('button_error', JSON.stringify({
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : String(error)
-    }));
   }
 };
-
-
 </script>
 
 <style scoped>

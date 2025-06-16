@@ -277,6 +277,16 @@ const router = createRouter({
       }
     },
     {
+      path: '/sso',
+      name: 'sso',
+      component: () => import('../views/SSOView.vue'),
+      meta: { 
+        requiresAuth: true,
+        title: 'SSO Configuration',
+        icon: 'pi pi-key'
+      }
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('../views/Profile.vue'),

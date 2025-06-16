@@ -7,33 +7,32 @@ import {
   clearOAuthState 
 } from '../utils/oauth';
 import { AuthService, TokenResponse } from './AuthService';
-import { OAuthConfigService } from '../config/oauth.config';
+import { restClient } from '../apollo/apolloClient';
 
-export interface GoogleOAuthConfig {
+export interface OidcConfig {
   clientId: string;
   redirectUri: string;
   scope: string;
+  issuer: string;
 }
 
-export interface GoogleOAuthCodeExchangeRequest {
+export interface OidcCodeExchangeRequest {
   code: string;
   codeVerifier: string;
   redirectUri: string;
 }
 
-export class GoogleOAuthService {
-  private static readonly GOOGLE_AUTH_BASE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-  private static oauthConfig = OAuthConfigService.getInstance();
-  private static readonly STORAGE_KEY = 'oauth_state';
-  private static readonly DEBUG_KEY = 'oauth_debug';
-  private static readonly CODE_VERIFIER_KEY = 'oauth_code_verifier';
+export class OidcService {
+  private static readonly STORAGE_KEY = 'oidc_state';
+  private static readonly DEBUG_KEY = 'oidc_debug';
+  private static readonly CODE_VERIFIER_KEY = 'oidc_code_verifier';
 
   /**
-   * Initiate Google OAuth login flow
+   * Initiate OIDC login flow
    */
   static async initiateLogin(): Promise<void> {
     try {
-      console.log('🚀 [GoogleOAuth] Starting OAuth flow');
+      console.log('🚀 [OIDC] Starting OIDC flow');
       
       // Clear any previous debug info
       localStorage.removeItem(this.DEBUG_KEY);
@@ -46,15 +45,20 @@ export class GoogleOAuthService {
       };
       localStorage.setItem(this.DEBUG_KEY, JSON.stringify([debugInfo]));
 
-      const config = this.oauthConfig.getConfig().google;
+      // Get OIDC configuration from backend
+      const config = await this.getOidcConfig();
       
       // Validate configuration
       if (!config.clientId) {
-        throw new Error('Google Client ID is not configured');
+        throw new Error('OIDC Client ID is not configured');
       }
       
       if (!config.redirectUri) {
-        throw new Error('Google Redirect URI is not configured');
+        throw new Error('OIDC Redirect URI is not configured');
+      }
+
+      if (!config.issuer) {
+        throw new Error('OIDC Issuer is not configured');
       }
 
       // Add config validation debug
@@ -62,7 +66,8 @@ export class GoogleOAuthService {
         action: 'config_validated',
         clientId: config.clientId.substring(0, 20) + '...',
         redirectUri: config.redirectUri,
-        scope: config.scope
+        scope: config.scope,
+        issuer: config.issuer
       });
 
       // Generate PKCE parameters
@@ -71,20 +76,8 @@ export class GoogleOAuthService {
       const state = this.generateState();
 
       // Store PKCE parameters
-      console.log('🔑 [GoogleOAuth] Storing state in localStorage:');
-      console.log('  - Key:', this.STORAGE_KEY);
-      console.log('  - Value:', state);
-      console.log('  - Value length:', state.length);
-      
       localStorage.setItem(this.STORAGE_KEY, state);
       localStorage.setItem(this.CODE_VERIFIER_KEY, codeVerifier);
-      
-      // Verify storage immediately
-      const storedState = localStorage.getItem(this.STORAGE_KEY);
-      console.log('🔍 [GoogleOAuth] Verification after storage:');
-      console.log('  - Stored state:', storedState);
-      console.log('  - States match:', storedState === state);
-      console.log('  - All localStorage keys:', Object.keys(localStorage));
 
       this.addDebugInfo({
         action: 'pkce_generated',
@@ -101,11 +94,10 @@ export class GoogleOAuthService {
         scope: config.scope,
         state: state,
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        access_type: 'offline'
+        code_challenge_method: 'S256'
       });
 
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+      const authUrl = `${config.issuer}/auth?${params.toString()}`;
       
       this.addDebugInfo({
         action: 'auth_url_built',
@@ -113,7 +105,7 @@ export class GoogleOAuthService {
         fullParams: Object.fromEntries(params.entries())
       });
 
-      console.log('🔗 [GoogleOAuth] Redirecting to:', authUrl);
+      console.log('🔗 [OIDC] Redirecting to:', authUrl);
       
       // Add final debug before redirect
       this.addDebugInfo({
@@ -121,11 +113,11 @@ export class GoogleOAuthService {
         timestamp: new Date().toISOString()
       });
 
-      // Redirect to Google OAuth
+      // Redirect to OIDC provider
       window.location.href = authUrl;
       
     } catch (error) {
-      console.error('❌ [GoogleOAuth] Failed to initiate login:', error);
+      console.error('❌ [OIDC] Failed to initiate login:', error);
       
       this.addDebugInfo({
         action: 'initiate_login_error',
@@ -137,14 +129,14 @@ export class GoogleOAuthService {
   }
 
   /**
-   * Handle OAuth callback and exchange code for tokens
+   * Handle OIDC callback and exchange code for tokens
    */
   static async handleCallback(
     code: string, 
     state: string
   ): Promise<TokenResponse> {
     try {
-      console.log('🔄 [GoogleOAuth] Processing callback');
+      console.log('🔄 [OIDC] Processing callback');
       
       // Add callback debug info
       this.addDebugInfo({
@@ -157,40 +149,18 @@ export class GoogleOAuthService {
 
       // Validate state parameter
       const storedState = localStorage.getItem(this.STORAGE_KEY);
-      
-      console.log('🔍 [GoogleOAuth] State validation:');
-      console.log('  - Storage Key:', this.STORAGE_KEY);
-      console.log('  - Stored state:', storedState);
-      console.log('  - Received state:', state);
-      console.log('  - Stored state length:', storedState?.length);
-      console.log('  - Received state length:', state?.length);
-      console.log('  - States equal (===):', storedState === state);
-      console.log('  - All localStorage keys:', Object.keys(localStorage));
-      console.log('  - All localStorage content:', Object.fromEntries(
-        Object.keys(localStorage).map(key => [key, localStorage.getItem(key)])
-      ));
-      
       if (!storedState || storedState !== state) {
-        console.error('❌ [GoogleOAuth] State validation failed!');
-        console.error('  - No stored state:', !storedState);
-        console.error('  - States dont match:', storedState !== state);
-        
         this.addDebugInfo({
           action: 'state_validation_failed',
           storedState: storedState?.substring(0, 10) + '...',
-          receivedState: state?.substring(0, 10) + '...',
-          storedStateLength: storedState?.length,
-          receivedStateLength: state?.length,
-          allStorageKeys: Object.keys(localStorage)
+          receivedState: state?.substring(0, 10) + '...'
         });
         throw new Error('Invalid state parameter. Possible CSRF attack.');
       }
-      
-      console.log('✅ [GoogleOAuth] State validation successful');
 
       // Get code verifier
       const codeVerifier = localStorage.getItem(this.CODE_VERIFIER_KEY);
-      console.log('🔍 [GoogleOAuth] Code Verifier Debug:');
+      console.log('🔍 [OIDC] Code Verifier Debug:');
       console.log('  - Storage Key:', this.CODE_VERIFIER_KEY);
       console.log('  - Retrieved Code Verifier:', codeVerifier);
       console.log('  - Code Verifier Length:', codeVerifier?.length);
@@ -216,7 +186,7 @@ export class GoogleOAuthService {
       localStorage.removeItem(this.CODE_VERIFIER_KEY);
 
       // Send to backend for token exchange
-      console.log('🔄 [GoogleOAuth] Sending to backend for token exchange');
+      console.log('🔄 [OIDC] Sending to backend for token exchange');
       
       this.addDebugInfo({
         action: 'backend_exchange_start',
@@ -231,11 +201,11 @@ export class GoogleOAuthService {
         hasRefreshToken: !!tokenResponse.refresh_token
       });
 
-      console.log('✅ [GoogleOAuth] Backend token exchange successful');
+      console.log('✅ [OIDC] Backend token exchange successful');
       return tokenResponse;
       
     } catch (error) {
-      console.error('❌ [GoogleOAuth] Callback handling failed:', error);
+      console.error('❌ [OIDC] Callback handling failed:', error);
       
       this.addDebugInfo({
         action: 'callback_error',
@@ -251,22 +221,58 @@ export class GoogleOAuthService {
   }
 
   /**
+   * Get OIDC configuration from backend
+   */
+  private static async getOidcConfig(): Promise<OidcConfig> {
+    console.log('🔍 [OIDC] Fetching OIDC configuration from backend');
+    
+    this.addDebugInfo({
+      action: 'config_fetch_start',
+      apiUrl: import.meta.env.VITE_API_URL
+    });
+
+    try {
+      const config = await restClient.get<OidcConfig>(`${import.meta.env.VITE_API_URL}/oidc/config`);
+      
+      this.addDebugInfo({
+        action: 'config_fetch_success',
+        hasClientId: !!config.clientId,
+        hasRedirectUri: !!config.redirectUri,
+        hasIssuer: !!config.issuer
+      });
+
+      console.log('✅ [OIDC] Configuration fetched successfully');
+      return config;
+    } catch (error) {
+      console.error('❌ [OIDC] Failed to fetch OIDC configuration:', error);
+      
+      this.addDebugInfo({
+        action: 'config_fetch_error',
+        error: error instanceof Error ? error.message : String(error)
+      });
+      
+      throw new Error(`Failed to fetch OIDC configuration: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
    * Send OAuth data to backend for token exchange
    */
   private static async sendToBackend(
     code: string,
     codeVerifier: string
   ): Promise<TokenResponse> {
-    const config = this.oauthConfig.getConfig().google;
+    // Get configuration first to get redirect URI
+    const config = await this.getOidcConfig();
     
     // Prepare data for backend
-    const socialAuthRequest = {
+    const oidcAuthRequest = {
       code: code,
       code_verifier: codeVerifier,
       redirect_uri: config.redirectUri
     };
 
-    console.log('🔍 [GoogleOAuth] Sending to backend:');
+    console.log('🔍 [OIDC] Sending to backend:');
     console.log('  - API URL:', import.meta.env.VITE_API_URL);
     console.log('  - Redirect URI:', config.redirectUri);
     console.log('  - Code Verifier Length:', codeVerifier.length);
@@ -279,40 +285,26 @@ export class GoogleOAuthService {
       codeVerifierLength: codeVerifier.length
     });
 
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth2/google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(socialAuthRequest)
-    });
+    try {
+      const tokens = await restClient.post<TokenResponse>(`${import.meta.env.VITE_API_URL}/oidc/callback`, oidcAuthRequest);
+      
+      this.addDebugInfo({
+        action: 'backend_tokens_parsed',
+        tokenType: tokens.token_type,
+        expiresIn: tokens.expires_in
+      });
 
-    this.addDebugInfo({
-      action: 'backend_response_received',
-      status: response.status,
-      statusText: response.statusText
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('❌ [GoogleOAuth] Backend error response:', errorData);
+      return tokens;
+    } catch (error) {
+      console.error('❌ [OIDC] Backend error response:', error);
       
       this.addDebugInfo({
         action: 'backend_response_error',
-        errorData: errorData.substring(0, 200)
+        error: error instanceof Error ? error.message : String(error)
       });
-      throw new Error(`Backend token exchange failed: ${response.status} ${response.statusText} - ${errorData}`);
+      
+      throw new Error(`Backend token exchange failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    const tokens = await response.json();
-    
-    this.addDebugInfo({
-      action: 'backend_tokens_parsed',
-      tokenType: tokens.token_type,
-      expiresIn: tokens.expires_in
-    });
-
-    return tokens as TokenResponse;
   }
 
   private static generateState(): string {
@@ -320,15 +312,10 @@ export class GoogleOAuthService {
     crypto.getRandomValues(array);
     
     // Use base64url encoding like PKCE for consistency and URL safety
-    const state = btoa(String.fromCharCode(...array))
+    return btoa(String.fromCharCode(...array))
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
       .replace(/=+$/, ""); // Remove padding
-    
-    console.log('🔑 [GoogleOAuth] Generated state:', state);
-    console.log('🔑 [GoogleOAuth] State length:', state.length);
-    
-    return state;
   }
 
   private static addDebugInfo(info: any): void {
@@ -362,7 +349,7 @@ export class GoogleOAuthService {
   }
 
   /**
-   * Check if OAuth callback URL contains error parameters
+   * Check if OIDC callback URL contains error parameters
    */
   static parseCallbackError(url: string): { error: string; error_description?: string } | null {
     const urlObj = new URL(url);
@@ -376,20 +363,6 @@ export class GoogleOAuthService {
     }
     
     return null;
-  }
-
-  /**
-   * Get current OAuth configuration (for debugging)
-   */
-  static getConfig(): GoogleOAuthConfig {
-    return this.oauthConfig.getConfig().google;
-  }
-
-  /**
-   * Validate configuration
-   */
-  static validateConfig(): boolean {
-    return this.oauthConfig.validateGoogleConfig();
   }
 
   private static generateCodeVerifier(): string {

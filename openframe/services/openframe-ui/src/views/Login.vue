@@ -21,11 +21,11 @@
         </div>
       </form>
       
+      <!-- Google OAuth form - only show if configured -->
       <div class="of-divider">
         <span class="of-divider-text">or</span>
       </div>
       
-      <!-- Google OAuth form -->
       <div class="of-form">
         <div class="of-form-group">
           <GoogleLoginButton @error="handleOAuthError" />
@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { ToastService } from '../services/ToastService'
@@ -60,6 +60,11 @@ const toastService = ToastService.getInstance()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
+
+onMounted(() => {
+  // Check for OAuth debug info on component load
+  checkOAuthDebugInfo();
+})
 
 // Check for OAuth debug info
 const checkOAuthDebugInfo = () => {
@@ -92,9 +97,6 @@ const checkOAuthDebugInfo = () => {
   localStorage.removeItem('oauth_redirect_debug');
   localStorage.removeItem('oauth_initiate_error_debug');
 };
-
-// Check debug info on component load
-checkOAuthDebugInfo();
 
 const copyToClipboard = async (text: string) => {
   try {

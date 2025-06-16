@@ -1,6 +1,8 @@
 package com.openframe.api.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -42,6 +44,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(EncryptionException.class)
+    public ResponseEntity<ErrorResponse> handleEncryptionException(EncryptionException ex) {
+        log.error("Encryption/decryption error: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(ex.getErrorCode(), "Configuration security error"));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.error("Invalid request: ", ex);
@@ -53,7 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getDefaultMessage())
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
         log.error("Validation error: {}", errorMessage);
@@ -84,6 +94,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(new ErrorResponse("unsupported_media_type", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex) {
+        String errorMessage = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining(", "));
+
+        log.error("Validation error: {}", errorMessage);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("bad_request", errorMessage));
     }
 
     @ExceptionHandler(Exception.class)

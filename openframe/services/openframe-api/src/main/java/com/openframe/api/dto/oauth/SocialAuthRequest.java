@@ -1,10 +1,15 @@
 package com.openframe.api.dto.oauth;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
 public class SocialAuthRequest {
     private String code;
-    private String code_verifier;
-    private String redirect_uri;
+
+    @JsonProperty("code_verifier")
+    private String codeVerifier;
+
+    @JsonProperty("redirect_uri")
+    private String redirectUri;
 } 
