@@ -3,6 +3,14 @@
     <div class="of-card-header">
       <i class="pi pi-key"></i>
       <span>Single Sign-On Configuration</span>
+      <div v-if="configData" class="status-indicator">
+        <span 
+          :class="['status-badge', configData.enabled ? 'status-enabled' : 'status-disabled']"
+        >
+          <i :class="configData.enabled ? 'pi pi-check-circle' : 'pi pi-pause-circle'"></i>
+          {{ configData.enabled ? 'Enabled' : 'Disabled' }}
+        </span>
+      </div>
     </div>
 
     <div v-if="loading" class="of-loading">
@@ -58,6 +66,16 @@
           <!-- Form Actions -->
           <div class="of-form-actions">
             <div class="of-form-actions-left">
+              <OFButton
+                v-if="configData"
+                :label="configData.enabled ? 'Disable' : 'Enable'"
+                :icon="configData.enabled ? 'pi pi-pause' : 'pi pi-play'"
+                :severity="configData.enabled ? 'warning' : 'success'"
+                variant="outlined"
+                @click="toggleConfiguration"
+                :disabled="saving"
+                class="mr-2"
+              />
               <OFButton
                 v-if="configData"
                 label="Delete Configuration"
@@ -228,13 +246,16 @@ async function handleSubmit() {
       ? 'Configuration updated successfully'
       : 'Configuration saved successfully';
 
-    // Only clear the client secret for security, keep client ID
-    form.clientSecret = '';
-    
-    // Reload config data
+    // Reload config data and update form
     setTimeout(async () => {
       try {
         configData.value = await ssoService.getConfig(selectedProvider.value);
+        
+        // Update form with fresh data from backend
+        if (configData.value) {
+          form.clientId = configData.value.clientId || '';
+          form.clientSecret = configData.value.clientSecret || '';
+        }
       } catch (error) {
         console.error('Error reloading config:', error);
       }
@@ -253,6 +274,36 @@ async function handleSubmit() {
     } else {
       errorMessage.value = error.message || 'Failed to save configuration';
     }
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function toggleConfiguration() {
+  if (!configData.value) {
+    return;
+  }
+
+  const action = configData.value.enabled ? 'disable' : 'enable';
+  const newEnabled = !configData.value.enabled;
+
+  if (!confirm(`Are you sure you want to ${action} the Google OAuth configuration?`)) {
+    return;
+  }
+
+  clearMessages();
+  saving.value = true;
+
+  try {
+    await ssoService.toggleConfig(selectedProvider.value, newEnabled);
+    successMessage.value = `Configuration ${action}d successfully`;
+    
+    // Update local state immediately for better UX
+    configData.value.enabled = newEnabled;
+    
+  } catch (error: any) {
+    console.error('Error toggling SSO config:', error);
+    errorMessage.value = error.message || `Failed to ${action} configuration`;
   } finally {
     saving.value = false;
   }
@@ -284,9 +335,38 @@ async function deleteConfiguration() {
 .of-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--of-spacing-sm);
-  color: var(--of-primary);
+  color: var(--text-color);
   font-weight: 500;
+}
+
+.status-indicator {
+  margin-left: auto;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-enabled {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-disabled {
+  background-color: rgba(158, 158, 158, 0.1);
+  color: #9E9E9E;
+  border: 1px solid rgba(158, 158, 158, 0.3);
 }
 
 .of-card-content {
@@ -344,6 +424,12 @@ async function deleteConfiguration() {
 
 .of-form-actions-left {
   flex: 1;
+  display: flex;
+  gap: var(--of-spacing-sm);
+}
+
+.mr-2 {
+  margin-right: var(--of-spacing-sm);
 }
 
 .of-form-actions-right {

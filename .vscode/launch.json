@@ -145,8 +145,8 @@
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "PORT": "5177",
-                "VITE_API_URL": "http://openframe-api.microservices:8090",
-                "VITE_GATEWAY_URL": "http://openframe-gateway.microservices:8100",
+                "VITE_API_URL": "https://openframe-gateway.192.168.100.100.nip.io/api",
+                "VITE_GATEWAY_URL": "https://openframe-gateway.192.168.100.100.nip.io/api",
                 "VITE_CLIENT_ID": "openframe_web_dashboard",
                 "VITE_CLIENT_SECRET": "prod_secret",
                 "VITE_GRAFANA_URL": "http://localhost:3000"
@@ -162,8 +162,8 @@
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "PORT": "5177",
-                "VITE_API_URL": "http://localhost:8100/api",
-                "VITE_GATEWAY_URL": "http://localhost:8100",
+                "VITE_API_URL": "https://openframe-gateway.192.168.100.100.nip.io/api",
+                "VITE_GATEWAY_URL": "https://openframe-gateway.192.168.100.100.nip.io/api",
                 "VITE_CLIENT_ID": "openframe_web_dashboard",
                 "VITE_CLIENT_SECRET": "prod_secret",
                 "VITE_GRAFANA_URL": "http://localhost:3000"

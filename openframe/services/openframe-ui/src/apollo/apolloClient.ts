@@ -220,7 +220,6 @@ export default apolloClient;
 export const restClient = {
   async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const makeRequest = async () => {
-      console.log('📤 [REST] Making request to:', url);
       const token = localStorage.getItem('access_token');
       const defaultHeaders = {
         'Accept': '*/*',
@@ -259,9 +258,19 @@ export const restClient = {
       }
 
       console.log('✅ [REST] Request successful');
-      const data = await response.json();
-      console.log('📦 [REST] Response data:', data);
-      return data as T;
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        console.log('📦 [REST] Response data:', data);
+        return undefined as T;
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        return data as T;
+      } else {
+        const text = await response.text();
+        return text as T;
+      }
     };
 
     try {

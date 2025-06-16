@@ -17,8 +17,6 @@ export class SSOService {
    * Returns all configuration data except sensitive fields
    */
   public async getConfig(provider: string): Promise<SSOConfigResponse> {
-    console.log('SSO getConfig - URL:', `${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}`);
-    
     return await restClient.get<SSOConfigResponse>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}`);
   }
 
