@@ -259,7 +259,7 @@ export const restClient = {
 
       console.log('✅ [REST] Request successful');
       if (response.status === 204 || response.headers.get('content-length') === '0') {
-        console.log('📦 [REST] Response data:', data);
+        console.log('📦 [REST] Response data: (empty)');
         return undefined as T;
       }
       
