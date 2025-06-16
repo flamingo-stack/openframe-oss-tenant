@@ -258,7 +258,9 @@ jobs:
       
       - name: Install certutil (NSS tools)
         run: |
-          sudo apt-get update && sudo apt-get install -y libnss3-tools
+          if ! command -v certutil &> /dev/null; then
+            sudo apt-get update -yqq && sudo apt-get install -yqq libnss3-tools
+          fi
           echo "certutil version: $(certutil --version)"
 
       - name: Install Helm
