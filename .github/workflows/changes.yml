@@ -23,8 +23,6 @@ on:
         value: ${{ jobs.changes.outputs.mongodb }}
       cassandra: 
         value: ${{ jobs.changes.outputs.cassandra }}
-      nifi: 
-        value: ${{ jobs.changes.outputs.nifi }}
       postgresql: 
         value: ${{ jobs.changes.outputs.postgresql }}
       tactical-frontend: 
@@ -69,7 +67,6 @@ jobs:
       stream: ${{ steps.filter.outputs.stream }}
       mongodb: ${{ steps.filter.outputs.mongodb }}
       cassandra: ${{ steps.filter.outputs.cassandra }}
-      nifi: ${{ steps.filter.outputs.nifi }}
       postgresql: ${{ steps.filter.outputs.postgresql }}
       tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
@@ -118,8 +115,6 @@ jobs:
               - './openframe/services/openframe-stream/**'
             ui:
               - './openframe/services/openframe-ui/**'
-            nifi:
-              - './openframe/datasources/nifi/**'
             postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
