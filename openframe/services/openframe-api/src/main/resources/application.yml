@@ -8,10 +8,11 @@ spring:
     import: "optional:configserver:http://openframe-config-server.microservices.svc.cluster.local:8888"
 
 security:
+  oauth:
+    encryption:
+      password: ${OAUTH_ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
+      salt: ${OAUTH_ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
   oauth2:
-    client-secret:
-      encryption-key: ${OAUTH_CLIENT_SECRET_ENCRYPTION_KEY:Fb1kZRrLgN18MUzYVTFA3t9UtAi11EAaJccUTYOzUT8=}
-    # Google OAuth конфігурація тепер зберігається в базі даних через SSO Configuration
     token:
       access:
         expiration-seconds: 3600

@@ -103,7 +103,6 @@ public class SSOConfigService {
                 .map(existingConfig -> {
                     existingConfig.setClientId(request.getClientId());
                     existingConfig.setClientSecret(encryptionService.encryptClientSecret(request.getClientSecret()));
-                    // enabled status is preserved from existing config
                     SSOConfig savedConfig = ssoConfigRepository.save(existingConfig);
                     log.info("Successfully updated SSO configuration for provider '{}'", provider);
 
