@@ -242,6 +242,14 @@ restore_identity_files() {
 # Selective cleanup function (preserves identity files)
 selective_cleanup() {
   local dir="$1"
+
+  # IMPORTANT: Check that this is NOT a system directory
+  case "$dir" in
+    "/usr/bin"|"/bin"|"/sbin"|"/usr/sbin"|"/etc")
+      echo "ERROR: Refusing to clean system directory: $dir"
+      return 1
+      ;;
+  esac
   
   if [ ! -d "$dir" ]; then
     debug_print "Directory does not exist, nothing to clean: $dir"
@@ -433,8 +441,8 @@ if [ "$OS_NAME" = "macos" ]; then
   INSTALL_DIR="/usr/local/bin"
   DATA_DIR="/Library/MeshAgent"
 else
-  INSTALL_DIR="/usr/bin"
-  DATA_DIR="/etc/meshagent"
+  INSTALL_DIR="/opt/meshagent"
+  DATA_DIR="/var/lib/meshagent"
 fi
 
 # Stop any running instances first

@@ -8,7 +8,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 
 @SpringBootApplication
 @EnableKafka
-@ComponentScan(basePackages = {"com.openframe.stream", "com.openframe.data.config", "com.openframe.core.config"})
+@ComponentScan(basePackages = {"com.openframe.stream", "com.openframe.data.config", "com.openframe.core.config", "com.openframe.data"})
 public class StreamApplication {
  
     public static void main(String[] args) {

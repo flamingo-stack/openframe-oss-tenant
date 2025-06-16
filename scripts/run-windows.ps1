@@ -1,6 +1,10 @@
 # OpenFrame Installation Script
 # This script checks for and installs the required components for OpenFrame
 
+# Source common variables
+$scriptsPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+. "$scriptsPath\variables.ps1"
+
 param(
     [switch]$Help,
     [switch]$Silent,
@@ -428,15 +432,6 @@ function Test-DockerDesktop {
             Write-Host "Please start Docker Desktop and try again." -ForegroundColor Yellow
             return $false
         }
-        
-        # Check if Docker Desktop is using WSL2 backend
-        if (-not ($dockerInfo -match "WSL 2")) {
-            Write-Host "Docker Desktop is not using WSL2 backend!" -ForegroundColor Red
-            Write-Host "Please enable WSL2 backend in Docker Desktop settings." -ForegroundColor Yellow
-            return $false
-        }
-        
-        Write-Host "Docker Desktop is running and using WSL2 backend." -ForegroundColor Green
         return $true
     }
     catch {
@@ -514,6 +509,34 @@ function Test-PortAvailability {
     catch {
         return $false
     }
+}
+
+# Check Docker memory limits
+Write-Host "Checking Docker memory allocation..." -ForegroundColor Cyan
+try {
+    $dockerInfo = docker info --format '{{.MemTotal}}'
+    if ($LASTEXITCODE -ne 0) { 
+        throw "Failed to get Docker info" 
+    }
+    
+    $DOCKER_MEMORY_LIMIT = [long]$dockerInfo
+    $DOCKER_MEMORY_LIMIT_MB = [math]::Floor($DOCKER_MEMORY_LIMIT / 1024 / 1024)
+
+    if ($DOCKER_MEMORY_LIMIT_MB -lt $RECOMMENDED_MEMORY) {
+        Write-Host "Docker is configured with only ${DOCKER_MEMORY_LIMIT_MB}MB of memory. Recommended: ${RECOMMENDED_MEMORY}MB." -ForegroundColor Red
+        Write-Host "Please increase Docker Desktop memory allocation:" -ForegroundColor Yellow
+        Write-Host "1. Open Docker Desktop" -ForegroundColor Yellow
+        Write-Host "2. Go to Settings → Resources → Memory" -ForegroundColor Yellow
+        Write-Host "3. Increase memory to at least ${RECOMMENDED_MEMORY}MB" -ForegroundColor Yellow
+        Write-Host "4. Click 'Apply & Restart'" -ForegroundColor Yellow
+        exit 1
+    } else {
+        Write-Host "Docker memory allocation is sufficient: ${DOCKER_MEMORY_LIMIT_MB}MB." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "Error checking Docker memory: $_" -ForegroundColor Red
+    Write-Host "Please make sure Docker is running and accessible." -ForegroundColor Yellow
+    exit 1
 }
 
 # Show help information and exit if -Help is specified
@@ -615,8 +638,6 @@ if (-not (Set-LoopbackAdapter)) {
 
 # 3. Configure Docker
 Set-DockerConfiguration
-
-Setup-WSLConfig
 
 # 4. Prevent system sleep
 if (-not (Disable-SystemSleep)) {

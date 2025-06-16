@@ -438,17 +438,17 @@ register_tool \
     "NONE" \
     "NONE" \
     '{
-       "name": "mesh-central-mongo-connector",
+       "name": "meshcentral-mongo-connector",
        "config": {
          "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
          "mongodb.connection.string": "mongodb://meshcentral-mongodb.integrated-tools.svc.cluster.local:27017/meshcentral?replicaSet=rs0",
          "mongodb.name": "meshcentral",
-         "topic.prefix": "mesh-central",
+         "topic.prefix": "meshcentral",
          "collection.include.list": "meshcentral.power,meshcentral.events",
          "transforms": "route",
          "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
          "transforms.route.regex": ".*",
-         "transforms.route.replacement": "mesh-central-debezium"
+         "transforms.route.replacement": "meshcentral.mongodb.events"
        }
      }'
 

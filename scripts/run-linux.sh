@@ -3,6 +3,9 @@
 # OpenFrame Installation Script
 # This script checks for and installs the required components for OpenFrame
 
+# Source common variables
+source "$(dirname "$0")/variables.sh"
+
 # Default values
 SILENT=false
 HELP=false
@@ -144,7 +147,6 @@ for cmd in "${missing_commands[@]}"; do
 done
 
 # Check if swap needs to be configured
-RECOMMENDED_MEMORY=20480
 TOTAL_MEMORY_MEMORY=$(free -m | grep "Mem:" | awk '{print $2}')
 AVAILABLE_MEMORY=$(free -m | grep "Mem:" | awk '{print $7}')
 FREE_SPACE=$(df -BM / | grep -v Avail | awk '{print $4}' | sed 's/M//')
@@ -186,6 +188,18 @@ if [ "$TOTAL_AVAILABLE_MEMORY" -lt "$RECOMMENDED_MEMORY" ]; then
         swapon --show
 
     fi
+fi
+
+# Check Docker memory limits
+DOCKER_MEMORY_LIMIT=$(docker info --format '{{.MemTotal}}')
+DOCKER_MEMORY_LIMIT_MB=$((DOCKER_MEMORY_LIMIT / 1024 / 1024))
+
+if [ "$DOCKER_MEMORY_LIMIT_MB" -lt "$RECOMMENDED_MEMORY" ]; then
+    write_status_message "Docker is configured with only ${DOCKER_MEMORY_LIMIT_MB}MB of memory. Recommended: ${RECOMMENDED_MEMORY}MB." "\033[31m"
+    write_status_message "Please increase Docker Desktop memory allocation (Settings → Resources → Memory)." "\033[33m"
+    exit 1
+else
+    write_status_message "Docker memory allocation is sufficient: ${DOCKER_MEMORY_LIMIT_MB}MB." "\033[32m"
 fi
 
 # Handle repository
