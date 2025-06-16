@@ -11,10 +11,3 @@ security:
   encryption:
     password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
     salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
-  oauth2:
-    token:
-      access:
-        expiration-seconds: 3600
-      refresh:
-        expiration-seconds: 2592000
-        max-refresh-count: 10
