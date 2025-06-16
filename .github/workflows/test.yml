@@ -276,7 +276,7 @@ jobs:
         env:
           TERM: dumb
         run: |
-          exit 1 
+          ./scripts/run.sh bootstrap
   
 
   post-test:
