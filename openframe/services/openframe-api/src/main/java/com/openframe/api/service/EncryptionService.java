@@ -14,8 +14,8 @@ public class EncryptionService {
     private final TextEncryptor textEncryptor;
 
     public EncryptionService(
-            @Value("${security.oauth.encryption.password}") String password,
-            @Value("${security.oauth.encryption.salt}") String salt) {
+            @Value("${security.encryption.password}") String password,
+            @Value("${security.encryption.salt}") String salt) {
 
         if (password == null || password.length() < 32) {
             throw new IllegalArgumentException("Encryption password must be at least 32 characters");

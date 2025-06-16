@@ -8,10 +8,9 @@ spring:
     import: "optional:configserver:http://openframe-config-server.microservices.svc.cluster.local:8888"
 
 security:
-  oauth:
-    encryption:
-      password: ${OAUTH_ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
-      salt: ${OAUTH_ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
+  encryption:
+    password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
+    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
   oauth2:
     token:
       access:
