@@ -1,5 +1,6 @@
 package com.openframe.api.exception;
 
+import com.openframe.core.exception.EncryptionException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;

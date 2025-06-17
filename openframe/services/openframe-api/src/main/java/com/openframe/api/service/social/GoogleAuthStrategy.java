@@ -7,12 +7,14 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.openframe.api.dto.SSOConfigStatusResponse;
+import com.openframe.api.dto.SSOProvider;
 import com.openframe.api.dto.oauth.SocialAuthRequest;
 import com.openframe.api.exception.SocialAuthException;
 import com.openframe.api.service.OAuthService;
-import com.openframe.api.service.SSOConfigService;
+import com.openframe.core.model.SSOConfig;
 import com.openframe.core.model.User;
+import com.openframe.core.service.EncryptionService;
+import com.openframe.data.repository.mongo.SSOConfigRepository;
 import com.openframe.data.repository.mongo.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +31,8 @@ import java.util.Collections;
 public class GoogleAuthStrategy implements SocialAuthStrategy {
     private final OAuthService oauthService;
     private final UserRepository userRepository;
-    private final SSOConfigService ssoConfigService;
+    private final SSOConfigRepository ssoConfigRepository;
+    private final EncryptionService encryptionService;
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
     private int accessTokenExpirationSeconds;
@@ -38,8 +41,8 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
     public com.openframe.api.dto.oauth.TokenResponse authenticate(SocialAuthRequest request) {
         validateRequest(request);
 
-        SSOConfigStatusResponse googleConfig = getGoogleConfig();
-        String clientSecret = ssoConfigService.getDecryptedClientSecret("google");
+        SSOConfig googleConfig = getGoogleConfig();
+        String clientSecret = encryptionService.decryptClientSecret(googleConfig.getClientSecret());
 
         if (clientSecret == null) {
             throw new SocialAuthException("client_secret_not_found", "Client secret not found or could not be decrypted");
@@ -57,17 +60,15 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
     }
 
     @Override
-    public String getProviderName() {
-        return "google";
+    public SSOProvider getProvider() {
+        return SSOProvider.GOOGLE;
     }
 
-    private SSOConfigStatusResponse getGoogleConfig() {
-        SSOConfigStatusResponse config = ssoConfigService.getConfigStatus("google");
-        if (!config.isConfigured() || !config.isEnabled()) {
-            throw new SocialAuthException("provider_not_configured",
-                    "Google OAuth is not configured or disabled");
-        }
-        return config;
+    private SSOConfig getGoogleConfig() {
+        return ssoConfigRepository.findByProvider(SSOProvider.GOOGLE.getProvider())
+                .filter(SSOConfig::isEnabled)
+                .orElseThrow(() -> new SocialAuthException("provider_not_configured",
+                        "Google OAuth is not configured or disabled"));
     }
 
     private void validateRequest(SocialAuthRequest request) {

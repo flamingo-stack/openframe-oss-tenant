@@ -3,7 +3,7 @@
     <button 
       @click="handleGoogleLogin" 
       class="google-login-button"
-      :disabled="!isConfigured"
+      :disabled="!isGoogleEnabled"
     >
       <svg class="google-icon" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -23,16 +23,11 @@ import { ssoService } from '@/services/SSOService';
 import type { SSOConfigStatus } from '@/types/sso';
 
 const isLoading = ref(true);
-const configStatus = ref<SSOConfigStatus | null>(null);
+const isGoogleEnabled = ref(false);
 
 // Computed properties
-const isConfigured = computed(() => 
-  configStatus.value?.configured === true && 
-  configStatus.value?.enabled === true
-);
-
 const shouldShowButton = computed(() => 
-  !isLoading.value && isConfigured.value
+  !isLoading.value && isGoogleEnabled.value
 );
 
 onMounted(async () => {
@@ -43,8 +38,9 @@ async function loadSSOConfig() {
   isLoading.value = true;
   
   try {
-    configStatus.value = await ssoService.getConfigStatus('google');
-    console.log('🔑 [GoogleLoginButton] Config loaded:', configStatus.value);
+    const enabledProviders = await ssoService.getEnabledProviders();
+    isGoogleEnabled.value = enabledProviders.some(provider => provider.provider === 'google');
+    console.log('🔑 [GoogleLoginButton] Enabled providers loaded:', enabledProviders);
   } catch (err) {
     console.error('Failed to load SSO configuration:', err);
   } finally {
@@ -56,8 +52,8 @@ const handleGoogleLogin = async () => {
   try {
     console.log('🔑 [GoogleLoginButton] Button clicked');
     
-    if (!isConfigured.value) {
-      console.error('❌ [GoogleLoginButton] Google OAuth configuration is invalid');
+    if (!isGoogleEnabled.value) {
+      console.error('❌ [GoogleLoginButton] Google OAuth is not enabled');
       return;
     }
     

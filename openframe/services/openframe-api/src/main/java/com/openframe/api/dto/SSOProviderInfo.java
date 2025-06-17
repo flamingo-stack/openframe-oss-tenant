@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class SSOConfigStatusResponse {
-    private boolean enabled;
+public class SSOProviderInfo {
     private String provider;
-    private String clientId;
+    private String displayName;
 } 

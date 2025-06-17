@@ -3,10 +3,13 @@ package com.openframe.api.controller;
 import com.openframe.api.dto.SSOConfigRequest;
 import com.openframe.api.dto.SSOConfigResponse;
 import com.openframe.api.dto.SSOConfigStatusResponse;
+import com.openframe.api.dto.SSOProviderInfo;
 import com.openframe.api.service.SSOConfigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -17,13 +20,23 @@ public class SSOConfigController {
     private final SSOConfigService ssoConfigService;
 
     /**
-     * Get SSO provider status - used by login components to check if provider is available
-     * Returns minimal information needed for OAuth flow
+     * Get list of enabled SSO providers - used by login components
+     * Returns list of configured and enabled providers with their client IDs
      */
-    @GetMapping("/{provider}/status")
+    @GetMapping("/providers")
     @ResponseStatus(OK)
-    public SSOConfigStatusResponse getConfigStatus(@PathVariable String provider) {
-        return ssoConfigService.getConfigStatus(provider);
+    public List<SSOConfigStatusResponse> getEnabledProviders() {
+        return ssoConfigService.getEnabledProviders();
+    }
+
+    /**
+     * Get list of available SSO providers - used by admin dropdowns
+     * Returns all providers that have strategy implementations
+     */
+    @GetMapping("/providers/available")
+    @ResponseStatus(OK)
+    public List<SSOProviderInfo> getAvailableProviders() {
+        return ssoConfigService.getAvailableProviders();
     }
 
     /**

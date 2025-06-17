@@ -4,18 +4,22 @@ export interface SSOConfigRequest {
 }
 
 export interface SSOConfigResponse {
-  id: string | null;
+  id?: string;
   provider: string;
-  clientId: string | null;
-  clientSecret: string | null;
+  clientId?: string;
+  clientSecret?: string;
   enabled: boolean;
 }
 
 export interface SSOConfigStatus {
-  configured: boolean;
   enabled: boolean;
   provider: string;
-  clientId: string | null;
+  clientId?: string;
+}
+
+export interface SSOProviderInfo {
+  provider: string;
+  displayName: string;
 }
 
 export interface SSOValidationErrors {
@@ -23,4 +27,4 @@ export interface SSOValidationErrors {
   clientSecret?: string;
 }
 
-export type SSOProvider = 'google' | 'microsoft' | 'github'; 
+export type SSOProvider = 'google' | 'microsoft' | 'slack'; 

@@ -1,12 +1,29 @@
-import type { SSOConfigRequest, SSOConfigResponse, SSOConfigStatus } from '@/types/sso';
+import type { SSOConfigRequest, SSOConfigResponse, SSOConfigStatus, SSOProviderInfo } from '@/types/sso';
 import { restClient } from '../apollo/apolloClient';
 
 export class SSOService {
   private static readonly BASE_URL = '/sso';
 
   /**
+   * Get enabled SSO providers for login buttons
+   * Returns list of enabled providers
+   */
+  public async getEnabledProviders(): Promise<SSOConfigStatus[]> {
+    return await restClient.get<SSOConfigStatus[]>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/providers`);
+  }
+
+  /**
+   * Get available SSO providers for admin dropdowns
+   * Returns all providers that have strategy implementations
+   */
+  public async getAvailableProviders(): Promise<SSOProviderInfo[]> {
+    return await restClient.get<SSOProviderInfo[]>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/providers/available`);
+  }
+
+  /**
    * Get SSO configuration status for OAuth login buttons
-   * Returns minimal info about whether SSO is configured and enabled
+   * Returns minimal info about whether SSO is enabled
+   * @deprecated Use getEnabledProviders() instead
    */
   public async getConfigStatus(provider: string): Promise<SSOConfigStatus> {
     return await restClient.get<SSOConfigStatus>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}/status`);
@@ -64,7 +81,7 @@ export class SSOService {
     try {
       const config = await this.getConfigStatus('google');
       
-      if (!config.configured || !config.enabled || !config.clientId) {
+      if (!config.enabled || !config.clientId) {
         return null;
       }
 

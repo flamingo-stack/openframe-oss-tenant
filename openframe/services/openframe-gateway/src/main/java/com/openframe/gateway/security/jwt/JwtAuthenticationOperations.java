@@ -100,7 +100,7 @@ public interface  JwtAuthenticationOperations {
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth/token")
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth/register")
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth2")
-                        || (path.startsWith(DASHBOARD_PREFIX + "/sso") && path.endsWith("/status"))
+                || path.startsWith(DASHBOARD_PREFIX + "/sso/providers")
                 || path.startsWith(CLIENTS_PREFIX+"/api/agents/register")
                 || path.startsWith(getManagementPath())
                 || path.equals(DASHBOARD_PREFIX+"/.well-known/openid-configuration")

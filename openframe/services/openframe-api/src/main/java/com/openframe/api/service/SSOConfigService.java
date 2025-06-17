@@ -1,9 +1,9 @@
 package com.openframe.api.service;
 
-import com.openframe.api.dto.SSOConfigRequest;
-import com.openframe.api.dto.SSOConfigResponse;
-import com.openframe.api.dto.SSOConfigStatusResponse;
+import com.openframe.api.dto.*;
+import com.openframe.api.service.social.SocialAuthStrategy;
 import com.openframe.core.model.SSOConfig;
+import com.openframe.core.service.EncryptionService;
 import com.openframe.data.repository.mongo.SSOConfigRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -20,26 +22,39 @@ import java.util.Optional;
 public class SSOConfigService {
     private final SSOConfigRepository ssoConfigRepository;
     private final EncryptionService encryptionService;
+    private final List<SocialAuthStrategy> authStrategies;
 
-    public SSOConfigStatusResponse getConfigStatus(String provider) {
-        Optional<SSOConfig> configOpt = ssoConfigRepository.findByProvider(provider);
 
-        if (configOpt.isPresent()) {
-            SSOConfig config = configOpt.get();
-            return SSOConfigStatusResponse.builder()
-                    .configured(true)
-                    .enabled(config.isEnabled())
-                    .provider(config.getProvider())
-                    .clientId(config.getClientId())
+    /**
+     * Get list of enabled SSO providers - used by login components
+     */
+    public List<SSOConfigStatusResponse> getEnabledProviders() {
+        log.debug("Getting enabled SSO providers");
+
+        return ssoConfigRepository.findByEnabledTrue().stream()
+                .map(config -> SSOConfigStatusResponse.builder()
+                        .provider(config.getProvider())
+                        .enabled(true)
+                        .clientId(config.getClientId())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get list of available SSO providers from strategies - used by admin dropdowns
+     */
+    public List<SSOProviderInfo> getAvailableProviders() {
+        log.debug("Getting available SSO providers from strategies");
+
+        return authStrategies.stream()
+                .map(strategy -> {
+                    SSOProvider provider = strategy.getProvider();
+                    return SSOProviderInfo.builder()
+                            .provider(provider.getProvider())
+                            .displayName(provider.getDisplayName())
                     .build();
-        } else {
-            return SSOConfigStatusResponse.builder()
-                    .configured(false)
-                    .enabled(false)
-                    .provider(provider)
-                    .clientId(null)
-                    .build();
-        }
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -128,14 +143,5 @@ public class SSOConfigService {
                     log.info("Successfully {} SSO configuration for provider '{}'",
                             enabled ? "enabled" : "disabled", provider);
                 });
-    }
-
-    /**
-     * Get decrypted client secret for OAuth operations
-     */
-    public String getDecryptedClientSecret(String provider) {
-        return ssoConfigRepository.findByProvider(provider)
-                .map(config -> encryptionService.decryptClientSecret(config.getClientSecret()))
-                .orElse(null);
     }
 } 

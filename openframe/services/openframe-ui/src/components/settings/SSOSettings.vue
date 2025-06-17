@@ -22,34 +22,38 @@
       <!-- Configuration Form -->
       <div class="of-form-container">
         <form @submit.prevent="handleSubmit" class="of-form">
-          <!-- Provider Selection - Fixed to Google only -->
+          <!-- Provider Selection - Dynamic loading from available providers -->
           <div class="of-form-group">
             <label class="of-form-label">OAuth Provider</label>
             <OFDropdown
               v-model="selectedProvider"
-              :options="providerOptions"
-              optionLabel="label"
-              optionValue="value"
-              :disabled="true"
-              placeholder="Google OAuth"
+              :options="availableProviders"
+              optionLabel="displayName"
+              optionValue="provider"
+              placeholder="Select OAuth Provider"
               class="of-form-field-wide"
+              @change="onProviderChange"
+              :loading="loadingProviders"
             />
+            <small v-if="!availableProviders.length && !loadingProviders" class="p-error">
+              No OAuth providers available. Please contact your administrator.
+            </small>
           </div>
 
-          <div class="of-form-group">
+          <div v-if="selectedProvider" class="of-form-group">
             <label for="clientId" class="of-form-label">Client ID *</label>
             <InputText
               id="clientId"
               v-model="form.clientId"
               type="text"
               required
-              placeholder="Enter Google OAuth Client ID"
+              placeholder="Enter OAuth Client ID"
               :class="{ 'p-invalid': errors.clientId, 'of-form-field-wide': true }"
             />
             <small v-if="errors.clientId" class="p-error">{{ errors.clientId }}</small>
           </div>
 
-          <div class="of-form-group">
+          <div v-if="selectedProvider" class="of-form-group">
             <label for="clientSecret" class="of-form-label">Client Secret *</label>
             <Password
               id="clientSecret"
@@ -57,14 +61,14 @@
               :feedback="false"
               toggleMask
               required
-              placeholder="Enter Google OAuth Client Secret"
+              placeholder="Enter OAuth Client Secret"
               :class="{ 'p-invalid': errors.clientSecret, 'of-form-field-wide': true }"
             />
             <small v-if="errors.clientSecret" class="p-error">{{ errors.clientSecret }}</small>
           </div>
 
           <!-- Form Actions -->
-          <div class="of-form-actions">
+          <div v-if="selectedProvider" class="of-form-actions">
             <div class="of-form-actions-left">
               <OFButton
                 v-if="configData"
@@ -99,6 +103,7 @@
                 :label="saving ? 'Saving...' : 'Save Configuration'"
                 icon="pi pi-save"
                 :loading="saving"
+                :disabled="!selectedProvider"
               />
             </div>
           </div>
@@ -120,24 +125,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { ssoService } from '@/services/SSOService';
-import type { SSOConfigResponse, SSOConfigRequest } from '@/types/sso';
+import type { SSOConfigResponse, SSOConfigRequest, SSOProviderInfo } from '@/types/sso';
 import { OFButton, OFDropdown } from '@/components/ui';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 
-const selectedProvider = ref<string>('google');
+const selectedProvider = ref<string>('');
 const loading = ref(false);
+const loadingProviders = ref(false);
 const saving = ref(false);
 const configData = ref<SSOConfigResponse | null>(null);
 const successMessage = ref('');
 const errorMessage = ref('');
-
-// Fixed to Google only
-const providerOptions = [
-  { value: 'google', label: 'Google OAuth' }
-];
+const availableProviders = ref<SSOProviderInfo[]>([]);
 
 const form = reactive({
   clientId: '',
@@ -147,41 +149,81 @@ const form = reactive({
 const errors = reactive<{ clientId?: string; clientSecret?: string }>({});
 
 onMounted(() => {
-  loadProviderConfig();
+  loadAvailableProviders();
 });
 
+// Watch for provider changes to load config
+watch(selectedProvider, (newProvider) => {
+  if (newProvider) {
+    loadProviderConfig();
+  } else {
+    configData.value = null;
+    resetForm();
+  }
+});
+
+async function loadAvailableProviders() {
+  loadingProviders.value = true;
+  errorMessage.value = '';
+  
+  try {
+    availableProviders.value = await ssoService.getAvailableProviders();
+    
+    // Auto-select first provider if available
+    if (availableProviders.value.length > 0) {
+      selectedProvider.value = availableProviders.value[0].provider;
+    }
+    
+    console.log('📄 [SSOSettings] Available providers loaded:', availableProviders.value);
+    
+  } catch (error) {
+    console.error('Error loading available providers:', error);
+    errorMessage.value = 'Failed to load available providers';
+  } finally {
+    loadingProviders.value = false;
+  }
+}
+
 async function loadProviderConfig() {
+  if (!selectedProvider.value) return;
+  
   loading.value = true;
   errorMessage.value = '';
   
   try {
-    // Load only configuration data - status can be derived from config
+    // Load configuration data for selected provider
     configData.value = await ssoService.getConfig(selectedProvider.value);
     
     // Populate form with configuration data if available
     if (configData.value) {
       form.clientId = configData.value.clientId || '';
-      // Populate client secret for editing (it's now returned from backend)
       form.clientSecret = configData.value.clientSecret || '';
     } else {
       // If no configuration, ensure form is clean
       resetForm();
     }
     
-    console.log('📄 [SSOSettings] Config loaded:', {
+    console.log('📄 [SSOSettings] Config loaded for provider:', {
+      provider: selectedProvider.value,
       hasConfig: !!configData.value,
-      configured: !!configData.value,
       enabled: configData.value?.enabled,
-      clientId: configData.value?.clientId,
-      formClientId: form.clientId
+      clientId: configData.value?.clientId
     });
     
   } catch (error) {
     console.error('Error loading SSO config:', error);
-    errorMessage.value = 'Failed to load configuration';
+    // Don't show error for missing config - it's normal for unconfigured providers
+    configData.value = null;
+    resetForm();
   } finally {
     loading.value = false;
   }
+}
+
+function onProviderChange() {
+  clearMessages();
+  clearErrors();
+  // Config will be loaded by the watcher
 }
 
 function resetForm() {
@@ -228,7 +270,7 @@ function validateForm(): boolean {
 async function handleSubmit() {
   clearMessages();
   
-  if (!validateForm()) {
+  if (!validateForm() || !selectedProvider.value) {
     return;
   }
 
@@ -280,14 +322,15 @@ async function handleSubmit() {
 }
 
 async function toggleConfiguration() {
-  if (!configData.value) {
+  if (!configData.value || !selectedProvider.value) {
     return;
   }
 
   const action = configData.value.enabled ? 'disable' : 'enable';
   const newEnabled = !configData.value.enabled;
+  const providerName = availableProviders.value.find(p => p.provider === selectedProvider.value)?.displayName || selectedProvider.value;
 
-  if (!confirm(`Are you sure you want to ${action} the Google OAuth configuration?`)) {
+  if (!confirm(`Are you sure you want to ${action} the ${providerName} configuration?`)) {
     return;
   }
 
@@ -310,7 +353,11 @@ async function toggleConfiguration() {
 }
 
 async function deleteConfiguration() {
-  if (!confirm(`Are you sure you want to delete the Google OAuth configuration?`)) {
+  if (!selectedProvider.value) return;
+  
+  const providerName = availableProviders.value.find(p => p.provider === selectedProvider.value)?.displayName || selectedProvider.value;
+  
+  if (!confirm(`Are you sure you want to delete the ${providerName} configuration?`)) {
     return;
   }
 
@@ -321,7 +368,7 @@ async function deleteConfiguration() {
     await ssoService.deleteConfig(selectedProvider.value);
     successMessage.value = 'Configuration deleted successfully';
     resetForm(); // Clear form when deleting
-    await loadProviderConfig();
+    await loadProviderConfig(); // Reload to refresh state
   } catch (error: any) {
     console.error('Error deleting SSO config:', error);
     errorMessage.value = error.message || 'Failed to delete configuration';

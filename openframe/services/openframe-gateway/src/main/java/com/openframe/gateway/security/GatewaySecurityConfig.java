@@ -87,7 +87,7 @@ public class GatewaySecurityConfig {
                                 "/api/oauth/token",
                                 "/api/oauth/register",
                                 "/api/oauth2/**",
-                                "/api/sso/*/status",
+                                "/api/sso/providers",
                                  managementContextPath + "/**",
                                 "/api/.well-known/openid-configuration"
                         ).permitAll()

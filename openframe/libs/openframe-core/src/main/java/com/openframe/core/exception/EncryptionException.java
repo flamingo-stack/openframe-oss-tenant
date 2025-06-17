@@ -1,4 +1,4 @@
-package com.openframe.api.exception;
+package com.openframe.core.exception;
 
 import lombok.Getter;
 

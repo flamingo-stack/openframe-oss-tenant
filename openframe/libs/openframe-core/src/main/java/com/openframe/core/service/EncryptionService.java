@@ -1,6 +1,6 @@
-package com.openframe.api.service;
+package com.openframe.core.service;
 
-import com.openframe.api.exception.EncryptionException;
+import com.openframe.core.exception.EncryptionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.encrypt.Encryptors;
