@@ -9,7 +9,6 @@ resources:
   - kafka.yaml
   - mongodb-exporter.yaml    
   - mongodb.yaml    
-  - nifi.yaml    
   - pinot.yaml
   - redis-exporter.yaml
   - redis.yaml

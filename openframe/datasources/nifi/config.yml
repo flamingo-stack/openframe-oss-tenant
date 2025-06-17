@@ -1,3 +1,0 @@
-rules:
-- pattern: "org.apache.nifi<type=(.+), name=(.+)><>Value"
-  name: nifi_$1_$2

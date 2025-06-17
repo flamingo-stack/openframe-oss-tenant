@@ -7,7 +7,6 @@ configMapGenerator:
       - ./cassandra.json
       - ./kafka.json
       - ./mongodb.json
-      - ./nifi.json
       - ./pinot-broker.json
       - ./pinot-controller.json
       - ./pinot-server.json
