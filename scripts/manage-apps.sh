@@ -165,11 +165,7 @@ integrated_tools_meshcentral)
   fi
   ;;
 tools_telepresence)
-  if [ "$ACTION" == "deploy" ]; then
-    tools_telepresence_deploy >>"${DEPLOY_LOG_DIR}/tools-telepresence-deploy.log"
-  elif [ "$ACTION" == "delete" ]; then
-    tools_telepresence_delete
-  elif [ "$ACTION" == "dev" ]; then
+  if [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
   elif [ "$ACTION" == "intercept" ]; then

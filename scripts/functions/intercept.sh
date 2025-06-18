@@ -3,44 +3,53 @@
 cleanup() {
   echo ""
   echo "Cleaning up intercept: $SERVICE_NAME"
-  telepresence leave "$SERVICE_NAME"
+  telepresence leave "$SERVICE_NAME" || true
 
-  # Restore original namespace
+  echo "Quitting Telepresence daemon"
   telepresence quit
+
+  echo "Restoring original namespace: $CURRENT_NAMESPACE"
   telepresence connect --namespace "$CURRENT_NAMESPACE"
   exit 0
 }
 
-function intercept_app() {
-  # Use the passed parameters instead of hardcoded values
+intercept_app() {
   SERVICE_NAME="$1"
   NAMESPACE="$2"
   LOCAL_PORT="$3"
   REMOTE_PORT_NAME="$4"
 
-  # Handle cleanup on Ctrl+C
+  if ! command -v jq &> /dev/null; then
+    echo "jq is required but not installed. Please install jq."
+    exit 1
+  fi
+
   trap cleanup INT
 
-  # Start intercept
-  echo "Starting intercept for $SERVICE_NAME"
-  # Save current namespace to a variable
   CURRENT_NAMESPACE=$(telepresence status --output json | jq -r '.user_daemon.namespace')
-  # Fallback to "default" if empty
   CURRENT_NAMESPACE=${CURRENT_NAMESPACE:-default}
 
+  echo "Current namespace: $CURRENT_NAMESPACE"
+
   if [ "$CURRENT_NAMESPACE" != "$NAMESPACE" ]; then
-    echo "Switching telepresence from $CURRENT_NAMESPACE to $NAMESPACE"
+    echo "Switching Telepresence from $CURRENT_NAMESPACE to $NAMESPACE"
     telepresence quit
     telepresence connect --namespace "$NAMESPACE"
   else
-    echo "Telepresence already in $NAMESPACE"
+    echo "Telepresence already connected to $NAMESPACE"
   fi
 
   sleep 1
-  telepresence intercept "$SERVICE_NAME" \
-    --port "$LOCAL_PORT:$REMOTE_PORT_NAME"
 
-  # Keep script alive until interrupted
+  echo "Starting intercept for $SERVICE_NAME"
+  telepresence intercept "$SERVICE_NAME" \
+    --port "$LOCAL_PORT:$REMOTE_PORT_NAME" \
+    --mount=false
+
   echo "Intercept running. Press Ctrl+C to stop..."
-  while true; do sleep 1; done
+
+  # Sleep loop to keep script alive until Ctrl+C
+  while true; do
+    sleep 1
+  done
 }
