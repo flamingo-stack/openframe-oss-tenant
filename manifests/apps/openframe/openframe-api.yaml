@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: fix/telepresence
+      targetRevision: main
       path: manifests/openframe/base/openframe-api
 
   destination:
@@ -21,8 +21,8 @@ spec:
 
   syncPolicy:
     automated:
-      selfHeal: false
-      prune: false
+      selfHeal: true
+      prune: true
     syncOptions:
       - CreateNamespace=false
     retry:
