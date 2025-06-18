@@ -453,47 +453,7 @@ OPENFRAME_API_KEY=ak_1a2b3c4d5e6f7890.sk_live_abcdefghijklmnopqrstuvwxyz123456
 OPENFRAME_API_URL=https://api.openframe.com
 ```
 
-## Monitoring and Analytics
 
-### Usage Metrics
-
-Track API key usage with the following metrics:
-
-- Request count per time period
-- Success/error rates
-- Response times
-- Rate limit hits
-- Top endpoints accessed
-
-### Alerts
-
-Set up alerts for:
-
-- Unusual usage patterns
-- High error rates
-- Rate limit violations
-- Unauthorized access attempts
-- Key expiration warnings
-
-## Migration Guide
-
-### From JWT to API Keys
-
-If migrating from JWT-based authentication:
-
-1. Create API key with equivalent permissions
-2. Update client applications to use `X-API-Key` header
-3. Test thoroughly in staging environment
-4. Gradually migrate production traffic
-5. Monitor for issues and performance impact
-
-### Backward Compatibility
-
-API keys work alongside existing authentication methods:
-
-- JWT tokens continue to work for user authentication
-- API keys are specifically for programmatic access
-- Both can be used in the same application for different purposes
 
 ## Troubleshooting
 
@@ -519,13 +479,7 @@ API keys work alongside existing authentication methods:
 - Check firewall and proxy settings
 - Ensure API endpoint is accessible
 
-### Support
 
-For additional support:
-
-- Check the [API Documentation](endpoints.md)
-- Review [Integration Examples](integration.md)
-- Contact support at support@openframe.com
 
 ## Next Steps
 
