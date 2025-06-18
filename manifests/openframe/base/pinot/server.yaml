@@ -77,12 +77,18 @@ spec:
           - zookeeper:2181
           - "-configFileName"
           - "/opt/pinot/conf/server.conf"
+          - "-serverHost"
+          - "$(PINOT_SERVER_HOST)"
         ports:
         - containerPort: 8098
           name: server
         - containerPort: 9011
           name: jmx
         env:
+        - name: PINOT_SERVER_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         - name: JAVA_OPTS
           value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9011:/opt/jmx_exporter/config.yml"
         volumeMounts:
