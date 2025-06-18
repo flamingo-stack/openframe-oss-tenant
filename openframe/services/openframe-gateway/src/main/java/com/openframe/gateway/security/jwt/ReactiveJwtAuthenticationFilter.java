@@ -2,7 +2,6 @@ package com.openframe.gateway.security.jwt;
 
 import com.openframe.security.jwt.JwtService;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -71,13 +70,12 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
                             var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                             return chain.filter(exchange)
                                     .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
-
                         }
                         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                         return exchange.getResponse().setComplete();
                     });
         }
-        if ("password".equals(grantType)) {
+        if ("password".equals(grantType) || "social".equals(grantType)) {
             String userEmail = extractUsername(jwt);
             if (userEmail == null) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

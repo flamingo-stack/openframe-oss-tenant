@@ -2,9 +2,9 @@ package com.openframe.gateway.security.jwt;
 
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.UserRepository;
+import com.openframe.security.adapter.OAuthClientSecurity;
 import com.openframe.security.adapter.UserSecurity;
 import com.openframe.security.jwt.JwtService;
-import com.openframe.security.adapter.OAuthClientSecurity;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,7 +60,6 @@ public class GatewayJwtAuthenticationFilter extends OncePerRequestFilter impleme
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-
         String path = getPath(request);
         String method = getMethod(request);
 
@@ -104,7 +103,7 @@ public class GatewayJwtAuthenticationFilter extends OncePerRequestFilter impleme
             }
         }
 
-        if ("password".equals(grantType)) {
+        if ("password".equals(grantType) || "social".equals(grantType)) {
             String userEmail = extractUsername(jwt);
             if (userEmail == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

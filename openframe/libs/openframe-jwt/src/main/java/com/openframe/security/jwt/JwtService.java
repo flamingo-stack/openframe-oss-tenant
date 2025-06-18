@@ -1,22 +1,17 @@
 package com.openframe.security.jwt;
 
-import java.time.Instant;
-import java.util.function.Function;
-
+import com.openframe.core.model.User;
 import com.openframe.security.adapter.OAuthClientSecurity;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.stereotype.Service;
-
 import com.openframe.security.adapter.UserSecurity;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +23,9 @@ public class JwtService {
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
     private int accessTokenExpirationSeconds;
+
+    @Value("${security.oauth2.token.refresh.expiration-seconds}")
+    private int refreshTokenExpirationSeconds;
     
     public Jwt decodeToken(String token) {
         log.debug("Decoding token");
@@ -63,6 +61,37 @@ public class JwtService {
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
+    public String generateAccessToken(User user, String grantType) {
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
+                .subject(user.getId())
+                .claim("email", user.getEmail())
+                .claim("grant_type", grantType)
+                .claim("roles", user.getRoles());
+
+        if (user.getFirstName() != null) {
+            claimsBuilder = claimsBuilder.claim("given_name", user.getFirstName());
+        }
+        if (user.getLastName() != null) {
+            claimsBuilder = claimsBuilder.claim("family_name", user.getLastName());
+        }
+
+        claimsBuilder = claimsBuilder
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds));
+
+        return generateToken(claimsBuilder.build());
+    }
+
+    public String generateRefreshToken(String userId) {
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .subject(userId)
+                .claim("refresh_count", 0L)
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
+                .build();
+        return generateToken(claims);
+    }
+
     public String extractGrantType(String token) {
         log.debug("Extracting grantType from token");
         try {
@@ -80,7 +109,7 @@ public class JwtService {
         log.debug("Extracting clientId from token");
         try {
             Jwt jwt = decoder.decode(token);
-            String clientId = jwt.getSubject();
+            String clientId = jwt.getClaimAsString("sub");
             log.debug("Extracted clientId from token: {}", clientId);
             return clientId;
         } catch (Exception e) {
