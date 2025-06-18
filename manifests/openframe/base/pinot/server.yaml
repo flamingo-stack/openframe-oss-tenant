@@ -8,9 +8,9 @@ data:
     pinot.server.instance.dataDir=/opt/pinot/data/server
     pinot.server.instance.segmentTarDir=/opt/pinot/data/server/segments
     pinot.server.starter.type=helix
-    pinot.server.helix.instance.id=Server_pinot-server_8098
+    pinot.server.helix.instance.id=Server_pinot-server-0_8098
     pinot.server.adminapi.port=8097
-    pinot.server.netty.host=0.0.0.0
+    pinot.server.netty.host=pinot-server-0.pinot-server.microservices.svc.cluster.local
     pinot.server.starter.enableSegmentBuildTimeLogging=false
     pinot.server.instance.enable.shutdown.delay=true
     pinot.server.helix.flappingTimeWindowMs=10000
@@ -22,7 +22,7 @@ data:
 ---
 
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: pinot-server
 spec:
@@ -43,25 +43,16 @@ spec:
       initContainers:
       - name: wait-for-zookeeper
         image: busybox
-        command:
-          - "sh"
-          - "-c"
-          - "until nc -z zookeeper 2181; do sleep 1; done"
-
+        command: [ "sh", "-c", "until nc -z zookeeper 2181; do sleep 1; done" ]
       - name: wait-for-controller
         image: busybox
-        command: ['sh', '-c', 'until nc -z pinot-controller 9000; do echo waiting for controller; sleep 3; done']
-
+        command: [ "sh", "-c", "until nc -z pinot-controller 9000; do echo waiting; sleep 3; done" ]
       - name: wait-for-broker
         image: busybox
-        command: ['sh', '-c', 'until nc -z pinot-broker 8099; do echo waiting for broker; sleep 3; done']
-
+        command: [ "sh", "-c", "until nc -z pinot-broker 8099; do echo waiting; sleep 3; done" ]
       - name: init-jmx
         image: busybox
-        command:
-          - "sh"
-          - "-c"
-          - "wget -O /opt/jmx_exporter/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar"
+        command: [ "sh", "-c", "wget -O /opt/jmx_exporter/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar" ]
         volumeMounts:
         - name: jmx-exporter
           mountPath: /opt/jmx_exporter
@@ -77,18 +68,11 @@ spec:
           - zookeeper:2181
           - "-configFileName"
           - "/opt/pinot/conf/server.conf"
-          - "-serverHost"
-          - "$(PINOT_SERVER_HOST)"
         ports:
         - containerPort: 8098
           name: server
         - containerPort: 9011
           name: jmx
-        env:
-        - name: PINOT_SERVER_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
         - name: JAVA_OPTS
           value: "-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent.jar=9011:/opt/jmx_exporter/config.yml"
         volumeMounts:
