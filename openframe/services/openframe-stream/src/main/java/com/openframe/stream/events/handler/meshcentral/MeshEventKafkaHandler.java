@@ -20,7 +20,7 @@ public class MeshEventKafkaHandler extends KafkaMessageHandler<KafkaITPinotMessa
     @Value("${kafka.producer.topic.event.meshcentral.name}")
     private String topic;
 
-    public MeshEventKafkaHandler(KafkaTemplate<String, KafkaITPinotMessage> kafkaTemplate, ObjectMapper objectMapper) {
+    public MeshEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(kafkaTemplate, objectMapper);
     }
 

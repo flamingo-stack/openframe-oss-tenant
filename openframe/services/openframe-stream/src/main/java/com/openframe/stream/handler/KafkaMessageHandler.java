@@ -8,9 +8,9 @@ import org.springframework.messaging.MessageDeliveryException;
 @Slf4j
 public abstract class KafkaMessageHandler<T> extends GenericMessageHandler<T> {
 
-    private final KafkaTemplate<String, T> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public KafkaMessageHandler(KafkaTemplate<String, T> kafkaTemplate, ObjectMapper objectMapper) {
+    public KafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(objectMapper);
         this.kafkaTemplate = kafkaTemplate;
     }

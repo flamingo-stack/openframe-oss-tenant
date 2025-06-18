@@ -19,7 +19,7 @@ public class TrmmEventKafkaHandler extends KafkaMessageHandler<KafkaITPinotMessa
     @Value("${kafka.producer.topic.event.tactical-rmm.name}")
     private String topic;
 
-    public TrmmEventKafkaHandler(KafkaTemplate<String, KafkaITPinotMessage> kafkaTemplate, ObjectMapper objectMapper) {
+    public TrmmEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(kafkaTemplate, objectMapper);
     }
 
