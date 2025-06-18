@@ -1,19 +1,5 @@
 package com.openframe.api.service;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.Map;
-import java.util.UUID;
-
-import com.openframe.security.jwt.JwtService;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet.Builder;
-import org.springframework.stereotype.Service;
-
 import com.openframe.api.dto.UserDTO;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
@@ -23,10 +9,20 @@ import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
 import com.openframe.data.repository.mongo.UserRepository;
-
-
+import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -48,25 +44,36 @@ public class OAuthService {
     @Value("${security.oauth2.token.refresh.max-refresh-count}")
     private int maxRefreshCount;
 
-    private String generateAccessToken(User user) {
-        Builder jwtClaimsSetBuilder = JwtClaimsSet.builder()
+    public String generateAccessToken(User user, String grantType) {
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .subject(user.getId())
                 .claim("email", user.getEmail())
-                .claim("grant_type", "password")
+                .claim("grant_type", grantType)
                 .claim("roles", user.getRoles());
 
         if (user.getFirstName() != null) {
-            jwtClaimsSetBuilder = jwtClaimsSetBuilder.claim("given_name", user.getFirstName());
+            claimsBuilder = claimsBuilder.claim("given_name", user.getFirstName());
         }
         if (user.getLastName() != null) {
-            jwtClaimsSetBuilder = jwtClaimsSetBuilder.claim("family_name", user.getLastName());
+            claimsBuilder = claimsBuilder.claim("family_name", user.getLastName());
         }
-        jwtClaimsSetBuilder = jwtClaimsSetBuilder
+
+        claimsBuilder = claimsBuilder
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds));
-        return jwtService.generateToken(jwtClaimsSetBuilder.build());
+
+        return jwtService.generateToken(claimsBuilder.build());
     }
 
+    public String generateRefreshToken(String userId) {
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .subject(userId)
+                .claim("refresh_count", 0L)
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
+                .build();
+        return jwtService.generateToken(claims);
+    }
 
     public ResponseEntity<?> handleRegistration(UserDTO userDTO, String authHeader) {
         try {
@@ -140,8 +147,8 @@ public class OAuthService {
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
-        String accessToken = generateAccessToken(user);
-        String refreshToken = generateRefreshToken(user);
+        String accessToken = generateAccessToken(user, "authorization_code");
+        String refreshToken = generateRefreshToken(user.getId());
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -166,8 +173,8 @@ public class OAuthService {
         }
 
         // Generate tokens with consistent expiration
-        String accessToken = generateAccessToken(user);
-        String refreshToken = generateRefreshToken(user);
+        String accessToken = generateAccessToken(user, "password");
+        String refreshToken = generateRefreshToken(user.getId());
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -230,7 +237,7 @@ public class OAuthService {
                     .orElseThrow(() -> new IllegalStateException("User not found"));
 
             // Generate new access token and increment refresh count
-            String accessToken = generateAccessToken(user);
+            String accessToken = generateAccessToken(user, "refresh_token");
 
             // Create new refresh token with incremented count
             JwtClaimsSet newRefreshClaims = JwtClaimsSet.builder()
@@ -250,43 +257,6 @@ public class OAuthService {
             log.error("Failed to validate refresh token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid refresh token");
         }
-    }
-
-    public String generateRefreshToken(User user) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .subject(user.getId())
-                .claim("refresh_count", 0L)
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
-                .build();
-        return jwtService.generateToken(claims);
-    }
-
-    private OAuthClient validateClient(String clientId, String clientSecret) {
-        log.debug("Validating client - ID: {}", clientId);
-
-        return clientRepository.findByClientId(clientId)
-                .map(client -> {
-                    // Only validate secret if one is provided (e.g. not for authorize endpoint)
-                    if (clientSecret != null) {
-                        // Log the lengths to help debug without exposing secrets
-                        log.debug("Stored secret length: {}, Provided secret length: {}",
-                                client.getClientSecret() != null ? client.getClientSecret().length() : 0,
-                                clientSecret.length());
-
-                        if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
-                            log.error("Invalid client secret for client: {}", clientId);
-                            throw new IllegalArgumentException("Invalid client secret");
-                        }
-                    }
-
-                    log.debug("Client validation successful for: {}", clientId);
-                    return client;
-                })
-                .orElseThrow(() -> {
-                    log.error("Client not found: {}", clientId);
-                    return new IllegalArgumentException("Client not found");
-                });
     }
 
     public AuthorizationResponse authorize(String responseType, String clientId,
@@ -386,8 +356,8 @@ public class OAuthService {
         userRepository.save(user);
 
         // Generate tokens
-        String accessToken = generateAccessToken(user);
-        String refreshToken = generateRefreshToken(user);
+        String accessToken = generateAccessToken(user, "client_credentials");
+        String refreshToken = generateRefreshToken(user.getId());
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -395,5 +365,32 @@ public class OAuthService {
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpirationSeconds)
                 .build();
+    }
+
+    private OAuthClient validateClient(String clientId, String clientSecret) {
+        log.debug("Validating client - ID: {}", clientId);
+
+        return clientRepository.findByClientId(clientId)
+                .map(client -> {
+                    // Only validate secret if one is provided (e.g. not for authorize endpoint)
+                    if (clientSecret != null) {
+                        // Log the lengths to help debug without exposing secrets
+                        log.debug("Stored secret length: {}, Provided secret length: {}",
+                                client.getClientSecret() != null ? client.getClientSecret().length() : 0,
+                                clientSecret.length());
+
+                        if (client.getClientSecret() == null || !client.getClientSecret().equals(clientSecret)) {
+                            log.error("Invalid client secret for client: {}", clientId);
+                            throw new IllegalArgumentException("Invalid client secret");
+                        }
+                    }
+
+                    log.debug("Client validation successful for: {}", clientId);
+                    return client;
+                })
+                .orElseThrow(() -> {
+                    log.error("Client not found: {}", clientId);
+                    return new IllegalArgumentException("Client not found");
+                });
     }
 }

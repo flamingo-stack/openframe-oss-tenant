@@ -282,7 +282,7 @@ h1.of-title,
   display: flex;
   align-items: center;
   gap: var(--of-spacing-sm);
-  color: var(--of-primary);
+  color: var(--text-color);
   font-size: var(--of-font-size-lg);
   padding: var(--of-spacing-md);
   border-bottom: 1px solid var(--surface-border);

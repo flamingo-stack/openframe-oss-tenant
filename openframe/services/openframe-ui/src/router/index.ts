@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
+import OAuthCallback from '../views/auth/OAuthCallback.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
@@ -45,6 +46,12 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: Register,
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/oauth2/callback/google',
+      name: 'oauth-callback-google',
+      component: OAuthCallback,
       meta: { requiresAuth: false }
     },
     {
@@ -270,6 +277,16 @@ const router = createRouter({
       }
     },
     {
+      path: '/sso',
+      name: 'sso',
+      component: () => import('../views/SSOView.vue'),
+      meta: { 
+        requiresAuth: true,
+        title: 'SSO Configuration',
+        icon: 'pi pi-key'
+      }
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('../views/Profile.vue'),
@@ -281,7 +298,27 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('access_token');
-  console.log('🚦 [Router] Navigation:', { to: to.path, from: from.path, token: !!token });
+  console.log('🚦 [Router] ===== NAVIGATION GUARD =====');
+  console.log('🚦 [Router] Navigation:', { 
+    to: to.path, 
+    from: from.path, 
+    token: !!token,
+    toName: to.name,
+    fromName: from.name,
+    toMeta: to.meta
+  });
+  console.log('🚦 [Router] Current URL:', window.location.href);
+  console.log('🚦 [Router] To fullPath:', to.fullPath);
+  console.log('🚦 [Router] To query:', to.query);
+  
+  // Special handling for OAuth callback
+  if (to.path === '/oauth2/callback/google') {
+    console.log('🔑 [Router] OAuth callback detected!');
+    console.log('🔑 [Router] OAuth callback query params:', to.query);
+    console.log('🔑 [Router] Allowing OAuth callback to proceed');
+    next();
+    return;
+  }
   
   // Always allow access to auth pages
   if (!to.meta.requiresAuth) {
@@ -302,7 +339,14 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // For all protected routes, validate the token
+  // Skip token validation for immediate post-OAuth navigation
+  if (from.path === '/oauth2/callback/google') {
+    console.log('🔑 [Router] Coming from OAuth callback, skipping token validation');
+    next();
+    return;
+  }
+
+  // For all other protected routes, validate the token
   try {
     console.log('🔍 [Router] Verifying token validity...');
     await AuthService.getUserInfo();

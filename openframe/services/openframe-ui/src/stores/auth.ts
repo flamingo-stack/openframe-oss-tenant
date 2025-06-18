@@ -86,6 +86,14 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated.value = false;
   }
 
+  async function checkAuthStatus() {
+    const accessToken = localStorage.getItem('access_token');
+    console.log('🔑 [AuthStore] Checking auth status, token exists:', !!accessToken);
+    isAuthenticated.value = !!accessToken;
+    console.log('🔑 [AuthStore] isAuthenticated set to:', isAuthenticated.value);
+    return isAuthenticated.value;
+  }
+
   async function handleAuthError(error: unknown) {
     if (error instanceof Error) {
       if (error.message.includes('token expired')) {
@@ -158,6 +166,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken,
     setTokens,
     logout,
+    checkAuthStatus,
     handleAuthError
   }
 })

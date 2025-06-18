@@ -1,0 +1,575 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# SSO Authentication in OpenFrame
+
+This document outlines the SSO (Single Sign-On) authentication patterns and best practices for the OpenFrame project.
+
+## Architecture Overview
+
+OpenFrame implements OAuth 2.0 with PKCE (Proof Key for Code Exchange) for secure authentication with external providers like Google, Microsoft, and Slack.
+
+### Key Components
+
+- **SSOConfigService**: Manages SSO provider configurations
+- **SocialAuthService**: Handles OAuth authentication flows
+- **GoogleAuthStrategy**: Provider-specific authentication implementation
+- **EncryptionService**: Encrypts/decrypts sensitive configuration data
+- **Frontend SSOService**: Client-side OAuth flow management
+
+## Backend Patterns
+
+### SSO Configuration Management
+
+Use the domain-driven approach for SSO configuration:
+
+```java
+@Service
+public class SSOConfigService {
+    private final SSOConfigRepository ssoConfigRepository;
+    private final EncryptionService encryptionService;
+    
+    /**
+     * Get SSO configuration domain model for internal service usage
+     */
+    public Optional<SSOConfig> getConfigByProvider(String provider) {
+        return ssoConfigRepository.findByProvider(provider);
+    }
+    
+    /**
+     * Get list of enabled SSO providers - used by login components
+     */
+    public List<SSOConfigStatusResponse> getEnabledProviders() {
+        return ssoConfigRepository.findByEnabledTrue().stream()
+            .map(config -> SSOConfigStatusResponse.builder()
+                .provider(config.getProvider())
+                .enabled(true)
+                .clientId(config.getClientId())
+                .build())
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get available SSO providers for admin dropdowns
+     */
+    public List<SSOProviderInfo> getAvailableProviders() {
+        return authStrategies.stream()
+            .map(strategy -> SSOProviderInfo.builder()
+                .provider(strategy.getProvider().getProvider())
+                .displayName(strategy.getProvider().getDisplayName())
+                .build())
+            .collect(Collectors.toList());
+    }
+}
+```
+
+### Provider Strategy Pattern
+
+Implement provider-specific strategies using the Strategy pattern:
+
+```java
+public interface SocialAuthStrategy {
+    SSOProvider getProvider();
+    
+    @Deprecated
+    default String getProviderName() {
+        return getProvider().getProvider();
+    }
+    
+    TokenResponse authenticate(SocialAuthRequest request);
+}
+
+@Component
+public class GoogleAuthStrategy implements SocialAuthStrategy {
+    private final SSOConfigRepository ssoConfigRepository;
+    private final EncryptionService encryptionService;
+    
+    @Override
+    public SSOProvider getProvider() {
+        return SSOProvider.GOOGLE;
+    }
+    
+    @Override
+    public TokenResponse authenticate(SocialAuthRequest request) {
+        SSOConfig googleConfig = getGoogleConfig();
+        String clientSecret = encryptionService.decryptClientSecret(googleConfig.getClientSecret());
+        
+        // Implementation...
+    }
+    
+    private SSOConfig getGoogleConfig() {
+        return ssoConfigRepository.findByProvider(SSOProvider.GOOGLE.getProvider())
+            .filter(SSOConfig::isEnabled)
+            .orElseThrow(() -> new SocialAuthException("provider_not_configured",
+                    "Google OAuth is not configured or disabled"));
+    }
+}
+```
+
+### Provider Enum
+
+Use type-safe enums for provider management:
+
+```java
+public enum SSOProvider {
+    GOOGLE("google", "Google OAuth"),
+    MICROSOFT("microsoft", "Microsoft OAuth"),
+    SLACK("slack", "Slack OAuth");
+    
+    private final String provider;
+    private final String displayName;
+    
+    SSOProvider(String provider, String displayName) {
+        this.provider = provider;
+        this.displayName = displayName;
+    }
+    
+    public static SSOProvider fromProvider(String provider) {
+        return Arrays.stream(values())
+            .filter(p -> p.provider.equals(provider))
+            .findFirst()
+            .orElse(null);
+    }
+    
+    // Getters...
+}
+```
+
+### API Endpoint Design
+
+Follow RESTful patterns for SSO endpoints:
+
+```java
+@RestController
+@RequestMapping("/sso")
+public class SSOConfigController {
+    
+    /**
+     * Get enabled providers for login buttons
+     */
+    @GetMapping("/providers")
+    public List<SSOConfigStatusResponse> getEnabledProviders() {
+        return ssoConfigService.getEnabledProviders();
+    }
+    
+    /**
+     * Get available providers for admin dropdowns
+     */
+    @GetMapping("/providers/available")
+    public List<SSOProviderInfo> getAvailableProviders() {
+        return ssoConfigService.getAvailableProviders();
+    }
+    
+    /**
+     * Get full SSO configuration for admin forms
+     */
+    @GetMapping("/{provider}")
+    public ResponseEntity<SSOConfigResponse> getConfig(@PathVariable String provider) {
+        // Implementation...
+    }
+    
+    /**
+     * Create or update SSO configuration
+     */
+    @PostMapping("/{provider}")
+    public ResponseEntity<SSOConfigResponse> createConfig(
+            @PathVariable String provider,
+            @Valid @RequestBody SSOConfigRequest request) {
+        // Implementation...
+    }
+}
+```
+
+## Frontend Patterns
+
+### Service Layer
+
+Implement a clean service layer for SSO operations:
+
+```typescript
+export class SSOService {
+  private static readonly BASE_URL = '/sso';
+
+  /**
+   * Get enabled SSO providers for login buttons
+   */
+  public async getEnabledProviders(): Promise<SSOConfigStatus[]> {
+    return await restClient.get<SSOConfigStatus[]>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/providers`);
+  }
+
+  /**
+   * Get available SSO providers for admin dropdowns
+   */
+  public async getAvailableProviders(): Promise<SSOProviderInfo[]> {
+    return await restClient.get<SSOProviderInfo[]>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/providers/available`);
+  }
+
+  /**
+   * Get full SSO configuration for admin forms
+   */
+  public async getConfig(provider: string): Promise<SSOConfigResponse> {
+    return await restClient.get<SSOConfigResponse>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}`);
+  }
+}
+```
+
+### Type Safety
+
+Define clear TypeScript interfaces:
+
+```typescript
+export interface SSOConfigRequest {
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface SSOConfigResponse {
+  id?: string;
+  provider: string;
+  clientId?: string;
+  clientSecret?: string;
+  enabled: boolean;
+}
+
+export interface SSOConfigStatus {
+  enabled: boolean;
+  provider: string;
+  clientId?: string;
+}
+
+export interface SSOProviderInfo {
+  provider: string;
+  displayName: string;
+}
+
+export type SSOProvider = 'google' | 'microsoft' | 'slack';
+```
+
+### Component Patterns
+
+#### Login Button Component
+
+```vue
+<template>
+  <div v-if="showGoogleLogin" class="google-login-wrapper">
+    <button 
+      @click="handleGoogleLogin" 
+      class="google-login-button"
+      :disabled="loading"
+    >
+      <GoogleIcon />
+      Continue with Google
+    </button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { ssoService } from '@/services/SSOService';
+
+const showGoogleLogin = ref(false);
+const loading = ref(false);
+
+onMounted(async () => {
+  try {
+    const enabledProviders = await ssoService.getEnabledProviders();
+    showGoogleLogin.value = enabledProviders.some(provider => provider.provider === 'google');
+  } catch (error) {
+    console.error('Failed to load SSO providers:', error);
+  }
+});
+
+async function handleGoogleLogin() {
+  loading.value = true;
+  try {
+    // OAuth flow implementation
+  } catch (error) {
+    console.error('Google login failed:', error);
+  } finally {
+    loading.value = false;
+  }
+}
+</script>
+```
+
+#### Admin Settings Component
+
+```vue
+<template>
+  <div class="sso-settings">
+    <form @submit.prevent="handleSubmit">
+      <!-- Provider Selection -->
+      <div class="form-group">
+        <label>OAuth Provider</label>
+        <OFDropdown
+          v-model="selectedProvider"
+          :options="availableProviders"
+          optionLabel="displayName"
+          optionValue="provider"
+          placeholder="Select OAuth Provider"
+          @change="onProviderChange"
+          :loading="loadingProviders"
+        />
+      </div>
+
+      <!-- Configuration Form -->
+      <div v-if="selectedProvider">
+        <Input
+          v-model="form.clientId"
+          label="Client ID"
+          required
+          :error="errors.clientId"
+        />
+        <Input
+          v-model="form.clientSecret"
+          label="Client Secret"
+          type="password"
+          required
+          :error="errors.clientSecret"
+        />
+      </div>
+    </form>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted, watch } from 'vue';
+import { ssoService } from '@/services/SSOService';
+import type { SSOProviderInfo } from '@/types/sso';
+
+const selectedProvider = ref<string>('');
+const availableProviders = ref<SSOProviderInfo[]>([]);
+const loadingProviders = ref(false);
+
+onMounted(() => {
+  loadAvailableProviders();
+});
+
+watch(selectedProvider, (newProvider) => {
+  if (newProvider) {
+    loadProviderConfig();
+  }
+});
+
+async function loadAvailableProviders() {
+  loadingProviders.value = true;
+  try {
+    availableProviders.value = await ssoService.getAvailableProviders();
+    if (availableProviders.value.length > 0) {
+      selectedProvider.value = availableProviders.value[0].provider;
+    }
+  } catch (error) {
+    console.error('Failed to load providers:', error);
+  } finally {
+    loadingProviders.value = false;
+  }
+}
+</script>
+```
+
+## Security Best Practices
+
+### Encryption
+
+Always encrypt sensitive configuration data:
+
+```java
+@Service
+public class EncryptionService {
+    private final StringEncryptor encryptor;
+    
+    public String encryptClientSecret(String clientSecret) {
+        if (clientSecret == null || clientSecret.isEmpty()) {
+            return null;
+        }
+        return encryptor.encrypt(clientSecret);
+    }
+    
+    public String decryptClientSecret(String encryptedSecret) {
+        if (encryptedSecret == null || encryptedSecret.isEmpty()) {
+            return null;
+        }
+        try {
+            return encryptor.decrypt(encryptedSecret);
+        } catch (Exception e) {
+            log.error("Failed to decrypt client secret", e);
+            return null;
+        }
+    }
+}
+```
+
+### PKCE Implementation
+
+Use PKCE for OAuth flows:
+
+```typescript
+export class SSOService {
+  public generateCodeVerifier(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+  }
+
+  private async generateCodeChallenge(codeVerifier: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    const base64String = btoa(String.fromCharCode(...new Uint8Array(digest)));
+    return base64String.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  }
+}
+```
+
+## Error Handling
+
+### Backend Error Handling
+
+```java
+@ControllerAdvice
+public class SSOExceptionHandler {
+    
+    @ExceptionHandler(SocialAuthException.class)
+    public ResponseEntity<ErrorResponse> handleSocialAuthException(SocialAuthException e) {
+        ErrorResponse error = ErrorResponse.builder()
+            .code(e.getErrorCode())
+            .message(e.getMessage())
+            .timestamp(LocalDateTime.now())
+            .build();
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+}
+
+public class SocialAuthException extends RuntimeException {
+    private final String errorCode;
+    
+    public SocialAuthException(String errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+}
+```
+
+### Frontend Error Handling
+
+```typescript
+try {
+  const config = await ssoService.getConfig(provider);
+  // Handle success
+} catch (error: any) {
+  if (error.response?.data?.errors) {
+    // Handle validation errors
+    const backendErrors = error.response.data.errors;
+    backendErrors.forEach((err: any) => {
+      if (err.field && err.message) {
+        errors[err.field] = err.message;
+      }
+    });
+  } else {
+    // Handle general errors
+    errorMessage.value = error.message || 'Failed to load configuration';
+  }
+}
+```
+
+## Testing Patterns
+
+### Backend Testing
+
+```java
+@ExtendWith(MockitoExtension.class)
+public class GoogleAuthStrategyTest {
+    @Mock
+    private SSOConfigRepository ssoConfigRepository;
+    
+    @Mock
+    private EncryptionService encryptionService;
+    
+    @InjectMocks
+    private GoogleAuthStrategy googleAuthStrategy;
+    
+    @Test
+    public void testAuthenticate_Success() {
+        // Arrange
+        SSOConfig config = SSOConfig.builder()
+            .provider("google")
+            .clientId("test-client-id")
+            .clientSecret("encrypted-secret")
+            .enabled(true)
+            .build();
+            
+        when(ssoConfigRepository.findByProvider("google"))
+            .thenReturn(Optional.of(config));
+        when(encryptionService.decryptClientSecret("encrypted-secret"))
+            .thenReturn("decrypted-secret");
+        
+        // Act & Assert
+        // Test implementation
+    }
+}
+```
+
+### Frontend Testing
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
+import { ssoService } from '@/services/SSOService';
+import SSOSettings from '@/components/settings/SSOSettings.vue';
+
+vi.mock('@/services/SSOService', () => ({
+  ssoService: {
+    getAvailableProviders: vi.fn(),
+    getConfig: vi.fn(),
+    saveConfig: vi.fn()
+  }
+}));
+
+describe('SSOSettings', () => {
+  it('loads available providers on mount', async () => {
+    const providers = [
+      { provider: 'google', displayName: 'Google OAuth' }
+    ];
+    
+    ssoService.getAvailableProviders.mockResolvedValue(providers);
+    
+    const wrapper = mount(SSOSettings);
+    
+    await wrapper.vm.$nextTick();
+    
+    expect(ssoService.getAvailableProviders).toHaveBeenCalled();
+  });
+});
+```
+
+## Best Practices
+
+1. **Type Safety**: Use enums and TypeScript interfaces for type safety
+2. **Security**: Always encrypt sensitive data and use PKCE for OAuth
+3. **Error Handling**: Provide clear error messages and proper exception handling
+4. **Testing**: Write comprehensive tests for both backend and frontend
+5. **Separation of Concerns**: Keep domain logic separate from DTOs
+6. **API Design**: Follow RESTful patterns for consistent API design
+7. **State Management**: Use reactive patterns for frontend state management
+8. **Validation**: Implement both client-side and server-side validation
+9. **Logging**: Add proper logging for debugging and monitoring
+10. **Documentation**: Document all public APIs and complex business logic
+
+## Common Pitfalls
+
+1. **Circular Dependencies**: Avoid circular dependencies between services
+2. **Hardcoded Values**: Use configuration and enums instead of hardcoded strings
+3. **Missing Validation**: Always validate input data
+4. **Insecure Storage**: Never store secrets in plain text
+5. **Poor Error Messages**: Provide meaningful error messages to users
+6. **Missing Tests**: Ensure good test coverage for critical flows
+7. **Inconsistent APIs**: Follow consistent patterns across all endpoints
+8. **Memory Leaks**: Properly clean up resources and event listeners
+9. **Race Conditions**: Handle async operations properly
+10. **Poor UX**: Provide loading states and proper feedback to users
