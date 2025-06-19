@@ -1,4 +1,4 @@
-package com.openframe.stream.events.handler.tactical;
+package com.openframe.stream.handler.tactical;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
