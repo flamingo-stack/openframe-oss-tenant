@@ -9,14 +9,14 @@ data:
     pinot.server.instance.segmentTarDir=/opt/pinot/data/server/segments
     pinot.server.starter.type=helix
     pinot.server.helix.instance.id=Server_pinot-server_8098
-    pinot.server.adminapi.port=9107
+    pinot.server.adminapi.port=8097
     pinot.server.netty.host=0.0.0.0
     pinot.server.starter.enableSegmentBuildTimeLogging=false
     pinot.server.instance.enable.shutdown.delay=true
     pinot.server.helix.flappingTimeWindowMs=10000
     pinot.server.helix.enabled=true
     # pinot.server.helix.zk.str=zookeeper.datasources:2181
-    # pinot.server.helix.cluster.name=openframe-pinot
+    # pinot.server.helix.cluster.name=pinot
     pinot.set.instance.id.to.hostname=false
 
 ---
@@ -80,8 +80,6 @@ spec:
           ports:
             - containerPort: 8098
               name: server
-            - containerPort: 9107
-              name: admin
             - containerPort: 9011
               name: jmx
           env:
@@ -126,8 +124,6 @@ spec:
   ports:
     - port: 8098
       name: server
-    - port: 9107
-      name: admin
     - port: 9011
       name: jmx
   type: ClusterIP
