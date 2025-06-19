@@ -34,17 +34,17 @@ argocd)
   ;;
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then 
-    kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${SCRIPT_DIR}/argocd-manifests/patch-argocd-cm.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
+    kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${ROOT_REPO_DIR}/manifests/argocd/patch-argocd-cm.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
     kubectl -n argocd patch deployment argocd-repo-server --type='merge' \
       -p='{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"docker-pat-secret"}]}}}}' >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-    kubectl -n argocd apply -k "${SCRIPT_DIR}/argocd-manifests" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    kubectl -n argocd apply -k "${ROOT_REPO_DIR}/manifests/argocd" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
 
     start_spinner "Waiting for ArgoCD Apps to become Healthy"
     wait_for_argocd_apps >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
     stop_spinner_and_return_code $? || exit 1 
     
   elif [ "$ACTION" == "delete" ]; then
-    kubectl -n argocd delete -k "${SCRIPT_DIR}/argocd-manifests"
+    kubectl -n argocd delete -k "${ROOT_REPO_DIR}/manifests/argocd"
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
