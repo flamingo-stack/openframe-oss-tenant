@@ -1,79 +1,30 @@
 package com.openframe.stream.handler.openframe;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.core.model.Tag;
 import com.openframe.data.model.DebeziumMessage;
 import com.openframe.data.service.TagRedisService;
 import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.handler.GenericMessageHandler;
+import com.openframe.stream.handler.DebeziumMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class MongoTagsHandler extends GenericMessageHandler<DebeziumMessage> {
+public class MongoTagsHandler extends DebeziumMessageHandler<Tag> {
     
     private final TagRedisService tagRedisService;
-    private final ObjectMapper objectMapper;
 
     public MongoTagsHandler(ObjectMapper mapper, TagRedisService tagRedisService) {
         super(mapper);
         this.tagRedisService = tagRedisService;
-        this.objectMapper = mapper;
     }
 
     @Override
-    protected DebeziumMessage transform(JsonNode messageJson) {
+    protected void handleCreate(Tag tag) {
         try {
-            return objectMapper.treeToValue(messageJson, DebeziumMessage.class);
-        } catch (Exception e) {
-            log.error("Failed to transform message to DebeziumMessage", e);
-            return null;
-        }
-    }
-
-    @Override
-    protected void pushData(DebeziumMessage data) {
-        if (data == null) {
-            log.warn("Received null DebeziumMessage, skipping processing");
-            return;
-        }
-
-        try {
-            String operation = data.getOperation();
-            log.debug("Processing tag operation: {} for collection: {}", 
-                     operation, data.getSource().getCollection());
-
-            switch (operation) {
-                case "c": // Create
-                case "r": // Read (snapshot)
-                    handleCreateOrRead(data);
-                    break;
-                case "u": // Update
-                    handleUpdate(data);
-                    break;
-                case "d": // Delete
-                    handleDelete(data);
-                    break;
-                default:
-                    log.warn("Unknown operation type: {}", operation);
-            }
-        } catch (Exception e) {
-            log.error("Failed to process tag message", e);
-        }
-    }
-
-    private void handleCreateOrRead(DebeziumMessage data) {
-        if (data.getAfter() == null) {
-            log.warn("After data is null for create/read operation");
-            return;
-        }
-
-        try {
-            Tag tag = objectMapper.readValue(data.getAfter(), Tag.class);
             boolean success = tagRedisService.saveTag(tag);
-            
+
             if (success) {
                 log.info("Tag saved to Redis successfully: {}", tag.getId());
             } else {
@@ -84,16 +35,16 @@ public class MongoTagsHandler extends GenericMessageHandler<DebeziumMessage> {
         }
     }
 
-    private void handleUpdate(DebeziumMessage data) {
-        if (data.getAfter() == null) {
-            log.warn("After data is null for update operation");
-            return;
-        }
+    @Override
+    protected void handleRead(Tag tag) {
+        handleCreate(tag);
+    }
 
+    @Override
+    protected void handleUpdate(Tag tag) {
         try {
-            Tag tag = objectMapper.readValue(data.getAfter(), Tag.class);
             boolean success = tagRedisService.saveTag(tag);
-            
+
             if (success) {
                 log.info("Tag updated in Redis successfully: {}", tag.getId());
             } else {
@@ -104,16 +55,11 @@ public class MongoTagsHandler extends GenericMessageHandler<DebeziumMessage> {
         }
     }
 
-    private void handleDelete(DebeziumMessage data) {
-        if (data.getBefore() == null) {
-            log.warn("Before data is null for delete operation");
-            return;
-        }
-
+    @Override
+    protected void handleDelete(Tag tag) {
         try {
-            Tag tag = objectMapper.readValue(data.getBefore(), Tag.class);
             boolean success = tagRedisService.deleteTag(tag.getId());
-            
+
             if (success) {
                 log.info("Tag deleted from Redis successfully: {}", tag.getId());
             } else {
@@ -127,5 +73,20 @@ public class MongoTagsHandler extends GenericMessageHandler<DebeziumMessage> {
     @Override
     public MessageType getType() {
         return MessageType.OPENFRAME_MONGO_TAGS;
+    }
+
+    @Override
+    protected Tag transform(DebeziumMessage debeziumMessage) {
+        if (debeziumMessage.getAfter() == null) {
+            log.warn("After data is null");
+            throw new RuntimeException("After data is null");
+        }
+
+        try {
+            return mapper.treeToValue(debeziumMessage.getAfter(), Tag.class);
+        } catch (Exception e) {
+            log.error("Failed to parse tag from after data", e);
+            throw new RuntimeException(e);
+        }
     }
 }

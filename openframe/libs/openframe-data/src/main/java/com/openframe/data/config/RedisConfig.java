@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.openframe.core.model.Machine;
+import com.openframe.core.model.MachineTag;
 import com.openframe.core.model.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,49 +17,62 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.redis.enabled", havingValue = "true", matchIfMissing = false)
+@Slf4j
 public class RedisConfig {
 
     @Bean
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
+        log.info("Creating RedisTemplate<String, String> bean");
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new StringRedisSerializer());
+        template.afterPropertiesSet();
         return template;
     }
 
     @Bean
     public RedisTemplate<String, Tag> tagRedisTemplate(RedisConnectionFactory connectionFactory) {
+        log.info("Creating RedisTemplate<String, Tag> bean");
         return createTypedRedisTemplate(connectionFactory, Tag.class, "tag");
     }
 
     @Bean
     public RedisTemplate<String, Machine> machineRedisTemplate(RedisConnectionFactory connectionFactory) {
+        log.info("Creating RedisTemplate<String, Machine> bean");
         return createTypedRedisTemplate(connectionFactory, Machine.class, "machine");
     }
 
+    @Bean
+    public RedisTemplate<String, MachineTag> machineTagRedisTemplate(RedisConnectionFactory connectionFactory) {
+        log.info("Creating RedisTemplate<String, MachineTag> bean");
+        return createTypedRedisTemplate(connectionFactory, MachineTag.class, "machineTag");
+    }
+
     /**
-     * Создает типизированный RedisTemplate для указанного класса
-     * @param connectionFactory фабрика соединений Redis
-     * @param clazz класс объекта
-     * @param typeName имя типа для логирования
-     * @return настроенный RedisTemplate
+     * Creates a typed RedisTemplate for the specified class
+     * @param connectionFactory Redis connection factory
+     * @param clazz object class
+     * @param typeName type name for logging
+     * @return configured RedisTemplate
      */
     private <T> RedisTemplate<String, T> createTypedRedisTemplate(
             RedisConnectionFactory connectionFactory, 
             Class<T> clazz, 
             String typeName) {
         
+        log.debug("Creating typed RedisTemplate for class: {}", clazz.getSimpleName());
+        
         RedisTemplate<String, T> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        // Настройка сериализации для ключей (String)
+        // Configure serialization for keys (String)
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        // Настройка сериализации для значений (объекты)
+        // Configure serialization for values (objects)
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.activateDefaultTyping(
             LaissezFaireSubTypeValidator.instance,
@@ -73,6 +88,7 @@ public class RedisConfig {
 
         template.afterPropertiesSet();
         
+        log.debug("Successfully created RedisTemplate for type: {}", typeName);
         return template;
     }
 }
