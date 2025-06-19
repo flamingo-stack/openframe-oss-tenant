@@ -10,7 +10,6 @@ data:
     pinot.server.starter.type=helix
     pinot.server.helix.instance.id=Server_pinot-server-0_8098
     pinot.server.adminapi.port=8097
-    pinot.server.netty.host=pinot-server-0.pinot-server.microservices.svc.cluster.local
     pinot.server.starter.enableSegmentBuildTimeLogging=false
     pinot.server.instance.enable.shutdown.delay=true
     pinot.server.helix.flappingTimeWindowMs=10000
