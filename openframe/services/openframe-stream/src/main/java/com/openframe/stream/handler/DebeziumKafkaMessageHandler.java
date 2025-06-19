@@ -6,17 +6,16 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
 
 @Slf4j
-public abstract class KafkaMessageHandler<T> extends GenericMessageHandler<T> {
+public abstract class DebeziumKafkaMessageHandler<T> extends DebeziumMessageHandler<T> {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public KafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
+    public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(objectMapper);
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    @Override
-    protected void pushData(T message) {
+    protected void handleCreate(T message) {
         try {
             kafkaTemplate.send(getTopic(), message);
             log.info("Message sent to Kafka topic {}: {}", getTopic(), message);
@@ -24,6 +23,15 @@ public abstract class KafkaMessageHandler<T> extends GenericMessageHandler<T> {
             log.error("Error sending message to Kafka topic {}: {}", getTopic(), message, e);
             throw new MessageDeliveryException("Failed to send message to Kafka");
         }
+    }
+
+    protected void handleRead(T message) {
+        handleCreate(message);
+    }
+    protected void handleUpdate(T message) {
+        handleCreate(message);
+    }
+    protected void handleDelete(T data) {
     }
 
     protected abstract String getTopic();

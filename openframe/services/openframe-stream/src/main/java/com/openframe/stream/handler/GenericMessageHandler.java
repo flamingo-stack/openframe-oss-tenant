@@ -2,12 +2,13 @@ package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
 @Slf4j
-public abstract class GenericMessageHandler<T> implements MessageHandler {
+public abstract class GenericMessageHandler<T, U> implements MessageHandler {
 
     protected final ObjectMapper mapper;
 
@@ -17,30 +18,38 @@ public abstract class GenericMessageHandler<T> implements MessageHandler {
 
     @Override
     public void handle(Map<String, Object> message) {
-        if (isValidMessage(message)) {
-
-            T transformedData = transform(message);
-            pushData(transformedData);
+        U deserializedMessage = deserialize(message);
+        if (isValidMessage(deserializedMessage)) {
+            T transformedData = transform(deserializedMessage);
+            OperationType operationType = getOperationType(deserializedMessage);
+            if (operationType != null) {
+                pushData(transformedData, operationType);
+            }
         }
     }
 
-    protected  boolean isValidMessage(Map<String, Object> message) {
+    protected  boolean isValidMessage(U message) {
         return true;
     }
 
-    protected T transform(Map<String, Object> message) {
-        try {
-            log.info("Received message: {}", message);
-            JsonNode messageJson = mapper.valueToTree(message);
-            return transform(messageJson);
-        } catch (Exception e) {
-            log.error("Error processing message: {}", message, e);
-            throw new RuntimeException("Failed to process message", e);
+    protected void pushData(T data, OperationType operationType) {
+        switch (operationType) {
+            case READ -> handleRead(data);
+            case CREATE ->  handleCreate(data);
+            case UPDATE ->  handleUpdate(data);
+            case DELETE ->  handleDelete(data);
         }
     }
 
-    protected abstract T transform(JsonNode messageJson);
+    protected abstract U deserialize(Map<String, Object> message);
 
-    protected abstract void pushData(T data);
+    protected abstract T transform(U message);
+
+    protected abstract OperationType getOperationType(U message);
+
+    protected abstract void handleCreate(T data);
+    protected abstract void handleRead(T data);
+    protected abstract void handleUpdate(T data);
+    protected abstract void handleDelete(T data);
 
 }

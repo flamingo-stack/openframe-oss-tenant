@@ -1,21 +1,18 @@
 package com.openframe.stream.events.handler.meshcentral;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.data.model.DebeziumMessage;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
-import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.handler.KafkaMessageHandler;
+import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-
 @Component
 @Slf4j
-public class MeshEventKafkaHandler extends KafkaMessageHandler<KafkaITPinotMessage> {
+public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage> {
 
     @Value("${kafka.producer.topic.event.meshcentral.name}")
     private String topic;
@@ -35,19 +32,19 @@ public class MeshEventKafkaHandler extends KafkaMessageHandler<KafkaITPinotMessa
     }
 
     @Override
-    protected KafkaITPinotMessage transform(JsonNode rootNode) {
+    protected KafkaITPinotMessage transform(DebeziumMessage debeziumMessage) {
         KafkaITPinotMessage message = new KafkaITPinotMessage();
-        try {
-            if (rootNode.has("eventType")) {
-                message.setEventType(rootNode.get("eventType").asText());
-            }
-            message.setTimestamp(Instant.now());
-            message.setToolName(IntegratedTool.MESHCENTRAL.getName());
-
-        } catch (Exception e) {
-            log.error("Error processing Kafka message", e);
-            throw e;
-        }
+//        try {
+//            if (rootNode.has("eventType")) {
+//                message.setEventType(rootNode.get("eventType").asText());
+//            }
+//            message.setTimestamp(Instant.now());
+//            message.setToolName(IntegratedTool.MESHCENTRAL.getName());
+//
+//        } catch (Exception e) {
+//            log.error("Error processing Kafka message", e);
+//            throw e;
+//        }
         return message;
     }
 }

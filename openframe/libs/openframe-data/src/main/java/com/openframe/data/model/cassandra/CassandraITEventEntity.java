@@ -1,6 +1,5 @@
 package com.openframe.data.model.cassandra;
 
-import com.openframe.data.model.DownstreamEntity;
 import lombok.Data;
 import org.springframework.data.cassandra.core.cql.Ordering;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
@@ -11,7 +10,7 @@ import java.util.Map;
 
 @Table("integrated_tool_event")
 @Data
-public class CassandraITEventEntity implements DownstreamEntity {
+public class CassandraITEventEntity {
 
     @PrimaryKey
     private CassandraITEventEntity.CassandraITEventKey key;

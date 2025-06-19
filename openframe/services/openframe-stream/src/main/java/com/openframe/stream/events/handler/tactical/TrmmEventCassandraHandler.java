@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
 import com.openframe.data.repository.cassandra.CassandraITEventRepository;
 import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.handler.CassandraMessageHandler;
+import com.openframe.stream.handler.DebeziumCassandraMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class TrmmEventCassandraHandler extends CassandraMessageHandler<CassandraITEventEntity> {
+public class TrmmEventCassandraHandler extends DebeziumCassandraMessageHandler<CassandraITEventEntity> {
 
     protected TrmmEventCassandraHandler(CassandraITEventRepository repository, ObjectMapper objectMapper) {
         super(repository, objectMapper);

@@ -2,20 +2,17 @@ package com.openframe.stream.events.handler.openframe;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.data.model.DebeziumMessage;
 import com.openframe.data.model.kafka.MachinePinotMessage;
-import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.handler.KafkaMessageHandler;
+import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-
 @Component
 @Slf4j
-public class MongoMachinesHandler extends KafkaMessageHandler<MachinePinotMessage> {
+public class MongoMachinesHandler extends DebeziumKafkaMessageHandler<MachinePinotMessage> {
 
 //    @Value("${kafka.producer.topic.openframe.machines.name}")
     private String topic = "machines.pinot";
@@ -30,22 +27,31 @@ public class MongoMachinesHandler extends KafkaMessageHandler<MachinePinotMessag
     }
 
     @Override
-    protected MachinePinotMessage transform(JsonNode messageJson) {
-        MachinePinotMessage message = new MachinePinotMessage();
+    protected MachinePinotMessage transform(DebeziumMessage message) {
+        MachinePinotMessage transformedMessage = new MachinePinotMessage();
         try {
-            if (messageJson.has("payload") && messageJson.get("payload").has("after")) {
-                JsonNode afterNode = messageJson.get("payload").get("after");
+            if (message.getAfter() != null) {
+                JsonNode afterNode = message.getAfter();
                 if (afterNode.isTextual()) {
                     String afterJson = afterNode.asText();
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode afterData = mapper.readTree(afterJson);
 
                     if (afterData.has("machineId")) {
-                        message.setMachineId(afterData.get("machineId").asText());
+                        transformedMessage.setMachineId(afterData.get("machineId").asText());
                     }
 
                     if (afterData.has("organizationId")) {
-                        message.setOrganizationId(afterData.get("organizationId").asText());
+                        transformedMessage.setOrganizationId(afterData.get("organizationId").asText());
+                    }
+                    if (afterData.has("type")) {
+                        transformedMessage.setDeviceType(afterData.get("type").asText());
+                    }
+                    if (afterData.has("status")) {
+                        transformedMessage.setStatus(afterData.get("status").asText());
+                    }
+                    if (afterData.has("osType")) {
+                        transformedMessage.setOsType(afterData.get("osType").asText());
                     }
                 }
             }
@@ -53,7 +59,7 @@ public class MongoMachinesHandler extends KafkaMessageHandler<MachinePinotMessag
             log.error("Error processing Kafka message", e);
             throw new RuntimeException();
         }
-        return message;
+        return transformedMessage;
     }
 
     @Override

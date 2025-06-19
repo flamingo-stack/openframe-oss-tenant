@@ -5,7 +5,9 @@ import com.openframe.stream.processor.GenericJsonMessageProcessor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class JsonKafkaListener {
@@ -31,9 +33,9 @@ public class JsonKafkaListener {
 //    @KafkaListener(topics = "${kafka.consumer.topic.openframe.mongo.name}", groupId = "${spring.kafka.consumer.group-id}")
     @KafkaListener(topics = "openframe.mongodb.machines", groupId = "${spring.kafka.consumer.group-id}")
     public void listenOpenframeMongoEvents(Map<String, Object> message) {
-        MessageType messageType = MessageTypeResolver.resolve(message);
-        if (messageType != null) {
+        List<MessageType> messageTypes = MessageTypeResolver.resolve(message);
+        Objects.requireNonNull(messageTypes).forEach(messageType -> {
             messageProcessor.process(message, messageType);
-        }
+        });
     }
 }

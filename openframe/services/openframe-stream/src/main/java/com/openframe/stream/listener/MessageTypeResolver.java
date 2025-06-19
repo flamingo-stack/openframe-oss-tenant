@@ -2,11 +2,14 @@ package com.openframe.stream.listener;
 
 import com.openframe.stream.enumeration.MessageType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class MessageTypeResolver {
 
-    public static MessageType resolve(Map<String, Object> message) {
+    public static List<MessageType> resolve(Map<String, Object> message) {
+        List<MessageType> messageTypeList = new ArrayList<>();
         try {
             Object payload = message.get("payload");
             if (!(payload instanceof Map)) {
@@ -27,16 +30,19 @@ public class MessageTypeResolver {
 
             String collectionName = (String) collection;
 
-            return switch (collectionName) {
+            MessageType messageType = switch (collectionName) {
                 case "tags" -> MessageType.OPENFRAME_MONGO_TAGS;
                 case "machines" -> MessageType.OPENFRAME_MONGO_MACHINES;
                 case "machineTag" -> MessageType.OPENFRAME_MONGO_MACHINE_TAG;
                 default -> null;
             };
+            if (messageType != null) {
+                messageTypeList.add(messageType);
+            }
 
         } catch (Exception e) {
-            return null;
         }
+        return messageTypeList;
     }
 
 }

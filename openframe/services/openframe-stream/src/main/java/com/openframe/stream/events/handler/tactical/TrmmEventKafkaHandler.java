@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
 import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.handler.KafkaMessageHandler;
+import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class TrmmEventKafkaHandler extends KafkaMessageHandler<KafkaITPinotMessage> {
+public class TrmmEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage> {
 
     @Value("${kafka.producer.topic.event.tactical-rmm.name}")
     private String topic;

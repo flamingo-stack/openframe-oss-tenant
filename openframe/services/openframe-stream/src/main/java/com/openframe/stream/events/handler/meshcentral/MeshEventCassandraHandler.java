@@ -2,11 +2,12 @@ package com.openframe.stream.events.handler.meshcentral;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.data.model.DebeziumMessage;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
 import com.openframe.data.repository.cassandra.CassandraITEventRepository;
 import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.handler.CassandraMessageHandler;
+import com.openframe.stream.handler.DebeziumCassandraMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,14 +18,14 @@ import java.util.UUID;
 
 @Component
 @Slf4j
-public class MeshEventCassandraHandler extends CassandraMessageHandler<CassandraITEventEntity> {
+public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<CassandraITEventEntity> {
 
     public MeshEventCassandraHandler(CassandraITEventRepository repository, ObjectMapper objectMapper) {
         super(repository, objectMapper);
     }
 
     @Override
-    protected CassandraITEventEntity transform(JsonNode rootNode) {
+    protected CassandraITEventEntity transform(DebeziumMessage debeziumMessage) {
         CassandraITEventEntity entity = new CassandraITEventEntity();
         try {
             CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
@@ -32,18 +33,12 @@ public class MeshEventCassandraHandler extends CassandraMessageHandler<Cassandra
             key.setToolName(IntegratedTool.MESHCENTRAL.getName());
             key.setTimestamp(Instant.now());
             entity.setKey(key);
-            if (rootNode.has("eventType")) {
-                entity.setEventType(rootNode.get("eventType").asText());
-            }
-
-            if (rootNode.has("payload")) {
-                Map<String, String> payload = new HashMap<>();
-                JsonNode metadataNode = rootNode.get("payload");
-                metadataNode.fields().forEachRemaining(entry -> {
-                    payload.put(entry.getKey(), entry.getValue().asText());
-                });
-                entity.setPayload(payload);
-            }
+            Map<String, String> payload = new HashMap<>();
+            JsonNode metadataNode = debeziumMessage.getAfter();
+            metadataNode.fields().forEachRemaining(entry -> {
+                payload.put(entry.getKey(), entry.getValue().asText());
+            });
+            entity.setPayload(payload);
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);
