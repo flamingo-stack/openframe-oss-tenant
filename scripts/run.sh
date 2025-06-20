@@ -75,9 +75,10 @@ NAMESPACE=$2
 APP=$3
 ACTION=$4
 
-if [ "$ACTION" == "intercept" ]; then
-  LOCAL_PORT="$5"
-  REMOTE_PORT_NAME="$6"
+if [ "$ACTION" == "intercept" ] || [ "$ACTION" == "health" ]; then
+  ARG1="$5"
+elif [ "$ACTION" == "health" ]; then
+  ARG2="$6"
 fi
 
 case "$ARG" in
@@ -101,7 +102,7 @@ case "$ARG" in
   a|app)
     # Deploy app one by one
     if [ -n "$APP" ]; then
-      bash "${SCRIPT_DIR}/manage-apps.sh" app "$NAMESPACE" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash "${SCRIPT_DIR}/manage-apps.sh" app "$NAMESPACE" "$APP" "$ACTION" "$ARG1" "$ARG2"
     else
       bash "${SCRIPT_DIR}/manage-apps.sh" "''"
     fi

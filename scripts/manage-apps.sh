@@ -8,11 +8,11 @@ source "${SCRIPT_DIR}/functions/spinner.sh"
 export -f start_spinner stop_spinner _spin
 
 ARG=$1
-APP=$2
-NAMESPACE=$3
+NAMESPACE=$2
+APP=$3
 ACTION=$4
-LOCAL_PORT=$5
-REMOTE_PORT_NAME=$6
+ARG1=$5
+ARG2=$6
 
 if [ "$ARG" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
@@ -70,14 +70,6 @@ openframe_microservices_register_apps)
   awk '/Fleet MDM Credentials:/ {i=NR} END {print i}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" |
     xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   ;;
-tools_telepresence)
-  if [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
 app)
   if [ "$ACTION" == "dev" ]; then
     echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
@@ -92,11 +84,13 @@ app)
         cd "${ROOT_REPO_DIR}/${NAMESPACE}/${APP}"
         ;;
     esac
-
-    skaffold dev --cache-artifacts=false -n $NAMESPACE ||
-      echo "$APP is not supported in dev mode" && exit 0
+    skaffold dev --cache-artifacts=false -n $NAMESPACE
   elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "$APP" "$NAMESPACE" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+    echo "Intercepting ${APP} at ${NAMESPACE} in intercept mode"
+    intercept_app "$APP" "$NAMESPACE" "$ARG1" "$ARG2"
+  elif [ "$ACTION" == "health" ]; then
+    echo "Branch '${ARG1}' health autosync removed for ${APP}"
+    switch_argocd_app_health "$APP" "$ARG1"
   fi
   ;;
 # BUNDLE APPS
