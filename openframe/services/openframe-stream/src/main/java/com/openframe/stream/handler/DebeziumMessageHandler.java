@@ -17,7 +17,7 @@ public abstract class DebeziumMessageHandler<T> extends GenericMessageHandler<T,
     @Override
     protected DebeziumMessage deserialize(Map<String, Object> message) {
         try {
-            return mapper.convertValue(message, DebeziumMessage.class);
+            return mapper.convertValue(message.get("payload"), DebeziumMessage.class);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Error converting Map to DebeziumMessage", e);
         }

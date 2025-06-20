@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.MachineTag;
-import com.openframe.core.model.Tag;
+import com.openframe.data.model.kafka.MachinePinotMessage;
+import com.openframe.data.model.redis.RedisTag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -34,15 +35,15 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Tag> tagRedisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, RedisTag> tagRedisTemplate(RedisConnectionFactory connectionFactory) {
         log.info("Creating RedisTemplate<String, Tag> bean");
-        return createTypedRedisTemplate(connectionFactory, Tag.class, "tag");
+        return createTypedRedisTemplate(connectionFactory, RedisTag.class, "tag");
     }
 
     @Bean
-    public RedisTemplate<String, Machine> machineRedisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, MachinePinotMessage> machineRedisTemplate(RedisConnectionFactory connectionFactory) {
         log.info("Creating RedisTemplate<String, Machine> bean");
-        return createTypedRedisTemplate(connectionFactory, Machine.class, "machine");
+        return createTypedRedisTemplate(connectionFactory, MachinePinotMessage.class, "machine");
     }
 
     @Bean

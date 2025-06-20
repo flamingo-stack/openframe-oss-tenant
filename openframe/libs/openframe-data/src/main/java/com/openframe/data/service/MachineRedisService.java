@@ -1,6 +1,9 @@
 package com.openframe.data.service;
 
 import com.openframe.core.model.Machine;
+import com.openframe.core.model.MachineTag;
+import com.openframe.core.model.Tag;
+import com.openframe.data.model.kafka.MachinePinotMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,18 +14,19 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @ConditionalOnProperty(name = "spring.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class MachineRedisService {
 
-    private final RedisTemplate<String, Machine> machineRedisTemplate;
+    private final RedisTemplate<String, MachinePinotMessage> machineRedisTemplate;
     private final MongoTemplate mongoTemplate;
     private static final String MACHINE_KEY_PREFIX = "machine:";
     private static final Duration DEFAULT_TTL = Duration.ofDays(30); // 30 days by default
 
-    public MachineRedisService(RedisTemplate<String, Machine> machineRedisTemplate, MongoTemplate mongoTemplate) {
+    public MachineRedisService(RedisTemplate<String, MachinePinotMessage> machineRedisTemplate, MongoTemplate mongoTemplate) {
         this.machineRedisTemplate = machineRedisTemplate;
         this.mongoTemplate = mongoTemplate;
         log.info("MachineRedisService initialized with Redis support");
@@ -33,14 +37,14 @@ public class MachineRedisService {
      * @param machine machine to save
      * @return true if save was successful
      */
-    public boolean saveMachine(Machine machine) {
+    public boolean saveMachine(MachinePinotMessage machine) {
         try {
-            String key = MACHINE_KEY_PREFIX + machine.getId();
+            String key = MACHINE_KEY_PREFIX + machine.getMachineId();
             machineRedisTemplate.opsForValue().set(key, machine, DEFAULT_TTL);
             log.debug("Machine saved to Redis with key: {}", key);
             return true;
         } catch (Exception e) {
-            log.error("Failed to save machine to Redis: {}", machine.getId(), e);
+            log.error("Failed to save machine to Redis: {}", machine.getMachineId(), e);
             return false;
         }
     }
@@ -50,10 +54,10 @@ public class MachineRedisService {
      * @param id machine ID
      * @return Optional with machine if found
      */
-    public Optional<Machine> getMachine(String id) {
+    public Optional<MachinePinotMessage> getMachine(String id) {
         try {
             String key = MACHINE_KEY_PREFIX + id;
-            Machine machine = machineRedisTemplate.opsForValue().get(key);
+            MachinePinotMessage machine = machineRedisTemplate.opsForValue().get(key);
             if (machine != null) {
                 log.debug("Machine retrieved from Redis with key: {}", key);
             }
@@ -69,8 +73,8 @@ public class MachineRedisService {
      * @param id machine ID
      * @return Optional with machine if found
      */
-    public Optional<Machine> getMachineWithRefresh(String id) {
-        Optional<Machine> machine = getMachine(id);
+    public Optional<MachinePinotMessage> getMachineWithRefresh(String id) {
+        Optional<MachinePinotMessage> machine = getMachine(id);
         if (machine.isEmpty()) {
             log.debug("Machine {} not found in Redis, attempting to refresh from MongoDB", id);
             if (refreshMachineFromMongoDB(id)) {
@@ -85,7 +89,7 @@ public class MachineRedisService {
      * @param machineId machine machineId
      * @return Optional with machine if found
      */
-    public Optional<Machine> getMachineByMachineId(String machineId) {
+    public Optional<MachinePinotMessage> getMachineByMachineId(String machineId) {
         try {
             // For searching by machineId we need to use pattern search
             // This is less efficient but necessary for this case
@@ -93,7 +97,7 @@ public class MachineRedisService {
             Set<String> keys = machineRedisTemplate.keys(pattern);
             
             for (String key : keys) {
-                Machine machine = machineRedisTemplate.opsForValue().get(key);
+                MachinePinotMessage machine = machineRedisTemplate.opsForValue().get(key);
                 if (machine != null && machineId.equals(machine.getMachineId())) {
                     log.debug("Machine found by machineId: {} with key: {}", machineId, key);
                     return Optional.of(machine);
@@ -112,11 +116,11 @@ public class MachineRedisService {
      * @param machineId machine machineId
      * @return Optional with machine if found
      */
-    public Optional<Machine> getMachineByMachineIdWithRefresh(String machineId) {
-        Optional<Machine> machine = getMachineByMachineId(machineId);
+    public Optional<MachinePinotMessage> getMachineByMachineIdWithRefresh(String machineId) {
+        Optional<MachinePinotMessage> machine = getMachineByMachineId(machineId);
         if (machine.isEmpty()) {
             log.debug("Machine with machineId {} not found in Redis, attempting to refresh from MongoDB", machineId);
-            refreshFromMongoDB();
+            refreshMachineFromMongoDB(machineId);
             return getMachineByMachineId(machineId);
         }
         return machine;
@@ -126,7 +130,7 @@ public class MachineRedisService {
      * Gets all machines from Redis
      * @return list of all machines in Redis
      */
-    public List<Machine> getAllMachines() {
+    public List<MachinePinotMessage> getAllMachines() {
         try {
             String pattern = MACHINE_KEY_PREFIX + "*";
             Set<String> keys = machineRedisTemplate.keys(pattern);
@@ -143,20 +147,6 @@ public class MachineRedisService {
             log.error("Failed to get all machines from Redis", e);
             return List.of();
         }
-    }
-
-    /**
-     * Gets all machines with automatic refresh from MongoDB if Redis is empty
-     * @return list of all machines
-     */
-    public List<Machine> getAllMachinesWithRefresh() {
-        List<Machine> machines = getAllMachines();
-        if (machines.isEmpty()) {
-            log.debug("No machines found in Redis, attempting to refresh from MongoDB");
-            refreshFromMongoDB();
-            return getAllMachines();
-        }
-        return machines;
     }
 
     /**
@@ -192,63 +182,12 @@ public class MachineRedisService {
     }
 
     /**
-     * Updates TTL for machine
-     * @param id machine ID
-     * @param ttl new time to live
-     * @return true if update was successful
-     */
-    public boolean updateTtl(String id, Duration ttl) {
-        try {
-            String key = MACHINE_KEY_PREFIX + id;
-            Boolean result = machineRedisTemplate.expire(key, ttl);
-            log.debug("TTL updated for machine with key: {} to {}", key, ttl);
-            return Boolean.TRUE.equals(result);
-        } catch (Exception e) {
-            log.error("Failed to update TTL for machine in Redis: {}", id, e);
-            return false;
-        }
-    }
-
-    /**
-     * Refreshes all machine data from MongoDB to Redis
-     * Clears all existing machine data in Redis and reloads from MongoDB
-     * @return number of machines refreshed
-     */
-    public long refreshFromMongoDB() {
-        try {
-            log.info("Starting machine data refresh from MongoDB to Redis");
-            
-            // Clear all existing machine data in Redis
-            String pattern = MACHINE_KEY_PREFIX + "*";
-            Set<String> keys = machineRedisTemplate.keys(pattern);
-            if (!keys.isEmpty()) {
-                Long deletedCount = machineRedisTemplate.delete(keys);
-                log.info("Cleared {} existing machine entries from Redis", deletedCount);
-            }
-            
-            // Load all machines from MongoDB
-            List<Machine> machines = mongoTemplate.findAll(Machine.class, "machines");
-            log.info("Found {} machines in MongoDB", machines.size());
-            
-            // Save all machines to Redis
-            long savedCount = 0;
-            for (Machine machine : machines) {
-                if (saveMachine(machine)) {
-                    savedCount++;
-                }
-            }
-            
-            log.info("Successfully refreshed {} machines from MongoDB to Redis", savedCount);
-            return savedCount;
-            
-        } catch (Exception e) {
-            log.error("Failed to refresh machine data from MongoDB to Redis", e);
-            return 0;
-        }
-    }
-
-    /**
      * Refreshes specific machine data from MongoDB to Redis
+     * 1. Find machine from MongoDB collection
+     * 2. Find all MachineTag for this machine
+     * 3. Find all Tag
+     * 4. Convert all to MachinePinotMessage
+     * 5. Save to Redis
      * @param machineId machine ID to refresh
      * @return true if refresh was successful
      */
@@ -256,20 +195,47 @@ public class MachineRedisService {
         try {
             log.debug("Refreshing machine {} from MongoDB to Redis", machineId);
             
-            // Get machine from MongoDB
+            // 1. Find machine from MongoDB collection
             Machine machine = mongoTemplate.findById(machineId, Machine.class, "machines");
             if (machine == null) {
                 log.warn("Machine {} not found in MongoDB", machineId);
                 return false;
             }
             
-            // Delete existing machine from Redis
-            deleteMachine(machineId);
+            // 2. Find all MachineTag for this machine
+            List<MachineTag> machineTags = mongoTemplate.find(
+                org.springframework.data.mongodb.core.query.Query.query(
+                    org.springframework.data.mongodb.core.query.Criteria.where("machineId").is(machineId)
+                ), 
+                MachineTag.class, 
+                "machine_tags"
+            );
+            log.debug("Found {} machine tags for machine {}", machineTags.size(), machineId);
             
-            // Save updated machine to Redis
-            boolean success = saveMachine(machine);
+            // 3. Find all Tag
+            List<String> tagIds = machineTags.stream()
+                .map(MachineTag::getTagId)
+                .collect(Collectors.toList());
+            
+            List<Tag> tags = List.of();
+            if (!tagIds.isEmpty()) {
+                tags = mongoTemplate.find(
+                    org.springframework.data.mongodb.core.query.Query.query(
+                        org.springframework.data.mongodb.core.query.Criteria.where("_id").in(tagIds)
+                    ), 
+                    Tag.class, 
+                    "tags"
+                );
+                log.debug("Found {} tags for machine {}", tags.size(), machineId);
+            }
+            
+            // 4. Convert all to MachinePinotMessage
+            MachinePinotMessage machinePinotMessage = convertToMachinePinotMessage(machine, machineTags, tags);
+            
+            // 5. Save to Redis
+            boolean success = saveMachine(machinePinotMessage);
             if (success) {
-                log.debug("Successfully refreshed machine {} from MongoDB to Redis", machineId);
+                log.debug("Successfully refreshed machine {} from MongoDB to Redis with {} tags", machineId, tags.size());
             }
             
             return success;
@@ -278,5 +244,31 @@ public class MachineRedisService {
             log.error("Failed to refresh machine {} from MongoDB to Redis", machineId, e);
             return false;
         }
+    }
+
+    /**
+     * Convert Machine, MachineTags, and Tags to MachinePinotMessage
+     * @param machine machine data
+     * @param machineTags machine-tag relationships
+     * @param tags tag data
+     * @return MachinePinotMessage
+     */
+    private MachinePinotMessage convertToMachinePinotMessage(Machine machine, List<MachineTag> machineTags, List<Tag> tags) {
+        MachinePinotMessage machinePinotMessage = new MachinePinotMessage();
+        
+        // Set basic machine information
+        machinePinotMessage.setMachineId(machine.getMachineId());
+        machinePinotMessage.setOrganizationId(machine.getOrganizationId());
+        machinePinotMessage.setDeviceType(machine.getType().toString());
+        machinePinotMessage.setStatus(machine.getStatus().toString());
+        machinePinotMessage.setOsType(machine.getOsType());
+
+        // Set tags information
+        List<String> tagsString = tags.stream()
+            .map(Tag::getName)
+            .toList();
+        machinePinotMessage.setTags(tagsString);
+        
+        return machinePinotMessage;
     }
 } 

@@ -8,7 +8,7 @@ import org.springframework.messaging.MessageDeliveryException;
 @Slf4j
 public abstract class DebeziumKafkaMessageHandler<T> extends DebeziumMessageHandler<T> {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    protected final KafkaTemplate<String, Object> kafkaTemplate;
 
     public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(objectMapper);

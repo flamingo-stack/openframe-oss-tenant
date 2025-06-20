@@ -11,7 +11,7 @@ public class DebeziumMessage {
     private JsonNode before;
     
     @JsonProperty("after")
-    private JsonNode after;
+    private String after;
     
     @JsonProperty("source")
     private Source source;

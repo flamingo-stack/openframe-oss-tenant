@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.DebeziumMessage;
 import com.openframe.data.model.kafka.MachinePinotMessage;
+import com.openframe.data.service.MachineRedisService;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Slf4j
@@ -16,9 +19,11 @@ public class MongoMachinesHandler extends DebeziumKafkaMessageHandler<MachinePin
 
 //    @Value("${kafka.producer.topic.openframe.machines.name}")
     private String topic = "machines.pinot";
+    private final MachineRedisService machineRedisService;
 
-    public MongoMachinesHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
+    public MongoMachinesHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper, MachineRedisService machineRedisService) {
         super(kafkaTemplate, objectMapper);
+        this.machineRedisService = machineRedisService;
     }
 
     @Override
@@ -31,14 +36,17 @@ public class MongoMachinesHandler extends DebeziumKafkaMessageHandler<MachinePin
         MachinePinotMessage transformedMessage = new MachinePinotMessage();
         try {
             if (message.getAfter() != null) {
-                JsonNode afterNode = message.getAfter();
-                if (afterNode.isTextual()) {
-                    String afterJson = afterNode.asText();
+                String afterJson = message.getAfter();
+                if (!afterJson.isEmpty()) {
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode afterData = mapper.readTree(afterJson);
 
                     if (afterData.has("machineId")) {
                         transformedMessage.setMachineId(afterData.get("machineId").asText());
+                        List<String> tags = "u".equalsIgnoreCase(message.getOperation())
+                                ? machineRedisService.getMachineWithRefresh(transformedMessage.getMachineId()).map(MachinePinotMessage::getTags)
+                                .orElse(List.of()) : List.of();
+                        transformedMessage.setTags(tags);
                     }
 
                     if (afterData.has("organizationId")) {
@@ -60,6 +68,11 @@ public class MongoMachinesHandler extends DebeziumKafkaMessageHandler<MachinePin
             throw new RuntimeException();
         }
         return transformedMessage;
+    }
+
+    protected void handleCreate(MachinePinotMessage message) {
+        super.handleCreate(message);
+        machineRedisService.saveMachine(message);
     }
 
     @Override

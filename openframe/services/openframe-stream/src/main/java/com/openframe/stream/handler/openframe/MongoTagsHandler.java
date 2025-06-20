@@ -1,8 +1,8 @@
 package com.openframe.stream.handler.openframe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.core.model.Tag;
 import com.openframe.data.model.DebeziumMessage;
+import com.openframe.data.model.redis.RedisTag;
 import com.openframe.data.service.TagRedisService;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.DebeziumMessageHandler;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class MongoTagsHandler extends DebeziumMessageHandler<Tag> {
+public class MongoTagsHandler extends DebeziumMessageHandler<RedisTag> {
     
     private final TagRedisService tagRedisService;
 
@@ -21,7 +21,7 @@ public class MongoTagsHandler extends DebeziumMessageHandler<Tag> {
     }
 
     @Override
-    protected void handleCreate(Tag tag) {
+    protected void handleCreate(RedisTag tag) {
         try {
             boolean success = tagRedisService.saveTag(tag);
 
@@ -36,12 +36,12 @@ public class MongoTagsHandler extends DebeziumMessageHandler<Tag> {
     }
 
     @Override
-    protected void handleRead(Tag tag) {
+    protected void handleRead(RedisTag tag) {
         handleCreate(tag);
     }
 
     @Override
-    protected void handleUpdate(Tag tag) {
+    protected void handleUpdate(RedisTag tag) {
         try {
             boolean success = tagRedisService.saveTag(tag);
 
@@ -56,7 +56,7 @@ public class MongoTagsHandler extends DebeziumMessageHandler<Tag> {
     }
 
     @Override
-    protected void handleDelete(Tag tag) {
+    protected void handleDelete(RedisTag tag) {
         try {
             boolean success = tagRedisService.deleteTag(tag.getId());
 
@@ -76,14 +76,14 @@ public class MongoTagsHandler extends DebeziumMessageHandler<Tag> {
     }
 
     @Override
-    protected Tag transform(DebeziumMessage debeziumMessage) {
+    protected RedisTag transform(DebeziumMessage debeziumMessage) {
         if (debeziumMessage.getAfter() == null) {
             log.warn("After data is null");
             throw new RuntimeException("After data is null");
         }
 
         try {
-            return mapper.treeToValue(debeziumMessage.getAfter(), Tag.class);
+            return mapper.readValue(debeziumMessage.getAfter(), RedisTag.class);
         } catch (Exception e) {
             log.error("Failed to parse tag from after data", e);
             throw new RuntimeException(e);

@@ -307,7 +307,7 @@ register_tool \
           "mongodb.connection.string": "mongodb://mongodb.datasources.svc.cluster.local:27017/meshcentral?replicaSet=rs0",
           "mongodb.name": "openframe",
           "topic.prefix": "openframe",
-          "collection.include.list": "openframe.machines,openframe.tags",
+          "collection.include.list": "openframe.machines,openframe.tags,openframe.machine_tags",
           "transforms": "route",
           "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
           "transforms.route.regex": ".*",

@@ -34,10 +34,10 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
             key.setTimestamp(Instant.now());
             entity.setKey(key);
             Map<String, String> payload = new HashMap<>();
-            JsonNode metadataNode = debeziumMessage.getAfter();
-            metadataNode.fields().forEachRemaining(entry -> {
-                payload.put(entry.getKey(), entry.getValue().asText());
-            });
+            String body = debeziumMessage.getAfter();
+//            metadataNode.fields().forEachRemaining(entry -> {
+//                payload.put(entry.getKey(), entry.getValue().asText());
+//            });
             entity.setPayload(payload);
 
         } catch (Exception e) {

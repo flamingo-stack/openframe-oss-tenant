@@ -1,7 +1,6 @@
 package com.openframe.data.service;
 
-import com.openframe.core.model.Tag;
-import lombok.RequiredArgsConstructor;
+import com.openframe.data.model.redis.RedisTag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -18,12 +17,12 @@ import java.util.Set;
 @ConditionalOnProperty(name = "spring.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class TagRedisService {
 
-    private final RedisTemplate<String, Tag> tagRedisTemplate;
+    private final RedisTemplate<String, RedisTag> tagRedisTemplate;
     private final MongoTemplate mongoTemplate;
     private static final String TAG_KEY_PREFIX = "tag:";
     private static final Duration DEFAULT_TTL = Duration.ofDays(30); // 30 days by default
 
-    public TagRedisService(RedisTemplate<String, Tag> tagRedisTemplate, MongoTemplate mongoTemplate) {
+    public TagRedisService(RedisTemplate<String, RedisTag> tagRedisTemplate, MongoTemplate mongoTemplate) {
         this.tagRedisTemplate = tagRedisTemplate;
         this.mongoTemplate = mongoTemplate;
         log.info("TagRedisService initialized with Redis support");
@@ -34,7 +33,7 @@ public class TagRedisService {
      * @param tag tag to save
      * @return true if save was successful
      */
-    public boolean saveTag(Tag tag) {
+    public boolean saveTag(RedisTag tag) {
         try {
             String key = TAG_KEY_PREFIX + tag.getId();
             tagRedisTemplate.opsForValue().set(key, tag, DEFAULT_TTL);
@@ -52,7 +51,7 @@ public class TagRedisService {
      * @param ttl time to live for the record
      * @return true if save was successful
      */
-    public boolean saveTag(Tag tag, Duration ttl) {
+    public boolean saveTag(RedisTag tag, Duration ttl) {
         try {
             String key = TAG_KEY_PREFIX + tag.getId();
             tagRedisTemplate.opsForValue().set(key, tag, ttl);
@@ -69,10 +68,10 @@ public class TagRedisService {
      * @param id tag ID
      * @return Optional with tag if found
      */
-    public Optional<Tag> getTag(String id) {
+    public Optional<RedisTag> getTag(String id) {
         try {
             String key = TAG_KEY_PREFIX + id;
-            Tag tag = tagRedisTemplate.opsForValue().get(key);
+            RedisTag tag = tagRedisTemplate.opsForValue().get(key);
             if (tag != null) {
                 log.debug("Tag retrieved from Redis with key: {}", key);
             }
@@ -88,8 +87,8 @@ public class TagRedisService {
      * @param id tag ID
      * @return Optional with tag if found
      */
-    public Optional<Tag> getTagWithRefresh(String id) {
-        Optional<Tag> tag = getTag(id);
+    public Optional<RedisTag> getTagWithRefresh(String id) {
+        Optional<RedisTag> tag = getTag(id);
         if (tag.isEmpty()) {
             log.debug("Tag {} not found in Redis, attempting to refresh from MongoDB", id);
             if (refreshTagFromMongoDB(id)) {
@@ -103,7 +102,7 @@ public class TagRedisService {
      * Gets all tags from Redis
      * @return list of all tags in Redis
      */
-    public List<Tag> getAllTags() {
+    public List<RedisTag> getAllTags() {
         try {
             String pattern = TAG_KEY_PREFIX + "*";
             Set<String> keys = tagRedisTemplate.keys(pattern);
@@ -126,8 +125,8 @@ public class TagRedisService {
      * Gets all tags with automatic refresh from MongoDB if Redis is empty
      * @return list of all tags
      */
-    public List<Tag> getAllTagsWithRefresh() {
-        List<Tag> tags = getAllTags();
+    public List<RedisTag> getAllTagsWithRefresh() {
+        List<RedisTag> tags = getAllTags();
         if (tags.isEmpty()) {
             log.debug("No tags found in Redis, attempting to refresh from MongoDB");
             refreshFromMongoDB();
@@ -205,12 +204,12 @@ public class TagRedisService {
             }
             
             // Load all tags from MongoDB
-            List<Tag> tags = mongoTemplate.findAll(Tag.class, "tags");
+            List<RedisTag> tags = mongoTemplate.findAll(RedisTag.class, "tags");
             log.info("Found {} tags in MongoDB", tags.size());
             
             // Save all tags to Redis
             long savedCount = 0;
-            for (Tag tag : tags) {
+            for (RedisTag tag : tags) {
                 if (saveTag(tag)) {
                     savedCount++;
                 }
@@ -235,7 +234,7 @@ public class TagRedisService {
             log.debug("Refreshing tag {} from MongoDB to Redis", tagId);
             
             // Get tag from MongoDB
-            Tag tag = mongoTemplate.findById(tagId, Tag.class, "tags");
+            RedisTag tag = mongoTemplate.findById(tagId, RedisTag.class, "tags");
             if (tag == null) {
                 log.warn("Tag {} not found in MongoDB", tagId);
                 return false;

@@ -1,7 +1,9 @@
 package com.openframe.stream.handler;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +15,9 @@ public abstract class GenericMessageHandler<T, U> implements MessageHandler {
     protected final ObjectMapper mapper;
 
     protected GenericMessageHandler(ObjectMapper mapper) {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
         this.mapper = mapper;
     }
 
