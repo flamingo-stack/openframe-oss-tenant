@@ -1,7 +1,7 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: fleet
+  name: fleetmdm
 build:
   tagPolicy:
     customTemplate:
@@ -17,4 +17,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../manifests/integrated-tools/base/fleet
+    - ../../manifests/integrated-tools/base/fleetmdm

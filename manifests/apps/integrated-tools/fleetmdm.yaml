@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: fleet
+  name: fleetmdm
   annotations:
     argocd.argoproj.io/sync-wave: "3"
   finalizers:
@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/integrated-tools/base/fleet
+      path: manifests/integrated-tools/base/fleetmdm
 
   destination:
     name: in-cluster
