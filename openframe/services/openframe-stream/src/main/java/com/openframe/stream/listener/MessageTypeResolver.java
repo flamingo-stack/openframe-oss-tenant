@@ -33,7 +33,7 @@ public class MessageTypeResolver {
             MessageType messageType = switch (collectionName) {
                 case "tags" -> MessageType.OPENFRAME_MONGO_TAGS;
                 case "machines" -> MessageType.OPENFRAME_MONGO_MACHINES;
-                case "machineTag" -> MessageType.OPENFRAME_MONGO_MACHINE_TAG;
+                case "machine_tags" -> MessageType.OPENFRAME_MONGO_MACHINE_TAG;
                 default -> null;
             };
             if (messageType != null) {

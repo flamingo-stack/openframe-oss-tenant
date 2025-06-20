@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.DebeziumMessage;
 import com.openframe.data.model.redis.RedisMachineTag;
 import com.openframe.data.model.kafka.MachinePinotMessage;
+import com.openframe.data.model.redis.RedisTag;
 import com.openframe.data.service.MachineRedisService;
 import com.openframe.data.service.MachineTagRedisService;
 import com.openframe.data.service.TagRedisService;
@@ -14,6 +15,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,22 +74,19 @@ public class MongoMachineTagHandler extends DebeziumKafkaMessageHandler<RedisMac
 
     @Override
     protected void handleRead(RedisMachineTag data) {
-        log.debug("Handling READ for machine tag: machineId={}, tagId={}", data.getMachineId(), data.getTagId());
-        // Read operations typically don't need special handling
+        handleCreate(data);
     }
 
     @Override
     protected void handleUpdate(RedisMachineTag data) {
         log.info("Handling UPDATE for machine tag: machineId={}, tagId={}", data.getMachineId(), data.getTagId());
 
-        // Save to Redis (update)
         boolean saved = machineTagRedisService.saveMachineTag(data);
         if (!saved) {
             log.error("Failed to update machine tag in Redis: machineId={}, tagId={}", data.getMachineId(), data.getTagId());
             return;
         }
 
-        // Find machine tag from Redis with tags and send to Kafka
         sendMachineWithTagsToKafka(data.getMachineId());
     }
 
@@ -120,26 +119,22 @@ public class MongoMachineTagHandler extends DebeziumKafkaMessageHandler<RedisMac
             }
 
             // Get the first machine tag (they all have the same machineId)
-            RedisMachineTag firstMachineTag = machineTags.get(0);
+            Optional<MachinePinotMessage> machineOptional = machineRedisService.getMachineWithRefresh(machineId);
 
-            // Create machine message with tags
-            MachinePinotMessage machineMessage = createMachinePinotMessage(firstMachineTag);
-
-            // Add tags information
-            StringBuilder tagsInfo = new StringBuilder();
-            for (RedisMachineTag machineTag : machineTags) {
-                // Get tag details from Redis
-                Optional<com.openframe.data.model.redis.RedisTag> tag = tagRedisService.getTagWithRefresh(machineTag.getTagId());
-                if (tag.isPresent()) {
-                    if (tagsInfo.length() > 0) {
-                        tagsInfo.append(",");
-                    }
-                    tagsInfo.append(tag.get().getName());
-                }
+            if (machineOptional.isEmpty()) {
+                log.debug("No machine found for machineId: {}", machineId);
+                return;
             }
 
-            // Set tags as additional field (you might need to add this field to MachinePinotMessage)
-            // machineMessage.setTags(tagsInfo.toString());
+            // Create machine message with tags
+            MachinePinotMessage machineMessage = machineOptional.get();
+            List<String> tags = new ArrayList<>();
+            for (RedisMachineTag machineTag : machineTags) {
+                // Get tag details from Redis
+                Optional<RedisTag> tag = tagRedisService.getTag(machineTag.getTagId());
+                tag.ifPresent(redisTag -> tags.add(redisTag.getName()));
+            }
+            machineMessage.setTags(tags);
 
             // Send to Kafka
             try {
@@ -149,7 +144,6 @@ public class MongoMachineTagHandler extends DebeziumKafkaMessageHandler<RedisMac
                 log.error("Error sending message to Kafka topic {}: {}", getTopic(), machineMessage, e);
                 throw new MessageDeliveryException("Failed to send message to Kafka");
             }
-            log.debug("Sent machine with tags to Kafka: machineId={}, tags={}", machineId, tagsInfo.toString());
 
         } catch (Exception e) {
             log.error("Failed to send machine with tags to Kafka: machineId={}", machineId, e);
@@ -165,20 +159,15 @@ public class MongoMachineTagHandler extends DebeziumKafkaMessageHandler<RedisMac
         MachinePinotMessage machineMessage = new MachinePinotMessage();
         machineMessage.setMachineId(redisMachineTag.getMachineId());
 
-        // Note: You might need to get additional machine information from a machine service
-        // For now, we're setting basic information from the machine tag
-
-        // You could also inject MachineRedisService to get full machine details
-         Optional<MachinePinotMessage> machine = machineRedisService.getMachineWithRefresh(redisMachineTag.getMachineId());
-         if (machine.isPresent()) {
-             machineMessage.setMachineId(machine.get().getMachineId());
-             machineMessage.setOrganizationId(machine.get().getOrganizationId());
-             machineMessage.setDeviceType(machine.get().getDeviceType());
-             machineMessage.setStatus(machine.get().getStatus());
-             machineMessage.setOsType(machine.get().getOsType());
-             machineMessage.setTags(machine.get().getTags());
-         }
-
+        Optional<MachinePinotMessage> machine = machineRedisService.getMachineWithRefresh(redisMachineTag.getMachineId());
+        if (machine.isPresent()) {
+            machineMessage.setMachineId(machine.get().getMachineId());
+            machineMessage.setOrganizationId(machine.get().getOrganizationId());
+            machineMessage.setDeviceType(machine.get().getDeviceType());
+            machineMessage.setStatus(machine.get().getStatus());
+            machineMessage.setOsType(machine.get().getOsType());
+            machineMessage.setTags(machine.get().getTags());
+        }
         return machineMessage;
     }
 }
