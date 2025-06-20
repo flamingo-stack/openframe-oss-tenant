@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 cleanup() {
   echo ""
   echo "Cleaning up intercept: $SERVICE_NAME"
@@ -12,6 +13,7 @@ cleanup() {
   telepresence connect --namespace "$CURRENT_NAMESPACE"
   exit 0
 }
+
 
 intercept_app() {
   SERVICE_NAME="$1"
@@ -52,4 +54,12 @@ intercept_app() {
   while true; do
     sleep 1
   done
+}
+
+
+switch_argocd_app_health() {
+  SERVICE_NAME="$1"
+  NAMESPACE="$2"
+  
+  
 }

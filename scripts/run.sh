@@ -36,8 +36,8 @@ export -f add_loopback_ip
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
-source "${SCRIPT_DIR}/functions/intercept.sh"
-export -f intercept_app
+source "${SCRIPT_DIR}/functions/develop.sh"
+export -f intercept_app switch_argocd_app_health
 
 source "${SCRIPT_DIR}/functions/argocd.sh"
 export -f deploy_argocd delete_argocd wait_for_argocd_apps
