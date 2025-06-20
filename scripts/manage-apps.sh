@@ -7,17 +7,19 @@
 source "${SCRIPT_DIR}/functions/spinner.sh"
 export -f start_spinner stop_spinner _spin
 
-APP=$1
-ACTION=$2
-LOCAL_PORT=$3
-REMOTE_PORT_NAME=$4
+ARG=$1
+APP=$2
+NAMESPACE=$3
+ACTION=$4
+LOCAL_PORT=$5
+REMOTE_PORT_NAME=$6
 
-if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
+if [ "$ARG" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
   exit 1
 fi
 
-case "$APP" in
+case "$ARG" in
 argocd)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying ArgoCD"
@@ -66,60 +68,6 @@ pki_cert)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-openframe_microservices_openframe_config_server)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Config Server in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-config-server" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_api)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying API in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-api" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_management)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Management in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-management" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_stream)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Stream in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-stream" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_gateway)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Gateway in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-gateway" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_ui)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying OpenFrame UI in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-ui" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
 openframe_microservices_register_apps)
   start_spinner "Registering apps"
   ${ROOT_REPO_DIR}/scripts/functions/register.sh >"${DEPLOY_LOG_DIR}/register-apps-deploy.log"
@@ -163,6 +111,22 @@ tools_telepresence)
     echo "$APP is not supported for debug mode"
   fi
   ;;
+app)
+  if [ "$ACTION" == "dev" ]; then
+    echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
+    case "$APP" in
+      *openframe*)
+        cd "${ROOT_REPO_DIR}/openframe/services/$APP"
+        skaffold dev --cache-artifacts=false -n $NAMESPACE
+        ;;
+      *)
+        echo "$APP is not supported in dev mode" && exit 0
+        ;;
+    esac
+  elif [ "$ACTION" == "intercept" ]; then
+    intercept_app "$APP" "$NAMESPACE" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+  fi
+  ;;
 # BUNDLE APPS
 a | all)
   # ------------- ALL -------------
@@ -178,7 +142,7 @@ a | all)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
   ;;
 *)
-  echo "Unknown app: $APP"
+  echo "Unknown arg: $ARG"
   echo
   echo "Available apps:"
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"

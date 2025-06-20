@@ -71,12 +71,13 @@ if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
 fi
 
 ARG=$1
-APP=$2
-ACTION=$3
+NAMESPACE=$2
+APP=$3
+ACTION=$4
 
 if [ "$ACTION" == "intercept" ]; then
-  LOCAL_PORT="$4"
-  REMOTE_PORT_NAME="$5"
+  LOCAL_PORT="$5"
+  REMOTE_PORT_NAME="$6"
 fi
 
 case "$ARG" in
@@ -100,7 +101,7 @@ case "$ARG" in
   a|app)
     # Deploy app one by one
     if [ -n "$APP" ]; then
-      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash "${SCRIPT_DIR}/manage-apps.sh" app "$NAMESPACE" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
     else
       bash "${SCRIPT_DIR}/manage-apps.sh" "''"
     fi
@@ -108,7 +109,7 @@ case "$ARG" in
   b|bootstrap)
     # Bootstrap whole cluster with all apps
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app all deploy
+    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app all namespace app deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
