@@ -30,8 +30,6 @@ argocd)
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
   fi
   ;;
 argocd_apps)
@@ -50,8 +48,6 @@ argocd_apps)
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
   fi
   ;;
 pki_cert)
@@ -64,8 +60,6 @@ pki_cert)
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
   fi
   ;;
 openframe_microservices_register_apps)
@@ -75,33 +69,6 @@ openframe_microservices_register_apps)
   echo
   awk '/Fleet MDM Credentials:/ {i=NR} END {print i}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" |
     xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
-  ;;
-integrated_tools_datasources_fleet)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Fleet in dev mode"
-    cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-    skaffold dev --cache-artifacts=false -n integrated-tools
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
-  fi
-  ;;
-integrated_tools_fleet)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Fleet in dev mode"
-    cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-    skaffold dev --cache-artifacts=false -n integrated-tools
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
-  fi
-  ;;
-integrated_tools_meshcentral)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying MeshCentral in dev mode"
-    cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
-    skaffold dev --cache-artifacts=false -n integrated-tools
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "meshcentral" "integrated-tools" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
   ;;
 tools_telepresence)
   if [ "$ACTION" == "dev" ]; then
@@ -116,13 +83,18 @@ app)
     echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
     case "$APP" in
       *openframe*)
-        cd "${ROOT_REPO_DIR}/openframe/services/$APP"
-        skaffold dev --cache-artifacts=false -n $NAMESPACE
+        cd "${ROOT_REPO_DIR}/openframe/services/${APP}"
+        ;;
+      meshcentral)
+        cd "${ROOT_REPO_DIR}/${NAMESPACE}/${APP}/server"
         ;;
       *)
-        echo "$APP is not supported in dev mode" && exit 0
+        cd "${ROOT_REPO_DIR}/${NAMESPACE}/${APP}"
         ;;
     esac
+
+    skaffold dev --cache-artifacts=false -n $NAMESPACE ||
+      echo "$APP is not supported in dev mode" && exit 0
   elif [ "$ACTION" == "intercept" ]; then
     intercept_app "$APP" "$NAMESPACE" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
