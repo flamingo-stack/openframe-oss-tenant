@@ -66,15 +66,6 @@ pki_cert)
     echo "$APP is not supported for debug mode"
   fi
   ;;
-openframe_datasources_nifi)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying NiFi in dev mode"
-    cd ${SCRIPT_DIR}/../openframe/datasources/nifi/
-    skaffold dev --cache-artifacts=false -n datasources
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
-  fi
-  ;;
 openframe_microservices_openframe_config_server)
   if [ "$ACTION" == "dev" ]; then
     echo "Deploying Config Server in dev mode"
