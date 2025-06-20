@@ -179,7 +179,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "up{job=\"openframe-config-server\"}",
+          "expr": "up{job=\"openframe-config\"}",
           "legendFormat": "Config",
           "range": true,
           "refId": "A"

@@ -18,7 +18,7 @@ spec:
       initContainers:
         - name: wait-for-config-server
           image: curlimages/curl:latest
-          command: ["sh", "-c", "until curl -f http://openframe-config-server:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+          command: ["sh", "-c", "until curl -f http://openframe-config:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
 
       containers:
         - name: openframe-management
@@ -32,7 +32,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: SPRING_CONFIG_IMPORT
-              value: "optional:configserver:http://openframe-config-server:8888"
+              value: "optional:configserver:http://openframe-config:8888"
             - name: OPENFRAME_MANAGEMENT_KEY
               valueFrom:
                 secretKeyRef:
