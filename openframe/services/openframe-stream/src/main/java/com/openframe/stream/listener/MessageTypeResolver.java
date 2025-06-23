@@ -11,8 +11,7 @@ import java.util.Map;
 
 public class MessageTypeResolver {
 
-    public static List<MessageType> resolve(Map<String, Object> message) {
-        List<MessageType> messageTypeList = new ArrayList<>();
+    public static MessageType resolve(Map<String, Object> message) {
         try {
             Object payload = message.get("payload");
             if (!(payload instanceof Map)) {
@@ -27,25 +26,6 @@ public class MessageTypeResolver {
 
             Map<String, Object> sourceMap = (Map<String, Object>) source;
             
-            // Get database type from connector
-            Object connector = sourceMap.get("connector");
-            if (!(connector instanceof String)) {
-                return null;
-            }
-            
-            String connectorStr = ((String) connector).toLowerCase();
-
-            DebeziumMessage.DatabaseType sourceDb = switch (connectorStr) {
-                case "mongodb" -> DebeziumMessage.DatabaseType.MONGODB;
-                case "postgresql" -> DebeziumMessage.DatabaseType.POSTGRESQL;
-                case "mysql" -> DebeziumMessage.DatabaseType.MYSQL;
-                default -> null;
-            };
-            
-            if (sourceDb == null) {
-                return null;
-            }
-            
             // Get database name
             Object database = sourceMap.get("db");
             if (!(database instanceof String)) {
@@ -55,24 +35,14 @@ public class MessageTypeResolver {
             String databaseName = (String) database;
             
             // Determine integrated tool based on database name
-            IntegratedTool integratedTool = (databaseName.equals(IntegratedTool.MESHCENTRAL.getDbName()))
-                    ? IntegratedTool.MESHCENTRAL
-                    : databaseName.equals(IntegratedTool.TACTICAL.getDbName()) ? IntegratedTool.TACTICAL
+            return (databaseName.equals(IntegratedTool.MESHCENTRAL.getDbName()))
+                    ? MessageType.MESHCENTRAL_EVENT
+                    : databaseName.equals(IntegratedTool.TACTICAL.getDbName()) ? MessageType.TACTICAL_EVENT
                     : null;
-            if (integratedTool == null) {
-                return null;
-            }
-            
-            // Find matching MessageType based on sourceDb and integratedTool
-            messageTypeList = Arrays.stream(MessageType.values())
-                    .filter(messageType -> messageType.getSourceDb() == sourceDb &&
-                            messageType.getIntegratedTool() == integratedTool)
-                    .toList();
 
         } catch (Exception e) {
-            // Log exception if needed
+            return null;
         }
-        return messageTypeList;
     }
 
 }

@@ -20,7 +20,7 @@ public class TrmmEventCassandraHandler extends DebeziumCassandraMessageHandler<C
 
     @Override
     public MessageType getType() {
-        return MessageType.TRMM_PSQL_AUDIT_LOG_TO_CASSANDRA;
+        return MessageType.TACTICAL_EVENT;
     }
 
     @Override

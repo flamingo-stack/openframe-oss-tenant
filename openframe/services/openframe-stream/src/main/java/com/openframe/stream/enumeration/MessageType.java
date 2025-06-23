@@ -1,22 +1,27 @@
 package com.openframe.stream.enumeration;
 
-import com.openframe.data.model.debezium.DebeziumMessage;
+import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 public enum MessageType {
 
-    MESHCENTRAL_EVENT(List.of(Destination.CASSANDRA, Destination.KAFKA)),
-    TACTICAL_EVENT(List.of(Destination.CASSANDRA, Destination.KAFKA));
+    MESHCENTRAL_EVENT(DataEnrichmentServiceType.INTEGRATED_TOOLS_EVENTS,
+            List.of(Destination.CASSANDRA, Destination.KAFKA), DeserializerType.INTEGRATED_TOOLS_EVENTS_DESERIALIZER),
+    TACTICAL_EVENT(DataEnrichmentServiceType.INTEGRATED_TOOLS_EVENTS,
+            List.of(Destination.CASSANDRA, Destination.KAFKA), DeserializerType.INTEGRATED_TOOLS_EVENTS_DESERIALIZER);
+
+    private final DataEnrichmentServiceType dataEnrichmentServiceType;
 
     private final List<Destination> destinationList;
 
-    MessageType(List<Destination> destinationList) {
-        this.destinationList = destinationList;
-    }
+    private final DeserializerType deserializerType;
 
-    public List<Destination> getDestinationList() {
-        return destinationList;
+    MessageType(DataEnrichmentServiceType dataEnrichmentServiceType, List<Destination> destinationList, DeserializerType deserializerType) {
+        this.dataEnrichmentServiceType = dataEnrichmentServiceType;
+        this.destinationList = destinationList;
+        this.deserializerType = deserializerType;
     }
 
     //    MESH_MONGO_EVENT_TO_CASSANDRA(DebeziumMessage.DatabaseType.MONGODB, IntegratedTool.MESHCENTRAL),

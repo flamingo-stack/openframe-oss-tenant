@@ -2,6 +2,7 @@ package com.openframe.stream.handler.tactical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.PostgreSqlDebeziumMessage;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
@@ -12,13 +13,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class TrmmEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage> {
+public class TrmmEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, PostgreSqlDebeziumMessage> {
 
     @Value("${kafka.producer.topic.event.tactical-rmm.name}")
     private String topic;
 
     public TrmmEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
-        super(kafkaTemplate, objectMapper);
+        super(kafkaTemplate, objectMapper, PostgreSqlDebeziumMessage.class);
     }
 
     @Override
@@ -28,16 +29,11 @@ public class TrmmEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPi
 
     @Override
     public MessageType getType() {
-        return MessageType.TRMM_PSQL_AUDIT_LOG_TO_KAFKA;
+        return MessageType.TACTICAL_EVENT;
     }
 
     @Override
-    protected boolean isValidMessage(DebeziumMessage message) {
-        return false;
-    }
-
-    @Override
-    protected KafkaITPinotMessage transform(DebeziumMessage debeziumMessage) {
+    protected KafkaITPinotMessage transform(PostgreSqlDebeziumMessage debeziumMessage) {
         return null;
     }
 }

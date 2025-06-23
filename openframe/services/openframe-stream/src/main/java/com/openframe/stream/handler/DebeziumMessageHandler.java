@@ -2,13 +2,14 @@ package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
 @Slf4j
-public abstract class DebeziumMessageHandler<T, U extends DebeziumMessage> extends GenericMessageHandler<T, U> {
+public abstract class DebeziumMessageHandler<T, U extends DebeziumMessage> extends GenericMessageHandler<T, U, IntegratedToolEnrichedData> {
 
     private final Class<U> clazz;
 

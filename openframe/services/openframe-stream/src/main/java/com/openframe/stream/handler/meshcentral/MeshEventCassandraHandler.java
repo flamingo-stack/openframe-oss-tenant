@@ -91,7 +91,7 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
 
     @Override
     public MessageType getType() {
-        return MessageType.MESH_MONGO_EVENT_TO_CASSANDRA;
+        return MessageType.MESHCENTRAL_EVENT;
     }
 
     @Override

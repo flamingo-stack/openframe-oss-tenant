@@ -2,6 +2,7 @@ package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.stream.enumeration.Destination;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.repository.CassandraRepository;
 
@@ -13,6 +14,11 @@ public abstract class DebeziumCassandraMessageHandler<T, U extends DebeziumMessa
     protected DebeziumCassandraMessageHandler(CassandraRepository repository, ObjectMapper objectMapper, Class<U> clazz) {
         super(objectMapper, clazz);
         this.repository = repository;
+    }
+
+    @Override
+    public Destination getDestination() {
+        return Destination.CASSANDRA;
     }
 
     protected void handleCreate(T data) {

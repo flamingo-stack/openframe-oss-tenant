@@ -29,7 +29,7 @@ public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPi
 
     @Override
     public MessageType getType() {
-        return MessageType.MESH_MONGO_EVENT_TO_KAFKA;
+        return MessageType.MESHCENTRAL_EVENT;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.stream.enumeration.Destination;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
@@ -33,6 +34,11 @@ public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> 
         handleCreate(message);
     }
     protected void handleDelete(T data) {
+    }
+
+    @Override
+    public Destination getDestination() {
+        return Destination.KAFKA;
     }
 
     protected abstract String getTopic();
