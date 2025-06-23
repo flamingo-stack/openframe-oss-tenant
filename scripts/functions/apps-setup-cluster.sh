@@ -93,7 +93,7 @@ function setup_cluster() {
     fi
 
     # Simple formula: 1 agent per 2 cores, minimum 1, maximum TOTAL_CPU/2
-    OPTIMAL_AGENTS=$((TOTAL_CPU / 3))
+    OPTIMAL_AGENTS=$((TOTAL_CPU / 5))
     [ "$OPTIMAL_AGENTS" -lt 1 ] && OPTIMAL_AGENTS=1
     SERVERS=1
 

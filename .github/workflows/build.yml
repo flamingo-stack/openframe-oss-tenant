@@ -12,6 +12,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'manifests/**'
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
