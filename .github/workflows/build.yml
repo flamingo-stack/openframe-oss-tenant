@@ -181,20 +181,3 @@ jobs:
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
-  
-
-  cleanup:
-    name: Cleanup the main branch
-    needs: [build]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && always()
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Change branch targetRevision to main
-        run: |
-          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i -E "s|^([[:space:]]*targetRevision:[[:space:]]*)[a-zA-Z_./-]+\$|\1main|" "$f"
-          done

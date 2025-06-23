@@ -16,4 +16,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/openframe/base/openframe-client
+    - ../../../manifests/microservices/base/openframe-client

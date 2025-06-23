@@ -48,7 +48,7 @@ RUN mkdir -p /usr/share /etc/fleet /var/log/osquery && \
 
 COPY init-fleet.sh /usr/share/init-fleet.sh
 COPY entrypoint.sh /entrypoint.sh
-COPY fleet.yml /etc/fleet/fleet.yml
+COPY fleetmdm.yml /etc/fleet/fleet.yml
 
 RUN apk add --no-cache bind-tools curl iputils netcat-openbsd nodejs npm && rm -rf /var/cache/apk/* && \
     npm install -g fleetctl@4.60.1 && \

@@ -38,9 +38,41 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
 
+  checks:
+    name: Basic branch tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check targetRevision is main
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: |
+          output=$(
+            find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | \
+            while IFS= read -r -d '' file; do
+              awk -v github_base="${GITHUB_BASE_REF}" '
+                /^[[:space:]]*targetRevision:[[:space:]]*/ {
+                  gsub(/^[[:space:]]*targetRevision:[[:space:]]*/, "", $0)
+                  val = $0
+                  if (val != github_base && val !~ /^[0-9]+(\.[0-9]+)*$/) {
+                    print FILENAME ": " val
+                    exit 1
+                  }
+                }
+              ' "$file"
+            done
+          )
+          if [[ -n "$output" ]]; then
+            echo "$output" && exit 1
+          fi
+
+
   build_java:
     name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix]
+    needs: [changes, matrix, checks]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     strategy:
@@ -223,7 +255,7 @@ jobs:
           GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
         run: |
           find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i -E "s|^([[:space:]]*targetRevision:[[:space:]]*)[a-zA-Z_./-]+\$|\1${GITHUB_HEAD_REF_CI}|" "$f"
+            sed -i -E "s|^([[:space:]]*targetRevision:[[:space:]]*)[a-zA-Z0-9_/-]+\$|\1${GITHUB_HEAD_REF_CI}|" "$f"
           done
 
       - name: Commit changes
@@ -297,7 +329,7 @@ jobs:
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, matrix, post-test]
+    needs: [changes, matrix, test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
     strategy:
