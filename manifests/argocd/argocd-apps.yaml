@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: 
+    targetRevision: feature/dev-mode
     path: manifests/apps
 
   destination:

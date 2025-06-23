@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/openframe/base/redis/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: 
+      targetRevision: feature/dev-mode
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: 
+      targetRevision: feature/dev-mode
       path: manifests/openframe/base/redis
 
   destination:
