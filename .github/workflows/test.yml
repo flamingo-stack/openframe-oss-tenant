@@ -57,7 +57,7 @@ jobs:
                 /^[[:space:]]*targetRevision:[[:space:]]*/ {
                   gsub(/^[[:space:]]*targetRevision:[[:space:]]*/, "", $0)
                   val = $0
-                  echo "${GITHUB_BASE_REF}"
+                  print "${GITHUB_BASE_REF}"
                   if (val != "${GITHUB_BASE_REF}" && val !~ /^[0-9]+(\.[0-9]+)*$/) {
                     print FILENAME ": " val
                     exit 1
