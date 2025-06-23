@@ -297,23 +297,6 @@ register_tool \
     "Datasource" \
     1 \
     "#616161" \
-    "" \
-    "" \
-    '{
-        "name": "openframe-mongo-connector",
-        "config": {
-          "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
-          "snapshot.mode": "always",
-          "mongodb.connection.string": "mongodb://mongodb.datasources.svc.cluster.local:27017/meshcentral?replicaSet=rs0",
-          "mongodb.name": "openframe",
-          "topic.prefix": "openframe",
-          "collection.include.list": "openframe.machines,openframe.tags,openframe.machine_tags",
-          "transforms": "route",
-          "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
-          "transforms.route.regex": ".*",
-          "transforms.route.replacement": "openframe.mongodb.machines"
-        }
-     }'
 
 # Register Redis with layer info
 register_tool \

@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/mesh-kafka-to-cassandra
+      targetRevision: main
       path: manifests/client-tools/base/mongo-express
 
   destination:

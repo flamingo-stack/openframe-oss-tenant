@@ -1,19 +1,10 @@
 package com.openframe.data.config;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.Tag;
-import com.openframe.data.model.kafka.MachinePinotMessage;
-import com.openframe.data.model.redis.RedisMachineTag;
-import com.openframe.data.model.redis.RedisTag;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
@@ -28,59 +19,6 @@ public class RedisConfig {
         template.setValueSerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new StringRedisSerializer());
-        return template;
-    }
-
-    @Bean
-    public RedisTemplate<String, RedisTag> tagRedisTemplate(RedisConnectionFactory connectionFactory) {
-        return createTypedRedisTemplate(connectionFactory, RedisTag.class, "tag");
-    }
-
-    @Bean
-    public RedisTemplate<String, MachinePinotMessage> machineRedisTemplate(RedisConnectionFactory connectionFactory) {
-        return createTypedRedisTemplate(connectionFactory, MachinePinotMessage.class, "machine");
-    }
-
-    @Bean
-    public RedisTemplate<String, RedisMachineTag> machineTagRedisTemplate(RedisConnectionFactory connectionFactory) {
-        return createTypedRedisTemplate(connectionFactory, RedisMachineTag.class, "machine");
-    }
-
-    /**
-     * Создает типизированный RedisTemplate для указанного класса
-     * @param connectionFactory фабрика соединений Redis
-     * @param clazz класс объекта
-     * @param typeName имя типа для логирования
-     * @return настроенный RedisTemplate
-     */
-    private <T> RedisTemplate<String, T> createTypedRedisTemplate(
-            RedisConnectionFactory connectionFactory, 
-            Class<T> clazz, 
-            String typeName) {
-        
-        RedisTemplate<String, T> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-
-        // Настройка сериализации для ключей (String)
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-
-        // Настройка сериализации для значений (объекты)
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.activateDefaultTyping(
-            LaissezFaireSubTypeValidator.instance,
-            ObjectMapper.DefaultTyping.NON_FINAL,
-            JsonTypeInfo.As.PROPERTY
-        );
-        
-        GenericJackson2JsonRedisSerializer jsonSerializer = 
-            new GenericJackson2JsonRedisSerializer(objectMapper);
-        
-        template.setValueSerializer(jsonSerializer);
-        template.setHashValueSerializer(jsonSerializer);
-
-        template.afterPropertiesSet();
-        
         return template;
     }
 }

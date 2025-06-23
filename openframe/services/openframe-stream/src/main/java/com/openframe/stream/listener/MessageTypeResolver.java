@@ -31,9 +31,9 @@ public class MessageTypeResolver {
             String collectionName = (String) collection;
 
             MessageType messageType = switch (collectionName) {
-                case "tags" -> MessageType.OPENFRAME_MONGO_TAGS;
-                case "machines" -> MessageType.OPENFRAME_MONGO_MACHINES;
-                case "machine_tags" -> MessageType.OPENFRAME_MONGO_MACHINE_TAG;
+//                case "tags" -> MessageType.OPENFRAME_MONGO_TAGS;
+//                case "machines" -> MessageType.OPENFRAME_MONGO_MACHINES;
+//                case "machine_tags" -> MessageType.OPENFRAME_MONGO_MACHINE_TAG;
                 default -> null;
             };
             if (messageType != null) {
