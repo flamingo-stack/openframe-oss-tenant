@@ -8,11 +8,7 @@ source "${SCRIPT_DIR}/functions/spinner.sh"
 export -f start_spinner stop_spinner _spin
 
 ARG=$1
-NAMESPACE=$2
-APP=$3
-ACTION=$4
-ARG1=$5
-ARG2=$6
+ACTION=$2
 
 if [ "$ARG" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
@@ -71,6 +67,19 @@ openframe_microservices_register_apps)
     xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   ;;
 app)
+  NAMESPACE=$2
+  APP=$3
+  ACTION=$4
+  ARG1=$5
+  ARG2=$6
+
+  if [ -z "$NAMESPACE" ] || [ -z "$APP" ]; then
+    echo "NAMESPACE and APP names are required"
+    echo "Example: ./scripts/run.sh app <namespace> <app> <command> <args>"
+    echo "Example: ./scripts/run.sh app microservices openframe-api intercept 8090 http"
+    exit 1
+  fi
+
   if [ "$ACTION" == "dev" ]; then
     echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
     case "$APP" in
@@ -95,14 +104,12 @@ app)
   ;;
 # BUNDLE APPS
 a | all)
-  # ------------- ALL -------------
   ACTION=${2}
-  IFWAIT=${3:-}
 
   $0 argocd $ACTION &&
     $0 argocd_apps $ACTION &&
     $0 pki_cert $ACTION &&
-    $0 openframe_microservices_register_apps $ACTION
+    $0 openframe_microservices_register_apps
   ;;
 -h | --help | -Help | help)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"

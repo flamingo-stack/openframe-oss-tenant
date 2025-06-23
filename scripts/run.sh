@@ -109,11 +109,11 @@ case "$ARG" in
   b|bootstrap)
     # Bootstrap whole cluster with all apps
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app all namespace app deploy
+    bash "${SCRIPT_DIR}/manage-apps.sh" all deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
-      echo "Cleaning up $node ..."
+      echo "Cleaning up $node ..." 
       docker exec "$node" crictl rmi --prune
     done
     ;;
