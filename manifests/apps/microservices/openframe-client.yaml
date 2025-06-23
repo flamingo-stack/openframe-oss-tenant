@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/dev-mode
+      targetRevision: main
       path: manifests/microservices/base/openframe-client
 
   destination:
