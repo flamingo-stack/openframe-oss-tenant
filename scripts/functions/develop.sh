@@ -60,6 +60,7 @@ intercept_app() {
 switch_argocd_app_health() {
   SERVICE_NAME="$1"
   BRANCH_NAME="$2"
+  HEALTH_STATUS="$3"
 
   # Detect platform-specific sed flags
   SED_INPLACE=(-i)
@@ -76,11 +77,14 @@ switch_argocd_app_health() {
     # Replace all targetRevision values
     sed "${SED_INPLACE[@]}" -E \
       "s|^([[:space:]]*targetRevision:[[:space:]]*)[[:alnum:]_/-]+$|\1${BRANCH_NAME}|" "$file"
-
+    
     # Set syncPolicy.automated.selfHeal/prune to false
+    local SYNC_BOOL="true"
+    [[ "$HEALTH_STATUS" == "off" ]] && SYNC_BOOL="false"
+    
     sed "${SED_INPLACE[@]}" -E \
-      "s|^([[:space:]]*selfHeal:[[:space:]])true$|\1false|" "$file"
+      "s|^([[:space:]]*selfHeal:[[:space:]])[a-z]+$|\1${SYNC_BOOL}|" "$file"
     sed "${SED_INPLACE[@]}" -E \
-      "s|^([[:space:]]*prune:[[:space:]])true$|\1false|" "$file"
+      "s|^([[:space:]]*prune:[[:space:]])[a-z]+$|\1${SYNC_BOOL}|" "$file"
   done
 }

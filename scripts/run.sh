@@ -77,7 +77,6 @@ ACTION=$4
 
 if [ "$ACTION" == "intercept" ] || [ "$ACTION" == "health" ]; then
   ARG1="$5"
-elif [ "$ACTION" == "health" ]; then
   ARG2="$6"
 fi
 

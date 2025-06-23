@@ -89,8 +89,8 @@ app)
     echo "Intercepting ${APP} at ${NAMESPACE} in intercept mode"
     intercept_app "$APP" "$NAMESPACE" "$ARG1" "$ARG2"
   elif [ "$ACTION" == "health" ]; then
-    echo "Branch '${ARG1}' health autosync removed for ${APP}"
-    switch_argocd_app_health "$APP" "$ARG1"
+    echo "Branch '${ARG1}' autosync is ${ARG2} for ${APP}"
+    switch_argocd_app_health "$APP" "$ARG1" "$ARG2"
   fi
   ;;
 # BUNDLE APPS
