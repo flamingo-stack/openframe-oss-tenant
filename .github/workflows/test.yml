@@ -329,7 +329,7 @@ jobs:
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, matrix, post-test]
+    needs: [changes, matrix, test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
     strategy:
