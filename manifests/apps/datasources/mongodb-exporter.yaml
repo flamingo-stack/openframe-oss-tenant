@@ -17,14 +17,14 @@ spec:
       chart: prometheus-mongodb-exporter
       helm:
         valueFiles:
-          - "$values/manifests/openframe/base/mongodb-exporter/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/datasources/base/mongodb-exporter/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
-      path: manifests/openframe/base/mongodb-exporter
+      path: manifests/datasources/base/mongodb-exporter
 
   destination:
     name: in-cluster

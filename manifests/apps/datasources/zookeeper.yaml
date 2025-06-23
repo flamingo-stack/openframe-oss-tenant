@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
-      path: manifests/openframe/base/zookeeper
+      path: manifests/datasources/base/zookeeper
 
   destination:
     name: in-cluster

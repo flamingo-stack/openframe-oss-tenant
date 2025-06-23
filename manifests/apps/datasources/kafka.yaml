@@ -17,14 +17,14 @@ spec:
       chart: kafka
       helm:
         valueFiles:
-          - "$values/manifests/openframe/base/kafka/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/datasources/base/kafka/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
-      path: manifests/openframe/base/kafka
+      path: manifests/datasources/base/kafka
 
   destination:
     name: in-cluster

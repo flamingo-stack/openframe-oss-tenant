@@ -17,14 +17,14 @@ spec:
       chart: cassandra
       helm:
         valueFiles:
-          - "$values/manifests/openframe/base/cassandra/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/datasources/base/cassandra/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
-      path: manifests/openframe/base/cassandra
+      path: manifests/datasources/base/cassandra
 
   destination:
     name: in-cluster

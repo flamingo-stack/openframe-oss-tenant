@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
-      path: manifests/openframe/base/debezium-connect
+      path: manifests/datasources/base/debezium-connect
 
   destination:
     name: in-cluster

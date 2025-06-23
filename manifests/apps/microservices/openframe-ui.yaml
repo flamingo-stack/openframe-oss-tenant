@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/dev-mode
-      path: manifests/openframe/base/openframe-ui
+      path: manifests/microservices/base/openframe-ui
 
   destination:
     name: in-cluster
