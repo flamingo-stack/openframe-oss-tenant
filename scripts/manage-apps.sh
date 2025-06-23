@@ -23,9 +23,8 @@ argocd)
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
     delete_argocd
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
+  elif [ "$ACTION" == "secret" ]; then
+    get_initial_secret
   fi
   ;;
 argocd_apps)

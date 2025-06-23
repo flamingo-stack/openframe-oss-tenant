@@ -49,3 +49,8 @@ wait_for_argocd_apps() {
   rm -f "$printed"
   echo "All ArgoCD apps are Healthy and Synced"
 }
+
+
+get_initial_secret() {
+  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+}
