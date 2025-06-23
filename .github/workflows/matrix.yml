@@ -38,49 +38,49 @@ jobs:
               "name": "api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
-              "manifest_path": "./manifests/openframe/base/openframe-api",
+              "manifest_path": "./manifests/microservices/base/openframe-api",
               "artifact_name": "openframe-api"
             },
             {
               "name": "client",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-client",
-              "manifest_path": "./manifests/openframe/base/openframe-client",
+              "manifest_path": "./manifests/microservices/base/openframe-client",
               "artifact_name": "openframe-client"
             },
             {
               "name": "config",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",
-              "manifest_path": "./manifests/openframe/base/openframe-config",
+              "manifest_path": "./manifests/microservices/base/openframe-config",
               "artifact_name": "openframe-config"
             },
             {
               "name": "gateway",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-gateway",
-              "manifest_path": "./manifests/openframe/base/openframe-gateway",
+              "manifest_path": "./manifests/microservices/base/openframe-gateway",
               "artifact_name": "openframe-gateway"
             },
             {
               "name": "management",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-management",
-              "manifest_path": "./manifests/openframe/base/openframe-management",
+              "manifest_path": "./manifests/microservices/base/openframe-management",
               "artifact_name": "openframe-management"
             },
             {
               "name": "stream",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-stream",
-              "manifest_path": "./manifests/openframe/base/openframe-stream",
+              "manifest_path": "./manifests/microservices/base/openframe-stream",
               "artifact_name": "openframe-stream"
             },
             {
               "name": "ui",
               "type": ["container"],
               "path": "./openframe/services/openframe-ui",
-              "manifest_path": "./manifests/openframe/base/openframe-ui"
+              "manifest_path": "./manifests/microservices/base/openframe-ui"
             },
             {
               "name": "authentik-postgresql",
