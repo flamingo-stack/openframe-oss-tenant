@@ -108,7 +108,7 @@ a | all)
   $0 argocd $ACTION &&
     $0 argocd_apps $ACTION &&
     $0 pki_cert $ACTION &&
-    $0 openframe_microservices_register_apps
+    $0 openframe_microservices_register_apps $ACTION
   ;;
 -h | --help | -Help | help)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
