@@ -97,7 +97,7 @@ jobs:
               "name": "fleetmdm",
               "type": ["container"],
               "path": "./integrated-tools/fleetmdm",
-              "manifest_path": "./manifests/integrated-tools/base/fleet"
+              "manifest_path": "./manifests/integrated-tools/base/fleetmdm"
             },
             {
               "name": "meshcentral",
