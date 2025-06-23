@@ -1,7 +1,7 @@
 package com.openframe.stream.handler.tactical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.DebeziumMessage;
+import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.DebeziumKafkaMessageHandler;

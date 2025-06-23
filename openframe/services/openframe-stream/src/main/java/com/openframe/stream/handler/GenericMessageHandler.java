@@ -4,13 +4,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.openframe.data.model.kafka.DeserializedKafkaMessage;
 import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
 @Slf4j
-public abstract class GenericMessageHandler<T, U> implements MessageHandler {
+public abstract class GenericMessageHandler<T, U extends DeserializedKafkaMessage> implements MessageHandler<U> {
 
     protected final ObjectMapper mapper;
 
@@ -22,11 +23,10 @@ public abstract class GenericMessageHandler<T, U> implements MessageHandler {
     }
 
     @Override
-    public void handle(Map<String, Object> message) {
-        U deserializedMessage = deserialize(message);
-        if (isValidMessage(deserializedMessage)) {
-            T transformedData = transform(deserializedMessage);
-            OperationType operationType = getOperationType(deserializedMessage);
+    public void handle(U message) {
+        if (isValidMessage(message)) {
+            T transformedData = transform(message);
+            OperationType operationType = getOperationType(message);
             if (operationType != null) {
                 pushData(transformedData, operationType);
             }

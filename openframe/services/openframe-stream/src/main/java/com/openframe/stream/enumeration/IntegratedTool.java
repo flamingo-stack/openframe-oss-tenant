@@ -3,15 +3,15 @@ package com.openframe.stream.enumeration;
 public enum IntegratedTool {
 
     MESHCENTRAL ("meshcentral"),
-    TACTICAL ("tactical-rmm");
+    TACTICAL ("tacticalrmm");
 
-    private final String name;
+    private final String dbName;
 
     IntegratedTool(String name) {
-        this.name = name;
+        this.dbName = name;
     }
 
-    public String getName() {
-        return name;
+    public String getDbName() {
+        return dbName;
     }
 }

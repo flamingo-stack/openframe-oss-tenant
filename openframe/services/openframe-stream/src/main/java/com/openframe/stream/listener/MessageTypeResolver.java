@@ -1,8 +1,11 @@
 package com.openframe.stream.listener;
 
+import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.stream.enumeration.MessageType;
+import com.openframe.stream.enumeration.IntegratedTool;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -23,24 +26,51 @@ public class MessageTypeResolver {
             }
 
             Map<String, Object> sourceMap = (Map<String, Object>) source;
-            Object collection = sourceMap.get("collection");
-            if (!(collection instanceof String)) {
+            
+            // Get database type from connector
+            Object connector = sourceMap.get("connector");
+            if (!(connector instanceof String)) {
                 return null;
             }
+            
+            String connectorStr = ((String) connector).toLowerCase();
 
-            String collectionName = (String) collection;
-
-            MessageType messageType = switch (collectionName) {
-//                case "tags" -> MessageType.OPENFRAME_MONGO_TAGS;
-//                case "machines" -> MessageType.OPENFRAME_MONGO_MACHINES;
-//                case "machine_tags" -> MessageType.OPENFRAME_MONGO_MACHINE_TAG;
+            DebeziumMessage.DatabaseType sourceDb = switch (connectorStr) {
+                case "mongodb" -> DebeziumMessage.DatabaseType.MONGODB;
+                case "postgresql" -> DebeziumMessage.DatabaseType.POSTGRESQL;
+                case "mysql" -> DebeziumMessage.DatabaseType.MYSQL;
                 default -> null;
             };
-            if (messageType != null) {
-                messageTypeList.add(messageType);
+            
+            if (sourceDb == null) {
+                return null;
             }
+            
+            // Get database name
+            Object database = sourceMap.get("db");
+            if (!(database instanceof String)) {
+                return null;
+            }
+            
+            String databaseName = (String) database;
+            
+            // Determine integrated tool based on database name
+            IntegratedTool integratedTool = (databaseName.equals(IntegratedTool.MESHCENTRAL.getDbName()))
+                    ? IntegratedTool.MESHCENTRAL
+                    : databaseName.equals(IntegratedTool.TACTICAL.getDbName()) ? IntegratedTool.TACTICAL
+                    : null;
+            if (integratedTool == null) {
+                return null;
+            }
+            
+            // Find matching MessageType based on sourceDb and integratedTool
+            messageTypeList = Arrays.stream(MessageType.values())
+                    .filter(messageType -> messageType.getSourceDb() == sourceDb &&
+                            messageType.getIntegratedTool() == integratedTool)
+                    .toList();
 
         } catch (Exception e) {
+            // Log exception if needed
         }
         return messageTypeList;
     }

@@ -1,7 +1,8 @@
 package com.openframe.stream.handler.meshcentral;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.DebeziumMessage;
+import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.MongoDbDebeziumMessage;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
@@ -12,13 +13,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage> {
+public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, MongoDbDebeziumMessage> {
 
     @Value("${kafka.producer.topic.event.meshcentral.name}")
     private String topic;
 
     public MeshEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
-        super(kafkaTemplate, objectMapper);
+        super(kafkaTemplate, objectMapper, MongoDbDebeziumMessage.class);
     }
 
     @Override
@@ -32,7 +33,7 @@ public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPi
     }
 
     @Override
-    protected KafkaITPinotMessage transform(DebeziumMessage debeziumMessage) {
+    protected KafkaITPinotMessage transform(MongoDbDebeziumMessage debeziumMessage) {
         KafkaITPinotMessage message = new KafkaITPinotMessage();
 //        try {
 //            if (rootNode.has("eventType")) {

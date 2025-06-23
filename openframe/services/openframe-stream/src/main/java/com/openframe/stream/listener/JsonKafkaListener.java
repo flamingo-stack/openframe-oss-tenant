@@ -18,21 +18,8 @@ public class JsonKafkaListener {
         this.messageProcessor = messageProcessor;
     }
 
-//    @KafkaListener(topics = "${kafka.consumer.topic.event.meshcentral.name}", groupId = "${spring.kafka.consumer.group-id}")
-    public void listenMeshEvents(Map<String, Object> message) {
-        messageProcessor.process(message, MessageType.MESH_MONGO_EVENT_TO_CASSANDRA);
-        messageProcessor.process(message, MessageType.MESH_MONGO_EVENT_TO_KAFKA);
-    }
-
-//    @KafkaListener(topics = "${kafka.consumer.topic.event.tactical-rmm.name}", groupId = "${spring.kafka.consumer.group-id}")
-    public void listenTrmmEvents(Map<String, Object> message) {
-        messageProcessor.process(message, MessageType.TRMM_PSQL_AUDIT_LOG_TO_CASSANDRA);
-        messageProcessor.process(message, MessageType.TRMM_PSQL_AUDIT_LOG_TO_KAFKA);
-    }
-
-//    @KafkaListener(topics = "${kafka.consumer.topic.openframe.mongo.name}", groupId = "${spring.kafka.consumer.group-id}")
-    @KafkaListener(topics = "openframe.mongodb.machines", groupId = "${spring.kafka.consumer.group-id}")
-    public void listenOpenframeMongoEvents(Map<String, Object> message) {
+    @KafkaListener(topics = {"meshcentral.mongodb.events", "tactical-rmm.postgres.events"}, groupId = "${spring.kafka.consumer.group-id}")
+    public void listenIntegratedToolsEvents(Map<String, Object> message) {
         List<MessageType> messageTypes = MessageTypeResolver.resolve(message);
         Objects.requireNonNull(messageTypes).forEach(messageType -> {
             messageProcessor.process(message, messageType);

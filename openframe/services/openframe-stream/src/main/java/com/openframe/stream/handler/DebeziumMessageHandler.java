@@ -1,23 +1,26 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.DebeziumMessage;
+import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
 @Slf4j
-public abstract class DebeziumMessageHandler<T> extends GenericMessageHandler<T, DebeziumMessage> {
+public abstract class DebeziumMessageHandler<T, U extends DebeziumMessage> extends GenericMessageHandler<T, U> {
 
-    protected DebeziumMessageHandler(ObjectMapper mapper) {
+    private final Class<U> clazz;
+
+    protected DebeziumMessageHandler(ObjectMapper mapper, Class<U> clazz) {
         super(mapper);
+        this.clazz = clazz;
     }
 
     @Override
-    protected DebeziumMessage deserialize(Map<String, Object> message) {
+    protected U deserialize(Map<String, Object> message) {
         try {
-            return mapper.convertValue(message.get("payload"), DebeziumMessage.class);
+            return mapper.convertValue(message.get("payload"), clazz);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Error converting Map to DebeziumMessage", e);
         }
@@ -43,6 +46,6 @@ public abstract class DebeziumMessageHandler<T> extends GenericMessageHandler<T,
         return operationType;
     }
 
-    abstract protected T transform(DebeziumMessage debeziumMessage);
+    abstract protected T transform(U debeziumMessage);
 
 }

@@ -1,17 +1,18 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.data.model.debezium.DebeziumMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
 
 @Slf4j
-public abstract class DebeziumKafkaMessageHandler<T> extends DebeziumMessageHandler<T> {
+public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> extends DebeziumMessageHandler<T, U> {
 
     protected final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
-        super(objectMapper);
+    public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper, Class<U> clazz) {
+        super(objectMapper, clazz);
         this.kafkaTemplate = kafkaTemplate;
     }
 

@@ -18,7 +18,7 @@ public class CassandraITEventEntity {
     @Column("payload")
     private Map<String, String> payload;
 
-    @Column("event_type")  // Fixed column name to match database
+    @Column("event_type")
     private String eventType;
 
     @PrimaryKeyClass
@@ -32,6 +32,16 @@ public class CassandraITEventEntity {
 
         @PrimaryKeyColumn(name = "tool_name", ordinal = 1, ordering = Ordering.ASCENDING)
         private String toolName;
+
+        @PrimaryKeyColumn(name = "tool_id", ordinal = 2, ordering = Ordering.DESCENDING)
+        private String toolId;
+
+        @PrimaryKeyColumn(name = "machine_id", ordinal = 3, ordering = Ordering.ASCENDING)
+        private String machineId;
+
+        public String generatePK() {
+            return "%s_%s_%s_%s".formatted(toolName, toolId, timestamp, machineId);
+        }
     }
 
 }
