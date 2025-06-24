@@ -23,7 +23,7 @@ spec:
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/mesh-kafka-to-cassamdra
+      targetRevision: feature/mesh-kafka-to-cassandra
       path: manifests/datasources/base/cassandra
 
   destination:
