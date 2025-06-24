@@ -39,7 +39,8 @@ initDB:
     CREATE TABLE IF NOT EXISTS integrated_tool_event (
         id         text,
         tool_name  text,
-        tool_id,
+        tool_id    text,
+        machine_id text,
         event_type text,
         timestamp  timestamp,
         payload    map<text, text>,
@@ -47,6 +48,12 @@ initDB:
     ) WITH CLUSTERING ORDER BY (tool_name ASC, timestamp DESC);
 
     CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_type ON integrated_tool_event(event_type);
+    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_tool_id ON integrated_tool_event(tool_id);
+    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_machine_id ON integrated_tool_event(machine_id);
+
+    -- Create default user for application access
+    CREATE USER IF NOT EXISTS openframe WITH PASSWORD 'openframe_password';
+    GRANT ALL PERMISSIONS ON KEYSPACE openframe_events TO openframe;
 # initDBConfigMap: ""
 
 cluster:
