@@ -27,6 +27,7 @@ public abstract class DebeziumMessage implements DeserializedKafkaMessage {
      * Get the table/collection name - to be implemented by subclasses
      */
     public abstract String getTableName();
+    public abstract String getAgentId();
     
     /**
      * Get the database type for this message

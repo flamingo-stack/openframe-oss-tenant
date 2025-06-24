@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 
 @Configuration
-@ConditionalOnProperty(name = "spring.data.mongodb.enabled", havingValue = "true", matchIfMissing = false)
+//@ConditionalOnProperty(name = "spring.data.mongodb.enabled", havingValue = "true", matchIfMissing = false)
 @EnableMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
 @EnableReactiveMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
 public class MongoConfig {

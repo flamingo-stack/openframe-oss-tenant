@@ -1,7 +1,7 @@
 package com.openframe.stream.service;
 
 import com.openframe.core.model.ToolConnection;
-import com.openframe.data.model.debezium.DebeziumIntegratedToolMessage;
+import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.debezium.ExtraParams;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.repository.mongo.ToolConnectionRepository;
@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DebeziumIntegratedToolMessage> {
+public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DebeziumMessage> {
 
     private final ToolConnectionRepository toolConnectionRepository;
 
@@ -22,7 +22,7 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
     }
 
     @Override
-    public ExtraParams getExtraParams(DebeziumIntegratedToolMessage message) {
+    public ExtraParams getExtraParams(DebeziumMessage message) {
         IntegratedToolEnrichedData integratedToolEnrichedData = new IntegratedToolEnrichedData();
         if (message == null || message.getAgentId() == null) {
             return integratedToolEnrichedData;

@@ -2,8 +2,11 @@ package com.openframe.stream.handler.meshcentral;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.data.model.debezium.MeshCentralEventMessage;
 import com.openframe.data.model.debezium.MongoDbDebeziumMessage;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
+import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.DebeziumKafkaMessageHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -13,13 +16,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, MongoDbDebeziumMessage> {
+public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, MeshCentralEventMessage> {
 
-    @Value("${kafka.producer.topic.event.meshcentral.name}")
-    private String topic;
+//    @Value("${kafka.producer.topic.event.meshcentral.name}")
+    private String topic = "IT.EVENTS.PINOT";
 
     public MeshEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
-        super(kafkaTemplate, objectMapper, MongoDbDebeziumMessage.class);
+        super(kafkaTemplate, objectMapper, MeshCentralEventMessage.class);
     }
 
     @Override
@@ -33,19 +36,18 @@ public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPi
     }
 
     @Override
-    protected KafkaITPinotMessage transform(MongoDbDebeziumMessage debeziumMessage) {
+    protected KafkaITPinotMessage transform(MeshCentralEventMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
         KafkaITPinotMessage message = new KafkaITPinotMessage();
-//        try {
-//            if (rootNode.has("eventType")) {
-//                message.setEventType(rootNode.get("eventType").asText());
-//            }
-//            message.setTimestamp(Instant.now());
-//            message.setToolName(IntegratedTool.MESHCENTRAL.getName());
-//
-//        } catch (Exception e) {
-//            log.error("Error processing Kafka message", e);
-//            throw e;
-//        }
+        try {
+            message.setTimestamp(debeziumMessage.getTimestamp());
+            message.setToolName(IntegratedTool.MESHCENTRAL.getDbName());
+            message.setAgentId(debeziumMessage.getAgentId());
+            message.setMachineId(enrichedData.getMachineId());
+
+        } catch (Exception e) {
+            log.error("Error processing Kafka message", e);
+            throw e;
+        }
         return message;
     }
 }

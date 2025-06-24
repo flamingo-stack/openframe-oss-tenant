@@ -541,7 +541,7 @@ register_tool \
     "HEADER" \
     "X-API-KEY" \
     '{
-       "name": "tactical-rmm-psql-connector-agent",
+       "name": "tactical-rmm-psql-connector",
        "config": {
          "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
          "tasks.max": "1",
@@ -557,15 +557,10 @@ register_tool \
          "topic.creation.default.partitions": 10,
          "topic.creation.default.cleanup.policy": "compact",
          "topic.creation.default.compression.type": "lz4",
-         "transforms": "route,addAgentId",
+         "transforms": "route",
          "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
          "transforms.route.topic.regex": "trmm_clients_users\\.(.*)",
-         "transforms.route.topic.replacement": "tactical-rmm.postgres.events",
-         "transforms.addAgentId.type": "io.debezium.transforms.ExtractNewDocumentState",
-         "transforms.addAgentId.add.fields": "agent_id",
-         "transforms.addAgentId.agent_id.field": "agent_id",
-         "transforms.addAgentId.agent_id.source": "after.agent_id",
-         "transforms.addAgentId.agent_id.default": "unknown"
+         "transforms.route.topic.replacement": "tactical-rmm.postgres.events"
        }
      }'
 

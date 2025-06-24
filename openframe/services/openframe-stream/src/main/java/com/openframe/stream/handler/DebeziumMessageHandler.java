@@ -47,6 +47,6 @@ public abstract class DebeziumMessageHandler<T, U extends DebeziumMessage> exten
         return operationType;
     }
 
-    abstract protected T transform(U debeziumMessage);
+    abstract protected T transform(U debeziumMessage, IntegratedToolEnrichedData extraParams);
 
 }

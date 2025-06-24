@@ -1,11 +1,9 @@
 package com.openframe.stream.processor;
 
-import com.openframe.data.model.debezium.DebeziumIntegratedToolMessage;
 import com.openframe.data.model.debezium.ExtraParams;
 import com.openframe.data.model.kafka.DeserializedKafkaMessage;
 import com.openframe.stream.deserializer.KafkaMessageDeserializer;
 import com.openframe.stream.enumeration.DataEnrichmentServiceType;
-import com.openframe.stream.enumeration.DeserializerType;
 import com.openframe.stream.enumeration.Destination;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.handler.MessageHandler;
@@ -22,7 +20,7 @@ public class GenericJsonMessageProcessor {
 
     private final Map<MessageType, Map<Destination, MessageHandler>> handlers;
     private final Map<DataEnrichmentServiceType, DataEnrichmentService> dataEnrichmentServices;
-    private final Map<DeserializerType, KafkaMessageDeserializer> deserializers;
+    private final Map<MessageType, KafkaMessageDeserializer> deserializers;
 
     public GenericJsonMessageProcessor(List<MessageHandler> handlers, List<DataEnrichmentService> dataEnrichmentServices, List<KafkaMessageDeserializer> deserializers) {
         this.handlers = handlers.stream()
@@ -52,12 +50,12 @@ public class GenericJsonMessageProcessor {
     }
 
     private DeserializedKafkaMessage deserialize(Map<String, Object> message, MessageType type) {
-        KafkaMessageDeserializer deserializer = deserializers.get(type.getDeserializerType());
+        KafkaMessageDeserializer deserializer = deserializers.get(type);
         return deserializer.deserialize(message);
     }
 
     private ExtraParams getExtraParams(DeserializedKafkaMessage message, MessageType messageType) {
-        DataEnrichmentService dataEnrichmentService = dataEnrichmentServices.get(messageType);
+        DataEnrichmentService dataEnrichmentService = dataEnrichmentServices.get(messageType.getDataEnrichmentServiceType());
         return dataEnrichmentService.getExtraParams(message);
     }
 

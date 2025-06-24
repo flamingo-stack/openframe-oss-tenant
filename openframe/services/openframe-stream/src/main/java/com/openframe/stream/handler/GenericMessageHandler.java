@@ -26,7 +26,7 @@ public abstract class GenericMessageHandler<T, U extends DeserializedKafkaMessag
     @Override
     public void handle(U message, V extraParams) {
         if (isValidMessage(message)) {
-            T transformedData = transform(message);
+            T transformedData = transform(message, extraParams);
             OperationType operationType = getOperationType(message);
             if (operationType != null) {
                 pushData(transformedData, operationType);
@@ -49,7 +49,7 @@ public abstract class GenericMessageHandler<T, U extends DeserializedKafkaMessag
 
     protected abstract U deserialize(Map<String, Object> message);
 
-    protected abstract T transform(U message);
+    protected abstract T transform(U message, V extraParams);
 
     protected abstract OperationType getOperationType(U message);
 

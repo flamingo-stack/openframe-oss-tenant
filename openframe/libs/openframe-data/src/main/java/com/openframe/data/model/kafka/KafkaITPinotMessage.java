@@ -7,7 +7,8 @@ import java.time.Instant;
 @Data
 public class KafkaITPinotMessage {
 
-    private String eventType;
-    private Instant timestamp;
+    private Long timestamp;
     private String toolName;
+    private String agentId;
+    private String machineId;
 }

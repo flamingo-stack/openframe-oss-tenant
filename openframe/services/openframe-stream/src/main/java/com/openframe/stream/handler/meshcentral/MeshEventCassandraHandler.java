@@ -3,6 +3,7 @@ package com.openframe.stream.handler.meshcentral;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.debezium.MongoDbDebeziumMessage;
 import com.openframe.data.model.debezium.PostgreSqlDebeziumMessage;
 import com.openframe.data.repository.cassandra.CassandraITEventRepository;
@@ -26,7 +27,7 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
     }
 
     @Override
-    protected CassandraITEventEntity transform(MongoDbDebeziumMessage debeziumMessage) {
+    protected CassandraITEventEntity transform(MongoDbDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
         CassandraITEventEntity entity = new CassandraITEventEntity();
         try {
             CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
@@ -36,6 +37,7 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
             key.setToolId(documentId);
             key.setToolName(IntegratedTool.MESHCENTRAL.getDbName());
             key.setTimestamp(Instant.now());
+            key.setMachineId(enrichedData.getMachineId());
             key.setId(key.generatePK());
             entity.setKey(key);
             
@@ -92,10 +94,5 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
     @Override
     public MessageType getType() {
         return MessageType.MESHCENTRAL_EVENT;
-    }
-
-    @Override
-    protected void handleCreate(CassandraITEventEntity data) {
-
     }
 }
