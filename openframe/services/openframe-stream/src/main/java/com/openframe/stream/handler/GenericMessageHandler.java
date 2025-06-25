@@ -47,8 +47,6 @@ public abstract class GenericMessageHandler<T, U extends DeserializedKafkaMessag
         }
     }
 
-    protected abstract U deserialize(Map<String, Object> message);
-
     protected abstract T transform(U message, V extraParams);
 
     protected abstract OperationType getOperationType(U message);

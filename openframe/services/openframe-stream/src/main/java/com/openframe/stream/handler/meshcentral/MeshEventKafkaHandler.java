@@ -1,10 +1,8 @@
 package com.openframe.stream.handler.meshcentral;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.debezium.MeshCentralEventMessage;
-import com.openframe.data.model.debezium.MongoDbDebeziumMessage;
 import com.openframe.data.model.kafka.KafkaITPinotMessage;
 import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.enumeration.MessageType;
@@ -18,8 +16,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, MeshCentralEventMessage> {
 
-//    @Value("${kafka.producer.topic.event.meshcentral.name}")
-    private String topic = "IT.EVENTS.PINOT";
+    @Value("${kafka.producer.topic.it.event.name}")
+    private String topic;
 
     public MeshEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(kafkaTemplate, objectMapper, MeshCentralEventMessage.class);

@@ -1,12 +1,8 @@
 package com.openframe.stream.listener;
 
-import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.stream.enumeration.MessageType;
 import com.openframe.stream.enumeration.IntegratedTool;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 public class MessageTypeResolver {

@@ -3,9 +3,13 @@ package com.openframe.stream.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.stream.enumeration.Destination;
+import com.openframe.stream.enumeration.IntegratedTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.repository.CassandraRepository;
+
+import java.time.Instant;
 
 @Slf4j
 public abstract class DebeziumCassandraMessageHandler<T extends CassandraITEventEntity, U extends DebeziumMessage> extends DebeziumMessageHandler<T, U> {
@@ -32,6 +36,26 @@ public abstract class DebeziumCassandraMessageHandler<T extends CassandraITEvent
         entity.setSource(sourceToString(debeziumMessage.getSource()));
     }
 
+    protected CassandraITEventEntity.CassandraITEventKey createKey(DebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData,
+                                                                   IntegratedTool integratedTool) {
+            CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
+
+            String toolId = debeziumMessage.getAgentId();
+            key.setToolId(toolId != null ? toolId : "");
+            key.setToolName(integratedTool.getDbName());
+
+            if (debeziumMessage.getTimestamp() != null) {
+                key.setTimestamp(Instant.ofEpochMilli(debeziumMessage.getTimestamp()));
+            } else {
+                key.setTimestamp(Instant.now());
+            }
+
+            key.setMachineId(enrichedData.getMachineId() != null ? enrichedData.getMachineId() : "");
+            key.setId(key.generatePK());
+
+            return key;
+    }
+
     private String determineEventType(DebeziumMessage debeziumMessage) {
         String operation = debeziumMessage.getOperation();
         String tableName = debeziumMessage.getTableName();
@@ -56,7 +80,6 @@ public abstract class DebeziumCassandraMessageHandler<T extends CassandraITEvent
         if (source == null) {
             return null;
         }
-
         try {
             return mapper.writeValueAsString(source);
         } catch (Exception e) {
