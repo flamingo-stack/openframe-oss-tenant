@@ -287,6 +287,16 @@ const router = createRouter({
       }
     },
     {
+      path: '/api-keys',
+      name: 'api-keys',
+      component: () => import('../views/ApiKeys.vue'),
+      meta: { 
+        requiresAuth: true,
+        title: 'API Keys',
+        icon: 'pi pi-shield'
+      }
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('../views/Profile.vue'),
