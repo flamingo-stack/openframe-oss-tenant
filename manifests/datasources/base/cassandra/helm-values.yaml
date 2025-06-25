@@ -45,16 +45,12 @@ initDB:
         timestamp  timestamp,
         payload    map<text, text>,
         PRIMARY KEY (id, timestamp, tool_name, tool_id, machine_id)
-    ) WITH CLUSTERING ORDER BY (timestamp DESC, tool_name ASC, tool_id);
+    ) WITH CLUSTERING ORDER BY (timestamp DESC, tool_name ASC, tool_id ASC);
 
     CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_type ON integrated_tool_event(event_type);
     CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_tool_name ON integrated_tool_event(tool_name);
     CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_tool_id ON integrated_tool_event(tool_id);
     CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_machine_id ON integrated_tool_event(machine_id);
-
-    -- Create default user for application access
-    CREATE USER IF NOT EXISTS openframe WITH PASSWORD 'openframe_password';
-    GRANT ALL PERMISSIONS ON KEYSPACE openframe_events TO openframe;
 # initDBConfigMap: ""
 
 cluster:
