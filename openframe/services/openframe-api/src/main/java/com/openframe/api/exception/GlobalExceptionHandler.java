@@ -109,6 +109,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("bad_request", errorMessage));
     }
 
+    @ExceptionHandler({AgentRegistrationSecretNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretNotFoundException(AgentRegistrationSecretNotFoundException ex) {
+        log.error("Entity not found: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         log.error("Unexpected error: ", ex);

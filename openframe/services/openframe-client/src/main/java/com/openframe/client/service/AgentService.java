@@ -2,9 +2,13 @@ package com.openframe.client.service;
 
 import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
+import com.openframe.client.exception.AgentRegistrationSecretValidationException;
+import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.device.DeviceStatus;
+import com.openframe.core.service.EncryptionService;
+import com.openframe.data.model.mongo.AgentRegistrationSecret;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +26,13 @@ public class AgentService {
 
     private final OAuthClientRepository oauthClientRepository;
     private final MachineRepository machineRepository;
+    private final AgentRegistrationSecretValidator secretValidator;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
     public AgentRegistrationResponse registerAgent(String initialKey, AgentRegistrationRequest request) {
+        secretValidator.validate(initialKey);
+
         Optional<OAuthClient> existingClient = oauthClientRepository
                 .findByMachineId(request.getMachineId());
 
