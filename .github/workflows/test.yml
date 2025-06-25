@@ -20,6 +20,10 @@ on:
       - 'manifests/**'
       - 'scripts/**'
 
+concurrency:
+  group: pr-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
 env:
   ORGANIZATION: flamingo-cx
   REGISTRY: ghcr.io
