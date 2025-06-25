@@ -37,13 +37,16 @@ initDB:
     USE openframe_events;
 
     CREATE TABLE IF NOT EXISTS integrated_tool_event (
-        id         text,
-        tool_name  text,
-        tool_id    text,
-        machine_id text,
-        event_type text,
-        timestamp  timestamp,
-        payload    map<text, text>,
+        id          text,
+        tool_name   text,
+        tool_id     text,
+        machine_id  text,
+        event_type  text,
+        timestamp   timestamp,
+        operation   text,
+        before_data text,
+        after_data  text,
+        source      text,
         PRIMARY KEY (id, timestamp, tool_name, tool_id, machine_id)
     ) WITH CLUSTERING ORDER BY (timestamp DESC, tool_name ASC, tool_id ASC);
 

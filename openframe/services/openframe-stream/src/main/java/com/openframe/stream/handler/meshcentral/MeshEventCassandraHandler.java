@@ -1,11 +1,8 @@
 package com.openframe.stream.handler.meshcentral;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.*;
 import com.openframe.data.model.cassandra.CassandraITEventEntity;
-import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
-import com.openframe.data.model.debezium.MongoDbDebeziumMessage;
-import com.openframe.data.model.debezium.PostgreSqlDebeziumMessage;
 import com.openframe.data.repository.cassandra.CassandraITEventRepository;
 import com.openframe.stream.enumeration.IntegratedTool;
 import com.openframe.stream.enumeration.MessageType;
@@ -14,40 +11,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
 @Slf4j
-public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<CassandraITEventEntity, MongoDbDebeziumMessage> {
+public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<CassandraITEventEntity, MeshCentralEventMessage> {
 
     public MeshEventCassandraHandler(CassandraITEventRepository repository, ObjectMapper objectMapper) {
-        super(repository, objectMapper, MongoDbDebeziumMessage.class);
+        super(repository, objectMapper, MeshCentralEventMessage.class);
     }
 
     @Override
-    protected CassandraITEventEntity transform(MongoDbDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+    protected CassandraITEventEntity transform(MeshCentralEventMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
         CassandraITEventEntity entity = new CassandraITEventEntity();
         try {
-            CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
-            
-            // Extract ID from MongoDB message
-            String documentId = extractDocumentId(debeziumMessage);
-            key.setToolId(documentId);
-            key.setToolName(IntegratedTool.MESHCENTRAL.getDbName());
-            key.setTimestamp(Instant.now());
-            key.setMachineId(enrichedData.getMachineId());
-            key.setId(key.generatePK());
+            CassandraITEventEntity.CassandraITEventKey key = createKey(debeziumMessage, enrichedData);
             entity.setKey(key);
-            
-            Map<String, String> payload = new HashMap<>();
-            // Add document ID to payload if needed
-            if (documentId != null) {
-                payload.put("documentId", documentId);
-            }
-            
-            entity.setPayload(payload);
+
+            mapEvent(entity, debeziumMessage);
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);
@@ -55,11 +36,32 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
         }
         return entity;
     }
-    
+
+    private CassandraITEventEntity.CassandraITEventKey createKey(MeshCentralEventMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+        CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
+
+        // Extract ID from MongoDB message
+        String documentId = extractDocumentId(debeziumMessage);
+        key.setToolId(documentId != null ? documentId : UUID.randomUUID().toString());
+        key.setToolName(IntegratedTool.MESHCENTRAL.getDbName());
+
+        // Используем timestamp из debezium сообщения если есть, иначе текущее время
+        if (debeziumMessage.getTimestamp() != null) {
+            key.setTimestamp(Instant.ofEpochMilli(debeziumMessage.getTimestamp()));
+        } else {
+            key.setTimestamp(Instant.now());
+        }
+
+        key.setMachineId(enrichedData.getMachineId() != null ? enrichedData.getMachineId() : "");
+        key.setId(key.generatePK());
+
+        return key;
+    }
+
     /**
      * Extract document ID from MongoDB Debezium message
      */
-    private String extractDocumentId(MongoDbDebeziumMessage debeziumMessage) {
+    private String extractDocumentId(MeshCentralEventMessage debeziumMessage) {
         try {
             if (debeziumMessage.getAfter() != null && !debeziumMessage.getAfter().isNull()) {
                 // Try to get ID from "after" field (for create/update operations)
@@ -72,7 +74,7 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
                     }
                 }
             }
-            
+
             if (debeziumMessage.getBefore() != null && !debeziumMessage.getBefore().isNull()) {
                 // Try to get ID from "before" field (for delete operations)
                 var idNode = debeziumMessage.getBefore().get("_id");
@@ -87,7 +89,7 @@ public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<C
         } catch (Exception e) {
             log.warn("Failed to extract document ID from MongoDB message", e);
         }
-        
+
         return null;
     }
 

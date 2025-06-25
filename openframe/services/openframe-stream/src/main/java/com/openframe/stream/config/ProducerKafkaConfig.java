@@ -16,8 +16,8 @@ import java.util.Map;
 @Configuration
 public class ProducerKafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+//    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers = "kafka.datasources.svc.cluster.local:9092";
 
     @Bean
     public ProducerFactory<String, Object> kafkaProducerFactory() {

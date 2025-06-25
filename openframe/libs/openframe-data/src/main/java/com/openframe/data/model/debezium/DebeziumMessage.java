@@ -29,39 +29,6 @@ public abstract class DebeziumMessage implements DeserializedKafkaMessage {
     public abstract String getTableName();
     public abstract String getAgentId();
     
-    /**
-     * Get the database type for this message
-     */
-    public DatabaseType getDatabaseType() {
-        if (source == null || source.getConnector() == null) {
-            return DatabaseType.UNKNOWN;
-        }
-        
-        String connector = source.getConnector().toLowerCase();
-        if (connector.contains("mongodb")) {
-            return DatabaseType.MONGODB;
-        } else if (connector.contains("postgresql") || connector.contains("postgres")) {
-            return DatabaseType.POSTGRESQL;
-        } else if (connector.contains("mysql")) {
-            return DatabaseType.MYSQL;
-        }
-        return DatabaseType.UNKNOWN;
-    }
-    
-    public enum DatabaseType {
-        MONGODB,
-        POSTGRESQL,
-        MYSQL,
-        UNKNOWN
-    }
-    
-    /**
-     * Get the database name
-     */
-    public String getDatabaseName() {
-        return source != null ? source.getDatabase() : null;
-    }
-    
     @Data
     public static class Source {
         @JsonProperty("version")

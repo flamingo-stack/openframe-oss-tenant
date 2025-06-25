@@ -15,11 +15,20 @@ public class CassandraITEventEntity {
     @PrimaryKey
     private CassandraITEventEntity.CassandraITEventKey key;
 
-    @Column("payload")
-    private Map<String, String> payload;
-
     @Column("event_type")
     private String eventType;
+
+    @Column("operation")
+    private String operation;
+
+    @Column("before_data")
+    private String beforeData;
+
+    @Column("after_data")
+    private String afterData;
+
+    @Column("source")
+    private String source;
 
     @PrimaryKeyClass
     @Data
