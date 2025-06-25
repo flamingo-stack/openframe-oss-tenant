@@ -20,7 +20,7 @@ public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPi
     private String topic;
 
     public MeshEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
-        super(kafkaTemplate, objectMapper, MeshCentralEventMessage.class);
+        super(kafkaTemplate, objectMapper);
     }
 
     @Override

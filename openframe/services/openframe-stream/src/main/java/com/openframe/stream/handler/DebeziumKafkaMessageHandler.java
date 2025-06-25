@@ -12,8 +12,8 @@ public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> 
 
     protected final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper, Class<U> clazz) {
-        super(objectMapper, clazz);
+    public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
+        super(objectMapper);
         this.kafkaTemplate = kafkaTemplate;
     }
 

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class MeshEventCassandraHandler extends DebeziumCassandraMessageHandler<CassandraITEventEntity, MeshCentralEventMessage> {
 
     public MeshEventCassandraHandler(CassandraITEventRepository repository, ObjectMapper objectMapper) {
-        super(repository, objectMapper, MeshCentralEventMessage.class);
+        super(repository, objectMapper);
     }
 
     @Override

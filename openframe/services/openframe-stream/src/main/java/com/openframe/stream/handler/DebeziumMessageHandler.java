@@ -11,20 +11,8 @@ import java.util.Map;
 @Slf4j
 public abstract class DebeziumMessageHandler<T, U extends DebeziumMessage> extends GenericMessageHandler<T, U, IntegratedToolEnrichedData> {
 
-    private final Class<U> clazz;
-
-    protected DebeziumMessageHandler(ObjectMapper mapper, Class<U> clazz) {
+    protected DebeziumMessageHandler(ObjectMapper mapper) {
         super(mapper);
-        this.clazz = clazz;
-    }
-
-    @Override
-    protected U deserialize(Map<String, Object> message) {
-        try {
-            return mapper.convertValue(message.get("payload"), clazz);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Error converting Map to DebeziumMessage", e);
-        }
     }
 
     protected OperationType getOperationType(DebeziumMessage message) {

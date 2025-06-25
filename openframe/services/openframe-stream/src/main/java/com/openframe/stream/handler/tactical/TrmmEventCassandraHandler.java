@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class TrmmEventCassandraHandler extends DebeziumCassandraMessageHandler<CassandraITEventEntity, TrmmEventMessage> {
 
     protected TrmmEventCassandraHandler(CassandraITEventRepository repository, ObjectMapper objectMapper) {
-        super(repository, objectMapper, TrmmEventMessage.class);
+        super(repository, objectMapper);
     }
 
     @Override

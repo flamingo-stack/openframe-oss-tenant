@@ -16,8 +16,8 @@ public abstract class DebeziumCassandraMessageHandler<T extends CassandraITEvent
 
     private final CassandraRepository repository;
 
-    protected DebeziumCassandraMessageHandler(CassandraRepository repository, ObjectMapper objectMapper, Class<U> clazz) {
-        super(objectMapper, clazz);
+    protected DebeziumCassandraMessageHandler(CassandraRepository repository, ObjectMapper objectMapper) {
+        super(objectMapper);
         this.repository = repository;
     }
 
