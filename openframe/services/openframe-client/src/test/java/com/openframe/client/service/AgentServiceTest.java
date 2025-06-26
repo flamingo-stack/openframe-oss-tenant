@@ -2,9 +2,11 @@ package com.openframe.client.service;
 
 import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
+import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.device.DeviceStatus;
+import com.openframe.core.service.SecretGenerator;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +16,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +32,15 @@ class AgentServiceTest {
     @Mock
     private MachineRepository machineRepository;
 
+    @Mock
+    private AgentRegistrationSecretValidator agentRegistrationSecretValidator;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private SecretGenerator secretGenerator;
+
     @Captor
     private ArgumentCaptor<OAuthClient> oauthClientCaptor;
 
@@ -38,23 +51,25 @@ class AgentServiceTest {
     private AgentRegistrationRequest request;
     private static final String INITIAL_KEY = "test-initial-key";
     private static final String MACHINE_ID = "test-machine-id";
+    private static final String CLIENT_SECRET = "01234567890123456789012345678912";
 
     @BeforeEach
     void setUp() {
-        agentService = new AgentService(oauthClientRepository, machineRepository);
+        agentService = new AgentService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, secretGenerator, passwordEncoder);
         request = createTestRequest();
     }
 
     @Test
     void registerAgent_WithNewMachine_ReturnsCredentials() {
-        when(oauthClientRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.empty());
+        when(oauthClientRepository.existsByMachineId(MACHINE_ID)).thenReturn(false);
+        when(secretGenerator.generate(32)).thenReturn(CLIENT_SECRET);
         when(oauthClientRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         when(machineRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         AgentRegistrationResponse response = agentService.registerAgent(INITIAL_KEY, request);
         assertNotNull(response);
         assertEquals("agent_" + MACHINE_ID, response.getClientId());
         assertNotNull(response.getClientSecret());
-        assertTrue(response.getClientSecret().length() > 32); // Base64 encoded 32 bytes
+        assertEquals(CLIENT_SECRET, response.getClientSecret());
 
         verify(oauthClientRepository).save(oauthClientCaptor.capture());
         OAuthClient savedClient = oauthClientCaptor.getValue();
@@ -78,8 +93,7 @@ class AgentServiceTest {
 
     @Test
     void registerAgent_WithExistingMachine_ThrowsException() {
-        when(oauthClientRepository.findByMachineId(MACHINE_ID))
-                .thenReturn(Optional.of(new OAuthClient()));
+        when(oauthClientRepository.existsByMachineId(MACHINE_ID)).thenReturn(true);
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> agentService.registerAgent(INITIAL_KEY, request)
@@ -88,18 +102,6 @@ class AgentServiceTest {
 
         verify(oauthClientRepository, never()).save(any());
         verify(machineRepository, never()).save(any());
-    }
-
-    @Test
-    void registerAgent_GeneratesUniqueSecrets() {
-        when(oauthClientRepository.findByMachineId(any())).thenReturn(Optional.empty());
-        when(oauthClientRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-        when(machineRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-
-        AgentRegistrationResponse response1 = agentService.registerAgent(INITIAL_KEY, request);
-        AgentRegistrationResponse response2 = agentService.registerAgent(INITIAL_KEY, createTestRequest("another-machine"));
-
-        assertNotEquals(response1.getClientSecret(), response2.getClientSecret());
     }
 
     private AgentRegistrationRequest createTestRequest() {
