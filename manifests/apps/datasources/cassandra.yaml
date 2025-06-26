@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/datasources/base/cassandra/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/mesh-kafka-to-cassandra
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/mesh-kafka-to-cassandra
       path: manifests/datasources/base/cassandra
 
   destination:
