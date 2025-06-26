@@ -10,13 +10,13 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - argocd.example.com
+    - argocd.192.168.100.100.nip.io
     secretName: argocd-server-tls
   rules:
-  - host: openframe-gateway.192.168.100.100.nip.io
+  - host: argocd.192.168.100.100.nip.io
     http:
       paths:
-      - path: /argocd
+      - path: /
         pathType: Prefix
         backend:
           service:
