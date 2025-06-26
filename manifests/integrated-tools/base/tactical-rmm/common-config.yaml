@@ -32,7 +32,7 @@ data:
   # below  is shown on browser that backend is not reachable
   # API_LOCALHOST_HOST: tactical-nginx.integrated-tools.svc.cluster.local:8000 # "localhost:8000"
   # API_LOCALHOST_HOST: tactical-ui.192.168.100.100.nip.io
-  API_LOCALHOST_HOST: tactical-api.192.168.100.100.nip.io
+  # API_LOCALHOST_HOST: tactical-api.192.168.100.100.nip.io
   # API_LOCALHOST_HOST: tactical-ui.192.168.100.100.nip.io
   # API_LOCALHOST_HOST: tactical-backend.integrated-tools.svc.cluster.local:8000 # "localhost:8000"
   APP_HOST: "tactical-frontend.integrated-tools.svc.cluster.local:8080"

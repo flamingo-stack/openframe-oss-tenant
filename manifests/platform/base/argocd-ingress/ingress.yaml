@@ -13,10 +13,10 @@ spec:
     - argocd.example.com
     secretName: argocd-server-tls
   rules:
-  - host: argocd.192.168.100.100.nip.io
+  - host: openframe-gateway.192.168.100.100.nip.io
     http:
       paths:
-      - path: /
+      - path: /argocd
         pathType: Prefix
         backend:
           service:

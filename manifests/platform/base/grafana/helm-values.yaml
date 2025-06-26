@@ -10,11 +10,12 @@ ingress:
       cert-manager.io/cluster-issuer: "cluster-issuer"
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts: 
-    - grafana.192.168.100.100.nip.io
+    - openframe-gateway.192.168.100.100.nip.io
+  path: /grafana
   tls: 
     - secretName: grafana-server-tls
       hosts:
-        - grafana.192.168.100.100.nip.io
+        - openframe-gateway.192.168.100.100.nip.io
 
 revisionHistoryLimit: 2
 resources:
@@ -51,7 +52,7 @@ grafana.ini:
     allow_embedding: true
     cookie_samesite: strict
   server:
-    domain: grafana.192.168.100.100.nip.io
+    domain: openframe-gateway.192.168.100.100.nip.io
 
 serviceMonitor:
   enabled: true
