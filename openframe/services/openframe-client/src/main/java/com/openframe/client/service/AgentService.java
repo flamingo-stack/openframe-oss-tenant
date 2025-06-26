@@ -30,7 +30,7 @@ public class AgentService {
     public AgentRegistrationResponse registerAgent(String initialKey, AgentRegistrationRequest request) {
         secretValidator.validate(initialKey);
 
-        if (oauthClientRepository.existsById(request.getMachineId())) {
+        if (oauthClientRepository.existsByMachineId(request.getMachineId())) {
             throw new IllegalArgumentException("Machine already registered");
         }
 

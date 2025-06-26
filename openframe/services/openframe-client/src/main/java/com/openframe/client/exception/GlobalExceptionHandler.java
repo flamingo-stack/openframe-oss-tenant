@@ -117,7 +117,7 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
     }
 
-    @ExceptionHandler({AgentRegistrationSecretValidationException.class})
+    @ExceptionHandler({AgentRegistrationSecretValidationErrorException.class})
     public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretValidationErrorException(AgentRegistrationSecretValidationErrorException ex) {
         log.error("Invalid agent initial key: ", ex);
         return ResponseEntity
