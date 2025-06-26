@@ -28,17 +28,14 @@ spec:
 
       containers:
         - name: mongodb
-          image: mongo:8.0.9
-          command: 
-            - "mongod"
-            - "--bind_ip_all"
-            - "--replSet"
-            - "rs0"
+          image: mongo:7.0.18
           ports:
             - containerPort: 27017
           envFrom:
             - configMapRef:
                 name: mongodb-config
+            - secretRef:
+                name: mongodb-secret
           volumeMounts:
             - name: mongodb-storage
               mountPath: /data/db
@@ -52,13 +49,6 @@ spec:
           readinessProbe:
             exec:
               command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-          livenessProbe:
-            tcpSocket:
-              port: 27017
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5

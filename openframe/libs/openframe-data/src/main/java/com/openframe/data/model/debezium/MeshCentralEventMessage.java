@@ -22,10 +22,19 @@ public class MeshCentralEventMessage extends MongoDbDebeziumMessage {
         if (event == null || event.asText().trim().isEmpty()) {
             return null;
         }
-        JsonNode agentIdNode = event.get("nodeid");
-        if (agentIdNode != null && !agentIdNode.asText().isEmpty()) {
-            return agentIdNode.asText();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            event = mapper.readTree(event.asText());
+
+            JsonNode agentIdNode = event.get("nodeid");
+            if (agentIdNode != null && !agentIdNode.asText().isEmpty()) {
+                return agentIdNode.asText();
+            }
+            return null;
+        } catch (IOException e) {
+            // Log the error but don't throw exception to avoid breaking the message processing
+            System.err.println("Error parsing agent ID from MeshCentral event: " + e.getMessage());
+            return null;
         }
-        return null;
     }
 }
