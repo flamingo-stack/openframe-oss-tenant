@@ -43,38 +43,6 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
 
-  checks:
-    name: Basic branch tests
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check targetRevision is main
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: |
-          output=$(
-            find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | \
-            while IFS= read -r -d '' file; do
-              awk -v github_base="${GITHUB_BASE_REF}" '
-                /^[[:space:]]*targetRevision:[[:space:]]*/ {
-                  gsub(/^[[:space:]]*targetRevision:[[:space:]]*/, "", $0)
-                  val = $0
-                  if (val != github_base && val !~ /^[0-9]+(\.[0-9]+)*$/) {
-                    print FILENAME ": " val
-                    exit 1
-                  }
-                }
-              ' "$file"
-            done
-          )
-          if [[ -n "$output" ]]; then
-            echo "$output" && exit 1
-          fi
-
-
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix, checks]
@@ -362,3 +330,36 @@ jobs:
           delete-ghost-images: true
           delete-tags: test-${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
+
+
+  final-checks:
+    name: Basic branch tests
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check targetRevision is main
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: |
+          output=$(
+            find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | \
+            while IFS= read -r -d '' file; do
+              awk -v github_base="${GITHUB_BASE_REF}" '
+                /^[[:space:]]*targetRevision:[[:space:]]*/ {
+                  gsub(/^[[:space:]]*targetRevision:[[:space:]]*/, "", $0)
+                  val = $0
+                  if (val != github_base && val !~ /^[0-9]+(\.[0-9]+)*$/) {
+                    print FILENAME ": " val
+                    exit 1
+                  }
+                }
+              ' "$file"
+            done
+          )
+          if [[ -n "$output" ]]; then
+            echo "$output" && exit 1
+          fi
