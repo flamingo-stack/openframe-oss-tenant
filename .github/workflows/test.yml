@@ -276,6 +276,7 @@ jobs:
     name: Run Tests
     needs: [pre-test, build]
     runs-on: Linux-x64
+    timeout-minutes: 60
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
