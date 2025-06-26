@@ -21,9 +21,8 @@ public class AgentRegistrationSecretValidator {
             throw new AgentRegistrationSecretValidationException("initial_key_empty", "Initial key is empty");
         }
 
-        // TODO: custom exception
         AgentRegistrationSecret secret = secretRepository.findByActiveTrue()
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new AgentRegistrationSecretValidationException("no_active_secret_found", "Not found active agent secret"));
 
         String decryptedSecretKey = encryptionService.decrypt(secret.getSecretKey());
         if (!decryptedSecretKey.equals(initialKey)) {

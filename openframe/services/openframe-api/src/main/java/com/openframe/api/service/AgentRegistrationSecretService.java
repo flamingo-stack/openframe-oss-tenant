@@ -68,9 +68,8 @@ public class AgentRegistrationSecretService {
     }
 
     private void deactivateExisting() {
-        // TODO: custom exception
         AgentRegistrationSecret activeSecret = secretRepository.findByActiveTrue()
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new AgentRegistrationSecretNotFoundException("no_active_secret_found", "Not found active agent secret"));
         activeSecret.setActive(false);
         secretRepository.save(activeSecret);
         log.info("Deactivated previous key with ID: {}", activeSecret.getId());
