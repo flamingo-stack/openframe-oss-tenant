@@ -1,5 +1,6 @@
 package com.openframe.client.service.validator;
 
+import com.openframe.client.exception.AgentRegistrationSecretValidationErrorException;
 import com.openframe.client.exception.AgentRegistrationSecretValidationException;
 import com.openframe.core.service.EncryptionService;
 import com.openframe.data.model.mongo.AgentRegistrationSecret;
@@ -22,7 +23,7 @@ public class AgentRegistrationSecretValidator {
         }
 
         AgentRegistrationSecret secret = secretRepository.findByActiveTrue()
-                .orElseThrow(() -> new AgentRegistrationSecretValidationException("no_active_secret_found", "Not found active agent secret"));
+                .orElseThrow(() -> new AgentRegistrationSecretValidationErrorException("No active agent secret found"));
 
         String decryptedSecretKey = encryptionService.decrypt(secret.getSecretKey());
         if (!decryptedSecretKey.equals(initialKey)) {
