@@ -52,7 +52,7 @@ grafana.ini:
     allow_embedding: true
     cookie_samesite: strict
   server:
-    domain: openframe-gateway.192.168.100.100.nip.io
+    domain: openframe-gateway.192.168.100.100.nip.io/grafana
 
 serviceMonitor:
   enabled: true
