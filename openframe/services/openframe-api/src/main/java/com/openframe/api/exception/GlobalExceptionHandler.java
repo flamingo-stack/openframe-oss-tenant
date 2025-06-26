@@ -111,7 +111,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({AgentRegistrationSecretNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretNotFoundException(AgentRegistrationSecretNotFoundException ex) {
-        log.error("Entity not found: ", ex);
+        log.error("Agent registration secret entity not found: ", ex);
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));

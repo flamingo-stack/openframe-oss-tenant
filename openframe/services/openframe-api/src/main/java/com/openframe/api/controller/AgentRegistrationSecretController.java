@@ -1,18 +1,17 @@
 package com.openframe.api.controller;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.openframe.api.dto.AgentRegistrationSecretResponse;
+import com.openframe.api.service.AgentRegistrationSecretService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.openframe.api.dto.AgentRegistrationSecretResponse;
-import com.openframe.data.model.mongo.AgentRegistrationSecret;
-import com.openframe.api.service.AgentRegistrationSecretService;
-
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 @RestController
 @RequestMapping("/agent/registration-secret")
