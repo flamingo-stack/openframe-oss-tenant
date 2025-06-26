@@ -45,7 +45,7 @@ jobs:
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix, checks]
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     strategy:
