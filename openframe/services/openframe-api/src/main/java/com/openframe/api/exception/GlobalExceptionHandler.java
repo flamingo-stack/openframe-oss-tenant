@@ -115,14 +115,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiKeyNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleApiKeyNotFoundException(ApiKeyNotFoundException ex) {
         log.warn("API key not found: {}", ex.getMessage());
-        
+
         Map<String, Object> errorResponse = Map.of(
             "error", "API_KEY_NOT_FOUND",
             "message", ex.getMessage(),
             "timestamp", Instant.now()
         );
-        
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler({AgentRegistrationSecretNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretNotFoundException(AgentRegistrationSecretNotFoundException ex) {
+        log.error("Agent registration secret entity not found: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

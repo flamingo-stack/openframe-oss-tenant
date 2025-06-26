@@ -7,6 +7,7 @@ import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ public class AgentAuthService {
 
     private final OAuthClientRepository clientRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
     private int accessTokenExpirationSeconds;
@@ -27,7 +29,7 @@ public class AgentAuthService {
         log.debug("Validating client - ID: {}", clientId);
         OAuthClient client = clientRepository.findByClientId(clientId)
                 .map(foundClient -> {
-                    if (foundClient.getClientSecret() == null || !foundClient.getClientSecret().equals(clientSecret)) {
+                    if (foundClient.getClientSecret() == null || !passwordEncoder.matches(clientSecret, foundClient.getClientSecret())) {
                         log.error("Invalid client secret for client: {}", clientId);
                         throw new IllegalArgumentException("Invalid client secret");
                     }

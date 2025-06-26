@@ -109,6 +109,22 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("unsupported_media_type", ex.getMessage()));
     }
 
+    @ExceptionHandler({AgentRegistrationSecretValidationException.class})
+    public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretValidationException(AgentRegistrationSecretValidationException ex) {
+        log.error("Invalid agent initial key: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler({AgentRegistrationSecretValidationErrorException.class})
+    public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretValidationErrorException(AgentRegistrationSecretValidationErrorException ex) {
+        log.error("Invalid agent initial key: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse("Internal server error"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         log.error("Unexpected error: ", ex);
