@@ -4,7 +4,6 @@ resources:
 - secret.yaml
 - deployment.yaml
 - service.yaml
-- ingress.yaml
 - servicemonitor.yaml
 
 images:
