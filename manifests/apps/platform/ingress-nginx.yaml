@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/platform/base/ingress-nginx/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-stream-redis
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-stream-redis
+      targetRevision: main
       path: manifests/platform/base/ingress-nginx
 
   destination:

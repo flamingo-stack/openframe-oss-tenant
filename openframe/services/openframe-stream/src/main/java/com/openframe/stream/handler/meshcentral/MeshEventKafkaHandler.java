@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MeshEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, MeshCentralEventMessage> {
 
-//    @Value("${kafka.producer.topic.it.event.name}")
-    private String topic = "integrated-tool.events.pinot";
+    @Value("${kafka.producer.topic.it.event.name}")
+    private String topic;
 
     public MeshEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(kafkaTemplate, objectMapper);

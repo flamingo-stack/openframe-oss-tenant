@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class TrmmEventKafkaHandler extends DebeziumKafkaMessageHandler<KafkaITPinotMessage, PostgreSqlDebeziumMessage> {
 
-//    @Value("${kafka.producer.topic.it.event.name}")
-    private String topic = "integrated-tool.events.pinot";
+    @Value("${kafka.producer.topic.it.event.name}")
+    private String topic;
 
     public TrmmEventKafkaHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
         super(kafkaTemplate, objectMapper);

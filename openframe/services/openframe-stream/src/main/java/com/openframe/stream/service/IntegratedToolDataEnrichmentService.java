@@ -21,7 +21,7 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
     private final RedisTemplate<String, String> redisTemplate;
     
     private static final String CACHE_KEY_PREFIX = "machine_id:";
-    private static final Duration CACHE_TTL = Duration.ofHours(1);
+    private static final Duration CACHE_TTL = Duration.ofHours(6);
 
     public IntegratedToolDataEnrichmentService(ToolConnectionRepository toolConnectionRepository,
                                              RedisTemplate<String, String> redisTemplate) {
