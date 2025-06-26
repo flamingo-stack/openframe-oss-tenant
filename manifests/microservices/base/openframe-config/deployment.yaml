@@ -28,7 +28,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: CONFIG_GIT_BRANCH
-              value: "openframe-stream"
+              value: "main"
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
