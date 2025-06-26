@@ -7,17 +7,15 @@
 source "${SCRIPT_DIR}/functions/spinner.sh"
 export -f start_spinner stop_spinner _spin
 
-APP=$1
+ARG=$1
 ACTION=$2
-LOCAL_PORT=$3
-REMOTE_PORT_NAME=$4
 
-if [ "$APP" != "''" ] && [ "$ACTION" == "" ]; then
+if [ "$ARG" != "''" ] && [ "$ACTION" == "" ]; then
   echo "Action is required: deploy, delete, dev, debug"
   exit 1
 fi
 
-case "$APP" in
+case "$ARG" in
 argocd)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Deploying ArgoCD"
@@ -25,11 +23,8 @@ argocd)
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
     delete_argocd
-  elif [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
+  elif [ "$ACTION" == "secret" ]; then
+    get_initial_secret
   fi
   ;;
 argocd_apps)
@@ -48,8 +43,6 @@ argocd_apps)
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
   fi
   ;;
 pki_cert)
@@ -62,71 +55,6 @@ pki_cert)
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
-  elif [ "$ACTION" == "debug" ]; then
-    echo "$APP is not supported for debug mode"
-  fi
-  ;;
-openframe_datasources_nifi)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying NiFi in dev mode"
-    cd ${SCRIPT_DIR}/../openframe/datasources/nifi/
-    skaffold dev --cache-artifacts=false -n datasources
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
-  fi
-  ;;
-openframe_microservices_openframe_config_server)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Config Server in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-config
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-config-server" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_api)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying API in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-api
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-api" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_management)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Management in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-management
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-management" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_stream)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Stream in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-stream
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-stream" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_gateway)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Gateway in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-gateway
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-gateway" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-openframe_microservices_openframe_ui)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying OpenFrame UI in dev mode"
-    cd ${ROOT_REPO_DIR}/openframe/services/openframe-ui
-    skaffold dev --cache-artifacts=false -n microservices
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "openframe-ui" "microservices" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
   fi
   ;;
 openframe_microservices_register_apps)
@@ -137,46 +65,45 @@ openframe_microservices_register_apps)
   awk '/Fleet MDM Credentials:/ {i=NR} END {print i}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" |
     xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
   ;;
-integrated_tools_datasources_fleet)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Fleet in dev mode"
-    cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-    skaffold dev --cache-artifacts=false -n integrated-tools
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
+app)
+  NAMESPACE=$2
+  APP=$3
+  ACTION=$4
+  ARG1=$5
+  ARG2=$6
+
+  if [ -z "$NAMESPACE" ] || [ -z "$APP" ]; then
+    echo "NAMESPACE and APP names are required"
+    echo "Example: ./scripts/run.sh app <namespace> <app> <command> <args>"
+    echo "Example: ./scripts/run.sh app microservices openframe-api intercept 8090 http"
+    exit 1
   fi
-  ;;
-integrated_tools_fleet)
+
   if [ "$ACTION" == "dev" ]; then
-    echo "Deploying Fleet in dev mode"
-    cd ${ROOT_REPO_DIR}/integrated-tools/fleetmdm
-    skaffold dev --cache-artifacts=false -n integrated-tools
+    echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
+    case "$APP" in
+      *openframe*)
+        cd "${ROOT_REPO_DIR}/openframe/services/${APP}"
+        ;;
+      meshcentral)
+        cd "${ROOT_REPO_DIR}/${NAMESPACE}/${APP}/server"
+        ;;
+      *)
+        cd "${ROOT_REPO_DIR}/${NAMESPACE}/${APP}"
+        ;;
+    esac
+    skaffold dev --cache-artifacts=false -n $NAMESPACE
   elif [ "$ACTION" == "intercept" ]; then
-    echo "Interception not enabled for this app"
-  fi
-  ;;
-integrated_tools_meshcentral)
-  if [ "$ACTION" == "dev" ]; then
-    echo "Deploying MeshCentral in dev mode"
-    cd ${ROOT_REPO_DIR}/integrated-tools/meshcentral/server
-    skaffold dev --cache-artifacts=false -n integrated-tools
-  elif [ "$ACTION" == "intercept" ]; then
-    intercept_app "meshcentral" "integrated-tools" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
-  fi
-  ;;
-tools_telepresence)
-  if [ "$ACTION" == "dev" ]; then
-    echo "$APP is not supported in dev mode"
-    exit 0
-  elif [ "$ACTION" == "intercept" ]; then
-    echo "$APP is not supported for debug mode"
+    echo "Intercepting ${APP} at ${NAMESPACE} in intercept mode"
+    intercept_app "$APP" "$NAMESPACE" "$ARG1" "$ARG2"
+  elif [ "$ACTION" == "health" ]; then
+    echo "Branch '${ARG1}' autosync is ${ARG2} for ${APP}"
+    switch_argocd_app_health "$APP" "$ARG1" "$ARG2"
   fi
   ;;
 # BUNDLE APPS
 a | all)
-  # ------------- ALL -------------
   ACTION=${2}
-  IFWAIT=${3:-}
 
   $0 argocd $ACTION &&
     $0 argocd_apps $ACTION &&
@@ -187,7 +114,7 @@ a | all)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
   ;;
 *)
-  echo "Unknown app: $APP"
+  echo "Unknown arg: $ARG"
   echo
   echo "Available apps:"
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"

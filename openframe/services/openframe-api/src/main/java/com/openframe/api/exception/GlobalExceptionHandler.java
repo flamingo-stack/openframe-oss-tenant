@@ -1,6 +1,7 @@
 package com.openframe.api.exception;
 
 import com.openframe.core.exception.EncryptionException;
+import com.openframe.core.exception.ApiKeyNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.time.Instant;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -107,6 +110,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("bad_request", errorMessage));
+    }
+
+    @ExceptionHandler(ApiKeyNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleApiKeyNotFoundException(ApiKeyNotFoundException ex) {
+        log.warn("API key not found: {}", ex.getMessage());
+
+        Map<String, Object> errorResponse = Map.of(
+            "error", "API_KEY_NOT_FOUND",
+            "message", ex.getMessage(),
+            "timestamp", Instant.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     @ExceptionHandler({AgentRegistrationSecretNotFoundException.class})

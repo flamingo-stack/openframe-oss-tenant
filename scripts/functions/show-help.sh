@@ -25,6 +25,7 @@ a|app <app-name|all> <action>           : Deploy <app-name> or 'all' apps
                                           require run twice)
   intercept <localport> <remoteportname>: Enable intercept mode and redirect traffic to local
                                           port (Use CTRL+C to stop)
+  health <branch>                       : Change the targetRevision branch and turn off the autosync
 
 
 Examples:

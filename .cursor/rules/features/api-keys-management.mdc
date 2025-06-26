@@ -1,0 +1,298 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# API Keys Management Feature Rules
+
+## Overview
+
+The API Keys management feature allows users to create, manage, and control API keys for programmatic access to the OpenFrame platform.
+
+## Backend Implementation
+
+### Entity Model
+- Use `APIKey` as the main entity class with `@Document(collection = "api_keys")`
+- Use `keyId` as the `@Id` field (no separate `id` field)
+- Store encrypted credentials using `EncryptionService`
+- Include user ownership with `userId` field
+
+### Controller Pattern
+```java
+@RestController
+@RequestMapping("/api-keys")
+@RequiredArgsConstructor
+@Slf4j
+public class ApiKeyController {
+    private final ApiKeyService apiKeyService;
+    
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreateApiKeyResponse createApiKey(
+            @Valid @RequestBody CreateApiKeyRequest request,
+            @RequestHeader("X-User-Id") String userId) {
+        return apiKeyService.createApiKey(userId, request);
+    }
+}
+```
+
+### Service Layer
+- Implement key generation with format: `ak_{keyId}.sk_{secretKey}`
+- Use secure random generation for key components
+- Encrypt secret keys before storage
+- Only return full key once during creation
+- Implement proper exception handling with custom exceptions
+
+### DTOs and Records
+```java
+public record CreateApiKeyRequest(
+    @NotBlank String name,
+    String description,
+    @Future LocalDateTime expiresAt
+) {}
+
+public record ApiKeyResponse(
+    String id,
+    String name,
+    String description,
+    boolean enabled,
+    LocalDateTime createdAt,
+    LocalDateTime expiresAt
+) {}
+
+public record CreateApiKeyResponse(
+    String id,
+    String name,
+    String fullKey,  // Only shown once
+    LocalDateTime createdAt,
+    LocalDateTime expiresAt
+) {}
+```
+
+### Repository Pattern
+- Extend `ReactiveMongoRepository<APIKey, String>`
+- Use `findByIdAndUserId()` for user ownership validation
+- Implement `findByUserIdOrderByCreatedAtDesc()` for listing
+- No custom `findByKeyId()` methods needed
+
+### Exception Handling
+```java
+public class ApiKeyNotFoundException extends RuntimeException {
+    public ApiKeyNotFoundException(String keyId) {
+        super("API key not found: " + keyId);
+    }
+}
+
+@ControllerAdvice
+public class ApiKeyExceptionHandler {
+    @ExceptionHandler(ApiKeyNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ApiKeyNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse("API_KEY_NOT_FOUND", e.getMessage()));
+    }
+}
+```
+
+## Frontend Implementation
+
+### Vue Component Structure
+- Use card-based layout instead of data tables for better UX
+- Implement responsive grid with `grid-template-columns: repeat(auto-fill, minmax(400px, 1fr))`
+- Support dark theme with CSS variables
+- Show full key ID without truncation
+
+### Service Layer
+```typescript
+export class ApiKeyService {
+  private static readonly BASE_URL = '/api-keys';
+
+  public async createApiKey(request: CreateApiKeyRequest): Promise<CreateApiKeyResponse> {
+    return await restClient.post<CreateApiKeyResponse>(
+      `${import.meta.env.VITE_API_URL}${ApiKeyService.BASE_URL}`,
+      request
+    );
+  }
+
+  public async getApiKeys(): Promise<ApiKeyResponse[]> {
+    return await restClient.get<ApiKeyResponse[]>(
+      `${import.meta.env.VITE_API_URL}${ApiKeyService.BASE_URL}`
+    );
+  }
+}
+```
+
+### Component Patterns
+```vue
+<template>
+  <div class="api-keys-container">
+    <div class="api-keys-header">
+      <h1>API Keys</h1>
+      <Button @click="openCreateDialog" severity="primary">
+        <i class="pi pi-plus"></i>
+        Create API Key
+      </Button>
+    </div>
+    
+    <div class="api-keys-grid">
+      <div v-for="apiKey in apiKeys" :key="apiKey.id" class="api-key-card">
+        <!-- Card content -->
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+### Form Handling
+- Use simplified form with only: name, description, expiration date
+- Implement proper validation with error display
+- Show loading states during operations
+- Reset form state when opening create dialog
+
+### UI/UX Best Practices
+- Display API key value only once during creation
+- Use copy-to-clipboard functionality for key IDs
+- Implement proper button styling with severity attributes
+- Use consistent spacing and hover effects
+- Support mobile-responsive design
+
+## Security Considerations
+
+### Key Generation
+- Use cryptographically secure random generation
+- Generate unique key IDs and secret keys
+- Format: `ak_{8-char-hex}.sk_{32-char-hex}`
+- Never store secret keys in plain text
+
+### Access Control
+- Validate user ownership for all operations
+- Use `@RequestHeader("X-User-Id")` for user context
+- Implement proper authorization checks
+- Log security events
+
+### Data Protection
+- Encrypt sensitive data at rest
+- Use HTTPS for all communications
+- Implement proper key rotation
+- Support key expiration
+
+## Error Handling
+
+### Backend Errors
+- Use custom exceptions for domain-specific errors
+- Return structured error responses
+- Log errors with appropriate levels
+- Handle validation errors gracefully
+
+### Frontend Errors
+- Display user-friendly error messages
+- Use toast notifications for feedback
+- Implement retry mechanisms where appropriate
+- Handle loading and error states properly
+
+## Testing
+
+### Backend Tests
+```java
+@ExtendWith(MockitoExtension.class)
+class ApiKeyServiceTest {
+    @Mock
+    private ApiKeyRepository apiKeyRepository;
+    
+    @InjectMocks
+    private ApiKeyService apiKeyService;
+    
+    @Test
+    void shouldCreateApiKeySuccessfully() {
+        // Test implementation
+    }
+}
+```
+
+### Frontend Tests
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
+import ApiKeys from '@/views/ApiKeys.vue';
+
+describe('ApiKeys', () => {
+  it('should display API keys list', () => {
+    // Test implementation
+  });
+});
+```
+
+## Common Patterns
+
+### CRUD Operations
+1. **Create**: Generate secure key, encrypt secret, return full key once
+2. **Read**: Return public information only, validate ownership
+3. **Update**: Allow name, description, enabled status, expiration
+4. **Delete**: Soft delete or hard delete based on requirements
+
+### State Management
+- Use reactive data with `ref()` and `reactive()`
+- Implement proper loading states
+- Handle error states gracefully
+- Update UI optimistically when appropriate
+
+### Validation
+- Backend: Use Bean Validation annotations
+- Frontend: Implement form validation with error display
+- Validate expiration dates are in the future
+- Ensure required fields are provided
+
+## Performance Considerations
+
+### Backend
+- Use indexes on `userId` and `keyId` fields
+- Implement pagination for large key lists
+- Use reactive programming for non-blocking operations
+- Cache frequently accessed data
+
+### Frontend
+- Implement lazy loading if needed
+- Use efficient rendering for large lists
+- Debounce search and filter operations
+- Optimize re-renders with proper key usage
+
+## Monitoring and Logging
+
+### Backend Logging
+```java
+log.info("Creating API key '{}' for user: {}", request.name(), userId);
+log.warn("API key not found: {} for user: {}", keyId, userId);
+log.error("Failed to create API key for user: {}", userId, e);
+```
+
+### Frontend Logging
+- Log user actions for debugging
+- Track API call failures
+- Monitor performance metrics
+- Use proper log levels
+
+## Deployment Considerations
+
+### Database
+- Ensure proper indexes are created
+- Handle migration of existing data
+- Implement backup and recovery procedures
+- Monitor database performance
+
+### Security
+- Rotate encryption keys regularly
+- Monitor for suspicious API key usage
+- Implement rate limiting
+- Use secure communication channels
+
+## Best Practices
+
+1. **Never log or display secret keys after creation**
+2. **Always validate user ownership of resources**
+3. **Use proper encryption for sensitive data**
+4. **Implement comprehensive error handling**
+5. **Follow reactive programming patterns**
+6. **Use consistent naming conventions**
+7. **Write comprehensive tests**
+8. **Monitor and log appropriately**
+9. **Follow security best practices**
+10. **Keep UI/UX simple and intuitive**

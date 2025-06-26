@@ -4,6 +4,7 @@
     :icon="icon"
     :loading="loading"
     :disabled="disabled"
+    :severity="severity"
     :class="[
       'of-button',
       { 'p-button-sm': size === 'small' },

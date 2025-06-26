@@ -36,11 +36,11 @@ export -f add_loopback_ip
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
-source "${SCRIPT_DIR}/functions/intercept.sh"
-export -f intercept_app
+source "${SCRIPT_DIR}/functions/develop.sh"
+export -f intercept_app switch_argocd_app_health
 
 source "${SCRIPT_DIR}/functions/argocd.sh"
-export -f deploy_argocd delete_argocd wait_for_argocd_apps
+export -f deploy_argocd delete_argocd wait_for_argocd_apps get_initial_secret
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -71,12 +71,13 @@ if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
 fi
 
 ARG=$1
-APP=$2
-ACTION=$3
+NAMESPACE=$2
+APP=$3
+ACTION=$4
 
-if [ "$ACTION" == "intercept" ]; then
-  LOCAL_PORT="$4"
-  REMOTE_PORT_NAME="$5"
+if [ "$ACTION" == "intercept" ] || [ "$ACTION" == "health" ]; then
+  ARG1="$5"
+  ARG2="$6"
 fi
 
 case "$ARG" in
@@ -100,7 +101,7 @@ case "$ARG" in
   a|app)
     # Deploy app one by one
     if [ -n "$APP" ]; then
-      bash "${SCRIPT_DIR}/manage-apps.sh" "$APP" "$ACTION" "$LOCAL_PORT" "$REMOTE_PORT_NAME"
+      bash "${SCRIPT_DIR}/manage-apps.sh" app "$NAMESPACE" "$APP" "$ACTION" "$ARG1" "$ARG2"
     else
       bash "${SCRIPT_DIR}/manage-apps.sh" "''"
     fi
@@ -108,11 +109,11 @@ case "$ARG" in
   b|bootstrap)
     # Bootstrap whole cluster with all apps
     OPENFRAME_RECURSIVE_CALL=1 bash "$0" cluster && \
-    OPENFRAME_RECURSIVE_CALL=1 bash "$0" app all deploy
+    bash "${SCRIPT_DIR}/manage-apps.sh" all deploy
     ;;
   c|cleanup)
     for node in k3d-openframe-dev-agent-0 k3d-openframe-dev-agent-1 k3d-openframe-dev-agent-2 k3d-openframe-dev-server-0; do
-      echo "Cleaning up $node ..."
+      echo "Cleaning up $node ..." 
       docker exec "$node" crictl rmi --prune
     done
     ;;
