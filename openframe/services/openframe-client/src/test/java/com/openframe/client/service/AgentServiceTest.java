@@ -6,7 +6,6 @@ import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.service.SecretGenerator;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -39,7 +37,7 @@ class AgentServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private SecretGenerator secretGenerator;
+    private AgentSecretGenerator agentSecretGenerator;
 
     @Captor
     private ArgumentCaptor<OAuthClient> oauthClientCaptor;
@@ -55,14 +53,14 @@ class AgentServiceTest {
 
     @BeforeEach
     void setUp() {
-        agentService = new AgentService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, secretGenerator, passwordEncoder);
+        agentService = new AgentService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder);
         request = createTestRequest();
     }
 
     @Test
     void registerAgent_WithNewMachine_ReturnsCredentials() {
         when(oauthClientRepository.existsByMachineId(MACHINE_ID)).thenReturn(false);
-        when(secretGenerator.generate(32)).thenReturn(CLIENT_SECRET);
+        when(agentSecretGenerator.generate()).thenReturn(CLIENT_SECRET);
         when(oauthClientRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         when(machineRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         AgentRegistrationResponse response = agentService.registerAgent(INITIAL_KEY, request);

@@ -1,4 +1,4 @@
-package com.openframe.core.service;
+package com.openframe.client.service;
 
 import org.springframework.stereotype.Component;
 
@@ -6,12 +6,12 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 @Component
-public class SecretGenerator {
+public class AgentSecretGenerator {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public String generate(int length) {
-        byte[] bytes = new byte[length];
+    public String generate() {
+        byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }

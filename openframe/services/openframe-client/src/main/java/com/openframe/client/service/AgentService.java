@@ -6,7 +6,6 @@ import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.service.SecretGenerator;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,7 @@ public class AgentService {
     private final OAuthClientRepository oauthClientRepository;
     private final MachineRepository machineRepository;
     private final AgentRegistrationSecretValidator secretValidator;
-    private final SecretGenerator secretGenerator;
+    private final AgentSecretGenerator agentSecretGenerator;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -35,7 +34,7 @@ public class AgentService {
         }
 
         String clientId = "agent_" + request.getMachineId();
-        String clientSecret = secretGenerator.generate(32);
+        String clientSecret = agentSecretGenerator.generate();
 
         // Create and save OAuth client
         OAuthClient client = new OAuthClient();
