@@ -21,7 +21,7 @@ public class AgentRegistrationSecretManagementService {
     private final EncryptionService encryptionService;
 
     public void createInitialSecret() {
-        if (secretRepository.count() > 0) {
+        if (secretRepository.existsAny()) {
             log.info("Agent registration keys already exist. Skipping key generation.");
             return;
         }
