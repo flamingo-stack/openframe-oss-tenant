@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: feature/mesh-kafka-to-cassandra
+    targetRevision: feature/openframe-stream
     path: manifests/apps
 
   destination:
