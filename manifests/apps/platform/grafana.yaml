@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/platform/base/grafana/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/remove-ingresses
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/remove-ingresses
       path: manifests/platform/base/grafana
 
   destination:

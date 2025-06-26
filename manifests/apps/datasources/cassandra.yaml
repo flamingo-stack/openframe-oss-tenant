@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/datasources/base/cassandra/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/remove-ingresses
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/remove-ingresses
       path: manifests/datasources/base/cassandra
 
   destination:

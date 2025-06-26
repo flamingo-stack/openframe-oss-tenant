@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/remove-ingresses
       path: manifests/microservices/base/openframe-config
 
   destination:
