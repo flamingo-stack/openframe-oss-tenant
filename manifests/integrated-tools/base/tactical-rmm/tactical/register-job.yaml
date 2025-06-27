@@ -44,9 +44,9 @@ spec:
                 "name": "Tactical RMM",
                 "description": "Remote Monitoring and Management Platform",
                 "toolUrls": [
-                  { "url": "http://tactical-api.192.168.100.100.nip.io", "port": "80", "type": "API" },
-                  { "url": "http://tactical-ui.192.168.100.100.nip.io", "port": "80", "type": "DASHBOARD" },
-                  { "url": "ws://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8000", "type": "WS" }
+                  { "url": "http://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8000", "type": "API" },
+                  { "url": "http://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8080", "type": "DASHBOARD" },
+                  { "url": "ws://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8080", "type": "WS" }
                 ],
                 "category": "Device Management",
                 "platformCategory": "Integrated Tool",
@@ -67,6 +67,7 @@ spec:
                 "debeziumConnector": {
                   "name": "tactical-rmm-psql-connector",
                   "config": {
+                    "replacementCharacter": "_",
                     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                     "tasks.max": "1",
                     "database.hostname": "'"${POSTGRES_HOST}"'",
