@@ -243,19 +243,32 @@ restore_identity_files() {
 selective_cleanup() {
   local dir="$1"
 
+  # Validate input
+  if [ -z "$dir" ]; then
+    echo -e "${RED}${CROSS} Error: Directory path is empty${RESET}"
+    return 1
+  fi
+
+  # Ensure we're working with absolute paths
+  if [[ "$dir" != /* ]]; then
+    echo -e "${RED}${CROSS} Error: Directory path must be absolute: $dir${RESET}"
+    return 1
+  fi
+
   # IMPORTANT: Check that this is NOT a system directory
   case "$dir" in
-    "/usr/bin"|"/bin"|"/sbin"|"/usr/sbin"|"/etc")
-      echo "ERROR: Refusing to clean system directory: $dir"
+    "/"|"/usr"|"/usr/bin"|"/bin"|"/sbin"|"/usr/sbin"|"/etc"|"/var"|"/opt"|"/lib"|"/lib64"|"/boot"|"/dev"|"/proc"|"/sys"|"/root"|"/home")
+      echo -e "${RED}${CROSS} Error: Refusing to clean system directory: $dir${RESET}"
       return 1
       ;;
   esac
-  
-  if [ ! -d "$dir" ]; then
-    debug_print "Directory does not exist, nothing to clean: $dir"
-    return 0
+
+  # Additional safety check for system directories
+  if [[ "$dir" =~ ^/(usr|bin|sbin|etc|var|opt|lib|lib64|boot|dev|proc|sys|root|home)(/|$) ]]; then
+    echo -e "${RED}${CROSS} Error: Refusing to clean directory that might be system-related: $dir${RESET}"
+    return 1
   fi
-  
+
   debug_print "Performing selective cleanup of directory: $dir"
   
   # Create a temporary directory to store files to preserve
@@ -280,6 +293,7 @@ selective_cleanup() {
   done
   
   # Remove all files in the directory
+  debug_print "Removing files from directory: $dir"
   rm -rf "$dir"/* 2>/dev/null || true
   
   # Restore the preserved files
@@ -343,8 +357,6 @@ uninstall_mesh_agent() {
     
   else # Linux
     install_locations=(
-      "/usr/bin/meshagent"
-      "/usr/bin/meshagent.msh"
       "/usr/local/bin/meshagent" 
       "/usr/local/bin/meshagent.msh"
       "/opt/meshagent"
