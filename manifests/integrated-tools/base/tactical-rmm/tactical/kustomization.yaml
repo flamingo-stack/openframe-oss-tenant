@@ -3,8 +3,11 @@ kind: Kustomization
 
 resources:
   - configmap.yaml
-  - secret.yaml
-  - pvc.yaml
-  - deployment.yaml
-  - service.yaml
   - register-job.yaml
+  - ./backend
+  - ./celery
+  - ./celerybeat
+  - ./frontend
+  - ./nats
+  - ./nginx
+  - ./websockets

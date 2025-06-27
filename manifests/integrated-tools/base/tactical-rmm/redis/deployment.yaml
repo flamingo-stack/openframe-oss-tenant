@@ -34,4 +34,4 @@ spec:
       volumes:
       - name: redis-data
         persistentVolumeClaim:
-          claimName: tactical-redis-data
+          claimName: tactical-redis

@@ -23,16 +23,11 @@ spec:
           - "wal_level=logical"
         ports:
         - containerPort: 5432
-        env:
-        - name: POSTGRES_DB
-          value: "tacticalrmm"
-        - name: POSTGRES_USER
-          value: "postgres"
-        - name: POSTGRES_PASSWORD
-          value: "postgrespass"
-        volumeMounts:
-        - name: postgres-data
-          mountPath: /var/lib/postgresql/data
+        envFrom:
+        - configMapRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-postgres
         livenessProbe:
           exec:
             command:
@@ -41,7 +36,10 @@ spec:
             - postgres
           initialDelaySeconds: 30
           periodSeconds: 10
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
       volumes:
       - name: postgres-data
         persistentVolumeClaim:
-          claimName: tactical-postgres-data
+          claimName: tactical-postgres

@@ -26,7 +26,15 @@ spec:
           ']
         envFrom:
         - configMapRef:
-            name: tactical-common-config
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-redis
 
       - name: wait-for-backend
         image: postgres:14-alpine
@@ -62,7 +70,15 @@ spec:
           echo "Backend is fully ready!"
         envFrom:
         - configMapRef:
-            name: tactical-common-config
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-redis
 
       containers:
       - name: openframe-tactical-nats
@@ -73,10 +89,15 @@ spec:
         - containerPort: 4222
         envFrom:
         - configMapRef:
-            name: tactical-common-config
-        volumeMounts:
-        - name: nats-data
-          mountPath: /opt/tactical
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-redis
         livenessProbe:
           exec:
             command:
@@ -84,6 +105,9 @@ spec:
             - /opt/tactical/tmp/tactical/ready
           initialDelaySeconds: 30
           periodSeconds: 15
+        volumeMounts:
+        - name: nats-data
+          mountPath: /opt/tactical
       volumes:
       - name: nats-data
         persistentVolumeClaim:

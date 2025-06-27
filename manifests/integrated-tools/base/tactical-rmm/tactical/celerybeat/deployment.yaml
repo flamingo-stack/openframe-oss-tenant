@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tactical-websockets
+  name: tactical-celerybeat
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tactical-websockets
+      app: tactical-celerybeat
   template:
     metadata:
       labels:
-        app: tactical-websockets
+        app: tactical-celerybeat
     spec:
       imagePullSecrets:
         - name: github-pat-secret
@@ -31,16 +31,22 @@ spec:
           ']
 
       containers:
-      - name: openframe-tactical-websockets
-        image: openframe-tactical-websockets
-        args: ["tactical-websockets"]
-        ports:
-        - containerPort: 8000
+      - name: openframe-tactical-celerybeat
+        image: openframe-tactical-celerybeat
+        args: ["tactical-celerybeat"]
         envFrom:
         - configMapRef:
-            name: tactical-common-config
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-redis
         volumeMounts:
-        - name: websockets-data
+        - name: celerybeat-data
           mountPath: /opt/tactical
         livenessProbe:
           exec:
@@ -50,6 +56,6 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
       volumes:
-      - name: websockets-data
+      - name: celerybeat-data
         persistentVolumeClaim:
-          claimName: tactical-websockets-data
+          claimName: tactical-celerybeat

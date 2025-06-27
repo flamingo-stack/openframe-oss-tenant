@@ -22,11 +22,19 @@ spec:
         - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: tactical-common-config
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-redis
         volumeMounts:
         - name: frontend-data
           mountPath: /opt/tactical
       volumes:
       - name: frontend-data
         persistentVolumeClaim:
-          claimName: tactical-frontend-data
+          claimName: tactical-frontend

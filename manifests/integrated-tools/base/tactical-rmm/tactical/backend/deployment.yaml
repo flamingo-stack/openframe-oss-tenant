@@ -50,10 +50,16 @@ spec:
         - containerPort: 8000
         envFrom:
         - configMapRef:
-            name: tactical-common-config
-        volumeMounts:
-        - name: backend-data
-          mountPath: /opt/tactical
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-redis
+
         readinessProbe:
           httpGet:
             path: /
@@ -72,7 +78,10 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 3
+        volumeMounts:
+        - name: backend-data
+          mountPath: /opt/tactical
       volumes:
       - name: backend-data
         persistentVolumeClaim:
-          claimName: tactical-backend-data
+          claimName: tactical-backend

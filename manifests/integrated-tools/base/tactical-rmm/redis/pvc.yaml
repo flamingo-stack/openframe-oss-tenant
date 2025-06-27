@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: tactical-redis-data
+  name: tactical-redis
 spec:
   accessModes:
     - ReadWriteOnce
