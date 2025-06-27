@@ -52,7 +52,7 @@ spec:
                 "enabled": true,
                 "credentials": {
                   "username": "'"${TRMM_USER}"'",
-                  "password": "'"${TRMM_PASS}"'",
+                  "password": "'"${TRMM_PASS}"'"
                 },
                 "layer": "Integrated Tools",
                 "layerOrder": 3,
