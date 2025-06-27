@@ -59,7 +59,7 @@ spec:
                     \"type\": \"DASHBOARD\"
                   },
                   {
-                    \"url\": \"wss://meshcentral-server.integrated-tools.svc.cluster.local\",
+                    \"url\": \"ws://meshcentral-server.integrated-tools.svc.cluster.local\",
                     \"port\": \"8383\",
                     \"type\": \"WS\"
                   }

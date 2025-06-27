@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: authentik-postgresql
+  name: authentik-postgres
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: authentik-postgresql
+      app: authentik-postgres
   template:
     metadata:
       labels:
-        app: authentik-postgresql
+        app: authentik-postgres
     spec:
       imagePullSecrets:
         - name: github-pat-secret
@@ -23,7 +23,7 @@ spec:
         image: busybox
         command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod 0700 -R /var/lib/postgresql/data"]
         volumeMounts:
-        - name: postgresql-data
+        - name: postgres-data
           mountPath: /var/lib/postgresql/data
 
       containers:
@@ -33,9 +33,9 @@ spec:
         - containerPort: 5432
         envFrom:
         - configMapRef:
-            name: authentik-postgresql
+            name: authentik-postgres
         - secretRef:
-            name: authentik-postgresql
+            name: authentik-postgres
         resources:
           requests:
             cpu: 250m
@@ -64,9 +64,9 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         volumeMounts:
-        - name: postgresql-data
+        - name: postgres-data
           mountPath: /var/lib/postgresql/data
       volumes:
-      - name: postgresql-data
+      - name: postgres-data
         persistentVolumeClaim:
-          claimName: authentik-postgresql-data
+          claimName: authentik-postgres

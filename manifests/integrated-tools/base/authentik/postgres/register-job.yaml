@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: authentik-postgresql
+  name: authentik-postgres
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -17,29 +17,29 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
-              name: authentik-postgresql
+              name: authentik-postgres
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-postgresql
+              name: authentik-postgres
               key: POSTGRES_PASSWORD
         command:
         - /bin/sh
         - -c
         - |
           echo "Registering Authentik PostgreSQL..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgresql" \
+          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
             -H "Content-Type: application/json" \
             -d "{
               \"tool\": {
-                \"id\": \"authentik-postgresql\",
+                \"id\": \"authentik-postgres\",
                 \"toolType\": \"POSTGRESQL\",
                 \"name\": \"Authentik PostgreSQL\",
                 \"description\": \"PostgreSQL Database Backend for Authentik\",
                 \"toolUrls\": [
                   {
-                    \"url\": \"postgresql://authentik-postgresql.integrated-tools.svc.cluster.local\",
+                    \"url\": \"postgresql://authentik-postgres.integrated-tools.svc.cluster.local\",
                     \"port\": \"5432\",
                     \"type\": \"DATABASE\"
                   }

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: authentik-postgresql
+  name: authentik-postgres
 data:
   POSTGRES_USER: "authentik-user"
   POSTGRES_MULTIPLE_DATABASES: "authentik-database,authentik-database-authentik"

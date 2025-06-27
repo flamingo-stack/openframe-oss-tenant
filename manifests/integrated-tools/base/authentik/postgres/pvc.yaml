@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: authentik-postgresql-data
+  name: authentik-postgres
 spec:
   accessModes:
     - ReadWriteOnce
