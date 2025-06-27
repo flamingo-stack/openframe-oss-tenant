@@ -29,8 +29,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        - secretRef:
-            name: tactical-redis
         volumeMounts:
         - name: frontend-data
           mountPath: /opt/tactical

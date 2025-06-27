@@ -33,8 +33,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        - secretRef:
-            name: tactical-redis
 
       - name: wait-for-backend
         image: postgres:14-alpine
@@ -77,8 +75,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        - secretRef:
-            name: tactical-redis
 
       containers:
       - name: openframe-tactical-nats
@@ -96,8 +92,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        - secretRef:
-            name: tactical-redis
         livenessProbe:
           exec:
             command:

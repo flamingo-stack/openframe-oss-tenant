@@ -43,8 +43,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        - secretRef:
-            name: tactical-redis
         volumeMounts:
         - name: celerybeat-data
           mountPath: /opt/tactical

@@ -57,8 +57,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        - secretRef:
-            name: tactical-redis
 
         readinessProbe:
           httpGet:
