@@ -5,6 +5,7 @@ resources:
 - deployment.yaml
 - service.yaml
 - servicemonitor.yaml
+- register-job.yaml
 
 images:
 - name: openframe-api
