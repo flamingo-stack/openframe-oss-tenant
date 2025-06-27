@@ -19,11 +19,6 @@ spec:
         - secretRef:
             name: tactical-postgres
         env:
-        - name: TACTICAL_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tactical-default
-              key: TACTICAL_API_KEY
         - name: TRMM_USER
           valueFrom:
             configMapKeyRef:
@@ -58,11 +53,6 @@ spec:
                 "credentials": {
                   "username": "'"${TRMM_USER}"'",
                   "password": "'"${TRMM_PASS}"'",
-                  "apiKey": {
-                    "key": "'"${TACTICAL_API_KEY}"'",
-                    "type": "HEADER",
-                    "keyName": "X-API-KEY"
-                  }
                 },
                 "layer": "Integrated Tools",
                 "layerOrder": 3,
