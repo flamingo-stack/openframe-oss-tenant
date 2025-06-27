@@ -110,7 +110,7 @@ spec:
       - name: wait-for-postgres
         image: postgres:latest
         command: ['sh', '-c',
-          'until pg_isready -h authentik-postgresql.integrated-tools -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+          'until pg_isready -h authentik-postgres.integrated-tools -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
         env:
         - name: PGPASSWORD
           valueFrom:
