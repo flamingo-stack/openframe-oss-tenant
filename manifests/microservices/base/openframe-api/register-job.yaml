@@ -17,7 +17,7 @@ spec:
           - -c
           - |
             echo "Registering OpenFrame API..."
-            curl -X POST "http://openframe-management.microservices.svc.cluster.local/v1/tools/openframe-api" \
+            curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-api" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
@@ -52,5 +52,4 @@ spec:
               --retry-delay 2 \
               --retry-all-errors \
               --silent --show-error
-
             echo "OpenFrame API Registration complete."
