@@ -22,7 +22,7 @@ spec:
         - name: TACTICAL_API_KEY
           valueFrom:
             secretKeyRef:
-              name: tactical-rmm
+              name: tactical-default
               key: TACTICAL_API_KEY
         - name: TRMM_USER
           valueFrom:
