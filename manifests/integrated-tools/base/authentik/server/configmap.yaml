@@ -4,8 +4,8 @@ metadata:
   name: authentik-server
 data:
   AUTHENTIK_API_URL: "http://authentik-server:9000"
-  AUTHENTIK_REDIS__HOST: "authentik-redis.integrated-tools"
-  AUTHENTIK_POSTGRESQL__HOST: "authentik-postgresql.integrated-tools"
+  AUTHENTIK_REDIS__HOST: "authentik-redis.integrated-tools.svc.cluster.local"
+  AUTHENTIK_POSTGRESQL__HOST: "authentik-postgres.integrated-tools.svc.cluster.local"
   AUTHENTIK_POSTGRESQL__USER: "authentik-user"
   AUTHENTIK_POSTGRESQL__NAME: "authentik-database-authentik"
   # https://github.com/goauthentik/authentik/issues/9454
