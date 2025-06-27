@@ -31,43 +31,43 @@ spec:
           echo "Registering MongoDB..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/mongodb-primary" \
             -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "mongodb-primary",
-                "toolType": "MONGODB",
-                "name": "MongoDB Database",
-                "description": "MongoDB NoSQL Database",
-                "toolUrls": [
+            -d "{
+              \"tool\": {
+                \"id\": \"mongodb-primary\",
+                \"toolType\": \"MONGODB\",
+                \"name\": \"MongoDB Database\",
+                \"description\": \"MongoDB NoSQL Database\",
+                \"toolUrls\": [
                   {
-                    "url": "mongodb://mongodb.datasources.svc.cluster.local",
-                    "port": "27017",
-                    "type": "DATABASE"
+                    \"url\": \"mongodb://mongodb.datasources.svc.cluster.local\",
+                    \"port\": \"27017\",
+                    \"type\": \"DATABASE\"
                   },
                   {
-                    "url": "http://mongo-express.client-tools.svc.cluster.local",
-                    "port": "80",
-                    "type": "DASHBOARD"
+                    \"url\": \"http://mongo-express.client-tools.svc.cluster.local\",
+                    \"port\": \"80\",
+                    \"type\": \"DASHBOARD\"
                   }
                 ],
-                "category": "NoSQL Database",
-                "platformCategory": "OpenFrame Datasource",
-                "enabled": true,
-                "credentials": {
-                  "username": "$MONGO_USERNAME",
-                  "password": "$MONGO_PASSWORD"
+                \"category\": \"NoSQL Database\",
+                \"platformCategory\": \"OpenFrame Datasource\",
+                \"enabled\": true,
+                \"credentials\": {
+                  \"username\": \"${MONGO_USERNAME}\",
+                  \"password\": \"${MONGO_PASSWORD}\"
                 },
-                "layer": "Datasource",
-                "layerOrder": 1,
-                "layerColor": "#616161",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/health",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*","/metrics"],
-                "debeziumConnector": null
+                \"layer\": \"Datasource\",
+                \"layerOrder\": 1,
+                \"layerColor\": \"#616161\",
+                \"metricsPath\": \"/metrics\",
+                \"healthCheckEndpoint\": \"/health\",
+                \"healthCheckInterval\": 30,
+                \"connectionTimeout\": 5000,
+                \"readTimeout\": 5000,
+                \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
+                \"debeziumConnector\": null
               }
-            }' \
+            }" \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \
