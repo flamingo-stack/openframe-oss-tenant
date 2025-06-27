@@ -17,17 +17,17 @@ spec:
         - name: AUTHENTIK_BOOTSTRAP_EMAIL
           valueFrom:
             secretKeyRef:
-              name: authentik-default
+              name: authentik-server
               key: AUTHENTIK_BOOTSTRAP_EMAIL
         - name: AUTHENTIK_BOOTSTRAP_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-default
+              name: authentik-server
               key: AUTHENTIK_BOOTSTRAP_PASSWORD
         - name: AUTHENTIK_BOOTSTRAP_TOKEN
           valueFrom:
             secretKeyRef:
-              name: authentik-default
+              name: authentik-server
               key: AUTHENTIK_BOOTSTRAP_TOKEN
         command:
         - /bin/sh
