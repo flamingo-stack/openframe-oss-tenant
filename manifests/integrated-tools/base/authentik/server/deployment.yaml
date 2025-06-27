@@ -48,7 +48,7 @@ spec:
             memory: 1024Mi
           limits:
             cpu: 150m
-            memory: 1024Mis
+            memory: 1024Mi
         startupProbe:
           httpGet:
             path: /-/health/live/
@@ -118,7 +118,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-postgresql
+              name: authentik-postgres
               key: POSTGRES_PASSWORD
 
       - name: wait-for-server
@@ -136,7 +136,7 @@ spec:
         - secretRef:
             name: authentik-server
         - secretRef:
-            name: authentik-postgresql
+            name: authentik-postgres
         resources:
           requests:
             cpu: 150m
