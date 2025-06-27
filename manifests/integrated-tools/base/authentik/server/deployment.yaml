@@ -41,7 +41,7 @@ spec:
         - secretRef:
             name: authentik-server
         - secretRef:
-            name: authentik-postgresql
+            name: authentik-postgres
         resources:
           requests:
             cpu: 150m
