@@ -105,4 +105,4 @@ spec:
       volumes:
       - name: nats-data
         persistentVolumeClaim:
-          claimName: tactical-nats-data
+          claimName: tactical-nats
