@@ -24,7 +24,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-postgresql
+              name: authentik-postgres
               key: POSTGRES_PASSWORD
 
       containers:
