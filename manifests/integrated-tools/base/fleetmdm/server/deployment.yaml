@@ -23,12 +23,24 @@ spec:
         envFrom:
         - configMapRef:
             name: fleetmdm-server
-        - configMapRef:
-            name: fleetmdm-mysql
         - secretRef:
             name: fleetmdm-server
-        - secretRef:
-            name: fleetmdm-mysql
+        env:
+        - name: FLEET_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: fleetmdm-mysql
+              key: MYSQL_DATABASE
+        - name: FLEET_MYSQL_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: fleetmdm-mysql
+              key: MYSQL_USER
+        - name: FLEET_MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fleetmdm-mysql
+              key: MYSQL_PASSWORD
         livenessProbe:
           httpGet:
             path: /setup
