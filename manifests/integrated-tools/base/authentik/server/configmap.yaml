@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-default
+data:
+  AUTHENTIK_API_URL: "http://authentik-server:9000"
+  AUTHENTIK_REDIS__HOST: "authentik-redis.integrated-tools"
+  AUTHENTIK_POSTGRESQL__HOST: "authentik-postgresql.integrated-tools"
+  AUTHENTIK_POSTGRESQL__USER: "authentik-user"
+  AUTHENTIK_POSTGRESQL__NAME: "authentik-database-authentik"
+  # https://github.com/goauthentik/authentik/issues/9454
+  # https://github.com/goauthentik/authentik/issues/5746#issuecomment-1875219192
+  AUTHENTIK_REDIS__DB: "1"
+  AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+  AUTHENTIK_DISABLE_STARTUP_ANALYTICS: "true"
+  AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+  AUTHENTIK_EMAIL__HOST: "localhost"
+  AUTHENTIK_EMAIL__PORT: "25"
+  AUTHENTIK_EMAIL__USERNAME: ""
+  AUTHENTIK_EMAIL__PASSWORD: ""
+  AUTHENTIK_EMAIL__USE_TLS: "false"
+  AUTHENTIK_EMAIL__USE_SSL: "false"
+  AUTHENTIK_EMAIL__TIMEOUT: "10"
+  AUTHENTIK_EMAIL__FROM: "authentik@localhost"
+  TMPDIR: "/tmp"
+        

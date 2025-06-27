@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: promtail
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: register
+        image: curlimages/curl:8.5.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Registering Promtail..."
+          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/promtail" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "id": "promtail",
+                "toolType": "PROMTAIL",
+                "name": "Promtail",
+                "description": "Promtail Log Collector for Loki",
+                "toolUrls": [
+                  {
+                    "url": "http://promtail.platform.svc.cluster.local",
+                    "port": "3101",
+                    "type": "API"
+                  }
+                ],
+                "category": "Log Collection",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Monitoring",
+                "layerOrder": 6,
+                "layerColor": "#F57C00",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/metrics",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/metrics"],
+                "debeziumConnector": null
+              }
+            }' \
+            --retry 5 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --silent --show-error
+          echo "Promtail Registration complete."

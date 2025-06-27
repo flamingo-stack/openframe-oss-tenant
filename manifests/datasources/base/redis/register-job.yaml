@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-primary
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: register
+        image: curlimages/curl:8.5.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Registering Redis..."
+          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/redis-primary" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "id": "redis-primary",
+                "toolType": "REDIS",
+                "name": "Redis Cache",
+                "description": "Redis In-Memory Cache",
+                "toolUrls": [
+                  {
+                    "url": "redis://redis-headless.datasources.svc.cluster.local",
+                    "port": "6379",
+                    "type": "DATABASE"
+                  }
+                ],
+                "category": "In-Memory Database",
+                "platformCategory": "OpenFrame Datasource",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Datasource",
+                "layerOrder": 2,
+                "layerColor": "#616161",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/health",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/api/v1/*","/metrics"],
+                "debeziumConnector": null
+              }
+            }' \
+            --retry 5 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --silent --show-error
+          echo "Redis Registration complete."

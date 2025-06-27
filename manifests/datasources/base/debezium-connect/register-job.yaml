@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: debezium-connect
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: register
+        image: curlimages/curl:8.5.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Registering Debezium Connect..."
+          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/debezium-connect" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tool": {
+                "id": "debezium-connect",
+                "toolType": "DEBEZIUM_CONNECT",
+                "name": "Debezium Connect",
+                "description": "Debezium Change Data Capture Connect Cluster",
+                "toolUrls": [
+                  {
+                    "url": "http://debezium-connect.datasources.svc.cluster.local",
+                    "port": "8083",
+                    "type": "API"
+                  }
+                ],
+                "category": "Change Data Capture",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {},
+                "layer": "Streaming",
+                "layerOrder": 3,
+                "layerColor": "#4CAF50",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/","/metrics"],
+                "debeziumConnector": null
+              }
+            }' \
+            --retry 5 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --silent --show-error
+          echo "Debezium Connect Registration complete."
