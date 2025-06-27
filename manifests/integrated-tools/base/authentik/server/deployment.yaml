@@ -24,8 +24,8 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-default
-              key: AUTHENTIK_POSTGRESQL__PASSWORD
+              name: authentik-postgresql
+              key: POSTGRES_PASSWORD
 
       containers:
       - name: server
@@ -37,9 +37,18 @@ spec:
           protocol: TCP
         envFrom:
         - configMapRef:
-            name: authentik-default
+            name: authentik-server
         - secretRef:
-            name: authentik-default
+            name: authentik-server
+        - secretRef:
+            name: authentik-postgresql
+        resources:
+          requests:
+            cpu: 150m
+            memory: 1024Mi
+          limits:
+            cpu: 150m
+            memory: 1024Mis
         startupProbe:
           httpGet:
             path: /-/health/live/
@@ -68,13 +77,6 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
-        resources:
-          requests:
-            cpu: 150m
-            memory: 1024Mi
-          limits:
-            cpu: 150m
-            memory: 1024Mi
         volumeMounts:
         - name: media
           mountPath: /media
@@ -116,8 +118,8 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-default
-              key: AUTHENTIK_POSTGRESQL__PASSWORD
+              name: authentik-postgresql
+              key: POSTGRES_PASSWORD
 
       - name: wait-for-server
         image: curlimages/curl:latest
@@ -130,9 +132,18 @@ spec:
         args: ["worker"]
         envFrom:
         - configMapRef:
-            name: authentik-default
+            name: authentik-server
         - secretRef:
-            name: authentik-default
+            name: authentik-server
+        - secretRef:
+            name: authentik-postgresql
+        resources:
+          requests:
+            cpu: 150m
+            memory: 1024Mi
+          limits:
+            cpu: 150m
+            memory: 1024Mi
         startupProbe:
           exec:
             command:
@@ -163,13 +174,6 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 10
-        resources:
-          requests:
-            cpu: 150m
-            memory: 1024Mi
-          limits:
-            cpu: 150m
-            memory: 1024Mi
         volumeMounts:
         - name: media
           mountPath: /media

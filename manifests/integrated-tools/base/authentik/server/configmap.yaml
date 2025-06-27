@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: authentik-default
+  name: authentik-server
 data:
   AUTHENTIK_API_URL: "http://authentik-server:9000"
   AUTHENTIK_REDIS__HOST: "authentik-redis.integrated-tools"

@@ -31,16 +31,18 @@ spec:
         image: openframe-authentik-postgresql
         ports:
         - containerPort: 5432
-        env:
-        - name: POSTGRES_USER
-          value: authentik-user
-        - name: POSTGRES_PASSWORD
-          value: authentik-password-1234
-        - name: POSTGRES_MULTIPLE_DATABASES
-          value: authentik-database,authentik-database-authentik
-        volumeMounts:
-        - name: postgresql-data
-          mountPath: /var/lib/postgresql/data
+        envFrom:
+        - configMapRef:
+            name: authentik-postgresql
+        - secretRef:
+            name: authentik-postgresql
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
         livenessProbe:
           exec:
             command:
@@ -61,13 +63,9 @@ spec:
             - authentik-database-authentik
           initialDelaySeconds: 5
           periodSeconds: 5
-        resources:
-          limits:
-            cpu: 500m
-            memory: 1Gi
-          requests:
-            cpu: 250m
-            memory: 512Mi
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
       volumes:
       - name: postgresql-data
         persistentVolumeClaim:
