@@ -31,38 +31,38 @@ spec:
           echo "Registering Authentik PostgreSQL..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"tool\": {
-                \"id\": \"authentik-postgres\",
-                \"toolType\": \"POSTGRESQL\",
-                \"name\": \"Authentik PostgreSQL\",
-                \"description\": \"PostgreSQL Database Backend for Authentik\",
-                \"toolUrls\": [
+            -d '{
+              "tool": {
+                "id": "authentik-postgres",
+                "toolType": "POSTGRESQL",
+                "name": "Authentik PostgreSQL",
+                "description": "PostgreSQL Database Backend for Authentik",
+                "toolUrls": [
                   {
-                    \"url\": \"postgresql://authentik-postgres.integrated-tools.svc.cluster.local\",
-                    \"port\": \"5432\",
-                    \"type\": \"DATABASE\"
+                    "url": "postgresql://authentik-postgres.integrated-tools.svc.cluster.local",
+                    "port": "5432",
+                    "type": "DATABASE"
                   }
                 ],
-                \"category\": \"SQL Database\",
-                \"platformCategory\": \"Integrated Tool\",
-                \"enabled\": true,
-                \"credentials\": {
-                  \"username\": \"${POSTGRES_USER}\",
-                  \"password\": \"${POSTGRES_PASSWORD}\"
+                "category": "SQL Database",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${POSTGRES_USER}"'",
+                  "password": "'"${POSTGRES_PASSWORD}"'"
                 },
-                \"layer\": \"Integrated Tools\",
-                \"layerOrder\": 6,
-                \"layerColor\": \"#3949AB\",
-                \"metricsPath\": \"/metrics\",
-                \"healthCheckEndpoint\": \"/\",
-                \"healthCheckInterval\": 30,
-                \"connectionTimeout\": 5000,
-                \"readTimeout\": 5000,
-                \"allowedEndpoints\": [\"/metrics\"],
-                \"debeziumConnector\": null
+                "layer": "Integrated Tools",
+                "layerOrder": 6,
+                "layerColor": "#3949AB",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/metrics"],
+                "debeziumConnector": null
               }
-            }" \
+            }' \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \

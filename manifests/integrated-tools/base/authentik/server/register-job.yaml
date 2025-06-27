@@ -36,39 +36,39 @@ spec:
           echo "Registering Authentik..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-server" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"tool\": {
-                \"id\": \"authentik\",
-                \"toolType\": \"AUTHENTIK\",
-                \"name\": \"Authentik SSO\",
-                \"description\": \"Authentik Identity Provider\",
-                \"toolUrls\": [
-                  { \"url\": \"http://authentik-server.integrated-tools.svc.cluster.local\", \"port\": \"9000\", \"type\": \"API\" },
-                  { \"url\": \"http://authentik-server.integrated-tools.svc.cluster.local\", \"port\": \"9000\", \"type\": \"DASHBOARD\" }
+            -d '{
+              "tool": {
+                "id": "authentik",
+                "toolType": "AUTHENTIK",
+                "name": "Authentik SSO",
+                "description": "Authentik Identity Provider",
+                "toolUrls": [
+                  { "url": "http://authentik-server.integrated-tools.svc.cluster.local", "port": "9000", "type": "API" },
+                  { "url": "http://authentik-server.integrated-tools.svc.cluster.local", "port": "9000", "type": "DASHBOARD" }
                 ],
-                \"category\": \"Identity Provider\",
-                \"platformCategory\": \"Integrated Tool\",
-                \"enabled\": true,
-                \"credentials\": {
-                  \"username\": \"${AUTHENTIK_BOOTSTRAP_EMAIL}\",
-                  \"password\": \"${AUTHENTIK_BOOTSTRAP_PASSWORD}\",
-                  \"apiKey\": {
-                    \"key\": \"${AUTHENTIK_BOOTSTRAP_TOKEN}\",
-                    \"type\": \"BEARER_TOKEN\"
+                "category": "Identity Provider",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${AUTHENTIK_BOOTSTRAP_EMAIL}"'",
+                  "password": "'"${AUTHENTIK_BOOTSTRAP_PASSWORD}"'",
+                  "apiKey": {
+                    "key": "'"${AUTHENTIK_BOOTSTRAP_TOKEN}"'",
+                    "type": "BEARER_TOKEN"
                   }
                 },
-                \"layer\": \"Integrated Tools\",
-                \"layerOrder\": 4,
-                \"layerColor\": \"#455A64\",
-                \"metricsPath\": \"/metrics\",
-                \"healthCheckEndpoint\": \"/\",
-                \"healthCheckInterval\": 30,
-                \"connectionTimeout\": 5000,
-                \"readTimeout\": 5000,
-                \"allowedEndpoints\": [\"/api/v1/*\",\"/metrics\"],
-                \"debeziumConnector\": null
+                "layer": "Integrated Tools",
+                "layerOrder": 4,
+                "layerColor": "#455A64",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/api/v1/*","/metrics"],
+                "debeziumConnector": null
               }
-            }" \
+            }' \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \

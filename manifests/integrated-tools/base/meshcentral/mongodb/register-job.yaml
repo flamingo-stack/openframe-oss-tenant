@@ -41,38 +41,38 @@ spec:
           echo "Registering MeshCentral MongoDB..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-mongodb" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"tool\": {
-                \"id\": \"meshcentral-mongodb\",
-                \"toolType\": \"MONGODB\",
-                \"name\": \"MeshCentral MongoDB\",
-                \"description\": \"MongoDB Backend for MeshCentral\",
-                \"toolUrls\": [
+            -d '{
+              "tool": {
+                "id": "meshcentral-mongodb",
+                "toolType": "MONGODB",
+                "name": "MeshCentral MongoDB",
+                "description": "MongoDB Backend for MeshCentral",
+                "toolUrls": [
                   {
-                    \"url\": \"mongodb://${MONGODB_HOST}\",
-                    \"port\": \"${MONGODB_PORT}\",
-                    \"type\": \"DATABASE\"
+                    "url": "mongodb://'"${MONGODB_HOST}"'",
+                    "port": "'"${MONGODB_PORT}"'",
+                    "type": "DATABASE"
                   }
                 ],
-                \"category\": \"NoSQL Database\",
-                \"platformCategory\": \"Integrated Tool\",
-                \"enabled\": true,
-                \"credentials\": {
-                  \"username\": \"${MONGO_INITDB_ROOT_USERNAME}\",
-                  \"password\": \"${MONGO_INITDB_ROOT_PASSWORD}\"
+                "category": "NoSQL Database",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${MONGO_INITDB_ROOT_USERNAME}"'",
+                  "password": "'"${MONGO_INITDB_ROOT_PASSWORD}"'"
                 },
-                \"layer\": \"Integrated Tools\",
-                \"layerOrder\": 6,
-                \"layerColor\": \"#4CAF50\",
-                \"metricsPath\": \"/metrics\",
-                \"healthCheckEndpoint\": \"/\",
-                \"healthCheckInterval\": 30,
-                \"connectionTimeout\": 5000,
-                \"readTimeout\": 5000,
-                \"allowedEndpoints\": [\"/metrics\"],
-                \"debeziumConnector\": null
+                "layer": "Integrated Tools",
+                "layerOrder": 6,
+                "layerColor": "#4CAF50",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/metrics"],
+                "debeziumConnector": null
               }
-            }" \
+            }' \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \

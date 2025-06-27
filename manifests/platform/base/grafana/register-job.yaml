@@ -31,43 +31,43 @@ spec:
           echo "Registering Grafana..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/grafana-primary" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"tool\": {
-                \"id\": \"grafana-primary\",
-                \"toolType\": \"GRAFANA\",
-                \"name\": \"Grafana\",
-                \"description\": \"Grafana Monitoring Dashboard\",
-                \"toolUrls\": [
+            -d '{
+              "tool": {
+                "id": "grafana-primary",
+                "toolType": "GRAFANA",
+                "name": "Grafana",
+                "description": "Grafana Monitoring Dashboard",
+                "toolUrls": [
                   {
-                    \"url\": \"https://grafana.platform.svc.cluster.local\",
-                    \"port\": \"80\",
-                    \"type\": \"DASHBOARD\"
+                    "url": "https://grafana.platform.svc.cluster.local",
+                    "port": "80",
+                    "type": "DASHBOARD"
                   },
                   {
-                    \"url\": \"https://grafana.platform.svc.cluster.local\",
-                    \"port\": \"80\",
-                    \"type\": \"API\"
+                    "url": "https://grafana.platform.svc.cluster.local",
+                    "port": "80",
+                    "type": "API"
                   }
                 ],
-                \"category\": \"Monitoring Dashboard\",
-                \"platformCategory\": \"OpenFrame Service\",
-                \"enabled\": true,
-                \"credentials\": {
-                  \"username\": \"${GRAFANA_USER}\",
-                  \"password\": \"${GRAFANA_PASSWORD}\"
+                "category": "Monitoring Dashboard",
+                "platformCategory": "OpenFrame Service",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${GRAFANA_USER}"'",
+                  "password": "'"${GRAFANA_PASSWORD}"'"
                 },
-                \"layer\": \"Monitoring\",
-                \"layerOrder\": 1,
-                \"layerColor\": \"#78909C\",
-                \"metricsPath\": \"/metrics\",
-                \"healthCheckEndpoint\": \"/health\",
-                \"healthCheckInterval\": 30,
-                \"connectionTimeout\": 5000,
-                \"readTimeout\": 5000,
-                \"allowedEndpoints\": [\"/api/v1/*\", \"/metrics\"],
-                \"debeziumConnector\": null
+                "layer": "Monitoring",
+                "layerOrder": 1,
+                "layerColor": "#78909C",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/health",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/api/v1/*", "/metrics"],
+                "debeziumConnector": null
               }
-            }" \
+            }' \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \

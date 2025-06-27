@@ -31,43 +31,43 @@ spec:
           echo "Registering FleetMDM Server..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-server" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"tool\": {
-                \"id\": \"fleetmdm-server\",
-                \"toolType\": \"FLEET\",
-                \"name\": \"FleetMDM Server\",
-                \"description\": \"Fleet Device Management Platform\",
-                \"toolUrls\": [
+            -d '{
+              "tool": {
+                "id": "fleetmdm-server",
+                "toolType": "FLEET",
+                "name": "FleetMDM Server",
+                "description": "Fleet Device Management Platform",
+                "toolUrls": [
                   {
-                    \"url\": \"http://fleetmdm-server.integrated-tools.svc.cluster.local\",
-                    \"port\": \"8070\",
-                    \"type\": \"API\"
+                    "url": "http://fleetmdm-server.integrated-tools.svc.cluster.local",
+                    "port": "8070",
+                    "type": "API"
                   },
                   {
-                    \"url\": \"http://fleetmdm-server.integrated-tools.svc.cluster.local\",
-                    \"port\": \"8070\",
-                    \"type\": \"DASHBOARD\"
+                    "url": "http://fleetmdm-server.integrated-tools.svc.cluster.local",
+                    "port": "8070",
+                    "type": "DASHBOARD"
                   }
                 ],
-                \"category\": \"Device Management\",
-                \"platformCategory\": \"Integrated Tool\",
-                \"enabled\": true,
-                \"credentials\": {
-                  \"username\": \"${FLEET_API_USER_EMAIL}\",
-                  \"password\": \"${FLEET_API_USER_PASSWORD}\"
+                "category": "Device Management",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${FLEET_API_USER_EMAIL}"'",
+                  "password": "'"${FLEET_API_USER_PASSWORD}"'"
                 },
-                \"layer\": \"Integrated Tools\",
-                \"layerOrder\": 4,
-                \"layerColor\": \"#455A64\",
-                \"metricsPath\": \"/metrics\",
-                \"healthCheckEndpoint\": \"/\",
-                \"healthCheckInterval\": 30,
-                \"connectionTimeout\": 5000,
-                \"readTimeout\": 5000,
-                \"allowedEndpoints\": [\"/api/v1/*\",\"/metrics\"],
-                \"debeziumConnector\": null
+                "layer": "Integrated Tools",
+                "layerOrder": 4,
+                "layerColor": "#455A64",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/api/v1/*","/metrics"],
+                "debeziumConnector": null
               }
-            }" \
+            }' \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \

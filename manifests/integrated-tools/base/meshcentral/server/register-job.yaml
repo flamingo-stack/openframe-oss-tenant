@@ -41,61 +41,61 @@ spec:
           echo "Registering MeshCentral Server..."
           curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-server" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"tool\": {
-                \"id\": \"meshcentral-server\",
-                \"toolType\": \"MESHCENTRAL\",
-                \"name\": \"MeshCentral Server\",
-                \"description\": \"MeshCentral Remote Management Platform\",
-                \"toolUrls\": [
+            -d '{
+              "tool": {
+                "id": "meshcentral-server",
+                "toolType": "MESHCENTRAL",
+                "name": "MeshCentral Server",
+                "description": "MeshCentral Remote Management Platform",
+                "toolUrls": [
                   {
-                    \"url\": \"http://meshcentral-server.integrated-tools.svc.cluster.local\",
-                    \"port\": \"8383\",
-                    \"type\": \"API\"
+                    "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
+                    "port": "8383",
+                    "type": "API"
                   },
                   {
-                    \"url\": \"http://meshcentral-server.integrated-tools.svc.cluster.local\",
-                    \"port\": \"8383\",
-                    \"type\": \"DASHBOARD\"
+                    "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
+                    "port": "8383",
+                    "type": "DASHBOARD"
                   },
                   {
-                    \"url\": \"ws://meshcentral-server.integrated-tools.svc.cluster.local\",
-                    \"port\": \"8383\",
-                    \"type\": \"WS\"
+                    "url": "ws://meshcentral-server.integrated-tools.svc.cluster.local",
+                    "port": "8383",
+                    "type": "WS"
                   }
                 ],
-                \"category\": \"Device Management\",
-                \"platformCategory\": \"Integrated Tool\",
-                \"enabled\": true,
-                \"credentials\": {
-                  \"username\": \"${MESH_USER}\",
-                  \"password\": \"${MESH_PASS}\"
+                "category": "Device Management",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${MESH_USER}"'",
+                  "password": "'"${MESH_PASS}"'"
                 },
-                \"layer\": \"Integrated Tools\",
-                \"layerOrder\": 4,
-                \"layerColor\": \"#455A64\",
-                \"metricsPath\": \"/metrics\",
-                \"healthCheckEndpoint\": \"/\",
-                \"healthCheckInterval\": 30,
-                \"connectionTimeout\": 5000,
-                \"readTimeout\": 5000,
-                \"allowedEndpoints\": [\"/metrics\"],
-                \"debeziumConnector\": {
-                  \"name\": \"meshcentral-mongo-connector\",
-                  \"config\": {
-                    \"connector.class\": \"io.debezium.connector.mongodb.MongoDbConnector\",
-                    \"mongodb.connection.string\": \"mongodb://${MONGODB_HOST}:${MONGODB_PORT}/meshcentral?replicaSet=rs0\",
-                    \"mongodb.name\": \"meshcentral\",
-                    \"topic.prefix\": \"meshcentral\",
-                    \"collection.include.list\": \"meshcentral.power,meshcentral.events\",
-                    \"transforms\": \"route\",
-                    \"transforms.route.type\": \"org.apache.kafka.connect.transforms.RegexRouter\",
-                    \"transforms.route.regex\": \".*\",
-                    \"transforms.route.replacement\": \"meshcentral.mongodb.events\"
+                "layer": "Integrated Tools",
+                "layerOrder": 4,
+                "layerColor": "#455A64",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/metrics"],
+                "debeziumConnector": {
+                  "name": "meshcentral-mongo-connector",
+                  "config": {
+                    "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+                    "mongodb.connection.string": "mongodb://'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0",
+                    "mongodb.name": "meshcentral",
+                    "topic.prefix": "meshcentral",
+                    "collection.include.list": "meshcentral.power,meshcentral.events",
+                    "transforms": "route",
+                    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+                    "transforms.route.regex": ".*",
+                    "transforms.route.replacement": "meshcentral.mongodb.events"
                   }
                 }
               }
-            }" \
+            }' \
             --retry 5 \
             --retry-delay 2 \
             --retry-all-errors \
