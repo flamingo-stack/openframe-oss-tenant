@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering MongoDB Exporter..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/mongodb-exporter" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/mongodb-exporter" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

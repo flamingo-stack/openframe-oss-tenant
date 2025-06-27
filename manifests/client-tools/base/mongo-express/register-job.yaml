@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering Mongo Express..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/mongo-express" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/mongo-express" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

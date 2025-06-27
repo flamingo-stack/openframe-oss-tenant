@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering Kafka UI..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/kafka-ui" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/kafka-ui" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

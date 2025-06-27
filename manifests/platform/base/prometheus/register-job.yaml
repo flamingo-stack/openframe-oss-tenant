@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering Prometheus..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/prometheus-primary" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/prometheus-primary" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

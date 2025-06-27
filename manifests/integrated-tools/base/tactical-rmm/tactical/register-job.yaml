@@ -34,7 +34,8 @@ spec:
         - -c
         - |
           echo "Registering Tactical RMM..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-rmm" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-rmm" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {
@@ -73,7 +74,7 @@ spec:
                     "database.user": "'"${POSTGRES_USER}"'",
                     "database.password": "'"${POSTGRES_PASSWORD}"'",
                     "database.dbname": "'"${POSTGRES_DB}"'",
-                    "topic.prefix": ""trmm_clients_users"",
+                    "topic.prefix": "trmm_clients_users",
                     "table.include.list": "public.logs_auditlog",
                     "plugin.name": "pgoutput",
                     "topic.creation.default.replication.factor": 1,

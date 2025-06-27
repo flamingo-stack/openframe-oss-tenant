@@ -39,7 +39,8 @@ spec:
         - -c
         - |
           echo "Registering MeshCentral MongoDB..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-mongodb" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-mongodb" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

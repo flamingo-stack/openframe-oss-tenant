@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering Ingress NGINX..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/ingress-nginx" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/ingress-nginx" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

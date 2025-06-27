@@ -18,7 +18,8 @@ spec:
           - -c
           - |
             echo "Registering OpenFrame UI..."
-            curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-ui" \
+            curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-ui" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {

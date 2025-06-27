@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering Authentik Redis..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-redis" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-redis" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

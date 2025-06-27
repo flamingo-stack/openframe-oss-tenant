@@ -18,7 +18,8 @@ spec:
         - -c
         - |
           echo "Registering Apache Pinot..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/pinot-primary" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/pinot-primary" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

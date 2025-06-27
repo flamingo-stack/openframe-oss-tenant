@@ -39,7 +39,8 @@ spec:
         - -c
         - |
           echo "Registering MeshCentral Server..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-server" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-server" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

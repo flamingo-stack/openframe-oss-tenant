@@ -34,7 +34,8 @@ spec:
         - -c
         - |
           echo "Registering Authentik..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-server" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-server" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {

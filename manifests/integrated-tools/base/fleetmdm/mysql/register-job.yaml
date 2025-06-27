@@ -29,7 +29,8 @@ spec:
         - -c
         - |
           echo "Registering FleetMDM MySQL..."
-          curl -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-mysql" \
+          curl --verbose --show-error --fail \
+            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-mysql" \
             -H "Content-Type: application/json" \
             -d '{
               "tool": {
