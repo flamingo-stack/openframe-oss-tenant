@@ -43,9 +43,6 @@ spec:
         - secretRef:
             name: authentik-postgres
         resources:
-          requests:
-            cpu: 150m
-            memory: 1024Mi
           limits:
             cpu: 150m
             memory: 1024Mi
@@ -138,9 +135,6 @@ spec:
         - secretRef:
             name: authentik-postgres
         resources:
-          requests:
-            cpu: 150m
-            memory: 1024Mi
           limits:
             cpu: 150m
             memory: 1024Mi
