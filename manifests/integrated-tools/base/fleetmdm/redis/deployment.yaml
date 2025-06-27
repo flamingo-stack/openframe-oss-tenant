@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fleet-mdm-redis
+  name: fleetmdm-redis
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fleet-mdm-redis
+      app: fleetmdm-redis
   template:
     metadata:
       labels:
-        app: fleet-mdm-redis
+        app: fleetmdm-redis
     spec:
       imagePullSecrets: 
         - name: docker-pat-secret
@@ -33,4 +33,4 @@ spec:
       volumes:
       - name: redis-data
         persistentVolumeClaim:
-          claimName: fleet-mdm-redis-data
+          claimName: fleetmdm-redis

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleetmdm-mysql
+data:
+  MYSQL_USER: "fleet-mdm-user"
+  MYSQL_DATABASE: "fleet-mdm-database"

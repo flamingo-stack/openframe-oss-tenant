@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fleet
+  name: fleetmdm-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fleet
+      app: fleetmdm-server
   template:
     metadata:
       labels:
-        app: fleet
+        app: fleetmdm-server
     spec:
       imagePullSecrets:
         - name: github-pat-secret
@@ -20,55 +20,25 @@ spec:
         image: openframe-fleetmdm
         ports:
         - containerPort: 8070
-        env:
-        - name: FLEET_CONFIG
-          value: "/etc/fleet/fleet.yml"
-        - name: FLEET_SETUP_ADMIN_EMAIL
-          value: "admin@openframe.local"
-        - name: FLEET_SETUP_ADMIN_PASSWORD
-          value: "openframe123!"
-        - name: FLEET_SETUP_ORG_NAME
-          value: "OpenFrame"
-        - name: FLEET_SETUP_AUTO_INIT
-          value: "true"
-        - name: FLEET_MYSQL_ADDRESS
-          value: "fleet-mdm-mysql.integrated-tools.svc:3306"
-        - name: FLEET_MYSQL_DATABASE
-          value: "fleet-mdm-database"
-        - name: FLEET_MYSQL_USERNAME
-          value: "fleet-mdm-user"
-        - name: FLEET_MYSQL_PASSWORD
-          value: "fleet-mdm-password-1234"
-        - name: FLEET_REDIS_ADDRESS
-          value: "fleet-mdm-redis.integrated-tools.svc:6379"
-        - name: FLEET_AUTH_JWT_KEY
-          value: "fleet-jwt-secret-123"
-        - name: FLEET_ENROLL_SECRET
-          value: "fleet-enroll-secret-123"
-        - name: FLEET_API_USER_NAME
-          value: "API User"
-        - name: FLEET_API_USER_EMAIL
-          value: "api@openframe.local"
-        - name: FLEET_API_USER_PASSWORD
-          value: "openframe123!"
-        - name: FLEET_SERVER_PORT
-          value: "8070"
-        - name: FLEET_SETUP_ADMIN_NAME
-          value: "Admin"
-        # - name: FLEET_URL  # Did not change app URL shown in the UI
-        #   value: "https://fleet.192.168.100.100.nip.io"
-        # - name: FLEET_SERVER_INSECURE_HTTP
-        #   value: "true"
-        volumeMounts:
-        - name: fleet-logs
-          mountPath: /var/log/osquery
+        envFrom:
+        - configMapRef:
+            name: fleetmdm-server
+        - configMapRef:
+            name: fleetmdm-mysql
+        - secretRef:
+            name: fleetmdm-server
+        - secretRef:
+            name: fleetmdm-mysql
         livenessProbe:
           httpGet:
             path: /setup
             port: 8070
           initialDelaySeconds: 30
           periodSeconds: 10
+        volumeMounts:
+        - name: fleet-logs
+          mountPath: /var/log/osquery
       volumes:
       - name: fleet-logs
         persistentVolumeClaim:
-          claimName: fleet-mdm-fleet-logs
+          claimName: fleetmdm-server

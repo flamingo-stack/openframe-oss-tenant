@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fleet-mdm-mysql
+  name: fleetmdm-mysql
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fleet-mdm-mysql
+      app: fleetmdm-mysql
   template:
     metadata:
       labels:
-        app: fleet-mdm-mysql
+        app: fleetmdm-mysql
     spec:
       imagePullSecrets: 
         - name: docker-pat-secret
@@ -25,20 +25,11 @@ spec:
           - --collation-server=utf8mb4_unicode_ci
         ports:
         - containerPort: 3306
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: "openframe123!"
-        - name: MYSQL_DATABASE
-          value: "fleet-mdm-database"
-        - name: MYSQL_USER
-          value: "fleet-mdm-user"
-        - name: MYSQL_PASSWORD
-          value: "fleet-mdm-password-1234"
-        - name: MYSQL_DEFAULT_AUTHENTICATION_PLUGIN
-          value: "mysql_native_password"
-        volumeMounts:
-        - name: mysql-data
-          mountPath: /var/lib/mysql
+        envFrom:
+        - configMapRef:
+            name: fleetmdm-mysql
+        - secretRef:
+            name: fleetmdm-mysql
         livenessProbe:
           exec:
             command:
@@ -51,7 +42,10 @@ spec:
             - -p${MYSQL_ROOT_PASSWORD}
           initialDelaySeconds: 30
           periodSeconds: 10
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
       volumes:
       - name: mysql-data
         persistentVolumeClaim:
-          claimName: fleet-mdm-mysql-data
+          claimName: fleetmdm-mysql

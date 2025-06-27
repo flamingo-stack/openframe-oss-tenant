@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: fleet-mdm-mysql-data
+  name: fleetmdm-mysql
 spec:
   accessModes:
     - ReadWriteOnce

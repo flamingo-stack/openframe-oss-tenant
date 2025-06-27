@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleetmdm-server
+data:
+  FLEET_CONFIG: "/etc/fleet/fleet.yml"
+  FLEET_SETUP_ADMIN_EMAIL: "admin@openframe.local"
+  FLEET_SETUP_ADMIN_NAME: "Admin"
+  FLEET_SETUP_ORG_NAME: "OpenFrame"
+  FLEET_SETUP_AUTO_INIT: "true"
+  FLEET_MYSQL_ADDRESS: "fleetmdm-mysql.integrated-tools.svc.cluster.local:3306"
+  FLEET_REDIS_ADDRESS: "fleetmdm-redis.integrated-tools.svc.cluster.local:6379"
+  FLEET_API_USER_NAME: "API User"
+  FLEET_API_USER_EMAIL: "api@openframe.local"
+  FLEET_SERVER_PORT: "8070"

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: fleet-mdm-redis-data
+  name: fleetmdm-redis
 spec:
   accessModes:
     - ReadWriteOnce
