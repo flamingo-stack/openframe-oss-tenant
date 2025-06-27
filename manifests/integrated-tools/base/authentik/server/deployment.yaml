@@ -24,7 +24,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-secrets
+              name: authentik-default
               key: AUTHENTIK_POSTGRESQL__PASSWORD
 
       containers:
@@ -116,7 +116,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: authentik-secrets
+              name: authentik-default
               key: AUTHENTIK_POSTGRESQL__PASSWORD
 
       - name: wait-for-server
