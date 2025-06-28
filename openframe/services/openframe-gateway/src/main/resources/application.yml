@@ -1,3 +1,6 @@
+server:
+  port: 8100
+
 spring:
   application:
     name: openframe-gateway
@@ -6,3 +9,59 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+  
+  # MongoDB configuration for API key validation
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/openframe
+      auto-index-creation: true
+  
+  # Redis configuration for rate limiting
+  redis:
+    enabled: true
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+
+# Spring Cloud Gateway routes
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: external-api
+          uri: http://localhost:8082
+          predicates:
+            - Path=/external-api/**
+          filters:
+            - StripPrefix=1
+
+# OpenFrame specific configuration
+openframe:
+  external-api:
+    url: http://localhost:8082
+  
+  rate-limit:
+    default-requests-per-minute: 100
+    default-requests-per-hour: 1000
+
+logging:
+  level:
+    com.openframe.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

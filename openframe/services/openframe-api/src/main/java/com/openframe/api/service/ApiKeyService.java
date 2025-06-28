@@ -109,14 +109,7 @@ public class ApiKeyService {
         }
     }
     
-    private void updateLastUsed(String apiKeyId) {
-        try {
-            apiKeyRepository.updateLastUsed(apiKeyId, Instant.now());
-        } catch (Exception e) {
-            log.warn("Failed to update last used timestamp for API key: {}", apiKeyId);
-        }
-    }
-    
+
     private String generateKeyId() {
         byte[] bytes = new byte[KEY_ID_LENGTH / 2];
         secureRandom.nextBytes(bytes);
