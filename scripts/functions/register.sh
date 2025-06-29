@@ -296,7 +296,7 @@ register_tool \
     "OpenFrame Datasource" \
     "Datasource" \
     1 \
-    "#616161" \
+    "#616161"
 
 # Register Redis with layer info
 register_tool \
@@ -541,7 +541,7 @@ register_tool \
     "HEADER" \
     "X-API-KEY" \
     '{
-       "name": "tactical-rmm-psql-connector",
+       "name": "trmm-psql-connector",
        "config": {
          "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
          "tasks.max": "1",
@@ -549,18 +549,14 @@ register_tool \
          "database.port": "5432",
          "database.user": "postgres",
          "database.password": "postgrespass",
-         "database.dbname": "tacticalrmm",
+         "database.dbname" : "tacticalrmm",
          "topic.prefix": "trmm_clients_users",
-         "table.include.list": "public.logs_auditlog",
+         "table.include.list": "public.clients_client,public.accounts_user",
          "plugin.name": "pgoutput",
          "topic.creation.default.replication.factor": 1,
          "topic.creation.default.partitions": 10,
          "topic.creation.default.cleanup.policy": "compact",
-         "topic.creation.default.compression.type": "lz4",
-         "transforms": "route",
-         "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
-         "transforms.route.topic.regex": "trmm_clients_users\\.(.*)",
-         "transforms.route.topic.replacement": "tactical-rmm.postgres.events"
+         "topic.creation.default.compression.type": "lz4"
        }
      }'
 

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<template encoding-version="1.0">
+    <description>OpenFrame Event Processing Template</description>
+    <groupId>openframe-event-processing</groupId>
+    <name>Event Processing Flow</name>
+    <snippet>
+        <processors>
+            <processor>
+                <id>consume-kafka</id>
+                <class>org.apache.nifi.processors.kafka.pubsub.ConsumeKafka_2_6</class>
+                <name>Consume Kafka Events</name>
+                <position>
+                    <x>0</x>
+                    <y>0</y>
+                </position>
+                <property>
+                    <name>bootstrap.servers</name>
+                    <value>${kafka.bootstrap.servers}</value>
+                </property>
+                <property>
+                    <name>topic</name>
+                    <value>${kafka.topic.events}</value>
+                </property>
+                <property>
+                    <name>group.id</name>
+                    <value>${kafka.consumer.group}</value>
+                </property>
+            </processor>
+            
+            <processor>
+                <id>transform-event</id>
+                <class>org.apache.nifi.processors.standard.JoltTransformJSON</class>
+                <name>Transform Event</name>
+                <position>
+                    <x>250</x>
+                    <y>0</y>
+                </position>
+                <property>
+                    <name>jolt-transform</name>
+                    <value>${event.transform.spec}</value>
+                </property>
+            </processor>
+            
+            <processor>
+                <id>route-events</id>
+                <class>org.apache.nifi.processors.standard.RouteOnAttribute</class>
+                <name>Route Events</name>
+                <position>
+                    <x>500</x>
+                    <y>0</y>
+                </position>
+                <property>
+                    <name>Routing Strategy</name>
+                    <value>Route to Property name</value>
+                </property>
+                <property>
+                    <name>event_type</name>
+                    <value>${event.type:equals('USER_ACTION')}</value>
+                </property>
+            </processor>
+            
+            <processor>
+                <id>process-events</id>
+                <class>com.openframe.stream.nifi.NiFiEventProcessor</class>
+                <name>Process Events</name>
+                <position>
+                    <x>750</x>
+                    <y>0</y>
+                </position>
+            </processor>
+            
+            <processor>
+                <id>publish-kafka</id>
+                <class>org.apache.nifi.processors.kafka.pubsub.PublishKafka_2_6</class>
+                <name>Publish Processed Events</name>
+                <position>
+                    <x>1000</x>
+                    <y>0</y>
+                </position>
+                <property>
+                    <name>bootstrap.servers</name>
+                    <value>${kafka.bootstrap.servers}</value>
+                </property>
+                <property>
+                    <name>topic</name>
+                    <value>${kafka.topic.processed}</value>
+                </property>
+            </processor>
+        </processors>
+        
+        <connections>
+            <connection>
+                <sourceId>consume-kafka</sourceId>
+                <destinationId>transform-event</destinationId>
+                <relationship>success</relationship>
+            </connection>
+            <connection>
+                <sourceId>transform-event</sourceId>
+                <destinationId>route-events</destinationId>
+                <relationship>success</relationship>
+            </connection>
+            <connection>
+                <sourceId>route-events</sourceId>
+                <destinationId>process-events</destinationId>
+                <relationship>matched</relationship>
+            </connection>
+            <connection>
+                <sourceId>process-events</sourceId>
+                <destinationId>publish-kafka</destinationId>
+                <relationship>success</relationship>
+            </connection>
+        </connections>
+        
+        <controllerServices>
+            <controllerService>
+                <id>json-reader</id>
+                <class>org.apache.nifi.json.JsonTreeReader</class>
+                <name>JsonTreeReader</name>
+            </controllerService>
+            <controllerService>
+                <id>json-writer</id>
+                <class>org.apache.nifi.json.JsonRecordSetWriter</class>
+                <name>JsonRecordSetWriter</name>
+            </controllerService>
+        </controllerServices>
+    </snippet>
+</template>

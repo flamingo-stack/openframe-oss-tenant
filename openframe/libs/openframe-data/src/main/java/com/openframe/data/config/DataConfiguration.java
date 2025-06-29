@@ -10,7 +10,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 public class DataConfiguration {
 
     @Configuration
-    @ConditionalOnProperty(name = "spring.data.mongodb.enabled", havingValue = "true", matchIfMissing = false)
+    @ConditionalOnProperty(name = "spring.data.mongodb.enabled", havingValue = "true", matchIfMissing = true)
     @EnableMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
     public static class MongoConfiguration {}
 
