@@ -6,18 +6,6 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
-# Spring Cloud Gateway routes
-  cloud:
-    gateway:
-      routes:
-        # External API route - highest priority
-        - id: external-api
-          uri: http://localhost:8082
-          predicates:
-            - Path=/external-api/**
-          filters:
-            - StripPrefix=1
-          order: 1  # Highest priority
 
 # OpenFrame specific configuration
 openframe:
