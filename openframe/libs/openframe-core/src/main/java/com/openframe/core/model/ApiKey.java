@@ -31,9 +31,6 @@ public class ApiKey {
     private List<String> scopes;       // ["devices:read", "alerts:write", "scripts:execute"]
     private List<String> roles;        // ["API_USER", "DEVICE_MANAGER"]
 
-    // Rate Limiting
-    private RateLimits rateLimits;
-
     // Metadata
     private boolean enabled = true;
     private Instant createdAt;
@@ -58,16 +55,5 @@ public class ApiKey {
      */
     public boolean isActive() {
         return enabled && !isExpired();
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RateLimits {
-        private Integer requestsPerMinute = 60;
-        private Integer requestsPerHour = 1000;
-        private Integer requestsPerDay = 10000;
-        private Integer burstCapacity = 10;
     }
 }
