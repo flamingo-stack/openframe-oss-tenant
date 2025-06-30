@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: fleetmdm-server
 spec:
+  clusterIP: None
   selector:
     app: fleetmdm-server
   ports:
   - port: 8070
     targetPort: 8070
+    protocol: TCP

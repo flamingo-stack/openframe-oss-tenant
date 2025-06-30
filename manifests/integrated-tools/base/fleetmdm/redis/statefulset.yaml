@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: fleetmdm-redis
 spec:
+  serviceName: fleetmdm-redis
   replicas: 1
   selector:
     matchLabels:
@@ -12,9 +13,9 @@ spec:
       labels:
         app: fleetmdm-redis
     spec:
-      imagePullSecrets: 
+      imagePullSecrets:
         - name: docker-pat-secret
-    
+
       containers:
       - name: redis
         image: redis:latest
@@ -30,7 +31,13 @@ spec:
             - ping
           initialDelaySeconds: 30
           periodSeconds: 10
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: fleetmdm-redis
+
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi

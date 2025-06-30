@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: fleetmdm-server
 spec:
+  serviceName: fleetmdm-server
   replicas: 1
   selector:
     matchLabels:
@@ -50,7 +51,13 @@ spec:
         volumeMounts:
         - name: fleet-logs
           mountPath: /var/log/osquery
-      volumes:
-      - name: fleet-logs
-        persistentVolumeClaim:
-          claimName: fleetmdm-server
+
+  volumeClaimTemplates:
+  - metadata:
+      name: fleet-logs
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi

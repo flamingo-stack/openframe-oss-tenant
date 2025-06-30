@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: fleetmdm-mysql
 spec:
+  serviceName: fleetmdm-mysql
   replicas: 1
   selector:
     matchLabels:
@@ -12,9 +13,9 @@ spec:
       labels:
         app: fleetmdm-mysql
     spec:
-      imagePullSecrets: 
+      imagePullSecrets:
         - name: docker-pat-secret
-    
+
       containers:
       - name: mysql
         image: mysql:8.0.35
@@ -45,7 +46,13 @@ spec:
         volumeMounts:
         - name: mysql-data
           mountPath: /var/lib/mysql
-      volumes:
-      - name: mysql-data
-        persistentVolumeClaim:
-          claimName: fleetmdm-mysql
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi

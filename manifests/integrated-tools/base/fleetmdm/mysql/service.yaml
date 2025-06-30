@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: fleetmdm-mysql
 spec:
+  clusterIP: None
   selector:
     app: fleetmdm-mysql
   ports:
   - port: 3306
     targetPort: 3306
+    protocol: TCP

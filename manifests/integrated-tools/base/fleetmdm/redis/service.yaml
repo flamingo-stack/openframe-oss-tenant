@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: fleetmdm-redis
 spec:
+  clusterIP: None
   selector:
     app: fleetmdm-redis
   ports:
   - port: 6379
     targetPort: 6379
+    protocol: TCP
