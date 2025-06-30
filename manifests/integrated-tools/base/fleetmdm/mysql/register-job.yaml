@@ -65,6 +65,5 @@ spec:
               }
             }' \
             --retry-delay 2 \
-            --retry-all-errors \
-            --silent --show-error
+            --retry-all-errors
           echo "FleetMDM MySQL Registration complete."

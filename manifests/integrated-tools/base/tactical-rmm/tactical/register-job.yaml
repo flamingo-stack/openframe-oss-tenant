@@ -100,6 +100,5 @@ spec:
               }
             }' \
             --retry-delay 2 \
-            --retry-all-errors \
-            --silent --show-error
+            --retry-all-errors
           echo "TacticalRMM Registration complete."
