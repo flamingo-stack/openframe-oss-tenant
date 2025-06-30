@@ -30,7 +30,7 @@ spec:
           - |
             echo "Registering MongoDB..."
             echo "Waiting for OpenFrame Management API to become reachable..."
-            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095/management/v1/health; do
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
