@@ -45,7 +45,7 @@ spec:
                 "description": "MongoDB NoSQL Database",
                 "toolUrls": [
                   {
-                    "url": "mongodb://mongodb.datasources.svc.cluster.local",
+                    "url": "mongodb://mongodb-0.mongodb.datasources.svc.cluster.local",
                     "port": "27017",
                     "type": "DATABASE"
                   },
