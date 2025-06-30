@@ -61,7 +61,7 @@ spec:
                 }
               }' \
               --retry 5 \
-              --retry-delay 2 \
+                          --retry-delay 2 \
               --retry-all-errors \
               --silent --show-error
             echo "Kafka Registration complete."
