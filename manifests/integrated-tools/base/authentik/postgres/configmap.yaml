@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-postgres
+data:
+  POSTGRES_USER: "authentik-user"
+  POSTGRES_MULTIPLE_DATABASES: "authentik-database,authentik-database-authentik"
+  POSTGRES_DB: "authentik-database-authentik"
+  POSTGRES_HOST: "authentik-postgres-0.authentik-postgres.integrated-tools.svc.cluster.local"

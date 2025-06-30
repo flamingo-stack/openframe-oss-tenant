@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tactical-redis
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: register
+        image: curlimages/curl:8.5.0
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-redis
+              key: REDIS_HOST
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Tactical RMM Redis..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+              echo "Still waiting..."
+              sleep 10
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-redis" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "tactical-redis",
+                  "toolType": "REDIS",
+                  "name": "Tactical RMM Redis",
+                  "description": "Redis Backend for Tactical RMM",
+                  "toolUrls": [
+                    {
+                      "url": "redis://'"${REDIS_HOST}"'",
+                      "port": "6379",
+                      "type": "DATABASE"
+                    }
+                  ],
+                  "category": "In-Memory Database",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Integrated Tools",
+                  "layerOrder": 5,
+                  "layerColor": "#B71C1C",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "Tactical RMM Redis Registration complete."

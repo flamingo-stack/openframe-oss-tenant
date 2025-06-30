@@ -28,16 +28,14 @@ spec:
               name: http
             - containerPort: 8096
               name: management
+          envFrom:
+            - secretRef:
+                name: openframe-management
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: SPRING_CONFIG_IMPORT
               value: "optional:configserver:http://openframe-config:8888"
-            - name: OPENFRAME_MANAGEMENT_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: openframe-secrets
-                  key: management-key
           livenessProbe:
             httpGet:
               path: /management/v1/health

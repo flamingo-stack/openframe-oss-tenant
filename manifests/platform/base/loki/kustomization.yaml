@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - servicemonitor.yaml
+  - register-job.yaml

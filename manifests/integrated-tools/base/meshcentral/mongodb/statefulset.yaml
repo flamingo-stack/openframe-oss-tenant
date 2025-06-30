@@ -33,9 +33,9 @@ spec:
               containerPort: 27017
           envFrom:
             - secretRef:
-                name: mongodb-secret
+                name: meshcentral-mongodb
             - configMapRef:
-                name: mongodb-config
+                name: meshcentral-mongodb
           readinessProbe:
             tcpSocket:
               port: 27017
