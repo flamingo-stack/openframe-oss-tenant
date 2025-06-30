@@ -17,7 +17,6 @@ import reactor.core.publisher.Mono;
 
 /**
  * Global filter for API key authentication on /external-api/** endpoints
- * 
  * Flow:
  * 1. Check if request is for /external-api/**
  * 2. If yes, require X-API-Key header
@@ -30,6 +29,12 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
+
+    private static final String EXTERNAL_API_PREFIX = "/external-api/";
+    private static final String API_DOCS_PATH = "/api-docs";
+    private static final String SWAGGER_UI_PATH = "/swagger-ui";
+    private static final String SWAGGER_UI_HTML = "/swagger-ui.html";
+    private static final String WEBJARS_PATH = "/webjars";
     
     private final ApiKeyValidationService apiKeyValidationService;
     private final RateLimitService rateLimitService;
@@ -37,26 +42,31 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     
     @Override
     public int getOrder() {
-        return -100; // High priority - run before other filters
+        return -100;
     }
     
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
         
-        // Only process requests to /external-api/**
-        if (!path.startsWith("/external-api/")) {
-            log.debug("Path {} does not start with /external-api/, skipping API key authentication", path);
+        log.debug("Processing request path: {}", path);
+
+        if (isDirectSwaggerPath(path)) {
+            log.debug("Skipping API key authentication for Swagger path: {}", path);
             return chain.filter(exchange);
         }
-        
-        log.debug("Processing /external-api/** request with API key authentication");
-        
-        // For /external-api/** paths, API key is required
+
+        if (!path.startsWith(EXTERNAL_API_PREFIX)) {
+            log.debug("Path {} is not external API, skipping authentication", path);
+            return chain.filter(exchange);
+        }
+
+        log.debug("Processing external API request with API key authentication: {}", path);
+
         String apiKey = exchange.getRequest().getHeaders().getFirst("X-API-Key");
         
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            log.warn("No API key provided for /external-api/** endpoint: {}", path);
+            log.warn("No API key provided for external API endpoint: {}", path);
             return handleUnauthorized(exchange, "API key is required for /external-api/** endpoints");
         }
         
@@ -74,16 +84,14 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
                 log.debug("API key validated successfully: {} for path: {}", keyId, path);
                 
                 // Check rate limits and get status for headers
-                log.info("🔍 Checking rate limits for API key: {}", keyId);
                 return rateLimitService.getRateLimitStatus(keyId)
-                    .flatMap((RateLimitStatus rateLimitStatus) -> {
-                        log.info("📊 Rate limit status for {}: minute={}/{}, hour={}/{}, includeHeaders={}", 
+                    .flatMap(rateLimitStatus -> {
+                        log.debug("Rate limit status for {}: minute={}/{}, hour={}/{}", 
                             keyId, rateLimitStatus.getMinuteRequests(), rateLimitStatus.getMinuteLimit(),
-                            rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit(),
-                            rateLimitProperties.isIncludeHeaders());
+                            rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit());
                         
                         return rateLimitService.isAllowed(keyId)
-                            .flatMap((Boolean allowed) -> {
+                            .flatMap(allowed -> {
                                 if (!allowed) {
                                     log.warn("Rate limit exceeded for API key: {} on path: {}", keyId, path);
                                     // Record failed request due to rate limiting
@@ -115,6 +123,16 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
             });
     }
     
+    /**
+     * Check if path is a direct Swagger/OpenAPI path (outside external-api)
+     */
+    private boolean isDirectSwaggerPath(String path) {
+        return path.startsWith(API_DOCS_PATH) ||
+               path.startsWith(SWAGGER_UI_PATH) ||
+               path.equals(SWAGGER_UI_HTML) ||
+               path.startsWith(WEBJARS_PATH);
+    }
+
     /**
      * Add user context headers and continue to external API
      */
@@ -194,7 +212,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
             headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.getHourLimit()));
             headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.getHourLimit() - rateLimitStatus.getHourRequests())));
             
-            log.info("✅ Added rate limit headers for API key: {} (minute: {}/{}, hour: {}/{})", 
+            log.debug("Added rate limit headers for API key: {} (minute: {}/{}, hour: {}/{})", 
                 rateLimitStatus.getKeyId(),
                 rateLimitStatus.getMinuteRequests(), rateLimitStatus.getMinuteLimit(),
                 rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit());
@@ -219,7 +237,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
         headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.getHourLimit()));
         headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.getHourLimit() - rateLimitStatus.getHourRequests())));
         
-        log.info("✅ Added rate limit headers to error response for API key: {}", rateLimitStatus.getKeyId());
+        log.debug("Added rate limit headers to error response for API key: {}", rateLimitStatus.getKeyId());
     }
     
     /**

@@ -40,7 +40,7 @@ public class OpenApiConfig {
                     
                     API requests are rate-limited based on your API key configuration:
                     - **Per Minute**: 100 requests (default)
-                    - **Per Hour**: 1,000 requests (default)  
+                    - **Per Hour**: 1,000 requests (default)
                     - **Per Day**: 10,000 requests (default)
                     
                     Rate limit headers are included in all responses:
@@ -69,11 +69,8 @@ public class OpenApiConfig {
                     .url("https://opensource.org/licenses/MIT")))
             .servers(List.of(
                 new Server()
-                    .url("https://api.openframe.com/external-api")
-                    .description("Production server"),
-                new Server()
-                    .url("http://localhost:8100/external-api")  
-                    .description("Local development server via Gateway")
+                    .url("https://openframe-gateway.192.168.100.100.nip.io/external-api")
+                    .description("Kubernetes Gateway server")
             ))
             .addSecurityItem(new SecurityRequirement()
                 .addList("ApiKeyAuth"))
