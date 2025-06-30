@@ -1,6 +1,8 @@
 package com.openframe.gateway.filter;
 
 import com.openframe.core.model.ApiKey;
+import com.openframe.gateway.config.RateLimitProperties;
+import com.openframe.gateway.model.RateLimitStatus;
 import com.openframe.gateway.service.ApiKeyValidationService;
 import com.openframe.gateway.service.RateLimitService;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +21,10 @@ import reactor.core.publisher.Mono;
  * Flow:
  * 1. Check if request is for /external-api/**
  * 2. If yes, require X-API-Key header
- * 3. Validate API key
+ * 3. Validate API key (includes total requests increment and lastUsed update)
  * 4. Check rate limits  
  * 5. Add user context headers and continue
- * 6. Update statistics asynchronously
+ * 6. Record success/failure statistics
  */
 @Slf4j
 @Component
@@ -31,6 +33,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     
     private final ApiKeyValidationService apiKeyValidationService;
     private final RateLimitService rateLimitService;
+    private final RateLimitProperties rateLimitProperties;
     
     @Override
     public int getOrder() {
@@ -57,7 +60,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
             return handleUnauthorized(exchange, "API key is required for /external-api/** endpoints");
         }
         
-        // Validate API key
+        // Validate API key (this automatically increments totalRequests and updates lastUsed)
         return apiKeyValidationService.validateApiKey(apiKey)
             .flatMap(validationResult -> {
                 if (!validationResult.isValid()) {
@@ -70,31 +73,39 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
                 
                 log.debug("API key validated successfully: {} for path: {}", keyId, path);
                 
-                // Update total requests counter asynchronously
-                apiKeyValidationService.incrementTotalRequestsAsync(keyId);
-                
-                // Check rate limits
-                return rateLimitService.isAllowed(keyId)
-                    .flatMap(allowed -> {
-                        if (!allowed) {
-                            log.warn("Rate limit exceeded for API key: {} on path: {}", keyId, path);
-                            // Increment failed requests counter
-                            apiKeyValidationService.incrementFailedRequestsAsync(keyId);
-                            return handleRateLimitExceeded(exchange);
-                        }
+                // Check rate limits and get status for headers
+                log.info("🔍 Checking rate limits for API key: {}", keyId);
+                return rateLimitService.getRateLimitStatus(keyId)
+                    .flatMap((RateLimitStatus rateLimitStatus) -> {
+                        log.info("📊 Rate limit status for {}: minute={}/{}, hour={}/{}, includeHeaders={}", 
+                            keyId, rateLimitStatus.getMinuteRequests(), rateLimitStatus.getMinuteLimit(),
+                            rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit(),
+                            rateLimitProperties.isIncludeHeaders());
                         
-                        // Update last used timestamp asynchronously
-                        apiKeyValidationService.updateLastUsedAsync(keyId);
-                        
-                        // Add user context headers and continue to external API
-                        return addUserContextAndContinue(exchange, chain, apiKeyObj)
-                            .doOnSuccess(unused -> {
-                                // Increment successful requests counter asynchronously
-                                apiKeyValidationService.incrementSuccessfulRequestsAsync(keyId);
-                            })
-                            .doOnError(error -> {
-                                // Increment failed requests counter asynchronously  
-                                apiKeyValidationService.incrementFailedRequestsAsync(keyId);
+                        return rateLimitService.isAllowed(keyId)
+                            .flatMap((Boolean allowed) -> {
+                                if (!allowed) {
+                                    log.warn("Rate limit exceeded for API key: {} on path: {}", keyId, path);
+                                    // Record failed request due to rate limiting
+                                    apiKeyValidationService.recordFailedRequest(keyId);
+                                    return handleRateLimitExceeded(exchange, rateLimitStatus);
+                                }
+                                
+                                // Add rate limit headers using beforeCommit (proper Gateway way)
+                                addRateLimitHeadersBeforeCommit(exchange, rateLimitStatus);
+                                
+                                // Continue to external API and record success/failure
+                                return addUserContextAndContinue(exchange, chain, apiKeyObj)
+                                    .doOnSuccess(unused -> {
+                                        // Record successful request (includes successfulRequests increment and lastUsed update)
+                                        log.debug("Request completed successfully for API key: {}", keyId);
+                                        apiKeyValidationService.recordSuccessfulRequest(keyId);
+                                    })
+                                    .doOnError(error -> {
+                                        // Record failed request due to downstream error
+                                        log.warn("Request failed for API key {}: {}", keyId, error.getMessage());
+                                        apiKeyValidationService.recordFailedRequest(keyId);
+                                    });
                             });
                     });
             })
@@ -146,17 +157,69 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     /**
      * Handle rate limit exceeded
      */
-    private Mono<Void> handleRateLimitExceeded(ServerWebExchange exchange) {
+    private Mono<Void> handleRateLimitExceeded(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
         exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
         exchange.getResponse().getHeaders().add("Content-Type", "application/json");
+        exchange.getResponse().getHeaders().add("Retry-After", "60"); // Suggest retry after 1 minute
+        
+        // Add rate limit headers if enabled
+        if (rateLimitProperties.isIncludeHeaders()) {
+            addRateLimitHeaders(exchange, rateLimitStatus);
+        }
         
         String responseBody = String.format(
-            "{\"error\": \"Rate limit exceeded\", \"message\": \"Too many requests\", \"timestamp\": \"%s\"}", 
+            "{\"error\": \"Rate limit exceeded\", \"message\": \"Too many requests. Please try again later.\", \"timestamp\": \"%s\"}", 
             java.time.Instant.now()
         );
         
         var buffer = exchange.getResponse().bufferFactory().wrap(responseBody.getBytes());
         return exchange.getResponse().writeWith(Mono.just(buffer));
+    }
+    
+    /**
+     * Add rate limit headers to response using beforeCommit (proper Gateway way)
+     */
+    private void addRateLimitHeadersBeforeCommit(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
+        if (!rateLimitProperties.isIncludeHeaders()) {
+            log.debug("Rate limit headers disabled via configuration");
+            return;
+        }
+        
+        exchange.getResponse().beforeCommit(() -> {
+            var headers = exchange.getResponse().getHeaders();
+            
+            // Add standard rate limit headers
+            headers.add("X-RateLimit-Limit-Minute", String.valueOf(rateLimitStatus.getMinuteLimit()));
+            headers.add("X-RateLimit-Remaining-Minute", String.valueOf(Math.max(0, rateLimitStatus.getMinuteLimit() - rateLimitStatus.getMinuteRequests())));
+            headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.getHourLimit()));
+            headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.getHourLimit() - rateLimitStatus.getHourRequests())));
+            
+            log.info("✅ Added rate limit headers for API key: {} (minute: {}/{}, hour: {}/{})", 
+                rateLimitStatus.getKeyId(),
+                rateLimitStatus.getMinuteRequests(), rateLimitStatus.getMinuteLimit(),
+                rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit());
+            
+            return Mono.empty();
+        });
+    }
+    
+    /**
+     * Add rate limit headers to response (for error cases)
+     */
+    private void addRateLimitHeaders(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
+        if (!rateLimitProperties.isIncludeHeaders()) {
+            return;
+        }
+        
+        var headers = exchange.getResponse().getHeaders();
+        
+        // Add standard rate limit headers
+        headers.add("X-RateLimit-Limit-Minute", String.valueOf(rateLimitStatus.getMinuteLimit()));
+        headers.add("X-RateLimit-Remaining-Minute", String.valueOf(Math.max(0, rateLimitStatus.getMinuteLimit() - rateLimitStatus.getMinuteRequests())));
+        headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.getHourLimit()));
+        headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.getHourLimit() - rateLimitStatus.getHourRequests())));
+        
+        log.info("✅ Added rate limit headers to error response for API key: {}", rateLimitStatus.getKeyId());
     }
     
     /**
@@ -167,7 +230,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
         exchange.getResponse().getHeaders().add("Content-Type", "application/json");
         
         String responseBody = String.format(
-            "{\"error\": \"Internal server error\", \"message\": \"Authentication service unavailable\", \"timestamp\": \"%s\"}", 
+            "{\"error\": \"Internal server error\", \"message\": \"Authentication service temporarily unavailable. Please try again later.\", \"timestamp\": \"%s\"}", 
             java.time.Instant.now()
         );
         

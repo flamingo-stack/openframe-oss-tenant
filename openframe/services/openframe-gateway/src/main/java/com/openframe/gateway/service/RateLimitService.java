@@ -1,17 +1,28 @@
 package com.openframe.gateway.service;
 
 import com.openframe.gateway.config.RateLimitProperties;
+import com.openframe.gateway.constants.RateLimitConstants;
+import com.openframe.gateway.model.RateLimitStatus;
+import com.openframe.gateway.model.RateLimitWindow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
- * Service for rate limiting API requests using Redis
- * Uses sliding window algorithm with configurable limits
+ * Service for rate limiting API requests using Redis with sliding window algorithm
+ * 
+ * Features:
+ * - Multiple time windows (minute, hour, day)
+ * - Configurable limits per window
+ * - Fail-open strategy for Redis errors
+ * - Detailed rate limit status reporting
+ * - Redis key expiration management
  */
 @Slf4j
 @Service
@@ -21,156 +32,184 @@ public class RateLimitService {
     private final ReactiveStringRedisTemplate redisTemplate;
     private final RateLimitProperties rateLimitProperties;
     
-    private static final String RATE_LIMIT_KEY_PREFIX = "rate_limit:";
-    
     /**
-     * Check if request is allowed based on rate limits
+     * Check if request is allowed for all configured time windows
+     * 
+     * @param keyId API key identifier
+     * @return true if request is allowed, false if any limit is exceeded
      */
     public Mono<Boolean> isAllowed(String keyId) {
-        return checkRateLimit(keyId, "minute", rateLimitProperties.getDefaultRequestsPerMinute(), Duration.ofMinutes(1))
+        if (!rateLimitProperties.isEnabled()) {
+            log.debug("Rate limiting is disabled globally");
+            return Mono.just(true);
+        }
+        
+        log.debug(RateLimitConstants.LOG_RATE_LIMIT_CHECK, keyId);
+        
+        // Check all time windows sequentially (fail-fast)
+        return checkTimeWindow(keyId, RateLimitWindow.MINUTE)
             .flatMap(minuteAllowed -> {
                 if (!minuteAllowed) {
+                    logRateLimitViolation(keyId, RateLimitWindow.MINUTE);
                     return Mono.just(false);
                 }
-                return checkRateLimit(keyId, "hour", rateLimitProperties.getDefaultRequestsPerHour(), Duration.ofHours(1));
+                return checkTimeWindow(keyId, RateLimitWindow.HOUR);
+            })
+            .flatMap(hourAllowed -> {
+                if (!hourAllowed) {
+                    logRateLimitViolation(keyId, RateLimitWindow.HOUR);
+                    return Mono.just(false);
+                }
+                return checkTimeWindow(keyId, RateLimitWindow.DAY);
             })
             .doOnNext(allowed -> {
                 if (!allowed) {
-                    log.warn("Rate limit exceeded for API key: {}", keyId);
+                    logRateLimitViolation(keyId, RateLimitWindow.DAY);
                 }
             })
-            .onErrorReturn(true); // Fail open on Redis errors
+            .onErrorResume(error -> {
+                log.error(RateLimitConstants.LOG_REDIS_ERROR, keyId, error.getMessage());
+                return Mono.just(rateLimitProperties.isFailOpen()); // Configurable fail strategy
+            });
     }
     
     /**
      * Check rate limit for specific time window
+     * 
+     * @param keyId API key identifier
+     * @param window Time window to check
+     * @return true if request is allowed within this window
      */
-    private Mono<Boolean> checkRateLimit(String keyId, String window, int limit, Duration duration) {
-        String key = RATE_LIMIT_KEY_PREFIX + keyId + ":" + window;
+    private Mono<Boolean> checkTimeWindow(String keyId, RateLimitWindow window) {
+        String redisKey = buildRedisKey(keyId, window);
+        int limit = rateLimitProperties.getLimitForWindow(window);
         
         return redisTemplate.opsForValue()
-            .increment(key)
+            .increment(redisKey)
+            .timeout(rateLimitProperties.getRedisTimeout())
             .flatMap(count -> {
+                log.debug("Current count for key {} in window {}: {}/{}", 
+                    keyId, window.getKeySuffix(), count, limit);
+                
                 if (count == 1) {
                     // First request in window, set expiration
-                    return redisTemplate.expire(key, duration)
+                    return redisTemplate.expire(redisKey, window.getDuration())
                         .then(Mono.just(true));
                 } else if (count <= limit) {
                     return Mono.just(true);
                 } else {
                     return Mono.just(false);
                 }
-            })
-            .onErrorResume(error -> {
-                log.error("Redis error in rate limiting for key {}: {}", key, error.getMessage());
-                return Mono.just(true); // Fail open
             });
     }
     
     /**
-     * Get current rate limit status for debugging
+     * Get comprehensive rate limit status for debugging and monitoring
+     * 
+     * @param keyId API key identifier
+     * @return detailed rate limit status
      */
     public Mono<RateLimitStatus> getRateLimitStatus(String keyId) {
-        String minuteKey = RATE_LIMIT_KEY_PREFIX + keyId + ":minute";
-        String hourKey = RATE_LIMIT_KEY_PREFIX + keyId + ":hour";
+        log.debug(RateLimitConstants.LOG_RATE_LIMIT_STATUS, keyId);
         
-        return Mono.zip(
-            redisTemplate.opsForValue().get(minuteKey).defaultIfEmpty("0"),
-            redisTemplate.opsForValue().get(hourKey).defaultIfEmpty("0")
-        ).map(tuple -> {
-            int minuteCount = Integer.parseInt(tuple.getT1());
-            int hourCount = Integer.parseInt(tuple.getT2());
-            
-            return RateLimitStatus.builder()
-                .keyId(keyId)
-                .minuteRequests(minuteCount)
-                .minuteLimit(rateLimitProperties.getDefaultRequestsPerMinute())
-                .hourRequests(hourCount)
-                .hourLimit(rateLimitProperties.getDefaultRequestsPerHour())
-                .build();
-        })
-        .onErrorReturn(RateLimitStatus.builder()
+        List<Mono<String>> countMonos = List.of(
+            getCurrentCount(keyId, RateLimitWindow.MINUTE),
+            getCurrentCount(keyId, RateLimitWindow.HOUR)
+        );
+        
+        return Flux.merge(countMonos)
+            .collectList()
+            .map(counts -> {
+                int minuteCount = parseCount(counts.get(0));
+                int hourCount = parseCount(counts.get(1));
+                
+                int minuteLimit = rateLimitProperties.getDefaultRequestsPerMinute();
+                int hourLimit = rateLimitProperties.getDefaultRequestsPerHour();
+                
+                return RateLimitStatus.builder()
+                    .keyId(keyId)
+                    .minuteRequests(minuteCount)
+                    .minuteLimit(minuteLimit)
+                    .hourRequests(hourCount)
+                    .hourLimit(hourLimit)
+                    .isMinuteExceeded(minuteCount >= minuteLimit)
+                    .isHourExceeded(hourCount >= hourLimit)
+                    .build();
+            })
+            .onErrorReturn(createEmptyStatus(keyId));
+    }
+    
+    /**
+     * Reset rate limits for a specific API key (useful for testing/admin operations)
+     * 
+     * @param keyId API key identifier
+     * @return completion signal
+     */
+    public Mono<Void> resetRateLimits(String keyId) {
+        log.info(RateLimitConstants.LOG_RATE_LIMIT_RESET, keyId);
+        
+        List<String> keysToDelete = List.of(
+            buildRedisKey(keyId, RateLimitWindow.MINUTE),
+            buildRedisKey(keyId, RateLimitWindow.HOUR),
+            buildRedisKey(keyId, RateLimitWindow.DAY)
+        );
+        
+        return redisTemplate.delete(keysToDelete.toArray(new String[0]))
+                         .doOnSuccess(deletedCount -> 
+                log.info(RateLimitConstants.LOG_RATE_LIMIT_DELETED, deletedCount, keyId))
+            .then();
+    }
+    
+    /**
+     * Get current request count for specific time window
+     */
+    private Mono<String> getCurrentCount(String keyId, RateLimitWindow window) {
+        String redisKey = buildRedisKey(keyId, window);
+        return redisTemplate.opsForValue()
+            .get(redisKey)
+            .defaultIfEmpty("0");
+    }
+    
+    /**
+     * Build Redis key for rate limiting
+     */
+    private String buildRedisKey(String keyId, RateLimitWindow window) {
+        return rateLimitProperties.getKeyPrefix() + keyId + ":" + window.getKeySuffix();
+    }
+    
+    /**
+     * Parse count string to integer, handling errors gracefully
+     */
+    private int parseCount(String countStr) {
+        try {
+            return Integer.parseInt(countStr);
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse count: {}, defaulting to 0", countStr);
+            return 0;
+        }
+    }
+    
+    /**
+     * Create empty rate limit status for error cases
+     */
+    private RateLimitStatus createEmptyStatus(String keyId) {
+        return RateLimitStatus.builder()
             .keyId(keyId)
             .minuteRequests(0)
             .minuteLimit(rateLimitProperties.getDefaultRequestsPerMinute())
             .hourRequests(0)
             .hourLimit(rateLimitProperties.getDefaultRequestsPerHour())
-            .build());
+            .isMinuteExceeded(false)
+            .isHourExceeded(false)
+            .build();
     }
     
     /**
-     * Rate limit status information
+     * Log rate limit violation if logging is enabled
      */
-    public static class RateLimitStatus {
-        private final String keyId;
-        private final int minuteRequests;
-        private final int minuteLimit;
-        private final int hourRequests;
-        private final int hourLimit;
-        
-        private RateLimitStatus(String keyId, int minuteRequests, int minuteLimit, 
-                               int hourRequests, int hourLimit) {
-            this.keyId = keyId;
-            this.minuteRequests = minuteRequests;
-            this.minuteLimit = minuteLimit;
-            this.hourRequests = hourRequests;
-            this.hourLimit = hourLimit;
-        }
-        
-        public static Builder builder() {
-            return new Builder();
-        }
-        
-        public boolean isMinuteExceeded() {
-            return minuteRequests >= minuteLimit;
-        }
-        
-        public boolean isHourExceeded() {
-            return hourRequests >= hourLimit;
-        }
-        
-        // Getters
-        public String getKeyId() { return keyId; }
-        public int getMinuteRequests() { return minuteRequests; }
-        public int getMinuteLimit() { return minuteLimit; }
-        public int getHourRequests() { return hourRequests; }
-        public int getHourLimit() { return hourLimit; }
-        
-        public static class Builder {
-            private String keyId;
-            private int minuteRequests;
-            private int minuteLimit;
-            private int hourRequests;
-            private int hourLimit;
-            
-            public Builder keyId(String keyId) {
-                this.keyId = keyId;
-                return this;
-            }
-            
-            public Builder minuteRequests(int minuteRequests) {
-                this.minuteRequests = minuteRequests;
-                return this;
-            }
-            
-            public Builder minuteLimit(int minuteLimit) {
-                this.minuteLimit = minuteLimit;
-                return this;
-            }
-            
-            public Builder hourRequests(int hourRequests) {
-                this.hourRequests = hourRequests;
-                return this;
-            }
-            
-            public Builder hourLimit(int hourLimit) {
-                this.hourLimit = hourLimit;
-                return this;
-            }
-            
-            public RateLimitStatus build() {
-                return new RateLimitStatus(keyId, minuteRequests, minuteLimit, hourRequests, hourLimit);
-            }
+    private void logRateLimitViolation(String keyId, RateLimitWindow window) {
+        if (rateLimitProperties.isLogViolations()) {
+            log.warn(RateLimitConstants.LOG_RATE_LIMIT_EXCEEDED, keyId, window.getKeySuffix());
         }
     }
 } 
