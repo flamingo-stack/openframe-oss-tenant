@@ -81,7 +81,6 @@ spec:
                   "debeziumConnector": {
                     "name": "tactical-rmm-psql-connector",
                     "config": {
-                      "replacementCharacter": "_",
                       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                       "tasks.max": "1",
                       "database.hostname": "'"${POSTGRES_HOST}"'",

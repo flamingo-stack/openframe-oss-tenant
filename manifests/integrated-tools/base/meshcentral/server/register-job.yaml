@@ -89,7 +89,6 @@ spec:
                   "debeziumConnector": {
                     "name": "meshcentral-mongo-connector",
                     "config": {
-                      "replacementCharacter": "_",
                       "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
                       "mongodb.connection.string": "mongodb://'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0",
                       "mongodb.name": "meshcentral",
