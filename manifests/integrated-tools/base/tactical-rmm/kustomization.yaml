@@ -4,14 +4,7 @@ kind: Kustomization
 resources:
   - ./postgres
   - ./redis
-  - common-config.yaml
-  - ./tactical-backend
-  - ./tactical-celery
-  - ./tactical-celerybeat
-  - ./tactical-frontend
-  - ./tactical-nats
-  - ./tactical-nginx
-  - ./tactical-websockets
+  - ./tactical
 
 images:
 - name: openframe-tactical-backend

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-celerybeat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tactical-celerybeat
+  template:
+    metadata:
+      labels:
+        app: tactical-celerybeat
+    spec:
+      imagePullSecrets:
+        - name: github-pat-secret
+
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.28
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend.integrated-tools.svc.cluster.local 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
+
+      containers:
+      - name: openframe-tactical-celerybeat
+        image: openframe-tactical-celerybeat
+        args: ["tactical-celerybeat"]
+        envFrom:
+        - configMapRef:
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        volumeMounts:
+        - name: celerybeat-data
+          mountPath: /opt/tactical
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: celerybeat-data
+        persistentVolumeClaim:
+          claimName: tactical-celerybeat

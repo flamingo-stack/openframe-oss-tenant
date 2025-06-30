@@ -1,20 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: meshcentral
+  name: meshcentral-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: meshcentral
+      app: meshcentral-server
   template:
     metadata:
       labels:
-        app: meshcentral
+        app: meshcentral-server
     spec:
       imagePullSecrets:
         - name: github-pat-secret
-
       securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
         runAsUser: 0
       
@@ -50,55 +49,24 @@ spec:
         - name: agent
           containerPort: 80
         envFrom:
-          - secretRef:
-              name: mongodb-secret
           - configMapRef:
-              name: mongodb-config
-        env:
-        - name: MONGO_INITDB_DATABASE
-          value: "meshcentral"
-        - name: MESH_USER
-          value: "mesh@openframe.io"
-        - name: MESH_PASS
-          value: "meshpass@1234"
-        - name: MESH_DEVICE_GROUP
-          value: "OpenFrame"
-        - name: MESH_PORT
-          value: "8383"
-        - name: MESH_HOST
-          value: "meshcentral.integrated-tools.svc.cluster.local"
-        - name: MESH_EXTERNAL_HOST
-          value: "meshcentral.192.168.100.100.nip.io"
-        - name: MESH_EXTERNAL_PORT
-          value: "443"
-        - name: MESH_NGINX_HOST
-          value: "meshcentral.192.168.100.100.nip.io"
-        - name: MESH_NGINX_NAT_HOST
-          value: "meshcentral.192.168.100.100.nip.io"
-        - name: MESH_PERSISTENT_CONFIG
-          value: "0"
-        - name: MESH_DISABLE_SSL
-          value: "1"
-        - name: MESH_COMPRESSION_ENABLED
-          value: "true"
-        - name: MESH_WEBRTC_ENABLED
-          value: "false"
-        - name: MESH_TEMP_DIR
-          value: "/tmp/mesh"
-        - name: MESH_DIR
-          value: "/opt/mesh"
-        - name: MESH_PROTOCOL
-          value: "wss"
-        volumeMounts:
-        - name: meshcentral-data
-          mountPath: /opt/mesh
+              name: meshcentral-server
+          - configMapRef:
+              name: meshcentral-mongodb
+          - secretRef:
+              name: meshcentral-server
+          - secretRef:
+              name: meshcentral-mongodb
         livenessProbe:
           httpGet:
             path: /health.ashx
             port: 8383
           initialDelaySeconds: 30
           periodSeconds: 15
+        volumeMounts:
+        - name: meshcentral-data
+          mountPath: /opt/mesh
       volumes:
       - name: meshcentral-data
         persistentVolumeClaim:
-          claimName: meshcentral-data
+          claimName: meshcentral-server

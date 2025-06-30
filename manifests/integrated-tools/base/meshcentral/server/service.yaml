@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: meshcentral
+  name: meshcentral-server
 spec:
   selector:
-    app: meshcentral
+    app: meshcentral-server
   ports:
   - name: meshcentral
     port: 8383

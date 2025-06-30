@@ -204,6 +204,11 @@ const menuItems: MenuItem[] = [
     label: 'SSO Configuration',
     icon: 'pi pi-key',
     path: '/sso'
+  },
+  {
+    label: 'API Keys',
+    icon: 'pi pi-shield',
+    path: '/api-keys'
   }
 ];
 

@@ -19,10 +19,16 @@ spec:
       - name: wait-for-postgres
         image: postgres:latest
         command: ['sh', '-c',
-          'until pg_isready -h authentik-postgresql.integrated-tools -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+          'until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do echo waiting for postgres; sleep 2; done;']
+        envFrom:
+        - configMapRef:
+            name: authentik-postgres
         env:
         - name: PGPASSWORD
-          value: "authentik-password-1234"
+          valueFrom:
+            secretKeyRef:
+              name: authentik-postgres
+              key: POSTGRES_PASSWORD
 
       containers:
       - name: server
@@ -32,62 +38,17 @@ spec:
         - containerPort: 9000
           name: http
           protocol: TCP
-        env:
-        - name: AUTHENTIK_API_URL
-          value: "http://authentik-server:9000"
-        - name: AUTHENTIK_BOOTSTRAP_EMAIL
-          value: "akadmin@openframe.local"
-        - name: AUTHENTIK_BOOTSTRAP_PASSWORD
-          value: "openframe123!"
-        - name: AUTHENTIK_BOOTSTRAP_TOKEN
-          value: "openframe-api-token-123456789"
-        - name: AUTHENTIK_REDIS__HOST
-          value: "authentik-redis.integrated-tools"
-        - name: AUTHENTIK_POSTGRESQL__HOST
-          value: "authentik-postgresql.integrated-tools"
-        - name: AUTHENTIK_POSTGRESQL__USER
-          value: "authentik-user"
-        - name: AUTHENTIK_POSTGRESQL__NAME
-          value: authentik-database-authentik
-        - name: AUTHENTIK_POSTGRESQL__PASSWORD
-          value: "authentik-password-1234"
-        # https://github.com/goauthentik/authentik/issues/9454
-        # https://github.com/goauthentik/authentik/issues/5746#issuecomment-1875219192
-        - name: AUTHENTIK_REDIS__DB
-          value: "1"
-        - name: AUTHENTIK_SECRET_KEY
-          value: "X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA"
-        - name: AUTHENTIK_ERROR_REPORTING__ENABLED
-          value: "false"
-        - name: AUTHENTIK_DISABLE_STARTUP_ANALYTICS
-          value: "true"
-        - name: AUTHENTIK_DISABLE_UPDATE_CHECK
-          value: "true"
-        - name: AUTHENTIK_EMAIL__HOST
-          value: "localhost"
-        - name: AUTHENTIK_EMAIL__PORT
-          value: "25"
-        - name: AUTHENTIK_EMAIL__USERNAME
-          value: ""
-        - name: AUTHENTIK_EMAIL__PASSWORD
-          value: ""
-        - name: AUTHENTIK_EMAIL__USE_TLS
-          value: "false"
-        - name: AUTHENTIK_EMAIL__USE_SSL
-          value: "false"
-        - name: AUTHENTIK_EMAIL__TIMEOUT
-          value: "10"
-        - name: AUTHENTIK_EMAIL__FROM
-          value: "authentik@localhost"
-        - name: TMPDIR
-          value: /tmp
-        volumeMounts:
-        - name: media-tmp
-          mountPath: /media
-        - name: certs
-          mountPath: /certs
-        - name: templates
-          mountPath: /templates
+        envFrom:
+        - configMapRef:
+            name: authentik-server
+        - secretRef:
+            name: authentik-server
+        - secretRef:
+            name: authentik-postgres
+        resources:
+          limits:
+            cpu: 150m
+            memory: 1024Mi
         startupProbe:
           httpGet:
             path: /-/health/live/
@@ -116,22 +77,20 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
-        resources:
-          # requests:
-          #   cpu: 150m
-          #   memory: 512Mi
-          limits:
-            cpu: 150m
-            memory: 1024Mi
+        volumeMounts:
+        - name: media
+          mountPath: /media
+        - name: certs
+          mountPath: /certs
+        - name: templates
+          mountPath: /templates
       volumes:
-      - name: media-tmp
+      - name: media
         emptyDir: {}
       - name: certs
-        configMap:
-          name: authentik-certs
+        emptyDir: {}
       - name: templates
-        configMap:
-          name: authentik-templates
+        emptyDir: {}
           
 ---
 
@@ -154,10 +113,16 @@ spec:
       - name: wait-for-postgres
         image: postgres:latest
         command: ['sh', '-c',
-          'until pg_isready -h authentik-postgresql.integrated-tools -U authentik-user -d authentik-database-authentik; do echo waiting for postgres; sleep 2; done;']
+          'until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do echo waiting for postgres; sleep 2; done;']
+        envFrom:
+        - configMapRef:
+            name: authentik-postgres
         env:
         - name: PGPASSWORD
-          value: "authentik-password-1234"
+          valueFrom:
+            secretKeyRef:
+              name: authentik-postgres
+              key: POSTGRES_PASSWORD
 
       - name: wait-for-server
         image: curlimages/curl:latest
@@ -168,51 +133,17 @@ spec:
       - name: worker
         image: ghcr.io/goauthentik/server:latest
         args: ["worker"]
-        env:
-        - name: AUTHENTIK_API_URL
-          value: "http://authentik-server:9000"
-        - name: AUTHENTIK_BOOTSTRAP_PASSWORD
-          value: "openframe123!"
-        - name: AUTHENTIK_BOOTSTRAP_TOKEN
-          value: "openframe-api-token-123456789"
-        - name: AUTHENTIK_BOOTSTRAP_EMAIL
-          value: "akadmin@openframe.local"
-        - name: AUTHENTIK_REDIS__HOST
-          value: "authentik-redis.integrated-tools"
-        - name: AUTHENTIK_POSTGRESQL__HOST
-          value: "authentik-postgresql.integrated-tools"
-        - name: AUTHENTIK_POSTGRESQL__USER
-          value: "authentik-user"
-        - name: AUTHENTIK_POSTGRESQL__NAME
-          value: authentik-database-authentik
-        - name: AUTHENTIK_POSTGRESQL__PASSWORD
-          value: "authentik-password-1234"
-        - name: AUTHENTIK_REDIS__DB
-          value: "1"
-        - name: AUTHENTIK_SECRET_KEY
-          value: "X4LXpLXOJd3aaEtnO+6jx2jW+lziVQZIBLDHBQ9P2li1ZFNs4RPqYacNSBvVHXt8BhCfakSHMqp+zvJA"
-        - name: AUTHENTIK_ERROR_REPORTING__ENABLED
-          value: "false"
-        - name: AUTHENTIK_DISABLE_STARTUP_ANALYTICS
-          value: "true"
-        - name: AUTHENTIK_DISABLE_UPDATE_CHECK
-          value: "true"
-        - name: AUTHENTIK_EMAIL__HOST
-          value: "localhost"
-        - name: AUTHENTIK_EMAIL__PORT
-          value: "25"
-        - name: AUTHENTIK_EMAIL__USERNAME
-          value: ""
-        - name: AUTHENTIK_EMAIL__PASSWORD
-          value: ""
-        - name: AUTHENTIK_EMAIL__USE_TLS
-          value: "false"
-        - name: AUTHENTIK_EMAIL__USE_SSL
-          value: "false"
-        - name: AUTHENTIK_EMAIL__TIMEOUT
-          value: "10"
-        - name: AUTHENTIK_EMAIL__FROM
-          value: "authentik@localhost"
+        envFrom:
+        - configMapRef:
+            name: authentik-server
+        - secretRef:
+            name: authentik-server
+        - secretRef:
+            name: authentik-postgres
+        resources:
+          limits:
+            cpu: 150m
+            memory: 1024Mi
         startupProbe:
           exec:
             command:
@@ -243,26 +174,17 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 10
-        resources:
-          # requests:
-          #   cpu: 150m
-          #   memory: 512Mi
-          limits:
-            cpu: 150m
-            memory: 1024Mi
         volumeMounts:
-        - name: media-tmp
+        - name: media
           mountPath: /media
         - name: certs
           mountPath: /certs
         - name: templates
           mountPath: /templates
       volumes:
-      - name: media-tmp
+      - name: media
         emptyDir: {}
       - name: certs
-        configMap:
-          name: authentik-certs
+        emptyDir: {}
       - name: templates
-        configMap:
-          name: authentik-templates
+        emptyDir: {}
