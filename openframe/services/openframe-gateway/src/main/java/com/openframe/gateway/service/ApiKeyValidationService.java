@@ -2,6 +2,7 @@ package com.openframe.gateway.service;
 
 import com.openframe.core.model.ApiKey;
 import com.openframe.data.repository.mongo.ApiKeyRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -61,7 +62,7 @@ public class ApiKeyValidationService {
             
             // Check if API key is active
             if (!apiKey.isActive()) {
-                log.warn("API key is not active: {}", keyId);
+                log.warn("API key is not active or expired: {}", keyId);
                 return ApiKeyValidationResult.invalid("API key is not active");
             }
             
@@ -146,6 +147,7 @@ public class ApiKeyValidationService {
     /**
      * Result of API key validation
      */
+    @Getter
     public static class ApiKeyValidationResult {
         private final boolean valid;
         private final String errorMessage;
@@ -163,18 +165,6 @@ public class ApiKeyValidationService {
         
         public static ApiKeyValidationResult invalid(String errorMessage) {
             return new ApiKeyValidationResult(false, errorMessage, null);
-        }
-        
-        public boolean isValid() {
-            return valid;
-        }
-        
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-        
-        public ApiKey getApiKey() {
-            return apiKey;
         }
     }
 } 

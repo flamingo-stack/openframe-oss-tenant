@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/api-key-filter-rate-limit
+      targetRevision: main
       path: manifests/microservices/base/openframe-gateway
 
   destination:

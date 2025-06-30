@@ -10,5 +10,5 @@ spring:
 # OpenFrame specific configuration
 openframe:
   rate-limit:
-    default-requests-per-minute: 100
+    default-requests-per-minute: 3
     default-requests-per-hour: 1000

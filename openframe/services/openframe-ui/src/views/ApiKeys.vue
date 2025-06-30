@@ -87,9 +87,9 @@
                 <div class="detail-row">
                   <label>Usage:</label>
                   <div class="usage-info">
-                    <span class="usage-count">{{ apiKey.usageCount }} requests</span>
-                    <small v-if="apiKey.lastUsedAt" class="last-used">
-                      Last used: {{ formatDate(apiKey.lastUsedAt) }}
+                    <span class="usage-count">{{ apiKey.totalRequests || 0 }} requests</span>
+                    <small v-if="apiKey.lastUsed" class="last-used">
+                      Last used: {{ formatDate(apiKey.lastUsed) }}
                     </small>
                     <small v-else class="never-used">Never used</small>
                   </div>
@@ -265,7 +265,15 @@
           <div class="detail-grid">
             <div class="detail-item">
               <label>Total Requests:</label>
-              <span>{{ selectedApiKey.usageCount }}</span>
+              <span>{{ selectedApiKey.totalRequests || 0 }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Successful Requests:</label>
+              <span>{{ selectedApiKey.successfulRequests || 0 }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Failed Requests:</label>
+              <span>{{ selectedApiKey.failedRequests || 0 }}</span>
             </div>
             <div class="detail-item">
               <label>Created:</label>
@@ -273,7 +281,7 @@
             </div>
             <div class="detail-item">
               <label>Last Used:</label>
-              <span>{{ selectedApiKey.lastUsedAt ? formatDate(selectedApiKey.lastUsedAt) : 'Never' }}</span>
+              <span>{{ selectedApiKey.lastUsed ? formatDate(selectedApiKey.lastUsed) : 'Never' }}</span>
             </div>
             <div class="detail-item">
               <label>Expires:</label>
@@ -450,8 +458,30 @@ const formData = reactive({
 
 // Methods
 onMounted(async () => {
+  // Wait for auth to be ready before loading API keys
+  await waitForAuth();
   await loadApiKeys();
 });
+
+// Add auth readiness check
+async function waitForAuth() {
+  const maxAttempts = 10;
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      console.log('🔑 [ApiKeys] Auth token ready, loading API keys...');
+      return;
+    }
+    
+    console.log(`🔑 [ApiKeys] Waiting for auth token... (${attempts + 1}/${maxAttempts})`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  
+  console.warn('🔑 [ApiKeys] Auth token not ready after waiting, trying anyway...');
+}
 
 async function loadApiKeys() {
   try {
