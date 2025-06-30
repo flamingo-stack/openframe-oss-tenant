@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/client-tools/base/kafka-ui/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/remove-ingresses
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/remove-ingresses
+      targetRevision: main
       path: manifests/client-tools/base/kafka-ui
 
   destination:

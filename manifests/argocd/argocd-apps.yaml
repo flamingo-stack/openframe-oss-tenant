@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: feature/remove-ingresses
+    targetRevision: main
     path: manifests/apps
 
   destination:
