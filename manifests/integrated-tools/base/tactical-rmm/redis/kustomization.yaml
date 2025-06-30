@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - configmap.yaml
-  - pvc.yaml
-  - deployment.yaml
+  - statefulset.yaml
   - service.yaml
   - register-job.yaml

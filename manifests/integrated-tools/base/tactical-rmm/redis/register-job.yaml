@@ -13,6 +13,12 @@ spec:
       containers:
       - name: register
         image: curlimages/curl:8.5.0
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-redis
+              key: REDIS_HOST
         command:
         - /bin/sh
         - -c
@@ -29,7 +35,7 @@ spec:
                 "description": "Redis Backend for Tactical RMM",
                 "toolUrls": [
                   {
-                    "url": "redis://tactical-redis.integrated-tools.svc.cluster.local",
+                    "url": "redis://'"${REDIS_HOST}"'",
                     "port": "6379",
                     "type": "DATABASE"
                   }

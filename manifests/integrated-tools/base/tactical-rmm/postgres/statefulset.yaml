@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: tactical-postgres
 spec:
+  serviceName: tactical-postgres
   replicas: 1
   selector:
     matchLabels:
@@ -12,9 +13,9 @@ spec:
       labels:
         app: tactical-postgres
     spec:
-      imagePullSecrets: 
+      imagePullSecrets:
         - name: docker-pat-secret
-    
+
       containers:
       - name: postgres
         image: postgres:13-alpine
@@ -39,7 +40,13 @@ spec:
         volumeMounts:
         - name: postgres-data
           mountPath: /var/lib/postgresql/data
-      volumes:
-      - name: postgres-data
-        persistentVolumeClaim:
-          claimName: tactical-postgres
+
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi

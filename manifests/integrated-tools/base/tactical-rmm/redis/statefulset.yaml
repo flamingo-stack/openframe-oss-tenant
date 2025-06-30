@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: tactical-redis
 spec:
+  serviceName: tactical-redis
   replicas: 1
   selector:
     matchLabels:
@@ -12,9 +13,9 @@ spec:
       labels:
         app: tactical-redis
     spec:
-      imagePullSecrets: 
+      imagePullSecrets:
         - name: docker-pat-secret
-    
+
       containers:
       - name: redis
         image: redis:6.0-alpine
@@ -31,7 +32,13 @@ spec:
             - ping
           initialDelaySeconds: 30
           periodSeconds: 10
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: tactical-redis
+
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi

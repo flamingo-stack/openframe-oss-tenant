@@ -4,5 +4,5 @@ metadata:
   name: tactical-postgres
 data:
   POSTGRES_DB: "tacticalrmm"
-  POSTGRES_HOST: "tactical-postgres.integrated-tools.svc.cluster.local"
+  POSTGRES_HOST: "tactical-postgres-0.tactical-postgres.integrated-tools.svc.cluster.local"
   POSTGRES_PORT: "5432"
