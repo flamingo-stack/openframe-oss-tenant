@@ -14,47 +14,47 @@ spec:
       - name: register
         image: curlimages/curl:8.5.0
         command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering Loki..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/loki-primary" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "loki-primary",
-                "toolType": "LOKI",
-                "name": "Loki",
-                "description": "Loki Log Aggregation System",
-                "toolUrls": [
-                  {
-                    "url": "http://loki.platform.svc.cluster.local",
-                    "port": "3100",
-                    "type": "API"
-                  }
-                ],
-                "category": "Log Aggregation",
-                "platformCategory": "OpenFrame Service",
-                "enabled": true,
-                "credentials": {},
-                "layer": "Monitoring",
-                "layerOrder": 3,
-                "layerColor": "#78909C",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/health",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*","/metrics"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "Loki Registration complete."
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Loki..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/loki-primary" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "loki-primary",
+                  "toolType": "LOKI",
+                  "name": "Loki",
+                  "description": "Loki Log Aggregation System",
+                  "toolUrls": [
+                    {
+                      "url": "http://loki.platform.svc.cluster.local",
+                      "port": "3100",
+                      "type": "API"
+                    }
+                  ],
+                  "category": "Log Aggregation",
+                  "platformCategory": "OpenFrame Service",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Monitoring",
+                  "layerOrder": 3,
+                  "layerColor": "#78909C",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/health",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*","/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "Loki Registration complete."

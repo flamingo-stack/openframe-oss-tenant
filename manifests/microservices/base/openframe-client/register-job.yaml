@@ -14,47 +14,47 @@ spec:
       - name: register
         image: curlimages/curl:8.5.0
         command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering OpenFrame Client..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-client" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "openframe-client",
-                "toolType": "OPENFRAME",
-                "name": "OpenFrame Client",
-                "description": "OpenFrame Client Gateway Service",
-                "toolUrls": [
-                  {
-                    "url": "http://openframe-client.microservices.svc",
-                    "port": "8097",
-                    "type": "API"
-                  }
-                ],
-                "category": "API Gateway",
-                "platformCategory": "OpenFrame Core",
-                "enabled": true,
-                "credentials": {},
-                "layer": "Application",
-                "layerOrder": 3,
-                "layerColor": "#455A64",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/health",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*", "/metrics"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "OpenFrame Client Registration complete."
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering OpenFrame Client..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-client" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "openframe-client",
+                  "toolType": "OPENFRAME",
+                  "name": "OpenFrame Client",
+                  "description": "OpenFrame Client Gateway Service",
+                  "toolUrls": [
+                    {
+                      "url": "http://openframe-client.microservices.svc",
+                      "port": "8097",
+                      "type": "API"
+                    }
+                  ],
+                  "category": "API Gateway",
+                  "platformCategory": "OpenFrame Core",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Application",
+                  "layerOrder": 3,
+                  "layerColor": "#455A64",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/health",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*", "/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "OpenFrame Client Registration complete."

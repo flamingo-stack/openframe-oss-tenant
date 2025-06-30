@@ -28,50 +28,50 @@ spec:
               name: tactical-postgres
               key: POSTGRES_PORT
         command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering TacticalRMM PostgreSQL..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-postgres" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "tactical-postgres",
-                "toolType": "POSTGRESQL",
-                "name": "TacticalRMM PostgreSQL",
-                "description": "PostgreSQL Database Backend for TacticalRMM",
-                "toolUrls": [
-                  {
-                    "url": "postgresql://'"${POSTGRES_HOST}"'",
-                    "port": "'"${POSTGRES_PORT}"'",
-                    "type": "DATABASE"
-                  }
-                ],
-                "category": "SQL Database",
-                "platformCategory": "Integrated Tool",
-                "enabled": true,
-                "credentials": {
-                  "username": "'"${POSTGRES_USER}"'",
-                  "password": "'"${POSTGRES_PASSWORD}"'"
-                },
-                "layer": "Integrated Tools",
-                "layerOrder": 6,
-                "layerColor": "#3949AB",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/metrics"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "TacticalRMM PostgreSQL Registration complete."
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering TacticalRMM PostgreSQL..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-postgres" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "tactical-postgres",
+                  "toolType": "POSTGRESQL",
+                  "name": "TacticalRMM PostgreSQL",
+                  "description": "PostgreSQL Database Backend for TacticalRMM",
+                  "toolUrls": [
+                    {
+                      "url": "postgresql://'"${POSTGRES_HOST}"'",
+                      "port": "'"${POSTGRES_PORT}"'",
+                      "type": "DATABASE"
+                    }
+                  ],
+                  "category": "SQL Database",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${POSTGRES_USER}"'",
+                    "password": "'"${POSTGRES_PASSWORD}"'"
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 6,
+                  "layerColor": "#3949AB",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "TacticalRMM PostgreSQL Registration complete."

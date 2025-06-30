@@ -25,50 +25,50 @@ spec:
               name: authentik-postgres
               key: POSTGRES_PASSWORD
         command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering Authentik PostgreSQL..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "authentik-postgres",
-                "toolType": "POSTGRESQL",
-                "name": "Authentik PostgreSQL",
-                "description": "PostgreSQL Database Backend for Authentik",
-                "toolUrls": [
-                  {
-                    "url": "postgresql://authentik-postgres-0.authentik-postgres.integrated-tools.svc.cluster.local",
-                    "port": "5432",
-                    "type": "DATABASE"
-                  }
-                ],
-                "category": "SQL Database",
-                "platformCategory": "Integrated Tool",
-                "enabled": true,
-                "credentials": {
-                  "username": "'"${POSTGRES_USER}"'",
-                  "password": "'"${POSTGRES_PASSWORD}"'"
-                },
-                "layer": "Integrated Tools",
-                "layerOrder": 6,
-                "layerColor": "#3949AB",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/metrics"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "Authentik PostgreSQL Registration complete."
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Authentik PostgreSQL..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "authentik-postgres",
+                  "toolType": "POSTGRESQL",
+                  "name": "Authentik PostgreSQL",
+                  "description": "PostgreSQL Database Backend for Authentik",
+                  "toolUrls": [
+                    {
+                      "url": "postgresql://authentik-postgres-0.authentik-postgres.integrated-tools.svc.cluster.local",
+                      "port": "5432",
+                      "type": "DATABASE"
+                    }
+                  ],
+                  "category": "SQL Database",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${POSTGRES_USER}"'",
+                    "password": "'"${POSTGRES_PASSWORD}"'"
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 6,
+                  "layerColor": "#3949AB",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "Authentik PostgreSQL Registration complete."

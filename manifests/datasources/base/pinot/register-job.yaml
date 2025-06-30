@@ -14,57 +14,57 @@ spec:
       - name: register
         image: curlimages/curl:8.5.0
         command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering Apache Pinot..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/pinot-primary" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "pinot-primary",
-                "toolType": "PINOT",
-                "name": "Apache Pinot",
-                "description": "Apache Pinot Real-time Analytics Database",
-                "toolUrls": [
-                  {
-                    "url": "http://pinot-controller.datasources.svc.cluster.local",
-                    "port": "9000",
-                    "type": "CONTROLLER"
-                  },
-                  {
-                    "url": "http://pinot-broker.datasources.svc.cluster.local",
-                    "port": "8099",
-                    "type": "BROKER"
-                  },
-                  {
-                    "url": "http://pinot-server.datasources.svc.cluster.local",
-                    "port": "8097",
-                    "type": "SERVER"
-                  }
-                ],
-                "category": "Analytics Database",
-                "platformCategory": "OpenFrame Service",
-                "enabled": true,
-                "credentials": {},
-                "layer": "Datasource",
-                "layerOrder": 4,
-                "layerColor": "#616161",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/health",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*","/metrics"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "Apache Pinot Registration complete."
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Apache Pinot..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/pinot-primary" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "pinot-primary",
+                  "toolType": "PINOT",
+                  "name": "Apache Pinot",
+                  "description": "Apache Pinot Real-time Analytics Database",
+                  "toolUrls": [
+                    {
+                      "url": "http://pinot-controller.datasources.svc.cluster.local",
+                      "port": "9000",
+                      "type": "CONTROLLER"
+                    },
+                    {
+                      "url": "http://pinot-broker.datasources.svc.cluster.local",
+                      "port": "8099",
+                      "type": "BROKER"
+                    },
+                    {
+                      "url": "http://pinot-server.datasources.svc.cluster.local",
+                      "port": "8097",
+                      "type": "SERVER"
+                    }
+                  ],
+                  "category": "Analytics Database",
+                  "platformCategory": "OpenFrame Service",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Datasource",
+                  "layerOrder": 4,
+                  "layerColor": "#616161",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/health",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*","/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "Apache Pinot Registration complete."

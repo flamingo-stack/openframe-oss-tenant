@@ -14,47 +14,47 @@ spec:
       - name: register
         image: curlimages/curl:8.5.0
         command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering Argo CD..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/argocd" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "argocd",
-                "toolType": "ARGOCD",
-                "name": "ArgoCD",
-                "description": "ArgoCD",
-                "toolUrls": [
-                  {
-                    "url": "http://argocd-server.platform.svc.cluster.local",
-                    "port": "8080",
-                    "type": "API"
-                  }
-                ],
-                "category": "Continuous Delivery",
-                "platformCategory": "OpenFrame Service",
-                "enabled": true,
-                "credentials": {},
-                "layer": "Delivery",
-                "layerOrder": 1,
-                "layerColor": "#EF5350",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/healthz",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*","/metrics","/healthz"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "ArgoCD Registration complete."
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Argo CD..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/argocd" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "argocd",
+                  "toolType": "ARGOCD",
+                  "name": "ArgoCD",
+                  "description": "ArgoCD",
+                  "toolUrls": [
+                    {
+                      "url": "http://argocd-server.platform.svc.cluster.local",
+                      "port": "8080",
+                      "type": "API"
+                    }
+                  ],
+                  "category": "Continuous Delivery",
+                  "platformCategory": "OpenFrame Service",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Delivery",
+                  "layerOrder": 1,
+                  "layerColor": "#EF5350",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/healthz",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*","/metrics","/healthz"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "ArgoCD Registration complete."

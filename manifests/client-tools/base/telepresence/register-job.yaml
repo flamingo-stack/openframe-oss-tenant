@@ -11,50 +11,50 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-      - name: register
-        image: curlimages/curl:8.5.0
-        command:
-        - /bin/sh
-        - -c
-        - |
-          echo "Registering Telepresence..."
-          echo "Waiting for OpenFrame Management API to become reachable..."
-          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
-            echo "Still waiting..."
-            sleep 3
-          done
-          curl --verbose --show-error --fail \
-            -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/telepresence" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tool": {
-                "id": "telepresence",
-                "toolType": "TELEPRESENCE",
-                "name": "Telepresence",
-                "description": "Telepresence Local-to-Remote Development Tool",
-                "toolUrls": [
-                  {
-                    "url": "http://traffic-manager.client-tools.svc.cluster.local",
-                    "port": "8081",
-                    "type": "API"
-                  }
-                ],
-                "category": "Development Proxy",
-                "platformCategory": "OpenFrame Service",
-                "enabled": true,
-                "credentials": {},
-                "layer": "Networking",
-                "layerOrder": 2,
-                "layerColor": "#8E24AA",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/","/metrics"],
-                "debeziumConnector": null
-              }
-            }' \
-            --retry-delay 2 \
-            --retry-all-errors
-          echo "Telepresence Registration complete."
+        - name: register
+          image: curlimages/curl:8.5.0
+          command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Telepresence..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+              echo "Still waiting..."
+              sleep 3
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/telepresence" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "telepresence",
+                  "toolType": "TELEPRESENCE",
+                  "name": "Telepresence",
+                  "description": "Telepresence Local-to-Remote Development Tool",
+                  "toolUrls": [
+                    {
+                      "url": "http://traffic-manager.client-tools.svc.cluster.local",
+                      "port": "8081",
+                      "type": "API"
+                    }
+                  ],
+                  "category": "Development Proxy",
+                  "platformCategory": "OpenFrame Service",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Networking",
+                  "layerOrder": 2,
+                  "layerColor": "#8E24AA",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/","/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "Telepresence Registration complete."
