@@ -34,6 +34,11 @@ spec:
         - -c
         - |
           echo "Registering Authentik..."
+          echo "Waiting for OpenFrame Management API to become reachable..."
+          until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8095; do
+            echo "Still waiting..."
+            sleep 3
+          done
           curl --verbose --show-error --fail \
             -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-server" \
             -H "Content-Type: application/json" \
