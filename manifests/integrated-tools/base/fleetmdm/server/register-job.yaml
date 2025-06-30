@@ -4,7 +4,7 @@ metadata:
   name: fleetmdm-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:
@@ -28,6 +28,10 @@ spec:
         - /bin/sh
         - -c
         - |
+          echo "Getting FLEET_TOKEN..."
+          POD=$(kubectl -n integrated-tools get pods -o name -l app=fleet)
+          FLEET_TOKEN=$(kubectl exec -n integrated-tools $POD -- cat /etc/fleet/api_token.txt)
+
           echo "Registering FleetMDM Server..."
           curl --verbose --show-error --fail \
             -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-server" \
@@ -55,7 +59,11 @@ spec:
                 "enabled": true,
                 "credentials": {
                   "username": "'"${FLEET_API_USER_EMAIL}"'",
-                  "password": "'"${FLEET_API_USER_PASSWORD}"'"
+                  "password": "'"${FLEET_API_USER_PASSWORD}"'",
+                  "apiKey": {
+                    "key": "'"${FLEET_TOKEN}"'",
+                    "type": "BEARER_TOKEN"
+                  }
                 },
                 "layer": "Integrated Tools",
                 "layerOrder": 4,

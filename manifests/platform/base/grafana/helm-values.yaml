@@ -4,18 +4,7 @@ global:
     - name: docker-pat-secret
 
 ingress:
-  enabled: true
-  ingressClassName: nginx
-  annotations: 
-      cert-manager.io/cluster-issuer: "cluster-issuer"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  hosts: 
-    - grafana.192.168.100.100.nip.io
-  path: /
-  tls: 
-    - secretName: grafana-server-tls
-      hosts:
-        - grafana.192.168.100.100.nip.io
+  enabled: false
 
 revisionHistoryLimit: 2
 resources:
