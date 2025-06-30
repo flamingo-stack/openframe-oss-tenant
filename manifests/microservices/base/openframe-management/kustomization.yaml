@@ -5,7 +5,7 @@ resources:
   - secret.yaml
   - deployment.yaml
   - service.yaml
-  - servicemonitor.yaml
+  # - servicemonitor.yaml
   - register-job.yaml
 
 images:
