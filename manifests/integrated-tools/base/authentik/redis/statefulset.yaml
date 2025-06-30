@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: authentik-redis
 spec:
+  serviceName: authentik-redis
   replicas: 1
   selector:
     matchLabels:
@@ -20,9 +21,6 @@ spec:
         image: redis:latest
         ports:
         - containerPort: 6379
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
         livenessProbe:
           tcpSocket:
             port: 6379
@@ -33,7 +31,16 @@ spec:
             port: 6379
           initialDelaySeconds: 5
           periodSeconds: 5
-      volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: authentik-redis-data
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi

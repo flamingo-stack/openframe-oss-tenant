@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: authentik-postgres
 spec:
+  clusterIP: None
   selector:
     app: authentik-postgres
   ports:
