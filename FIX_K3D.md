@@ -20,6 +20,7 @@ This task list tracks all places in the scripts where the k3d cluster name (and 
 
 ## Implementation Plan
 
+
 1. **Mapping**: 
    - All references to `openframe-dev`, `k3d-openframe-dev-*`, `k3d-openframe-registry`, etc., are found in:
      - `scripts/run.sh` (creation, deletion, start, stop, cleanup)
