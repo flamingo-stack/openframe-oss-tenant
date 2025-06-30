@@ -34,7 +34,7 @@ spec:
                   "description": "Redis In-Memory Cache",
                   "toolUrls": [
                     {
-                      "url": "redis://redis-headless.datasources.svc.cluster.local",
+                      "url": "redis://redis-master.datasources.svc.cluster.local",
                       "port": "6379",
                       "type": "DATABASE"
                     }
