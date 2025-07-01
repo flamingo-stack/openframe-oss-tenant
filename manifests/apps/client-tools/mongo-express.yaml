@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/pinot-configs
       path: manifests/client-tools/base/mongo-express
 
   destination:
