@@ -52,41 +52,6 @@ public class GenericKafkaProducer {
     public <T> void sendMessage(String topic, T message) {
         sendMessage(topic, null, message);
     }
-
-    /**
-     * Sends a message to Kafka topic asynchronously with a key.
-     *
-     * @param topic   the Kafka topic
-     * @param key     the message key
-     * @param message the message to send
-     * @param <T>     the message type
-     * @return CompletableFuture with SendResult
-     */
-    public <T> CompletableFuture<SendResult<String, Object>> sendMessageAsync(String topic, String key, T message) {
-        return kafkaTemplate.send(topic, key, message)
-                .whenComplete((result, throwable) -> {
-                    if (throwable != null) {
-                        log.error("Async error sending message to Kafka topic {} with key {}: {}", 
-                                topic, key, message, throwable);
-                    } else {
-                        log.info("Async message sent to Kafka topic {} with key {}: {}", 
-                                topic, key, message);
-                    }
-                });
-    }
-
-    /**
-     * Sends a message to Kafka topic asynchronously without a key.
-     *
-     * @param topic   the Kafka topic
-     * @param message the message to send
-     * @param <T>     the message type
-     * @return CompletableFuture with SendResult
-     */
-    public <T> CompletableFuture<SendResult<String, Object>> sendMessageAsync(String topic, T message) {
-        return sendMessageAsync(topic, null, message);
-    }
-
     /**
      * Sends a message to Kafka topic with retry logic.
      *
