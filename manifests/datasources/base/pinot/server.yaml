@@ -8,7 +8,7 @@ data:
     pinot.server.instance.dataDir=/opt/pinot/data/server
     pinot.server.instance.segmentTarDir=/opt/pinot/data/server/segments
     pinot.server.starter.type=helix
-    pinot.server.helix.instance.id=Server_pinot-server-0_8098
+    pinot.server.helix.instance.id=Server_pinot-server_8098
     pinot.server.adminapi.port=8097
     pinot.server.starter.enableSegmentBuildTimeLogging=false
     pinot.server.instance.enable.shutdown.delay=true
@@ -21,7 +21,7 @@ data:
 ---
 
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: pinot-server
 spec:
