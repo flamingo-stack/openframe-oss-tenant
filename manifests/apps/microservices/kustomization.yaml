@@ -10,4 +10,5 @@ resources:
   - openframe-ui.yaml    
   - openframe-api.yaml   
   - openframe-client.yaml
-  - openframe-gateway.yaml       
+  - openframe-gateway.yaml    
+  - external-api.yaml      
