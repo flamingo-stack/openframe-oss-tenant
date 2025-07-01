@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/pinot-configs
+      targetRevision: main
       path: manifests/integrated-tools/base/namespace
 
   destination:
