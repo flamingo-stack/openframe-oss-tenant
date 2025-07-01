@@ -18,6 +18,8 @@ spring:
     enabled: false
   main:
     allow-bean-definition-overriding: true
+  application:
+    name: openframe-client-test
 
 pinot:
   enabled: false
@@ -29,4 +31,12 @@ jwt:
 logging:
   level:
     org.springframework.test: INFO
-    com.openframe: DEBUG 
+    com.openframe: DEBUG
+    com.openframe.client.aspect: DEBUG
+    org.springframework.aop: DEBUG
+
+kafka:
+  producer:
+    topic:
+      machine:
+        name: test-pinot-events

@@ -17,7 +17,9 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -35,16 +37,11 @@ public class RepositoryEventAspect {
     private final TagRepository tagRepository;
     private final GenericKafkaProducer kafkaProducer;
     
-    @Value("${kafka.topics.machine-events:pinot-events}")
+    @Value("${kafka.producer.topic.machine.name}")
     private String machineEventsTopic;
     
     // Thread-safe map to store original tag states for comparison
     private final ConcurrentHashMap<String, Tag> originalTagStates = new ConcurrentHashMap<>();
-
-    {
-        // This block will execute when the aspect is instantiated
-        log.info("RepositoryEventAspect initialized successfully");
-    }
 
     /**
      * Intercepts Machine repository save operations.
@@ -61,19 +58,38 @@ public class RepositoryEventAspect {
             
             // Cast to Machine entity
             Machine machineEntity = (Machine) machine;
-            
-            // Fetch all tags for the machine
-            List<Tag> machineTags = fetchMachineTags(machineEntity.getMachineId());
-            
-            // Build MachinePinotMessage with complete data
-            MachinePinotMessage message = buildMachinePinotMessage(machineEntity, machineTags);
-            
-            // Send to Kafka asynchronously
-            kafkaProducer.sendMessage(machineEventsTopic, machineEntity.getMachineId(), message);
+
+            sendMachineEventToKafka(machineEntity);
             
             log.info("Machine event processed successfully");
         } catch (Exception e) {
             log.error("Error processing machine save event: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Intercepts Machine repository saveAll operations.
+     * Processes each machine in the collection and sends MachinePinotMessage for each.
+     */
+    @AfterReturning(
+        pointcut = "execution(* com.openframe.data.repository.mongo.MachineRepository.saveAll(..)) && args(machines)",
+        returning = "result",
+        argNames = "joinPoint,machines,result"
+    )
+    public void afterMachineSaveAll(JoinPoint joinPoint, Object machines, Object result) {
+        try {
+            log.info("Machine saveAll operation detected: {} machines", machines);
+            
+            // Cast to collection of Machine entities
+            @SuppressWarnings("unchecked")
+            Iterable<Machine> machineEntities = (Iterable<Machine>) machines;
+            
+            // Process each machine
+            for (Machine machine : machineEntities) {
+                sendMachineEventToKafka(machine);
+            }
+        } catch (Exception e) {
+            log.error("Error in afterMachineSaveAll: {}", e.getMessage(), e);
         }
     }
 
@@ -93,25 +109,43 @@ public class RepositoryEventAspect {
             // Cast to MachineTag entity
             MachineTag machineTagEntity = (MachineTag) machineTag;
             
-            // Fetch associated machine data
-            Machine machine = fetchMachine(machineTagEntity.getMachineId());
-            if (machine == null) {
-                log.warn("Machine not found for machineId: {}", machineTagEntity.getMachineId());
-                return;
-            }
+            sendMachineTagEventToKafka(machineTagEntity);
             
-            // Fetch all tags for the machine (including the new one)
-            List<Tag> machineTags = fetchMachineTags(machine.getMachineId());
-            
-            // Build MachinePinotMessage with updated tag list
-            MachinePinotMessage message = buildMachinePinotMessage(machine, machineTags);
-            
-            // Send to Kafka asynchronously
-            kafkaProducer.sendMessage(machineEventsTopic, machine.getMachineId(), message);
-            
-            log.info("MachineTag event processed successfully for machine: {}", machine.getMachineId());
+            log.info("MachineTag event processed successfully for machine: {}", machineTagEntity.getMachineId());
         } catch (Exception e) {
             log.error("Error processing machine tag save event: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Intercepts MachineTag repository saveAll operations.
+     * Processes each machineTag in the collection and sends MachinePinotMessage for each affected machine.
+     */
+    @AfterReturning(
+        pointcut = "execution(* com.openframe.data.repository.mongo.MachineTagRepository.saveAll(..)) && args(machineTags)",
+        returning = "result",
+        argNames = "joinPoint,machineTags,result"
+    )
+    public void afterMachineTagSaveAll(JoinPoint joinPoint, Object machineTags, Object result) {
+        try {
+            log.info("MachineTag saveAll operation detected: {} machineTags", machineTags);
+            
+            // Cast to collection of MachineTag entities
+            @SuppressWarnings("unchecked")
+            Iterable<MachineTag> machineTagEntities = (Iterable<MachineTag>) machineTags;
+            
+            // Group by machineId to avoid duplicate processing
+            Set<String> processedMachineIds = new HashSet<>();
+            
+            // Process each machineTag
+            for (MachineTag machineTag : machineTagEntities) {
+                if (!processedMachineIds.contains(machineTag.getMachineId())) {
+                    sendMachineTagEventToKafka(machineTag);
+                    processedMachineIds.add(machineTag.getMachineId());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error in afterMachineTagSaveAll: {}", e.getMessage(), e);
         }
     }
 
@@ -137,6 +171,30 @@ public class RepositoryEventAspect {
     }
 
     /**
+     * Captures original tag states before saveAll operation.
+     */
+    @Before("execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)")
+    public void beforeTagSaveAll(JoinPoint joinPoint, Object tags) {
+        try {
+            @SuppressWarnings("unchecked")
+            Iterable<Tag> tagEntities = (Iterable<Tag>) tags;
+            
+            // Store original tag states for comparison after save
+            for (Tag tag : tagEntities) {
+                if (tag.getId() != null) {
+                    Tag originalTag = fetchTagById(tag.getId());
+                    if (originalTag != null) {
+                        originalTagStates.put(tag.getId(), originalTag);
+                        log.debug("Captured original tag state for ID: {}", tag.getId());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error capturing original tag states: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * Intercepts Tag repository save operations.
      * Only processes when tag name changes, fetches all affected machines.
      */
@@ -152,36 +210,7 @@ public class RepositoryEventAspect {
             // Cast to Tag entity
             Tag tagEntity = (Tag) tag;
             
-            // Check if this is an update operation and if name changed
-            if (tagEntity.getId() != null) {
-                Tag originalTag = originalTagStates.remove(tagEntity.getId());
-                if (originalTag != null && !originalTag.getName().equals(tagEntity.getName())) {
-                    log.info("Tag name changed from '{}' to '{}'", originalTag.getName(), tagEntity.getName());
-                    
-                    // Fetch all machines with this tag
-                    List<String> machineIds = fetchMachineIdsForTag(tagEntity.getId());
-                    
-                    // Send MachinePinotMessage for each affected machine
-                    for (String machineId : machineIds) {
-                        try {
-                            Machine machine = fetchMachine(machineId);
-                            if (machine != null) {
-                                List<Tag> machineTags = fetchMachineTags(machineId);
-                                MachinePinotMessage message = buildMachinePinotMessage(machine, machineTags);
-                                
-                                kafkaProducer.sendMessage(  machineEventsTopic, machineId, message);
-                                log.debug("Sent update for machine {} due to tag name change", machineId);
-                            }
-                        } catch (Exception e) {
-                            log.error("Error processing machine {} for tag name change: {}", machineId, e.getMessage());
-                        }
-                    }
-                    
-                    log.info("Processed tag name change for {} machines", machineIds.size());
-                } else if (originalTag != null) {
-                    log.debug("Tag updated but name did not change for ID: {}", tagEntity.getId());
-                }
-            }
+            sendTagEventToKafka(tagEntity);
             
             log.info("Tag event processed successfully");
         } catch (Exception e) {
@@ -190,26 +219,112 @@ public class RepositoryEventAspect {
     }
 
     /**
+     * Intercepts Tag repository saveAll operations.
+     * Processes each tag in the collection and sends MachinePinotMessage for affected machines.
+     */
+    @AfterReturning(
+        pointcut = "execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)",
+        returning = "result",
+        argNames = "joinPoint,tags,result"
+    )
+    public void afterTagSaveAll(JoinPoint joinPoint, Object tags, Object result) {
+        try {
+            log.info("Tag saveAll operation detected: {} tags", tags);
+            
+            // Cast to collection of Tag entities
+            @SuppressWarnings("unchecked")
+            Iterable<Tag> tagEntities = (Iterable<Tag>) tags;
+            
+            // Process each tag
+            for (Tag tag : tagEntities) {
+                sendTagEventToKafka(tag);
+            }
+        } catch (Exception e) {
+            log.error("Error in afterTagSaveAll: {}", e.getMessage(), e);
+        }
+    }
+
+    private void sendMachineEventToKafka(Machine machineEntity) {
+        try {
+            // Fetch all tags for the machine
+            List<Tag> machineTags = fetchMachineTags(machineEntity.getMachineId());
+
+            // Build MachinePinotMessage with complete data
+            MachinePinotMessage message = buildMachinePinotMessage(machineEntity, machineTags);
+
+            // Send to Kafka asynchronously
+            kafkaProducer.sendMessage(machineEventsTopic, machineEntity.getMachineId(), message);
+        } catch (Exception e) {
+            log.error("Error sending machine event to Kafka for machine {}: {}", 
+                machineEntity.getMachineId(), e.getMessage(), e);
+        }
+    }
+
+    private void sendMachineTagEventToKafka(MachineTag machineTagEntity) {
+        // Fetch associated machine data
+        Machine machine = fetchMachine(machineTagEntity.getMachineId());
+        if (machine == null) {
+            log.warn("Machine not found for machineId: {}", machineTagEntity.getMachineId());
+            return;
+        }
+
+        // Fetch all tags for the machine (including the new one)
+        List<Tag> machineTags = fetchMachineTags(machine.getMachineId());
+
+        // Build MachinePinotMessage with updated tag list
+        MachinePinotMessage message = buildMachinePinotMessage(machine, machineTags);
+
+        // Send to Kafka asynchronously
+        kafkaProducer.sendMessage(machineEventsTopic, machine.getMachineId(), message);
+    }
+    private void sendTagEventToKafka(Tag tagEntity) {
+        // Check if this is an update operation and if name changed
+        if (tagEntity.getId() != null) {
+            Tag originalTag = originalTagStates.remove(tagEntity.getId());
+            if (originalTag != null && !originalTag.getName().equals(tagEntity.getName())) {
+                log.info("Tag name changed from '{}' to '{}'", originalTag.getName(), tagEntity.getName());
+
+                // Fetch all machines with this tag
+                List<String> machineIds = fetchMachineIdsForTag(tagEntity.getId());
+
+                // Send MachinePinotMessage for each affected machine
+                for (String machineId : machineIds) {
+                    try {
+                        Machine machine = fetchMachine(machineId);
+                        if (machine != null) {
+                            List<Tag> machineTags = fetchMachineTags(machineId);
+                            MachinePinotMessage message = buildMachinePinotMessage(machine, machineTags);
+
+                            kafkaProducer.sendMessage(  machineEventsTopic, machineId, message);
+                            log.debug("Sent update for machine {} due to tag name change", machineId);
+                        }
+                    } catch (Exception e) {
+                        log.error("Error processing machine {} for tag name change: {}", machineId, e.getMessage());
+                    }
+                }
+
+                log.info("Processed tag name change for {} machines", machineIds.size());
+            } else if (originalTag != null) {
+                log.debug("Tag updated but name did not change for ID: {}", tagEntity.getId());
+            }
+        }
+    }
+
+    /**
      * Fetches all tags for a given machine ID.
      */
     private List<Tag> fetchMachineTags(String machineId) {
-        try {
-            List<MachineTag> machineTags = machineTagRepository.findByMachineId(machineId);
-            
-            if (machineTags.isEmpty()) {
-                return List.of();
-            }
-            
-            // Extract tag IDs
-            List<String> tagIds = machineTags.stream()
-                .map(MachineTag::getTagId)
-                .toList();
-            return tagRepository.findAllById(tagIds);
-
-        } catch (Exception e) {
-            log.error("Error fetching tags for machine {}: {}", machineId, e.getMessage(), e);
+        List<MachineTag> machineTags = machineTagRepository.findByMachineId(machineId);
+        
+        if (machineTags.isEmpty()) {
             return List.of();
         }
+        
+        // Extract tag IDs
+        List<String> tagIds = machineTags.stream()
+            .map(MachineTag::getTagId)
+            .toList();
+        return tagRepository.findAllById(tagIds);
     }
 
     /**
