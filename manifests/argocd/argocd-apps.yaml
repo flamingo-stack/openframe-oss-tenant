@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: main
+    targetRevision: feature/pinot-configs
     path: manifests/apps
 
   destination:
