@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - secret.yaml
   - ./dashboards
+  - register-job.yaml

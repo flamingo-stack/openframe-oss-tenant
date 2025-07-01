@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fleetmdm-mysql
+spec:
+  serviceName: fleetmdm-mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleetmdm-mysql
+  template:
+    metadata:
+      labels:
+        app: fleetmdm-mysql
+    spec:
+      imagePullSecrets:
+        - name: docker-pat-secret
+
+      containers:
+      - name: mysql
+        image: mysql:8.0.35
+        args:
+          - --default-authentication-plugin=mysql_native_password
+          - --skip-mysqlx
+          - --character-set-server=utf8mb4
+          - --collation-server=utf8mb4_unicode_ci
+        ports:
+        - containerPort: 3306
+        envFrom:
+        - configMapRef:
+            name: fleetmdm-mysql
+        - secretRef:
+            name: fleetmdm-mysql
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p${MYSQL_ROOT_PASSWORD}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi

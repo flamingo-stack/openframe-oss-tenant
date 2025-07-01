@@ -1,10 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fleet-mdm-redis
+  name: fleetmdm-redis
 spec:
+  clusterIP: None
   selector:
-    app: fleet-mdm-redis
+    app: fleetmdm-redis
   ports:
   - port: 6379
     targetPort: 6379
+    protocol: TCP

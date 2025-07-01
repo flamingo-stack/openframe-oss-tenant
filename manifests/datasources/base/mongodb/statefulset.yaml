@@ -33,9 +33,16 @@ spec:
             - containerPort: 27017
           envFrom:
             - configMapRef:
-                name: mongodb-config
+                name: mongodb
             - secretRef:
-                name: mongodb-secret
+                name: mongodb
+          readinessProbe:
+            exec:
+              command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: mongodb-storage
               mountPath: /data/db
@@ -46,23 +53,22 @@ spec:
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh
               subPath: readiness-command.sh
-          readinessProbe:
-            exec:
-              command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
       volumes:
         - name: init-script
           configMap:
             name: mongodb-init
         - name: logs
           emptyDir: {}
-        - name: mongodb-storage
-          persistentVolumeClaim:
-            claimName: mongodb-pvc
         - name: readiness-command
           configMap:
             name: mongodb-readiness
             defaultMode: 0755
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi

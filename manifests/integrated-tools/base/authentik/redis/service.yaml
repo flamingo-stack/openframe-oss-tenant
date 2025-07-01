@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: authentik-redis
 spec:
+  clusterIP: None
   selector:
     app: authentik-redis
   ports:

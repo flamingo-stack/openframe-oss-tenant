@@ -4,9 +4,9 @@ kind: Kustomization
 resources:
   - configmap.yaml
   - secret.yaml
-  - pvc.yaml
   - service.yaml
   - statefulset.yaml
+  - register-job.yaml
 
 configMapGenerator:
   - name: mongodb-init

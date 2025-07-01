@@ -7,3 +7,4 @@ resources:
   - jmx_config.yaml
   - server.yaml
   - servicemonitor.yaml
+  - register-job.yaml

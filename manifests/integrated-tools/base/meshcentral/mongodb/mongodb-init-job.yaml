@@ -13,9 +13,9 @@ spec:
         image: mongo:8.0.9
         envFrom:
           - secretRef:
-              name: mongodb-secret
+              name: meshcentral-mongodb
           - configMapRef:
-              name: mongodb-config
+              name: meshcentral-mongodb
         env:
         - name: MONGO_HOST
           value: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017"

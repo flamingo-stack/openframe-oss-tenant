@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fleetmdm-redis
+spec:
+  serviceName: fleetmdm-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleetmdm-redis
+  template:
+    metadata:
+      labels:
+        app: fleetmdm-redis
+    spec:
+      imagePullSecrets:
+        - name: docker-pat-secret
+
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
