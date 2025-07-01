@@ -5,3 +5,4 @@ resources:
   - bootstrap-issuer.yaml
   - platform-certificate.yaml
   - cluster-issuer.yaml
+  - register-job.yaml

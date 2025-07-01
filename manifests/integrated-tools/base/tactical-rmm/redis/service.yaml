@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: tactical-redis
 spec:
+  clusterIP: None
   selector:
     app: tactical-redis
   ports:
   - port: 6379
     targetPort: 6379
+    protocol: TCP

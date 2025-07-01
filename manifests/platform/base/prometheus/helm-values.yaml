@@ -11,16 +11,6 @@ alertmanager:
 prometheus:
   ingress:
     enabled: false
-    ingressClassName: nginx
-    annotations: 
-      cert-manager.io/cluster-issuer: "cluster-issuer"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    hosts: 
-      - prometheus.192.168.100.100.nip.io
-    tls:
-      - secretName: prometheus-tls-secret
-        hosts:
-          - prometheus.192.168.100.100.nip.io
       
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false

@@ -57,14 +57,6 @@ pki_cert)
     exit 0
   fi
   ;;
-openframe_microservices_register_apps)
-  start_spinner "Registering apps"
-  ${ROOT_REPO_DIR}/scripts/functions/register.sh >"${DEPLOY_LOG_DIR}/register-apps-deploy.log"
-  stop_spinner_and_return_code $? || exit 1
-  echo
-  awk '/Fleet MDM Credentials:/ {i=NR} END {print i}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log" |
-    xargs -I{} awk 'NR >= {} && !/All ingresses:/ {print} /All ingresses:/ {exit}' "${DEPLOY_LOG_DIR}/register-apps-deploy.log"
-  ;;
 app)
   NAMESPACE=$2
   APP=$3
@@ -107,8 +99,7 @@ a | all)
 
   $0 argocd $ACTION &&
     $0 argocd_apps $ACTION &&
-    $0 pki_cert $ACTION &&
-    $0 openframe_microservices_register_apps $ACTION
+    $0 pki_cert $ACTION 
   ;;
 -h | --help | -Help | help)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
