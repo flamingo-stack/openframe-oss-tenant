@@ -1,0 +1,118 @@
+extend type Query {
+    deviceFilters(filter: DeviceFilterInput): DeviceFilters!
+
+    devices(
+        filter: DeviceFilterInput
+        pagination: PaginationInput
+        search: String
+    ): DeviceConnection!
+
+    device(machineId: String!): Machine
+}
+
+type DeviceFilters {
+    statuses: [FilterOption!]!
+    deviceTypes: [FilterOption!]!
+    osTypes: [FilterOption!]!
+    organizationIds: [FilterOption!]!
+    tags: [TagFilterOption!]!
+    filteredCount: Int!
+}
+
+type FilterOption {
+    value: String!
+    count: Int!
+}
+
+type TagFilterOption {
+    value: String!
+    label: String!
+    count: Int!
+}
+
+input DeviceFilterInput {
+    statuses: [DeviceStatus!]
+    deviceTypes: [DeviceType!]
+    osTypes: [String!]
+    organizationIds: [String!]
+    tagNames: [String!]
+}
+
+input PaginationInput {
+    page: Int
+    pageSize: Int
+}
+
+type Machine {
+    id: ID!
+    machineId: String!
+    ip: String
+    macAddress: String
+    osUuid: String
+    agentVersion: String
+    status: DeviceStatus!
+    lastSeen: DateTime
+    organizationId: String!
+    hostname: String
+    displayName: String
+    serialNumber: String
+    manufacturer: String
+    model: String
+    type: DeviceType!
+    osType: String
+    osVersion: String
+    osBuild: String
+    timezone: String
+    registeredAt: DateTime!
+    updatedAt: DateTime!
+    tags: [Tag!]!
+}
+
+type Tag {
+    id: ID!
+    name: String!
+    description: String
+    color: String
+    organizationId: String!
+    createdAt: DateTime!
+    createdBy: String!
+}
+
+enum DeviceStatus {
+    ACTIVE
+    INACTIVE
+    MAINTENANCE
+    DECOMMISSIONED
+}
+
+enum DeviceType {
+    DESKTOP
+    LAPTOP
+    SERVER
+    MOBILE_DEVICE
+    TABLET
+    NETWORK_DEVICE
+    IOT_DEVICE
+    VIRTUAL_MACHINE
+    CONTAINER_HOST
+    OTHER
+}
+
+type DeviceConnection {
+    edges: [DeviceEdge!]!
+    pageInfo: PageInfo!
+    filteredCount: Int!
+}
+
+type DeviceEdge {
+    node: Machine!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    currentPage: Int!
+    totalPages: Int!
+}
+
+scalar DateTime

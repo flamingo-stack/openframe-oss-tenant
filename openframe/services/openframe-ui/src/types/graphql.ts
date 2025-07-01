@@ -17,6 +17,26 @@ export enum APIKeyType {
     BEARER_TOKEN = 'BEARER_TOKEN'
 }
 
+export enum DeviceStatus {
+    ACTIVE = 'ACTIVE',
+    INACTIVE = 'INACTIVE',
+    MAINTENANCE = 'MAINTENANCE',
+    DECOMMISSIONED = 'DECOMMISSIONED'
+}
+
+export enum DeviceType {
+    DESKTOP = 'DESKTOP',
+    LAPTOP = 'LAPTOP',
+    SERVER = 'SERVER',
+    MOBILE_DEVICE = 'MOBILE_DEVICE',
+    TABLET = 'TABLET',
+    NETWORK_DEVICE = 'NETWORK_DEVICE',
+    IOT_DEVICE = 'IOT_DEVICE',
+    VIRTUAL_MACHINE = 'VIRTUAL_MACHINE',
+    CONTAINER_HOST = 'CONTAINER_HOST',
+    OTHER = 'OTHER'
+}
+
 export interface APIKey {
     key: string;
     type: APIKeyType;
@@ -68,4 +88,90 @@ export interface ToolFilter {
     search?: string;
     category?: string;
     platformCategory?: string;
+}
+
+// Device-related GraphQL types
+export interface DeviceFilterInput {
+    statuses?: DeviceStatus[];
+    deviceTypes?: DeviceType[];
+    osTypes?: string[];
+    organizationIds?: string[];
+    tagNames?: string[];
+}
+
+export interface PaginationInput {
+    page: number;
+    pageSize: number;
+}
+
+export interface FilterOption {
+    value: string;
+    count: number;
+}
+
+export interface TagFilterOption {
+    value: string;
+    label: string;
+    count: number;
+}
+
+export interface DeviceFilters {
+    statuses: FilterOption[];
+    deviceTypes: FilterOption[];
+    osTypes: FilterOption[];
+    organizationIds: FilterOption[];
+    tags: TagFilterOption[];
+    filteredCount: number;
+}
+
+export interface Tag {
+    id: string;
+    name: string;
+    description?: string;
+    color?: string;
+    organizationId: string;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface Machine {
+    id: string;
+    machineId: string;
+    hostname?: string;
+    displayName?: string;
+    ip?: string;
+    macAddress?: string;
+    osUuid?: string;
+    agentVersion?: string;
+    status: DeviceStatus;
+    lastSeen?: string;
+    organizationId: string;
+    serialNumber?: string;
+    manufacturer?: string;
+    model?: string;
+    type: DeviceType;
+    osType?: string;
+    osVersion?: string;
+    osBuild?: string;
+    timezone?: string;
+    registeredAt: string;
+    updatedAt: string;
+    tags: Tag[];
+}
+
+export interface DeviceEdge {
+    node: Machine;
+}
+
+export interface PageInfo {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    currentPage: number;
+    totalPages: number;
+}
+
+export interface DeviceConnection {
+    edges: DeviceEdge[];
+    pageInfo: PageInfo;
+    filteredCount: number;
 } 

@@ -58,6 +58,8 @@
         <module>openframe/services/openframe-stream</module>
         <module>openframe/services/openframe-management</module>
         <module>openframe/services/openframe-gateway</module>
+        <!-- Development Tools -->
+        <module>openframe/dev-tools/openframe-test-data</module>
     </modules>
 
     <dependencies>

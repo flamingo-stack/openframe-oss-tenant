@@ -12,4 +12,6 @@ public interface MachineTagRepository extends MongoRepository<MachineTag, String
     List<MachineTag> findByTagId(String tagId);
     void deleteByMachineId(String machineId);
     void deleteByMachineIdAndTagId(String machineId, String tagId);
+    List<MachineTag> findByMachineIdIn(List<String> machineIds);
+    List<MachineTag> findByTagIdIn(List<String> tagIds);
 }

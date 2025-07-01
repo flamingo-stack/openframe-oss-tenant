@@ -1,0 +1,57 @@
+{
+  "tableName": "devices",
+  "tableType": "REALTIME",
+  "segmentsConfig": {
+    "timeColumnName": "ingestionTime",
+    "timeType": "MILLISECONDS",
+    "replication": "1",
+    "segmentAssignmentStrategy": "BalanceNumSegmentAssignmentStrategy",
+    "realtimeSegmentConfig": {
+      "flushThresholdRows": "50000",
+      "flushThresholdTime": "24h"
+    }
+  },
+  "tableIndexConfig": {
+    "loadMode": "MMAP",
+    "nullHandlingEnabled": true,
+    "optimizeDictionary": true,
+    "invertedIndexColumns": [
+      "status",
+      "deviceType",
+      "osType",
+      "organizationId",
+      "tags"
+    ],
+
+    "streamConfigs": {
+      "streamType": "kafka",
+      "stream.kafka.topic.name": "devices-topic",
+      "stream.kafka.broker.list": "kafka-broker-headless.datasources.svc.cluster.local:9092",
+      "stream.kafka.consumer.type": "lowlevel",
+      "stream.kafka.decoder.class.name": "org.apache.pinot.plugin.stream.kafka.KafkaJSONMessageDecoder",
+      "stream.kafka.consumer.prop.auto.offset.reset": "smallest"
+    }
+  },
+  "fieldConfigList": [
+    {
+      "name": "tags",
+      "dataType": "STRING",
+      "singleValueField": false,
+      "encodingType": "DICTIONARY",
+      "properties": {
+        "maxMultiValueEntries": 50
+      }
+    }
+  ],
+  "ingestionConfig": {},
+  "routing": {
+    "instanceSelectorType": "strictReplicaGroup"
+  },
+  "upsertConfig": {
+    "mode": "FULL"
+  },
+  "tenants": {
+    "broker": "DefaultTenant",
+    "server": "DefaultTenant"
+  }
+}
