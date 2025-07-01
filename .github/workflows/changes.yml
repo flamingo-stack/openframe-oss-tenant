@@ -9,6 +9,8 @@ on:
         value: ${{ jobs.changes.outputs.data }}
       api: 
         value: ${{ jobs.changes.outputs.api }}
+      external-api: 
+        value: ${{ jobs.changes.outputs.external-api }}
       client: 
         value: ${{ jobs.changes.outputs.client }}
       config: 
@@ -60,6 +62,7 @@ jobs:
       core: ${{ steps.filter.outputs.core }}
       data: ${{ steps.filter.outputs.data }}
       api: ${{ steps.filter.outputs.api }}
+      external-api: ${{ steps.filter.outputs.external-api }}
       client: ${{ steps.filter.outputs.client }}
       config: ${{ steps.filter.outputs.config }}
       gateway: ${{ steps.filter.outputs.gateway }}
@@ -103,6 +106,8 @@ jobs:
               - './openframe/libs/openframe-data/**'
             api:
               - './openframe/services/openframe-api/**'
+            external-api:
+              - './openframe/services/external-api/**'
             client:
               - './openframe/services/openframe-client/**'
             config:
