@@ -17,7 +17,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ApiKeyStatsDataService {
+public class ApiKeyStatsService {
 
     private final ApiKeyStatsRepository redisRepository;
     private final ApiKeyStatsMongoRepository mongoRepository;

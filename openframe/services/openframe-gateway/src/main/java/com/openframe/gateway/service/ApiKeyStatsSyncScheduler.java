@@ -14,7 +14,7 @@ import javax.annotation.PostConstruct;
 @ConditionalOnProperty(name = "openframe.api-key-stats.enabled", havingValue = "true", matchIfMissing = true)
 public class ApiKeyStatsSyncScheduler {
 
-    private final ApiKeyStatsDataService apiKeyStatsDataService;
+    private final ApiKeyStatsService apiKeyStatsService;
 
     @PostConstruct
     public void init() {
@@ -26,7 +26,7 @@ public class ApiKeyStatsSyncScheduler {
         log.info("Starting scheduled Redis to MongoDB sync");
 
         try {
-            apiKeyStatsDataService.syncToMongoAndClear();
+            apiKeyStatsService.syncToMongoAndClear();
             log.info("Completed scheduled Redis to MongoDB sync successfully");
         } catch (Exception e) {
             log.error("Failed to sync Redis stats to MongoDB", e);

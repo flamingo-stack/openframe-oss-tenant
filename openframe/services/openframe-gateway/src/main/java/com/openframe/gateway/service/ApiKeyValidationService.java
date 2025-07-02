@@ -29,7 +29,7 @@ public class ApiKeyValidationService {
     
     private final ApiKeyRepository apiKeyRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ApiKeyStatsDataService apiKeyStatsDataService;
+    private final ApiKeyStatsService apiKeyStatsService;
     
     private static final String API_KEY_PREFIX = "ak_";
     private static final String SECRET_SEPARATOR = ".sk_";
@@ -65,7 +65,7 @@ public class ApiKeyValidationService {
 
             if (!passwordEncoder.matches(parsed.secret(), apiKey.getHashedKey())) {
                 log.warn("Invalid secret for API key: {}", parsed.keyId());
-                apiKeyStatsDataService.incrementFailed(parsed.keyId());
+                apiKeyStatsService.incrementFailed(parsed.keyId());
                 return ApiKeyValidationResult.invalid("Invalid API key secret");
             }
 
@@ -83,7 +83,7 @@ public class ApiKeyValidationService {
     public void recordSuccessfulRequest(String keyId) {
         log.debug("Recording successful request for API key: {}", keyId);
 
-        apiKeyStatsDataService.incrementSuccessful(keyId);
+        apiKeyStatsService.incrementSuccessful(keyId);
     }
     
     /**
@@ -94,7 +94,7 @@ public class ApiKeyValidationService {
     public void recordFailedRequest(String keyId) {
         log.debug("Recording failed request for API key: {}", keyId);
 
-        apiKeyStatsDataService.incrementFailed(keyId);
+        apiKeyStatsService.incrementFailed(keyId);
     }
     
     /**
