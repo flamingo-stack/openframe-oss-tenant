@@ -8,12 +8,4 @@ public interface SocialAuthStrategy {
     TokenResponse authenticate(SocialAuthRequest request);
 
     SSOProvider getProvider();
-
-    /**
-     * @deprecated Use getProvider().getProvider() instead
-     */
-    @Deprecated
-    default String getProviderName() {
-        return getProvider().getProvider();
-    }
 } 

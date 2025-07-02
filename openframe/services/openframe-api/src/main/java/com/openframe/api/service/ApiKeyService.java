@@ -6,7 +6,9 @@ import com.openframe.api.dto.CreateApiKeyResponse;
 import com.openframe.api.dto.UpdateApiKeyRequest;
 import com.openframe.core.exception.ApiKeyException;
 import com.openframe.core.model.ApiKey;
+import com.openframe.data.model.mongo.ApiKeyStatsMongo;
 import com.openframe.data.repository.mongo.ApiKeyRepository;
+import com.openframe.data.repository.mongo.ApiKeyStatsMongoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Slf4j
@@ -22,6 +25,7 @@ import java.util.List;
 public class ApiKeyService {
     
     private final ApiKeyRepository apiKeyRepository;
+    private final ApiKeyStatsMongoRepository apiKeyStatsMongoRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
     
@@ -86,13 +90,15 @@ public class ApiKeyService {
     }
     
     /**
-     * Delete API key
+     * Delete API key and its statistics
      */
     public void deleteApiKey(String keyId, String userId) {
         ApiKey apiKey = apiKeyRepository.findByIdAndUserIdOrElseThrow(keyId, userId);
-        
+
         apiKeyRepository.delete(apiKey);
-        log.info("Deleted API key: {}", keyId);
+        apiKeyStatsMongoRepository.deleteById(keyId);
+
+        log.info("Deleted API key and its statistics: {}", keyId);
     }
     
     /**
@@ -131,6 +137,17 @@ public class ApiKeyService {
     }
 
     private ApiKeyResponse mapToResponse(ApiKey apiKey) {
+        log.debug("Getting stats for API key: {}", apiKey.getKeyId());
+        ApiKeyStatsMongo totalStats = apiKeyStatsMongoRepository.findById(apiKey.getKeyId()).orElse(null);
+
+        if (totalStats != null) {
+            log.debug("Found stats for {}: total={}, successful={}, failed={}",
+                    apiKey.getKeyId(), totalStats.getTotalRequests(),
+                    totalStats.getSuccessfulRequests(), totalStats.getFailedRequests());
+        } else {
+            log.debug("No stats found for API key: {}", apiKey.getKeyId());
+        }
+
         return ApiKeyResponse.builder()
                 .id(apiKey.getKeyId())
                 .name(apiKey.getName())
@@ -139,10 +156,11 @@ public class ApiKeyService {
                 .createdAt(apiKey.getCreatedAt())
                 .updatedAt(apiKey.getUpdatedAt())
                 .expiresAt(apiKey.getExpiresAt())
-                .lastUsed(apiKey.getLastUsed())
-                .totalRequests(apiKey.getTotalRequests())
-                .successfulRequests(apiKey.getSuccessfulRequests())
-                .failedRequests(apiKey.getFailedRequests())
+                .lastUsed(totalStats != null && totalStats.getLastUsed() != null ?
+                        totalStats.getLastUsed().toInstant(ZoneOffset.UTC) : null)
+                .totalRequests(totalStats != null ? totalStats.getTotalRequests() : 0L)
+                .successfulRequests(totalStats != null ? totalStats.getSuccessfulRequests() : 0L)
+                .failedRequests(totalStats != null ? totalStats.getFailedRequests() : 0L)
                 .build();
     }
 

@@ -5,10 +5,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.redis.enabled", havingValue = "true", matchIfMissing = false)
+@EnableRedisRepositories(basePackages = "com.openframe.data.repository.redis")
 public class RedisConfig {
 
     @Bean

@@ -69,7 +69,7 @@ public class OpenApiConfig {
                     .url("https://opensource.org/licenses/MIT")))
             .servers(List.of(
                 new Server()
-                    .url("https://openframe-gateway.192.168.100.100.nip.io/external-api")
+                        .url("/external-api")
                     .description("Kubernetes Gateway server")
             ))
             .addSecurityItem(new SecurityRequirement()

@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
  * Flow:
  * 1. Check if request is for /external-api/**
  * 2. If yes, require X-API-Key header
- * 3. Validate API key (includes total requests increment and lastUsed update)
+ * 3. Validate API key (includes total requests increment)
  * 4. Check rate limits  
  * 5. Add user context headers and continue
  * 6. Record success/failure statistics
@@ -70,56 +70,80 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
             return handleUnauthorized(exchange, "API key is required for /external-api/** endpoints");
         }
         
-        // Validate API key (this automatically increments totalRequests and updates lastUsed)
         return apiKeyValidationService.validateApiKey(apiKey)
-            .flatMap(validationResult -> {
-                if (!validationResult.isValid()) {
-                    log.warn("Invalid API key for path {}: {}", path, validationResult.getErrorMessage());
-                    return handleUnauthorized(exchange, validationResult.getErrorMessage());
-                }
-                
-                ApiKey apiKeyObj = validationResult.getApiKey();
-                String keyId = apiKeyObj.getKeyId();
-                
-                log.debug("API key validated successfully: {} for path: {}", keyId, path);
-                
-                // Check rate limits and get status for headers
-                return rateLimitService.getRateLimitStatus(keyId)
-                    .flatMap(rateLimitStatus -> {
-                        log.debug("Rate limit status for {}: minute={}/{}, hour={}/{}", 
-                            keyId, rateLimitStatus.getMinuteRequests(), rateLimitStatus.getMinuteLimit(),
-                            rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit());
-                        
-                        return rateLimitService.isAllowed(keyId)
-                            .flatMap(allowed -> {
-                                if (!allowed) {
-                                    log.warn("Rate limit exceeded for API key: {} on path: {}", keyId, path);
-                                    // Record failed request due to rate limiting
-                                    apiKeyValidationService.recordFailedRequest(keyId);
-                                    return handleRateLimitExceeded(exchange, rateLimitStatus);
-                                }
-                                
-                                // Add rate limit headers using beforeCommit (proper Gateway way)
-                                addRateLimitHeadersBeforeCommit(exchange, rateLimitStatus);
-                                
-                                // Continue to external API and record success/failure
-                                return addUserContextAndContinue(exchange, chain, apiKeyObj)
-                                    .doOnSuccess(unused -> {
-                                        // Record successful request (includes successfulRequests increment and lastUsed update)
-                                        log.debug("Request completed successfully for API key: {}", keyId);
-                                        apiKeyValidationService.recordSuccessfulRequest(keyId);
-                                    })
-                                    .doOnError(error -> {
-                                        // Record failed request due to downstream error
-                                        log.warn("Request failed for API key {}: {}", keyId, error.getMessage());
-                                        apiKeyValidationService.recordFailedRequest(keyId);
-                                    });
+                .flatMap(validationResult -> processValidationResult(validationResult, exchange, chain, path))
+                .onErrorResume(error -> {
+                    log.error("Error in API key authentication filter: {}", error.getMessage(), error);
+                    return handleInternalError(exchange);
+                });
+    }
+
+    /**
+     * Process API key validation result
+     */
+    private Mono<Void> processValidationResult(ApiKeyValidationService.ApiKeyValidationResult validationResult,
+                                               ServerWebExchange exchange, GatewayFilterChain chain, String path) {
+        if (!validationResult.isValid()) {
+            log.warn("Invalid API key for path {}: {}", path, validationResult.getErrorMessage());
+            return handleUnauthorized(exchange, validationResult.getErrorMessage());
+        }
+
+        ApiKey apiKeyObj = validationResult.getApiKey();
+        String keyId = apiKeyObj.getKeyId();
+
+        log.debug("API key validated successfully: {} for path: {}", keyId, path);
+
+        return rateLimitService.isAllowed(keyId)
+                .flatMap(allowed -> processRateLimitCheck(allowed, keyId, exchange, chain, apiKeyObj, path));
+    }
+
+    /**
+     * Process rate limit check result
+     */
+    private Mono<Void> processRateLimitCheck(Boolean allowed, String keyId, ServerWebExchange exchange,
+                                             GatewayFilterChain chain, ApiKey apiKeyObj, String path) {
+        if (!allowed) {
+            return processRateLimitExceeded(keyId, exchange, path);
+        }
+
+        return processAllowedRequest(keyId, exchange, chain, apiKeyObj);
+    }
+
+    /**
+     * Process rate limit exceeded scenario
+     */
+    private Mono<Void> processRateLimitExceeded(String keyId, ServerWebExchange exchange, String path) {
+        return rateLimitService.getRateLimitStatus(keyId)
+                .flatMap(rateLimitStatus -> {
+                    log.warn("Rate limit exceeded for API key: {} on path: {}", keyId, path);
+                    apiKeyValidationService.recordFailedRequest(keyId);
+                    return handleRateLimitExceeded(exchange, rateLimitStatus);
+                });
+    }
+
+    /**
+     * Process allowed request with rate limit headers
+     */
+    private Mono<Void> processAllowedRequest(String keyId, ServerWebExchange exchange,
+                                             GatewayFilterChain chain, ApiKey apiKeyObj) {
+        return rateLimitService.getRateLimitStatus(keyId)
+                .flatMap(rateLimitStatus -> {
+                    log.debug("Rate limit status for {}: minute={}/{}, hour={}/{}, day={}/{}",
+                            keyId, rateLimitStatus.minuteRequests(), rateLimitStatus.minuteLimit(),
+                            rateLimitStatus.hourRequests(), rateLimitStatus.hourLimit(),
+                            rateLimitStatus.dayRequests(), rateLimitStatus.dayLimit());
+
+                    addRateLimitHeaders(exchange, rateLimitStatus, true);
+
+                    return addUserContextAndContinue(exchange, chain, apiKeyObj)
+                            .doOnSuccess(unused -> {
+                                log.debug("Request completed successfully for API key: {}", keyId);
+                                apiKeyValidationService.recordSuccessfulRequest(keyId);
+                            })
+                            .doOnError(error -> {
+                                log.warn("Request failed for API key {}: {}", keyId, error.getMessage());
+                                apiKeyValidationService.recordFailedRequest(keyId);
                             });
-                    });
-            })
-            .onErrorResume(error -> {
-                log.error("Error in API key authentication filter: {}", error.getMessage(), error);
-                return handleInternalError(exchange);
             });
     }
     
@@ -137,15 +161,12 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      * Add user context headers and continue to external API
      */
     private Mono<Void> addUserContextAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, ApiKey apiKey) {
-        // Add user context headers for external API
         var modifiedRequest = exchange.getRequest().mutate()
             .header("X-User-Id", apiKey.getUserId())
             .header("X-API-Key-Id", apiKey.getKeyId())
-            // Remove original API key for security
             .headers(headers -> headers.remove("X-API-Key"))
             .build();
         
-        // Modify exchange with new request
         var modifiedExchange = exchange.mutate()
             .request(modifiedRequest)
             .build();
@@ -180,9 +201,8 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
         exchange.getResponse().getHeaders().add("Content-Type", "application/json");
         exchange.getResponse().getHeaders().add("Retry-After", "60"); // Suggest retry after 1 minute
         
-        // Add rate limit headers if enabled
         if (rateLimitProperties.isIncludeHeaders()) {
-            addRateLimitHeaders(exchange, rateLimitStatus);
+            addRateLimitHeaders(exchange, rateLimitStatus, false);
         }
         
         String responseBody = String.format(
@@ -195,49 +215,50 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     }
     
     /**
-     * Add rate limit headers to response using beforeCommit (proper Gateway way)
+     * Add rate limit headers to response
+     * @param exchange ServerWebExchange
+     * @param rateLimitStatus RateLimitStatus with current limits
+     * @param beforeCommit true to use beforeCommit (for success), false for direct headers (for errors)
      */
-    private void addRateLimitHeadersBeforeCommit(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
+    private void addRateLimitHeaders(ServerWebExchange exchange, RateLimitStatus rateLimitStatus, boolean beforeCommit) {
         if (!rateLimitProperties.isIncludeHeaders()) {
-            log.debug("Rate limit headers disabled via configuration");
+            if (beforeCommit) {
+                log.debug("Rate limit headers disabled via configuration");
+            }
             return;
         }
-        
-        exchange.getResponse().beforeCommit(() -> {
+
+        if (beforeCommit) {
+            exchange.getResponse().beforeCommit(() -> {
+                var headers = exchange.getResponse().getHeaders();
+                addHeadersToResponse(headers, rateLimitStatus);
+
+                log.debug("Added rate limit headers for API key: {} (minute: {}/{}, hour: {}/{}, day: {}/{})",
+                        rateLimitStatus.keyId(),
+                        rateLimitStatus.minuteRequests(), rateLimitStatus.minuteLimit(),
+                        rateLimitStatus.hourRequests(), rateLimitStatus.hourLimit(),
+                        rateLimitStatus.dayRequests(), rateLimitStatus.dayLimit());
+
+                return Mono.empty();
+            });
+        } else {
             var headers = exchange.getResponse().getHeaders();
-            
-            // Add standard rate limit headers
-            headers.add("X-RateLimit-Limit-Minute", String.valueOf(rateLimitStatus.getMinuteLimit()));
-            headers.add("X-RateLimit-Remaining-Minute", String.valueOf(Math.max(0, rateLimitStatus.getMinuteLimit() - rateLimitStatus.getMinuteRequests())));
-            headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.getHourLimit()));
-            headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.getHourLimit() - rateLimitStatus.getHourRequests())));
-            
-            log.debug("Added rate limit headers for API key: {} (minute: {}/{}, hour: {}/{})", 
-                rateLimitStatus.getKeyId(),
-                rateLimitStatus.getMinuteRequests(), rateLimitStatus.getMinuteLimit(),
-                rateLimitStatus.getHourRequests(), rateLimitStatus.getHourLimit());
-            
-            return Mono.empty();
-        });
-    }
-    
-    /**
-     * Add rate limit headers to response (for error cases)
-     */
-    private void addRateLimitHeaders(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
-        if (!rateLimitProperties.isIncludeHeaders()) {
-            return;
+            addHeadersToResponse(headers, rateLimitStatus);
+
+            log.debug("Added rate limit headers to error response for API key: {}", rateLimitStatus.keyId());
         }
-        
-        var headers = exchange.getResponse().getHeaders();
-        
-        // Add standard rate limit headers
-        headers.add("X-RateLimit-Limit-Minute", String.valueOf(rateLimitStatus.getMinuteLimit()));
-        headers.add("X-RateLimit-Remaining-Minute", String.valueOf(Math.max(0, rateLimitStatus.getMinuteLimit() - rateLimitStatus.getMinuteRequests())));
-        headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.getHourLimit()));
-        headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.getHourLimit() - rateLimitStatus.getHourRequests())));
-        
-        log.debug("Added rate limit headers to error response for API key: {}", rateLimitStatus.getKeyId());
+    }
+
+    /**
+     * Helper method to add headers to HttpHeaders
+     */
+    private void addHeadersToResponse(org.springframework.http.HttpHeaders headers, RateLimitStatus rateLimitStatus) {
+        headers.add("X-RateLimit-Limit-Minute", String.valueOf(rateLimitStatus.minuteLimit()));
+        headers.add("X-RateLimit-Remaining-Minute", String.valueOf(Math.max(0, rateLimitStatus.minuteLimit() - rateLimitStatus.minuteRequests())));
+        headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.hourLimit()));
+        headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.hourLimit() - rateLimitStatus.hourRequests())));
+        headers.add("X-RateLimit-Limit-Day", String.valueOf(rateLimitStatus.dayLimit()));
+        headers.add("X-RateLimit-Remaining-Day", String.valueOf(Math.max(0, rateLimitStatus.dayLimit() - rateLimitStatus.dayRequests())));
     }
     
     /**

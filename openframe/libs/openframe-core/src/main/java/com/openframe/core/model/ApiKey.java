@@ -35,13 +35,7 @@ public class ApiKey {
     private boolean enabled = true;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant lastUsed;
     private Instant expiresAt;         // Optional expiration
-
-    // Usage tracking
-    private long totalRequests = 0;
-    private long successfulRequests = 0;
-    private long failedRequests = 0;
 
     /**
      * Check if the API key is expired
