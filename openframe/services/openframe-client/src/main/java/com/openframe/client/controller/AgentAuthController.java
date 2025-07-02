@@ -19,22 +19,23 @@ public class AgentAuthController {
 
     @PostMapping(value = "/token", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getClientToken(
-            @RequestParam String client_id,
-            @RequestParam(required = false) String client_secret) {
+            @RequestParam(name = "grant_type") String grantType,
+            @RequestParam(name = "refresh_token", required = false) String refreshToken,
+            @RequestParam(name = "client_id", required = false) String clientId,
+            @RequestParam(name = "client_secret", required = false) String clientSecret) {
 
-        log.debug("Client token request - client_id: {}", client_id);
+        log.debug("Client token request - client_id: {}", clientId);
 
         try {
-            AgentTokenResponse response = agentAuthService.issueClientToken(client_id, client_secret);
+            AgentTokenResponse response = agentAuthService.issueClientToken(grantType, refreshToken, clientId, clientSecret);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401)
                     .body(Map.of(
-                            "error", "invalid_client",
-                            "error_description", e.getMessage()
+                            "message", e.getMessage()
                     ));
         } catch (Exception e) {
-            log.error("Token error: {}", e.getMessage(), e);
+            log.error("Token issue error: {}", e.getMessage(), e);
             return ResponseEntity.status(400)
                     .body(Map.of(
                             "error", "server_error",
