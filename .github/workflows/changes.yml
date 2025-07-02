@@ -25,8 +25,8 @@ on:
         value: ${{ jobs.changes.outputs.mongodb }}
       cassandra: 
         value: ${{ jobs.changes.outputs.cassandra }}
-      postgresql: 
-        value: ${{ jobs.changes.outputs.postgresql }}
+      authentik-postgresql: 
+        value: ${{ jobs.changes.outputs.authentik-postgresql }}
       tactical-frontend: 
         value: ${{ jobs.changes.outputs.tactical-frontend }}
       tactical-nginx: 
@@ -68,7 +68,7 @@ jobs:
       openframe-ui: ${{ steps.filter.outputs.openframe-ui }}
       mongodb: ${{ steps.filter.outputs.mongodb }}
       cassandra: ${{ steps.filter.outputs.cassandra }}
-      postgresql: ${{ steps.filter.outputs.postgresql }}
+      authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
       tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
       tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
@@ -115,7 +115,7 @@ jobs:
               - './openframe/services/openframe-stream/**'
             openframe-ui:
               - './openframe/services/openframe-ui/**'
-            postgresql:
+            authentik-postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
               - './integrated-tools/tactical-rmm/tactical-frontend/**'
