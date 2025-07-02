@@ -8,5 +8,5 @@ resources:
 
 images:
 - name: openframe-authentik-postgresql
-  newName: ghcr.io/flamingo-cx/openframe-authentik-postgresql
+  newName: ghcr.io/flamingo-cx/openframe/authentik-postgresql
   newTag: latest

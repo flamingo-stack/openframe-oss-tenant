@@ -7,7 +7,7 @@ build:
     customTemplate:
       template:  "latest"
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-meshcentral
+    - image: ghcr.io/flamingo-cx/openframe/meshcentral
       docker:
         dockerfile: Dockerfile
         buildArgs:

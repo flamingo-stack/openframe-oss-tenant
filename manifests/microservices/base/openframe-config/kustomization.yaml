@@ -9,5 +9,5 @@ resources:
 
 images:
 - name: openframe-config
-  newName: ghcr.io/flamingo-cx/openframe-config
+  newName: ghcr.io/flamingo-cx/openframe/openframe-config
   newTag: latest
