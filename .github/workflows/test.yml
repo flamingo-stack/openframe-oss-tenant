@@ -216,9 +216,9 @@ jobs:
 
             [ "$pushed" = "true" ] || continue
 
-            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            echo "$name → ${REGISTRY}/${REPOSITORY}/${name}:${COMMIT_SHA}"
             cd "$path"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            kustomize edit set image "${name}=${REGISTRY}/${REPOSITORY}/${name}:${COMMIT_SHA}"
             cd - > /dev/null
           done
 
@@ -326,7 +326,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: openframe-${{ matrix.name }}
+          package: ${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: test-${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
