@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-nginx
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: platform
+
+  sources:
+    # Helm chart
+    - repoURL: https://kubernetes.github.io/ingress-nginx
+      targetRevision: 4.12.1
+      chart: ingress-nginx
+      helm:
+        valueFiles:
+          - "$values/manifests/platform/base/ingress-nginx/helm-values.yaml"  # name is hardcoded
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: main
+      ref: values
+    # Extra resources
+    - repoURL: https://github.com/Flamingo-CX/openframe.git
+      targetRevision: main
+      path: manifests/platform/base/ingress-nginx
+
+  destination:
+    name: in-cluster
+    namespace: platform
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m
