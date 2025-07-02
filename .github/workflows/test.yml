@@ -281,8 +281,7 @@ jobs:
         env:
           TERM: dumb
         run: |
-          echo 0 
-          # ./scripts/run.sh bootstrap
+          ./scripts/run.sh bootstrap
   
 
   post-test:
@@ -330,7 +329,7 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: test-${{ needs.changes.outputs.commit_sha }}
+          delete-tags: "*"
           exclude-tags: latest
 
 
