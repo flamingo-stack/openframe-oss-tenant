@@ -25,8 +25,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ORGANIZATION: flamingo-cx
-  REGISTRY: ghcr.io
+  REPOSITORY: "flamingo-cx/openframe"
+  REGISTRY: "ghcr.io"
 
 jobs:
 
@@ -144,7 +144,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=test-${{ needs.changes.outputs.commit_sha }}
