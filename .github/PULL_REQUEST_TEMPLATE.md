@@ -51,5 +51,3 @@
 
 ---
 *By submitting this PR, I confirm that these changes have been tested adequately and comply with our security standards and SOC 2 requirements.*
-
-test-${{ needs.changes.outputs.commit_sha }}
