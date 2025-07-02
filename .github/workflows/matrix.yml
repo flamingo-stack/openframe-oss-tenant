@@ -35,6 +35,12 @@ jobs:
               "artifact_name": "openframe-data"
             },
             {
+              "name": "openframe-jwt",
+              "type": ["java"],
+              "path": "./openframe/libs/openframe-jwt",
+              "artifact_name": "openframe-jwt"
+            },
+            {
               "name": "openframe-api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
