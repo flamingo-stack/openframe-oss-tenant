@@ -4,7 +4,7 @@ metadata:
   name: openframe-stream
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-stream
+    - image: ghcr.io/flamingo-cx/openframe/openframe-stream
       context: .
       sync: 
         manual:

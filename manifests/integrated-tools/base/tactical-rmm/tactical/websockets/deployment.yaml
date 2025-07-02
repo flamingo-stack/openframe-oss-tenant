@@ -31,8 +31,8 @@ spec:
           ']
 
       containers:
-      - name: openframe-tactical-websockets
-        image: openframe-tactical-websockets
+      - name: tactical-websockets
+        image: tactical-websockets
         args: ["tactical-websockets"]
         ports:
         - containerPort: 8000

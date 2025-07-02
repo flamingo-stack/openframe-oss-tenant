@@ -8,5 +8,5 @@ resources:
 
 images:
 - name: openframe-ui
-  newName: ghcr.io/flamingo-cx/openframe-ui
+  newName: ghcr.io/flamingo-cx/openframe/openframe-ui
   newTag: latest

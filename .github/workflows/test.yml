@@ -25,8 +25,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ORGANIZATION: flamingo-cx
-  REGISTRY: ghcr.io
+  REGISTRY: "ghcr.io"
+  ORGANISATION: "flamingo-cx"
+  REPOSITORY: "openframe"
 
 jobs:
 
@@ -144,7 +145,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/openframe-${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=test-${{ needs.changes.outputs.commit_sha }}
@@ -216,9 +217,9 @@ jobs:
 
             [ "$pushed" = "true" ] || continue
 
-            echo "$name → $REGISTRY/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            echo "$name → ${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
             cd "$path"
-            kustomize edit set image "openframe-${name}=${REGISTRY}/${ORGANIZATION}/openframe-${name}:${COMMIT_SHA}"
+            kustomize edit set image "${name}=${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
             cd - > /dev/null
           done
 
@@ -326,9 +327,9 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: openframe-${{ matrix.name }}
+          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: test-${{ needs.changes.outputs.commit_sha }}
+          delete-tags: "*"
           exclude-tags: latest
 
 
