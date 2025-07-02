@@ -16,8 +16,8 @@ spec:
         - name: github-pat-secret
 
       containers:
-      - name: openframe-tactical-nginx
-        image: openframe-tactical-nginx
+      - name: tactical-nginx
+        image: tactical-nginx
         ports:
         - containerPort: 8080
         - containerPort: 8000

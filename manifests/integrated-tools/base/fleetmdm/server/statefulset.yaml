@@ -17,8 +17,8 @@ spec:
         - name: github-pat-secret
 
       containers:
-      - name: openframe-fleetmdm
-        image: openframe-fleetmdm
+      - name: fleetmdm
+        image: fleetmdm
         ports:
         - containerPort: 8070
         envFrom:
