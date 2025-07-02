@@ -6,8 +6,7 @@ resources:
   - namespace.yaml   
   - cert-manager.yaml   
   - ingress-nginx.yaml  
-
-  # wave 1
+  - ngrok.yaml
   - argocd.yaml   
   - promtail.yaml
   - loki.yaml           
