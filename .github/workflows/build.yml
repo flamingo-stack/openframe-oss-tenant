@@ -18,8 +18,9 @@ on:
       - 'pom.xml'
 
 env:
-  REPOSITORY: "flamingo-cx/openframe"
   REGISTRY: "ghcr.io"
+  ORGANISATION: "flamingo-cx"
+  REPOSITORY: "openframe"
 
 jobs:
 
@@ -137,7 +138,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
