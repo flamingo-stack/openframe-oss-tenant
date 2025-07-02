@@ -25,13 +25,10 @@ public class AgentAuthService {
     ) {
         log.debug("Validating client - ID: {}", clientId);
 
-        switch (grantType) {
-            case "client_credentials":
-                return clientCredentialsHandler.handle(clientId, clientSecret);
-            case "refresh_token":
-                return refreshTokenHandler.handle(refreshToken);
-            default:
-                throw new IllegalArgumentException("Unsupported grant type: " + grantType);
-        }
+        return switch (grantType) {
+            case "client_credentials" -> clientCredentialsHandler.handle(clientId, clientSecret);
+            case "refresh_token" -> refreshTokenHandler.handle(refreshToken);
+            default -> throw new IllegalArgumentException("Unsupported grant type: " + grantType);
+        };
     }
 }
