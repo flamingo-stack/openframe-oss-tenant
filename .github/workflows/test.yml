@@ -244,7 +244,7 @@ jobs:
     name: Run Tests
     needs: [pre-test, build]
     runs-on: Linux-x64
-    timeout-minutes: 90
+    timeout-minutes: 60
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
@@ -329,7 +329,7 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: test-${{ needs.changes.outputs.commit_sha }}
+          delete-tags: "*"
           exclude-tags: latest
 
 
