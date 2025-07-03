@@ -17,12 +17,12 @@ spec:
         - name: MONGO_USERNAME
           valueFrom:
             secretKeyRef:
-              name: mongodb-secret
+              name: mongodb
               key: MONGO_INITDB_ROOT_USERNAME
         - name: MONGO_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mongodb-secret
+              name: mongodb
               key: MONGO_INITDB_ROOT_PASSWORD
         command:
           - /bin/sh
