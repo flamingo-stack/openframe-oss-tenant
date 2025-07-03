@@ -46,7 +46,8 @@ export class GoogleOAuthService {
       };
       localStorage.setItem(this.DEBUG_KEY, JSON.stringify([debugInfo]));
 
-      const config = this.oauthConfig.getConfig().google;
+      const configData = await this.oauthConfig.getConfig();
+      const config = configData.google;
       
       // Validate configuration
       if (!config.clientId) {
@@ -257,7 +258,8 @@ export class GoogleOAuthService {
     code: string,
     codeVerifier: string
   ): Promise<TokenResponse> {
-    const config = this.oauthConfig.getConfig().google;
+    const configData = await this.oauthConfig.getConfig();
+    const config = configData.google;
     
     // Prepare data for backend
     const socialAuthRequest = {
@@ -381,15 +383,16 @@ export class GoogleOAuthService {
   /**
    * Get current OAuth configuration (for debugging)
    */
-  static getConfig(): GoogleOAuthConfig {
-    return this.oauthConfig.getConfig().google;
+  static async getConfig(): Promise<GoogleOAuthConfig> {
+    const configData = await this.oauthConfig.getConfig();
+    return configData.google;
   }
 
   /**
    * Validate configuration
    */
-  static validateConfig(): boolean {
-    return this.oauthConfig.validateGoogleConfig();
+  static async validateConfig(): Promise<boolean> {
+    return await this.oauthConfig.validateGoogleConfig();
   }
 
   private static generateCodeVerifier(): string {
