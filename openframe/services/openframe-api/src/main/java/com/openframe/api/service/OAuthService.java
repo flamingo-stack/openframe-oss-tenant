@@ -35,7 +35,7 @@ public class OAuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${security.oauth2.token.access.expiration-seconds}")
+    @Value("${security.oauth2.token.access.expiration-seconds1}")
     private int accessTokenExpirationSeconds;
 
     @Value("${security.oauth2.token.refresh.expiration-seconds}")
@@ -52,10 +52,10 @@ public class OAuthService {
                 .claim("roles", user.getRoles());
 
         if (user.getFirstName() != null) {
-            claimsBuilder = claimsBuilder.claim("given_name", user.getFirstName());
+            claimsBuilder.claim("given_name", user.getFirstName());
         }
         if (user.getLastName() != null) {
-            claimsBuilder = claimsBuilder.claim("family_name", user.getLastName());
+            claimsBuilder.claim("family_name", user.getLastName());
         }
 
         claimsBuilder = claimsBuilder
@@ -112,18 +112,13 @@ public class OAuthService {
 
     public TokenResponse token(String grantType, String code, String refreshToken,
             String username, String password, String clientId, String clientSecret) {
-        switch (grantType) {
-            case "authorization_code":
-                return handleAuthorizationCode(code, clientId, clientSecret);
-            case "password":
-                return handlePasswordGrant(username, password, clientId, clientSecret);
-            case "client_credentials":
-                return handleClientCredentials(clientId, clientSecret);
-            case "refresh_token":
-                return handleRefreshToken(refreshToken, clientId, clientSecret);
-            default:
-                throw new IllegalArgumentException("Unsupported grant type: " + grantType);
-        }
+        return switch (grantType) {
+            case "authorization_code" -> handleAuthorizationCode(code, clientId, clientSecret);
+            case "password" -> handlePasswordGrant(username, password, clientId, clientSecret);
+            case "client_credentials" -> handleClientCredentials(clientId, clientSecret);
+            case "refresh_token" -> handleRefreshToken(refreshToken, clientId, clientSecret);
+            default -> throw new IllegalArgumentException("Unsupported grant type: " + grantType);
+        };
     }
 
     private TokenResponse handleAuthorizationCode(String code, String clientId, String clientSecret) {
@@ -237,7 +232,7 @@ public class OAuthService {
                     .orElseThrow(() -> new IllegalStateException("User not found"));
 
             // Generate new access token and increment refresh count
-            String accessToken = generateAccessToken(user, "refresh_token");
+            String accessToken = generateAccessToken(user, "password");
 
             // Create new refresh token with incremented count
             JwtClaimsSet newRefreshClaims = JwtClaimsSet.builder()
