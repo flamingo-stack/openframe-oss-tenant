@@ -1,15 +1,13 @@
 package com.openframe.gateway.service;
 
 import com.openframe.core.model.ApiKey;
-import com.openframe.data.repository.mongo.ApiKeyRepository;
+import com.openframe.data.repository.mongo.ReactiveApiKeyRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 /**
  * Clean, focused service for API key validation only
@@ -26,8 +24,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class ApiKeyValidationService {
-    
-    private final ApiKeyRepository apiKeyRepository;
+
+    private final ReactiveApiKeyRepository apiKeyRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApiKeyStatsService apiKeyStatsService;
     
@@ -41,38 +39,38 @@ public class ApiKeyValidationService {
      * @return Mono<ApiKeyValidationResult> containing validation result
      */
     public Mono<ApiKeyValidationResult> validateApiKey(String fullApiKey) {
-        return Mono.fromCallable(() -> {
-            log.debug("Validating API key format and credentials");
-            
-            ParsedApiKey parsed = parseApiKey(fullApiKey);
-            if (!parsed.valid()) {
-                log.warn("Invalid API key format: {}", parsed.errorMessage());
-                return ApiKeyValidationResult.invalid(parsed.errorMessage());
-            }
+        log.debug("Validating API key format and credentials");
 
-            Optional<ApiKey> apiKeyOpt = apiKeyRepository.findById(parsed.keyId());
-            if (apiKeyOpt.isEmpty()) {
-                log.warn("API key not found: {}", parsed.keyId());
-                return ApiKeyValidationResult.invalid("API key not found");
-            }
-            
-            ApiKey apiKey = apiKeyOpt.get();
-            
-            if (!apiKey.isActive()) {
-                log.warn("API key is not active or expired: {}", parsed.keyId());
-                return ApiKeyValidationResult.invalid("API key is not active or expired");
-            }
+        ParsedApiKey parsed = parseApiKey(fullApiKey);
+        if (!parsed.valid()) {
+            log.warn("Invalid API key format: {}", parsed.errorMessage());
+            return Mono.just(ApiKeyValidationResult.invalid(parsed.errorMessage()));
+        }
 
-            if (!passwordEncoder.matches(parsed.secret(), apiKey.getHashedKey())) {
-                log.warn("Invalid secret for API key: {}", parsed.keyId());
-                apiKeyStatsService.incrementFailed(parsed.keyId());
-                return ApiKeyValidationResult.invalid("Invalid API key secret");
-            }
+        return apiKeyRepository.findById(parsed.keyId())
+                .map(apiKey -> {
+                    if (!apiKey.isActive()) {
+                        log.warn("API key is not active or expired: {}", parsed.keyId());
+                        return ApiKeyValidationResult.invalid("API key is not active or expired");
+                    }
 
-            log.debug("API key validation successful for: {}", parsed.keyId());
+                    if (!passwordEncoder.matches(parsed.secret(), apiKey.getHashedKey())) {
+                        log.warn("Invalid secret for API key: {}", parsed.keyId());
+                        apiKeyStatsService.incrementFailed(parsed.keyId());
+                        return ApiKeyValidationResult.invalid("Invalid API key secret");
+                    }
 
-            return ApiKeyValidationResult.valid(apiKey);
-        });
+                    log.debug("API key validation successful for: {}", parsed.keyId());
+                    return ApiKeyValidationResult.valid(apiKey);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.warn("API key not found: {}", parsed.keyId());
+                    return Mono.just(ApiKeyValidationResult.invalid("API key not found"));
+                }))
+                .onErrorResume(error -> {
+                    log.error("Error during API key validation", error);
+                    return Mono.just(ApiKeyValidationResult.invalid("Internal validation error"));
+                });
     }
     
     /**

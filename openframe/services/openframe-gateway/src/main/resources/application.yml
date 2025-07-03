@@ -6,19 +6,3 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
-
-# OpenFrame specific configuration
-openframe:
-  rate-limit:
-    default-requests-per-minute: 3
-    default-requests-per-hour: 1000
-    default-requests-per-day: 10000
-    enabled: true
-    key-prefix: "rate_limit:"
-    redis-timeout: 2s
-    fail-open: true
-    log-violations: true
-    include-headers: true
-  api-key-stats:
-    sync-interval: 30000
-    redis-ttl: 604800

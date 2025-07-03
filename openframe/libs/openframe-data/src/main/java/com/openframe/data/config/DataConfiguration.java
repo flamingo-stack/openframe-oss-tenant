@@ -1,6 +1,7 @@
 package com.openframe.data.config;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.cassandra.repository.config.EnableCassandraRepositories;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
@@ -13,8 +14,14 @@ public class DataConfiguration {
     @Configuration
     @ConditionalOnProperty(name = "spring.data.mongodb.enabled", havingValue = "true", matchIfMissing = false)
     @EnableMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
+    public static class MongoConfiguration {
+    }
+
+    @Configuration
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
     @EnableReactiveMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
-    public static class MongoConfiguration {}
+    public static class ReactiveMongoConfiguration {
+    }
 
     @Configuration
     @ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "true", matchIfMissing = false)
