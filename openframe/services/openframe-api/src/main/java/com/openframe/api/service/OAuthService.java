@@ -35,7 +35,7 @@ public class OAuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${security.oauth2.token.access.expiration-seconds1}")
+    @Value("${security.oauth2.token.access.expiration-seconds}")
     private int accessTokenExpirationSeconds;
 
     @Value("${security.oauth2.token.refresh.expiration-seconds}")
@@ -65,10 +65,11 @@ public class OAuthService {
         return jwtService.generateToken(claimsBuilder.build());
     }
 
-    public String generateRefreshToken(String userId) {
+    public String generateRefreshToken(String userId, String grantType) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(userId)
                 .claim("refresh_count", 0L)
+                .claim("grant_type", grantType)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
                 .build();
@@ -143,7 +144,7 @@ public class OAuthService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
         String accessToken = generateAccessToken(user, "authorization_code");
-        String refreshToken = generateRefreshToken(user.getId());
+        String refreshToken = generateRefreshToken(user.getId(), "authorization_code");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -169,7 +170,7 @@ public class OAuthService {
 
         // Generate tokens with consistent expiration
         String accessToken = generateAccessToken(user, "password");
-        String refreshToken = generateRefreshToken(user.getId());
+        String refreshToken = generateRefreshToken(user.getId(), "password");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -199,6 +200,7 @@ public class OAuthService {
 
         return TokenResponse.builder()
                 .accessToken(jwtService.generateToken(claims))
+                .refreshToken(generateRefreshToken(clientId, "password"))
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpirationSeconds)
                 .build();
@@ -208,16 +210,16 @@ public class OAuthService {
         validateClient(clientId, clientSecret);
 
         try {
-            var claims = jwtService.decodeToken(refreshToken);
+            var jwt = jwtService.decodeToken(refreshToken);
 
             // Check if token has expired
-            Instant expiresAt = claims.getExpiresAt();
+            Instant expiresAt = jwt.getExpiresAt();
             if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
                 throw new IllegalArgumentException("Refresh token has expired. Please log in again");
             }
 
             // Get refresh count
-            Long refreshCount = claims.getClaim("refresh_count");
+            Long refreshCount = jwt.getClaim("refresh_count");
             if (refreshCount == null) {
                 refreshCount = 0L;
             }
@@ -226,18 +228,20 @@ public class OAuthService {
                 throw new IllegalArgumentException("Maximum refresh count reached. Please log in again");
             }
 
-            // Get user from claims
-            String userId = claims.getSubject();
+            // Get user from jwt
+            String userId = jwt.getSubject();
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalStateException("User not found"));
 
+            String grantType = jwt.getClaimAsString("grant_type");
             // Generate new access token and increment refresh count
-            String accessToken = generateAccessToken(user, "password");
+            String accessToken = generateAccessToken(user, grantType);
 
             // Create new refresh token with incremented count
             JwtClaimsSet newRefreshClaims = JwtClaimsSet.builder()
                     .subject(userId)
                     .claim("refresh_count", refreshCount + 1)
+                    .claim("grant_type", grantType)
                     .issuedAt(Instant.now())
                     .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
                     .build();
@@ -352,7 +356,7 @@ public class OAuthService {
 
         // Generate tokens
         String accessToken = generateAccessToken(user, "client_credentials");
-        String refreshToken = generateRefreshToken(user.getId());
+        String refreshToken = generateRefreshToken(user.getId(),"client_credentials");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
