@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/fleet-events
       path: manifests/integrated-tools/base/fleetmdm
 
   destination:
