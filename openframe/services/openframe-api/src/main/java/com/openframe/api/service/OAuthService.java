@@ -356,7 +356,7 @@ public class OAuthService {
 
         // Generate tokens
         String accessToken = generateAccessToken(user, "client_credentials");
-        String refreshToken = generateRefreshToken(user.getId(),"client_credentials");
+        String refreshToken = generateRefreshToken(user.getId(), "client_credentials");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
