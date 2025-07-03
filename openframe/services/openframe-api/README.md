@@ -59,3 +59,4 @@ OpenFrame API is the core backend service for the OpenFrame platform, providing 
 * **Logging**: Uses SLF4J with Lombok @Slf4j annotations for standardized logging.
 * **Security**: Provides JWT token generation for user authentication via standard OAuth flows.
 * **GraphiQL**: Includes GraphiQL UI for testing GraphQL queries (enabled by default).
+

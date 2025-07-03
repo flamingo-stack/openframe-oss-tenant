@@ -3,30 +3,34 @@ name: Generate Changes
 on:
   workflow_call:
     outputs:      
-      core: 
-        value: ${{ jobs.changes.outputs.core }}
-      data: 
-        value: ${{ jobs.changes.outputs.data }}
-      api: 
-        value: ${{ jobs.changes.outputs.api }}
+      openframe-core: 
+        value: ${{ jobs.changes.outputs.openframe-core }}
+      openframe-data: 
+        value: ${{ jobs.changes.outputs.openframe-data }}
+      openframe-jwt: 
+        value: ${{ jobs.changes.outputs.openframe-jwt }}
+      openframe-api: 
+        value: ${{ jobs.changes.outputs.openframe-api }}
       external-api: 
         value: ${{ jobs.changes.outputs.external-api }}
-      client: 
-        value: ${{ jobs.changes.outputs.client }}
-      config: 
-        value: ${{ jobs.changes.outputs.config }}
-      gateway: 
-        value: ${{ jobs.changes.outputs.gateway }}
-      management: 
-        value: ${{ jobs.changes.outputs.management }}
-      stream: 
-        value: ${{ jobs.changes.outputs.stream }}
+      openframe-client: 
+        value: ${{ jobs.changes.outputs.openframe-client }}
+      openframe-config: 
+        value: ${{ jobs.changes.outputs.openframe-config }}
+      openframe-gateway: 
+        value: ${{ jobs.changes.outputs.openframe-gateway }}
+      openframe-management: 
+        value: ${{ jobs.changes.outputs.openframe-management }}
+      openframe-stream: 
+        value: ${{ jobs.changes.outputs.openframe-stream }}
+      openframe-ui: 
+        value: ${{ jobs.changes.outputs.openframe-ui }}
       mongodb: 
         value: ${{ jobs.changes.outputs.mongodb }}
       cassandra: 
         value: ${{ jobs.changes.outputs.cassandra }}
-      postgresql: 
-        value: ${{ jobs.changes.outputs.postgresql }}
+      authentik-postgresql: 
+        value: ${{ jobs.changes.outputs.authentik-postgresql }}
       tactical-frontend: 
         value: ${{ jobs.changes.outputs.tactical-frontend }}
       tactical-nginx: 
@@ -45,8 +49,6 @@ on:
         value: ${{ jobs.changes.outputs.fleetmdm }}
       meshcentral: 
         value: ${{ jobs.changes.outputs.meshcentral }}
-      ui: 
-        value: ${{ jobs.changes.outputs.ui }}
       timestamp: 
         value: ${{ jobs.changes.outputs.timestamp }}
       timestamp_tag: 
@@ -59,18 +61,20 @@ jobs:
     name: Changes check
     runs-on: ubuntu-latest
     outputs:
-      core: ${{ steps.filter.outputs.core }}
-      data: ${{ steps.filter.outputs.data }}
-      api: ${{ steps.filter.outputs.api }}
+      openframe-core: ${{ steps.filter.outputs.openframe-core }}
+      openframe-data: ${{ steps.filter.outputs.openframe-data }}
+      openframe-jwt: ${{ steps.filter.outputs.openframe-jwt }}
+      openframe-api: ${{ steps.filter.outputs.openframe-api }}
       external-api: ${{ steps.filter.outputs.external-api }}
-      client: ${{ steps.filter.outputs.client }}
-      config: ${{ steps.filter.outputs.config }}
-      gateway: ${{ steps.filter.outputs.gateway }}
-      management: ${{ steps.filter.outputs.management }}
-      stream: ${{ steps.filter.outputs.stream }}
+      openframe-client: ${{ steps.filter.outputs.openframe-client }}
+      openframe-config: ${{ steps.filter.outputs.openframe-config }}
+      openframe-gateway: ${{ steps.filter.outputs.openframe-gateway }}
+      openframe-management: ${{ steps.filter.outputs.openframe-management }}
+      openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
+      openframe-ui: ${{ steps.filter.outputs.openframe-ui }}
       mongodb: ${{ steps.filter.outputs.mongodb }}
       cassandra: ${{ steps.filter.outputs.cassandra }}
-      postgresql: ${{ steps.filter.outputs.postgresql }}
+      authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
       tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
       tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
@@ -80,7 +84,6 @@ jobs:
       tactical-celerybeat: ${{ steps.filter.outputs.tactical-celerybeat }}
       fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
       meshcentral: ${{ steps.filter.outputs.meshcentral }}
-      ui: ${{ steps.filter.outputs.ui }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
       commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
@@ -100,27 +103,29 @@ jobs:
         id: filter
         with:
           filters: |
-            core:
+            openframe-core:
               - './openframe/libs/openframe-core/**'
-            data:
+            openframe-data:
               - './openframe/libs/openframe-data/**'
-            api:
+            openframe-jwt:
+              - './openframe/libs/openframe-jwt/**'
+            openframe-api:
               - './openframe/services/openframe-api/**'
             external-api:
               - './openframe/services/external-api/**'
-            client:
+            openframe-client:
               - './openframe/services/openframe-client/**'
-            config:
+            openframe-config:
               - './openframe/services/openframe-config/**'
-            gateway:
+            openframe-gateway:
               - './openframe/services/openframe-gateway/**'
-            management:
+            openframe-management:
               - './openframe/services/openframe-management/**'
-            stream:
+            openframe-stream:
               - './openframe/services/openframe-stream/**'
-            ui:
+            openframe-ui:
               - './openframe/services/openframe-ui/**'
-            postgresql:
+            authentik-postgresql:
               - './integrated-tools/authentik/postgresql/**'
             tactical-frontend:
               - './integrated-tools/tactical-rmm/tactical-frontend/**'

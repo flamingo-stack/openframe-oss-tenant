@@ -4,7 +4,7 @@ metadata:
   name: openframe-management
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-management
+    - image: ghcr.io/flamingo-cx/openframe/openframe-management
       context: .
       sync: 
         manual:

@@ -7,6 +7,6 @@ resources:
   - ./server
 
 images:
-- name: openframe-fleetmdm
-  newName: ghcr.io/flamingo-cx/openframe-fleetmdm
+- name: fleetmdm
+  newName: ghcr.io/flamingo-cx/openframe/fleetmdm
   newTag: latest

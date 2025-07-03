@@ -77,8 +77,8 @@ spec:
             name: tactical-postgres
 
       containers:
-      - name: openframe-tactical-nats
-        image: openframe-tactical-nats
+      - name: tactical-nats
+        image: tactical-nats
         args: ["tactical-nats"]
         ports:
         - containerPort: 9235

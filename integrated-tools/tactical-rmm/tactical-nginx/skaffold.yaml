@@ -7,7 +7,7 @@ build:
     customTemplate:
       template:  "latest"
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-tactical-nginx
+    - image: ghcr.io/flamingo-cx/openframe/tactical-nginx
       docker:
         dockerfile: Dockerfile
         buildArgs:

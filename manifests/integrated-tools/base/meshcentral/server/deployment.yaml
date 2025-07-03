@@ -41,8 +41,8 @@ spec:
             mountPath: /opt/mesh
 
       containers:
-      - name: openframe-meshcentral
-        image: openframe-meshcentral
+      - name: meshcentral
+        image: meshcentral
         ports:
         - name: meshcentral
           containerPort: 8383

@@ -8,7 +8,7 @@ resources:
   - ingress-nginx.yaml  
 
   # wave 1
-  - argocd-ingress.yaml   
+  - argocd.yaml   
   - promtail.yaml
   - loki.yaml           
   - prometheus.yaml

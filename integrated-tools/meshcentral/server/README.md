@@ -246,3 +246,4 @@ curl -X POST https://meshcentral.example.com/api/runcommand \
     "powershell": false
   }'
 ```
+

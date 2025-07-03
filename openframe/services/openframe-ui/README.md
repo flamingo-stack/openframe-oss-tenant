@@ -51,3 +51,4 @@ PORT=5177 VITE_API_URL=http://localhost:8090 VITE_GATEWAY_URL=http://localhost:8
 • Use Dockerfile or docker-compose to containerize.  
 • Typically hosted behind openframe-gateway or served on its own domain.  
 • For production, ensure environment variables (like VITE_API_URL) point to correct backend services.
+
