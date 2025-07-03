@@ -10,5 +10,5 @@ resources:
 
 images:
   - name: openframe-client
-    newName: ghcr.io/flamingo-cx/openframe-client
+    newName: ghcr.io/flamingo-cx/openframe/openframe-client
     newTag: latest

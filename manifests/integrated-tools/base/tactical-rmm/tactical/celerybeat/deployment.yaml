@@ -31,8 +31,8 @@ spec:
           ']
 
       containers:
-      - name: openframe-tactical-celerybeat
-        image: openframe-tactical-celerybeat
+      - name: tactical-celerybeat
+        image: tactical-celerybeat
         args: ["tactical-celerybeat"]
         envFrom:
         - configMapRef:

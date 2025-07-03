@@ -16,8 +16,8 @@ spec:
         - name: github-pat-secret
 
       containers:
-      - name: openframe-tactical-frontend
-        image: openframe-tactical-frontend
+      - name: tactical-frontend
+        image: tactical-frontend
         ports:
         - containerPort: 8080
         envFrom:

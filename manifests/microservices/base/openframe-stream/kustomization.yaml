@@ -9,5 +9,5 @@ resources:
 
 images:
 - name: openframe-stream
-  newName: ghcr.io/flamingo-cx/openframe-stream
+  newName: ghcr.io/flamingo-cx/openframe/openframe-stream
   newTag: latest
