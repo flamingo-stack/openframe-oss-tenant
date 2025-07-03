@@ -1,8 +1,7 @@
 package com.openframe.data.repository.pinot;
 
 import com.openframe.data.repository.pinot.exception.PinotQueryException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.pinot.client.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,17 +10,16 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Repository
-public class PinotDeviceRepositoryImpl implements PinotDeviceRepository {
-
-    private static final Logger log = LoggerFactory.getLogger(PinotDeviceRepositoryImpl.class);
+public class PinotClientDeviceRepository implements PinotDeviceRepository {
 
     private final Connection pinotConnection;
 
     @Value("${pinot.devices.table:devices}")
     private String devicesTable;
 
-    public PinotDeviceRepositoryImpl(@Qualifier("pinotBrokerConnection") Connection pinotConnection) {
+    public PinotClientDeviceRepository(@Qualifier("pinotBrokerConnection") Connection pinotConnection) {
         this.pinotConnection = pinotConnection;
     }
 
