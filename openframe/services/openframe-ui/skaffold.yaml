@@ -4,7 +4,7 @@ metadata:
   name: openframe-ui
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-ui
+    - image: ghcr.io/flamingo-cx/openframe/openframe-ui
       docker: {}
   local:
     useDockerCLI: false

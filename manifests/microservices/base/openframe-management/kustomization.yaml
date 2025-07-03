@@ -10,5 +10,5 @@ resources:
 
 images:
 - name: openframe-management
-  newName: ghcr.io/flamingo-cx/openframe-management
+  newName: ghcr.io/flamingo-cx/openframe/openframe-management
   newTag: latest

@@ -28,8 +28,8 @@ spec:
           mountPath: /var/lib/postgresql/data
 
       containers:
-      - name: openframe-authentik-postgresql
-        image: openframe-authentik-postgresql
+      - name: authentik-postgresql
+        image: authentik-postgresql
         ports:
         - containerPort: 5432
         envFrom:

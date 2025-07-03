@@ -6,6 +6,6 @@ resources:
   - ./server
 
 images:
-- name: openframe-meshcentral
-  newName: ghcr.io/flamingo-cx/openframe-meshcentral
+- name: meshcentral
+  newName: ghcr.io/flamingo-cx/openframe/meshcentral
   newTag: latest

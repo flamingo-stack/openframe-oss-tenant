@@ -43,8 +43,8 @@ spec:
           ']
 
       containers:
-      - name: openframe-tactical-backend
-        image: openframe-tactical-backend
+      - name: tactical-backend
+        image: tactical-backend
         args: ["tactical-backend"]
         ports:
         - containerPort: 8000

@@ -14,4 +14,4 @@ data:
   MESH_WEBRTC_ENABLED: "false"
   MESH_TEMP_DIR: "/tmp/mesh"
   MESH_DIR: "/opt/mesh"
-  MESH_PROTOCOL: "wss"
+  MESH_PROTOCOL: "ws"

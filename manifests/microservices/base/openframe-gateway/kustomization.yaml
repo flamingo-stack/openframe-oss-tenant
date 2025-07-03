@@ -10,5 +10,5 @@ resources:
 
 images:
 - name: openframe-gateway
-  newName: ghcr.io/flamingo-cx/openframe-gateway
+  newName: ghcr.io/flamingo-cx/openframe/openframe-gateway
   newTag: latest
