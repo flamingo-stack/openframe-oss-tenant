@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: openframe-external-api
+    name: external-api
 
 # OpenAPI/Swagger Configuration
 springdoc:
