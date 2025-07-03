@@ -94,6 +94,7 @@ spec:
                       "database.user": "'"${MYSQL_USER}"'",
                       "database.password": "'"${MYSQL_PASSWORD}"'",
                       "database.server.name": "'"${MYSQL_DATABASE}"'",
+                      "database.server.id": "1",
                       "database.include.list": "'"${MYSQL_DATABASE}"'",
                       "topic.prefix": "fleet_mysql",
                       "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities",
