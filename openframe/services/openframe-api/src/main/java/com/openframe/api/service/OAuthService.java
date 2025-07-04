@@ -200,7 +200,7 @@ public class OAuthService {
 
         return TokenResponse.builder()
                 .accessToken(jwtService.generateToken(claims))
-                .refreshToken(generateRefreshToken(clientId, "password"))
+                .refreshToken(generateRefreshToken(clientId, "client_credentials"))
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpirationSeconds)
                 .build();
