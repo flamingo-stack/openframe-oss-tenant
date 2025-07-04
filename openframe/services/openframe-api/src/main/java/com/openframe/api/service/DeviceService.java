@@ -9,26 +9,23 @@ import com.openframe.data.repository.mongo.MachineTagRepository;
 import com.openframe.core.model.Tag;
 import com.openframe.core.model.MachineTag;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import com.openframe.core.model.device.filter.MachineQueryFilter;
-
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@Validated
 public class DeviceService {
     
     private static final String SORT_FIELD = "machineId";
-    private static final int DEFAULT_PAGE = 1;
-    private static final int DEFAULT_PAGE_SIZE = 20;
-    private static final int MAX_PAGE_SIZE = 100;
-    
     private final MachineRepository machineRepository;
     private final TagRepository tagRepository;
     private final MachineTagRepository machineTagRepository;
@@ -39,27 +36,23 @@ public class DeviceService {
         this.machineTagRepository = machineTagRepository;
     }
 
-    public Optional<Machine> findByMachineId(String machineId) {
+    public Optional<Machine> findByMachineId(@NotBlank String machineId) {
         log.debug("Finding machine by ID: {}", machineId);
-        validateMachineId(machineId);
         Optional<Machine> result = machineRepository.findByMachineId(machineId);
         log.debug("Found machine: {}", result.isPresent());
         return result;
     }
 
-    public List<Machine> findMachinesWithPagination(Query query, PageRequest pageRequest) {
+    public List<Machine> findMachinesWithPagination(@NotNull Query query, @NotNull PageRequest pageRequest) {
         log.debug("Finding machines with pagination - page: {}, size: {}", 
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
-        validateQuery(query);
-        validatePageRequest(pageRequest);
         List<Machine> machines = machineRepository.findMachinesWithPagination(query, pageRequest);
         log.debug("Found {} machines", machines.size());
         return machines;
     }
 
-    public long countMachines(Query query) {
+    public long countMachines(@NotNull Query query) {
         log.debug("Counting machines with query");
-        validateQuery(query);
         long count = machineRepository.countMachines(query);
         log.debug("Machine count: {}", count);
         return count;
@@ -107,68 +100,5 @@ public class DeviceService {
         return queryFilter;
     }
 
-    public PageRequest createPageRequest(int page, int pageSize) {
-        log.debug("Creating page request - page: {}, pageSize: {}", page, pageSize);
-        validatePageAndPageSize(page, pageSize);
-        
-        int normalizedPage = Math.max(DEFAULT_PAGE, page);
-        int normalizedPageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, pageSize));
-        PageRequest result = PageRequest.of(normalizedPage - 1, normalizedPageSize, Sort.by(SORT_FIELD).ascending());
-        log.debug("Created page request: {}", result);
-        return result;
-    }
 
-    public PageRequest createPageRequestFromInput(PaginationInput pagination) {
-        if (pagination == null) {
-            return createPageRequest(DEFAULT_PAGE, DEFAULT_PAGE_SIZE);
-        }
-        return createPageRequest(pagination.getPage(), pagination.getPageSize());
-    }
-
-    public PaginationInput normalizePagination(PaginationInput pagination) {
-        if (pagination == null) {
-            return PaginationInput.builder()
-                    .page(DEFAULT_PAGE)
-                    .pageSize(DEFAULT_PAGE_SIZE)
-                    .build();
-        }
-        
-        int page = Math.max(DEFAULT_PAGE, pagination.getPage() != null ? pagination.getPage() : DEFAULT_PAGE);
-        int pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, pagination.getPageSize() != null ? pagination.getPageSize() : DEFAULT_PAGE_SIZE));
-        
-        return PaginationInput.builder()
-                .page(page)
-                .pageSize(pageSize)
-                .build();
-    }
-
-    private void validateMachineId(String machineId) {
-        if (!StringUtils.hasText(machineId)) {
-            throw new IllegalArgumentException("Machine ID cannot be null or empty");
-        }
-    }
-
-    private void validateQuery(Query query) {
-        if (query == null) {
-            throw new IllegalArgumentException("Query cannot be null");
-        }
-    }
-
-    private void validatePageRequest(PageRequest pageRequest) {
-        if (pageRequest == null) {
-            throw new IllegalArgumentException("PageRequest cannot be null");
-        }
-    }
-
-    private void validatePageAndPageSize(int page, int pageSize) {
-        if (page < 1) {
-            throw new IllegalArgumentException("Page must be greater than 0");
-        }
-        if (pageSize < 1) {
-            throw new IllegalArgumentException("Page size must be greater than 0");
-        }
-        if (pageSize > MAX_PAGE_SIZE) {
-            throw new IllegalArgumentException("Page size cannot exceed " + MAX_PAGE_SIZE);
-        }
-    }
 } 

@@ -1,23 +1,34 @@
 package com.openframe.api.datafetcher;
 
 import com.netflix.graphql.dgs.*;
-import com.openframe.core.model.*;
-import com.openframe.api.dto.device.*;
+import com.openframe.core.model.Machine;
+import com.openframe.core.model.Tag;
+import com.openframe.api.dto.device.DeviceConnection;
+import com.openframe.api.dto.device.DeviceEdge;
+import com.openframe.api.dto.device.DeviceFilterInput;
+import com.openframe.api.dto.device.DeviceFilters;
+import com.openframe.api.dto.device.PageInfo;
+import com.openframe.api.dto.device.PaginationInput;
 import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
+import com.openframe.api.util.PaginationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.dataloader.DataLoader;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
+
+import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @DgsComponent
 @Slf4j
+@Validated
 public class DeviceDataFetcher {
 
+    private static final String SORT_FIELD = "machineId";
     private final DeviceService deviceService;
     private final DeviceFilterService deviceFilterService;
 
@@ -42,19 +53,18 @@ public class DeviceDataFetcher {
         
         log.debug("Fetching devices with filter: {}, pagination: {}, search: {}", filter, pagination, search);
 
-        PaginationInput normalizedPagination = deviceService.normalizePagination(pagination);
+        PaginationInput normalizedPagination = PaginationUtils.normalizePagination(pagination);
         Query query = deviceService.buildDeviceQuery(filter, search);
         long totalCount = deviceService.countMachines(query);
-        PageRequest pageRequest = deviceService.createPageRequestFromInput(normalizedPagination);
+        PageRequest pageRequest = PaginationUtils.createPageRequestFromInput(normalizedPagination, SORT_FIELD);
         List<Machine> machines = deviceService.findMachinesWithPagination(query, pageRequest);
 
         return buildDeviceConnection(machines, normalizedPagination, totalCount);
     }
 
     @DgsQuery
-    public Machine device(@InputArgument String machineId) {
+    public Machine device(@InputArgument @NotBlank String machineId) {
         log.debug("Fetching device with ID: {}", machineId);
-        validateMachineId(machineId);
         Optional<Machine> machineOpt = deviceService.findByMachineId(machineId);
         return machineOpt.orElse(null);
     }
@@ -85,12 +95,6 @@ public class DeviceDataFetcher {
                 .pageInfo(pageInfo)
                 .filteredCount(edges.size())
                 .build();
-    }
-
-    private void validateMachineId(String machineId) {
-        if (!StringUtils.hasText(machineId)) {
-            throw new IllegalArgumentException("Machine ID is required");
-        }
     }
 }
 
