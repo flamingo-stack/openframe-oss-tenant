@@ -2,9 +2,9 @@ package com.openframe.management.service;
 
 import com.openframe.data.model.mongo.ApiKeyStats;
 import com.openframe.data.repository.mongo.ApiKeyStatsMongoRepository;
+import com.openframe.data.repository.redis.ApiKeyStatsSyncRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,14 +16,14 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ApiKeyStatsSyncService {
 
-    private final StringRedisTemplate redisTemplate;
+    private final ApiKeyStatsSyncRepository redisRepository;
     private final ApiKeyStatsMongoRepository mongoRepository;
 
     public void syncStatsToMongo() {
         try {
             log.info("Starting sync from Redis to MongoDB");
 
-            Set<String> statsKeys = redisTemplate.keys("stats:*");
+            Set<String> statsKeys = redisRepository.getAllStatsKeys();
             if (statsKeys.isEmpty()) {
                 log.info("No stats found in Redis");
                 return;
@@ -34,7 +34,7 @@ public class ApiKeyStatsSyncService {
             for (String redisKey : statsKeys) {
                 try {
                     syncSingleKey(redisKey);
-                    redisTemplate.delete(redisKey);
+                    redisRepository.deleteStatsKey(redisKey);
                 } catch (Exception e) {
                     log.error("Failed to sync key: {}", redisKey, e);
                 }
@@ -47,17 +47,17 @@ public class ApiKeyStatsSyncService {
     }
 
     private void syncSingleKey(String redisKey) {
-        String keyId = redisKey.replace("stats:", "");
+        String keyId = redisRepository.extractKeyId(redisKey);
 
-        Map<Object, Object> redisData = redisTemplate.opsForHash().entries(redisKey);
+        Map<Object, Object> redisData = redisRepository.getStatsData(redisKey);
         if (redisData.isEmpty()) {
             return;
         }
 
-        Long total = getLong(redisData, "total");
-        Long success = getLong(redisData, "success");
-        Long failed = getLong(redisData, "failed");
-        String lastUsedStr = getString(redisData, "lastUsed");
+        Long total = redisRepository.getLong(redisData, "total");
+        Long success = redisRepository.getLong(redisData, "success");
+        Long failed = redisRepository.getLong(redisData, "failed");
+        String lastUsedStr = redisRepository.getString(redisData, "lastUsed");
 
         ApiKeyStats mongo = mongoRepository.findById(keyId)
                 .orElse(new ApiKeyStats());
@@ -83,20 +83,7 @@ public class ApiKeyStatsSyncService {
                 keyId, total, success, failed);
     }
 
-    private Long getLong(Map<Object, Object> data, String key) {
-        Object value = data.get(key);
-        if (value == null) return 0L;
-        try {
-            return Long.parseLong(value.toString());
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
-    }
 
-    private String getString(Map<Object, Object> data, String key) {
-        Object value = data.get(key);
-        return value != null ? value.toString() : null;
-    }
 
     private Long add(Long a, Long b) {
         return (a == null ? 0 : a) + (b == null ? 0 : b);

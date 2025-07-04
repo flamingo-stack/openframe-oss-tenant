@@ -1,35 +1,32 @@
 package com.openframe.gateway.service;
 
 import com.openframe.data.model.enums.RateLimitWindow;
+import com.openframe.data.repository.redis.ReactiveRateLimitRepository;
+import com.openframe.data.repository.redis.ReactiveRateLimitRepository.RateLimitResult;
 import com.openframe.gateway.config.RateLimitProperties;
 import com.openframe.gateway.constants.RateLimitConstants;
 import com.openframe.gateway.model.RateLimitStatus;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Objects;
 
 import static java.time.LocalDateTime.now;
 import static java.time.format.DateTimeFormatter.ofPattern;
 
 /**
- * Service for rate limiting API requests using Redis atomic operations
+ * Service for rate limiting API requests using Redis atomic operations via repository
  * <p>
  * Features:
  * - Multiple time windows (minute, hour, day)
  * - Configurable limits per window
  * - Fail-open strategy for Redis errors
  * - Detailed rate limit status reporting
- * - Atomic Redis hash increments for thread safety
- * - Fully reactive Redis operations using ReactiveStringRedisTemplate
+ * - Atomic Redis operations through ReactiveRateLimitRepository
+ * - Fully reactive Redis operations
  */
 @Slf4j
 @Service
@@ -37,7 +34,7 @@ import static java.time.format.DateTimeFormatter.ofPattern;
 public class RateLimitService {
 
     private final RateLimitProperties rateLimitProperties;
-    private final ReactiveStringRedisTemplate reactiveRedisTemplate;
+    private final ReactiveRateLimitRepository rateLimitRepository;
 
     @Value("${openframe.rate-limit.redis-ttl}")
     private Long redisTtl;
@@ -60,19 +57,24 @@ public class RateLimitService {
         Mono<RateLimitResult> hourResult = checkAndIncrement(keyId, RateLimitWindow.HOUR, rateLimitProperties.getDefaultRequestsPerHour());
         Mono<RateLimitResult> dayResult = checkAndIncrement(keyId, RateLimitWindow.DAY, rateLimitProperties.getDefaultRequestsPerDay());
 
-        return Mono.zip(minuteResult, hourResult, dayResult).map(tuple -> {
-            RateLimitResult minute = tuple.getT1();
-            RateLimitResult hour = tuple.getT2();
-            RateLimitResult day = tuple.getT3();
+        return Mono.zip(minuteResult, hourResult, dayResult)
+                .map(tuple -> {
+                    RateLimitResult minute = tuple.getT1();
+                    RateLimitResult hour = tuple.getT2();
+                    RateLimitResult day = tuple.getT3();
 
-            boolean allowed = minute.isAllowed() && hour.isAllowed() && day.isAllowed();
+                    boolean allowed = minute.isAllowed() && hour.isAllowed() && day.isAllowed();
 
-            if (!allowed) {
-                log.warn("Rate limit exceeded for keyId: {} - minute:{}/{}, hour:{}/{}, day:{}/{}", keyId, minute.getCurrentCount(), minute.getLimit(), hour.getCurrentCount(), hour.getLimit(), day.getCurrentCount(), day.getLimit());
-            }
+                    if (!allowed) {
+                        log.warn("Rate limit exceeded for keyId: {} - minute:{}/{}, hour:{}/{}, day:{}/{}", 
+                                keyId, minute.getCurrentCount(), minute.getLimit(), 
+                                hour.getCurrentCount(), hour.getLimit(), 
+                                day.getCurrentCount(), day.getLimit());
+                    }
 
-            return allowed;
-        }).onErrorReturn(rateLimitProperties.isFailOpen());
+                    return allowed;
+                })
+                .onErrorReturn(rateLimitProperties.isFailOpen());
     }
 
     /**
@@ -85,101 +87,84 @@ public class RateLimitService {
         Mono<RateLimitResult> hourResult = getStatus(keyId, RateLimitWindow.HOUR, rateLimitProperties.getDefaultRequestsPerHour());
         Mono<RateLimitResult> dayResult = getStatus(keyId, RateLimitWindow.DAY, rateLimitProperties.getDefaultRequestsPerDay());
 
-        return Mono.zip(minuteResult, hourResult, dayResult).map(tuple -> {
-            RateLimitResult minute = tuple.getT1();
-            RateLimitResult hour = tuple.getT2();
-            RateLimitResult day = tuple.getT3();
+        return Mono.zip(minuteResult, hourResult, dayResult)
+                .map(tuple -> {
+                    RateLimitResult minute = tuple.getT1();
+                    RateLimitResult hour = tuple.getT2();
+                    RateLimitResult day = tuple.getT3();
 
-            return RateLimitStatus.builder().keyId(keyId).minuteRequests((int) minute.getCurrentCount()).minuteLimit(rateLimitProperties.getDefaultRequestsPerMinute()).hourRequests((int) hour.getCurrentCount()).hourLimit(rateLimitProperties.getDefaultRequestsPerHour()).dayRequests((int) day.getCurrentCount()).dayLimit(rateLimitProperties.getDefaultRequestsPerDay()).isMinuteExceeded(!minute.isAllowed()).isHourExceeded(!hour.isAllowed()).isDayExceeded(!day.isAllowed()).build();
-        }).onErrorReturn(createEmptyStatus(keyId));
+                    return RateLimitStatus.builder()
+                            .keyId(keyId)
+                            .minuteRequests((int) minute.getCurrentCount())
+                            .minuteLimit(rateLimitProperties.getDefaultRequestsPerMinute())
+                            .hourRequests((int) hour.getCurrentCount())
+                            .hourLimit(rateLimitProperties.getDefaultRequestsPerHour())
+                            .dayRequests((int) day.getCurrentCount())
+                            .dayLimit(rateLimitProperties.getDefaultRequestsPerDay())
+                            .isMinuteExceeded(!minute.isAllowed())
+                            .isHourExceeded(!hour.isAllowed())
+                            .isDayExceeded(!day.isAllowed())
+                            .build();
+                })
+                .onErrorReturn(createEmptyStatus(keyId));
     }
 
     /**
-     * Check rate limit and increment counter atomically
+     * Check rate limit and increment counter atomically using repository
      */
     private Mono<RateLimitResult> checkAndIncrement(String keyId, RateLimitWindow window, long limit) {
         String timestamp = now().format(ofPattern(window.getTimestampFormat()));
-        String redisKey = buildRedisKey(keyId, window.name(), timestamp);
-        LocalDateTime requestTime = now();
+        Duration ttl = Duration.ofSeconds(Math.max(redisTtl, window.getSeconds() * 2));
 
-        return reactiveRedisTemplate.opsForHash().increment(redisKey, "count", 1).flatMap(requestCount -> {
-            Mono<Void> setupFirstRequest = Mono.empty();
-
-            if (requestCount == 1) {
-                setupFirstRequest = reactiveRedisTemplate.opsForHash().put(redisKey, "firstRequest", requestTime.toString()).then();
-            }
-
-            return setupFirstRequest.then(reactiveRedisTemplate.opsForHash().put(redisKey, "lastRequest", requestTime.toString()).then()).then(setTtl(redisKey, window)).then(getTimestamp(redisKey, "firstRequest").defaultIfEmpty(requestTime).map(windowStart -> buildRateLimitResult(requestCount, limit, windowStart, requestTime)));
-        }).onErrorResume(e -> {
-            log.error("Rate limit check failed for keyId: {}, window: {}", keyId, window, e);
-            return Mono.just(createFailureResult(limit));
-        });
+        return rateLimitRepository.checkAndIncrement(keyId, window.name(), timestamp, limit, ttl)
+                .onErrorResume(e -> {
+                    log.error("Rate limit check failed for keyId: {}, window: {}", keyId, window, e);
+                    return Mono.just(createFailureResult(limit));
+                });
     }
 
     /**
-     * Get current rate limit status without incrementing counter
+     * Get current rate limit status without incrementing counter using repository
      */
     private Mono<RateLimitResult> getStatus(String keyId, RateLimitWindow window, long limit) {
         String timestamp = now().format(ofPattern(window.getTimestampFormat()));
-        String redisKey = buildRedisKey(keyId, window.name(), timestamp);
 
-        Mono<Long> countMono = reactiveRedisTemplate.opsForHash().get(redisKey, "count")
-            .map(value -> value != null ? Long.parseLong(value.toString()) : 0L)
-            .defaultIfEmpty(0L);
-
-        Mono<LocalDateTime> windowStartMono = getTimestamp(redisKey, "firstRequest")
-            .defaultIfEmpty(now());
-        Mono<LocalDateTime> windowEndMono = getTimestamp(redisKey, "lastRequest")
-            .defaultIfEmpty(now());
-
-        return countMono.flatMap(currentCount -> Mono.zip(windowStartMono, windowEndMono)
-            .map(tuple -> buildRateLimitResult(currentCount, limit, tuple.getT1(), tuple.getT2()))).onErrorResume(e -> {
-            log.error("Failed to get rate limit status for keyId: {}, window: {}", keyId, window, e);
-            return Mono.just(createFailureResult(limit));
-        });
+        return rateLimitRepository.getStatus(keyId, window.name(), timestamp, limit)
+                .onErrorResume(e -> {
+                    log.error("Failed to get rate limit status for keyId: {}, window: {}", keyId, window, e);
+                    return Mono.just(createFailureResult(limit));
+                });
     }
 
-    private String buildRedisKey(String keyId, String window, String timestamp) {
-        return String.format("rate_limit:%s:%s:%s", keyId, window, timestamp);
-    }
-
-    private Mono<Boolean> setTtl(String redisKey, RateLimitWindow window) {
-        long ttlSeconds = Math.max(redisTtl, window.getSeconds() * 2);
-        return reactiveRedisTemplate.expire(redisKey, Duration.ofSeconds(ttlSeconds));
-    }
-
-    private Mono<LocalDateTime> getTimestamp(String redisKey, String field) {
-        return reactiveRedisTemplate.opsForHash().get(redisKey, field).map(timestamp -> {
-            try {
-                return LocalDateTime.parse(timestamp.toString());
-            } catch (Exception e) {
-                log.warn("Failed to parse timestamp: {}", timestamp, e);
-                return null;
-            }
-        }).filter(Objects::nonNull);
-    }
-
-
-    private RateLimitResult buildRateLimitResult(Long requestCount, long limit, LocalDateTime windowStart, LocalDateTime windowEnd) {
-        return RateLimitResult.builder().allowed(requestCount <= limit).currentCount(requestCount).limit(limit).remaining(Math.max(0, limit - requestCount)).windowStart(windowStart).windowEnd(windowEnd).build();
-    }
-
+    /**
+     * Create failure result for error cases
+     */
     private RateLimitResult createFailureResult(long limit) {
-        return RateLimitResult.builder().allowed(failOpen).currentCount(0L).limit(limit).remaining(failOpen ? limit : 0L).windowStart(null).windowEnd(null).build();
+        return RateLimitResult.builder()
+                .allowed(failOpen)
+                .currentCount(0L)
+                .limit(limit)
+                .remaining(failOpen ? limit : 0L)
+                .windowStart(null)
+                .windowEnd(null)
+                .build();
     }
 
+    /**
+     * Create empty status for error cases
+     */
     private RateLimitStatus createEmptyStatus(String keyId) {
-        return RateLimitStatus.builder().keyId(keyId).minuteRequests(0).minuteLimit(rateLimitProperties.getDefaultRequestsPerMinute()).hourRequests(0).hourLimit(rateLimitProperties.getDefaultRequestsPerHour()).dayRequests(0).dayLimit(rateLimitProperties.getDefaultRequestsPerDay()).isMinuteExceeded(false).isHourExceeded(false).isDayExceeded(false).build();
-    }
-
-    @Getter
-    @Builder
-    public static class RateLimitResult {
-        private final boolean allowed;
-        private final long currentCount;
-        private final long limit;
-        private final long remaining;
-        private final LocalDateTime windowStart;
-        private final LocalDateTime windowEnd;
+        return RateLimitStatus.builder()
+                .keyId(keyId)
+                .minuteRequests(0)
+                .minuteLimit(rateLimitProperties.getDefaultRequestsPerMinute())
+                .hourRequests(0)
+                .hourLimit(rateLimitProperties.getDefaultRequestsPerHour())
+                .dayRequests(0)
+                .dayLimit(rateLimitProperties.getDefaultRequestsPerDay())
+                .isMinuteExceeded(false)
+                .isHourExceeded(false)
+                .isDayExceeded(false)
+                .build();
     }
 } 

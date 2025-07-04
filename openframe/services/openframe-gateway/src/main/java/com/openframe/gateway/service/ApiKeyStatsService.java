@@ -1,14 +1,13 @@
 package com.openframe.gateway.service;
 
+import com.openframe.data.repository.redis.ReactiveApiKeyStatsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 /**
  * Service for handling API key statistics with atomic Redis operations
@@ -18,40 +17,26 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class ApiKeyStatsService {
 
-    private final ReactiveStringRedisTemplate redisTemplate;
+    private final ReactiveApiKeyStatsRepository statsRepository;
 
     @Value("${openframe.api-key-stats.redis-ttl}")
     private Long redisTtl;
 
     /**
-     * Atomically increment successful request counters with a single Redis call
+     * Atomically increment successful request counters
      */
     public void incrementSuccessful(String keyId) {
-        String key = "stats:" + keyId;
-        String now = LocalDateTime.now().toString();
-
-        redisTemplate.opsForHash().increment(key, "total", 1)
-                .then(redisTemplate.opsForHash().increment(key, "success", 1))
-                .then(redisTemplate.opsForHash().put(key, "lastUsed", now))
-                .then(redisTemplate.expire(key, Duration.ofSeconds(redisTtl)))
-                .then()
+        statsRepository.incrementSuccessful(keyId, Duration.ofSeconds(redisTtl))
                 .doOnError(e -> log.error("Failed to increment success for {}", keyId, e))
                 .onErrorResume(e -> Mono.empty())
                 .subscribe();
     }
 
     /**
-     * Atomically increment failed request counters with a single Redis call
+     * Atomically increment failed request counters
      */
     public void incrementFailed(String keyId) {
-        String key = "stats:" + keyId;
-        String now = LocalDateTime.now().toString();
-
-        redisTemplate.opsForHash().increment(key, "total", 1)
-                .then(redisTemplate.opsForHash().increment(key, "failed", 1))
-                .then(redisTemplate.opsForHash().put(key, "lastUsed", now))
-                .then(redisTemplate.expire(key, Duration.ofSeconds(redisTtl)))
-                .then()
+        statsRepository.incrementFailed(keyId, Duration.ofSeconds(redisTtl))
                 .doOnError(e -> log.error("Failed to increment failed for {}", keyId, e))
                 .onErrorResume(e -> Mono.empty())
                 .subscribe();

@@ -16,10 +16,3 @@ springdoc:
     tryItOutEnabled: true
     filter: true
     displayRequestDuration: true
-
-# Management endpoints
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,openapi
