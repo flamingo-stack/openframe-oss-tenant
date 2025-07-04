@@ -24,7 +24,9 @@ public class ApiKeyStatsSyncScheduler {
     }
 
     @Scheduled(fixedDelayString = "${openframe.api-key-stats.sync-interval}")
-    @SchedulerLock(name = "apiKeyStatsSync", lockAtMostFor = "10m", lockAtLeastFor = "1m")
+    @SchedulerLock(name = "apiKeyStatsSync", 
+                   lockAtMostFor = "${openframe.api-key-stats.lock-at-most-for:10m}", 
+                   lockAtLeastFor = "${openframe.api-key-stats.lock-at-least-for:1m}")
     public void syncStatsToMongo() {
         log.info("Starting scheduled Redis to MongoDB sync");
         try {
