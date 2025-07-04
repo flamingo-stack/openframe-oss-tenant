@@ -24,15 +24,22 @@ spec:
         - name: external-api
           image: external-api
           ports:
-            - containerPort: 8090
+            - containerPort: 8092
               name: http
-            - containerPort: 8091
+            - containerPort: 8093
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: SPRING_CONFIG_IMPORT
               value: "optional:configserver:http://openframe-config:8888"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
           livenessProbe:
             httpGet:
               path: /management/v1/health
@@ -49,10 +56,3 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "0.5"
-            limits:
-              memory: "1Gi"
-              cpu: "1"
