@@ -3,11 +3,21 @@ package com.openframe.core.model;
 import java.time.Instant;
 import java.util.List;
 
-import com.openframe.core.model.device.*;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.openframe.core.model.device.ComplianceRequirement;
+import com.openframe.core.model.device.ComplianceState;
+import com.openframe.core.model.device.DeviceStatus;
+import com.openframe.core.model.device.DeviceType;
+import com.openframe.core.model.device.SecurityAlert;
+import com.openframe.core.model.device.SecurityState;
+
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
@@ -23,8 +33,10 @@ public class Machine {
     private String macAddress;
     private String osUuid;
     private String agentVersion;
+    @Indexed
     private DeviceStatus status;
     private Instant lastSeen;
+    @Indexed
     private String organizationId;
 
     private String hostname;
@@ -33,7 +45,9 @@ public class Machine {
     private String manufacturer;
     private String model;
 
+    @Indexed
     private DeviceType type;
+    @Indexed
     private String osType;
     private String osVersion;
     private String osBuild;

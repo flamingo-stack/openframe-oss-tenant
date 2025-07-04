@@ -5,15 +5,14 @@ import OAuthCallback from '../views/auth/OAuthCallback.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
+import DevicesView from '../views/DevicesView.vue'
 import MDMLayout from '../views/mdm/MDMLayout.vue'
 import MDMDashboard from '../views/mdm/Dashboard.vue'
 import MDMDevices from '../views/mdm/Devices.vue'
 import MDMProfiles from '../views/mdm/Profiles.vue'
 import MDMPolicies from '../views/mdm/Policies.vue'
 import MDMQueries from '../views/mdm/Queries.vue'
-import MDMSettings from '../views/mdm/Settings.vue'
 import Settings from '../views/mdm/Settings.vue'
-import Profiles from '../views/mdm/Profiles.vue'
 import SettingsCategory from '../views/mdm/SettingsCategory.vue'
 import SystemArchitecture from '../views/SystemArchitecture.vue'
 import RMMLayout from '../views/rmm/RMMLayout.vue'
@@ -66,6 +65,16 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Dashboard',
         icon: 'pi pi-home'
+      }
+    },
+    {
+      path: '/devices',
+      name: 'devices',
+      component: DevicesView,
+      meta: { 
+        requiresAuth: true,
+        title: 'Devices',
+        icon: 'pi pi-desktop'
       }
     },
     {

@@ -37,6 +37,7 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
     "@types/node": "^22.13.10",
     "@types/vue": "^1.0.31",
     "@vitejs/plugin-vue": "^4.5.2",
