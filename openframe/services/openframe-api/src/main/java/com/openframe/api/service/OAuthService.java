@@ -355,8 +355,8 @@ public class OAuthService {
         userRepository.save(user);
 
         // Generate tokens
-        String accessToken = generateAccessToken(user, "client_credentials");
-        String refreshToken = generateRefreshToken(user.getId(), "client_credentials");
+        String accessToken = generateAccessToken(user, "password");
+        String refreshToken = generateRefreshToken(user.getId(), "password");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
