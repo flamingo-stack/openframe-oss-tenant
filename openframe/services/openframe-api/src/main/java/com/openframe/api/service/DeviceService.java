@@ -1,13 +1,13 @@
 package com.openframe.api.service;
 
 import com.openframe.core.model.Machine;
-import com.openframe.core.model.Tag;
-import com.openframe.core.model.MachineTag;
 import com.openframe.api.dto.device.DeviceFilterInput;
 import com.openframe.api.dto.device.PaginationInput;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.TagRepository;
 import com.openframe.data.repository.mongo.MachineTagRepository;
+import com.openframe.core.model.Tag;
+import com.openframe.core.model.MachineTag;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import com.openframe.core.model.device.filter.MachineQueryFilter;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,10 +33,7 @@ public class DeviceService {
     private final TagRepository tagRepository;
     private final MachineTagRepository machineTagRepository;
 
-    public DeviceService(
-            MachineRepository machineRepository,
-            TagRepository tagRepository,
-            MachineTagRepository machineTagRepository) {
+    public DeviceService(MachineRepository machineRepository, TagRepository tagRepository, MachineTagRepository machineTagRepository) {
         this.machineRepository = machineRepository;
         this.tagRepository = tagRepository;
         this.machineTagRepository = machineTagRepository;
@@ -68,11 +66,45 @@ public class DeviceService {
     }
 
     public Query buildDeviceQuery(DeviceFilterInput filter, String search) {
-        log.debug("Building device query with filter: {}, search: {}", filter, search);
-        Query query = new Query();
-        applyDeviceFilters(query, filter);
-        applySearchCriteria(query, search);
+        MachineQueryFilter queryFilter = mapToMachineQueryFilter(filter);
+        Query query = machineRepository.buildDeviceQuery(queryFilter, search);
+        if (filter != null && filter.getTagNames() != null && !filter.getTagNames().isEmpty()) {
+            List<String> machineIds = resolveTagNamesToMachineIds(filter.getTagNames());
+            if (!machineIds.isEmpty()) {
+                query.addCriteria(Criteria.where(SORT_FIELD).in(machineIds));
+            } else {
+                query.addCriteria(Criteria.where(SORT_FIELD).exists(false));
+            }
+        }
         return query;
+    }
+
+    private List<String> resolveTagNamesToMachineIds(List<String> tagNames) {
+        List<Tag> tags = tagRepository.findByNameIn(tagNames);
+        List<String> tagIds = tags.stream()
+                .map(Tag::getId)
+                .collect(Collectors.toList());
+        if (tagIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<MachineTag> machineTags = machineTagRepository.findByTagIdIn(tagIds);
+        return machineTags.stream()
+                .map(MachineTag::getMachineId)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private MachineQueryFilter mapToMachineQueryFilter(DeviceFilterInput filter) {
+        if (filter == null) {
+            return new MachineQueryFilter();
+        }
+        MachineQueryFilter queryFilter = new MachineQueryFilter();
+        queryFilter.setStatuses(filter.getStatuses() != null ? filter.getStatuses().stream().map(Enum::name).collect(Collectors.toList()) : null);
+        queryFilter.setDeviceTypes(filter.getDeviceTypes() != null ? filter.getDeviceTypes().stream().map(Enum::name).collect(Collectors.toList()) : null);
+        queryFilter.setOsTypes(filter.getOsTypes());
+        queryFilter.setOrganizationIds(filter.getOrganizationIds());
+        queryFilter.setTagNames(filter.getTagNames());
+        return queryFilter;
     }
 
     public PageRequest createPageRequest(int page, int pageSize) {
@@ -108,67 +140,6 @@ public class DeviceService {
                 .page(page)
                 .pageSize(pageSize)
                 .build();
-    }
-
-    private List<String> resolveTagNamesToMachineIds(List<String> tagNames) {
-        List<Tag> tags = tagRepository.findByNameIn(tagNames);
-        List<String> tagIds = tags.stream()
-                .map(Tag::getId)
-                .collect(Collectors.toList());
-        if (tagIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<MachineTag> machineTags = machineTagRepository.findByTagIdIn(tagIds);
-        return machineTags.stream()
-                .map(MachineTag::getMachineId)
-                .distinct()
-                .collect(Collectors.toList());
-    }
-
-    private void applySearchCriteria(Query query, String search) {
-        if (StringUtils.hasText(search)) {
-            Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("hostname").regex(search, "i"),
-                    Criteria.where("displayName").regex(search, "i"),
-                    Criteria.where("ip").regex(search, "i"),
-                    Criteria.where("serialNumber").regex(search, "i"),
-                    Criteria.where("manufacturer").regex(search, "i"),
-                    Criteria.where("model").regex(search, "i")
-            );
-            query.addCriteria(searchCriteria);
-        }
-    }
-
-    private void applyDeviceFilters(Query query, DeviceFilterInput filter) {
-        if (filter == null) {
-            return;
-        }
-        if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
-            List<String> statusStrings = filter.getStatuses().stream()
-                    .map(status -> status.name())
-                    .collect(Collectors.toList());
-            query.addCriteria(Criteria.where("status").in(statusStrings));
-        }
-        if (filter.getDeviceTypes() != null && !filter.getDeviceTypes().isEmpty()) {
-            List<String> typeStrings = filter.getDeviceTypes().stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList());
-            query.addCriteria(Criteria.where("type").in(typeStrings));
-        }
-        if (filter.getOsTypes() != null && !filter.getOsTypes().isEmpty()) {
-            query.addCriteria(Criteria.where("osType").in(filter.getOsTypes()));
-        }
-        if (filter.getOrganizationIds() != null && !filter.getOrganizationIds().isEmpty()) {
-            query.addCriteria(Criteria.where("organizationId").in(filter.getOrganizationIds()));
-        }
-        if (filter.getTagNames() != null && !filter.getTagNames().isEmpty()) {
-            List<String> machineIds = resolveTagNamesToMachineIds(filter.getTagNames());
-            if (!machineIds.isEmpty()) {
-                query.addCriteria(Criteria.where(SORT_FIELD).in(machineIds));
-            } else {
-                query.addCriteria(Criteria.where(SORT_FIELD).exists(false));
-            }
-        }
     }
 
     private void validateMachineId(String machineId) {
