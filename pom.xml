@@ -58,6 +58,7 @@
         <module>openframe/services/openframe-stream</module>
         <module>openframe/services/openframe-management</module>
         <module>openframe/services/openframe-gateway</module>
+        <module>openframe/services/external-api</module>
     </modules>
 
     <dependencies>

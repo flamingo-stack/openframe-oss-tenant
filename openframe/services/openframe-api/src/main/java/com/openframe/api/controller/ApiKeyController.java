@@ -5,7 +5,6 @@ import com.openframe.api.dto.CreateApiKeyRequest;
 import com.openframe.api.dto.CreateApiKeyResponse;
 import com.openframe.api.dto.UpdateApiKeyRequest;
 import com.openframe.api.service.ApiKeyService;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import static com.openframe.core.constants.HttpHeaders.X_USER_ID;
 
 @Slf4j
 @RestController
@@ -27,7 +28,7 @@ public class ApiKeyController {
     @ResponseStatus(HttpStatus.CREATED)
     public CreateApiKeyResponse createApiKey(
             @Valid @RequestBody CreateApiKeyRequest request,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader(X_USER_ID) String userId) {
         
         log.info("Creating API key '{}' for user: {}", request.name(), userId);
         
@@ -35,7 +36,7 @@ public class ApiKeyController {
     }
     
     @GetMapping
-    public List<ApiKeyResponse> getApiKeys(@RequestHeader("X-User-Id") String userId) {
+    public List<ApiKeyResponse> getApiKeys(@RequestHeader(X_USER_ID) String userId) {
         
         log.debug("Retrieving API keys for user: {}", userId);
         
@@ -45,7 +46,7 @@ public class ApiKeyController {
     @GetMapping("/{keyId}")
     public ResponseEntity<ApiKeyResponse> getApiKey(
             @PathVariable String keyId,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader(X_USER_ID) String userId) {
         
         ApiKeyResponse apiKey = apiKeyService.getApiKeyById(keyId, userId);
         return ResponseEntity.ok(apiKey);
@@ -55,7 +56,7 @@ public class ApiKeyController {
     public ApiKeyResponse updateApiKey(
             @PathVariable String keyId,
             @Valid @RequestBody UpdateApiKeyRequest request,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader(X_USER_ID) String userId) {
         
         log.info("Updating API key {} for user: {}", keyId, userId);
         
@@ -85,7 +86,7 @@ public class ApiKeyController {
     public void toggleApiKey(
             @PathVariable String keyId,
             @RequestParam boolean enabled,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader(X_USER_ID) String userId) {
         
         log.info("Toggling API key {} to {} for user: {}", keyId, enabled, userId);
         
@@ -99,7 +100,7 @@ public class ApiKeyController {
     @PostMapping("/{keyId}/regenerate")
     public CreateApiKeyResponse regenerateApiKey(
             @PathVariable String keyId,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader(X_USER_ID) String userId) {
         
         log.info("Regenerating API key {} for user: {}", keyId, userId);
         

@@ -8,8 +8,10 @@ export interface ApiKey {
   createdAt: string;
   updatedAt: string;
   expiresAt?: string;
-  lastUsedAt?: string;
-  usageCount: number;
+  lastUsed?: string;
+  totalRequests?: number;
+  successfulRequests?: number;
+  failedRequests?: number;
 }
 
 export interface CreateApiKeyRequest {
