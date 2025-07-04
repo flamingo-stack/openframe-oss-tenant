@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "api_key_stats")
-public class ApiKeyStatsMongo {
+public class ApiKeyStats {
 
     @Id
     private String id;

@@ -6,7 +6,7 @@ import com.openframe.api.dto.CreateApiKeyResponse;
 import com.openframe.api.dto.UpdateApiKeyRequest;
 import com.openframe.core.exception.ApiKeyException;
 import com.openframe.core.model.ApiKey;
-import com.openframe.data.model.mongo.ApiKeyStatsMongo;
+import com.openframe.data.model.mongo.ApiKeyStats;
 import com.openframe.data.repository.mongo.ApiKeyRepository;
 import com.openframe.data.repository.mongo.ApiKeyStatsMongoRepository;
 import lombok.RequiredArgsConstructor;
@@ -138,7 +138,7 @@ public class ApiKeyService {
 
     private ApiKeyResponse mapToResponse(ApiKey apiKey) {
         log.debug("Getting stats for API key: {}", apiKey.getKeyId());
-        ApiKeyStatsMongo totalStats = apiKeyStatsMongoRepository.findById(apiKey.getKeyId()).orElse(null);
+        ApiKeyStats totalStats = apiKeyStatsMongoRepository.findById(apiKey.getKeyId()).orElse(null);
 
         if (totalStats != null) {
             log.debug("Found stats for {}: total={}, successful={}, failed={}",

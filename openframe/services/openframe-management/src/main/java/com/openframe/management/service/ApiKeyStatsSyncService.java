@@ -1,6 +1,6 @@
 package com.openframe.management.service;
 
-import com.openframe.data.model.mongo.ApiKeyStatsMongo;
+import com.openframe.data.model.mongo.ApiKeyStats;
 import com.openframe.data.repository.mongo.ApiKeyStatsMongoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +59,8 @@ public class ApiKeyStatsSyncService {
         Long failed = getLong(redisData, "failed");
         String lastUsedStr = getString(redisData, "lastUsed");
 
-        ApiKeyStatsMongo mongo = mongoRepository.findById(keyId)
-                .orElse(new ApiKeyStatsMongo());
+        ApiKeyStats mongo = mongoRepository.findById(keyId)
+                .orElse(new ApiKeyStats());
 
         mongo.setId(keyId);
         mongo.setTotalRequests(add(mongo.getTotalRequests(), total));
