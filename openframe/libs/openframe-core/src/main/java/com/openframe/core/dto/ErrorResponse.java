@@ -1,4 +1,4 @@
-package com.openframe.client.exception;
+package com.openframe.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

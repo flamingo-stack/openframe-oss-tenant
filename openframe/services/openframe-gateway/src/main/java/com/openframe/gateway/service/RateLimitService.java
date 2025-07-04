@@ -132,10 +132,8 @@ public class RateLimitService {
         Mono<LocalDateTime> windowEndMono = getTimestamp(redisKey, "lastRequest")
             .defaultIfEmpty(now());
 
-        return countMono.flatMap(currentCount -> {
-            return Mono.zip(windowStartMono, windowEndMono)
-                .map(tuple -> buildRateLimitResult(currentCount, limit, tuple.getT1(), tuple.getT2()));
-        }).onErrorResume(e -> {
+        return countMono.flatMap(currentCount -> Mono.zip(windowStartMono, windowEndMono)
+            .map(tuple -> buildRateLimitResult(currentCount, limit, tuple.getT1(), tuple.getT2()))).onErrorResume(e -> {
             log.error("Failed to get rate limit status for keyId: {}, window: {}", keyId, window, e);
             return Mono.just(createFailureResult(limit));
         });

@@ -1,7 +1,10 @@
 package com.openframe.gateway.filter;
 
 import static com.openframe.core.constants.HttpHeaders.*;
+import static org.springframework.http.HttpStatus.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.core.dto.ErrorResponse;
 import com.openframe.core.model.ApiKey;
 import com.openframe.gateway.config.RateLimitProperties;
 import com.openframe.gateway.model.RateLimitStatus;
@@ -41,6 +44,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     private final ApiKeyValidationService apiKeyValidationService;
     private final RateLimitService rateLimitService;
     private final RateLimitProperties rateLimitProperties;
+    private final ObjectMapper objectMapper;
     
     @Override
     public int getOrder() {
@@ -178,41 +182,43 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
         
         return chain.filter(modifiedExchange);
     }
-    
+
     /**
      * Handle unauthorized access
      */
     private Mono<Void> handleUnauthorized(ServerWebExchange exchange, String message) {
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
-        
-        String responseBody = String.format(
-            "{\"error\": \"Unauthorized\", \"message\": \"%s\", \"timestamp\": \"%s\"}", 
-            message, 
-            java.time.Instant.now()
-        );
-        
-        var buffer = exchange.getResponse().bufferFactory().wrap(responseBody.getBytes());
-        return exchange.getResponse().writeWith(Mono.just(buffer));
+        return writeErrorResponse(exchange, UNAUTHORIZED, "UNAUTHORIZED", message);
     }
-    
+
+    /**
+     * Write error response in a reactive way
+     *
+     * Note: We cannot use exceptions like BadCredentialsException here because
+     * Spring WebFlux filters execute at a lower level than controllers,
+     * so @ControllerAdvice/@ExceptionHandler won't catch them.
+     * Instead, we handle errors directly in the filter.
+     */
+    private Mono<Void> writeErrorResponse(ServerWebExchange exchange, HttpStatus status, String code, String message) {
+        exchange.getResponse().setStatusCode(status);
+        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
+
+        return Mono.fromCallable(() -> {
+                    ErrorResponse errorResponse = new ErrorResponse(code, message);
+                    return objectMapper.writeValueAsString(errorResponse);
+                })
+                .onErrorReturn("{\"code\":\"" + code + "\",\"message\":\"" + message + "\"}")
+                .map(responseBody -> exchange.getResponse().bufferFactory().wrap(responseBody.getBytes()))
+                .flatMap(buffer -> exchange.getResponse().writeWith(Mono.just(buffer)));
+    }
+
     /**
      * Handle rate limit exceeded
      */
     private Mono<Void> handleRateLimitExceeded(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
-        exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
         exchange.getResponse().getHeaders().add("Retry-After", "60");
-        
         addRateLimitHeaders(exchange, rateLimitStatus);
         
-        String responseBody = String.format(
-            "{\"error\": \"Rate limit exceeded\", \"message\": \"Too many requests. Please try again later.\", \"timestamp\": \"%s\"}", 
-            java.time.Instant.now()
-        );
-        
-        var buffer = exchange.getResponse().bufferFactory().wrap(responseBody.getBytes());
-        return exchange.getResponse().writeWith(Mono.just(buffer));
+        return writeErrorResponse(exchange, TOO_MANY_REQUESTS, "RATE_LIMIT_EXCEEDED", "Too many requests. Please try again later.");
     }
     
     /**
@@ -251,15 +257,6 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      * Handle internal server error
      */
     private Mono<Void> handleInternalError(ServerWebExchange exchange) {
-        exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
-        
-        String responseBody = String.format(
-            "{\"error\": \"Internal Server Error\", \"message\": \"An unexpected error occurred\", \"timestamp\": \"%s\"}", 
-            java.time.Instant.now()
-        );
-        
-        var buffer = exchange.getResponse().bufferFactory().wrap(responseBody.getBytes());
-        return exchange.getResponse().writeWith(Mono.just(buffer));
+        return writeErrorResponse(exchange, INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "An unexpected error occurred");
     }
 } 

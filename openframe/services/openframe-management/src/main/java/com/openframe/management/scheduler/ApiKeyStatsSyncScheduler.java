@@ -27,7 +27,6 @@ public class ApiKeyStatsSyncScheduler {
     @SchedulerLock(name = "apiKeyStatsSync", lockAtMostFor = "10m", lockAtLeastFor = "1m")
     public void syncStatsToMongo() {
         log.info("Starting scheduled Redis to MongoDB sync");
-
         try {
             syncService.syncStatsToMongo();
             log.info("Completed scheduled Redis to MongoDB sync successfully");
