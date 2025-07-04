@@ -22,9 +22,6 @@ import lombok.Data;
 
 @Data
 @Document(collection = "machines")
-@CompoundIndexes({
-    @CompoundIndex(name = "status_type_org_idx", def = "{'status': 1, 'type': 1, 'organizationId': 1}")
-})
 public class Machine {
     @Id
     private String id;
@@ -66,7 +63,4 @@ public class Machine {
 
     private Instant registeredAt;  // When device was first registered (replaces createdAt)
     private Instant updatedAt;     // Last time device info was updated (replaces lastModifiedAt)
-
-    @Transient
-    private List<Tag> tags;
 }

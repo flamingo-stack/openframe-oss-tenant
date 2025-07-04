@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import com.openframe.core.model.Machine;
 
 @Repository
-public interface MachineRepository extends MongoRepository<Machine, String> {
+public interface MachineRepository extends MongoRepository<Machine, String>, CustomMachineRepository {
     Optional<Machine> findByMachineId(String machineId);
 } 

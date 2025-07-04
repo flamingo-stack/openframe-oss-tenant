@@ -10,12 +10,11 @@ import com.openframe.data.repository.mongo.TagRepository;
 import com.openframe.data.repository.mongo.MachineTagRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,17 +31,14 @@ public class DeviceService {
     private final MachineRepository machineRepository;
     private final TagRepository tagRepository;
     private final MachineTagRepository machineTagRepository;
-    private final MongoTemplate mongoTemplate;
 
     public DeviceService(
             MachineRepository machineRepository,
             TagRepository tagRepository,
-            MachineTagRepository machineTagRepository,
-            MongoTemplate mongoTemplate) {
+            MachineTagRepository machineTagRepository) {
         this.machineRepository = machineRepository;
         this.tagRepository = tagRepository;
         this.machineTagRepository = machineTagRepository;
-        this.mongoTemplate = mongoTemplate;
     }
 
     public Optional<Machine> findByMachineId(String machineId) {
@@ -58,18 +54,15 @@ public class DeviceService {
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
         validateQuery(query);
         validatePageRequest(pageRequest);
-        
-        query.with(pageRequest);
-        List<Machine> machines = mongoTemplate.find(query, Machine.class);
+        List<Machine> machines = machineRepository.findMachinesWithPagination(query, pageRequest);
         log.debug("Found {} machines", machines.size());
-        populateTagsForMachines(machines);
         return machines;
     }
 
     public long countMachines(Query query) {
         log.debug("Counting machines with query");
         validateQuery(query);
-        long count = mongoTemplate.count(query, Machine.class);
+        long count = machineRepository.countMachines(query);
         log.debug("Machine count: {}", count);
         return count;
     }
@@ -117,25 +110,17 @@ public class DeviceService {
                 .build();
     }
 
-    public void populateTags(Machine machine) {
-        log.debug("Populating tags for machine: {}", machine.getMachineId());
-        validateMachine(machine);
-        List<Machine> machines = List.of(machine);
-        populateTagsForMachines(machines);
-        log.debug("Tags populated for machine: {}", machine.getMachineId());
-    }
-
     private List<String> resolveTagNamesToMachineIds(List<String> tagNames) {
         List<Tag> tags = tagRepository.findByNameIn(tagNames);
         List<String> tagIds = tags.stream()
-                .map(tag -> tag.getId())
+                .map(Tag::getId)
                 .collect(Collectors.toList());
         if (tagIds.isEmpty()) {
             return new ArrayList<>();
         }
         List<MachineTag> machineTags = machineTagRepository.findByTagIdIn(tagIds);
         return machineTags.stream()
-                .map(mt -> mt.getMachineId())
+                .map(MachineTag::getMachineId)
                 .distinct()
                 .collect(Collectors.toList());
     }
@@ -154,38 +139,6 @@ public class DeviceService {
         }
     }
 
-    private void populateTagsForMachines(List<Machine> machines) {
-        if (machines.isEmpty()) {
-            return;
-        }
-        List<String> machineIds = machines.stream()
-                .map(machine -> machine.getMachineId())
-                .collect(Collectors.toList());
-        List<MachineTag> allMachineTags = machineTagRepository.findByMachineIdIn(machineIds);
-        Map<String, List<MachineTag>> machineTagsMap = allMachineTags.stream()
-                .collect(Collectors.groupingBy(mt -> mt.getMachineId()));
-        List<String> tagIds = allMachineTags.stream()
-                .map(mt -> mt.getTagId())
-                .distinct()
-                .collect(Collectors.toList());
-        Map<String, Tag> tagsMap;
-        if (!tagIds.isEmpty()) {
-            List<Tag> tags = tagRepository.findAllById(tagIds);
-            tagsMap = tags.stream()
-                    .collect(Collectors.toMap(tag -> tag.getId(), tag -> tag));
-        } else {
-            tagsMap = new HashMap<>();
-        }
-        for (Machine machine : machines) {
-            List<MachineTag> machineTags = machineTagsMap.getOrDefault(machine.getMachineId(), new ArrayList<>());
-            List<Tag> tags = machineTags.stream()
-                    .map(mt -> tagsMap.get(mt.getTagId()))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            machine.setTags(tags);
-        }
-    }
-
     private void applyDeviceFilters(Query query, DeviceFilterInput filter) {
         if (filter == null) {
             return;
@@ -198,7 +151,7 @@ public class DeviceService {
         }
         if (filter.getDeviceTypes() != null && !filter.getDeviceTypes().isEmpty()) {
             List<String> typeStrings = filter.getDeviceTypes().stream()
-                    .map(type -> type.name())
+                    .map(Enum::name)
                     .collect(Collectors.toList());
             query.addCriteria(Criteria.where("type").in(typeStrings));
         }
@@ -220,15 +173,6 @@ public class DeviceService {
 
     private void validateMachineId(String machineId) {
         if (!StringUtils.hasText(machineId)) {
-            throw new IllegalArgumentException("Machine ID cannot be null or empty");
-        }
-    }
-
-    private void validateMachine(Machine machine) {
-        if (machine == null) {
-            throw new IllegalArgumentException("Machine cannot be null");
-        }
-        if (!StringUtils.hasText(machine.getMachineId())) {
             throw new IllegalArgumentException("Machine ID cannot be null or empty");
         }
     }

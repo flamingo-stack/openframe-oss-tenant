@@ -6,6 +6,7 @@ import com.openframe.api.dto.device.*;
 import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
 import lombok.extern.slf4j.Slf4j;
+import org.dataloader.DataLoader;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.StringUtils;
@@ -53,17 +54,16 @@ public class DeviceDataFetcher {
     @DgsQuery
     public Machine device(@InputArgument String machineId) {
         log.debug("Fetching device with ID: {}", machineId);
-        
         validateMachineId(machineId);
-
         Optional<Machine> machineOpt = deviceService.findByMachineId(machineId);
-        if (machineOpt.isPresent()) {
-            Machine machine = machineOpt.get();
-            deviceService.populateTags(machine);
-            return machine;
-        }
+        return machineOpt.orElse(null);
+    }
 
-        return null;
+    @DgsData(parentType = "Machine")
+    public CompletableFuture<List<Tag>> tags(DgsDataFetchingEnvironment dfe) {
+        DataLoader<String, List<Tag>> dataLoader = dfe.getDataLoader("tagDataLoader");
+        Machine machine = dfe.getSource();
+        return dataLoader.load(machine.getId());
     }
 
     private DeviceConnection buildDeviceConnection(List<Machine> machines, PaginationInput pagination, long totalCount) {
