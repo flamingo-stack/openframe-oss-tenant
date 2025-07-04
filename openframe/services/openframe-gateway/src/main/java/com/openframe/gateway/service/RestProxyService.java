@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.SSLException;
 
+import static com.openframe.core.constants.HttpHeaders.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -77,10 +78,10 @@ public class RestProxyService {
 
     private Map<String, String> buildApiRequestHeaders(IntegratedTool tool) {
         Map<String, String> headers = new HashMap<>();
-        headers.put("Accept-Charset", "UTF-8");
-        headers.put("Accept-Language", "en-US,en;q=0.9");
-        headers.put("Content-Type", "application/json");
-        headers.put("Accept", "application/json");
+        headers.put(ACCEPT_CHARSET, "UTF-8");
+        headers.put(ACCEPT_LANGUAGE, "en-US,en;q=0.9");
+        headers.put(CONTENT_TYPE, APPLICATION_JSON);
+        headers.put(ACCEPT, APPLICATION_JSON);
 
         String toolId = tool.getId();
         ToolCredentials credentials = tool.getCredentials();
@@ -94,7 +95,7 @@ public class RestProxyService {
                 break;
             case BEARER_TOKEN:
                 String token = credentials.getApiKey().getKey();
-                headers.put("Authorization", "Bearer " + token);
+                headers.put(AUTHORIZATION, "Bearer " + token);
                 break;
             case NONE:
                 break;
@@ -150,13 +151,13 @@ public class RestProxyService {
 
     private Map<String, String> buildAgentRequestHeaders(ServerHttpRequest request) {
         Map<String, String> headers = new HashMap<>();
-        headers.put("Accept", "application/json");
-        headers.put("Content-Type", "application/json");
+        headers.put(ACCEPT, APPLICATION_JSON);
+        headers.put(CONTENT_TYPE, APPLICATION_JSON);
 
         HttpHeaders requestHeaders = request.getHeaders();
         String toolAuthorisation = requestHeaders.getFirst("Tool-Authorization");
         if (isNotBlank(toolAuthorisation)) {
-            headers.put("Authorization", toolAuthorisation);
+            headers.put(AUTHORIZATION, toolAuthorisation);
         }
         return headers;
     }

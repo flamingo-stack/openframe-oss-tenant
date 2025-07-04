@@ -18,33 +18,24 @@ import java.util.List;
 @Document(collection = "api_keys")
 public class ApiKey {
     @Id
-    private String keyId;              // "ak_1a2b3c4d5e6f7890" - unique identifier
+    private String keyId;
 
-    private String hashedKey;          // BCrypt hash of secret part
-    private String name;               // "Mobile App Production"
-    private String description;        // "API key for mobile application"
+    private String hashedKey;
+    private String name;
+    private String description;
 
     @Indexed
-    private String userId;             // Owner of the key
+    private String userId;
 
-    // Permissions & Scopes
-    private List<String> scopes;       // ["devices:read", "alerts:write", "scripts:execute"]
-    private List<String> roles;        // ["API_USER", "DEVICE_MANAGER"]
-
-    // Rate Limiting
-    private RateLimits rateLimits;
+    // Permissions & Scopes TODO
+    private List<String> scopes;
+    private List<String> roles;
 
     // Metadata
     private boolean enabled = true;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant lastUsed;
-    private Instant expiresAt;         // Optional expiration
-
-    // Usage tracking
-    private long totalRequests = 0;
-    private long successfulRequests = 0;
-    private long failedRequests = 0;
+    private Instant expiresAt;
 
     /**
      * Check if the API key is expired
@@ -58,16 +49,5 @@ public class ApiKey {
      */
     public boolean isActive() {
         return enabled && !isExpired();
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RateLimits {
-        private Integer requestsPerMinute = 60;
-        private Integer requestsPerHour = 1000;
-        private Integer requestsPerDay = 10000;
-        private Integer burstCapacity = 10;
     }
 }
