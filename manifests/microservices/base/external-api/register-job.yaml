@@ -17,21 +17,21 @@ spec:
           - /bin/sh
           - -c
           - |
-            echo "Registering OpenFrame API..."
+            echo "Registering External API..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-api" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/external-api" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
                   "id": "external-api",
                   "toolType": "OPENFRAME",
-                  "name": "OpenFrame API",
-                  "description": "OpenFrame API Gateway Service",
+                  "name": "External API",
+                  "description": "External API Gateway Service",
                   "toolUrls": [
                     {
                       "url": "http://external-api.microservices.svc.cluster.local",
@@ -59,4 +59,4 @@ spec:
                           --retry-delay 2 \
               --retry-all-errors \
               --silent --show-error
-            echo "OpenFrame API Registration complete."
+            echo "External API Registration complete."

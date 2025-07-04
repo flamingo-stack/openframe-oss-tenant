@@ -9,5 +9,5 @@ resources:
 
 images:
 - name: external-api
-  newName: nginx
+  newName: ghcr.io/flamingo-cx/openframe/external-api
   newTag: latest
