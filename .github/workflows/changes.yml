@@ -11,6 +11,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-jwt }}
       openframe-api: 
         value: ${{ jobs.changes.outputs.openframe-api }}
+      external-api: 
+        value: ${{ jobs.changes.outputs.external-api }}
       openframe-client: 
         value: ${{ jobs.changes.outputs.openframe-client }}
       openframe-config: 
@@ -63,6 +65,7 @@ jobs:
       openframe-data: ${{ steps.filter.outputs.openframe-data }}
       openframe-jwt: ${{ steps.filter.outputs.openframe-jwt }}
       openframe-api: ${{ steps.filter.outputs.openframe-api }}
+      external-api: ${{ steps.filter.outputs.external-api }}
       openframe-client: ${{ steps.filter.outputs.openframe-client }}
       openframe-config: ${{ steps.filter.outputs.openframe-config }}
       openframe-gateway: ${{ steps.filter.outputs.openframe-gateway }}
@@ -108,6 +111,8 @@ jobs:
               - './openframe/libs/openframe-jwt/**'
             openframe-api:
               - './openframe/services/openframe-api/**'
+            external-api:
+              - './openframe/services/external-api/**'
             openframe-client:
               - './openframe/services/openframe-client/**'
             openframe-config:

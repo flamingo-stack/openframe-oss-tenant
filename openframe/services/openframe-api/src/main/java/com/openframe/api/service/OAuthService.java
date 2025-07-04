@@ -52,10 +52,10 @@ public class OAuthService {
                 .claim("roles", user.getRoles());
 
         if (user.getFirstName() != null) {
-            claimsBuilder = claimsBuilder.claim("given_name", user.getFirstName());
+            claimsBuilder.claim("given_name", user.getFirstName());
         }
         if (user.getLastName() != null) {
-            claimsBuilder = claimsBuilder.claim("family_name", user.getLastName());
+            claimsBuilder.claim("family_name", user.getLastName());
         }
 
         claimsBuilder = claimsBuilder
@@ -65,10 +65,11 @@ public class OAuthService {
         return jwtService.generateToken(claimsBuilder.build());
     }
 
-    public String generateRefreshToken(String userId) {
+    public String generateRefreshToken(String userId, String grantType) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(userId)
                 .claim("refresh_count", 0L)
+                .claim("grant_type", grantType)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
                 .build();
@@ -112,18 +113,13 @@ public class OAuthService {
 
     public TokenResponse token(String grantType, String code, String refreshToken,
             String username, String password, String clientId, String clientSecret) {
-        switch (grantType) {
-            case "authorization_code":
-                return handleAuthorizationCode(code, clientId, clientSecret);
-            case "password":
-                return handlePasswordGrant(username, password, clientId, clientSecret);
-            case "client_credentials":
-                return handleClientCredentials(clientId, clientSecret);
-            case "refresh_token":
-                return handleRefreshToken(refreshToken, clientId, clientSecret);
-            default:
-                throw new IllegalArgumentException("Unsupported grant type: " + grantType);
-        }
+        return switch (grantType) {
+            case "authorization_code" -> handleAuthorizationCode(code, clientId, clientSecret);
+            case "password" -> handlePasswordGrant(username, password, clientId, clientSecret);
+            case "client_credentials" -> handleClientCredentials(clientId, clientSecret);
+            case "refresh_token" -> handleRefreshToken(refreshToken, clientId, clientSecret);
+            default -> throw new IllegalArgumentException("Unsupported grant type: " + grantType);
+        };
     }
 
     private TokenResponse handleAuthorizationCode(String code, String clientId, String clientSecret) {
@@ -148,7 +144,7 @@ public class OAuthService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
         String accessToken = generateAccessToken(user, "authorization_code");
-        String refreshToken = generateRefreshToken(user.getId());
+        String refreshToken = generateRefreshToken(user.getId(), "authorization_code");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -174,7 +170,7 @@ public class OAuthService {
 
         // Generate tokens with consistent expiration
         String accessToken = generateAccessToken(user, "password");
-        String refreshToken = generateRefreshToken(user.getId());
+        String refreshToken = generateRefreshToken(user.getId(), "password");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -204,6 +200,7 @@ public class OAuthService {
 
         return TokenResponse.builder()
                 .accessToken(jwtService.generateToken(claims))
+                .refreshToken(generateRefreshToken(clientId, "client_credentials"))
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpirationSeconds)
                 .build();
@@ -213,16 +210,16 @@ public class OAuthService {
         validateClient(clientId, clientSecret);
 
         try {
-            var claims = jwtService.decodeToken(refreshToken);
+            var jwt = jwtService.decodeToken(refreshToken);
 
             // Check if token has expired
-            Instant expiresAt = claims.getExpiresAt();
+            Instant expiresAt = jwt.getExpiresAt();
             if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
                 throw new IllegalArgumentException("Refresh token has expired. Please log in again");
             }
 
             // Get refresh count
-            Long refreshCount = claims.getClaim("refresh_count");
+            Long refreshCount = jwt.getClaim("refresh_count");
             if (refreshCount == null) {
                 refreshCount = 0L;
             }
@@ -231,18 +228,20 @@ public class OAuthService {
                 throw new IllegalArgumentException("Maximum refresh count reached. Please log in again");
             }
 
-            // Get user from claims
-            String userId = claims.getSubject();
+            // Get user from jwt
+            String userId = jwt.getSubject();
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalStateException("User not found"));
 
+            String grantType = jwt.getClaimAsString("grant_type");
             // Generate new access token and increment refresh count
-            String accessToken = generateAccessToken(user, "refresh_token");
+            String accessToken = generateAccessToken(user, grantType);
 
             // Create new refresh token with incremented count
             JwtClaimsSet newRefreshClaims = JwtClaimsSet.builder()
                     .subject(userId)
                     .claim("refresh_count", refreshCount + 1)
+                    .claim("grant_type", grantType)
                     .issuedAt(Instant.now())
                     .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
                     .build();
@@ -356,8 +355,8 @@ public class OAuthService {
         userRepository.save(user);
 
         // Generate tokens
-        String accessToken = generateAccessToken(user, "client_credentials");
-        String refreshToken = generateRefreshToken(user.getId());
+        String accessToken = generateAccessToken(user, "password");
+        String refreshToken = generateRefreshToken(user.getId(), "password");
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
