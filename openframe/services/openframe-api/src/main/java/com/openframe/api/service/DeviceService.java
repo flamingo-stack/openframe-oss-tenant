@@ -2,7 +2,6 @@ package com.openframe.api.service;
 
 import com.openframe.core.model.Machine;
 import com.openframe.api.dto.device.DeviceFilterInput;
-import com.openframe.api.dto.device.PaginationInput;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.TagRepository;
 import com.openframe.data.repository.mongo.MachineTagRepository;
@@ -99,6 +98,4 @@ public class DeviceService {
         queryFilter.setTagNames(filter.getTagNames());
         return queryFilter;
     }
-
-
 } 
