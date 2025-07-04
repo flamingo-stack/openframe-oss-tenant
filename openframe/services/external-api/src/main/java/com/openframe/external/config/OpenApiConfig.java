@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+import static com.openframe.core.constants.HttpHeaders.X_API_KEY;
+
 /**
  * OpenAPI/Swagger configuration for OpenFrame External API
  */
@@ -78,7 +80,7 @@ public class OpenApiConfig {
                 .addSecuritySchemes("ApiKeyAuth", new SecurityScheme()
                     .type(SecurityScheme.Type.APIKEY)
                     .in(SecurityScheme.In.HEADER)
-                    .name("X-API-Key")
+                    .name(X_API_KEY)
                     .description("API key for authentication (format: ak_keyId.sk_secretKey)")));
     }
 } 

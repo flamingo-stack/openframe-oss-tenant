@@ -1,18 +1,19 @@
 package com.openframe.api.controller;
 
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import com.openframe.api.dto.UserDTO;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.api.service.OAuthService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+
+import static com.openframe.core.constants.HttpHeaders.AUTHORIZATION;
+import static com.openframe.core.constants.HttpHeaders.X_USER_ID;
 
 @Slf4j
 @RestController
@@ -55,7 +56,7 @@ public class OAuthController {
 
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> register(@RequestBody final UserDTO userDTO, 
-                                    @RequestHeader(value = "Authorization", required = true) String authHeader) {
+                                    @RequestHeader(value = AUTHORIZATION, required = true) String authHeader) {
         return oauthService.handleRegistration(userDTO, authHeader);
     }
 
@@ -66,7 +67,7 @@ public class OAuthController {
             @RequestParam("redirect_uri") String redirectUri,
             @RequestParam(value = "scope", required = false) String scope,
             @RequestParam(value = "state", required = false) String state,
-            @RequestHeader("X-User-Id") String userId) {
+            @RequestHeader(X_USER_ID) String userId) {
         
         log.debug("Authorization request - response_type: {}, client_id: {}, user_id: {}", responseType, clientId, userId);
         try {

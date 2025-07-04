@@ -1,5 +1,7 @@
 package com.openframe.gateway.filter;
 
+import static com.openframe.core.constants.HttpHeaders.*;
+
 import com.openframe.core.model.ApiKey;
 import com.openframe.gateway.config.RateLimitProperties;
 import com.openframe.gateway.model.RateLimitStatus;
@@ -63,7 +65,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
 
         log.debug("Processing external API request with API key authentication: {}", path);
 
-        String apiKey = exchange.getRequest().getHeaders().getFirst("X-API-Key");
+        String apiKey = exchange.getRequest().getHeaders().getFirst(X_API_KEY);
         
         if (apiKey == null || apiKey.trim().isEmpty()) {
             log.warn("No API key provided for external API endpoint: {}", path);
@@ -133,7 +135,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
                             rateLimitStatus.hourRequests(), rateLimitStatus.hourLimit(),
                             rateLimitStatus.dayRequests(), rateLimitStatus.dayLimit());
 
-                    addRateLimitHeaders(exchange, rateLimitStatus, true);
+                    addRateLimitHeaders(exchange, rateLimitStatus);
 
                     return addUserContextAndContinue(exchange, chain, apiKeyObj)
                             .doOnSuccess(unused -> {
@@ -162,9 +164,10 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      */
     private Mono<Void> addUserContextAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, ApiKey apiKey) {
         var modifiedRequest = exchange.getRequest().mutate()
-            .header("X-User-Id", apiKey.getUserId())
-            .header("X-API-Key-Id", apiKey.getKeyId())
-            .headers(headers -> headers.remove("X-API-Key"))
+            .header(X_API_KEY_ID, apiKey.getKeyId())
+            .header(X_CLIENT_ID, apiKey.getUserId())
+            .header(X_CLIENT_SCOPES, String.join(",", apiKey.getScopes()))
+            .headers(headers -> headers.remove(X_API_KEY))
             .build();
         
         var modifiedExchange = exchange.mutate()
@@ -181,7 +184,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      */
     private Mono<Void> handleUnauthorized(ServerWebExchange exchange, String message) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json");
+        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
         
         String responseBody = String.format(
             "{\"error\": \"Unauthorized\", \"message\": \"%s\", \"timestamp\": \"%s\"}", 
@@ -198,12 +201,10 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      */
     private Mono<Void> handleRateLimitExceeded(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
         exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json");
-        exchange.getResponse().getHeaders().add("Retry-After", "60"); // Suggest retry after 1 minute
+        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
+        exchange.getResponse().getHeaders().add("Retry-After", "60");
         
-        if (rateLimitProperties.isIncludeHeaders()) {
-            addRateLimitHeaders(exchange, rateLimitStatus, false);
-        }
+        addRateLimitHeaders(exchange, rateLimitStatus);
         
         String responseBody = String.format(
             "{\"error\": \"Rate limit exceeded\", \"message\": \"Too many requests. Please try again later.\", \"timestamp\": \"%s\"}", 
@@ -215,50 +216,35 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     }
     
     /**
-     * Add rate limit headers to response
-     * @param exchange ServerWebExchange
-     * @param rateLimitStatus RateLimitStatus with current limits
-     * @param beforeCommit true to use beforeCommit (for success), false for direct headers (for errors)
+     * Add rate limiting headers to response
      */
-    private void addRateLimitHeaders(ServerWebExchange exchange, RateLimitStatus rateLimitStatus, boolean beforeCommit) {
+    private void addRateLimitHeaders(ServerWebExchange exchange, RateLimitStatus rateLimitStatus) {
         if (!rateLimitProperties.isIncludeHeaders()) {
-            if (beforeCommit) {
-                log.debug("Rate limit headers disabled via configuration");
-            }
             return;
         }
 
-        if (beforeCommit) {
-            exchange.getResponse().beforeCommit(() -> {
-                var headers = exchange.getResponse().getHeaders();
-                addHeadersToResponse(headers, rateLimitStatus);
-
-                log.debug("Added rate limit headers for API key: {} (minute: {}/{}, hour: {}/{}, day: {}/{})",
-                        rateLimitStatus.keyId(),
-                        rateLimitStatus.minuteRequests(), rateLimitStatus.minuteLimit(),
-                        rateLimitStatus.hourRequests(), rateLimitStatus.hourLimit(),
-                        rateLimitStatus.dayRequests(), rateLimitStatus.dayLimit());
-
-                return Mono.empty();
-            });
-        } else {
-            var headers = exchange.getResponse().getHeaders();
-            addHeadersToResponse(headers, rateLimitStatus);
-
-            log.debug("Added rate limit headers to error response for API key: {}", rateLimitStatus.keyId());
-        }
+        exchange.getResponse().beforeCommit(() -> {
+            addHeadersToResponse(exchange.getResponse().getHeaders(), rateLimitStatus);
+            return Mono.empty();
+        });
     }
-
+    
     /**
-     * Helper method to add headers to HttpHeaders
+     * Add rate limit headers to response
+     * 
+     * Rate limiting headers for minute, hour, and day limits.
+     * Follows standard HTTP rate limiting header conventions.
+     * 
+     * @param headers Response headers to add to
+     * @param rateLimitStatus Current rate limit status
      */
     private void addHeadersToResponse(org.springframework.http.HttpHeaders headers, RateLimitStatus rateLimitStatus) {
-        headers.add("X-RateLimit-Limit-Minute", String.valueOf(rateLimitStatus.minuteLimit()));
-        headers.add("X-RateLimit-Remaining-Minute", String.valueOf(Math.max(0, rateLimitStatus.minuteLimit() - rateLimitStatus.minuteRequests())));
-        headers.add("X-RateLimit-Limit-Hour", String.valueOf(rateLimitStatus.hourLimit()));
-        headers.add("X-RateLimit-Remaining-Hour", String.valueOf(Math.max(0, rateLimitStatus.hourLimit() - rateLimitStatus.hourRequests())));
-        headers.add("X-RateLimit-Limit-Day", String.valueOf(rateLimitStatus.dayLimit()));
-        headers.add("X-RateLimit-Remaining-Day", String.valueOf(Math.max(0, rateLimitStatus.dayLimit() - rateLimitStatus.dayRequests())));
+        headers.add(X_RATE_LIMIT_LIMIT_MINUTE, String.valueOf(rateLimitStatus.minuteLimit()));
+        headers.add(X_RATE_LIMIT_REMAINING_MINUTE, String.valueOf(Math.max(0, rateLimitStatus.minuteLimit() - rateLimitStatus.minuteRequests())));
+        headers.add(X_RATE_LIMIT_LIMIT_HOUR, String.valueOf(rateLimitStatus.hourLimit()));
+        headers.add(X_RATE_LIMIT_REMAINING_HOUR, String.valueOf(Math.max(0, rateLimitStatus.hourLimit() - rateLimitStatus.hourRequests())));
+        headers.add(X_RATE_LIMIT_LIMIT_DAY, String.valueOf(rateLimitStatus.dayLimit()));
+        headers.add(X_RATE_LIMIT_REMAINING_DAY, String.valueOf(Math.max(0, rateLimitStatus.dayLimit() - rateLimitStatus.dayRequests())));
     }
     
     /**
@@ -266,10 +252,10 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      */
     private Mono<Void> handleInternalError(ServerWebExchange exchange) {
         exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json");
+        exchange.getResponse().getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
         
         String responseBody = String.format(
-            "{\"error\": \"Internal server error\", \"message\": \"Authentication service temporarily unavailable. Please try again later.\", \"timestamp\": \"%s\"}", 
+            "{\"error\": \"Internal Server Error\", \"message\": \"An unexpected error occurred\", \"timestamp\": \"%s\"}", 
             java.time.Instant.now()
         );
         
