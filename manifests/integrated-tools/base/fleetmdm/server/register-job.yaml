@@ -85,7 +85,7 @@ spec:
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
                   "debeziumConnector": {
-                    "name": "fleet-mysql-connector",
+                    "name": "fleet-mysql-connector4",
                     "config": {
                       "connector.class": "io.debezium.connector.mysql.MySqlConnector",
                       "tasks.max": "1",
@@ -109,7 +109,9 @@ spec:
                       "snapshot.mode": "initial",
                       "include.schema.changes": "false",
                       "database.allowPublicKeyRetrieval": "true",
-                      "database.useSSL": "false"
+                      "database.useSSL": "false",
+                      "schema.history.internal.kafka.topic": "fleet_mysql_schema_history",
+                      "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092"
                     }
                   }
                 }

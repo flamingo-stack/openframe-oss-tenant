@@ -16,6 +16,39 @@ spec:
       imagePullSecrets:
         - name: docker-pat-secret
 
+      initContainers:
+      - name: init-mysql-privileges
+        image: mysql:8.0.35
+        env:
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: fleetmdm-mysql
+              key: MYSQL_USER
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fleetmdm-mysql
+              key: MYSQL_ROOT_PASSWORD
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Waiting for MySQL to be ready..."
+            until mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1" 2>/dev/null; do
+              echo "Still waiting for MySQL..."
+              sleep 5
+            done
+            
+            echo "Granting Debezium privileges to ${MYSQL_USER}..."
+            mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} << EOF
+            GRANT RELOAD, FLUSH_TABLES ON *.* TO '${MYSQL_USER}'@'%';
+            FLUSH PRIVILEGES;
+            SHOW GRANTS FOR '${MYSQL_USER}'@'%';
+            EOF
+            
+            echo "MySQL user privileges configured successfully."
+      
       containers:
       - name: mysql
         image: mysql:8.0.35
