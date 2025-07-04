@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    
+
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -16,7 +16,7 @@
     <packaging>jar</packaging>
     <name>OpenFrame External API</name>
     <description>External API service for programmatic access with API keys</description>
-    
+
     <dependencies>
         <!-- Spring Boot Starters -->
         <dependency>
@@ -30,7 +30,7 @@
             <artifactId>openframe-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <!-- Swagger/OpenAPI Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -38,8 +38,14 @@
             <version>2.3.0</version>
         </dependency>
 
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
@@ -56,4 +62,4 @@
             </plugin>
         </plugins>
     </build>
-</project> 
+</project>

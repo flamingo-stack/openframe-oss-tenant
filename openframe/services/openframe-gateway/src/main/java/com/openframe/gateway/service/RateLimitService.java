@@ -123,19 +123,19 @@ public class RateLimitService {
         String timestamp = now().format(ofPattern(window.getTimestampFormat()));
         String redisKey = buildRedisKey(keyId, window.name(), timestamp);
 
-        Mono<Long> countMono = reactiveRedisTemplate.opsForHash().get(redisKey, "count").map(value -> {
-            try {
-                return value != null ? Long.parseLong(value.toString()) : 0L;
-            } catch (NumberFormatException e) {
-                log.warn("Invalid count value in Redis for key {}", redisKey, e);
-                return 0L;
-            }
-        }).defaultIfEmpty(0L);
+        Mono<Long> countMono = reactiveRedisTemplate.opsForHash().get(redisKey, "count")
+            .map(value -> value != null ? Long.parseLong(value.toString()) : 0L)
+            .defaultIfEmpty(0L);
 
-        Mono<LocalDateTime> windowStartMono = getTimestamp(redisKey, "firstRequest").defaultIfEmpty(null);
-        Mono<LocalDateTime> windowEndMono = getTimestamp(redisKey, "lastRequest").defaultIfEmpty(null);
+        Mono<LocalDateTime> windowStartMono = getTimestamp(redisKey, "firstRequest")
+            .defaultIfEmpty(now());
+        Mono<LocalDateTime> windowEndMono = getTimestamp(redisKey, "lastRequest")
+            .defaultIfEmpty(now());
 
-        return countMono.flatMap(currentCount -> Mono.zip(windowStartMono, windowEndMono).map(tuple -> buildRateLimitResult(currentCount, limit, tuple.getT1(), tuple.getT2())).defaultIfEmpty(buildRateLimitResult(currentCount, limit, null, null))).onErrorResume(e -> {
+        return countMono.flatMap(currentCount -> {
+            return Mono.zip(windowStartMono, windowEndMono)
+                .map(tuple -> buildRateLimitResult(currentCount, limit, tuple.getT1(), tuple.getT2()));
+        }).onErrorResume(e -> {
             log.error("Failed to get rate limit status for keyId: {}, window: {}", keyId, window, e);
             return Mono.just(createFailureResult(limit));
         });
