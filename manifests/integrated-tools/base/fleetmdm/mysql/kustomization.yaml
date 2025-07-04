@@ -7,3 +7,4 @@ resources:
   - statefulset.yaml
   - service.yaml
   - register-job.yaml
+  - init-privileges-job.yaml
