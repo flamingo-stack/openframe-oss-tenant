@@ -1,0 +1,46 @@
+# OpenFrame Management Service Configuration
+
+# API Key Statistics Sync Configuration
+openframe:
+  api-key-stats:
+    enabled: true
+    sync-interval: "PT5M"  # Every 5 minutes (ISO 8601 duration format)
+    lock-at-most-for: "10m"  # Maximum lock duration
+    lock-at-least-for: "1m"  # Minimum lock duration
+    redis-ttl: 7200  # 2 hours in seconds
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      base-path: /management/v1
+      exposure:
+        include: health,info,prometheus,metrics
+    enabled-by-default: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    enable:
+      all: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tags:
+    application: ${spring.application.name}
+
+# Logging
+logging:
+  config: http://openframe-config.microservices.svc.cluster.local:8888/logging/shared-logback-spring.xml
+  level:
+    root: INFO
+    com.openframe: DEBUG
+    com.openframe.management: DEBUG
+  file:
+    path: ${LOG_PATH:logs} 

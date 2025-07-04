@@ -1,0 +1,53 @@
+# OpenFrame Gateway Service Configuration
+
+# API Key Statistics Configuration
+openframe:
+  api-key-stats:
+    enabled: true
+    redis-ttl: 7200  # 2 hours in seconds
+
+# Rate Limiting Configuration
+  rate-limit:
+    enabled: true
+    redis-ttl: 3600  # 1 hour in seconds
+    fail-open: true  # Allow requests when Redis is unavailable
+    default-requests-per-minute: 100
+    default-requests-per-hour: 1000
+    default-requests-per-day: 10000
+    include-headers: true
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      base-path: /management/v1
+      exposure:
+        include: health,info,prometheus,metrics
+    enabled-by-default: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    enable:
+      all: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tags:
+    application: ${spring.application.name}
+
+# Logging
+logging:
+  config: http://openframe-config.microservices.svc.cluster.local:8888/logging/shared-logback-spring.xml
+  level:
+    root: INFO
+    com.openframe: DEBUG
+    com.openframe.gateway: DEBUG
+  file:
+    path: ${LOG_PATH:logs} 
