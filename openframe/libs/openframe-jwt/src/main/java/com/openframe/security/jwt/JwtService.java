@@ -1,6 +1,5 @@
 package com.openframe.security.jwt;
 
-import com.openframe.core.model.User;
 import com.openframe.security.adapter.OAuthClientSecurity;
 import com.openframe.security.adapter.UserSecurity;
 import lombok.RequiredArgsConstructor;
@@ -59,37 +58,6 @@ public class JwtService {
     
     public String generateToken(JwtClaimsSet claims) {
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-    }
-
-    public String generateAccessToken(User user, String grantType) {
-        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
-                .subject(user.getId())
-                .claim("email", user.getEmail())
-                .claim("grant_type", grantType)
-                .claim("roles", user.getRoles());
-
-        if (user.getFirstName() != null) {
-            claimsBuilder = claimsBuilder.claim("given_name", user.getFirstName());
-        }
-        if (user.getLastName() != null) {
-            claimsBuilder = claimsBuilder.claim("family_name", user.getLastName());
-        }
-
-        claimsBuilder = claimsBuilder
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(accessTokenExpirationSeconds));
-
-        return generateToken(claimsBuilder.build());
-    }
-
-    public String generateRefreshToken(String userId) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .subject(userId)
-                .claim("refresh_count", 0L)
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(refreshTokenExpirationSeconds))
-                .build();
-        return generateToken(claims);
     }
 
     public String extractGrantType(String token) {
