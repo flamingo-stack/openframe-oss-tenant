@@ -167,10 +167,10 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
      * Add user context headers and continue to external API
      */
     private Mono<Void> addUserContextAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, ApiKey apiKey) {
+
         var modifiedRequest = exchange.getRequest().mutate()
             .header(X_API_KEY_ID, apiKey.getKeyId())
-            .header(X_CLIENT_ID, apiKey.getUserId())
-            .header(X_CLIENT_SCOPES, String.join(",", apiKey.getScopes()))
+            .header(X_USER_ID, apiKey.getUserId())
             .headers(headers -> headers.remove(X_API_KEY))
             .build();
         
