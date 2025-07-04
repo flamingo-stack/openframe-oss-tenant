@@ -5,3 +5,5 @@ metadata:
 data:
   MYSQL_USER: "fleet-mdm-user"
   MYSQL_DATABASE: "fleet-mdm-database"
+  FLEET_MYSQL_HOST: "fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local"
+  FLEET_MYSQL_PORT: "3306"

@@ -24,6 +24,13 @@ spec:
           - --skip-mysqlx
           - --character-set-server=utf8mb4
           - --collation-server=utf8mb4_unicode_ci
+          - --server-id=1
+          - --log-bin=mysql-bin
+          - --binlog-format=ROW
+          - --binlog-row-image=FULL
+          - --expire-logs-days=10
+          - --gtid-mode=ON
+          - --enforce-gtid-consistency=ON
         ports:
         - containerPort: 3306
         envFrom:
@@ -31,6 +38,7 @@ spec:
             name: fleetmdm-mysql
         - secretRef:
             name: fleetmdm-mysql
+        
         livenessProbe:
           exec:
             command:

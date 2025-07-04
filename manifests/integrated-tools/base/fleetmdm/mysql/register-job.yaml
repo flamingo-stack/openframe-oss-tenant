@@ -24,6 +24,7 @@ spec:
             secretKeyRef:
               name: fleetmdm-mysql
               key: MYSQL_PASSWORD
+
         command:
           - /bin/sh
           - -c
@@ -72,3 +73,5 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "FleetMDM MySQL Registration complete."
+            
+            
