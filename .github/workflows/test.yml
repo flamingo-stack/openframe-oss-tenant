@@ -334,7 +334,7 @@ jobs:
 
 
   final-checks:
-    name: Basic branch tests
+    name: Basic Merge tests
     needs: [test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
@@ -364,3 +364,12 @@ jobs:
           if [[ -n "$output" ]]; then
             echo "$output" && exit 1
           fi
+      
+      - name: Check openframe-config branch is main
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: |
+          f=$(find . -type f -path "*/openframe-config/deployment.yaml" -print -quit)
+          [ "$f" ] || { echo "No **/openframe-config/deployment.yaml found."; exit 1; }
+          [ "$(awk '/CONFIG_GIT_BRANCH/{getline;sub(/.*:/,"");gsub(/[" \t\r\n]/,"");print}' "$f")" = "${GITHUB_BASE_REF}" ] \
+            || { echo "CONFIG_GIT_BRANCH does not match \"${GITHUB_BASE_REF}\"";}
