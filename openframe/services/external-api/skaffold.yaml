@@ -1,0 +1,19 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: external-api
+build:
+  tagPolicy:
+    customTemplate:
+      template:  "latest"
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe/external-api
+      docker: {}
+  local:
+    useDockerCLI: false
+    useBuildkit: true
+    push: true
+manifests:
+  kustomize:
+    paths:
+    - ../../../manifests/microservices/base/external-api
