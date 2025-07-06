@@ -1,6 +1,7 @@
-package com.openframe.client.aspect;
+package com.openframe.client.service.impl;
 
 import com.openframe.client.dto.MachinePinotMessage;
+import com.openframe.client.service.MachineTagEventService;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.MachineTag;
 import com.openframe.core.model.Tag;
@@ -10,12 +11,8 @@ import com.openframe.data.repository.mongo.MachineTagRepository;
 import com.openframe.data.repository.mongo.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
@@ -23,14 +20,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * AOP aspect to intercept repository save operations and send Kafka messages.
- * Handles Machine, MachineTag, and Tag entity changes.
+ * Implementation of RepositoryEventService that handles repository events and sends Kafka messages.
+ * Contains all business logic for processing entity changes.
  */
-@Aspect
-@Component
+@Service
 @Slf4j
 @RequiredArgsConstructor
-public class RepositoryEventAspect {
+public class MachineTagEventServiceImpl implements MachineTagEventService {
 
     private final MachineRepository machineRepository;
     private final MachineTagRepository machineTagRepository;
@@ -43,187 +39,82 @@ public class RepositoryEventAspect {
     // Thread-safe map to store original tag states for comparison
     private final ConcurrentHashMap<String, Tag> originalTagStates = new ConcurrentHashMap<>();
 
-    /**
-     * Intercepts Machine repository save operations.
-     * Fetches all tags for the machine and sends MachinePinotMessage.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineRepository.save(..)) && args(machine)",
-            returning = "result",
-            argNames = "joinPoint,machine,result"
-    )
-    public void afterMachineSave(JoinPoint joinPoint, Object machine, Object result) {
+    @Override
+    public void processMachineSave(Machine machine) {
         try {
-            log.info("Machine save operation detected: {}", machine);
-
-            // Cast to Machine entity
-            Machine machineEntity = (Machine) machine;
-
-            sendMachineEventToKafka(machineEntity);
-
+            log.info("Processing machine save event: {}", machine);
+            sendMachineEventToKafka(machine);
             log.info("Machine event processed successfully");
         } catch (Exception e) {
             log.error("Error processing machine save event: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Intercepts Machine repository saveAll operations.
-     * Processes each machine in the collection and sends MachinePinotMessage for each.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineRepository.saveAll(..)) && args(machines)",
-            returning = "result",
-            argNames = "joinPoint,machines,result"
-    )
-    public void afterMachineSaveAll(JoinPoint joinPoint, Object machines, Object result) {
+    @Override
+    public void processMachineSaveAll(Iterable<Machine> machines) {
         try {
-            log.info("Machine saveAll operation detected: {} machines", machines);
-            Iterable<Machine> machineEntities = (Iterable<Machine>) machines;
-
-            for (Machine machine : machineEntities) {
+            log.info("Processing machine saveAll event: {} machines", machines);
+            for (Machine machine : machines) {
                 sendMachineEventToKafka(machine);
             }
         } catch (Exception e) {
-            log.error("Error in afterMachineSaveAll: {}", e.getMessage(), e);
+            log.error("Error in processMachineSaveAll: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Intercepts MachineTag repository save operations.
-     * Fetches associated machine and tag data, then sends MachinePinotMessage.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineTagRepository.save(..)) && args(machineTag)",
-            returning = "result",
-            argNames = "joinPoint,machineTag,result"
-    )
-    public void afterMachineTagSave(JoinPoint joinPoint, Object machineTag, Object result) {
+    @Override
+    public void processMachineTagSave(MachineTag machineTag) {
         try {
-            log.info("MachineTag save operation detected: {}", machineTag);
-
-            MachineTag machineTagEntity = (MachineTag) machineTag;
-
-            sendMachineTagEventToKafka(machineTagEntity);
-
-            log.info("MachineTag event processed successfully for machine: {}", machineTagEntity.getMachineId());
+            log.info("Processing machineTag save event: {}", machineTag);
+            sendMachineTagEventToKafka(machineTag);
+            log.info("MachineTag event processed successfully for machine: {}", machineTag.getMachineId());
         } catch (Exception e) {
             log.error("Error processing machine tag save event: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Intercepts MachineTag repository saveAll operations.
-     * Processes each machineTag in the collection and sends MachinePinotMessage for each affected machine.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineTagRepository.saveAll(..)) && args(machineTags)",
-            returning = "result",
-            argNames = "joinPoint,machineTags,result"
-    )
-    public void afterMachineTagSaveAll(JoinPoint joinPoint, Object machineTags, Object result) {
+    @Override
+    public void processMachineTagSaveAll(Iterable<MachineTag> machineTags) {
         try {
-            log.info("MachineTag saveAll operation detected: {} machineTags", machineTags);
-
-            Iterable<MachineTag> machineTagEntities = (Iterable<MachineTag>) machineTags;
+            log.info("Processing machineTag saveAll event: {} machineTags", machineTags);
 
             // Group by machineId to avoid duplicate processing
             Set<String> processedMachineIds = new HashSet<>();
 
             // Process each machineTag
-            for (MachineTag machineTag : machineTagEntities) {
+            for (MachineTag machineTag : machineTags) {
                 if (!processedMachineIds.contains(machineTag.getMachineId())) {
                     sendMachineTagEventToKafka(machineTag);
                     processedMachineIds.add(machineTag.getMachineId());
                 }
             }
         } catch (Exception e) {
-            log.error("Error in afterMachineTagSaveAll: {}", e.getMessage(), e);
+            log.error("Error in processMachineTagSaveAll: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Captures original tag state before save operation.
-     */
-    @Before("execution(* com.openframe.data.repository.mongo.TagRepository.save(..)) && args(tag)")
-    public void beforeTagSave(JoinPoint joinPoint, Object tag) {
+    @Override
+    public void processTagSave(Tag tag) {
         try {
-            Tag tagEntity = (Tag) tag;
-
-            // Only capture state if this is an update operation (tag has an ID)
-            if (tagEntity.getId() != null) {
-                originalTagStates.put(tagEntity.getId(), tagEntity);
-                log.debug("Captured original tag state for ID: {}", tagEntity.getId());
-            }
-        } catch (Exception e) {
-            log.error("Error capturing original tag state: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Captures original tag states before saveAll operation.
-     */
-    @Before("execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)")
-    public void beforeTagSaveAll(JoinPoint joinPoint, Object tags) {
-        try {
-            Iterable<Tag> tagEntities = (Iterable<Tag>) tags;
-            // Store original tag states for comparison after save
-            for (Tag tag : tagEntities) {
-                if (tag.getId() != null) {
-                    originalTagStates.put(tag.getId(), tag);
-                    log.debug("Captured original tag state for ID: {}", tag.getId());
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error capturing original tag states: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Intercepts Tag repository save operations.
-     * Only processes when tag name changes, fetches all affected machines.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.TagRepository.save(..)) && args(tag)",
-            returning = "result",
-            argNames = "joinPoint,tag,result"
-    )
-    public void afterTagSave(JoinPoint joinPoint, Object tag, Object result) {
-        try {
-            log.info("Tag save operation detected: {}", tag);
-
-            // Cast to Tag entity
-            Tag tagEntity = (Tag) tag;
-
-            sendTagEventToKafka(tagEntity);
-
+            log.info("Processing tag save event: {}", tag);
+            sendTagEventToKafka(tag);
             log.info("Tag event processed successfully");
         } catch (Exception e) {
             log.error("Error processing tag save event: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Intercepts Tag repository saveAll operations.
-     * Processes each tag in the collection and sends MachinePinotMessage for affected machines.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)",
-            returning = "result",
-            argNames = "joinPoint,tags,result"
-    )
-    public void afterTagSaveAll(JoinPoint joinPoint, Object tags, Object result) {
+    @Override
+    public void processTagSaveAll(Iterable<Tag> tags) {
         try {
-            log.info("Tag saveAll operation detected: {} tags", tags);
-
-            Iterable<Tag> tagEntities = (Iterable<Tag>) tags;
+            log.info("Processing tag saveAll event: {} tags", tags);
 
             // Process each tag
-            for (Tag tag : tagEntities) {
+            for (Tag tag : tags) {
                 sendTagEventToKafka(tag);
             }
         } catch (Exception e) {
-            log.error("Error in afterTagSaveAll: {}", e.getMessage(), e);
+            log.error("Error in processTagSaveAll: {}", e.getMessage(), e);
         }
     }
 
