@@ -10,4 +10,5 @@ import java.util.List;
 public interface TagRepository extends MongoRepository<Tag, String> {
     List<Tag> findByOrganizationId(String organizationId);
     Tag findByNameAndOrganizationId(String name, String organizationId);
+    List<Tag> findByNameIn(List<String> names);
 }

@@ -1,0 +1,44 @@
+{
+  "schemaName": "devices",
+  "primaryKeyColumns": ["machineId"],
+  "dimensionFieldSpecs": [
+    {
+      "name": "machineId",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "status",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "deviceType",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "osType",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "organizationId",
+      "dataType": "STRING",
+      "singleValueField": true
+    },
+    {
+      "name": "tags",
+      "dataType": "STRING",
+      "singleValueField": false
+    }
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "ingestionTime",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ]
+}
