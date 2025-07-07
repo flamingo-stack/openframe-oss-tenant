@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
-  - traffic-policy.yaml
+  # - traffic-policy.yaml
   - ingress.yaml
   - servicemonitor.yaml
   - register-job.yaml
