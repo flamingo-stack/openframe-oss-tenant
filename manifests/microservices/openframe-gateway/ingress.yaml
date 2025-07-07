@@ -7,7 +7,7 @@ metadata:
 spec:
   ingressClassName: ngrok
   rules:
-    - host: "termite-elegant-obviously.ngrok-free.app"
+    - host: "reindeer-suitable-genuinely.ngrok-free.app"
       http:
         paths:
           - path: /
