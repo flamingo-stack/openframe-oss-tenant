@@ -2,7 +2,6 @@ apiVersion: ngrok.k8s.ngrok.com/v1alpha1
 kind: NgrokTrafficPolicy
 metadata:
   name: restrict-ips
-  namespace: default
 spec:
   policy:
     on_http_request:
