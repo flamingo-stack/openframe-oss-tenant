@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: ingress-nginx
+  name: ngrok-operator
   annotations:
     "argocd.argoproj.io/hook": PostSync
     # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -17,24 +17,24 @@ spec:
           - /bin/sh
           - -c
           - |
-            echo "Registering Ingress NGINX..."
+            echo "Registering Ngrok Operator..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/ingress-nginx" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/ngro-operator" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "ingress-nginx",
-                  "toolType": "INGRESS_NGINX",
-                  "name": "Ingress NGINX",
-                  "description": "NGINX Kubernetes Ingress Controller",
+                  "id": "ngrok operator",
+                  "toolType": "NGROK_OPERATOR",
+                  "name": "Ngrok Operator",
+                  "description": "Ngrok Operator Kubernetes Controller",
                   "toolUrls": [
                     {
-                      "url": "http://ingress-nginx-controller.platform.svc.cluster.local",
+                      "url": "http://ngrok-operator.platform.svc.cluster.local",
                       "port": "10254",
                       "type": "API"
                     }
@@ -57,4 +57,4 @@ spec:
               }' \
               --retry-delay 2 \
               --retry-all-errors
-            echo "Ingress NGINX Registration complete."
+            echo "Ngrok Operator Registration complete."
