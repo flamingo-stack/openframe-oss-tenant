@@ -1,0 +1,3 @@
+credentials:
+  secret:
+    name: ngrok-operator

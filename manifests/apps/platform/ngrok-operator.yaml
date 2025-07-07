@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ingress-nginx
+  name: ngrok-operator
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   finalizers:
@@ -12,19 +12,19 @@ spec:
 
   sources:
     # Helm chart
-    - repoURL: https://kubernetes.github.io/ingress-nginx
-      targetRevision: 4.12.1
-      chart: ingress-nginx
+    - repoURL: https://charts.ngrok.com
+      targetRevision: 0.19.0
+      chart: ngrok-operator
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/ingress-nginx/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/base/ngrok-operator/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/ngrok
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: feature/ngrok
-      path: manifests/platform/base/ingress-nginx
+      path: manifests/platform/base/ngrok-operator
 
   destination:
     name: in-cluster
