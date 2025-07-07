@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:   
   # wave 2            
-  # - namespace.yaml 
+  - namespace.yaml 
   # - mongo-express.yaml   
   # - kafka-ui.yaml
   - telepresence.yaml
