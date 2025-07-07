@@ -12,12 +12,7 @@ export default defineConfig(({ mode }) => {
       port: parseInt(env.PORT || '3000'),
       strictPort: true,
       host: true,
-      historyApiFallback: true,
-      hmr: {
-        protocol: 'wss',
-        host: 'openframe-gateway.192.168.100.100.nip.io',
-        clientPort: 443
-      }
+      historyApiFallback: true
     },
     resolve: {
       alias: {
