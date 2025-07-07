@@ -23,11 +23,11 @@ spec:
               name: http
           env:
             - name: VITE_API_URL
-              value: "https://openframe-gateway.192.168.100.100.nip.io/api"
+              value: "https://reindeer-suitable-genuinely.ngrok-free.app/api"
             - name: VITE_CLIENT_URL
-              value: "https://openframe-gateway.192.168.100.100.nip.io/client"
+              value: "https://reindeer-suitable-genuinely.ngrok-free.app/client"
             - name: VITE_GATEWAY_URL
-              value: "https://openframe-gateway.192.168.100.100.nip.io"
+              value: "https://reindeer-suitable-genuinely.ngrok-free.app"
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET

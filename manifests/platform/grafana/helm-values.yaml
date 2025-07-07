@@ -40,8 +40,6 @@ grafana.ini:
   security:
     allow_embedding: true
     cookie_samesite: strict
-  server:
-    domain: grafana.192.168.100.100.nip.io
 
 serviceMonitor:
   enabled: true
