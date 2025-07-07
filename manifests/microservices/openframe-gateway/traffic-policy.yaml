@@ -10,4 +10,4 @@ spec:
             config:
               enforce: true
               allow:
-                - $YOUR_PUBLIC_IP
+                - 178.133.28.182
