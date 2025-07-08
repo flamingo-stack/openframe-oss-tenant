@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: fix/api-keys-tools
+    targetRevision: main
     path: manifests/apps
 
   destination:
