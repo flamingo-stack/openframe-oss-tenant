@@ -12,8 +12,13 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+<<<<<<< HEAD
+      targetRevision: feature/ngrok
       path: manifests/datasources/namespace
+=======
+      targetRevision: feature/ngrok
+      path: manifests/datasources/base/namespace
+>>>>>>> ec646a17 (switch to ngrok)
 
   destination:
     name: in-cluster
