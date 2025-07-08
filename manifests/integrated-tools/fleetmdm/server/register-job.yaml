@@ -33,12 +33,9 @@ spec:
           - /bin/sh
           - -c
           - |
-
             echo "Getting FLEET_TOKEN..."
             POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
-            echo "Found pod: $POD"
             FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
-            echo "Got token: $FLEET_TOKEN"
 
             echo "Registering FleetMDM Server..."
             echo "Waiting for OpenFrame Management API to become reachable..."

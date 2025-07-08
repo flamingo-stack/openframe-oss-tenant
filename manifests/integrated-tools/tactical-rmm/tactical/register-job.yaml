@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: ghcr.io/sap/kubectl-container:v1.31.6
         envFrom:
         - configMapRef:
             name: tactical-postgres
