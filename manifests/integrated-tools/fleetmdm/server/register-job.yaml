@@ -34,7 +34,7 @@ spec:
           - -c
           - |
             echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl -n integrated-tools get pods -o name -l app=fleet)
+            POD=$(kubectl -n integrated-tools get pods -o name -l app=fleetmdm-server)
             FLEET_TOKEN=$(kubectl exec -n integrated-tools $POD -- cat /etc/fleet/api_token.txt)
 
             echo "Registering FleetMDM Server..."
@@ -84,7 +84,36 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
-                  "debeziumConnector": null
+                  "debeziumConnector": {
+                    "name": "fleet-mysql-connector5",
+                    "config": {
+                      "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+                      "tasks.max": "1",
+                      "database.hostname": "'"${FLEET_MYSQL_HOST}"'",
+                      "database.port": "'"${FLEET_MYSQL_PORT}"'",
+                      "database.user": "'"${MYSQL_USER}"'",
+                      "database.password": "'"${MYSQL_PASSWORD}"'",
+                      "database.server.name": "'"${MYSQL_DATABASE}"'",
+                      "database.server.id": "1",
+                      "database.include.list": "'"${MYSQL_DATABASE}"'",
+                      "topic.prefix": "fleet_mysql",
+                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities",
+                      "topic.creation.default.replication.factor": 1,
+                      "topic.creation.default.partitions": 10,
+                      "topic.creation.default.cleanup.policy": "compact",
+                      "topic.creation.default.compression.type": "lz4",
+                      "transforms": "route",
+                      "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
+                      "transforms.route.topic.regex": "fleet_mysql\\.(.*)",
+                      "transforms.route.topic.replacement": "fleet.mysql.events",
+                      "snapshot.mode": "initial",
+                      "include.schema.changes": "false",
+                      "database.allowPublicKeyRetrieval": "true",
+                      "database.useSSL": "false",
+                      "schema.history.internal.kafka.topic": "fleet_mysql_schema_history",
+                      "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092"
+                    }
+                  }
                 }
               }' \
               --retry-delay 2 \
