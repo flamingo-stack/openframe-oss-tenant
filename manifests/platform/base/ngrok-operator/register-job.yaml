@@ -34,7 +34,7 @@ spec:
                   "description": "Ngrok Operator Kubernetes Controller",
                   "toolUrls": [
                     {
-                      "url": "http://ngrok-operator.platform.svc.cluster.local",
+                      "url": "http://ngrok-operator-manager.platform.svc.cluster.local",
                       "port": "10254",
                       "type": "API"
                     }
