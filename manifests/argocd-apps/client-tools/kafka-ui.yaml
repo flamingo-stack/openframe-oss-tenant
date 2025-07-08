@@ -19,12 +19,12 @@ spec:
         valueFiles:
           - "$values/manifests/client-tools/kafka-ui/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/ngrok
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
-      path: manifests/client-tools/base/kafka-ui
+      targetRevision: feature/ngrok
+      path: manifests/client-tools/kafka-ui
 
   destination:
     name: in-cluster
