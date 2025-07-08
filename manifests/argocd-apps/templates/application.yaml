@@ -22,13 +22,13 @@ spec:
       helm:
         valueFiles:
           - "$values/{{ $app.helm.valuesPath }}"
+    - repoURL: {{ $.Values.extra.repoURL }}
+      targetRevision: {{ $.Values.extra.revision }}
+      path: values
     {{- end }}
     - repoURL: {{ $.Values.extra.repoURL }}
       targetRevision: {{ $.Values.extra.revision }}
-      ref: values
-    - repoURL: {{ $.Values.extra.repoURL }}
-      targetRevision: {{ $.Values.extra.revision }}
-      path: {{ tpl $app.basePath (dict "name" $app.name "category" $categoryName) }}
+      ref: openframe/manifests/argocd-apps/templates/application.yaml
 
   destination:
     name: in-cluster
