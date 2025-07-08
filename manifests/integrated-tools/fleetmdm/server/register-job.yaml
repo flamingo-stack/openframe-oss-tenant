@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: register
-        image: lachlanevenson/k8s-kubectl:v1.29.0
+        image: bitnami/kubectl:1.29.2-debian-11-r0
         envFrom:
           - configMapRef:
               name: fleetmdm-mysql
@@ -33,6 +33,8 @@ spec:
           - /bin/sh
           - -c
           - |
+            apt-get update && apt-get install -y curl && \
+
             echo "Getting FLEET_TOKEN..."
             POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
             echo "Found pod: $POD"
