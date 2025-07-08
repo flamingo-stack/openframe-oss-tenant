@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: register
-        image: bitnami/kubectl:latest
+        image: lachlanevenson/k8s-kubectl:v1.29.0
         envFrom:
           - configMapRef:
               name: fleetmdm-mysql
@@ -33,8 +33,6 @@ spec:
           - /bin/sh
           - -c
           - |
-            apt update && apt install -y curl jq
-
             echo "Getting FLEET_TOKEN..."
             POD=$(kubectl get pod -n integrated-tools -l app=fleetmdm-server)
             FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
