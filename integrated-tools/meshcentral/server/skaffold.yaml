@@ -8,6 +8,16 @@ build:
       template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/meshcentral
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
       docker:
         dockerfile: Dockerfile
         buildArgs:
