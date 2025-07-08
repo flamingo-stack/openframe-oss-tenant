@@ -72,7 +72,7 @@ switch_argocd_app_health() {
     "${ROOT_REPO_DIR}/manifests/argocd/argocd-apps.yaml"
 
   # Patch targetRevision and syncPolicy in service YAMLs
-  find "${ROOT_REPO_DIR}/manifests/apps" -type f -name "${SERVICE_NAME}.yaml" -print0 | \
+  find "${ROOT_REPO_DIR}/manifests/argocd-apps" -type f -name "${SERVICE_NAME}.yaml" -print0 | \
   while IFS= read -r -d '' file; do
     # Replace all targetRevision values
     sed "${SED_INPLACE[@]}" -E \
