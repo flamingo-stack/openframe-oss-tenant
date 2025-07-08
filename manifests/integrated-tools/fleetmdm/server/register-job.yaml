@@ -36,7 +36,7 @@ spec:
             apt update && apt install -y curl jq
 
             echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl get pod -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
+            POD=$(kubectl get pod -n integrated-tools -l app=fleetmdm-server)
             FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
             echo $FLEET_TOKEN
 
