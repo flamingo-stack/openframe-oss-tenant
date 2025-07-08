@@ -7,7 +7,11 @@ metadata:
 spec:
   ingressClassName: ngrok
   rules:
+<<<<<<< HEAD:manifests/microservices/openframe-gateway/ingress.yaml
     - host: "reindeer-suitable-genuinely.ngrok-free.app"
+=======
+    - host: "termite-elegant-obviously.ngrok-free.app"
+>>>>>>> dc06c688 (ingress host):manifests/microservices/base/openframe-gateway/ingress.yaml
       http:
         paths:
           - path: /
