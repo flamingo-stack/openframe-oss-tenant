@@ -34,7 +34,7 @@ spec:
           - -c
           - |
             echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl -n integrated-tools get pods -o name -l app=fleet)
+            POD=$(kubectl -n integrated-tools get pods -o name -l app=fleetmdm-server)
             FLEET_TOKEN=$(kubectl exec -n integrated-tools $POD -- cat /etc/fleet/api_token.txt)
 
             echo "Registering FleetMDM Server..."
