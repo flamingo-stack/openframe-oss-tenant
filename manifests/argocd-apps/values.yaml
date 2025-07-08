@@ -1,3 +1,6 @@
+
+manifestsDir: manifests
+
 extra:
   repoURL: https://github.com/Flamingo-CX/openframe.git
   revision: feature/ngrok
@@ -8,21 +11,19 @@ clientTools:
   syncWave: "2"
   apps:
     - name: kafka-ui
-      basePath: "manifests/{{ .project }}/base/{{ .name }}"
       helm:
         repoURL: https://kafbat.github.io/helm-charts
         chart: kafka-ui
         version: 1.4.12
-        valuesPath: manifests/client-tools/base/kafka-ui/helm-values.yaml
+        valuesPath: manifests/client-tools/kafka-ui/helm-values.yaml
 
     - name: debezium-ui
       syncWave: "3"
-      basePath: "manifests/{{ .project }}/base/{{ .name }}"
       helm:
         repoURL: https://example.com/helm
         chart: debezium-ui
         version: 0.1.0
-        valuesPath: manifests/client-tools/base/debezium-ui/helm-values.yaml
+        valuesPath: manifests/client-tools/debezium-ui/helm-values.yaml
 
 platform:
   namespace: platform
@@ -30,21 +31,18 @@ platform:
   syncWave: "1"
   apps:
     - name: cert-manager
-      basePath: "manifests/{{ .project }}/base/{{ .name }}"
       helm:
         repoURL: https://charts.jetstack.io
         chart: cert-manager
         version: v1.12.0
-        valuesPath: manifests/platform/base/cert-manager/helm-values.yaml
+        valuesPath: manifests/platform/cert-manager/helm-values.yaml
 
     - name: ingress-nginx
-      basePath: "manifests/{{ .project }}/base/{{ .name }}"
       helm:
         repoURL: https://kubernetes.github.io/ingress-nginx
         chart: ingress-nginx
         version: 4.8.3
-        valuesPath: manifests/platform/base/ingress-nginx/helm-values.yaml
+        valuesPath: manifests/platform/ingress-nginx/helm-values.yaml
 
     - name: namespace-platform
-      basePath: "manifests/{{ .project }}/base/{{ .name }}"
       # No Helm block — pure K8s manifests only
