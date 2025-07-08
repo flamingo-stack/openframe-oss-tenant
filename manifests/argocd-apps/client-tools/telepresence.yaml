@@ -20,17 +20,12 @@ spec:
         valueFiles:
           - "$values/manifests/client-tools/telepresence/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/ngrok
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-<<<<<<< HEAD
       targetRevision: feature/ngrok
       path: manifests/client-tools/telepresence
-=======
-      targetRevision: main
-      path: manifests/client-tools/base/telepresence
->>>>>>> 8245907e (back to main)
 
   destination:
     name: in-cluster

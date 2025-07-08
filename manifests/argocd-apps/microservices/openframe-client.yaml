@@ -12,13 +12,8 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-<<<<<<< HEAD
       targetRevision: feature/ngrok
       path: manifests/microservices/openframe-client
-=======
-      targetRevision: main
-      path: manifests/microservices/base/openframe-client
->>>>>>> 8245907e (back to main)
 
   destination:
     name: in-cluster

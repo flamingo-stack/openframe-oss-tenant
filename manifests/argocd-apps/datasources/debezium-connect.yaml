@@ -12,13 +12,8 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-<<<<<<< HEAD
       targetRevision: feature/ngrok
       path: manifests/datasources/debezium-connect
-=======
-      targetRevision: main
-      path: manifests/datasources/base/debezium-connect
->>>>>>> 8245907e (back to main)
 
   destination:
     name: in-cluster

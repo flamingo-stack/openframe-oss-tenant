@@ -19,17 +19,12 @@ spec:
         valueFiles:
           - "$values/manifests/platform/loki/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/ngrok
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-<<<<<<< HEAD
       targetRevision: feature/ngrok
       path: manifests/platform/loki
-=======
-      targetRevision: main
-      path: manifests/platform/base/loki
->>>>>>> 8245907e (back to main)
 
   destination:
     name: in-cluster

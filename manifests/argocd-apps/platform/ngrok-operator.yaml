@@ -17,14 +17,14 @@ spec:
       chart: ngrok-operator
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/ngrok-operator/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/ngrok-operator/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/ngrok
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
-      path: manifests/platform/base/ngrok-operator
+      targetRevision: feature/ngrok
+      path: manifests/platform/ngrok-operator
 
   destination:
     name: in-cluster
