@@ -1,0 +1,53 @@
+{{- range $categoryName, $category := .Values }}
+  {{- if kindIs "map" $category }}
+    {{- if hasKey $category "apps" }}
+      {{- range $app := $category.apps }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $app.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ default $category.syncWave $app.syncWave }}"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ $category.project }}
+
+  sources:
+    {{- if $app.helm }}
+    - repoURL: {{ $app.helm.repoURL }}
+      targetRevision: {{ $app.helm.version }}
+      chart: {{ $app.helm.chart }}
+      helm:
+        valueFiles:
+          - "$values/{{ $app.helm.valuesPath }}"
+    {{- end }}
+    - repoURL: {{ $.Values.extra.repoURL }}
+      targetRevision: {{ $.Values.extra.revision }}
+      ref: values
+    - repoURL: {{ $.Values.extra.repoURL }}
+      targetRevision: {{ $.Values.extra.revision }}
+      path: {{ tpl $app.basePath (dict "name" $app.name "category" $categoryName) }}
+
+  destination:
+    name: in-cluster
+    namespace: {{ $category.namespace }}
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
