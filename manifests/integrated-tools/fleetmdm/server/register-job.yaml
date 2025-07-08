@@ -34,10 +34,11 @@ spec:
           - -c
           - |
             apt update && apt install -y curl jq
-            
+
             echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl -n integrated-tools get pods -o name -l app=fleetmdm-server)
-            FLEET_TOKEN=$(kubectl exec -n integrated-tools $POD -- cat /etc/fleet/api_token.txt)
+            POD=$(kubectl get pod -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
+            FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
+            echo $FLEET_TOKEN
 
             echo "Registering FleetMDM Server..."
             echo "Waiting for OpenFrame Management API to become reachable..."
