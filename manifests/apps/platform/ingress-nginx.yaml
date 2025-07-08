@@ -17,14 +17,14 @@ spec:
       chart: ingress-nginx
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/ingress-nginx/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/ingress-nginx/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/platform/base/ingress-nginx
+      path: manifests/platform/ingress-nginx
 
   destination:
     name: in-cluster

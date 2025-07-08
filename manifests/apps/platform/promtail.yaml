@@ -17,14 +17,14 @@ spec:
       chart: promtail
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/promtail/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/promtail/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/platform/base/promtail
+      path: manifests/platform/promtail
 
   destination:
     name: in-cluster

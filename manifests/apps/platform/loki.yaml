@@ -17,14 +17,14 @@ spec:
       chart: loki
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/loki/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/loki/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/platform/base/loki
+      path: manifests/platform/loki
 
   destination:
     name: in-cluster

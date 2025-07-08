@@ -18,14 +18,14 @@ spec:
       helm:
         releaseName: traffic-manager
         valueFiles:
-          - "$values/manifests/client-tools/base/telepresence/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/client-tools/telepresence/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/client-tools/base/telepresence
+      path: manifests/client-tools/telepresence
 
   destination:
     name: in-cluster

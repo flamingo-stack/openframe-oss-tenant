@@ -16,4 +16,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/microservices/base/external-api
+    - ../../../manifests/microservices/external-api
