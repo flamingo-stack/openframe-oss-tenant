@@ -33,7 +33,8 @@ spec:
           - /bin/sh
           - -c
           - |
-            apt-get update && apt-get install -y curl && \
+            mkdir -p /var/lib/apt/lists/partial
+            apt-get update && apt-get install -y curl
 
             echo "Getting FLEET_TOKEN..."
             POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
