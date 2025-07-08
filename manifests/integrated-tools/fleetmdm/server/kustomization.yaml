@@ -6,5 +6,4 @@ resources:
   - secret.yaml
   - statefulset.yaml
   - service.yaml
-  - rbac.yaml
   - register-job.yaml
