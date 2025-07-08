@@ -19,12 +19,17 @@ spec:
         valueFiles:
           - "$values/manifests/datasources/redis-exporter/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/ngrok
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
+<<<<<<< HEAD
       targetRevision: feature/ngrok
       path: manifests/datasources/redis-exporter
+=======
+      targetRevision: main
+      path: manifests/datasources/base/redis-exporter
+>>>>>>> 8245907e (back to main)
 
   destination:
     name: in-cluster
