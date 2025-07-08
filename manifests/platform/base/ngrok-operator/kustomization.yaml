@@ -3,4 +3,7 @@ kind: Kustomization
 
 resources: 
   - secret.yaml
+  - gateway-class.yaml
+  - gateway.yaml
+  - traffic-policy.yaml
   - register-job.yaml

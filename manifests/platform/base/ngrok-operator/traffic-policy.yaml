@@ -1,0 +1,14 @@
+apiVersion: ngrok.k8s.ngrok.com/v1alpha1
+kind: NgrokTrafficPolicy
+metadata:
+  name: restrict-ips
+  namespace: default
+spec:
+  policy:
+    on_http_request:
+      - actions:
+          - type: restrict-ips
+            config:
+              enforce: true
+              allow:
+                - $YOUR_PUBLIC_IP
