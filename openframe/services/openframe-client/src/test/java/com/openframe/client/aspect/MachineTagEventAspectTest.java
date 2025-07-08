@@ -4,231 +4,258 @@ import com.openframe.client.service.MachineTagEventService;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.MachineTag;
 import com.openframe.core.model.Tag;
-import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.model.device.DeviceType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
 
-import java.lang.reflect.Field;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Tests for MachineTagEventAspect to ensure proper interception of repository operations.
+ */
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
-public class MachineTagEventAspectTest {
+class MachineTagEventAspectTest {
 
     @Mock
     private MachineTagEventService machineTagEventService;
 
-    private MachineTagEventAspect aspect;
+    private MachineTagEventAspect machineTagEventAspect;
 
     @BeforeEach
-    void setUp() throws Exception {
-        aspect = new MachineTagEventAspect(machineTagEventService);
+    void setUp() {
+        machineTagEventAspect = new MachineTagEventAspect(machineTagEventService);
     }
 
     @Test
-    void testAfterMachineSave_SingleMachine() {
+    void testMachineSaveAspect() {
         // Arrange
-        Machine machine = createTestMachine("machine-1", "org-1");
+        Machine machine = new Machine();
+        machine.setId("machine-1");
+        machine.setHostname("test-machine");
 
-        // Act
-        aspect.afterMachineSave(null, machine, machine);
+        // Act - directly call the aspect method
+        machineTagEventAspect.afterMachineSave(null, machine, machine);
 
         // Assert
-        verify(machineTagEventService).processMachineSave(machine);
+        verify(machineTagEventService, times(1)).processMachineSave(machine);
     }
 
     @Test
-    void testAfterMachineSaveAll_MultipleMachines() {
+    void testMachineSaveAllAspect() {
         // Arrange
-        List<Machine> machines = Arrays.asList(
-            createTestMachine("machine-1", "org-1"),
-            createTestMachine("machine-2", "org-1")
-        );
+        Machine machine1 = new Machine();
+        machine1.setId("machine-1");
+        machine1.setHostname("test-machine-1");
 
-        // Act
-        aspect.afterMachineSaveAll(null, machines, machines);
+        Machine machine2 = new Machine();
+        machine2.setId("machine-2");
+        machine2.setHostname("test-machine-2");
+
+        List<Machine> machines = Arrays.asList(machine1, machine2);
+
+        // Act - directly call the aspect method
+        machineTagEventAspect.afterMachineSaveAll(null, machines, machines);
 
         // Assert
-        verify(machineTagEventService).processMachineSaveAll(machines);
+        verify(machineTagEventService, times(1)).processMachineSaveAll(machines);
     }
 
     @Test
-    void testAfterMachineTagSave_SingleMachineTag() {
+    void testMachineTagSaveAspect() {
         // Arrange
-        MachineTag machineTag = createTestMachineTag("machine-1", "tag-1");
+        MachineTag machineTag = new MachineTag();
+        machineTag.setId("machine-tag-1");
+        machineTag.setMachineId("machine-1");
+        machineTag.setTagId("tag-1");
 
-        // Act
-        aspect.afterMachineTagSave(null, machineTag, machineTag);
+        // Act - directly call the aspect method
+        machineTagEventAspect.afterMachineTagSave(null, machineTag, machineTag);
 
         // Assert
-        verify(machineTagEventService).processMachineTagSave(machineTag);
+        verify(machineTagEventService, times(1)).processMachineTagSave(machineTag);
     }
 
     @Test
-    void testAfterMachineTagSaveAll_MultipleMachineTags() {
+    void testMachineTagSaveAllAspect() {
         // Arrange
-        List<MachineTag> machineTags = Arrays.asList(
-            createTestMachineTag("machine-1", "tag-1"),
-            createTestMachineTag("machine-1", "tag-2"), // Same machine, different tag
-            createTestMachineTag("machine-2", "tag-3")
-        );
+        MachineTag machineTag1 = new MachineTag();
+        machineTag1.setId("machine-tag-1");
+        machineTag1.setMachineId("machine-1");
+        machineTag1.setTagId("tag-1");
 
-        // Act
-        aspect.afterMachineTagSaveAll(null, machineTags, machineTags);
+        MachineTag machineTag2 = new MachineTag();
+        machineTag2.setId("machine-tag-2");
+        machineTag2.setMachineId("machine-2");
+        machineTag2.setTagId("tag-2");
+
+        List<MachineTag> machineTags = Arrays.asList(machineTag1, machineTag2);
+
+        // Act - directly call the aspect method
+        machineTagEventAspect.afterMachineTagSaveAll(null, machineTags, machineTags);
 
         // Assert
-        verify(machineTagEventService).processMachineTagSaveAll(machineTags);
+        verify(machineTagEventService, times(1)).processMachineTagSaveAll(machineTags);
     }
 
     @Test
-    void testBeforeTagSave_CapturesOriginalState() {
+    void testTagSaveAspect_WithOriginalState() {
         // Arrange
-        Tag tag = createTestTag("tag-1", "OriginalName");
+        Tag tag = new Tag();
+        tag.setId("tag-1");
+        tag.setName("test-tag");
+        tag.setColor("#FF0000");
 
-        // Act
-        aspect.beforeTagSave(null, tag);
+        // First capture the original state (simulating beforeTagSave)
+        machineTagEventAspect.beforeTagSave(null, tag);
 
-        // Assert - verify that the aspect doesn't throw any exceptions
-        assertDoesNotThrow(() -> {
-            // The aspect should capture the original state internally
-        });
-    }
-
-    @Test
-    void testBeforeTagSaveAll_CapturesOriginalStates() {
-        // Arrange
-        List<Tag> tags = Arrays.asList(
-            createTestTag("tag-1", "Tag1"),
-            createTestTag("tag-2", "Tag2")
-        );
-
-        // Act
-        aspect.beforeTagSaveAll(null, tags);
-
-        // Assert - verify that the aspect doesn't throw any exceptions
-        assertDoesNotThrow(() -> {
-            // The aspect should capture the original states internally
-        });
-    }
-
-    @Test
-    void testAfterTagSave_WithOriginalState() {
-        // Arrange
-        Tag tag = createTestTag("tag-1", "UpdatedName");
-        
-        // First capture the original state
-        aspect.beforeTagSave(null, tag);
-
-        // Act
-        aspect.afterTagSave(null, tag, tag);
+        // Act - call the after save method
+        machineTagEventAspect.afterTagSave(null, tag, tag);
 
         // Assert
-        verify(machineTagEventService).processTagSave(tag);
+        verify(machineTagEventService, times(1)).processTagSave(tag);
     }
 
     @Test
-    void testAfterTagSave_WithoutOriginalState() {
+    void testTagSaveAspect_WithoutOriginalState() {
         // Arrange
-        Tag tag = createTestTag("tag-1", "NewTag");
+        Tag tag = new Tag();
+        tag.setId("tag-1");
+        tag.setName("test-tag");
+        tag.setColor("#FF0000");
 
-        // Act - call afterTagSave without calling beforeTagSave first
-        aspect.afterTagSave(null, tag, tag);
+        // Act - call the after save method without capturing original state
+        machineTagEventAspect.afterTagSave(null, tag, tag);
 
-        // Assert - should not call the service since there's no original state
-        verify(machineTagEventService, never()).processTagSave(any());
+        // Assert - should not call service because no original state was captured
+        verify(machineTagEventService, never()).processTagSave(any(Tag.class));
     }
 
     @Test
-    void testAfterTagSaveAll_WithOriginalStates() {
+    void testTagSaveAllAspect_WithOriginalStates() {
         // Arrange
-        List<Tag> tags = Arrays.asList(
-            createTestTag("tag-1", "Tag1"),
-            createTestTag("tag-2", "Tag2")
-        );
-        
-        // First capture the original states
-        aspect.beforeTagSaveAll(null, tags);
+        Tag tag1 = new Tag();
+        tag1.setId("tag-1");
+        tag1.setName("test-tag-1");
+        tag1.setColor("#FF0000");
 
-        // Act
-        aspect.afterTagSaveAll(null, tags, tags);
+        Tag tag2 = new Tag();
+        tag2.setId("tag-2");
+        tag2.setName("test-tag-2");
+        tag2.setColor("#00FF00");
+
+        List<Tag> tags = Arrays.asList(tag1, tag2);
+
+        // First capture the original states (simulating beforeTagSaveAll)
+        machineTagEventAspect.beforeTagSaveAll(null, tags);
+
+        // Act - call the after save method
+        machineTagEventAspect.afterTagSaveAll(null, tags, tags);
 
         // Assert
-        verify(machineTagEventService, times(2)).processTagSave(any(Tag.class));
+        verify(machineTagEventService, times(1)).processTagSave(tag1);
+        verify(machineTagEventService, times(1)).processTagSave(tag2);
     }
 
     @Test
-    void testAfterTagSaveAll_WithoutOriginalStates() {
+    void testTagSaveAspect_NewTag() {
         // Arrange
-        List<Tag> tags = Arrays.asList(
-            createTestTag("tag-1", "Tag1"),
-            createTestTag("tag-2", "Tag2")
-        );
+        Tag tag = new Tag();
+        tag.setName("new-tag");
+        tag.setColor("#FF0000");
+        // Note: No ID set, so this is a new tag
 
-        // Act - call afterTagSaveAll without calling beforeTagSaveAll first
-        aspect.afterTagSaveAll(null, tags, tags);
+        // Act - call the after save method without capturing original state
+        machineTagEventAspect.afterTagSave(null, tag, tag);
 
-        // Assert - should not call the service since there are no original states
-        verify(machineTagEventService, never()).processTagSave(any());
+        // Assert - should not call service because tag has no ID
+        verify(machineTagEventService, never()).processTagSave(any(Tag.class));
+    }
+
+    @Test
+    void testTagSaveAllAspect_MixedTags() {
+        // Arrange
+        Tag existingTag = new Tag();
+        existingTag.setId("tag-1");
+        existingTag.setName("existing-tag");
+        existingTag.setColor("#FF0000");
+
+        Tag newTag = new Tag();
+        newTag.setName("new-tag");
+        newTag.setColor("#00FF00");
+
+        List<Tag> tags = Arrays.asList(existingTag, newTag);
+
+        // First capture the original states (only existingTag will be captured)
+        machineTagEventAspect.beforeTagSaveAll(null, tags);
+
+        // Act - call the after save method
+        machineTagEventAspect.afterTagSaveAll(null, tags, tags);
+
+        // Assert - only existingTag should be processed
+        verify(machineTagEventService, times(1)).processTagSave(existingTag);
+        verify(machineTagEventService, never()).processTagSave(newTag);
     }
 
     @Test
     void testErrorHandling_MachineSave() {
         // Arrange
-        Machine machine = createTestMachine("machine-1", "org-1");
+        Machine machine = new Machine();
+        machine.setId("machine-1");
+        machine.setHostname("test-machine");
+        
         doThrow(new RuntimeException("Service error"))
             .when(machineTagEventService).processMachineSave(machine);
 
-        // Act & Assert
-        assertDoesNotThrow(() -> {
-            aspect.afterMachineSave(null, machine, machine);
-        });
+        // Act & Assert - should not throw exception
+        machineTagEventAspect.afterMachineSave(null, machine, machine);
 
         // Should still call the service
-        verify(machineTagEventService).processMachineSave(machine);
+        verify(machineTagEventService, times(1)).processMachineSave(machine);
     }
 
     @Test
     void testErrorHandling_MachineTagSave() {
         // Arrange
-        MachineTag machineTag = createTestMachineTag("machine-1", "tag-1");
+        MachineTag machineTag = new MachineTag();
+        machineTag.setId("machine-tag-1");
+        machineTag.setMachineId("machine-1");
+        machineTag.setTagId("tag-1");
+        
         doThrow(new RuntimeException("Service error"))
             .when(machineTagEventService).processMachineTagSave(machineTag);
 
-        // Act & Assert
-        assertDoesNotThrow(() -> {
-            aspect.afterMachineTagSave(null, machineTag, machineTag);
-        });
+        // Act & Assert - should not throw exception
+        machineTagEventAspect.afterMachineTagSave(null, machineTag, machineTag);
 
         // Should still call the service
-        verify(machineTagEventService).processMachineTagSave(machineTag);
+        verify(machineTagEventService, times(1)).processMachineTagSave(machineTag);
     }
 
     @Test
     void testErrorHandling_TagSave() {
         // Arrange
-        Tag tag = createTestTag("tag-1", "TagName");
-        aspect.beforeTagSave(null, tag); // Capture original state
+        Tag tag = new Tag();
+        tag.setId("tag-1");
+        tag.setName("test-tag");
+        tag.setColor("#FF0000");
+        
+        // First capture the original state
+        machineTagEventAspect.beforeTagSave(null, tag);
         
         doThrow(new RuntimeException("Service error"))
             .when(machineTagEventService).processTagSave(tag);
 
-        // Act & Assert
-        assertDoesNotThrow(() -> {
-            aspect.afterTagSave(null, tag, tag);
-        });
+        // Act & Assert - should not throw exception
+        machineTagEventAspect.afterTagSave(null, tag, tag);
 
         // Should still call the service
-        verify(machineTagEventService).processTagSave(tag);
+        verify(machineTagEventService, times(1)).processTagSave(tag);
     }
 
     @Test
@@ -236,38 +263,31 @@ public class MachineTagEventAspectTest {
         // Arrange
         Object invalidObject = "not a machine";
 
-        // Act & Assert
-        assertDoesNotThrow(() -> {
-            aspect.afterMachineSave(null, invalidObject, invalidObject);
-        });
+        // Act & Assert - should not throw exception
+        machineTagEventAspect.afterMachineSave(null, invalidObject, invalidObject);
 
         // Should not call the service due to ClassCastException
         verify(machineTagEventService, never()).processMachineSave(any());
     }
 
-    // Helper methods
-    private Machine createTestMachine(String machineId, String organizationId) {
-        Machine machine = new Machine();
-        machine.setMachineId(machineId);
-        machine.setOrganizationId(organizationId);
-        machine.setType(DeviceType.SERVER);
-        machine.setStatus(DeviceStatus.DECOMMISSIONED);
-        machine.setOsType("Linux");
-        machine.setLastSeen(Instant.now());
-        return machine;
-    }
-
-    private Tag createTestTag(String id, String name) {
+    @Test
+    void testOriginalTagStatesCleanup() {
+        // Arrange
         Tag tag = new Tag();
-        tag.setId(id);
-        tag.setName(name);
-        return tag;
-    }
+        tag.setId("tag-1");
+        tag.setName("test-tag");
+        tag.setColor("#FF0000");
 
-    private MachineTag createTestMachineTag(String machineId, String tagId) {
-        MachineTag machineTag = new MachineTag();
-        machineTag.setMachineId(machineId);
-        machineTag.setTagId(tagId);
-        return machineTag;
+        // Capture original state
+        machineTagEventAspect.beforeTagSave(null, tag);
+
+        // Act - process the save
+        machineTagEventAspect.afterTagSave(null, tag, tag);
+
+        // Act again - should not process because original state was removed
+        machineTagEventAspect.afterTagSave(null, tag, tag);
+
+        // Assert - should only be called once
+        verify(machineTagEventService, times(1)).processTagSave(tag);
     }
 } 
