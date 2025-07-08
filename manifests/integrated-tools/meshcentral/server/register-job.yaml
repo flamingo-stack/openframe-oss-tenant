@@ -86,20 +86,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
-                  "debeziumConnector": {
-                    "name": "meshcentral-mongo-connector",
-                    "config": {
-                      "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
-                      "mongodb.connection.string": "mongodb://'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0",
-                      "mongodb.name": "meshcentral",
-                      "topic.prefix": "meshcentral",
-                      "collection.include.list": "meshcentral.power,meshcentral.events",
-                      "transforms": "route",
-                      "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
-                      "transforms.route.regex": ".*",
-                      "transforms.route.replacement": "meshcentral.mongodb.events"
-                    }
-                  }
+                  "debeziumConnector": null
                 }
               }' \
               --retry-delay 2 \
