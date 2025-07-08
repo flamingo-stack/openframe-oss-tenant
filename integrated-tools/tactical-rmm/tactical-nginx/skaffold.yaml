@@ -56,4 +56,4 @@ build:
     push: false
 manifests:
   rawYaml:
-    - ../../../manifests/integrated-tools/base/tactical-rmm/tactical-nginx
+    - ../../../manifests/integrated-tools/tactical-rmm/tactical-nginx

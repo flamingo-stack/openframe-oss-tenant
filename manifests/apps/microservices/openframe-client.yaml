@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/microservices/base/openframe-client
+      path: manifests/microservices/openframe-client
 
   destination:
     name: in-cluster

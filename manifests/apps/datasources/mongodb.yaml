@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/datasources/base/mongodb
+      path: manifests/datasources/mongodb
 
   destination:
     name: in-cluster
