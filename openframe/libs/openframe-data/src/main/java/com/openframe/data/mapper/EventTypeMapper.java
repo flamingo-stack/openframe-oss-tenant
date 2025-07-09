@@ -37,7 +37,15 @@ public class EventTypeMapper {
     }
 
     private static void initializeDefaultMappings() {
-        // MeshCentral mappings
+        // MeshCentral mappings - Updated to match actual event types from deserializer
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user", UnifiedEventType.LOGIN); // For user events (login/logout)
+        registerMapping(IntegratedToolType.MESHCENTRAL, "server", UnifiedEventType.SYSTEM_START); // For server events
+        registerMapping(IntegratedToolType.MESHCENTRAL, "login", UnifiedEventType.LOGIN); // Direct action mapping
+        registerMapping(IntegratedToolType.MESHCENTRAL, "logout", UnifiedEventType.LOGOUT); // Direct action mapping
+        registerMapping(IntegratedToolType.MESHCENTRAL, "started", UnifiedEventType.SYSTEM_START); // Direct action mapping
+        registerMapping(IntegratedToolType.MESHCENTRAL, "servertimelinestats", UnifiedEventType.SYSTEM_MONITORING); // Direct action mapping
+        
+        // Legacy mappings (keeping for backward compatibility)
         registerMapping(IntegratedToolType.MESHCENTRAL, "user.login", UnifiedEventType.LOGIN);
         registerMapping(IntegratedToolType.MESHCENTRAL, "user.logout", UnifiedEventType.LOGOUT);
         registerMapping(IntegratedToolType.MESHCENTRAL, "device.connect", UnifiedEventType.DEVICE_ONLINE);
@@ -45,6 +53,25 @@ public class EventTypeMapper {
         registerMapping(IntegratedToolType.MESHCENTRAL, "file.transfer", UnifiedEventType.FILE_TRANSFER);
         registerMapping(IntegratedToolType.MESHCENTRAL, "remote.session.start", UnifiedEventType.REMOTE_SESSION_START);
         registerMapping(IntegratedToolType.MESHCENTRAL, "remote.session.end", UnifiedEventType.REMOTE_SESSION_END);
+        
+        // Additional MeshCentral event type mappings based on actual event data
+        registerMapping(IntegratedToolType.MESHCENTRAL, "userconnect", UnifiedEventType.LOGIN);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "userdisconnect", UnifiedEventType.LOGOUT);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "agentconnect", UnifiedEventType.DEVICE_ONLINE);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "agentdisconnect", UnifiedEventType.DEVICE_OFFLINE);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "agentinstall", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "agentupdate", UnifiedEventType.DEVICE_UPDATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "filesend", UnifiedEventType.FILE_TRANSFER);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "filereceive", UnifiedEventType.FILE_TRANSFER);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "kvmconnect", UnifiedEventType.REMOTE_SESSION_START);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "kvmdisconnect", UnifiedEventType.REMOTE_SESSION_END);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "terminalconnect", UnifiedEventType.REMOTE_SESSION_START);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "terminaldisconnect", UnifiedEventType.REMOTE_SESSION_END);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "filesconnect", UnifiedEventType.REMOTE_SESSION_START);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "filesdisconnect", UnifiedEventType.REMOTE_SESSION_END);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "heartbeat", UnifiedEventType.DEVICE_HEARTBEAT);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "status", UnifiedEventType.SYSTEM_STATUS);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "serverstatus", UnifiedEventType.SYSTEM_STATUS);
 
         // Tactical RMM mappings
         registerMapping(IntegratedToolType.TACTICAL, "user_login", UnifiedEventType.LOGIN);

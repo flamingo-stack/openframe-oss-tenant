@@ -93,7 +93,7 @@ spec:
                       "mongodb.connection.string": "mongodb://'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0",
                       "mongodb.name": "meshcentral",
                       "topic.prefix": "meshcentral",
-                      "collection.include.list": "meshcentral.power,meshcentral.events",
+                      "collection.include.list": "meshcentral.events",
                       "transforms": "route",
                       "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
                       "transforms.route.regex": ".*",

@@ -50,6 +50,14 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
             });
         }
         
+        // Set unified event type information from the message
+        integratedToolEnrichedData.setToolName(message.getToolType().getDbName());
+        integratedToolEnrichedData.setSourceEventType(message.getSourceEventType());
+        integratedToolEnrichedData.setUnifiedEventType(message.getEventType());
+        
+        log.debug("Enriched data for agent {}: tool={}, sourceEvent={}, unifiedEvent={}", 
+                agentId, message.getToolType().getDbName(), message.getSourceEventType(), message.getEventType());
+        
         return integratedToolEnrichedData;
     }
 

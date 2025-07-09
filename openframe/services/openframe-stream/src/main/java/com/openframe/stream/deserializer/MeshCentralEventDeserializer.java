@@ -73,12 +73,53 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
 
     @Override
     protected String getEventToolId(MeshCentralEventMessage deserializedMessage) {
-        return "";
+        JsonNode event = deserializedMessage.getAfter();
+        if (event == null || event.asText().trim().isEmpty()) {
+            return "";
+        }
+        try {
+            event = mapper.readTree(event.asText());
+            
+            // Extract _id from MeshCentral event structure
+            JsonNode idNode = event.get("_id");
+            if (idNode != null) {
+                // Handle MongoDB ObjectId format: {"$oid": "686e70d8a6a36a003412d5e5"}
+                JsonNode oidNode = idNode.get("$oid");
+                if (oidNode != null && !oidNode.asText().isEmpty()) {
+                    return oidNode.asText();
+                }
+                if (!idNode.asText().isEmpty()) {
+                    return idNode.asText();
+                }
+            }
+            
+            return "";
+        } catch (IOException e) {
+            log.error("Error parsing event tool ID from MeshCentral event: {}", e.getMessage());
+            return "";
+        }
     }
 
     @Override
     protected String getUserId(MeshCentralEventMessage deserializedMessage) {
-        return "";
+        JsonNode event = deserializedMessage.getAfter();
+        if (event == null || event.asText().trim().isEmpty()) {
+            return "";
+        }
+        try {
+            event = mapper.readTree(event.asText());
+
+            // Extract event type from MeshCentral event structure
+            JsonNode eventTypeNode = event.get("userid");
+            if (eventTypeNode != null && !eventTypeNode.asText().isEmpty()) {
+                return eventTypeNode.asText();
+            }
+
+            return "";
+        } catch (IOException e) {
+            log.error("Error parsing event type from MeshCentral event: {}", e.getMessage());
+            return "unknown";
+        }
     }
 
     @Override

@@ -17,7 +17,7 @@ public class JsonKafkaListener {
     }
 
     @KafkaListener(topics = {"${kafka.consumer.topic.event.meshcentral.name}", "${kafka.consumer.topic.event.tactical-rmm.name}"},
-            groupId = "${spring.kafka.consumer.group-id}")
+            groupId = "test-group-8")
     public void listenIntegratedToolsEvents(Map<String, Object> message) {
         MessageType messageType = MessageTypeResolver.resolve(message);
         messageProcessor.process(message, messageType);

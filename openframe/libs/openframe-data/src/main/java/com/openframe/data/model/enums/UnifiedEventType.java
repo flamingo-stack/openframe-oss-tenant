@@ -52,7 +52,13 @@ public enum UnifiedEventType {
     // System events
     SYSTEM_STARTUP("System", "System startup"),
     SYSTEM_SHUTDOWN("System", "System shutdown"),
+    SYSTEM_START("System", "System started"),
+    SYSTEM_MONITORING("System", "System monitoring event"),
+    SYSTEM_STATUS("System", "System status update"),
     SYSTEM_ERROR("System", "System error occurred"),
+
+    // Device events
+    DEVICE_HEARTBEAT("Device Management", "Device heartbeat"),
 
     // Unknown events
     UNKNOWN("Unknown", "Unknown event type");

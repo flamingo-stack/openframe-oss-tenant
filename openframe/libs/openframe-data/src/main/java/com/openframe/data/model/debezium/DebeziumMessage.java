@@ -46,7 +46,7 @@ public abstract class DebeziumMessage implements DeserializedKafkaMessage {
 
     public UnifiedEventType getEventType() {
         if (unifiedEventType == null) {
-            unifiedEventType = EventTypeMapper.mapToUnifiedType(getToolType(), getSourceEventType());
+            unifiedEventType = EventTypeMapper.mapToUnifiedType(getToolType(), sourceEventType);
         }
         return unifiedEventType;
     }
