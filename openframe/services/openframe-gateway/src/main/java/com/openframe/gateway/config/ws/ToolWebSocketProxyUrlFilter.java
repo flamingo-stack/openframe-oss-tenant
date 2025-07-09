@@ -3,9 +3,9 @@ package com.openframe.gateway.config.ws;
 import com.openframe.core.model.IntegratedTool;
 import com.openframe.core.model.ToolUrl;
 import com.openframe.core.model.ToolUrlType;
+import com.openframe.core.service.ProxyUrlResolver;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
-import com.openframe.gateway.service.ProxyUrlResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -14,7 +14,6 @@ import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;

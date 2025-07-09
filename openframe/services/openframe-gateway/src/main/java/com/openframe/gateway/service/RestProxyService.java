@@ -1,22 +1,15 @@
 package com.openframe.gateway.service;
 
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.ToolCredentials;
-import com.openframe.core.model.ToolUrl;
-import com.openframe.core.model.ToolUrlType;
-import com.openframe.core.model.APIKeyType;
+import com.openframe.core.model.*;
+import com.openframe.core.service.ProxyUrlResolver;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import com.openframe.gateway.config.CurlLoggingHandler;
-import io.netty.util.AttributeKey;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
@@ -26,12 +19,12 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
+import javax.net.ssl.SSLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import javax.net.ssl.SSLException;
 
 import static com.openframe.core.constants.HttpHeaders.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -83,7 +76,6 @@ public class RestProxyService {
         headers.put(CONTENT_TYPE, APPLICATION_JSON);
         headers.put(ACCEPT, APPLICATION_JSON);
 
-        String toolId = tool.getId();
         ToolCredentials credentials = tool.getCredentials();
         APIKeyType apiKeyType = credentials != null
                 && credentials.getApiKey() != null ? credentials.getApiKey().getType() : APIKeyType.NONE;
@@ -186,7 +178,7 @@ public class RestProxyService {
             requestSpec.bodyValue(body);
         }
 
-        Mono<ResponseEntity<String>> monoResponseEntity = null;
+        Mono<ResponseEntity<String>> monoResponseEntity;
         try {
             monoResponseEntity = requestSpec
                     .retrieve()

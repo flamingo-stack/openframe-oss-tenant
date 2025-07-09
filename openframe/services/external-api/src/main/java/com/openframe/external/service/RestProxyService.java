@@ -1,6 +1,7 @@
 package com.openframe.external.service;
 
 import com.openframe.core.model.*;
+import com.openframe.core.service.ProxyUrlResolver;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,8 +38,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.openframe.core.constants.HttpHeaders.*;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Service
 @Slf4j
@@ -150,7 +149,7 @@ public class RestProxyService {
                 log.debug("Added header: {} = {}", header.getKey(), header.getValue());
             }
 
-            if (isNotEmpty(body)) {
+            if (body != null && !body.isEmpty()) {
                 log.debug("Setting request body (length: {})", body.length());
                 StringEntity entity = new StringEntity(body, ContentType.APPLICATION_JSON);
                 httpRequest.setEntity(entity);
