@@ -3,13 +3,18 @@ kind: Config
 metadata:
   name: fleetmdm
 build:
-  tagPolicy:
-    customTemplate:
-      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/fleetmdm
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
       docker:
         dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
   local:
     useDockerCLI: false
     useBuildkit: true

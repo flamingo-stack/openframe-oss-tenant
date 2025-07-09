@@ -5,6 +5,16 @@ metadata:
 build:
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/openframe-ui
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
       docker: {}
   local:
     useDockerCLI: false
