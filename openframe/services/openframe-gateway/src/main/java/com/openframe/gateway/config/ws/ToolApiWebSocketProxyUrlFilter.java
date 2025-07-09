@@ -1,20 +1,9 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.core.model.*;
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
+import com.openframe.core.service.ProxyUrlResolver;
+import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
-import com.openframe.gateway.service.ProxyUrlResolver;
-import lombok.RequiredArgsConstructor;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.RouteToRequestUrlFilter;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
-
-import java.net.URI;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_API_WS_ENDPOINT_PREFIX;
 
@@ -22,7 +11,7 @@ import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_API_W
 public class ToolApiWebSocketProxyUrlFilter extends ToolWebSocketProxyUrlFilter {
 
     public ToolApiWebSocketProxyUrlFilter(
-            IntegratedToolRepository toolRepository,
+            ReactiveIntegratedToolRepository toolRepository,
             ToolUrlService toolUrlService,
             ProxyUrlResolver proxyUrlResolver
     ) {
