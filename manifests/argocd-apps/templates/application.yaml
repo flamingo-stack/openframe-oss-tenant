@@ -1,8 +1,8 @@
 {{- range $categoryName, $category := .Values }}
-  {{- if and (kindIs "map" $category) (or (not (hasKey $category "enabled")) $category.enabled) }}
-    {{- if hasKey $category "apps" }}
-      {{- range $app := $category.apps }}
-        {{- if or (not (hasKey $app "enabled")) $app.enabled }}
+  {{- if and (kindIs "map" $category) (hasKey $category "apps") }}
+    {{- range $app := $category.apps }}
+      {{- $skip := include "openframe.shouldSkipApp" (list $app $category $.Values) | trim | lower }}
+      {{- if ne $skip "true" }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -12,10 +12,13 @@ metadata:
     argocd.argoproj.io/sync-wave: "{{ default $category.syncWave $app.syncWave }}"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+
 spec:
-  project: {{ $category.project }}
+  project: {{ default $category.project $app.project }}
+
   sources:
     {{- if $app.helm }}
+    # Helm chart
     - repoURL: {{ $app.helm.repoURL }}
       targetRevision: {{ $app.helm.version }}
       chart: {{ $app.helm.chart }}
@@ -24,27 +27,37 @@ spec:
         valueFiles:
           - "$values/{{ $app.helm.valuesPath }}"
         {{- end }}
+    - repoURL: {{ $.Values.repoURL }}
+      targetRevision: {{ $.Values.repoBranch }}
+      ref: values
     {{- end }}
-    - repoURL: {{ $.Values.extra.repoURL }}
-      targetRevision: {{ $.Values.extra.revision }}
-      path: values
+    # Extra resources
+    - repoURL: {{ $.Values.repoURL }}
+      targetRevision: {{ $.Values.repoBranch }}
+      path: {{ printf "%s/%s/%s" $.Values.repoDir $category.namespace $app.name }}
+
   destination:
     name: in-cluster
-    namespace: {{ $category.namespace }}
+    namespace: {{ default $category.namespace $app.namespace }}
+
   syncPolicy:
     automated:
       selfHeal: true
       prune: true
     syncOptions:
       - CreateNamespace=false
+      {{- if and (hasKey $app "syncOptions") (hasKey $app.syncOptions "ServerSideApply") (typeIs "bool" $app.syncOptions.ServerSideApply) }}
+      - ServerSideApply={{ $app.syncOptions.ServerSideApply }}
+      {{- else }}
       - ServerSideApply=false
+      {{- end }}
     retry:
       limit: -1
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 30m
-        {{- end }}
+
       {{- end }}
     {{- end }}
   {{- end }}
