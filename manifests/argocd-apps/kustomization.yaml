@@ -4,6 +4,6 @@ kind: Kustomization
 resources:
   - ./client-tools
   - ./datasources
-  - ./integrated-tools
+  # - ./integrated-tools
   - ./microservices
   - ./platform
