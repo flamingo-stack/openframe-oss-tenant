@@ -33,27 +33,27 @@ initDB:
   cassandra-init.cql: |
     CREATE KEYSPACE IF NOT EXISTS openframe_events
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-
+  
     USE openframe_events;
-
+    
     CREATE TABLE IF NOT EXISTS unified_logs (
-        id          text,
-        tool_name   text,
-        tool_id     text,
-        machine_id  text,
-        event_type  text,
-        timestamp   timestamp,
-        operation   text,
-        before_data text,
-        after_data  text,
-        source      text,
-        PRIMARY KEY (id, timestamp, tool_name, tool_id, machine_id)
-    ) WITH CLUSTERING ORDER BY (timestamp DESC, tool_name ASC, tool_id ASC);
-
-    CREATE INDEX IF NOT EXISTS idx_unified_logs_type ON unified_logs(event_type);
-    CREATE INDEX IF NOT EXISTS idx_unified_logs_tool_name ON unified_logs(tool_name);
-    CREATE INDEX IF NOT EXISTS idx_unified_logs_tool_id ON unified_logs(tool_id);
-    CREATE INDEX IF NOT EXISTS idx_unified_logs_machine_id ON unified_logs(machine_id);
+    ingest_day      text,
+    tool_type       text,
+    event_type      text,
+    timestamp       timestamp,
+    tool_event_id   text,
+    user_id         text,
+    device_id       text,
+    severity        text,
+    message         text,
+    details         map<text, text>,
+    PRIMARY KEY ((ingest_day, tool_type), event_type, timestamp, tool_event_id)
+    ) WITH CLUSTERING ORDER BY (event_type ASC, timestamp DESC, tool_event_id ASC);
+    
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_event_type ON unified_logs(event_type);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_tool_type ON unified_logs(tool_type);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_user_id ON unified_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_device_id ON unified_logs(device_id);
 # initDBConfigMap: ""
 
 cluster:
