@@ -1,7 +1,7 @@
 package com.openframe.stream.deserializer;
 
 import com.openframe.data.model.kafka.DeserializedKafkaMessage;
-import com.openframe.stream.enumeration.MessageType;
+import com.openframe.data.model.enums.MessageType;
 
 import java.util.Map;
 

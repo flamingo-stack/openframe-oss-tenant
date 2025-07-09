@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/unified-event-type
       path: manifests/microservices/openframe-management
 
   destination:

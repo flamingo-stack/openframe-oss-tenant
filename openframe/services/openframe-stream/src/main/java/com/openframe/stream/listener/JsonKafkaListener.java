@@ -1,13 +1,11 @@
 package com.openframe.stream.listener;
 
-import com.openframe.stream.enumeration.MessageType;
+import com.openframe.data.model.enums.MessageType;
 import com.openframe.stream.processor.GenericJsonMessageProcessor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Service
 public class JsonKafkaListener {

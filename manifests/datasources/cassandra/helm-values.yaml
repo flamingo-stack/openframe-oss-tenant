@@ -36,7 +36,7 @@ initDB:
 
     USE openframe_events;
 
-    CREATE TABLE IF NOT EXISTS integrated_tool_event (
+    CREATE TABLE IF NOT EXISTS unified_logs (
         id          text,
         tool_name   text,
         tool_id     text,
@@ -50,10 +50,10 @@ initDB:
         PRIMARY KEY (id, timestamp, tool_name, tool_id, machine_id)
     ) WITH CLUSTERING ORDER BY (timestamp DESC, tool_name ASC, tool_id ASC);
 
-    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_type ON integrated_tool_event(event_type);
-    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_tool_name ON integrated_tool_event(tool_name);
-    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_tool_id ON integrated_tool_event(tool_id);
-    CREATE INDEX IF NOT EXISTS idx_integrated_tool_event_machine_id ON integrated_tool_event(machine_id);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_type ON unified_logs(event_type);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_tool_name ON unified_logs(tool_name);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_tool_id ON unified_logs(tool_id);
+    CREATE INDEX IF NOT EXISTS idx_unified_logs_machine_id ON unified_logs(machine_id);
 # initDBConfigMap: ""
 
 cluster:

@@ -1,7 +1,7 @@
 package com.openframe.stream.listener;
 
-import com.openframe.stream.enumeration.MessageType;
-import com.openframe.stream.enumeration.IntegratedTool;
+import com.openframe.data.model.enums.MessageType;
+import com.openframe.data.model.enums.IntegratedToolType;
 
 import java.util.Map;
 
@@ -24,16 +24,14 @@ public class MessageTypeResolver {
             
             // Get database name
             Object database = sourceMap.get("db");
-            if (!(database instanceof String)) {
+            if (!(database instanceof String databaseName)) {
                 return null;
             }
-            
-            String databaseName = (String) database;
-            
+
             // Determine integrated tool based on database name
-            return (databaseName.equals(IntegratedTool.MESHCENTRAL.getDbName()))
+            return (databaseName.equals(IntegratedToolType.MESHCENTRAL.getDbName()))
                     ? MessageType.MESHCENTRAL_EVENT
-                    : databaseName.equals(IntegratedTool.TACTICAL.getDbName()) ? MessageType.TACTICAL_EVENT
+                    : databaseName.equals(IntegratedToolType.TACTICAL.getDbName()) ? MessageType.TACTICAL_EVENT
                     : null;
 
         } catch (Exception e) {

@@ -1,19 +1,21 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.cassandra.CassandraITEventEntity;
+import com.openframe.data.model.cassandra.UnifiedLogEvent;
 import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
-import com.openframe.stream.enumeration.Destination;
-import com.openframe.stream.enumeration.IntegratedTool;
+import com.openframe.data.model.enums.Destination;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.repository.CassandraRepository;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
-public abstract class DebeziumCassandraMessageHandler<T extends CassandraITEventEntity, U extends DebeziumMessage> extends DebeziumMessageHandler<T, U> {
+public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<UnifiedLogEvent, DebeziumMessage> {
 
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
     private final CassandraRepository repository;
 
     protected DebeziumCassandraMessageHandler(CassandraRepository repository, ObjectMapper objectMapper) {
@@ -26,78 +28,49 @@ public abstract class DebeziumCassandraMessageHandler<T extends CassandraITEvent
         return Destination.CASSANDRA;
     }
 
-    protected void mapEvent(T entity, DebeziumMessage debeziumMessage) {
-        entity.setEventType(determineEventType(debeziumMessage));
-
-        entity.setOperation(debeziumMessage.getOperation());
-
-        entity.setBeforeData(jsonNodeToString(debeziumMessage.getBefore()));
-        entity.setAfterData(jsonNodeToString(debeziumMessage.getAfter()));
-        entity.setSource(sourceToString(debeziumMessage.getSource()));
-    }
-
-    protected CassandraITEventEntity.CassandraITEventKey createKey(DebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData,
-                                                                   IntegratedTool integratedTool) {
-            CassandraITEventEntity.CassandraITEventKey key = new CassandraITEventEntity.CassandraITEventKey();
-
-            String toolId = debeziumMessage.getAgentId();
-            key.setToolId(toolId != null ? toolId : "");
-            key.setToolName(integratedTool.getDbName());
-
-            if (debeziumMessage.getTimestamp() != null) {
-                key.setTimestamp(Instant.ofEpochMilli(debeziumMessage.getTimestamp()));
-            } else {
-                key.setTimestamp(Instant.now());
-            }
-
-            key.setMachineId(enrichedData.getMachineId() != null ? enrichedData.getMachineId() : "");
-            key.setId(key.generatePK());
-
-            return key;
-    }
-
-    private String determineEventType(DebeziumMessage debeziumMessage) {
-        String operation = debeziumMessage.getOperation();
-        String tableName = debeziumMessage.getTableName();
-
-        return String.format("%s_%s", tableName, operation).toUpperCase();
-    }
-
-    private String jsonNodeToString(com.fasterxml.jackson.databind.JsonNode node) {
-        if (node == null || node.isNull()) {
-            return null;
-        }
-
+    @Override
+    protected UnifiedLogEvent transform(DebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+        UnifiedLogEvent logEvent = new UnifiedLogEvent();
         try {
-            return mapper.writeValueAsString(node);
+            UnifiedLogEvent.UnifiedLogEventKey key = createKey(debeziumMessage);
+            logEvent.setKey(key);
+            logEvent.setUserId(debeziumMessage.getUserId());
+            logEvent.setDeviceId(enrichedData.getMachineId());
+            logEvent.setSeverity(debeziumMessage.getSeverity());
+            logEvent.setDetails(debeziumMessage.getDetails());
+
         } catch (Exception e) {
-            log.warn("Failed to serialize JsonNode to string", e);
-            return node.toString();
+            log.error("Error processing Kafka message", e);
+            throw e;
         }
+        return logEvent;
     }
 
-    private String sourceToString(DebeziumMessage.Source source) {
-        if (source == null) {
-            return null;
-        }
-        try {
-            return mapper.writeValueAsString(source);
-        } catch (Exception e) {
-            log.warn("Failed to serialize Source to string", e);
-            return source.toString();
-        }
+    protected UnifiedLogEvent.UnifiedLogEventKey createKey(DebeziumMessage debeziumMessage) {
+        UnifiedLogEvent.UnifiedLogEventKey key = new UnifiedLogEvent.UnifiedLogEventKey();
+        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getTimestamp());
+
+        key.setIngestDay(formatter.format(timestamp));
+        key.setToolType(debeziumMessage.getToolType().getDbName());
+        key.setEventType(debeziumMessage.getEventType().name());
+        key.setTimestamp(timestamp);
+        key.setToolEventId(debeziumMessage.getEventToolId());
+
+        return key;
     }
 
-    protected void handleCreate(T data) {
+    protected void handleCreate(UnifiedLogEvent data) {
         repository.save(data);
     }
 
-    protected void handleRead(T message) {
+    protected void handleRead(UnifiedLogEvent message) {
         handleCreate(message);
     }
-    protected void handleUpdate(T message) {
+
+    protected void handleUpdate(UnifiedLogEvent message) {
         handleCreate(message);
     }
-    protected void handleDelete(T data) {
+
+    protected void handleDelete(UnifiedLogEvent data) {
     }
 }

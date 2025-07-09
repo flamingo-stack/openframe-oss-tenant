@@ -1,13 +1,14 @@
-package com.openframe.stream.enumeration;
+package com.openframe.data.model.enums;
 
-public enum IntegratedTool {
+public enum IntegratedToolType {
 
     MESHCENTRAL ("meshcentral"),
-    TACTICAL ("tacticalrmm");
+    TACTICAL ("tactical-rmm"),
+    FLEET ("fleet-mdm");
 
     private final String dbName;
 
-    IntegratedTool(String name) {
+    IntegratedToolType(String name) {
         this.dbName = name;
     }
 

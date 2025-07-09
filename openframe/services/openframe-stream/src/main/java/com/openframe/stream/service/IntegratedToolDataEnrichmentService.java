@@ -6,7 +6,7 @@ import com.openframe.data.model.debezium.ExtraParams;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.repository.mongo.ToolConnectionRepository;
 import com.openframe.data.repository.redis.RedisRepository;
-import com.openframe.stream.enumeration.DataEnrichmentServiceType;
+import com.openframe.data.model.enums.DataEnrichmentServiceType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
