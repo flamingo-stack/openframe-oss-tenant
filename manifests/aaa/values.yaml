@@ -26,8 +26,9 @@ clientTools:
         valuesPath: manifests/client-tools/debezium-ui/helm-values.yaml
 
 platform:
+  enable: false
   namespace: platform
-  project: default
+  project: platform
   syncWave: "1"
   apps:
     - name: cert-manager
@@ -45,4 +46,4 @@ platform:
         valuesPath: manifests/platform/ingress-nginx/helm-values.yaml
 
     - name: namespace-platform
-      # No Helm block — pure K8s manifests only
+      # Pure manifests, no Helm block

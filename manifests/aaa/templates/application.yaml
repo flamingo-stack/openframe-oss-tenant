@@ -1,7 +1,8 @@
 {{- range $categoryName, $category := .Values }}
-  {{- if kindIs "map" $category }}
+  {{- if and (kindIs "map" $category) (or (not (hasKey $category "enabled")) $category.enabled) }}
     {{- if hasKey $category "apps" }}
       {{- range $app := $category.apps }}
+        {{- if or (not (hasKey $app "enabled")) $app.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -13,27 +14,23 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: {{ $category.project }}
-
   sources:
     {{- if $app.helm }}
     - repoURL: {{ $app.helm.repoURL }}
       targetRevision: {{ $app.helm.version }}
       chart: {{ $app.helm.chart }}
       helm:
+        {{- if $app.helm.valuesPath }}
         valueFiles:
           - "$values/{{ $app.helm.valuesPath }}"
-    - repoURL: {{ $.Values.extra.repoURL }}
-      targetRevision: {{ $.Values.extra.revision }}
-      path: values
+        {{- end }}
     {{- end }}
     - repoURL: {{ $.Values.extra.repoURL }}
       targetRevision: {{ $.Values.extra.revision }}
-      ref: openframe/manifests/argocd-apps/templates/application.yaml
-
+      path: values
   destination:
     name: in-cluster
     namespace: {{ $category.namespace }}
-
   syncPolicy:
     automated:
       selfHeal: true
@@ -47,6 +44,7 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 30m
+        {{- end }}
       {{- end }}
     {{- end }}
   {{- end }}
