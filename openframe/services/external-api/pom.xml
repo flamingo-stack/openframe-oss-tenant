@@ -27,8 +27,7 @@
         <!-- OpenFrame Dependencies -->
         <dependency>
             <groupId>com.openframe</groupId>
-            <artifactId>openframe-core</artifactId>
-            <version>${project.version}</version>
+            <artifactId>openframe-data</artifactId>
         </dependency>
 
         <!-- Spring Cloud Config -->
@@ -37,18 +36,23 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
+        <!-- HTTP Client -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
+        
+        <!-- Common Utils -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
         <!-- Swagger/OpenAPI Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.3.0</version>
-        </dependency>
-
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 
