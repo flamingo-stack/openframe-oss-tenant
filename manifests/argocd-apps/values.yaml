@@ -1,6 +1,6 @@
 repoDir: manifests
 repoURL: https://github.com/Flamingo-CX/openframe.git
-repoBranch: main
+repoBranch: feature/ngrok
 
 deployment:
   name: local         # or "cloud"
