@@ -142,7 +142,7 @@ clientTools:
         valuesPath: manifests/client-tools/telepresence/helm-values.yaml
 
 integratedTools:
-  enabled: true
+  enabled: false
   project: integrated-tools
   namespace: integrated-tools
   syncWave: "3"
