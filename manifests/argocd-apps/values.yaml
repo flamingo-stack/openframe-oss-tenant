@@ -1,0 +1,156 @@
+repoDir: manifests
+repoURL: https://github.com/Flamingo-CX/openframe.git
+repoBranch: main
+
+deployment:
+  name: local         # or "cloud"
+  ingress: ngrok      # "ngrok" or "nat"
+
+
+platform:
+  project: platform
+  namespace: platform
+  syncWave: "0"
+  apps:
+    - name: namespace-platform
+      project: default
+    - name: ngrok-operator
+      helm:
+        chart: ngrok-operator
+        repoURL: https://charts.ngrok.com
+        version: 0.19.0
+        valuesPath: manifests/platform/ngrok-operator/helm-values.yaml
+    - name: cert-manager
+      helm:
+        chart: cert-manager
+        repoURL: https://charts.jetstack.io
+        version: 1.17.2
+        valuesPath: manifests/platform/cert-manager/helm-values.yaml
+    - name: ingress-nginx
+      helm:
+        chart: ingress-nginx
+        repoURL: https://kubernetes.github.io/ingress-nginx
+        version: 4.12.1
+        valuesPath: manifests/platform/ingress-nginx/helm-values.yaml
+    - name: promtail
+      helm:
+        chart: promtail
+        repoURL: https://grafana.github.io/helm-charts
+        version: 6.16.6
+        valuesPath: manifests/platform/promtail/helm-values.yaml
+    - name: loki
+      helm:
+        chart: loki
+        repoURL: https://grafana.github.io/helm-charts
+        version: 6.29.0
+        valuesPath: manifests/platform/loki/helm-values.yaml
+    - name: prometheus
+      syncOptions:
+        ServerSideApply: true
+      helm:
+        chart: kube-prometheus-stack
+        repoURL: https://prometheus-community.github.io/helm-charts
+        version: 72.5.1
+        valuesPath: manifests/platform/prometheus/helm-values.yaml
+    - name: grafana
+      syncOptions:
+        ServerSideApply: true
+      helm:
+        chart: grafana
+        repoURL: https://grafana.github.io/helm-charts
+        version: 8.13.1
+        valuesPath: manifests/platform/grafana/helm-values.yaml
+    - name: argocd
+
+datasources:
+  enabled: true
+  project: datasources
+  namespace: datasources
+  syncWave: "1"
+  apps:
+    - name: namespace-datasources
+      project: default
+    - name: mongodb
+    - name: debezium-connect
+    - name: pinot
+    - name: zookeeper
+    - name: cassandra
+      helm:
+        chart: cassandra
+        repoURL: https://charts.bitnami.com/bitnami
+        version: 12.2.1
+        valuesPath: manifests/datasources/cassandra/helm-values.yaml
+    - name: kafka
+      helm:
+        chart: kafka
+        repoURL: https://charts.bitnami.com/bitnami
+        version: 31.5.0
+        valuesPath: manifests/datasources/kafka/helm-values.yaml
+    - name: mongodb-exporter
+      helm:
+        chart: prometheus-mongodb-exporter
+        repoURL: https://prometheus-community.github.io/helm-charts
+        version: 3.11.1
+        valuesPath: manifests/datasources/mongodb-exporter/helm-values.yaml
+    - name: redis
+      helm:
+        chart: redis
+        repoURL: https://charts.bitnami.com/bitnami
+        version: 20.11.3
+        valuesPath: manifests/datasources/redis/helm-values.yaml
+    - name: redis-exporter
+      helm:
+        chart: prometheus-redis-exporter
+        repoURL: https://prometheus-community.github.io/helm-charts
+        version: 6.9.0
+        valuesPath: manifests/datasources/redis-exporter/helm-values.yaml
+
+microservices:
+  project: microservices
+  namespace: microservices
+  syncWave: "2"
+  apps:
+    - name: namespace-microservices
+      project: default
+    - name: openframe-config
+    - name: openframe-management
+    - name: external-api
+    - name: openframe-api
+    - name: openframe-gateway
+    - name: openframe-client
+    - name: openframe-stream
+    - name: openframe-ui
+
+clientTools:
+  project: client-tools
+  namespace: client-tools
+  syncWave: "2"
+  apps:
+    - name: namespace-client-tools
+      project: default
+    - name: mongo-express
+    - name: kafka-ui
+      helm:
+        chart: kafka-ui
+        repoURL: https://kafbat.github.io/helm-charts
+        version: 1.4.12
+        valuesPath: manifests/client-tools/kafka-ui/helm-values.yaml
+    - name: telepresence
+      helm:
+        chart: telepresence-oss
+        repoURL: ghcr.io/telepresenceio
+        version: 2.23.0
+        valuesPath: manifests/client-tools/telepresence/helm-values.yaml
+
+integratedTools:
+  enabled: true
+  project: integrated-tools
+  namespace: integrated-tools
+  syncWave: "3"
+  apps:
+    - name: namespace-integrated-tools
+      project: default
+    - name: authentik
+    - name: fleetmdm
+    - name: meshcentral
+    - name: tactical-rmm
