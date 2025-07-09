@@ -34,7 +34,7 @@ spec:
     # Extra resources
     - repoURL: {{ $.Values.repoURL }}
       targetRevision: {{ $.Values.repoBranch }}
-      path: {{ printf "%s/%s/%s" $.Values.repoDir $category.namespace $app.name }}
+      path: "{{ if regexMatch `^namespace-` $app.name }}{{ printf "%s/%s/namespace" $.Values.repoDir $category.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.repoDir $category.namespace $app.name }}{{ end }}"
 
   destination:
     name: in-cluster
