@@ -10,34 +10,25 @@ import org.apache.hc.client5.http.classic.methods.*;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
-import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.openframe.core.constants.HttpHeaders.*;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Service
 @Slf4j
@@ -149,7 +140,7 @@ public class RestProxyService {
                 log.debug("Added header: {} = {}", header.getKey(), header.getValue());
             }
 
-            if (body != null && !body.isEmpty()) {
+            if (isNotEmpty(body)) {
                 log.debug("Setting request body (length: {})", body.length());
                 StringEntity entity = new StringEntity(body, ContentType.APPLICATION_JSON);
                 httpRequest.setEntity(entity);
@@ -180,50 +171,30 @@ public class RestProxyService {
     }
 
     private HttpUriRequestBase createHttpRequest(String method, URI uri) {
-        return switch (method.toUpperCase()) {
-            case "GET" -> new HttpGet(uri);
-            case "POST" -> new HttpPost(uri);
-            case "PUT" -> new HttpPut(uri);
-            case "PATCH" -> new HttpPatch(uri);
-            case "DELETE" -> new HttpDelete(uri);
-            case "OPTIONS" -> new HttpOptions(uri);
-            default -> throw new IllegalArgumentException("Unsupported HTTP method: " + method);
-        };
+        try {
+            Method httpMethod = Method.valueOf(method.toUpperCase());
+            return switch (httpMethod) {
+                case GET -> new HttpGet(uri);
+                case POST -> new HttpPost(uri);
+                case PUT -> new HttpPut(uri);
+                case PATCH -> new HttpPatch(uri);
+                case DELETE -> new HttpDelete(uri);
+                case OPTIONS -> new HttpOptions(uri);
+                default -> throw new IllegalArgumentException("Unsupported HTTP method: " + method);
+            };
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unsupported HTTP method: " + method, e);
+        }
     }
 
     private CloseableHttpClient createHttpClient() {
-        try {
-            // Create SSL context that trusts all certificates (for development)
-            SSLContext sslContext = SSLContextBuilder.create()
-                    .loadTrustMaterial(TrustAllStrategy.INSTANCE)
-                    .build();
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.ofSeconds(10))
+                .setResponseTimeout(Timeout.ofSeconds(60))
+                .build();
 
-            // Apache HttpClient 5 way to configure SSL
-            SSLConnectionSocketFactory sslConnectionSocketFactory = SSLConnectionSocketFactoryBuilder.create()
-                    .setSslContext(sslContext)
-                    .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                    .build();
-
-            // Configure connection manager with SSL factory
-            PoolingHttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-                    .setSSLSocketFactory(sslConnectionSocketFactory)
-                    .setMaxConnTotal(100)
-                    .setMaxConnPerRoute(20)
-                    .build();
-
-            RequestConfig requestConfig = RequestConfig.custom()
-                    .setConnectionRequestTimeout(Timeout.ofSeconds(10))
-                    .setResponseTimeout(Timeout.ofSeconds(60))
-                    .build();
-
-            return HttpClients.custom()
-                    .setConnectionManager(connectionManager)
-                    .setDefaultRequestConfig(requestConfig)
-                    .build();
-
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-            log.error("Failed to create HTTP client with SSL configuration", e);
-            return HttpClients.createDefault();
-        }
+        return HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
     }
 } 

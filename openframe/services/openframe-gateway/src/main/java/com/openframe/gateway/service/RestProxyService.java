@@ -2,7 +2,7 @@ package com.openframe.gateway.service;
 
 import com.openframe.core.model.*;
 import com.openframe.core.service.ProxyUrlResolver;
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
+import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import com.openframe.gateway.config.CurlLoggingHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -37,13 +37,13 @@ public class RestProxyService {
 
     private static final AttributeKey<URI> TARGET_URI_KEY = AttributeKey.valueOf("target_uri");
 
-    private final IntegratedToolRepository toolRepository;
+    private final ReactiveIntegratedToolRepository toolRepository;
     private final ProxyUrlResolver proxyUrlResolver;
     private final ToolUrlService toolUrlService;
 
     public Mono<ResponseEntity<String>> proxyApiRequest(String toolId, ServerHttpRequest request, String body) {
         return toolRepository.findById(toolId)
-                .map(tool -> {
+                .flatMap(tool -> {
                     if (!tool.isEnabled()) {
                         return Mono
                                 .just(ResponseEntity.badRequest().body("Tool " + tool.getName() + " is not enabled"));
@@ -65,8 +65,8 @@ public class RestProxyService {
 
                     return proxy(tool, targetUri, method, headers, body);
                 })
-                .orElseGet(
-                        () -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
+                .switchIfEmpty(
+                        Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
     }
 
     private Map<String, String> buildApiRequestHeaders(IntegratedTool tool) {
@@ -112,7 +112,7 @@ public class RestProxyService {
      */
     public Mono<ResponseEntity<String>> proxyAgentRequest(String toolId, ServerHttpRequest request, String body) {
         return toolRepository.findById(toolId)
-                .map(tool -> {
+                .flatMap(tool -> {
                     if (!tool.isEnabled()) {
                         ResponseEntity<String> response = ResponseEntity.badRequest()
                                 .body("Tool " + tool.getName() + " is not enabled");
@@ -137,8 +137,8 @@ public class RestProxyService {
 
                     return proxy(tool, targetUri, method, headers, body);
                 })
-                .orElseGet(
-                        () -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
+                .switchIfEmpty(
+                        Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tool not found: " + toolId)));
     }
 
     private Map<String, String> buildAgentRequestHeaders(ServerHttpRequest request) {

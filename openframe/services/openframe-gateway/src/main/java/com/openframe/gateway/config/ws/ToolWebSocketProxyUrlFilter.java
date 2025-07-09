@@ -1,10 +1,9 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.core.model.IntegratedTool;
 import com.openframe.core.model.ToolUrl;
 import com.openframe.core.model.ToolUrlType;
 import com.openframe.core.service.ProxyUrlResolver;
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
+import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -21,7 +20,7 @@ import java.net.URI;
 @RequiredArgsConstructor
 public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Ordered {
 
-    private final IntegratedToolRepository toolRepository;
+    private final ReactiveIntegratedToolRepository toolRepository;
     private final ToolUrlService toolUrlService;
     private final ProxyUrlResolver proxyUrlResolver;
 
@@ -37,27 +36,31 @@ public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Orde
         String path = requestUri.getPath();
 
         String toolId = getRequestToolId(path);
-        ToolUrl toolUrl = getToolUrl(toolId);
 
-        String endpointPrefix = getEndpointPrefix();
-        URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, requestUri, endpointPrefix);
+        return getToolUrl(toolId)
+                .flatMap(toolUrl -> {
+                    String endpointPrefix = getEndpointPrefix();
+                    URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, requestUri, endpointPrefix);
 
-        exchange.getAttributes()
-                .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);
+                    exchange.getAttributes()
+                            .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);
 
-        return chain.filter(exchange);
+                    return chain.filter(exchange);
+                });
     }
 
-    private ToolUrl getToolUrl(String toolId) {
-        IntegratedTool tool = toolRepository.findById(toolId)
-                .orElseThrow(() -> new IllegalArgumentException("Tool not found: " + toolId));
+    private Mono<ToolUrl> getToolUrl(String toolId) {
+        return toolRepository.findById(toolId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Tool not found: " + toolId)))
+                .flatMap(tool -> {
+                    if (!tool.isEnabled()) {
+                        return Mono.error(new IllegalArgumentException("Tool " + tool.getName() + " is not enabled"));
+                    }
 
-        if (!tool.isEnabled()) {
-            throw new IllegalArgumentException("Tool " + tool.getName() + " is not enabled");
-        }
-
-        return toolUrlService.getUrlByToolType(tool, ToolUrlType.WS)
-                .orElseThrow(() -> new IllegalArgumentException("Tool " + tool.getName() + " have no web socket url"));
+                    return toolUrlService.getUrlByToolType(tool, ToolUrlType.WS)
+                            .map(Mono::just)
+                            .orElse(Mono.error(new IllegalArgumentException("Tool " + tool.getName() + " have no web socket url")));
+                });
     }
 
     protected abstract String getRequestToolId(String path);
