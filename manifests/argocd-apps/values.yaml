@@ -62,7 +62,7 @@ platform:
         valuesPath: manifests/platform/grafana/helm-values.yaml
 
 datasources:
-  enabled: true
+  enabled: false
   project: datasources
   namespace: datasources
   syncWave: "1"
@@ -105,6 +105,7 @@ datasources:
         valuesPath: manifests/datasources/redis-exporter/helm-values.yaml
 
 microservices:
+  enabled: false
   project: microservices
   namespace: microservices
   syncWave: "2"
@@ -121,6 +122,7 @@ microservices:
     - name: openframe-ui
 
 clientTools:
+  enabled: false
   project: client-tools
   namespace: client-tools
   syncWave: "2"
