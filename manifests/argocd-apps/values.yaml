@@ -60,7 +60,6 @@ platform:
         repoURL: https://grafana.github.io/helm-charts
         version: 8.13.1
         valuesPath: manifests/platform/grafana/helm-values.yaml
-    - name: argocd
 
 datasources:
   enabled: true
