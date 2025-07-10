@@ -14,7 +14,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 
 spec:
-  project: {{ default $category.project $app.project }}
+  project: {{ default $app.namespace $app.project }} 
 
   sources:
     {{- if $app.helm }}
