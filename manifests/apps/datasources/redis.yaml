@@ -17,14 +17,14 @@ spec:
       chart: redis
       helm:
         valueFiles:
-          - "$values/manifests/datasources/base/redis/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/datasources/redis/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
-      path: manifests/datasources/base/redis
+      targetRevision: main
+      path: manifests/datasources/redis
 
   destination:
     name: in-cluster

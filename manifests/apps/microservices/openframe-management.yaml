@@ -12,8 +12,8 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
-      path: manifests/microservices/base/openframe-management
+      targetRevision: main
+      path: manifests/microservices/openframe-management
 
   destination:
     name: in-cluster

@@ -44,62 +44,62 @@ jobs:
               "name": "openframe-api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
-              "manifest_path": "./manifests/microservices/base/openframe-api",
+              "manifest_path": "./manifests/microservices/openframe-api",
               "artifact_name": "openframe-api"
             },
             {
               "name": "external-api",
               "type": ["java", "container"],
               "path": "./openframe/services/external-api",
-              "manifest_path": "./manifests/microservices/base/external-api",
+              "manifest_path": "./manifests/microservices/external-api",
               "artifact_name": "external-api"
             },
             {
               "name": "openframe-client",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-client",
-              "manifest_path": "./manifests/microservices/base/openframe-client",
+              "manifest_path": "./manifests/microservices/openframe-client",
               "artifact_name": "openframe-client"
             },
             {
               "name": "openframe-config",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",
-              "manifest_path": "./manifests/microservices/base/openframe-config",
+              "manifest_path": "./manifests/microservices/openframe-config",
               "artifact_name": "openframe-config"
             },
             {
               "name": "openframe-gateway",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-gateway",
-              "manifest_path": "./manifests/microservices/base/openframe-gateway",
+              "manifest_path": "./manifests/microservices/openframe-gateway",
               "artifact_name": "openframe-gateway"
             },
             {
               "name": "openframe-management",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-management",
-              "manifest_path": "./manifests/microservices/base/openframe-management",
+              "manifest_path": "./manifests/microservices/openframe-management",
               "artifact_name": "openframe-management"
             },
             {
               "name": "openframe-stream",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-stream",
-              "manifest_path": "./manifests/microservices/base/openframe-stream",
+              "manifest_path": "./manifests/microservices/openframe-stream",
               "artifact_name": "openframe-stream"
             },
             {
               "name": "openframe-ui",
               "type": ["container"],
               "path": "./openframe/services/openframe-ui",
-              "manifest_path": "./manifests/microservices/base/openframe-ui"
+              "manifest_path": "./manifests/microservices/openframe-ui"
             },
             {
               "name": "authentik-postgresql",
               "type": ["container"],
               "path": "./integrated-tools/authentik/postgresql",
-              "manifest_path": "./manifests/integrated-tools/base/authentik/",
+              "manifest_path": "./manifests/integrated-tools/authentik/",
               "build_args": {
                 "POSTGRES_USER": "authentik-user",
                 "POSTGRES_PASSWORD": "authentik-password-1234",
@@ -110,13 +110,13 @@ jobs:
               "name": "fleetmdm",
               "type": ["container"],
               "path": "./integrated-tools/fleetmdm",
-              "manifest_path": "./manifests/integrated-tools/base/fleetmdm"
+              "manifest_path": "./manifests/integrated-tools/fleetmdm"
             },
             {
               "name": "meshcentral",
               "type": ["container"],
               "path": "./integrated-tools/meshcentral/server",
-              "manifest_path": "./manifests/integrated-tools/base/meshcentral",
+              "manifest_path": "./manifests/integrated-tools/meshcentral",
               "build_args": {
                 "MESH_DIR": "/opt/mesh",
                 "MESH_TEMP_DIR": "/tmp/mesh",
@@ -147,7 +147,7 @@ jobs:
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-frontend",
               "context": "./integrated-tools/tactical-rmm",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -194,7 +194,7 @@ jobs:
               "name": "tactical-nginx",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-nginx",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -242,7 +242,7 @@ jobs:
               "name": "tactical-backend",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -290,7 +290,7 @@ jobs:
               "name": "tactical-nats",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -338,7 +338,7 @@ jobs:
               "name": "tactical-websockets",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -386,7 +386,7 @@ jobs:
               "name": "tactical-celery",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -434,7 +434,7 @@ jobs:
               "name": "tactical-celerybeat",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
-              "manifest_path": "./manifests/integrated-tools/base/tactical-rmm",
+              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",

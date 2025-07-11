@@ -12,8 +12,8 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
-      path: manifests/microservices/base/openframe-stream
+      targetRevision: main
+      path: manifests/microservices/openframe-stream
 
   destination:
     name: in-cluster
@@ -21,8 +21,8 @@ spec:
 
   syncPolicy:
     automated:
-      selfHeal: false
-      prune: false
+      selfHeal: true
+      prune: true
     syncOptions:
       - CreateNamespace=false
     retry:

@@ -12,8 +12,8 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
-      path: manifests/datasources/base/pinot
+      targetRevision: main
+      path: manifests/datasources/pinot
 
   destination:
     name: in-cluster

@@ -17,14 +17,14 @@ spec:
       chart: cert-manager
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/cert-manager/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/cert-manager/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
-      path: manifests/platform/base/cert-manager
+      targetRevision: main
+      path: manifests/platform/cert-manager
 
   destination:
     name: in-cluster

@@ -12,8 +12,8 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/openframe-client-kafka
-      path: manifests/client-tools/base/mongo-express
+      targetRevision: main
+      path: manifests/client-tools/mongo-express
 
   destination:
     name: in-cluster

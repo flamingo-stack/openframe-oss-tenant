@@ -22,4 +22,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/microservices/base/openframe-gateway
+    - ../../../manifests/microservices/openframe-gateway

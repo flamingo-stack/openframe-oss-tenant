@@ -8,6 +8,16 @@ build:
       template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/openframe-client
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
       docker: {}
   local:
     useDockerCLI: false
@@ -16,4 +26,4 @@ build:
 manifests:
   kustomize:
     paths:
-    - ../../../manifests/microservices/base/openframe-client
+    - ../../../manifests/microservices/openframe-client
