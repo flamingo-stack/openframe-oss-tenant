@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use directories::ProjectDirs;
 use semver;
 use serde::{Deserialize, Serialize};
@@ -8,10 +8,14 @@ use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
 use tracing::{error, info};
 use uuid;
+use reqwest;
 
 mod config;
 mod metrics;
+pub mod models;
 pub mod platform;
+pub mod clients;
+pub mod services;
 
 pub mod logging;
 pub mod monitoring;
@@ -27,6 +31,13 @@ pub mod system;
 pub mod updater;
 
 use crate::platform::DirectoryManager;
+use crate::services::agent_configuration_service::AgentConfigurationService;
+use crate::services::{AgentAuthService, AgentRegistrationService, InitialAuthenticationProcessor};
+use crate::services::registration_processor::RegistrationProcessor;
+use crate::clients::{RegistrationClient, AuthClient};
+use crate::services::DeviceDataFetcher;
+use crate::services::shared_token_service::SharedTokenService;
+use crate::services::encryption_service::EncryptionService;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -90,9 +101,14 @@ impl Default for ClientConfiguration {
 pub struct Client {
     config: Arc<RwLock<ClientConfiguration>>,
     directory_manager: DirectoryManager,
+    registration_processor: RegistrationProcessor,
+    auth_processor: InitialAuthenticationProcessor,
 }
 
 impl Client {
+    // TODO: get from args during installation and save to file during installation
+    const GATEWAY_URL: &'static str = "https://openframe-gateway.192.168.100.100.nip.io";
+
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
 
@@ -107,14 +123,82 @@ impl Client {
         // Perform initial health check
         directory_manager.perform_health_check()?;
 
+        // Initialize configuration service
+        let config_service = AgentConfigurationService::new(directory_manager.clone())
+            .context("Failed to initialize device configuration service")?;
+
+        // Initialize HTTP client
+        let http_client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .context("Failed to create HTTP client")?;
+
+        // Initialize registration client
+        let registration_client = RegistrationClient::new(
+            Self::GATEWAY_URL.to_string(),
+            http_client.clone()
+        ).context("Failed to create registration client")?;
+        
+        // Initialize device data fetcher
+        let device_data_fetcher = DeviceDataFetcher::new();
+        
+        // Initialize registration service
+        let registration_service = AgentRegistrationService::new(
+            registration_client,
+            device_data_fetcher,
+            config_service.clone()
+        );
+        
+        // Initialize registration processor
+        let registration_processor = RegistrationProcessor::new(
+            registration_service,
+            config_service.clone()
+        );
+
+        // Initialize authentication client
+        let auth_client = AuthClient::new(
+            Self::GATEWAY_URL.to_string(),
+            http_client
+        );
+        
+        // Initialize encryption service
+        let encryption_service = EncryptionService::new();
+        
+        // Initialize shared token service
+        let shared_token_service = SharedTokenService::new(
+            directory_manager.clone(),
+            encryption_service
+        );
+        
+        // Initialize authentication service
+        let auth_service = AgentAuthService::new(
+            auth_client,
+            config_service.clone(),
+            shared_token_service
+        );
+        
+        // Initialize authentication processor
+        let auth_processor = InitialAuthenticationProcessor::new(
+            auth_service,
+            config_service
+        );
+
         Ok(Self {
             config,
             directory_manager,
+            registration_processor,
+            auth_processor,
         })
     }
 
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
+
+        // Proccess initial registration and authentication 
+        // if it haven't been done yet
+        // Processors retry it till success
+        self.registration_processor.process().await?;
+        self.auth_processor.process().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

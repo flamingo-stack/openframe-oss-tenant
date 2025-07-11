@@ -41,6 +41,8 @@ tempfile = "3.10"
 semver = "1.0"
 sys-info = "0.9"
 velopack = "0.0.1213-g57cf68d"
+aes-gcm = "0.10"
+base64 = "0.21"
 log = "0.4.27"
 clap = { version = "4.5", features = ["derive", "env", "std", "cargo", "string"] }
 whoami = "1.4"
@@ -48,6 +50,8 @@ tracing-appender = "0.2"
 flate2 = "1.0"
 service-manager = "0.8"
 plist = "1.7.1"
+# System information collection dependencies
+hostname = "0.3"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

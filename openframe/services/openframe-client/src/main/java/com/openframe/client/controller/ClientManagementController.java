@@ -13,6 +13,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/clients")
 @RequiredArgsConstructor
+// TODO: remove?
 public class ClientManagementController {
 
     private final OAuthClientRepository clientRepository;
