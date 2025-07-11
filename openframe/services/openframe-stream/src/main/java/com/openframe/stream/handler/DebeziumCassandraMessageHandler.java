@@ -15,7 +15,6 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<UnifiedLogEvent, DebeziumMessage> {
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
     private final CassandraRepository repository;
 
     protected DebeziumCassandraMessageHandler(CassandraRepository repository, ObjectMapper objectMapper) {
@@ -34,10 +33,11 @@ public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHan
         try {
             UnifiedLogEvent.UnifiedLogEventKey key = createKey(debeziumMessage);
             logEvent.setKey(key);
-            logEvent.setUserId(debeziumMessage.getUserId());
+            logEvent.setUserId(enrichedData.getUserId());
             logEvent.setDeviceId(enrichedData.getMachineId());
-            logEvent.setSeverity(debeziumMessage.getSeverity());
+            logEvent.setSeverity(debeziumMessage.getSeverity().name());
             logEvent.setDetails(debeziumMessage.getDetails());
+            logEvent.setMessage(debeziumMessage.getMessage());
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);
@@ -50,11 +50,11 @@ public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHan
         UnifiedLogEvent.UnifiedLogEventKey key = new UnifiedLogEvent.UnifiedLogEventKey();
         Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getTimestamp());
 
-        key.setIngestDay(formatter.format(timestamp));
-        key.setToolType(debeziumMessage.getToolType().getDbName());
+        key.setIngestDay(debeziumMessage.getIngestDay());
+        key.setToolType(debeziumMessage.getToolType().name());
         key.setEventType(debeziumMessage.getEventType().name());
         key.setTimestamp(timestamp);
-        key.setToolEventId(debeziumMessage.getEventToolId());
+        key.setToolEventId(debeziumMessage.getToolEventId());
 
         return key;
     }

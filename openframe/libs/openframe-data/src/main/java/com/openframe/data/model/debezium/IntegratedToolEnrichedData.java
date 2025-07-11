@@ -7,6 +7,7 @@ import lombok.Data;
 public class IntegratedToolEnrichedData implements ExtraParams {
 
     private String machineId;
+    private String userId;
     
     // Unified event type information
     private UnifiedEventType unifiedEventType;

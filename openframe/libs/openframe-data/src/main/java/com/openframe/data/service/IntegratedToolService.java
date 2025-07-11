@@ -58,7 +58,6 @@ public class IntegratedToolService {
             log.info("Added debezium connector. Response: {}", response.getStatusCode());
         } catch (Exception e) {
             log.error("Failed to add debezium connector", e);
-            throw e;
         }
 
     }

@@ -33,15 +33,20 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer<TrmmE
 
     @Override
     protected String getSourceEventType(TrmmEventMessage deserializedMessage) {
+        String result = "";
         JsonNode event = deserializedMessage.getAfter();
-        if (event == null || event.asText().trim().isEmpty()) {
+        if (event == null || event.isEmpty()) {
             return "unknown";
+        }
+        JsonNode objectTypeTypeNode = event.get("object_type");
+        if (objectTypeTypeNode != null && !objectTypeTypeNode.isNull() && !objectTypeTypeNode.asText().isEmpty()) {
+            result = objectTypeTypeNode.asText();
         }
 
         // Extract event type from Tactical RMM event structure
         JsonNode eventTypeNode = event.get("action");
         if (eventTypeNode != null && !eventTypeNode.isNull() && !eventTypeNode.asText().isEmpty()) {
-            return eventTypeNode.asText();
+            result = result.isEmpty() ? eventTypeNode.asText() :  "%s.%s".formatted(result, eventTypeNode.asText());
         }
 
         // Fallback: try to determine from table name and operation
@@ -51,21 +56,34 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer<TrmmE
             return tableName + "_" + operation;
         }
 
-        return "unknown";
+        return result.isBlank() ? "unknown" : result;
     }
 
     @Override
     protected String getEventToolId(TrmmEventMessage deserializedMessage) {
-        return "";
+        String result = "";
+        JsonNode event = deserializedMessage.getAfter();
+        if (event == null || event.isEmpty()) {
+            return null;
+        } else {
+            JsonNode idNode = event.get("id");
+            if (idNode != null && !idNode.isNull() && !idNode.asText().isEmpty()) {
+                result = idNode.asText();
+            }
+        }
+        return result.isBlank() ? "unknown" : result;
     }
 
     @Override
-    protected String getUserId(TrmmEventMessage deserializedMessage) {
-        return "";
-    }
-
-    @Override
-    protected String getSeverity(TrmmEventMessage deserializedMessage) {
-        return "INFO";
+    protected String getMessage(TrmmEventMessage deserializedMessage) {
+        JsonNode event = deserializedMessage.getAfter();
+        if (event == null || event.isEmpty()) {
+            return null;
+        }
+        JsonNode messageNode = event.get("message");
+        if (messageNode != null && !messageNode.isNull() && !messageNode.asText().isEmpty()) {
+            return messageNode.asText();
+        }
+        return null;
     }
 }

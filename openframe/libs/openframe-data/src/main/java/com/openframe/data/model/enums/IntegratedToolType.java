@@ -3,7 +3,7 @@ package com.openframe.data.model.enums;
 public enum IntegratedToolType {
 
     MESHCENTRAL ("meshcentral"),
-    TACTICAL ("tactical-rmm"),
+    TACTICAL ("tacticalrmm"),
     FLEET ("fleet-mdm");
 
     private final String dbName;

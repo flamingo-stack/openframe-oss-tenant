@@ -46,6 +46,7 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     @Override
     protected String getSourceEventType(MeshCentralEventMessage deserializedMessage) {
         JsonNode event = deserializedMessage.getAfter();
+        String result = "";
         if (event == null || event.asText().trim().isEmpty()) {
             return "unknown";
         }
@@ -55,16 +56,16 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
             // Extract event type from MeshCentral event structure
             JsonNode eventTypeNode = event.get("etype");
             if (eventTypeNode != null && !eventTypeNode.asText().isEmpty()) {
-                return eventTypeNode.asText();
+                result = eventTypeNode.asText();
             }
 
             // Fallback: try to determine from action field
             JsonNode actionNode = event.get("action");
             if (actionNode != null && !actionNode.asText().isEmpty()) {
-                return actionNode.asText();
+                result = "".equals(result) ? actionNode.asText() : "%s.%s".formatted(result, actionNode.asText());
             }
 
-            return "unknown";
+            return "".equals(result) ? "unknown" : result;
         } catch (IOException e) {
             log.error("Error parsing event type from MeshCentral event: {}", e.getMessage());
             return "unknown";
@@ -101,29 +102,23 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     }
 
     @Override
-    protected String getUserId(MeshCentralEventMessage deserializedMessage) {
+    protected String getMessage(MeshCentralEventMessage deserializedMessage) {
         JsonNode event = deserializedMessage.getAfter();
         if (event == null || event.asText().trim().isEmpty()) {
-            return "";
+            return "unknown";
         }
         try {
             event = mapper.readTree(event.asText());
 
             // Extract event type from MeshCentral event structure
-            JsonNode eventTypeNode = event.get("userid");
-            if (eventTypeNode != null && !eventTypeNode.asText().isEmpty()) {
-                return eventTypeNode.asText();
+            JsonNode message = event.get("msg");
+            if (message != null && !message.asText().isEmpty()) {
+                return message.asText();
             }
-
-            return "";
+            return null;
         } catch (IOException e) {
             log.error("Error parsing event type from MeshCentral event: {}", e.getMessage());
             return "unknown";
         }
-    }
-
-    @Override
-    protected String getSeverity(MeshCentralEventMessage deserializedMessage) {
-        return "INFO";
     }
 }

@@ -1,7 +1,5 @@
 package com.openframe.core.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;

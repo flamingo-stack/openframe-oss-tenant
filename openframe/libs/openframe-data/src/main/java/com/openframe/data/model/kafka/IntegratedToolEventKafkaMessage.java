@@ -4,9 +4,13 @@ import lombok.Data;
 
 @Data
 public class IntegratedToolEventKafkaMessage {
-
+    private String toolEventId;
+    private String userId;
+    private String deviceId;
+    private String ingestDay;
+    private String toolType;
+    private String eventType;
+    private String severity;
+    private String summary;
     private Long timestamp;
-    private String toolName;
-    private String agentId;
-    private String machineId;
 }

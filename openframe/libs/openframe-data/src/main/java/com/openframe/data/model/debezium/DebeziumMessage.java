@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.mapper.EventTypeMapper;
 import com.openframe.data.model.enums.IntegratedToolType;
-import com.openframe.data.model.enums.MessageType;
+import com.openframe.data.model.enums.Severity;
 import com.openframe.data.model.enums.UnifiedEventType;
 import com.openframe.data.model.kafka.DeserializedKafkaMessage;
 import lombok.Data;
@@ -31,11 +31,12 @@ public abstract class DebeziumMessage implements DeserializedKafkaMessage {
     private Long timestamp;
 
     private UnifiedEventType unifiedEventType;
-    private String eventToolId;
-    private String userId;
+    private String ingestDay;
+    private String toolEventId;
     private String agentId;
     private String sourceEventType;
-    private String severity;
+    private Severity severity;
+    private String message;
     private Map<String, String> details;
 
     /**

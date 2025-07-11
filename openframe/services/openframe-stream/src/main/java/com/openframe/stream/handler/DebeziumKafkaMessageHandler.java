@@ -27,10 +27,15 @@ public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler
     protected IntegratedToolEventKafkaMessage transform(DebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
         IntegratedToolEventKafkaMessage message = new IntegratedToolEventKafkaMessage();
         try {
+            message.setToolEventId(debeziumMessage.getToolEventId());
+            message.setUserId(enrichedData.getUserId());
+            message.setDeviceId(enrichedData.getMachineId());
+            message.setIngestDay(debeziumMessage.getIngestDay());
+            message.setToolType(debeziumMessage.getToolType().name());
+            message.setEventType(debeziumMessage.getEventType().name());
+            message.setSeverity(debeziumMessage.getSeverity().name());
+            message.setSummary(debeziumMessage.getMessage());
             message.setTimestamp(debeziumMessage.getTimestamp());
-            message.setToolName(debeziumMessage.getToolType().getDbName());
-            message.setAgentId(debeziumMessage.getAgentId());
-            message.setMachineId(enrichedData.getMachineId());
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);
@@ -52,9 +57,11 @@ public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler
     protected void handleRead(IntegratedToolEventKafkaMessage message) {
         handleCreate(message);
     }
+
     protected void handleUpdate(IntegratedToolEventKafkaMessage message) {
         handleCreate(message);
     }
+
     protected void handleDelete(IntegratedToolEventKafkaMessage data) {
     }
 
