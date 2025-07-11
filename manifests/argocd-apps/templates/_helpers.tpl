@@ -1,27 +1,30 @@
 {{/*
-openframe.shouldSkipApp
+app.skip
 
-Returns "true" if the app should be skipped based on:
-1. enabled: true → always include
-2. enabled: false → always skip
-3. fallback to deployment+ingress logic
+Returns "true" if the app should be skipped.
 
-Arguments:
-- $app      = the app map
-- $category = the parent category (e.g. platform)
-- $vals     = the full .Values tree
+Usage:
+  include "app.skip" (list $name $app $.Values)
+
+Rules:
+1. If `enabled: false` → skip
+2. Otherwise:
+   - If deployment is "local":
+     - If ingress is "ngrok" → skip "cert-manager", "ingress-nginx"
+     - If ingress is "nat"   → skip "ngrok-operator"
+3. Everything else is included
 */}}
-{{- define "openframe.shouldSkipApp" -}}
 
-{{- $app := index . 0 -}}
-{{- $category := index . 1 -}}
-{{- $vals := index . 2 -}}
+{{- define "app.skip" -}}
 
-{{- $appName := $app.name | quote }}
-{{- $deployment := default "local" (get $vals.deployment "name") }}
-{{- $ingress := default "ngrok" (get $vals.deployment "ingress") }}
+{{- $name := index . 0 -}}     {{/* app key name */}}
+{{- $app := index . 1 -}}      {{/* app spec */}}
+{{- $vals := index . 2 -}}     {{/* root .Values */}}
 
-{{/* ────── Validate deployment config ────── */}}
+{{- $deployment := get $vals.deployment "name" | default "local" }}
+{{- $ingress := get $vals.deployment "ingress" | default "ngrok" }}
+
+{{/* ── Validate deployment config ── */}}
 {{- if not (or (eq $deployment "local") (eq $deployment "cloud")) }}
   {{- fail (printf "Invalid deployment.name: '%s'. Must be 'local' or 'cloud'." $deployment) }}
 {{- end }}
@@ -29,29 +32,22 @@ Arguments:
   {{- fail (printf "Invalid deployment.ingress: '%s'. Must be 'ngrok' or 'nat' when deployment is 'local'." $ingress) }}
 {{- end }}
 
-{{/* ────── Apply enabled/disabled overrides ────── */}}
-{{- $appEnabled := get $app "enabled" }}
-{{- $catEnabled := get $category "enabled" }}
-
-{{- if and (typeIs "bool" $appEnabled) (eq $appEnabled true) }}
-  false
-{{- else if and (typeIs "bool" $appEnabled) (eq $appEnabled false) }}
-  true
-{{- else if and (typeIs "bool" $catEnabled) (eq $catEnabled true) }}
-  false
-{{- else if and (typeIs "bool" $catEnabled) (eq $catEnabled false) }}
+{{/* ── Skip if explicitly disabled ── */}}
+{{- if and (hasKey $app "enabled") (eq $app.enabled false) }}
   true
 
-{{/* ────── Fallback logic based on deployment + ingress ────── */}}
+{{/* ── Skip based on ingress/deployment fallback ── */}}
 {{- else if eq $deployment "local" }}
   {{- if or
-        (and (eq $ingress "ngrok") (or (eq $app.name "ingress-nginx") (eq $app.name "cert-manager")))
-        (and (eq $ingress "nat")   (eq $app.name "ngrok-operator"))
+        (and (eq $ingress "ngrok") (or (eq $name "cert-manager") (eq $name "ingress-nginx")))
+        (and (eq $ingress "nat")   (eq $name "ngrok-operator"))
       }}
     true
   {{- else }}
     false
   {{- end }}
+
+{{/* ── Default: do not skip ── */}}
 {{- else }}
   false
 {{- end }}
