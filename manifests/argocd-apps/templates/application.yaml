@@ -1,32 +1,28 @@
-{{- range $categoryName, $category := .Values }}
-  {{- if and (kindIs "map" $category) (hasKey $category "apps") }}
-    {{- range $app := $category.apps }}
-      {{- $skip := include "openframe.shouldSkipApp" (list $app $category $.Values) | trim | lower }}
-      {{- if ne $skip "true" }}
+{{- range $name, $app := .Values.argocdApps }}
+  {{- $skip := include "app.skip" (list $name $app $.Values) | trim | lower }}
+  {{- if ne $skip "true" }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ $app.name }}
+  name: {{ $name }}
   annotations:
-    argocd.argoproj.io/sync-wave: "{{ default $category.syncWave $app.syncWave }}"
+    argocd.argoproj.io/sync-wave: "{{ $app.syncWave | default "0" }}"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 
 spec:
-  project: {{ default $app.namespace $app.project }} 
+  project: {{ $app.project | default "default" }}
 
   sources:
-    {{- if $app.helm }}
+    {{- if hasKey $app "helm" }}
     # Helm chart
     - repoURL: {{ $app.helm.repoURL }}
       targetRevision: {{ $app.helm.version }}
       chart: {{ $app.helm.chart }}
       helm:
-        {{- if $app.helm.valuesPath }}
         valueFiles:
           - "$values/{{ $app.helm.valuesPath }}"
-        {{- end }}
     - repoURL: {{ $.Values.repoURL }}
       targetRevision: {{ $.Values.repoBranch }}
       ref: values
@@ -34,11 +30,12 @@ spec:
     # Extra resources
     - repoURL: {{ $.Values.repoURL }}
       targetRevision: {{ $.Values.repoBranch }}
-      path: "{{ if regexMatch `^namespace-` $app.name }}{{ printf "%s/%s/namespace" $.Values.repoDir $category.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.repoDir $category.namespace $app.name }}{{ end }}"
+      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.repoDir $app.namespace $name }}{{ end }}"
+
 
   destination:
     name: in-cluster
-    namespace: {{ default $category.namespace $app.namespace }}
+    namespace: {{ $app.namespace }}
 
   syncPolicy:
     automated:
@@ -46,19 +43,12 @@ spec:
       prune: true
     syncOptions:
       - CreateNamespace=false
-      {{- if and (hasKey $app "syncOptions") (hasKey $app.syncOptions "ServerSideApply") (typeIs "bool" $app.syncOptions.ServerSideApply) }}
-      - ServerSideApply={{ $app.syncOptions.ServerSideApply }}
-      {{- else }}
-      - ServerSideApply=false
-      {{- end }}
+      - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
     retry:
       limit: -1
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 30m
-
-      {{- end }}
-    {{- end }}
   {{- end }}
 {{- end }}
