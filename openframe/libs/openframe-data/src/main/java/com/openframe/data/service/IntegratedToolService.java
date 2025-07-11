@@ -4,6 +4,7 @@ import com.openframe.core.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpEntity;
@@ -23,7 +24,10 @@ import java.util.Optional;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class IntegratedToolService {
     private final IntegratedToolRepository toolRepository;
-    RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${debezium.url}")
+    private String debeziumUrl;
 
     public List<IntegratedTool> getAllTools() {
         return toolRepository.findAll();
@@ -49,7 +53,7 @@ public class IntegratedToolService {
         HttpEntity<Object> requestEntity = new HttpEntity<>(debeziumConnector, headers);
 
         // URL for the request
-        String url = "http://debezium-connect.datasources:8083/connectors";
+        String url = "%s/connectors".formatted(debeziumUrl);
 
         // Send POST request and get response
         try {

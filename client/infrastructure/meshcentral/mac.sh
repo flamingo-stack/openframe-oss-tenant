@@ -538,7 +538,7 @@ mkdir -p "$INSTALL_DIR"
 mkdir -p "$DATA_DIR"
 
 # Download MeshAgent binary
-AGENT_URL="http://$MESH_SERVER/meshagents?id=$AGENT_ID"
+AGENT_URL="https://$MESH_SERVER/meshagents?id=$AGENT_ID"
 AGENT_PATH="$TEMP_DIR/meshagent"
 
 debug_print "Downloading MeshAgent binary from $AGENT_URL"
@@ -566,7 +566,7 @@ if [ "$OS_NAME" = "macos" ]; then
   sudo spctl --enable --label "MeshAgent" 2>/dev/null || true
 fi
 
-CONFIG_URL="http://$MESH_SERVER/openframe_public/meshagent.msh"
+CONFIG_URL="https://$MESH_SERVER/openframe_public/meshagent.msh"
 CONFIG_PATH="$TEMP_DIR/meshagent.msh"
 
 # Download MeshAgent configuration file
