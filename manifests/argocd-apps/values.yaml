@@ -84,31 +84,16 @@ argocdApps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-    helm:
-      chart: cassandra
-      repoURL: https://charts.bitnami.com/bitnami
-      version: 12.2.1
-      valuesPath: manifests/datasources/cassandra/helm-values.yaml
   kafka:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-    helm:
-      chart: kafka
-      repoURL: https://charts.bitnami.com/bitnami
-      version: 31.5.0
-      valuesPath: manifests/datasources/kafka/helm-values.yaml
   mongodb-exporter:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-    helm:
-      chart: prometheus-mongodb-exporter
-      repoURL: https://prometheus-community.github.io/helm-charts
-      version: 3.11.1
-      valuesPath: manifests/datasources/mongodb-exporter/helm-values.yaml
   redis:
     enabled: true
     project: datasources
