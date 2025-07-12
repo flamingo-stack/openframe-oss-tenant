@@ -1,15 +1,8 @@
-ngrok-operator:
-  credentials:
-    secret:
-      name: ngrok-operator
-# optionally include apiKey and authtoken if you're passing them directly:
-#  credentials:
-#    apiKey: YOUR_API_KEY
-#    authtoken: YOUR_AUTHTOKEN
-
 registerJob:
   enabled: true
 
-secret:
-  create: true
-  
+
+ngrok-operator:
+  credentials:
+    apiKey: "2zXpZ8Ka8DYjdNKXYcv4VznABha_7Laa3fUvZX5gyTt3kEat"
+    authtoken: "2yv5cuRsSW6gKpaaweVRzCNKYk9_6pozz69uPtSQT4vZ2uHpL"

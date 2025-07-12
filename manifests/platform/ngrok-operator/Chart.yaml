@@ -1,6 +1,6 @@
 apiVersion: v2
 name: ngrok-operator-wrapper
-description: Wrapper chart for ngrok-operator with secret + register job
+description: Wrapper chart for Ngrok Operator
 type: application
 version: 0.1.0
 appVersion: "1.0"
