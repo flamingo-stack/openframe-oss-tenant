@@ -23,24 +23,24 @@ spec:
       helm:
         valueFiles:
           - "$values/{{ $app.helm.valuesPath }}"
-    - repoURL: {{ $.Values.repoURL }}
-      targetRevision: {{ $.Values.repoBranch }}
+    - repoURL: {{ $.Values.global.repoURL }}
+      targetRevision: {{ $.Values.global.repoBranch }}
       ref: values
     {{- end }}
     # Extra resources
-    - repoURL: {{ $.Values.repoURL }}
-      targetRevision: {{ $.Values.repoBranch }}
-      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.repoDir $app.namespace $name }}{{ end }}"
-
+    - repoURL: {{ $.Values.global.repoURL }}
+      targetRevision: {{ $.Values.global.repoBranch }}
+      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.global.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.global.repoDir $app.namespace $name }}{{ end }}"
 
   destination:
     name: in-cluster
     namespace: {{ $app.namespace }}
 
+  {{- $autoSync := (hasKey $.Values.global "autoSync") | ternary $.Values.global.autoSync true }}
   syncPolicy:
     automated:
-      selfHeal: true
-      prune: true
+      prune: {{ $autoSync }}
+      selfHeal: {{ $autoSync }}
     syncOptions:
       - CreateNamespace=false
       - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
