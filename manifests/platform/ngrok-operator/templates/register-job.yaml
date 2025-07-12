@@ -59,3 +59,4 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "Ngrok Operator Registration complete."
+{{- end }}
