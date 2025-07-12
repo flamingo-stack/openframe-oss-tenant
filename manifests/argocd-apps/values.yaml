@@ -34,21 +34,11 @@ argocdApps:
     project: platform
     namespace: platform
     syncWave: "0"
-    helm:
-      chart: promtail
-      repoURL: https://grafana.github.io/helm-charts
-      version: 6.16.6
-      valuesPath: manifests/platform/promtail/helm-values.yaml
   loki:
     enabled: true
     project: platform
     namespace: platform
     syncWave: "0"
-    helm:
-      chart: loki
-      repoURL: https://grafana.github.io/helm-charts
-      version: 6.29.0
-      valuesPath: manifests/platform/loki/helm-values.yaml
   prometheus:
     enabled: true
     project: platform
@@ -56,11 +46,6 @@ argocdApps:
     syncWave: "0"
     syncOptions:
       ServerSideApply: true
-    helm:
-      chart: kube-prometheus-stack
-      repoURL: https://prometheus-community.github.io/helm-charts
-      version: 72.5.1
-      valuesPath: manifests/platform/prometheus/helm-values.yaml
   grafana:
     enabled: true
     project: platform
