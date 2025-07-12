@@ -1,14 +1,14 @@
-repoDir: manifests
-repoURL: https://github.com/Flamingo-CX/openframe.git
-repoBranch: feature/ngrok
-
 deployment:
   name: local         # or "cloud"
   ingress: ngrok      # "ngrok" or "nat"
 
+global:
+  repoDir: manifests
+  repoURL: https://github.com/Flamingo-CX/openframe.git
+  repoBranch: feature/ngrok
+  autoSync: true
 
 argocdApps:
-
   namespace-platform:
     enabled: true
     project: default
