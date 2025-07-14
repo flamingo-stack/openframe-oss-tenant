@@ -218,6 +218,9 @@ jobs:
             [ "$pushed" = "true" ] || continue
 
             echo "$name → ${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
+            echo "Current dir: $(pwd)"
+            echo "Files:"
+            ls -la
             cd "$path"
             kustomize edit set image "${name}=${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
             cd - > /dev/null
