@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tactical-celery
+  name: tactical-websockets
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tactical-celery
+      app: tactical-websockets
   template:
     metadata:
       labels:
-        app: tactical-celery
+        app: tactical-websockets
     spec:
       imagePullSecrets:
         - name: github-pat-secret
@@ -31,9 +31,11 @@ spec:
           ']
 
       containers:
-      - name: tactical-celery
-        image: tactical-celery
-        args: ["tactical-celery"]
+      - name: tactical-websockets
+        image: "{{ .Values.tactical.websockets.image.repo }}:{{ .Values.tactical.websockets.image.tag }}"
+        args: ["tactical-websockets"]
+        ports:
+        - containerPort: 8000
         envFrom:
         - configMapRef:
             name: tactical-default
@@ -51,9 +53,9 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
         volumeMounts:
-        - name: celery-data
+        - name: websockets-data
           mountPath: /opt/tactical
       volumes:
-      - name: celery-data
+      - name: websockets-data
         persistentVolumeClaim:
-          claimName: tactical-celery
+          claimName: tactical-websockets

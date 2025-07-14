@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tactical-celerybeat
+  name: tactical-celery
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tactical-celerybeat
+      app: tactical-celery
   template:
     metadata:
       labels:
-        app: tactical-celerybeat
+        app: tactical-celery
     spec:
       imagePullSecrets:
         - name: github-pat-secret
@@ -31,9 +31,9 @@ spec:
           ']
 
       containers:
-      - name: tactical-celerybeat
-        image: tactical-celerybeat
-        args: ["tactical-celerybeat"]
+      - name: tactical-celery
+        image: "{{ .Values.tactical.celery.image.repo }}:{{ .Values.tactical.celery.image.tag }}"
+        args: ["tactical-celery"]
         envFrom:
         - configMapRef:
             name: tactical-default
@@ -43,9 +43,6 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
-        volumeMounts:
-        - name: celerybeat-data
-          mountPath: /opt/tactical
         livenessProbe:
           exec:
             command:
@@ -53,7 +50,10 @@ spec:
             - /opt/tactical/tmp/tactical/ready
           initialDelaySeconds: 30
           periodSeconds: 10
+        volumeMounts:
+        - name: celery-data
+          mountPath: /opt/tactical
       volumes:
-      - name: celerybeat-data
+      - name: celery-data
         persistentVolumeClaim:
-          claimName: tactical-celerybeat
+          claimName: tactical-celery

@@ -78,7 +78,7 @@ spec:
 
       containers:
       - name: tactical-nats
-        image: tactical-nats
+        image: "{{ .Values.tactical.nats.image.repo }}:{{ .Values.tactical.nats.image.tag }}"
         args: ["tactical-nats"]
         ports:
         - containerPort: 9235

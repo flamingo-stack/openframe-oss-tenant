@@ -1,7 +1,8 @@
+{{- if .Values.global.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: tactical-redis
+  name: tactical-postgres
   annotations:
     "argocd.argoproj.io/hook": PostSync
     # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -13,45 +14,56 @@ spec:
       containers:
       - name: register
         image: curlimages/curl:8.5.0
+        envFrom:
+        - secretRef:
+            name: tactical-postgres
         env:
-        - name: REDIS_HOST
+        - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
-              name: tactical-redis
-              key: REDIS_HOST
+              name: tactical-postgres
+              key: POSTGRES_HOST
+        - name: POSTGRES_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-postgres
+              key: POSTGRES_PORT
         command:
           - /bin/sh
           - -c
           - |
-            echo "Registering Tactical RMM Redis..."
+            echo "Registering TacticalRMM PostgreSQL..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-redis" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-postgres" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "tactical-redis",
-                  "toolType": "REDIS",
-                  "name": "Tactical RMM Redis",
-                  "description": "Redis Backend for Tactical RMM",
+                  "id": "tactical-postgres",
+                  "toolType": "POSTGRESQL",
+                  "name": "TacticalRMM PostgreSQL",
+                  "description": "PostgreSQL Database Backend for TacticalRMM",
                   "toolUrls": [
                     {
-                      "url": "redis://'"${REDIS_HOST}"'",
-                      "port": "6379",
+                      "url": "postgresql://'"${POSTGRES_HOST}"'",
+                      "port": "'"${POSTGRES_PORT}"'",
                       "type": "DATABASE"
                     }
                   ],
-                  "category": "In-Memory Database",
+                  "category": "SQL Database",
                   "platformCategory": "Integrated Tool",
                   "enabled": true,
-                  "credentials": {},
+                  "credentials": {
+                    "username": "'"${POSTGRES_USER}"'",
+                    "password": "'"${POSTGRES_PASSWORD}"'"
+                  },
                   "layer": "Integrated Tools",
-                  "layerOrder": 5,
-                  "layerColor": "#B71C1C",
+                  "layerOrder": 6,
+                  "layerColor": "#3949AB",
                   "metricsPath": "/metrics",
                   "healthCheckEndpoint": "/",
                   "healthCheckInterval": 30,
@@ -63,4 +75,5 @@ spec:
               }' \
               --retry-delay 2 \
               --retry-all-errors
-            echo "Tactical RMM Redis Registration complete."
+            echo "TacticalRMM PostgreSQL Registration complete."
+{{- end }}
