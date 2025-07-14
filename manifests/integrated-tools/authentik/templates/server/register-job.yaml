@@ -1,3 +1,4 @@
+{{- if .Values.global.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -78,3 +79,4 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "Authentik Registration complete."
+{{- end }}

@@ -1,7 +1,8 @@
+{{- if .Values.global.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fleetmdm-mysql
+  name: authentik-postgres
   annotations:
     "argocd.argoproj.io/hook": PostSync
     # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -14,40 +15,39 @@ spec:
       - name: register
         image: curlimages/curl:8.5.0
         env:
-        - name: MYSQL_USER
+        - name: POSTGRES_USER
           valueFrom:
             configMapKeyRef:
-              name: fleetmdm-mysql
-              key: MYSQL_USER
-        - name: MYSQL_PASSWORD
+              name: authentik-postgres
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: fleetmdm-mysql
-              key: MYSQL_PASSWORD
-
+              name: authentik-postgres
+              key: POSTGRES_PASSWORD
         command:
           - /bin/sh
           - -c
           - |
-            echo "Registering FleetMDM MySQL..."
+            echo "Registering Authentik PostgreSQL..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-mysql" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "fleetmdm-mysql",
-                  "toolType": "MYSQL",
-                  "name": "FleetMDM MySQL",
-                  "description": "MySQL Database Backend for FleetMDM",
+                  "id": "authentik-postgres",
+                  "toolType": "POSTGRESQL",
+                  "name": "Authentik PostgreSQL",
+                  "description": "PostgreSQL Database Backend for Authentik",
                   "toolUrls": [
                     {
-                      "url": "mysql://fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local",
-                      "port": "3306",
+                      "url": "postgresql://authentik-postgres-0.authentik-postgres.integrated-tools.svc.cluster.local",
+                      "port": "5432",
                       "type": "DATABASE"
                     }
                   ],
@@ -55,12 +55,12 @@ spec:
                   "platformCategory": "Integrated Tool",
                   "enabled": true,
                   "credentials": {
-                    "username": "'"${MYSQL_USER}"'",
-                    "password": "'"${MYSQL_PASSWORD}"'"
+                    "username": "'"${POSTGRES_USER}"'",
+                    "password": "'"${POSTGRES_PASSWORD}"'"
                   },
                   "layer": "Integrated Tools",
                   "layerOrder": 6,
-                  "layerColor": "#00796B",
+                  "layerColor": "#3949AB",
                   "metricsPath": "/metrics",
                   "healthCheckEndpoint": "/",
                   "healthCheckInterval": 30,
@@ -72,6 +72,5 @@ spec:
               }' \
               --retry-delay 2 \
               --retry-all-errors
-            echo "FleetMDM MySQL Registration complete."
-            
-            
+            echo "Authentik PostgreSQL Registration complete."
+{{- end }}

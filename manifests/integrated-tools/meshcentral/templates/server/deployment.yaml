@@ -42,7 +42,7 @@ spec:
 
       containers:
       - name: meshcentral
-        image: meshcentral
+        image: "{{ .Values.server.image.repo }}:{{ .Values.server.image.tag }}"
         ports:
         - name: meshcentral
           containerPort: 8383

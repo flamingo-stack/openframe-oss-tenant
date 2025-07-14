@@ -29,7 +29,7 @@ spec:
 
       containers:
       - name: authentik-postgresql
-        image: authentik-postgresql
+        image: "{{ .Values.postgres.image.repo }}:{{ .Values.postgres.image.tag }}"
         ports:
         - containerPort: 5432
         envFrom:
