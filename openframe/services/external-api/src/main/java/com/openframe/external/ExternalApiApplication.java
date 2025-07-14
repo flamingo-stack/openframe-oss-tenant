@@ -8,7 +8,8 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = {
     "com.openframe.external",
     "com.openframe.data",
-    "com.openframe.core"
+    "com.openframe.core",
+    "com.openframe.api"
 })
 public class ExternalApiApplication {
     public static void main(String[] args) {
