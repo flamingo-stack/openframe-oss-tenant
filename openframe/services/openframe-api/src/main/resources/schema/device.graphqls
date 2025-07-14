@@ -45,7 +45,7 @@ input PaginationInput {
 
 type Machine {
     id: ID!
-    machineId: String
+    machineId: String!,
     ip: String
     macAddress: String
     osUuid: String
