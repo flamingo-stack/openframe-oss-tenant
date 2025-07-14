@@ -1,9 +1,0 @@
-{
-  "auths": {
-    "ghcr.io": {
-      "username": "CI",
-      "password": "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",
-      "email": "CI@flamingo.cx"
-    }
-  }
-}
