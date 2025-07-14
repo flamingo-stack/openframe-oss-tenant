@@ -345,6 +345,7 @@ impl DirectoryManager {
     pub fn for_development() -> Self {
         let user_logs = Self::get_user_logs_directory();
         
+        // In development mode, use user logs for everything to avoid permission issues
         Self {
             logs_dir: user_logs.clone(),
             app_support_dir: user_logs.clone(),
