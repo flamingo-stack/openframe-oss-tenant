@@ -2,15 +2,13 @@ package com.openframe.management.config.pinot;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -28,21 +26,16 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Slf4j
 @Configuration
 public class PinotConfigInitializer {
-    
-    private static final Logger log = LoggerFactory.getLogger(PinotConfigInitializer.class);
 
     private final ResourceLoader resourceLoader;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    //TODO configs need to be moved to config repository
-    @Value("${pinot.controller.host:pinot-controller.datasources.svc.cluster.local}")
-    private String pinotControllerHost;
-
-    @Value("${pinot.controller.port:9000}")
-    private int pinotControllerPort;
+    @Value("${pinot.controller.url}")
+    private String pinotControllerUrl;
 
     @Value("${pinot.config.enabled:true}")
     private boolean pinotConfigEnabled;
@@ -70,7 +63,7 @@ public class PinotConfigInitializer {
             return;
         }
 
-        log.info("Starting Pinot configuration deployment to {}:{}", pinotControllerHost, pinotControllerPort);
+        log.info("Starting Pinot configuration deployment to {}", pinotControllerUrl);
         
         for (PinotConfig config : PINOT_CONFIGS) {
             try {
@@ -95,7 +88,7 @@ public class PinotConfigInitializer {
             
             log.info("Successfully deployed Pinot configuration for: {}", config.getName());
             
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Failed to load Pinot configuration files for {}", config.getName(), e);
             throw new RuntimeException("Failed to load Pinot configuration for " + config.getName(), e);
         }
@@ -106,7 +99,9 @@ public class PinotConfigInitializer {
         if (!resource.exists()) {
             throw new IOException("Resource not found: " + resourcePath);
         }
-        return new String(Files.readAllBytes(resource.getFile().toPath()), StandardCharsets.UTF_8);
+        try (var inputStream = resource.getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private void deployWithRetry(Runnable deployment, String configType) {
@@ -147,7 +142,7 @@ public class PinotConfigInitializer {
     }
 
     private void deploySchema(String schemaConfig) {
-        String url = String.format("http://%s:%d/schemas", pinotControllerHost, pinotControllerPort);
+        String url = String.format("http://%s/schemas", pinotControllerUrl);
         
         try {
             objectMapper.readTree(schemaConfig);
@@ -173,8 +168,8 @@ public class PinotConfigInitializer {
             JsonNode tableConfigJson = objectMapper.readTree(tableConfig);
             String tableName = tableConfigJson.get("tableName").asText() + "_REALTIME";
             
-            String updateUrl = String.format("http://%s:%d/tables/%s", pinotControllerHost, pinotControllerPort, tableName);
-            String createUrl = String.format("http://%s:%d/tables", pinotControllerHost, pinotControllerPort);
+            String updateUrl = String.format("http://%s/tables/%s", pinotControllerUrl, tableName);
+            String createUrl = String.format("http://%s/tables", pinotControllerUrl);
             
             HttpHeaders headers = createHeaders();
             HttpEntity<String> request = new HttpEntity<>(tableConfig, headers);

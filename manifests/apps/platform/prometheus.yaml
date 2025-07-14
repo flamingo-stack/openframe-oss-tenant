@@ -17,14 +17,14 @@ spec:
       chart: kube-prometheus-stack
       helm:
         valueFiles:
-          - "$values/manifests/platform/base/prometheus/helm-values.yaml"  # name is hardcoded
+          - "$values/manifests/platform/prometheus/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/platform/base/prometheus
+      path: manifests/platform/prometheus
 
   destination:
     name: in-cluster

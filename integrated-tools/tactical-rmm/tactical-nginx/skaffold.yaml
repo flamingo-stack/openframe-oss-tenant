@@ -8,6 +8,16 @@ build:
       template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/tactical-nginx
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
       docker:
         dockerfile: Dockerfile
         buildArgs:
@@ -56,4 +66,4 @@ build:
     push: false
 manifests:
   rawYaml:
-    - ../../../manifests/integrated-tools/base/tactical-rmm/tactical-nginx
+    - ../../../manifests/integrated-tools/tactical-rmm/tactical-nginx

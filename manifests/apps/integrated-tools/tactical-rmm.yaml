@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/integrated-tools/base/tactical-rmm
+      path: manifests/integrated-tools/tactical-rmm
 
   destination:
     name: in-cluster

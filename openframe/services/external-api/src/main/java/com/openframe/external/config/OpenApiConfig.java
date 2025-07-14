@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -82,5 +83,14 @@ public class OpenApiConfig {
                     .in(SecurityScheme.In.HEADER)
                     .name(X_API_KEY)
                     .description("API key for authentication (format: ak_keyId.sk_secretKey)")));
+    }
+
+    @Bean
+    public GroupedOpenApi externalApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("external-api")
+                .pathsToMatch("/tools/**", "/test/**")
+                .pathsToExclude("/actuator/**", "/api/core/**")
+                .build();
     }
 } 

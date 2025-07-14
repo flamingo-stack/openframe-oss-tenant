@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ns.yaml
+  - rbac.yaml
 
 secretGenerator:
   - name: github-pat-secret

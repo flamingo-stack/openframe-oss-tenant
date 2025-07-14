@@ -1,27 +1,26 @@
 package com.openframe.data.service;
 
-import java.util.List;
-import java.util.Optional;
-
-import com.fasterxml.jackson.databind.JsonNode;
+import com.openframe.core.model.IntegratedTool;
+import com.openframe.data.repository.mongo.IntegratedToolRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
-
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "spring.data.mongodb.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class IntegratedToolService {
     private final IntegratedToolRepository toolRepository;
     RestTemplate restTemplate = new RestTemplate();
@@ -39,14 +38,6 @@ public class IntegratedToolService {
             createDebeziumConnector(tool.getDebeziumConnector());
         }
         return toolRepository.save(tool);
-    }
-
-    public String getActiveToken(String toolType) {
-        Optional<IntegratedTool> tool = getTool(toolType);
-        if (!tool.isPresent() || !tool.get().isEnabled() || tool.get().getCredentials() == null) {
-            return null;
-        }
-        return tool.get().getCredentials().getApiKey().getKey();
     }
 
     private void createDebeziumConnector(Object debeziumConnector) {

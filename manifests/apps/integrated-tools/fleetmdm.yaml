@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/integrated-tools/base/fleetmdm
+      path: manifests/integrated-tools/fleetmdm
 
   destination:
     name: in-cluster

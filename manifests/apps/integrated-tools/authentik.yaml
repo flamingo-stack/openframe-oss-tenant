@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
       targetRevision: main
-      path: manifests/integrated-tools/base/authentik
+      path: manifests/integrated-tools/authentik
 
   destination:
     name: in-cluster
