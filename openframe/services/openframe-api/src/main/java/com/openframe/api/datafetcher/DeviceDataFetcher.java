@@ -1,48 +1,44 @@
 package com.openframe.api.datafetcher;
 
 import com.netflix.graphql.dgs.*;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.Tag;
+import com.openframe.api.dto.DeviceFilterOptions;
+import com.openframe.api.dto.DeviceFilters;
+import com.openframe.api.dto.DeviceQueryResult;
+import com.openframe.api.dto.PaginationCriteria;
 import com.openframe.api.dto.device.DeviceConnection;
-import com.openframe.api.dto.device.DeviceEdge;
 import com.openframe.api.dto.device.DeviceFilterInput;
-import com.openframe.api.dto.device.DeviceFilters;
-import com.openframe.api.dto.device.PageInfo;
 import com.openframe.api.dto.device.PaginationInput;
+import com.openframe.api.mapper.GraphQLDeviceMapper;
 import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
-import com.openframe.api.util.PaginationUtils;
+import com.openframe.core.model.Machine;
+import com.openframe.core.model.Tag;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dataloader.DataLoader;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.validation.annotation.Validated;
 
-import jakarta.validation.constraints.NotBlank;
-import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @DgsComponent
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 public class DeviceDataFetcher {
 
-    private static final String SORT_FIELD = "machineId";
     private final DeviceService deviceService;
     private final DeviceFilterService deviceFilterService;
-
-    public DeviceDataFetcher(
-            DeviceService deviceService,
-            DeviceFilterService deviceFilterService) {
-        this.deviceService = deviceService;
-        this.deviceFilterService = deviceFilterService;
-    }
+    private final GraphQLDeviceMapper mapper;
 
     @DgsQuery
     public CompletableFuture<DeviceFilters> deviceFilters(@InputArgument DeviceFilterInput filter) {
         log.debug("Fetching device filters with filter: {}", filter);
-        return deviceFilterService.getDeviceFilters(filter);
+
+        DeviceFilterOptions filterOptions = mapper.toDeviceFilterOptions(filter);
+
+        return deviceFilterService.getDeviceFilters(filterOptions);
     }
 
     @DgsQuery
@@ -53,20 +49,18 @@ public class DeviceDataFetcher {
         
         log.debug("Fetching devices with filter: {}, pagination: {}, search: {}", filter, pagination, search);
 
-        PaginationInput normalizedPagination = PaginationUtils.normalizePagination(pagination);
-        Query query = deviceService.buildDeviceQuery(filter, search);
-        long totalCount = deviceService.countMachines(query);
-        PageRequest pageRequest = PaginationUtils.createPageRequestFromInput(normalizedPagination, SORT_FIELD);
-        List<Machine> machines = deviceService.findMachinesWithPagination(query, pageRequest);
+        DeviceFilterOptions filterOptions = mapper.toDeviceFilterOptions(filter);
+        PaginationCriteria paginationCriteria = mapper.toPaginationCriteria(pagination);
 
-        return buildDeviceConnection(machines, normalizedPagination, totalCount);
+        DeviceQueryResult result = deviceService.queryDevices(filterOptions, paginationCriteria, search);
+
+        return mapper.toDeviceConnection(result);
     }
 
     @DgsQuery
     public Machine device(@InputArgument @NotBlank String machineId) {
         log.debug("Fetching device with ID: {}", machineId);
-        Optional<Machine> machineOpt = deviceService.findByMachineId(machineId);
-        return machineOpt.orElse(null);
+        return deviceService.findByMachineId(machineId).orElse(null);
     }
 
     @DgsData(parentType = "Machine")
@@ -74,27 +68,6 @@ public class DeviceDataFetcher {
         DataLoader<String, List<Tag>> dataLoader = dfe.getDataLoader("tagDataLoader");
         Machine machine = dfe.getSource();
         return dataLoader.load(machine.getId());
-    }
-
-    private DeviceConnection buildDeviceConnection(List<Machine> machines, PaginationInput pagination, long totalCount) {
-        List<DeviceEdge> edges = machines.stream()
-                .map(machine -> DeviceEdge.builder().node(machine).build())
-                .collect(Collectors.toList());
-
-        int totalPages = (int) Math.ceil((double) totalCount / pagination.getPageSize());
-        
-        PageInfo pageInfo = PageInfo.builder()
-                .hasNextPage(pagination.getPage() < totalPages)
-                .hasPreviousPage(pagination.getPage() > 1)
-                .currentPage(pagination.getPage())
-                .totalPages(totalPages)
-                .build();
-
-        return DeviceConnection.builder()
-                .edges(edges)
-                .pageInfo(pageInfo)
-                .filteredCount(edges.size())
-                .build();
     }
 }
 

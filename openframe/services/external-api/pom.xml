@@ -27,7 +27,7 @@
         <!-- OpenFrame Dependencies -->
         <dependency>
             <groupId>com.openframe</groupId>
-            <artifactId>openframe-data</artifactId>
+            <artifactId>api-library</artifactId>
         </dependency>
 
         <!-- Spring Cloud Config -->
