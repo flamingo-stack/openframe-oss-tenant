@@ -18,10 +18,10 @@ spec:
     - repoURL: {{ $.Values.global.repoURL }}
       targetRevision: {{ $.Values.global.repoBranch }}
       path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.global.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.global.repoDir $app.namespace $name }}{{ end }}"
-      {{- with $app.helm-values }}
+      {{- with $app.helm }}
       helm:
         values: |
-{{ . | indent 10 }}
+{{ .values | indent 10 }}
       {{- end }}
 
   destination:
