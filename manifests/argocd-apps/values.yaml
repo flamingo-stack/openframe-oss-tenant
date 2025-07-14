@@ -8,7 +8,20 @@ global:
   repoBranch: feature/helm-structure
   autoSync: true
 
+
 argocdApps:
+  # example-app:
+  #   enabled: true
+  #   project: default
+  #   namespace: default
+  #   syncWave: "0"
+  #   helm:
+  #     values: |
+  #       registerJob:
+  #         enabled: false
+  #       servicemonitor:
+  #         enabled: false
+
   namespace-platform:
     enabled: true
     project: default

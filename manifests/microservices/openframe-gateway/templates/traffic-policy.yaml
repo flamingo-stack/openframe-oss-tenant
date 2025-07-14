@@ -1,3 +1,4 @@
+{{- if eq .Values.deployment.ingress "ngrok" }}
 apiVersion: ngrok.k8s.ngrok.com/v1alpha1
 kind: NgrokTrafficPolicy
 metadata:
@@ -11,3 +12,4 @@ spec:
               enforce: true
               allow:
                 - 178.133.28.182
+{{- end }}
