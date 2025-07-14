@@ -1,5 +1,4 @@
-# Not active right now
-
+{{- if .Values.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -60,3 +59,4 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "ArgoCD Registration complete."
+{{- end }}
