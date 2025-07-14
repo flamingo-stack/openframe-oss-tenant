@@ -18,6 +18,11 @@ spec:
     - repoURL: {{ $.Values.global.repoURL }}
       targetRevision: {{ $.Values.global.repoBranch }}
       path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.global.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.global.repoDir $app.namespace $name }}{{ end }}"
+      {{- with $app.helm-values }}
+      helm:
+        values: |
+{{ . | indent 10 }}
+      {{- end }}
 
   destination:
     name: in-cluster

@@ -125,6 +125,12 @@ argocdApps:
     project: microservices
     namespace: microservices
     syncWave: "2"
+    helm:
+      values: |
+        registerJob:
+          enabled: false
+        # servicemonitor:
+        #   enabled: false
   openframe-api: 
     enabled: true
     project: microservices
