@@ -129,8 +129,8 @@ argocdApps:
       values: |
         registerJob:
           enabled: false
-        # servicemonitor:
-          #   enabled: false
+        servicemonitor:
+            enabled: false
   openframe-api: 
     enabled: true
     project: microservices
