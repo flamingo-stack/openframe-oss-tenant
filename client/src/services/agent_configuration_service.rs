@@ -85,17 +85,11 @@ impl AgentConfigurationService {
 
     pub async fn get_access_token(&self) -> Result<String> {
         let config = self.get().await?;
-        if config.access_token.is_empty() {
-            return Err(anyhow::anyhow!("No access token found"));
-        }
         return Ok(config.access_token.clone());
     }
 
     pub async fn get_refresh_token(&self) -> Result<String> {
         let config = self.get().await?;
-        if config.refresh_token.is_empty() {
-            return Err(anyhow::anyhow!("No refresh token found"));
-        }
         return Ok(config.refresh_token.clone());
     }
 

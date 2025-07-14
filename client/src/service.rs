@@ -147,6 +147,7 @@ impl Service {
         // Initialize the client
         let client = Client::new()?;
 
+        // TODO: need it at the service level?
         // Start heartbeat logging in background
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(5)); // Log heartbeat every 5 seconds
