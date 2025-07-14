@@ -65,12 +65,12 @@ argocdApps:
     namespace: datasources
     syncWave: "1"
   debezium-connect:
-    enabled: true
+    enabled: false
     project: datasources
     namespace: datasources
     syncWave: "1"
   pinot: 
-    enabled: true
+    enabled: false
     project: datasources
     namespace: datasources
     syncWave: "1"
@@ -90,7 +90,7 @@ argocdApps:
     namespace: datasources
     syncWave: "1"
   mongodb-exporter:
-    enabled: true
+    enabled: false
     project: datasources
     namespace: datasources
     syncWave: "1"
@@ -100,7 +100,7 @@ argocdApps:
     namespace: datasources
     syncWave: "1"
   redis-exporter:
-    enabled: true
+    enabled: false
     project: datasources
     namespace: datasources
     syncWave: "1"
@@ -121,18 +121,12 @@ argocdApps:
     namespace: microservices
     syncWave: "2"
   external-api: 
-    enabled: true
+    enabled: false
     project: microservices
     namespace: microservices
     syncWave: "2"
-    helm:
-      values: |
-        registerJob:
-          enabled: false
-        servicemonitor:
-          enabled: false
   openframe-api: 
-    enabled: true
+    enabled: false
     project: microservices
     namespace: microservices
     syncWave: "2"
@@ -141,18 +135,24 @@ argocdApps:
     project: microservices
     namespace: microservices
     syncWave: "2"
+        helm:
+      values: |
+        registerJob:
+          enabled: false
+        servicemonitor:
+          enabled: false
   openframe-client: 
-    enabled: true
+    enabled: false
     project: microservices
     namespace: microservices
     syncWave: "2"
   openframe-stream: 
-    enabled: true
+    enabled: false
     project: microservices
     namespace: microservices
     syncWave: "2"
   openframe-ui: 
-    enabled: true
+    enabled: false
     project: microservices
     namespace: microservices
     syncWave: "2"
@@ -163,12 +163,12 @@ argocdApps:
     namespace: client-tools
     syncWave: "2"
   mongo-express:
-    enabled: true
+    enabled: false
     project: client-tools
     namespace: client-tools
     syncWave: "2"
   kafka-ui:
-    enabled: true
+    enabled: false
     project: client-tools
     namespace: client-tools
     syncWave: "2"
@@ -179,27 +179,27 @@ argocdApps:
     syncWave: "2"
 
   namespace-integrated-tools:
-    enabled: true
+    enabled: false
     project: default
     namespace: integrated-tools
     syncWave: "3"
   authentik: 
-    enabled: true
+    enabled: false
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
   fleetmdm: 
-    enabled: true
+    enabled: false
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
   meshcentral: 
-    enabled: true
+    enabled: false
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
   tactical-rmm: 
-    enabled: true
+    enabled: false
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
