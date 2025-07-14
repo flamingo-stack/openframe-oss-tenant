@@ -1,18 +1,16 @@
 # OpenFrame API Library
 
-The OpenFrame API Library contains shared business logic for device management operations that are used by both GraphQL
-and REST APIs.
+The OpenFrame API Library contains shared business logic and data transfer objects for device management operations that are used by both GraphQL and REST APIs.
 
 ## Purpose
 
-This library was created to eliminate code duplication between the OpenFrame API service (GraphQL) and External API
-service (REST) by providing common:
+This library was created to eliminate code duplication between the OpenFrame API service (GraphQL) and External API service (REST) by providing common:
 
 - Device query and filtering logic
-- Pagination utilities
-- Tag management operations
-- Data transfer objects for common operations
-- Service layer abstractions
+- Tag management operations with batch loading
+- Device filter options and analytics
+- Shared data transfer objects
+- Unified service layer for both API types
 
 ## Architecture
 
@@ -22,33 +20,58 @@ The library follows a clean architecture pattern with clear separation of concer
 api-library/
 ├── dto/          # Common data transfer objects
 ├── service/      # Shared business logic services
-├── util/         # Utility classes
-└── mapper/       # Data mapping utilities (if needed)
+└── pom.xml       # Maven dependencies
+```
+
+### Package Structure
+
+```
+com.openframe.api/
+├── dto/                    # Data Transfer Objects
+│   ├── DeviceFilterOptions.java
+│   ├── DeviceQueryResult.java
+│   ├── PaginationCriteria.java
+│   ├── DeviceFilters.java
+│   ├── FilterOption.java
+│   └── TagFilterOption.java
+└── service/                # Business Logic Services
+    ├── DeviceService.java
+    ├── DeviceFilterService.java
+    └── TagService.java
 ```
 
 ## Key Components
 
-### Common Services
+### Core Services
 
-- **CommonDeviceService**: Handles device querying, filtering, and pagination
-- **CommonDeviceFilterService**: Manages device filter options and counts
-- **CommonTagService**: Handles tag operations for devices
+- **DeviceService**: Handles device querying, filtering, and pagination using MongoDB
+- **DeviceFilterService**: Manages device filter options and analytics using Apache Pinot
+- **TagService**: Handles tag operations for devices with efficient batch loading
 
-### DTOs
+### Data Transfer Objects
 
 - **DeviceFilterOptions**: Common filter criteria for device queries
 - **DeviceQueryResult**: Standardized response for device queries with pagination
 - **PaginationCriteria**: Common pagination parameters
+- **DeviceFilters**: Filter options with counts for UI components
+- **FilterOption**: Simple filter option with value and count
+- **TagFilterOption**: Tag filter option with value, label, and count
 
-## Usage
+## Database Usage
 
-### In GraphQL API Service
+The library uses multiple specialized databases:
 
-The GraphQL service uses this library to perform the actual business logic, then maps the results to GraphQL-specific
-DTOs:
+- **MongoDB**: Primary storage for devices, tags, and relationships
+- **Apache Pinot**: Analytics and filtering operations for performance
+- **Redis**: Caching (through application layer)
+
+## Usage Examples
+
+### GraphQL API Service
+
+GraphQL service uses the library services and DTOs:
 
 ```java
-
 @DgsQuery
 public DeviceConnection devices(
         @InputArgument DeviceFilterInput filter,
@@ -56,100 +79,195 @@ public DeviceConnection devices(
         @InputArgument String search) {
 
     // Convert GraphQL DTOs to common DTOs
-    DeviceFilterOptions commonFilter = mapper.toCommonFilter(filter);
-    PaginationCriteria commonPagination = mapper.toCommonPagination(pagination);
+    DeviceFilterOptions filterOptions = mapper.toDeviceFilterOptions(filter);
+    PaginationCriteria paginationCriteria = mapper.toPaginationCriteria(pagination);
 
-    // Use common service
-    DeviceQueryResult result = commonDeviceService.getDevices(commonFilter, commonPagination, search);
+    // Use common service - same business logic as REST
+    DeviceQueryResult result = deviceService.queryDevices(filterOptions, paginationCriteria, search);
 
-    // Convert back to GraphQL DTOs
-    return mapper.toGraphQLConnection(result);
+    // Convert to GraphQL DTOs
+    return mapper.toDeviceConnection(result);
+}
+
+@DgsQuery
+public CompletableFuture<DeviceFilters> deviceFilters(@InputArgument DeviceFilterInput filter) {
+    DeviceFilterOptions filterOptions = mapper.toDeviceFilterOptions(filter);
+    
+    // Return same DTO type - no conversion needed!
+    return deviceFilterService.getDeviceFilters(filterOptions);
 }
 ```
 
-### In REST API Service
+### REST API Service
 
-The REST service also uses the same common services but maps to REST-specific DTOs:
+REST service uses the same services:
 
 ```java
-
 @GetMapping
 public ResponseEntity<DevicesResponse> getDevices(
-        @RequestParam List<DeviceStatus> statuses,
-        @RequestParam Integer page,
-        @RequestParam Integer pageSize) {
+        @RequestParam(required = false) List<DeviceStatus> statuses,
+        @RequestParam(defaultValue = "1") Integer page,
+        @RequestParam(defaultValue = "20") Integer pageSize,
+        @RequestParam(defaultValue = "false") Boolean includeTags) {
 
-    // Convert REST params to common DTOs
-    DeviceFilterOptions filter = DeviceFilterOptions.builder()
-            .statuses(statuses)
-            .build();
+    // Build common DTOs
+    DeviceFilterOptions filterOptions = DeviceFilterOptions.builder()
+        .statuses(statuses)
+        .build();
+    
     PaginationCriteria pagination = PaginationCriteria.builder()
-            .page(page)
-            .pageSize(pageSize)
-            .build();
+        .page(page)
+        .pageSize(pageSize)
+        .build();
 
-    // Use common service
-    DeviceQueryResult result = commonDeviceService.getDevices(filter, pagination, null);
+    // Use same service as GraphQL
+    DeviceQueryResult result = deviceService.queryDevices(filterOptions, pagination, search);
 
-    // Convert to REST DTOs
-    DevicesResponse response = deviceMapper.toDevicesResponse(result);
-    return ResponseEntity.ok(response);
+    // Handle tags efficiently
+    if (includeTags) {
+        List<String> machineIds = result.getDevices().stream()
+            .map(Machine::getId)
+            .collect(Collectors.toList());
+        
+        // Batch load tags for all devices
+        List<List<Tag>> tagsPerMachine = tagService.getTagsForMachines(machineIds);
+        return ResponseEntity.ok(deviceMapper.toDevicesResponseWithTags(result, tagsPerMachine));
+    }
+    
+    return ResponseEntity.ok(deviceMapper.toDevicesResponse(result));
+}
+```
+
+### Tag Loading Patterns
+
+The TagService provides efficient batch loading to prevent N+1 query problems:
+
+```java
+@Service
+public class TagService {
+    
+    // Batch loading for multiple devices
+    public List<List<Tag>> getTagsForMachines(List<String> machineIds) {
+        // Efficient batch loading with 2 database queries:
+        // 1. Load all machine-tag relationships
+        // 2. Load all tags
+        // Group in memory
+    }
+    
+    // Single device loading
+    public List<Tag> getTagsForMachine(String machineId) {
+        // Simple loading for single device
+    }
+}
+
+// GraphQL DataLoader integration
+@DgsDataLoader(name = "tagDataLoader")
+@RequiredArgsConstructor
+public class TagDataLoader implements BatchLoader<String, List<Tag>> {
+    private final TagService tagService;
+    
+    @Override
+    public CompletionStage<List<List<Tag>>> load(List<String> machineIds) {
+        return CompletableFuture.supplyAsync(() -> tagService.getTagsForMachines(machineIds));
+    }
 }
 ```
 
 ## Benefits
 
-1. **DRY Principle**: Business logic is written once and reused
-2. **Consistency**: Both APIs use the same underlying logic ensuring consistent behavior
-3. **Maintainability**: Changes to business logic only need to be made in one place
-4. **Testability**: Business logic can be tested independently of API layers
-5. **Separation of Concerns**: API-specific concerns (GraphQL vs REST) are separated from business logic
+1. **Zero Duplication**: Business logic written once, used by both APIs
+2. **Consistent Behavior**: GraphQL and REST APIs behave identically
+3. **Shared DTOs**: No conversion needed between API types for common objects
+4. **Efficient Data Loading**: Batch loading prevents N+1 query problems
+5. **Database Specialization**: Each database used for its strengths
+6. **Maintainability**: Changes in one place affect both APIs
+7. **Performance**: Optimized data loading and minimal object creation
+
+## Architecture Decisions
+
+### Database Strategy
+
+- **MongoDB**: Primary storage for CRUD operations
+- **Pinot**: Analytics and filtering for performance
+- **Multi-database**: Services abstract database complexity
+
+### DTO Strategy
+
+- **Shared DTOs**: Same objects used by both APIs
+- **No Conversion**: Eliminates mapping between identical classes
+- **Type Safety**: Strong typing prevents runtime errors
 
 ## Development Guidelines
 
-1. **Keep it API-agnostic**: Don't include GraphQL or REST-specific code in this library
-2. **Use common DTOs**: Create DTOs that can be easily mapped to both GraphQL and REST formats
-3. **Focus on business logic**: Only include business logic, not presentation concerns
-4. **Maintain backwards compatibility**: Changes should not break existing API services
-5. **Test thoroughly**: All shared business logic should have comprehensive tests
+1. **Keep Services Database-Agnostic**: Services should abstract database complexity
+2. **Use Batch Loading**: Always consider N+1 query problems
+3. **Shared DTOs**: Create DTOs that work for both GraphQL and REST
+4. **Test Business Logic**: Focus tests on service logic, not API specifics
+5. **Performance First**: Consider performance implications of data loading patterns
+6. **API Compatibility**: Ensure services work well with both GraphQL and REST patterns
 
 ## Dependencies
 
 This library depends on:
 
-- `openframe-core`: For core domain models (Machine, Tag, etc.)
-- `openframe-data`: For repository access
-- Spring Framework: For dependency injection and data access
+- `openframe-core`: Core domain models (Machine, Tag, MachineTag, etc.)
+- `openframe-data`: Repository access for MongoDB and Pinot
+- Spring Framework: Dependency injection and data access
+- Spring Data: MongoDB and reactive programming support
 
 ## Testing
 
 Unit tests focus on business logic validation:
 
 ```java
-
 @ExtendWith(MockitoExtension.class)
-class CommonDeviceServiceTest {
+class DeviceServiceTest {
     @Mock
     private MachineRepository machineRepository;
-
+    
+    @Mock
+    private TagRepository tagRepository;
+    
     @InjectMocks
-    private CommonDeviceService commonDeviceService;
+    private DeviceService deviceService;
 
     @Test
-    void shouldReturnPaginatedDevices() {
-        // Test implementation
+    void shouldQueryDevicesWithFilters() {
+        // Arrange
+        DeviceFilterOptions filter = DeviceFilterOptions.builder()
+            .statuses(List.of(DeviceStatus.ONLINE))
+            .build();
+        
+        PaginationCriteria pagination = PaginationCriteria.builder()
+            .page(1)
+            .pageSize(20)
+            .build();
+
+        // Act
+        DeviceQueryResult result = deviceService.queryDevices(filter, pagination, null);
+
+        // Assert
+        assertThat(result.getDevices()).hasSize(expectedSize);
+        verify(machineRepository).findMachinesWithPagination(any(), any());
     }
 }
 ```
 
 ## Migration Notes
 
-When migrating from the original API service:
+When migrating from separate API services:
 
-1. **Service logic**: Move business logic from API-specific services to common services
-2. **DTOs**: Create common DTOs and mappers for API-specific DTOs
-3. **Tests**: Migrate tests to focus on business logic rather than API specifics
-4. **Dependencies**: Update API services to depend on this library
+1. **Service Consolidation**: Merged duplicate services into single implementations
+2. **DTO Unification**: Removed duplicate DTOs and used shared objects
+3. **Database Optimization**: Separated concerns between MongoDB and Pinot
+4. **Performance Optimization**: Implemented batch loading patterns
+5. **API Integration**: Ensured services work seamlessly with both GraphQL and REST
 
-This library enables OpenFrame to provide consistent device management functionality across both GraphQL and REST APIs
-while maintaining clean separation of concerns. 
+## Performance Characteristics
+
+- **Tag Loading**: O(1) queries regardless of device count (batch loading)
+- **Filter Operations**: Optimized using Pinot for analytics
+- **Device Queries**: Efficient pagination and filtering
+- **Memory Usage**: Minimal object creation through shared DTOs
+
+This library enables OpenFrame to provide consistent, high-performance device management functionality across both GraphQL and REST APIs while maintaining clean separation of concerns and optimal database usage patterns. 
