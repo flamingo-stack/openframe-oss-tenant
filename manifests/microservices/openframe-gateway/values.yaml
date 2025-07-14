@@ -1,0 +1,8 @@
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
+
+image:
+  repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
+  tag: latest

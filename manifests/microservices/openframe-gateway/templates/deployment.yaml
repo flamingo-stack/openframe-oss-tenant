@@ -22,7 +22,7 @@ spec:
       
       containers:
         - name: openframe-gateway
-          image: openframe-gateway
+          image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 8100
               name: http
