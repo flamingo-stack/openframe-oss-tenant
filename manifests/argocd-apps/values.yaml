@@ -1,6 +1,6 @@
 deployment:
   name: local         # or "cloud"
-  ingress: ngrok      # "ngrok" or "nat"
+  ingress: nat      # "ngrok" or "nat"
 
 global:
   repoDir: manifests
@@ -47,7 +47,7 @@ argocdApps:
     syncOptions:
       ServerSideApply: true
   grafana:
-    enabled: true
+    enabled: false
     project: platform
     namespace: platform
     syncWave: "0"
