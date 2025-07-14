@@ -8,4 +8,4 @@ appVersion: "1.0"
 dependencies:
   - name: telepresence-oss
     version: ">=2.23.3"
-    repository: ghcr.io/telepresenceio
+    repository: oci://ghcr.io/telepresenceio
