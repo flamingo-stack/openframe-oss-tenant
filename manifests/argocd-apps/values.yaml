@@ -99,21 +99,11 @@ argocdApps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-    helm:
-      chart: redis
-      repoURL: https://charts.bitnami.com/bitnami
-      version: 20.11.3
-      valuesPath: manifests/datasources/redis/helm-values.yaml
   redis-exporter:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-    helm:
-      chart: prometheus-redis-exporter
-      repoURL: https://prometheus-community.github.io/helm-charts
-      version: 6.9.0
-      valuesPath: manifests/datasources/redis-exporter/helm-values.yaml
 
   namespace-microservices:
     enabled: false

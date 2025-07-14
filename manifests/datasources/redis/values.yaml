@@ -1,0 +1,24 @@
+registerJob:
+  enabled: true
+
+redis:
+  global:
+    imagePullSecrets: 
+      - name: docker-pat-secret
+
+  auth:
+    enabled: false
+    password: ""
+    # existingSecret: ""
+  #   password: "admin"
+  #   existingSecret: "redis-secret"
+  #   existingSecretPasswordKey: "redis-password"
+  replica:
+    replicaCount: 1
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+    # podMonitor:
+    #   enabled: true
