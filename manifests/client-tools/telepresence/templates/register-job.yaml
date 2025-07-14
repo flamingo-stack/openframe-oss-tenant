@@ -1,7 +1,8 @@
+{{- if .Values.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mongo-express
+  name: telepresence
   annotations:
     "argocd.argoproj.io/hook": PostSync
     # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -11,50 +12,51 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-      - name: register
-        image: curlimages/curl:8.5.0
-        command:
+        - name: register
+          image: curlimages/curl:8.5.0
+          command:
           - /bin/sh
           - -c
           - |
-            echo "Registering Mongo Express..."
+            echo "Registering Telepresence..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/mongo-express" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/telepresence" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "mongo-express",
-                  "toolType": "MONGO_EXPRESS",
-                  "name": "Mongo Express",
-                  "description": "Mongo Express Web-based MongoDB Admin Interface",
+                  "id": "telepresence",
+                  "toolType": "TELEPRESENCE",
+                  "name": "Telepresence",
+                  "description": "Telepresence Local-to-Remote Development Tool",
                   "toolUrls": [
                     {
-                      "url": "http://mongo-express.client-tools.svc.cluster.local",
-                      "port": "80",
-                      "type": "DASHBOARD"
+                      "url": "http://traffic-manager.client-tools.svc.cluster.local",
+                      "port": "8081",
+                      "type": "API"
                     }
                   ],
-                  "category": "NoSQL Database",
-                  "platformCategory": "OpenFrame Datasource",
+                  "category": "Development Proxy",
+                  "platformCategory": "OpenFrame Service",
                   "enabled": true,
                   "credentials": {},
-                  "layer": "Datasource",
+                  "layer": "Networking",
                   "layerOrder": 2,
-                  "layerColor": "#4DB6AC",
+                  "layerColor": "#8E24AA",
                   "metricsPath": "/metrics",
                   "healthCheckEndpoint": "/",
                   "healthCheckInterval": 30,
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
-                  "allowedEndpoints": ["/"],
+                  "allowedEndpoints": ["/","/metrics"],
                   "debeziumConnector": null
                 }
               }' \
               --retry-delay 2 \
               --retry-all-errors
-            echo "Mongo Express Registration complete."
+            echo "Telepresence Registration complete."
+{{- end }}

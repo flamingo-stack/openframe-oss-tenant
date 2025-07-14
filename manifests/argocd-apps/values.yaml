@@ -166,21 +166,11 @@ argocdApps:
     project: client-tools
     namespace: client-tools
     syncWave: "2"
-    helm:
-      chart: kafka-ui
-      repoURL: https://kafbat.github.io/helm-charts
-      version: 1.4.12
-      valuesPath: manifests/client-tools/kafka-ui/helm-values.yaml
   telepresence:
     enabled: false
     project: client-tools
     namespace: client-tools
     syncWave: "2"
-    helm:
-      chart: telepresence-oss
-      repoURL: ghcr.io/telepresenceio
-      version: 2.23.0
-      valuesPath: manifests/client-tools/telepresence/helm-values.yaml
 
   namespace-integrated-tools:
     enabled: false

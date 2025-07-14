@@ -1,0 +1,11 @@
+apiVersion: v2
+name: kafka-ui-wrapper
+description: Wrapper chart for Kafka UI
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+dependencies:
+  - name: kafka-ui
+    version: ">=1.4.12"
+    repository: https://kafbat.github.io/helm-charts
