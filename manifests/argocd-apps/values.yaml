@@ -5,7 +5,7 @@ deployment:
 global:
   repoDir: manifests
   repoURL: https://github.com/Flamingo-CX/openframe.git
-  repoBranch: feature/ngrok
+  repoBranch: feature/helm-structure
   autoSync: true
 
 argocdApps:

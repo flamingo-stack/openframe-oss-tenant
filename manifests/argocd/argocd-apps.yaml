@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: feature/ngrok
+    targetRevision: feature/helm-structure
     path: manifests/argocd-apps
 
   destination:
