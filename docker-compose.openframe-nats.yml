@@ -1,0 +1,46 @@
+services:
+  nats-server:
+    image: nats:2.10-alpine
+    container_name: openframe-nats
+    ports:
+      - "4222:4222"      # NATS client port
+      - "8222:8222"      # NATS HTTP monitoring port
+      - "6222:6222"      # NATS clustering port
+    command: [
+      "-js",                    # Enable JetStream
+      "-m", "8222",            # HTTP monitoring port
+      "-sd", "/data/jetstream" # JetStream storage directory
+    ]
+    volumes:
+      - nats-data:/data
+    environment:
+      - NATS_SERVER_NAME=openframe-nats
+    networks:
+      - openframe-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  nats-cli:
+    image: natsio/nats-box:latest
+    container_name: openframe-nats-cli
+    depends_on:
+      nats-server:
+        condition: service_healthy
+    command: ["sleep", "infinity"]
+    networks:
+      - openframe-network
+    restart: unless-stopped
+
+volumes:
+  nats-data:
+    driver: local
+
+networks:
+  openframe-network:
+    driver: bridge
+    name: openframe-network 
