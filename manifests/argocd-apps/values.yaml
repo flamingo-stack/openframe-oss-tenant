@@ -135,7 +135,7 @@ argocdApps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-        helm:
+    helm:
       values: |
         registerJob:
           enabled: false
