@@ -2,6 +2,7 @@ package com.openframe.api.mapper;
 
 import com.openframe.api.dto.DeviceFilterOptions;
 import com.openframe.api.dto.DeviceQueryResult;
+import com.openframe.api.dto.PageInfo;
 import com.openframe.api.dto.PaginationCriteria;
 import com.openframe.api.dto.device.*;
 import org.springframework.stereotype.Component;
@@ -57,6 +58,4 @@ public class GraphQLDeviceMapper {
                 .filteredCount(result.getFilteredCount())
                 .build();
     }
-
-
 } 

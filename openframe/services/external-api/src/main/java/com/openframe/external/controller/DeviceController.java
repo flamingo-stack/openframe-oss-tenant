@@ -1,11 +1,13 @@
 package com.openframe.external.controller;
 
 import com.openframe.api.dto.DeviceFilterOptions;
+import com.openframe.api.dto.DeviceFilters;
 import com.openframe.api.dto.DeviceQueryResult;
 import com.openframe.api.dto.PaginationCriteria;
 import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
 import com.openframe.api.service.TagService;
+import com.openframe.core.dto.ErrorResponse;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.Tag;
 import com.openframe.core.model.device.DeviceStatus;
@@ -13,6 +15,7 @@ import com.openframe.core.model.device.DeviceType;
 import com.openframe.external.dto.DeviceFilterResponse;
 import com.openframe.external.dto.DeviceResponse;
 import com.openframe.external.dto.DevicesResponse;
+import com.openframe.external.exception.DeviceNotFoundException;
 import com.openframe.external.mapper.DeviceMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,12 +27,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import static org.springframework.http.HttpStatus.OK;
+
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @RestController
@@ -52,12 +54,16 @@ public class DeviceController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved devices",
                     content = @Content(schema = @Schema(implementation = DevicesResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping
-    public ResponseEntity<DevicesResponse> getDevices(
+    @ResponseStatus(OK)
+    public DevicesResponse getDevices(
             @Parameter(description = "Device statuses to filter by")
             @RequestParam(required = false) List<DeviceStatus> statuses,
 
@@ -106,25 +112,20 @@ public class DeviceController {
 
         DeviceQueryResult result = deviceService.queryDevices(filterOptions, pagination, search);
 
-        DevicesResponse response;
         if (includeTags) {
             List<String> machineIds = result.getDevices().stream()
                     .map(Machine::getId)
                     .collect(Collectors.toList());
-
             try {
                 List<List<Tag>> tagsPerMachine = tagService.getTagsForMachines(machineIds);
-                response = deviceMapper.toDevicesResponseWithTags(result, tagsPerMachine);
+                return deviceMapper.toDevicesResponseWithTags(result, tagsPerMachine);
             } catch (Exception e) {
                 log.error("Failed to load tags for devices", e);
                 // Fallback to response without tags
-                response = deviceMapper.toDevicesResponse(result);
+                return deviceMapper.toDevicesResponse(result);
             }
-        } else {
-            response = deviceMapper.toDevicesResponse(result);
         }
-
-        return ResponseEntity.ok(response);
+        return deviceMapper.toDevicesResponse(result);
     }
 
     @Operation(
@@ -134,32 +135,28 @@ public class DeviceController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Device found",
                     content = @Content(schema = @Schema(implementation = DeviceResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Device not found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
+            @ApiResponse(responseCode = "404", description = "Device not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/{machineId}")
-    public ResponseEntity<DeviceResponse> getDevice(
+    @ResponseStatus(OK)
+    public DeviceResponse getDevice(
             @Parameter(description = "Machine ID of the device")
             @PathVariable String machineId,
-
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Parameter(hidden = true) @RequestHeader(value = "X-API-Key-Id", required = false) String apiKeyId) {
 
         log.info("Getting device by ID: {} - userId: {}, apiKeyId: {}", machineId, userId, apiKeyId);
 
-        Optional<Machine> machineOpt = deviceService.findByMachineId(machineId);
-
-        if (machineOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Machine machine = machineOpt.get();
+        Machine machine = deviceService.findByMachineId(machineId)
+                .orElseThrow(() -> new DeviceNotFoundException("Device not found with ID: " + machineId));
+        
         List<Tag> tags = tagService.getTagsForMachine(machine.getId());
-
-        DeviceResponse response = deviceMapper.toDeviceResponse(machine, tags);
-
-        return ResponseEntity.ok(response);
+        return deviceMapper.toDeviceResponse(machine, tags);
     }
 
     @Operation(
@@ -169,11 +166,14 @@ public class DeviceController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Filter options retrieved successfully",
                     content = @Content(schema = @Schema(implementation = DeviceFilterResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/filters")
-    public CompletableFuture<ResponseEntity<DeviceFilterResponse>> getDeviceFilters(
+    @ResponseStatus(OK)
+    public DeviceFilterResponse getDeviceFilters(
             @Parameter(description = "Device statuses to filter by")
             @RequestParam(required = false) List<DeviceStatus> statuses,
 
@@ -202,10 +202,7 @@ public class DeviceController {
                 .tagNames(tagNames)
                 .build();
 
-        return deviceFilterService.getDeviceFilters(filterOptions)
-                .thenApply(filters -> {
-                    DeviceFilterResponse response = deviceMapper.toDeviceFilterResponse(filters);
-                    return ResponseEntity.ok(response);
-                });
+        DeviceFilters filters = deviceFilterService.getDeviceFilters(filterOptions).join();
+        return deviceMapper.toDeviceFilterResponse(filters);
     }
 } 

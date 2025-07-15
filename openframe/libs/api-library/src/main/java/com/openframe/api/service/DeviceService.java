@@ -2,6 +2,7 @@ package com.openframe.api.service;
 
 import com.openframe.api.dto.DeviceFilterOptions;
 import com.openframe.api.dto.DeviceQueryResult;
+import com.openframe.api.dto.PageInfo;
 import com.openframe.api.dto.PaginationCriteria;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.MachineTag;
@@ -12,6 +13,7 @@ import com.openframe.data.repository.mongo.MachineTagRepository;
 import com.openframe.data.repository.mongo.TagRepository;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -28,20 +30,13 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @Validated
+@RequiredArgsConstructor
 public class DeviceService {
 
     private static final String SORT_FIELD = "machineId";
     private final MachineRepository machineRepository;
     private final TagRepository tagRepository;
     private final MachineTagRepository machineTagRepository;
-
-    public DeviceService(MachineRepository machineRepository,
-                         TagRepository tagRepository,
-                         MachineTagRepository machineTagRepository) {
-        this.machineRepository = machineRepository;
-        this.tagRepository = tagRepository;
-        this.machineTagRepository = machineTagRepository;
-    }
 
     public Optional<Machine> findByMachineId(@NotBlank String machineId) {
         log.debug("Finding machine by ID: {}", machineId);
@@ -65,7 +60,7 @@ public class DeviceService {
 
         int totalPages = (int) Math.ceil((double) totalCount / normalizedPagination.getPageSize());
 
-        DeviceQueryResult.PageInfo pageInfo = DeviceQueryResult.PageInfo.builder()
+        PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(normalizedPagination.getPage() < totalPages)
                 .hasPreviousPage(normalizedPagination.getPage() > 1)
                 .currentPage(normalizedPagination.getPage())

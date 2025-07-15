@@ -2,6 +2,7 @@ package com.openframe.external.mapper;
 
 import com.openframe.api.dto.DeviceQueryResult;
 import com.openframe.api.dto.FilterOption;
+import com.openframe.api.dto.PageInfo;
 import com.openframe.api.dto.TagFilterOption;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.Tag;
@@ -50,7 +51,7 @@ public class DeviceMapper {
                 .map(machine -> toDeviceResponse(machine, List.of())) // Tags will be loaded separately if needed
                 .collect(Collectors.toList());
 
-        DevicesResponse.PageInfo pageInfo = DevicesResponse.PageInfo.builder()
+        PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(queryResult.getPageInfo().isHasNextPage())
                 .hasPreviousPage(queryResult.getPageInfo().isHasPreviousPage())
                 .currentPage(queryResult.getPageInfo().getCurrentPage())
@@ -74,7 +75,7 @@ public class DeviceMapper {
             deviceResponses.add(toDeviceResponse(machine, tags));
         }
 
-        DevicesResponse.PageInfo pageInfo = DevicesResponse.PageInfo.builder()
+        PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(queryResult.getPageInfo().isHasNextPage())
                 .hasPreviousPage(queryResult.getPageInfo().isHasPreviousPage())
                 .currentPage(queryResult.getPageInfo().getCurrentPage())

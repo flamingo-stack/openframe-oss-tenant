@@ -1,5 +1,6 @@
 package com.openframe.api.dto.device;
 
+import com.openframe.api.dto.PageInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

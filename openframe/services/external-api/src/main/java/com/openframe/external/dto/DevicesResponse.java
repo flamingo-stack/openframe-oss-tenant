@@ -1,5 +1,6 @@
 package com.openframe.external.dto;
 
+import com.openframe.api.dto.PageInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,24 +24,4 @@ public class DevicesResponse {
 
     @Schema(description = "Total count of filtered devices")
     private int filteredCount;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "Pagination information")
-    public static class PageInfo {
-
-        @Schema(description = "Whether there is a next page", example = "true")
-        private boolean hasNextPage;
-
-        @Schema(description = "Whether there is a previous page", example = "false")
-        private boolean hasPreviousPage;
-
-        @Schema(description = "Current page number (1-based)", example = "1")
-        private int currentPage;
-
-        @Schema(description = "Total number of pages", example = "10")
-        private int totalPages;
-    }
 } 

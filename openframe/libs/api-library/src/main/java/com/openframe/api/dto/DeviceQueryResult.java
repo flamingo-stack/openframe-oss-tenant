@@ -16,15 +16,4 @@ public class DeviceQueryResult {
     private List<Machine> devices;
     private PageInfo pageInfo;
     private int filteredCount;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PageInfo {
-        private boolean hasNextPage;
-        private boolean hasPreviousPage;
-        private int currentPage;
-        private int totalPages;
-    }
 } 
