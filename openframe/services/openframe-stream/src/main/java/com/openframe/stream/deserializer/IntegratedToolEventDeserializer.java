@@ -19,7 +19,6 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
     private static final String UNKNOWN = "unknown";
     protected final ObjectMapper mapper;
     
-    // Константы для ограничений
     private static final int MAX_DEPTH = 10;
     private static final int MAX_ARRAY_SIZE = 1000;
     private static final int MAX_VALUE_LENGTH = 10000;
