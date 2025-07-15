@@ -1,11 +1,11 @@
 package com.openframe.stream.service;
 
-import com.openframe.data.model.debezium.ExtraParams;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.DataEnrichmentServiceType;
 
 public interface DataEnrichmentService <T> {
 
-    ExtraParams getExtraParams(T message);
+    IntegratedToolEnrichedData getExtraParams(T message);
 
     DataEnrichmentServiceType getType();
 

@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage> implements KafkaMessageDeserializer {
 
@@ -26,7 +27,7 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
     public T deserialize(Map<String, Object> message) {
         try {
             T deserializedMessage = mapper.convertValue(message.get("payload"), clazz);
-            deserializedMessage.setAgentId(getAgentId(deserializedMessage));
+            deserializedMessage.setAgentId(getAgentId(deserializedMessage).orElse(null));
             deserializedMessage.setIngestDay(formatter.format(Instant.ofEpochMilli(deserializedMessage.getTimestamp())));
             deserializedMessage.setSourceEventType(getSourceEventType(deserializedMessage));
             deserializedMessage.setToolEventId("%s_%s".formatted(deserializedMessage.getToolType().name(), getEventToolId(deserializedMessage)));
@@ -39,10 +40,10 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
         }
     }
 
-    protected abstract String getAgentId(T deserializedMessage);
-    protected abstract String getSourceEventType(T deserializedMessage);
-    protected abstract String getEventToolId(T deserializedMessage);
-    protected abstract String getMessage(T deserializedMessage);
+    protected abstract Optional<String> getAgentId(T deserializedMessage);
+    protected abstract Optional<String> getSourceEventType(T deserializedMessage);
+    protected abstract Optional<String> getEventToolId(T deserializedMessage);
+    protected abstract Optional<String> getMessage(T deserializedMessage);
     
     /**
      * Convert all fields from JsonNode after to Map<String, String>

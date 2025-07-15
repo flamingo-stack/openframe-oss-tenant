@@ -1,18 +1,15 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.openframe.data.model.debezium.ExtraParams;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.kafka.DeserializedKafkaMessage;
 import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-
 @Slf4j
-public abstract class GenericMessageHandler<T, U extends DeserializedKafkaMessage, V extends ExtraParams> implements MessageHandler<U, V> {
+public abstract class GenericMessageHandler<T, U extends DeserializedKafkaMessage, V extends IntegratedToolEnrichedData> implements MessageHandler<U, V> {
 
     protected final ObjectMapper mapper;
 

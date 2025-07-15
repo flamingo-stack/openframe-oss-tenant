@@ -2,7 +2,6 @@ package com.openframe.stream.service;
 
 import com.openframe.core.model.ToolConnection;
 import com.openframe.data.model.debezium.DebeziumMessage;
-import com.openframe.data.model.debezium.ExtraParams;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.repository.mongo.ToolConnectionRepository;
 import com.openframe.data.repository.redis.RedisRepository;
@@ -26,7 +25,7 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
     }
 
     @Override
-    public ExtraParams getExtraParams(DebeziumMessage message) {
+    public IntegratedToolEnrichedData getExtraParams(DebeziumMessage message) {
         IntegratedToolEnrichedData integratedToolEnrichedData = new IntegratedToolEnrichedData();
         if (message == null || message.getAgentId() == null) {
             return integratedToolEnrichedData;
@@ -49,11 +48,6 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
                 }
             });
         }
-        
-        // Set unified event type information from the message
-        integratedToolEnrichedData.setToolName(message.getToolType().getDbName());
-        integratedToolEnrichedData.setSourceEventType(message.getSourceEventType());
-        integratedToolEnrichedData.setUnifiedEventType(message.getEventType());
         
         log.debug("Enriched data for agent {}: tool={}, sourceEvent={}, unifiedEvent={}", 
                 agentId, message.getToolType().getDbName(), message.getSourceEventType(), message.getEventType());

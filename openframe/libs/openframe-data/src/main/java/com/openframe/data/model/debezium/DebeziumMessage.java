@@ -39,10 +39,6 @@ public abstract class DebeziumMessage implements DeserializedKafkaMessage {
     private String message;
     private Map<String, String> details;
 
-    /**
-     * Get the table/collection name - to be implemented by subclasses
-     */
-    public abstract String getTableName();
     public abstract IntegratedToolType getToolType();
 
     public UnifiedEventType getEventType() {
