@@ -26,7 +26,7 @@ public class IntegratedToolService {
     private final IntegratedToolRepository toolRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${debezium.url}")
+    @Value("${debezium.connector.create}")
     private String debeziumUrl;
 
     public List<IntegratedTool> getAllTools() {
@@ -48,17 +48,10 @@ public class IntegratedToolService {
         log.info("Add debezium connector");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Create HTTP entity with headers and body
         HttpEntity<Object> requestEntity = new HttpEntity<>(debeziumConnector, headers);
 
-        // URL for the request
-        String url = "%s/connectors".formatted(debeziumUrl);
-
-        // Send POST request and get response
         try {
-            // Send POST request and get response
-            ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(debeziumUrl, requestEntity, String.class);
             log.info("Added debezium connector. Response: {}", response.getStatusCode());
         } catch (Exception e) {
             log.error("Failed to add debezium connector", e);

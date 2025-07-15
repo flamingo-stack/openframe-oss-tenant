@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class TrmmEventMessage extends PostgreSqlDebeziumMessage {
+public class TrmmEventMessage extends DebeziumMessage {
 
     @Override
     public IntegratedToolType getToolType() {

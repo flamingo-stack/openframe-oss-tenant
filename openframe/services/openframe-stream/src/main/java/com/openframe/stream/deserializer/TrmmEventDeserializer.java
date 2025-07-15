@@ -25,47 +25,44 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer<TrmmE
     }
 
     @Override
-    protected String getAgentId(TrmmEventMessage deserializedMessage) {
-        return parseField(deserializedMessage.getAfter(), "agentid")
-                .orElse(null);
+    protected Optional<String> getAgentId(TrmmEventMessage deserializedMessage) {
+        return parseField(deserializedMessage.getAfter(), "agentid");
     }
 
     @Override
-    protected String getSourceEventType(TrmmEventMessage deserializedMessage) {
-        return parseField(deserializedMessage.getAfter(), "event_type")
-                .orElse("unknown");
+    protected Optional<String> getSourceEventType(TrmmEventMessage deserializedMessage) {
+        Optional<String> objectType = parseField(deserializedMessage.getAfter(), "object_type");
+        Optional<String> action = parseField(deserializedMessage.getAfter(), "action");
+        Optional<String> result = Optional.empty();
+        if (objectType.isPresent() && action.isPresent()) {
+            result = Optional.of("%s.%s".formatted(objectType.get(), action.get()));
+        } else if (objectType.isPresent()) {
+            result = objectType;
+        } else if (action.isPresent()) {
+            result = action;
+        }
+
+        return result;
     }
 
     @Override
-    protected String getEventToolId(TrmmEventMessage deserializedMessage) {
-        return parseField(deserializedMessage.getAfter(), "id")
-                .orElse("");
+    protected Optional<String> getEventToolId(TrmmEventMessage deserializedMessage) {
+        return parseField(deserializedMessage.getAfter(), "id");
     }
 
     @Override
-    protected String getMessage(TrmmEventMessage deserializedMessage) {
-        return parseField(deserializedMessage.getAfter(), "message")
-                .orElse("unknown");
+    protected Optional<String> getMessage(TrmmEventMessage deserializedMessage) {
+        return parseField(deserializedMessage.getAfter(), "message");
     }
 
-    /**
-     * Безопасно парсит JSON-строку из JsonNode и извлекает значение указанного поля.
-     */
+
     private Optional<String> parseField(JsonNode rawNode, String fieldName) {
         return Optional.ofNullable(rawNode)
-                .map(JsonNode::asText)
-                .filter(StringUtils::isNotBlank)
-                .flatMap(json -> {
-                    try {
-                        JsonNode node = mapper.readTree(json);
-                        JsonNode fieldNode = node.get(fieldName);
-                        return fieldNode != null && StringUtils.isNotBlank(fieldNode.asText())
-                                ? Optional.of(fieldNode.asText())
-                                : Optional.empty();
-                    } catch (IOException e) {
-                        log.error("Failed to parse JSON field '{}': {}", fieldName, e.getMessage());
-                        return Optional.empty();
-                    }
+                .flatMap(node -> {
+                    JsonNode fieldNode = node.get(fieldName);
+                    return fieldNode != null && StringUtils.isNotBlank(fieldNode.asText())
+                            ? Optional.of(fieldNode.asText())
+                            : Optional.empty();
                 });
     }
 }

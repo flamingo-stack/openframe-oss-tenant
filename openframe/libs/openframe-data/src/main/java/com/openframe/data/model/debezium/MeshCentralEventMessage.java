@@ -4,7 +4,7 @@ import com.openframe.data.model.enums.IntegratedToolType;
 import lombok.Data;
 
 @Data
-public class MeshCentralEventMessage extends MongoDbDebeziumMessage {
+public class MeshCentralEventMessage extends DebeziumMessage {
 
     @Override
     public IntegratedToolType getToolType() {

@@ -16,7 +16,13 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
     private final Class<T> clazz;
+    private static final String UNKNOWN = "unknown";
     protected final ObjectMapper mapper;
+    
+    // Константы для ограничений
+    private static final int MAX_DEPTH = 10;
+    private static final int MAX_ARRAY_SIZE = 1000;
+    private static final int MAX_VALUE_LENGTH = 10000;
 
     IntegratedToolEventDeserializer(ObjectMapper objectMapper, Class<T> clazz) {
         this.clazz = clazz;
@@ -29,10 +35,10 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
             T deserializedMessage = mapper.convertValue(message.get("payload"), clazz);
             deserializedMessage.setAgentId(getAgentId(deserializedMessage).orElse(null));
             deserializedMessage.setIngestDay(formatter.format(Instant.ofEpochMilli(deserializedMessage.getTimestamp())));
-            deserializedMessage.setSourceEventType(getSourceEventType(deserializedMessage));
-            deserializedMessage.setToolEventId("%s_%s".formatted(deserializedMessage.getToolType().name(), getEventToolId(deserializedMessage)));
+            deserializedMessage.setSourceEventType(getSourceEventType(deserializedMessage).orElse(UNKNOWN));
+            deserializedMessage.setToolEventId("%s_%s".formatted(deserializedMessage.getToolType().name(), getEventToolId(deserializedMessage).orElse(UNKNOWN)));
             deserializedMessage.setSeverity(deserializedMessage.getEventType().getSeverity());
-            deserializedMessage.setMessage(getMessage(deserializedMessage));
+            deserializedMessage.setMessage(getMessage(deserializedMessage).orElse(null));
             deserializedMessage.setDetails(getDetails(deserializedMessage));
             return deserializedMessage;
         } catch (IllegalArgumentException e) {
@@ -63,36 +69,36 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
     /**
      * Recursively convert JsonNode to Map<String, String>
      * Handles nested objects and arrays by flattening them with dot notation
+     * Includes safety limits to prevent stack overflow and memory issues
      */
     private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result) {
+        convertJsonNodeToMap(node, prefix, result, 0);
+    }
+    
+    private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result, int depth) {
+        if (node == null || result == null || depth > MAX_DEPTH) {
+            return;
+        }
+        
         if (node.isObject()) {
             Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
                 String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
-                convertJsonNodeToMap(entry.getValue(), key, result);
+                convertJsonNodeToMap(entry.getValue(), key, result, depth + 1);
             }
         } else if (node.isArray()) {
-            for (int i = 0; i < node.size(); i++) {
+            int maxSize = Math.min(node.size(), MAX_ARRAY_SIZE);
+            for (int i = 0; i < maxSize; i++) {
                 String key = prefix + "[" + i + "]";
-                convertJsonNodeToMap(node.get(i), key, result);
+                convertJsonNodeToMap(node.get(i), key, result, depth + 1);
             }
         } else {
-            // Handle primitive values
-            String value;
-            if (node.isTextual()) {
-                value = node.asText();
-            } else if (node.isNumber()) {
-                value = node.asText(); // Preserve number format
-            } else if (node.isBoolean()) {
-                value = String.valueOf(node.asBoolean());
-            } else if (node.isNull()) {
-                value = null;
-            } else {
-                value = node.asText();
-            }
-            
-            if (value != null) {
+            if (!node.isNull()) {
+                String value = node.asText();
+                if (value.length() > MAX_VALUE_LENGTH) {
+                    value = value.substring(0, MAX_VALUE_LENGTH) + "...";
+                }
                 result.put(prefix, value);
             }
         }
