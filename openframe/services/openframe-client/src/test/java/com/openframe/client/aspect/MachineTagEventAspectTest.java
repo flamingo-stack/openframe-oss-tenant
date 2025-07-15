@@ -4,6 +4,7 @@ import com.openframe.client.service.MachineTagEventService;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.MachineTag;
 import com.openframe.core.model.Tag;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -24,6 +27,9 @@ class MachineTagEventAspectTest {
 
     @Mock
     private MachineTagEventService machineTagEventService;
+
+    @Mock
+    private ProceedingJoinPoint proceedingJoinPoint;
 
     private MachineTagEventAspect machineTagEventAspect;
 
@@ -104,40 +110,45 @@ class MachineTagEventAspectTest {
     }
 
     @Test
-    void testTagSaveAspect_WithOriginalState() {
+    void testAroundTagSave_ExistingTag() throws Throwable {
         // Arrange
         Tag tag = new Tag();
         tag.setId("tag-1");
         tag.setName("test-tag");
         tag.setColor("#FF0000");
 
-        // First capture the original state (simulating beforeTagSave)
-        machineTagEventAspect.beforeTagSave(null, tag);
+        when(proceedingJoinPoint.proceed()).thenReturn(tag);
 
-        // Act - call the after save method
-        machineTagEventAspect.afterTagSave(null, tag, tag);
+        // Act
+        Object result = machineTagEventAspect.aroundTagSave(proceedingJoinPoint, tag);
 
         // Assert
+        verify(proceedingJoinPoint, times(1)).proceed();
         verify(machineTagEventService, times(1)).processTagSave(tag);
+        assertEquals(tag, result);
     }
 
     @Test
-    void testTagSaveAspect_WithoutOriginalState() {
+    void testAroundTagSave_NewTag() throws Throwable {
         // Arrange
         Tag tag = new Tag();
-        tag.setId("tag-1");
-        tag.setName("test-tag");
+        tag.setName("new-tag");
         tag.setColor("#FF0000");
+        // Note: No ID set, so this is a new tag
 
-        // Act - call the after save method without capturing original state
-        machineTagEventAspect.afterTagSave(null, tag, tag);
+        when(proceedingJoinPoint.proceed()).thenReturn(tag);
 
-        // Assert - should not call service because no original state was captured
+        // Act
+        Object result = machineTagEventAspect.aroundTagSave(proceedingJoinPoint, tag);
+
+        // Assert
+        verify(proceedingJoinPoint, times(1)).proceed();
         verify(machineTagEventService, never()).processTagSave(any(Tag.class));
+        assertEquals(tag, result);
     }
 
     @Test
-    void testTagSaveAllAspect_WithOriginalStates() {
+    void testAroundTagSaveAll_ExistingTags() throws Throwable {
         // Arrange
         Tag tag1 = new Tag();
         tag1.setId("tag-1");
@@ -150,35 +161,22 @@ class MachineTagEventAspectTest {
         tag2.setColor("#00FF00");
 
         List<Tag> tags = Arrays.asList(tag1, tag2);
+        List<Tag> results = Arrays.asList(tag1, tag2);
 
-        // First capture the original states (simulating beforeTagSaveAll)
-        machineTagEventAspect.beforeTagSaveAll(null, tags);
+        when(proceedingJoinPoint.proceed()).thenReturn(results);
 
-        // Act - call the after save method
-        machineTagEventAspect.afterTagSaveAll(null, tags, tags);
+        // Act
+        Object result = machineTagEventAspect.aroundTagSaveAll(proceedingJoinPoint, tags);
 
         // Assert
+        verify(proceedingJoinPoint, times(1)).proceed();
         verify(machineTagEventService, times(1)).processTagSave(tag1);
         verify(machineTagEventService, times(1)).processTagSave(tag2);
+        assertEquals(results, result);
     }
 
     @Test
-    void testTagSaveAspect_NewTag() {
-        // Arrange
-        Tag tag = new Tag();
-        tag.setName("new-tag");
-        tag.setColor("#FF0000");
-        // Note: No ID set, so this is a new tag
-
-        // Act - call the after save method without capturing original state
-        machineTagEventAspect.afterTagSave(null, tag, tag);
-
-        // Assert - should not call service because tag has no ID
-        verify(machineTagEventService, never()).processTagSave(any(Tag.class));
-    }
-
-    @Test
-    void testTagSaveAllAspect_MixedTags() {
+    void testAroundTagSaveAll_MixedTags() throws Throwable {
         // Arrange
         Tag existingTag = new Tag();
         existingTag.setId("tag-1");
@@ -190,16 +188,43 @@ class MachineTagEventAspectTest {
         newTag.setColor("#00FF00");
 
         List<Tag> tags = Arrays.asList(existingTag, newTag);
+        List<Tag> results = Arrays.asList(existingTag, newTag);
 
-        // First capture the original states (only existingTag will be captured)
-        machineTagEventAspect.beforeTagSaveAll(null, tags);
+        when(proceedingJoinPoint.proceed()).thenReturn(results);
 
-        // Act - call the after save method
-        machineTagEventAspect.afterTagSaveAll(null, tags, tags);
+        // Act
+        Object result = machineTagEventAspect.aroundTagSaveAll(proceedingJoinPoint, tags);
 
-        // Assert - only existingTag should be processed
+        // Assert
+        verify(proceedingJoinPoint, times(1)).proceed();
         verify(machineTagEventService, times(1)).processTagSave(existingTag);
         verify(machineTagEventService, never()).processTagSave(newTag);
+        assertEquals(results, result);
+    }
+
+    @Test
+    void testAroundTagSaveAll_NewTagsOnly() throws Throwable {
+        // Arrange
+        Tag newTag1 = new Tag();
+        newTag1.setName("new-tag-1");
+        newTag1.setColor("#FF0000");
+
+        Tag newTag2 = new Tag();
+        newTag2.setName("new-tag-2");
+        newTag2.setColor("#00FF00");
+
+        List<Tag> tags = Arrays.asList(newTag1, newTag2);
+        List<Tag> results = Arrays.asList(newTag1, newTag2);
+
+        when(proceedingJoinPoint.proceed()).thenReturn(results);
+
+        // Act
+        Object result = machineTagEventAspect.aroundTagSaveAll(proceedingJoinPoint, tags);
+
+        // Assert
+        verify(proceedingJoinPoint, times(1)).proceed();
+        verify(machineTagEventService, never()).processTagSave(any(Tag.class));
+        assertEquals(results, result);
     }
 
     @Test
@@ -238,24 +263,22 @@ class MachineTagEventAspectTest {
     }
 
     @Test
-    void testErrorHandling_TagSave() {
+    void testErrorHandling_ProceedingJoinPointThrowsException() throws Throwable {
         // Arrange
         Tag tag = new Tag();
         tag.setId("tag-1");
         tag.setName("test-tag");
         tag.setColor("#FF0000");
         
-        // First capture the original state
-        machineTagEventAspect.beforeTagSave(null, tag);
-        
-        doThrow(new RuntimeException("Service error"))
-            .when(machineTagEventService).processTagSave(tag);
+        when(proceedingJoinPoint.proceed()).thenThrow(new RuntimeException("Database error"));
 
-        // Act & Assert - should not throw exception
-        machineTagEventAspect.afterTagSave(null, tag, tag);
+        // Act & Assert - should propagate the exception
+        assertThrows(RuntimeException.class, () -> {
+            machineTagEventAspect.aroundTagSave(proceedingJoinPoint, tag);
+        });
 
-        // Should still call the service
-        verify(machineTagEventService, times(1)).processTagSave(tag);
+        // Should not call the service because the save operation failed
+        verify(machineTagEventService, never()).processTagSave(any(Tag.class));
     }
 
     @Test
@@ -268,26 +291,5 @@ class MachineTagEventAspectTest {
 
         // Should not call the service due to ClassCastException
         verify(machineTagEventService, never()).processMachineSave(any());
-    }
-
-    @Test
-    void testOriginalTagStatesCleanup() {
-        // Arrange
-        Tag tag = new Tag();
-        tag.setId("tag-1");
-        tag.setName("test-tag");
-        tag.setColor("#FF0000");
-
-        // Capture original state
-        machineTagEventAspect.beforeTagSave(null, tag);
-
-        // Act - process the save
-        machineTagEventAspect.afterTagSave(null, tag, tag);
-
-        // Act again - should not process because original state was removed
-        machineTagEventAspect.afterTagSave(null, tag, tag);
-
-        // Assert - should only be called once
-        verify(machineTagEventService, times(1)).processTagSave(tag);
     }
 } 

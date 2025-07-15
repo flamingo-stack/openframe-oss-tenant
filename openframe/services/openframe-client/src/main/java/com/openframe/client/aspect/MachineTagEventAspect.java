@@ -7,12 +7,14 @@ import com.openframe.core.model.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * AOP aspect to intercept repository save operations and delegate to RepositoryEventService.
@@ -25,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MachineTagEventAspect {
 
     private final MachineTagEventService machineTagEventService;
-    private final ConcurrentHashMap<String, Tag> originalTagStates = new ConcurrentHashMap<>();
+
     /**
      * Intercepts Machine repository save operations.
      */
@@ -100,89 +102,56 @@ public class MachineTagEventAspect {
     }
 
     /**
-     * Captures original tag state before save operation.
+     * Intercepts Tag repository save operations using @Around advice.
+     * Captures original state before save and processes after successful save.
      */
-    @Before("execution(* com.openframe.data.repository.mongo.TagRepository.save(..)) && args(tag)")
-    public void beforeTagSave(JoinPoint joinPoint, Object tag) {
+    @Around("execution(* com.openframe.data.repository.mongo.TagRepository.save(..)) && args(tag)")
+    public Object aroundTagSave(ProceedingJoinPoint joinPoint, Object tag) throws Throwable {
         try {
-            log.debug("Tag save operation detected (before), delegating to service");
+            log.debug("Tag save operation detected, capturing state and delegating to service");
             Tag tagEntity = (Tag) tag;
 
-            // Only capture state if this is an update operation (tag has an ID)
-            if (tagEntity.getId() != null) {
-                originalTagStates.put(tagEntity.getId(), tagEntity);
-                log.debug("Captured original tag state for ID: {}", tagEntity.getId());
+            Tag result = (Tag) joinPoint.proceed();
+
+            if (tagEntity != null && tagEntity.getId() != null) {
+                machineTagEventService.processTagSave(tagEntity);
             }
+            return result;
         } catch (Exception e) {
-            log.error("Error capturing original tag state: {}", e.getMessage(), e);
+            log.error("Error in aroundTagSave aspect: {}", e.getMessage(), e);
+            throw e;
         }
     }
 
     /**
-     * Captures original tag states before saveAll operation.
+     * Intercepts Tag repository saveAll operations using @Around advice.
+     * Captures original states before save and processes after successful save.
      */
-    @Before("execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)")
-    public void beforeTagSaveAll(JoinPoint joinPoint, Object tags) {
+    @Around("execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)")
+    public Object aroundTagSaveAll(ProceedingJoinPoint joinPoint, Object tags) throws Throwable {
         try {
+            log.debug("Tag saveAll operation detected, capturing states and delegating to service");
             Iterable<Tag> tagEntities = (Iterable<Tag>) tags;
-            // Store original tag states for comparison after save
+
+            Map<String, Tag> originalTags = new HashMap<>();
             for (Tag tag : tagEntities) {
                 if (tag.getId() != null) {
-                    originalTagStates.put(tag.getId(), tag);
+                    originalTags.put(tag.getId(), tag);
                     log.debug("Captured original tag state for ID: {}", tag.getId());
                 }
             }
-        } catch (Exception e) {
-            log.error("Error capturing original tag states: {}", e.getMessage(), e);
-        }
-    }
 
-    /**
-     * Intercepts Tag repository save operations.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.TagRepository.save(..)) && args(tag)",
-            returning = "result",
-            argNames = "joinPoint,tag,result"
-    )
-    public void afterTagSave(JoinPoint joinPoint, Object tag, Object result) {
-        try {
-            log.debug("Tag save operation detected, delegating to service");
-            Tag tagEntity = (Tag) tag;
-            if (tagEntity.getId() != null) {
-                Tag originalTag = originalTagStates.remove(tagEntity.getId());
-                if (originalTag != null) {
-                    machineTagEventService.processTagSave(tagEntity);
+            Iterable<Tag> results = (Iterable<Tag>) joinPoint.proceed();
+
+            for (Tag tag : results) {
+                if (originalTags.containsKey(tag.getId())) {
+                    machineTagEventService.processTagSave(tag);
                 }
             }
+            return results;
         } catch (Exception e) {
-            log.error("Error in afterTagSave aspect: {}", e.getMessage(), e);
+            log.error("Error in aroundTagSaveAll aspect: {}", e.getMessage(), e);
+            throw e;
         }
     }
-
-    /**
-     * Intercepts Tag repository saveAll operations.
-     */
-    @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)",
-            returning = "result",
-            argNames = "joinPoint,tags,result"
-    )
-    public void afterTagSaveAll(JoinPoint joinPoint, Object tags, Object result) {
-        try {
-            log.debug("Tag saveAll operation detected, delegating to service");
-            Iterable<Tag> tagEntities = (Iterable<Tag>) tags;
-            for (Tag tag : tagEntities) {
-                if (tag.getId() != null) {
-                    Tag originalTag = originalTagStates.remove(tag.getId());
-                    if (originalTag != null) {
-                        machineTagEventService.processTagSave(tag);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error in afterTagSaveAll aspect: {}", e.getMessage(), e);
-        }
-    }
-
 } 
