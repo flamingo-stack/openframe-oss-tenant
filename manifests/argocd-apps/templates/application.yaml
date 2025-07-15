@@ -1,4 +1,4 @@
-{{- range $name, $app := .Values.argocdApps }}
+{{- range $name, $app := .Values.apps }}
   {{- $skip := include "app.skip" (list $name $app $.Values) | trim | lower }}
   {{- if ne $skip "true" }}
 ---

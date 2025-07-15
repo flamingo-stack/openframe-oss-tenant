@@ -9,7 +9,7 @@ global:
   autoSync: true
 
 
-argocdApps:
+apps:
   # example-app:
   #   enabled: true
   #   project: default
@@ -148,12 +148,6 @@ argocdApps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-    helm:
-      values: |
-        registerJob:
-          enabled: false
-        servicemonitor:
-          enabled: false
   openframe-client: 
     enabled: false
     project: microservices

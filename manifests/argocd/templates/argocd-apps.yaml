@@ -7,9 +7,12 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/Flamingo-CX/openframe.git
-    targetRevision: feature/helm-structure
-    path: manifests/argocd-apps
+    repoURL: {{ .Values.global.repoURL }}
+    targetRevision: {{ .Values.global.repoBranch }}
+    path: "{{ .Values.global.repoDir }}/{{ .Values.global.appsDir }}"
+    helm:
+      values: |
+{{ omit .Values "argo-cd" | toYaml | indent 8 }}
 
   destination:
     name: in-cluster
