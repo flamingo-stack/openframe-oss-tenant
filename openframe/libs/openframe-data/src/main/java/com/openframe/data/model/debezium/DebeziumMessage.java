@@ -1,23 +1,24 @@
 package com.openframe.data.model.debezium;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
-
+/**
+ * Generic DebeziumMessage for type-safe message handling
+ */
 @Data
-public class DebeziumMessage {
+public class DebeziumMessage<T> {
 
     @JsonProperty("payload")
-    private Payload payload;
+    private Payload<T> payload;
 
     @Data
-    public static class Payload {
+    public static class Payload<T> {
         @JsonProperty("before")
-        private JsonNode before;
+        private T before;
 
         @JsonProperty("after")
-        private JsonNode after;
+        private T after;
 
         @JsonProperty("source")
         private Source source;

@@ -1,8 +1,99 @@
 spring:
   application:
     name: openframe-stream
-  config:
-    url: http://openframe-config.microservices.svc.cluster.local:8888
-    activate:
-      on-profile: k8s
-    import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+  
+  # Main application datasource (if needed)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  
+  # Fleet database configuration
+  datasource:
+    fleet:
+      url: jdbc:mysql://fleet-db:3306/fleet
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      username: ${FLEET_DB_USERNAME:fleet}
+      password: ${FLEET_DB_PASSWORD:fleet}
+      hikari:
+        maximum-pool-size: 10
+        minimum-idle: 2
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+  
+  # JPA configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+  
+  # Redis configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 1000ms
+
+# Kafka configuration
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  streams:
+    application-id: openframe-stream-enrichment
+    replication-factor: 1
+    num-stream-threads: 2
+    state-dir: /tmp/kafka-streams
+    exactly-once: true
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    producer:
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+
+# Logging configuration
+logging:
+  level:
+    com.openframe.stream: DEBUG
+    org.apache.kafka.streams: INFO
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server configuration
+server:
+  port: 8082
+  servlet:
+    context-path: /
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,streams
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
