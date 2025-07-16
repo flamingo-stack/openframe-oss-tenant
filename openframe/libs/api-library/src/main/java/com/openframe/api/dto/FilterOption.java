@@ -1,4 +1,4 @@
-package com.openframe.api.dto.device;
+package com.openframe.api.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,6 +1,6 @@
-package com.openframe.api.dto.device;
+package com.openframe.api.dto;
 
-import com.openframe.api.dto.PageInfo;
+import com.openframe.core.model.Machine;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +12,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeviceConnection {
-    private List<DeviceEdge> edges;
+public class DeviceQueryResult {
+    private List<Machine> devices;
     private PageInfo pageInfo;
     private int filteredCount;
 } 

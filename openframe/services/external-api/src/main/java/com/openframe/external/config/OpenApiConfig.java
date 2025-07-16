@@ -89,7 +89,7 @@ public class OpenApiConfig {
     public GroupedOpenApi externalApiGroup() {
         return GroupedOpenApi.builder()
                 .group("external-api")
-                .pathsToMatch("/tools/**", "/test/**")
+                .pathsToMatch("/tools/**", "/test/**", "/api/v1/**")
                 .pathsToExclude("/actuator/**", "/api/core/**")
                 .build();
     }
