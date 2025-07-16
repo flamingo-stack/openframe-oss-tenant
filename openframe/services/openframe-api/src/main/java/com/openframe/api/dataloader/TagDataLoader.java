@@ -1,24 +1,23 @@
 package com.openframe.api.dataloader;
 
-import com.openframe.core.model.Tag;
-import com.openframe.api.service.TagService;
 import com.netflix.graphql.dgs.DgsDataLoader;
+import com.openframe.api.service.TagService;
+import com.openframe.core.model.Tag;
+import lombok.RequiredArgsConstructor;
 import org.dataloader.BatchLoader;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @DgsDataLoader(name = "tagDataLoader")
+@RequiredArgsConstructor
 public class TagDataLoader implements BatchLoader<String, List<Tag>> {
 
     private final TagService tagService;
-    
-    public TagDataLoader(TagService tagService) {
-        this.tagService = tagService;
-    }
 
     @Override
     public CompletionStage<List<List<Tag>>> load(List<String> machineIds) {
-        return tagService.loadTagsForMachines(machineIds);
+        return CompletableFuture.supplyAsync(() -> tagService.getTagsForMachines(machineIds));
     }
 } 
