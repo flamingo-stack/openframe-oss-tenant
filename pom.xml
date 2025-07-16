@@ -50,6 +50,7 @@
         <module>openframe/libs/openframe-core</module>
         <module>openframe/libs/openframe-data</module>
         <module>openframe/libs/openframe-jwt</module>
+        <module>openframe/libs/api-library</module>
 
         <!-- Services -->
         <module>openframe/services/openframe-config</module>
@@ -167,6 +168,11 @@
             <dependency>
                 <groupId>com.openframe</groupId>
                 <artifactId>openframe-jwt</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe</groupId>
+                <artifactId>api-library</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
