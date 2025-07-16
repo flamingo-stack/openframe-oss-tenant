@@ -1,28 +1,21 @@
 package com.openframe.stream.service;
 
-import com.openframe.core.model.ToolConnection;
 import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.debezium.ExtraParams;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
-import com.openframe.data.repository.mongo.ToolConnectionRepository;
-import com.openframe.data.repository.redis.RedisRepository;
+import com.openframe.data.service.MachineIdCacheService;
 import com.openframe.stream.enumeration.DataEnrichmentServiceType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @Slf4j
 public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DebeziumMessage> {
 
-    private final ToolConnectionRepository toolConnectionRepository;
-    private final RedisRepository redisRepository;
+    private final MachineIdCacheService machineIdCacheService;
 
-    public IntegratedToolDataEnrichmentService(ToolConnectionRepository toolConnectionRepository,
-                                             RedisRepository redisRepository) {
-        this.toolConnectionRepository = toolConnectionRepository;
-        this.redisRepository = redisRepository;
+    public IntegratedToolDataEnrichmentService(MachineIdCacheService machineIdCacheService) {
+        this.machineIdCacheService = machineIdCacheService;
     }
 
     @Override
@@ -31,26 +24,18 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
         if (message == null || message.getAgentId() == null) {
             return integratedToolEnrichedData;
         }
-        
+
         String agentId = message.getAgentId();
-        Optional<String> machineIdOptional = redisRepository.getMachineIdFromCache(agentId);
+        String machineId = machineIdCacheService.getMachineId(agentId);
         
-        if (machineIdOptional.isPresent()) {
-            log.debug("Machine ID found in cache for agent: {}", agentId);
-            integratedToolEnrichedData.setMachineId(machineIdOptional.get());
+        if (machineId != null) {
+            log.debug("Found machine ID {} for agent {}", machineId, agentId);
+            integratedToolEnrichedData.setMachineId(machineId);
+            return integratedToolEnrichedData;
         } else {
-            log.debug("Machine ID not found in cache, querying database for agent: {}", agentId);
-            Optional<ToolConnection> toolConnectionOptional = toolConnectionRepository.findByAgentToolId(agentId);
-            toolConnectionOptional.ifPresent(toolConnection -> {
-                String dbMachineId = toolConnection.getMachineId();
-                integratedToolEnrichedData.setMachineId(dbMachineId);
-                if (dbMachineId != null) {
-                    redisRepository.putMachineIdToCache(agentId, dbMachineId);
-                }
-            });
+            log.warn("Machine ID not found for agent: {}", agentId);
+            return integratedToolEnrichedData;
         }
-        
-        return integratedToolEnrichedData;
     }
 
     @Override
