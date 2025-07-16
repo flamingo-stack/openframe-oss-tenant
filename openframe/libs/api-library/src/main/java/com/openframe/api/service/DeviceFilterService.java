@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyList;
+
 @Service
 @Slf4j
 public class DeviceFilterService {
@@ -26,12 +28,12 @@ public class DeviceFilterService {
 
     public CompletableFuture<DeviceFilters> getDeviceFilters(DeviceFilterOptions filters) {
         List<String> statuses = filters != null && filters.getStatuses() != null ?
-                filters.getStatuses().stream().map(Enum::name).collect(Collectors.toList()) : null;
+                filters.getStatuses().stream().map(Enum::name).toList() : emptyList();
         List<String> deviceTypes = filters != null && filters.getDeviceTypes() != null ?
-                filters.getDeviceTypes().stream().map(Enum::name).collect(Collectors.toList()) : null;
-        List<String> osTypes = filters != null ? filters.getOsTypes() : null;
-        List<String> organizationIds = filters != null ? filters.getOrganizationIds() : null;
-        List<String> tagNames = filters != null ? filters.getTagNames() : null;
+                filters.getDeviceTypes().stream().map(Enum::name).toList() : emptyList();
+        List<String> osTypes = filters != null ? filters.getOsTypes() : emptyList();
+        List<String> organizationIds = filters != null ? filters.getOrganizationIds() : emptyList();
+        List<String> tagNames = filters != null ? filters.getTagNames() : emptyList();
 
         CompletableFuture<Map<String, Integer>> statusesFuture = CompletableFuture.supplyAsync(() ->
                 pinotDeviceRepository.getStatusFilterOptions(statuses, deviceTypes, osTypes, organizationIds, tagNames));
