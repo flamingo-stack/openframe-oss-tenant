@@ -1,8 +1,11 @@
 package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.mapper.EventTypeMapper;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.data.model.enums.IntegratedToolType;
+import com.openframe.data.model.enums.MessageType;
+import com.openframe.data.model.enums.UnifiedEventType;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -12,59 +15,56 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage> implements KafkaMessageDeserializer {
+public abstract class IntegratedToolEventDeserializer implements KafkaMessageDeserializer {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
-    private final Class<T> clazz;
     private static final String UNKNOWN = "unknown";
-    protected final ObjectMapper mapper;
     
     private static final int MAX_DEPTH = 10;
     private static final int MAX_ARRAY_SIZE = 1000;
     private static final int MAX_VALUE_LENGTH = 10000;
 
-    IntegratedToolEventDeserializer(ObjectMapper objectMapper, Class<T> clazz) {
-        this.clazz = clazz;
-        this.mapper = objectMapper;
-    }
-
     @Override
-    public T deserialize(Map<String, Object> message) {
+    public DeserializedDebeziumMessage deserialize(DeserializedDebeziumMessage deserializedMessage, MessageType messageType) {
         try {
-            T deserializedMessage = mapper.convertValue(message.get("payload"), clazz);
-            deserializedMessage.setAgentId(getAgentId(deserializedMessage).orElse(null));
-            deserializedMessage.setIngestDay(formatter.format(Instant.ofEpochMilli(deserializedMessage.getTimestamp())));
-            deserializedMessage.setSourceEventType(getSourceEventType(deserializedMessage).orElse(UNKNOWN));
-            deserializedMessage.setToolEventId("%s_%s".formatted(deserializedMessage.getToolType().name(), getEventToolId(deserializedMessage).orElse(UNKNOWN)));
-            deserializedMessage.setSeverity(deserializedMessage.getEventType().getSeverity());
-            deserializedMessage.setMessage(getMessage(deserializedMessage).orElse(null));
-            deserializedMessage.setDetails(getDetails(deserializedMessage));
+            JsonNode after = deserializedMessage.getPayload().getAfter();
+            deserializedMessage.setAgentId(getAgentId(after).orElse(null));
+            deserializedMessage.setIngestDay(formatter.format(Instant.ofEpochMilli(deserializedMessage.getPayload().getTimestamp())));
+            deserializedMessage.setSourceEventType(getSourceEventType(after).orElse(UNKNOWN));
+            deserializedMessage.setToolEventId("%s_%s".formatted(messageType.getIntegratedToolType().name(), getEventToolId(after).orElse(UNKNOWN)));
+            deserializedMessage.setUnifiedEventType(getEventType(deserializedMessage.getSourceEventType(), messageType.getIntegratedToolType()));
+            deserializedMessage.setMessage(getMessage(after).orElse(null));
+            deserializedMessage.setIntegratedToolType(messageType.getIntegratedToolType());
+            deserializedMessage.setDetails(getDetails(after));
             return deserializedMessage;
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Error converting Map to DebeziumMessage", e);
         }
     }
 
-    protected abstract Optional<String> getAgentId(T deserializedMessage);
-    protected abstract Optional<String> getSourceEventType(T deserializedMessage);
-    protected abstract Optional<String> getEventToolId(T deserializedMessage);
-    protected abstract Optional<String> getMessage(T deserializedMessage);
+    protected abstract Optional<String> getAgentId(JsonNode afterField);
+    protected abstract Optional<String> getSourceEventType(JsonNode afterField);
+    protected abstract Optional<String> getEventToolId(JsonNode afterField);
+    protected abstract Optional<String> getMessage(JsonNode afterField);
     
     /**
      * Convert all fields from JsonNode after to Map<String, String>
      * This method extracts all key-value pairs from the after field and converts them to strings
      */
-    protected Map<String, String> getDetails(T deserializedMessage) {
-        JsonNode after = deserializedMessage.getAfter();
+    protected Map<String, String> getDetails(JsonNode after) {
         if (after == null || after.isNull()) {
             return new HashMap<>();
         }
-        
+
         Map<String, String> details = new HashMap<>();
         convertJsonNodeToMap(after, "", details);
         return details;
     }
-    
+
+    private UnifiedEventType getEventType(String sourceEventType, IntegratedToolType toolType) {
+        return EventTypeMapper.mapToUnifiedType(toolType, sourceEventType);
+    }
+
     /**
      * Recursively convert JsonNode to Map<String, String>
      * Handles nested objects and arrays by flattening them with dot notation
@@ -73,12 +73,12 @@ public abstract class IntegratedToolEventDeserializer <T extends DebeziumMessage
     private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result) {
         convertJsonNodeToMap(node, prefix, result, 0);
     }
-    
+
     private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result, int depth) {
         if (node == null || result == null || depth > MAX_DEPTH) {
             return;
         }
-        
+
         if (node.isObject()) {
             Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
             while (fields.hasNext()) {

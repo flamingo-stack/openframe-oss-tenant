@@ -3,17 +3,16 @@ package com.openframe.stream.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.cassandra.UnifiedLogEvent;
 import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.Destination;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.repository.CassandraRepository;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 @Slf4j
-public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<UnifiedLogEvent, DebeziumMessage> {
+public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<UnifiedLogEvent, DeserializedDebeziumMessage> {
 
     private final CassandraRepository repository;
 
@@ -28,14 +27,14 @@ public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHan
     }
 
     @Override
-    protected UnifiedLogEvent transform(DebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+    protected UnifiedLogEvent transform(DeserializedDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
         UnifiedLogEvent logEvent = new UnifiedLogEvent();
         try {
             UnifiedLogEvent.UnifiedLogEventKey key = createKey(debeziumMessage);
             logEvent.setKey(key);
             logEvent.setUserId(enrichedData.getUserId());
             logEvent.setDeviceId(enrichedData.getMachineId());
-            logEvent.setSeverity(debeziumMessage.getSeverity().name());
+            logEvent.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
             logEvent.setDetails(debeziumMessage.getDetails());
             logEvent.setMessage(debeziumMessage.getMessage());
 
@@ -46,13 +45,13 @@ public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHan
         return logEvent;
     }
 
-    protected UnifiedLogEvent.UnifiedLogEventKey createKey(DebeziumMessage debeziumMessage) {
+    protected UnifiedLogEvent.UnifiedLogEventKey createKey(DeserializedDebeziumMessage debeziumMessage) {
         UnifiedLogEvent.UnifiedLogEventKey key = new UnifiedLogEvent.UnifiedLogEventKey();
-        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getTimestamp());
+        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getPayload().getTimestamp());
 
         key.setIngestDay(debeziumMessage.getIngestDay());
-        key.setToolType(debeziumMessage.getToolType().name());
-        key.setEventType(debeziumMessage.getEventType().name());
+        key.setToolType(debeziumMessage.getIntegratedToolType().name());
+        key.setEventType(debeziumMessage.getUnifiedEventType().name());
         key.setTimestamp(timestamp);
         key.setToolEventId(debeziumMessage.getToolEventId());
 

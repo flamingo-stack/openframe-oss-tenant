@@ -1,7 +1,7 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.kafka.IntegratedToolEventKafkaMessage;
 import com.openframe.data.model.enums.Destination;
@@ -11,7 +11,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
 
 @Slf4j
-public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEventKafkaMessage, DebeziumMessage> {
+public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEventKafkaMessage, DeserializedDebeziumMessage> {
 
     @Value("${kafka.producer.topic.it.event.name}")
     private String topic;
@@ -24,18 +24,18 @@ public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler
     }
 
     @Override
-    protected IntegratedToolEventKafkaMessage transform(DebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+    protected IntegratedToolEventKafkaMessage transform(DeserializedDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
         IntegratedToolEventKafkaMessage message = new IntegratedToolEventKafkaMessage();
         try {
             message.setToolEventId(debeziumMessage.getToolEventId());
             message.setUserId(enrichedData.getUserId());
             message.setDeviceId(enrichedData.getMachineId());
             message.setIngestDay(debeziumMessage.getIngestDay());
-            message.setToolType(debeziumMessage.getToolType().name());
-            message.setEventType(debeziumMessage.getEventType().name());
-            message.setSeverity(debeziumMessage.getSeverity().name());
+            message.setToolType(debeziumMessage.getIntegratedToolType().name());
+            message.setEventType(debeziumMessage.getUnifiedEventType().name());
+            message.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
             message.setSummary(debeziumMessage.getMessage());
-            message.setTimestamp(debeziumMessage.getTimestamp());
+            message.setTimestamp(debeziumMessage.getPayload().getTimestamp());
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);

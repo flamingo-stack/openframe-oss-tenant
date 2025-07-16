@@ -1,25 +1,23 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.stream.enumeration.OperationType;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-
 @Slf4j
-public abstract class DebeziumMessageHandler<T, U extends DebeziumMessage> extends GenericMessageHandler<T, U, IntegratedToolEnrichedData> {
+public abstract class DebeziumMessageHandler<T, U extends DeserializedDebeziumMessage> extends GenericMessageHandler<T, U, IntegratedToolEnrichedData> {
 
     protected DebeziumMessageHandler(ObjectMapper mapper) {
         super(mapper);
     }
 
-    protected OperationType getOperationType(DebeziumMessage message) {
+    protected OperationType getOperationType(DeserializedDebeziumMessage message) {
         OperationType operationType = null;
-        if (message != null && message.getOperation() != null) {
+        if (message != null && message.getPayload().getOperation() != null) {
             try {
-                String operation = message.getOperation();
+                String operation = message.getPayload().getOperation();
 
                 operationType = switch (operation) {
                     case "c" -> OperationType.CREATE;

@@ -95,10 +95,13 @@ spec:
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
                       "topic.creation.default.compression.type": "lz4",
-                      "transforms": "route",
+                      "transforms": "route,addHeaders",
                       "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
                       "transforms.route.topic.regex": "trmm_clients_users\\.(.*)",
-                      "transforms.route.topic.replacement": "tactical-rmm.postgres.events"
+                      "transforms.route.topic.replacement": "tactical-rmm.postgres.events",
+                      "transforms.addHeaders.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaders.header": "message-type",
+                      "transforms.addHeaders.value.literal": "TACTICAL_RMM_EVENT"
                     }
                   }
                 }

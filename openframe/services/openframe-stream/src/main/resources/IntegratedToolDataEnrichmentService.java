@@ -1,7 +1,7 @@
 package com.openframe.stream.service;
 
 import com.openframe.core.model.ToolConnection;
-import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.repository.mongo.ToolConnectionRepository;
 import com.openframe.data.repository.redis.RedisRepository;
@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DebeziumMessage> {
+public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DeserializedDebeziumMessage> {
 
     private final ToolConnectionRepository toolConnectionRepository;
     private final RedisRepository redisRepository;
@@ -25,7 +25,7 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
     }
 
     @Override
-    public IntegratedToolEnrichedData getExtraParams(DebeziumMessage message) {
+    public IntegratedToolEnrichedData getExtraParams(DeserializedDebeziumMessage message) {
         IntegratedToolEnrichedData integratedToolEnrichedData = new IntegratedToolEnrichedData();
         if (message == null || message.getAgentId() == null) {
             return integratedToolEnrichedData;
@@ -50,7 +50,7 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
         }
         
         log.debug("Enriched data for agent {}: tool={}, sourceEvent={}, unifiedEvent={}", 
-                agentId, message.getToolType().getDbName(), message.getSourceEventType(), message.getEventType());
+                agentId, message.getIntegratedToolType().getDbName(), message.getSourceEventType(), message.getUnifiedEventType());
         
         return integratedToolEnrichedData;
     }

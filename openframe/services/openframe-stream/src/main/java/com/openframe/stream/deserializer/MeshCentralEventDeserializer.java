@@ -2,7 +2,6 @@ package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.MeshCentralEventMessage;
 import com.openframe.data.model.enums.MessageType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -13,7 +12,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class MeshCentralEventDeserializer extends IntegratedToolEventDeserializer<MeshCentralEventMessage> {
+public class MeshCentralEventDeserializer extends IntegratedToolEventDeserializer {
 
     private static final String FIELD_NODEID = "nodeid";
     private static final String FIELD_ETYPE = "etype";
@@ -21,9 +20,10 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     private static final String FIELD_ID = "_id";
     private static final String FIELD_OID = "$oid";
     private static final String FIELD_MSG = "msg";
+    private final ObjectMapper mapper;
 
     public MeshCentralEventDeserializer(ObjectMapper mapper) {
-        super(mapper, MeshCentralEventMessage.class);
+        this.mapper = mapper;
     }
 
     @Override
@@ -32,17 +32,17 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     }
 
     @Override
-    protected Optional<String> getAgentId(MeshCentralEventMessage deserializedMessage) {
-        if (deserializedMessage == null || deserializedMessage.getAfter() == null) {
+    protected Optional<String> getAgentId(JsonNode after) {
+        if (after == null) {
             log.warn("Invalid message structure for agent ID extraction");
             return Optional.empty();
         }
-        return parseAndExtractField(deserializedMessage.getAfter(), FIELD_NODEID);
+        return parseAndExtractField(after, FIELD_NODEID);
     }
 
     @Override
-    protected Optional<String> getSourceEventType(MeshCentralEventMessage deserializedMessage) {
-        return parseJson(deserializedMessage.getAfter())
+    protected Optional<String> getSourceEventType(JsonNode after) {
+        return parseJson(after)
                 .flatMap(event -> {
                     Optional<String> etype = extractField(event, FIELD_ETYPE);
                     Optional<String> action = extractField(event, FIELD_ACTION);
@@ -55,18 +55,18 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     }
 
     @Override
-    protected Optional<String> getEventToolId(MeshCentralEventMessage deserializedMessage) {
-        return parseJson(deserializedMessage.getAfter())
+    protected Optional<String> getEventToolId(JsonNode after) {
+        return parseJson(after)
                 .flatMap(this::extractEventId);
     }
 
     @Override
-    protected Optional<String> getMessage(MeshCentralEventMessage deserializedMessage) {
-        if (deserializedMessage == null || deserializedMessage.getAfter() == null) {
+    protected Optional<String> getMessage(JsonNode after) {
+        if (after == null) {
             log.warn("Invalid message structure for message extraction");
             return Optional.empty();
         }
-        return extractField(deserializedMessage.getAfter(), FIELD_MSG);
+        return extractField(after, FIELD_MSG);
     }
 
     private Optional<JsonNode> parseJson(JsonNode rawNode) {

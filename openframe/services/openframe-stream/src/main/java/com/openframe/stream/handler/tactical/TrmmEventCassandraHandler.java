@@ -18,12 +18,12 @@ public class TrmmEventCassandraHandler extends DebeziumCassandraMessageHandler {
 
     @Override
     public MessageType getType() {
-        return MessageType.TACTICAL_EVENT;
+        return MessageType.TACTICAL_RMM_EVENT;
     }
 
     @Override
-    protected boolean isValidMessage(DebeziumMessage message) {
+    protected boolean isValidMessage(DeserializedDebeziumMessage message) {
         return message != null && 
-               message.getAfter() != null;
+               message.getPayload().getAfter() != null;
     }
 }

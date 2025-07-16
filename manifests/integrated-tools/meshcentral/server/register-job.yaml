@@ -94,10 +94,13 @@ spec:
                       "mongodb.name": "meshcentral",
                       "topic.prefix": "meshcentral",
                       "collection.include.list": "meshcentral.events",
-                      "transforms": "route",
+                      "transforms": "route,addHeaders",
                       "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
                       "transforms.route.regex": ".*",
-                      "transforms.route.replacement": "meshcentral.mongodb.events"
+                      "transforms.route.replacement": "meshcentral.mongodb.events",
+                      "transforms.addHeaders.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaders.header": "message-type",
+                      "transforms.addHeaders.value.literal": "MESHCENTRAL_EVENT"
                     }
                   }
                 }

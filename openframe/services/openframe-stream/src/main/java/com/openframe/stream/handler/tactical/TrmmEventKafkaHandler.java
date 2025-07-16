@@ -19,6 +19,6 @@ public class TrmmEventKafkaHandler extends DebeziumKafkaMessageHandler {
 
     @Override
     public MessageType getType() {
-        return MessageType.TACTICAL_EVENT;
+        return MessageType.TACTICAL_RMM_EVENT;
     }
 }
