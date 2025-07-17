@@ -1,11 +1,11 @@
 package com.openframe.stream.processor;
 
-import com.openframe.data.model.debezium.ExtraParams;
-import com.openframe.data.model.kafka.DeserializedKafkaMessage;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.stream.deserializer.KafkaMessageDeserializer;
-import com.openframe.stream.enumeration.DataEnrichmentServiceType;
-import com.openframe.stream.enumeration.Destination;
-import com.openframe.stream.enumeration.MessageType;
+import com.openframe.data.model.enums.DataEnrichmentServiceType;
+import com.openframe.data.model.enums.Destination;
+import com.openframe.data.model.enums.MessageType;
 import com.openframe.stream.handler.MessageHandler;
 import com.openframe.stream.service.DataEnrichmentService;
 import org.springframework.stereotype.Service;
@@ -37,24 +37,27 @@ public class GenericJsonMessageProcessor {
                 .collect(Collectors.toMap(KafkaMessageDeserializer::getType, Function.identity()));
     }
 
-    public void process(Map<String, Object> message, MessageType type) {
-        DeserializedKafkaMessage deserializedKafkaMessage = deserialize(message, type);
-        ExtraParams extraParams = getExtraParams(deserializedKafkaMessage, type);
+    public void process(DeserializedDebeziumMessage message, MessageType type) {
+        DeserializedDebeziumMessage deserializedKafkaMessage = deserialize(message, type);
+        IntegratedToolEnrichedData enrichedData = getExtraParams(deserializedKafkaMessage, type);
         type.getDestinationList().forEach(destination -> {
             MessageHandler handler = handlers.get(type).get(destination);
             if (handler == null) {
                 throw new IllegalArgumentException("No handler found for type: " + type);
             }
-            handler.handle(deserializedKafkaMessage, extraParams);
+            handler.handle(deserializedKafkaMessage, enrichedData);
         });
     }
 
-    private DeserializedKafkaMessage deserialize(Map<String, Object> message, MessageType type) {
+    private DeserializedDebeziumMessage deserialize(DeserializedDebeziumMessage message, MessageType type) {
         KafkaMessageDeserializer deserializer = deserializers.get(type);
-        return deserializer.deserialize(message);
+        if (deserializer == null) {
+            throw new IllegalArgumentException("The message type '%s' is not supported".formatted(type));
+        }
+        return deserializer.deserialize(message, type);
     }
 
-    private ExtraParams getExtraParams(DeserializedKafkaMessage message, MessageType messageType) {
+    private IntegratedToolEnrichedData getExtraParams(DeserializedDebeziumMessage message, MessageType messageType) {
         DataEnrichmentService dataEnrichmentService = dataEnrichmentServices.get(messageType.getDataEnrichmentServiceType());
         return dataEnrichmentService.getExtraParams(message);
     }

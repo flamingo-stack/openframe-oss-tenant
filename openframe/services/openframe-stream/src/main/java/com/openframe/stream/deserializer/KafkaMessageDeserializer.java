@@ -1,14 +1,12 @@
 package com.openframe.stream.deserializer;
 
-import com.openframe.data.model.kafka.DeserializedKafkaMessage;
-import com.openframe.stream.enumeration.MessageType;
-
-import java.util.Map;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.data.model.enums.MessageType;
 
 public interface KafkaMessageDeserializer {
 
     MessageType getType();
 
-    DeserializedKafkaMessage deserialize(Map<String, Object> message);
+    DeserializedDebeziumMessage deserialize(DeserializedDebeziumMessage message, MessageType type);
 
 }

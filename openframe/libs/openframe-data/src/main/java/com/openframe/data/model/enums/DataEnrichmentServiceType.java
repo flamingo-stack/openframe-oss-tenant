@@ -1,4 +1,4 @@
-package com.openframe.stream.enumeration;
+package com.openframe.data.model.enums;
 
 public enum DataEnrichmentServiceType {
 

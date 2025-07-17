@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DebeziumMessage> {
+public class IntegratedToolDataEnrichmentService implements DataEnrichmentService<DeserializedDebeziumMessage> {
 
     private final MachineIdCacheService machineIdCacheService;
 
@@ -19,7 +19,7 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
     }
 
     @Override
-    public ExtraParams getExtraParams(DebeziumMessage message) {
+    public IntegratedToolEnrichedData getExtraParams(DeserializedDebeziumMessage message) {
         IntegratedToolEnrichedData integratedToolEnrichedData = new IntegratedToolEnrichedData();
         if (message == null || message.getAgentId() == null) {
             return integratedToolEnrichedData;
