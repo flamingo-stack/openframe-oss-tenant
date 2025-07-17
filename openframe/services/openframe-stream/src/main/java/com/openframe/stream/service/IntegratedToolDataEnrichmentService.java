@@ -1,10 +1,9 @@
 package com.openframe.stream.service;
 
-import com.openframe.data.model.debezium.DebeziumMessage;
-import com.openframe.data.model.debezium.ExtraParams;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.data.model.enums.DataEnrichmentServiceType;
 import com.openframe.data.service.MachineIdCacheService;
-import com.openframe.stream.enumeration.DataEnrichmentServiceType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

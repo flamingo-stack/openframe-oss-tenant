@@ -1,6 +1,6 @@
 package com.openframe.stream.listener;
 
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.enums.MessageType;
 import com.openframe.stream.processor.GenericJsonMessageProcessor;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -22,7 +22,7 @@ public class JsonKafkaListener {
             groupId = "${spring.kafka.consumer.group-id}",
             containerFactory = "debeziumKafkaListenerContainerFactory"
     )
-    public void listenIntegratedToolsEvents(@Payload DeserializedDebeziumMessage debeziumMessage, @Header("message-type") MessageType messageType) {
+    public void listenIntegratedToolsEvents(@Payload CommonDebeziumMessage debeziumMessage, @Header("message-type") MessageType messageType) {
         messageProcessor.process(debeziumMessage, messageType);
     }
 }
