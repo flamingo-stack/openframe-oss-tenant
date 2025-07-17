@@ -20,6 +20,20 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("DEVICE_NOT_FOUND", ex.getMessage());
     }
 
+    @ExceptionHandler(EventNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleEventNotFound(EventNotFoundException ex) {
+        log.warn("Event not found: {}", ex.getMessage());
+        return new ErrorResponse("EVENT_NOT_FOUND", ex.getMessage());
+    }
+
+    @ExceptionHandler(ToolNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleToolNotFound(ToolNotFoundException ex) {
+        log.warn("Tool not found: {}", ex.getMessage());
+        return new ErrorResponse("TOOL_NOT_FOUND", ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidationErrors(MethodArgumentNotValidException ex) {
