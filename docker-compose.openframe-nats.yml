@@ -25,16 +25,16 @@ services:
       retries: 3
       start_period: 10s
 
-  nats-cli:
-    image: natsio/nats-box:latest
-    container_name: openframe-nats-cli
-    depends_on:
-      nats-server:
-        condition: service_healthy
-    command: ["sleep", "infinity"]
-    networks:
-      - openframe-network
-    restart: unless-stopped
+  # nats-cli:
+  #   image: natsio/nats-box:latest
+  #   container_name: openframe-nats-cli
+  #   depends_on:
+  #     nats-server:
+  #       condition: service_healthy
+  #   command: ["sleep", "infinity"]
+  #   networks:
+  #     - openframe-network
+  #   restart: unless-stopped
 
 volumes:
   nats-data:
