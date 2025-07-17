@@ -1,8 +1,8 @@
 package com.openframe.stream.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.stream.model.ActivityMessage;
-import com.openframe.stream.model.HostActivityMessage;
+import com.openframe.stream.model.fleet.ActivityMessage;
+import com.openframe.stream.model.fleet.HostActivityMessage;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.springframework.context.annotation.Bean;

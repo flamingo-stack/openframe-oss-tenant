@@ -1,7 +1,5 @@
 package com.openframe.stream.config;
 
-import com.openframe.stream.model.ActivityMessage;
-import com.openframe.stream.model.HostActivityMessage;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.beans.factory.annotation.Value;

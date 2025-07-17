@@ -1,4 +1,4 @@
-package com.openframe.stream.model;
+package com.openframe.stream.model.fleet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -29,6 +29,7 @@ public class Activity {
     @JsonProperty("user_email")
     private String userEmail;
     
-    // Enrichment field (not from Debezium)
+    // Enrichment fields (not from Debezium)
     private String agentId; // From Redis cache or Fleet DB lookup by hostId
+    private Long hostId; // From HostActivity join
 } 

@@ -1,30 +1,109 @@
-# Fleet Activities Stream Join Implementation
+# Fleet Activities Stream - Kafka Streams Data Enrichment Pipeline
 
-Реализация Kafka Streams join между топиками activities и host_activities из Fleet MDM для создания обогащенных событий.
+## Overview
 
-## Completed Tasks
+This document describes the implementation of a Kafka Streams-based data enrichment pipeline in the `openframe-stream` microservice. The pipeline processes Debezium CDC events from two Kafka topics (`activities` and `host_activities`), joins them on timestamp key, enriches activity data with `agentId` obtained via Redis cache or fallback Fleet MySQL DB lookup, and outputs enriched events to a result topic.
 
-- [x] Создание плана реализации
+## Architecture
 
-## In Progress Tasks
+### Data Flow
 
-- [ ] Анализ структуры данных и проектирование схемы
+```
+fleet.activities.events (Kafka) 
+    ↓
+ActivityMessage (DebeziumMessage<Activity>)
+    ↓
+Kafka Streams Join (leftJoin)
+    ↓
+HostActivityMessage (DebeziumMessage<HostActivity>)
+    ↓
+Enrichment with agentId
+    ↓
+Redis Cache (HostAgentCacheService) → Fleet MySQL DB (fallback)
+    ↓
+fleet.mysql.events (Kafka) - Enriched ActivityMessage
+```
 
-## Future Tasks
+### Components
 
-- [x] Добавление зависимостей Spring Cloud Stream и Kafka Streams
-- [x] Создание моделей данных для activities и host_activities
-- [x] Настройка конфигурации Kafka Streams
-- [x] Создание HostAgentCacheRepository для Redis кэширования
-- [x] Создание FleetHostRepository и конфигурации Fleet Database
-- [ ] Настройка временных окон (5-10 секунд) для join операций
-- [ ] Реализация LEFT JOIN логики с временными окнами
-- [ ] Реализация Redis lookup и Fleet DB fallback логики
-- [ ] Создание схемы результирующего сообщения
-- [ ] Реализация обработки Debezium событий
-- [ ] Создание тестов для join операций
-- [ ] Настройка мониторинга и метрик
-- [ ] Документация API и схем
+1. **Input Topics:**
+   - `fleet.activities.events` - Debezium CDC events from activities table
+   - `fleet.host_activities.events` - Debezium CDC events from host_activities table
+
+2. **Output Topic:**
+   - `fleet.mysql.events` - Enriched activity events with agentId
+
+3. **Data Sources:**
+   - Redis Cache - Fast lookup for host_id → agent_id mapping
+   - Fleet MySQL Database - Fallback source for host information
+
+## Data Models
+
+### Activity Model
+```java
+@Data
+public class Activity {
+    private Long id;
+    private String createdAt;
+    private Long userId;
+    private String userName;
+    private String activityType;
+    private String details;
+    private Integer streamed;
+    private String userEmail;
+    
+    // Enrichment fields (not from Debezium)
+    private String agentId;
+    private Long hostId;
+}
+```
+
+### HostActivity Model
+```java
+@Data
+public class HostActivity {
+    private Long hostId;
+    private Long activityId; // Changed from String to Long for join with Activity.id
+}
+```
+
+### FleetHost Model
+```java
+@Entity
+@Table(name = "hosts")
+@Data
+public class FleetHost {
+    @Id
+    private Long id;
+    
+    @Column(name = "uuid")
+    private String uuid; // This is the agent_id
+    
+    // Other fields...
+}
+```
+
+## Implementation Status
+
+### ✅ Completed Components:
+
+1. **Модели данных** - `Activity`, `HostActivity`, `FleetHost` в пакете `fleet`
+2. **Типизированные сообщения** - `ActivityMessage` и `HostActivityMessage` наследуют от `DebeziumMessage<T>`
+3. **SerdeConfig** - правильно настроен для типизированных сообщений
+4. **FleetDatabaseConfig** - правильно настроен для Fleet DB
+5. **FleetHostRepository** - упрощен, использует только `findById` и `findAgentIdByHostId`
+6. **HostAgentCacheService** - создан по аналогии с MachineIdCacheService, заменяет HostAgentCacheRepository
+7. **TopicConfig** - заменен на `@Value` в `ActivityEnrichmentService`
+8. **StreamLifecycleService** - управление жизненным циклом Kafka Streams
+9. **StreamMonitoringController** - REST endpoints для мониторинга
+10. **Исправлены ошибки компиляции** - правильные импорты и типы данных
+
+### ❌ Критические проблемы для исправления:
+
+1. **Фильтрация Debezium событий** - нужно оставлять только INSERT/UPDATE, брать только `after`
+2. **Обработка ошибок** - улучшить error handling в join логике
+3. **Мониторинг и метрики** - добавить метрики для производительности
+4. **Тесты** - добавить интеграционные тесты
 
 ## Implementation Plan
 
@@ -33,213 +112,146 @@
 1. **Источники данных:**
    - Топик `fleet.activities.events` - события из таблицы activities (Debezium)
    - Топик `fleet.host_activities.events` - события из таблицы host_activities (Debezium)
-   - Redis - кэш для agent_id по host_id
+   - Redis - кэш для agent_id по host_id (HostAgentCacheService)
    - Fleet Database - источник данных для hosts таблицы
 
 2. **Обработка:**
-   - Kafka Streams приложение в openframe-stream сервисе
-   - LEFT JOIN по полю `activity_id` (из host_activities) и `id` (из activities)
-   - Временные окна (5-10 секунд) для ожидания связанных событий
-   - Redis lookup по host_id для получения agent_id
-   - Fallback: запрос к Fleet DB если agent_id нет в Redis
-   - Обогащение данных activities информацией о host_id и agent_id
+   - Kafka Streams join по activity_id
+   - Обогащение данных agentId из кэша или БД
+   - Фильтрация Debezium событий (только INSERT/UPDATE)
 
 3. **Результат:**
-   - Новый топик `fleet.mysql.events` с обогащенными событиями
+   - Обогащенные события в топике `fleet.mysql.events`
 
-### Инфраструктура
+### Логика обогащения
 
-**Уже есть:**
-- ✅ Kafka кластер (KRaft режим)
-- ✅ Debezium Connect для CDC
-- ✅ Топики создаются автоматически
-- ✅ Мониторинг и метрики
+```java
+// 1. Join Activity с HostActivity по activity_id
+KStream<String, ActivityMessage> enrichedStream = activityStream
+    .leftJoin(
+        hostActivityStreamByActivityId,
+        this::enrichActivityWithHostInfo,
+        JoinWindows.ofTimeDifferenceWithNoGrace(Duration.ofSeconds(10)),
+        StreamJoined.with(Serdes.String(), activityMessageSerde, hostActivityMessageSerde)
+    );
 
-**Нужно добавить:**
-- ❌ Kafka Streams библиотеки в openframe-stream
-- ❌ Spring Cloud Stream конфигурацию
-- ❌ Stream processing логику
-- ❌ Redis конфигурацию и сервис
-- ❌ Fleet Database подключение
-- ❌ Кэширование agent_id логики
+// 2. Обогащение agentId
+private String getAgentIdFromCacheOrDatabase(Long hostId) {
+    // Try Redis cache first using HostAgentCacheService
+    return hostAgentCacheService.getAgentId(hostId)
+        .orElseGet(() -> {
+            // Fallback to Fleet database
+            return fleetHostRepository.findAgentIdByHostId(hostId)
+                .map(agentId -> {
+                    // Cache the result for future use
+                    hostAgentCacheService.putAgentId(hostId, agentId);
+                    return agentId;
+                })
+                .orElse(null);
+        });
+}
+```
 
-### Технические компоненты
+## Configuration
 
-- Spring Cloud Stream с Kafka Streams (требует добавления)
-- Обработка Debezium Change Data Capture (CDC) событий
-- LEFT JOIN операция между топиками с временными окнами
-- Временные окна (Tumbling/Hopping) для ожидания связанных событий
-- Redis кэширование agent_id по host_id
-- Fleet Database подключение для fallback запросов
-- Схемы данных (JSON с Debezium envelope)
-- Мониторинг и метрики
-- Обработка ошибок и retry логика
+### Application Properties
 
-### Текущее состояние openframe-stream
+```yaml
+# Kafka Topics
+kafka:
+  topics:
+    activities: fleet.activities.events
+    host-activities: fleet.host_activities.events
+    enriched-activities: fleet.mysql.events
 
-**Есть:**
-- ✅ Spring Kafka (spring-kafka)
-- ✅ Kafka Producer конфигурация
-- ✅ Базовая структура приложения
+# Fleet Database
+spring:
+  datasource:
+    fleet:
+      url: jdbc:mysql://fleet-db:3306/fleet
+      username: ${FLEET_DB_USERNAME}
+      password: ${FLEET_DB_PASSWORD}
+      driver-class-name: com.mysql.cj.jdbc.Driver
 
-**Нужно добавить:**
-- ❌ Spring Cloud Stream (spring-cloud-stream)
-- ❌ Kafka Streams (spring-cloud-stream-binder-kafka-streams)
-- ❌ Kafka Streams конфигурация
-- ❌ Stream processing логика
+# Redis Cache
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+```
 
-### Структура данных
+## Monitoring
 
-**Activities топик:**
-- `id` (int64) - уникальный идентификатор активности
-- `created_at` (ZonedTimestamp) - время создания
-- `user_id` (int64) - ID пользователя
-- `user_name` (string) - имя пользователя
-- `activity_type` (string) - тип активности
-- `details` (JSON) - детали активности
-- `streamed` (int16) - флаг стриминга
-- `user_email` (string) - email пользователя
+### Metrics
 
-**Host Activities топик:**
-- `host_id` (int64) - ID хоста
-- `activity_id` (int64) - ID активности (связь с activities.id)
+- `kafka.streams.records.processed` - количество обработанных записей
+- `kafka.streams.records.lagged` - отставание в обработке
+- `cache.hit.rate` - процент попаданий в кэш
+- `db.query.duration` - время запросов к БД
 
-**Результирующий топик:**
-- Все поля из activities
-- Дополнительное поле `host_id` из host_activities (если есть связь)
-- Дополнительное поле `agent_id` из Redis/Fleet DB (если есть host_id)
-- Метаданные обработки (timestamp, source)
+### Health Checks
 
-### Relevant Files
+- Kafka Streams состояние
+- Redis подключение
+- Fleet DB подключение
+- Топики доступность
 
-- `openframe/services/openframe-stream/` - Основной сервис для stream обработки
-- `openframe/services/openframe-stream/src/main/java/com/openframe/stream/` - Java код
-- `openframe/services/openframe-stream/src/main/resources/` - Конфигурация
-- `openframe/manifests/microservices/openframe-stream/` - Kubernetes манифесты
+## Testing
 
-## Технические детали
+### Unit Tests
 
-### Временные окна в Kafka Streams
+- `ActivityEnrichmentServiceTest` - тестирование логики обогащения
+- `HostAgentCacheServiceTest` - тестирование кэш операций
+- `FleetHostRepositoryTest` - тестирование репозитория
 
-**Что такое временные окна:**
-Временные окна в Kafka Streams - это механизм для группировки событий по времени. Они позволяют:
-- Ограничивать время ожидания для join операций
-- Обрабатывать события, которые приходят с задержкой
-- Управлять памятью и производительностью
+### Integration Tests
 
-**Типы окон:**
-- **Tumbling Window** - фиксированные непересекающиеся окна
-- **Hopping Window** - окна с перекрытием
-- **Session Window** - окна на основе активности
+- End-to-end тестирование pipeline
+- Тестирование с реальными Debezium событиями
+- Тестирование fallback логики
 
-**Можно ли без временных окон:**
-Да, можно! Для вашего случая LEFT JOIN без временных окон будет работать следующим образом:
-- Все события из activities будут обрабатываться немедленно
-- Если есть соответствующая запись в host_activities - добавляется host_id
-- Если нет - отправляется событие без host_id
-- Это проще в реализации и подходит для ваших требований
+## Deployment
 
-**НО есть проблема с порядком событий:**
-Если Activity придет раньше HostActivity, то событие будет отправлено без host_id, даже если HostActivity придет через секунду.
+### Docker
 
-### План реализации без временных окон
+```dockerfile
+FROM openjdk:17-jre-slim
+COPY target/openframe-stream.jar app.jar
+ENTRYPOINT ["java", "-jar", "/app.jar"]
+```
 
-1. **Поток activities** - основной поток данных
-2. **Поток host_activities** - используется как lookup таблица
-3. **LEFT JOIN** - каждое событие из activities обогащается host_id если есть связь
-4. **Результат** - отправляется в `fleet.mysql.events` топик
+### Kubernetes
 
-### Сценарии обработки событий
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-stream
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-stream
+  template:
+    metadata:
+      labels:
+        app: openframe-stream
+    spec:
+      containers:
+      - name: openframe-stream
+        image: openframe/stream:latest
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+```
 
-**Сценарий 1: События приходят одновременно (идеальный случай)**
-- Activity и HostActivity создаются в одной транзакции
-- Debezium отправляет события практически одновременно
-- LEFT JOIN найдет соответствие и обогатит событие host_id
+## Next Steps
 
-**Сценарий 2: HostActivity приходит раньше Activity (1 секунда разницы)**
-- HostActivity приходит первым → сохраняется в lookup таблице
-- Activity приходит через 1 секунду → LEFT JOIN найдет соответствие
-- Результат: обогащенное событие с host_id
-
-**Сценарий 3: Activity приходит раньше HostActivity (1 секунда разницы)**
-- Activity приходит первым → LEFT JOIN не найдет соответствие
-- Результат: событие БЕЗ host_id
-- HostActivity приходит через 1 секунду → сохраняется в lookup таблице
-- **Проблема**: Activity уже обработано без host_id
-
-**Сценарий 4: HostActivity приходит намного позже (несколько секунд)**
-- Activity обрабатывается без host_id
-- HostActivity приходит позже → lookup таблица обновляется
-- **Проблема**: Activity уже отправлено без host_id
-
-### Обработка Debezium событий
-
-- Фильтрация только INSERT/UPDATE событий (op = 'c' или 'u')
-- Извлечение данных из поля `after`
-- Игнорирование DELETE событий (op = 'd')
-- Обработка snapshot событий (op = 'r')
-
-### Решения для проблемы порядка событий
-
-**Вариант 1: Использовать временные окна (рекомендуется)**
-- Настроить окно в 5-10 секунд для ожидания HostActivity
-- Если HostActivity не придет в течение окна - отправлять Activity без host_id
-- Это гарантирует, что большинство событий будут обогащены
-
-**Вариант 2: Буферизация Activity событий**
-- Временно сохранять Activity события в памяти
-- Ждать появления соответствующего HostActivity
-- Отправлять обогащенное событие или с таймаутом
-
-**Вариант 3: Двухфазная обработка**
-- Фаза 1: Обрабатывать все события как есть (быстро)
-- Фаза 2: Отдельный процесс для "дообогащения" событий без host_id
-
-**Выбранное решение:**
-Использовать **Вариант 1** с временным окном 5-10 секунд, так как:
-- Простота реализации
-- Гарантированная обработка большинства событий
-- Контролируемая задержка
-- Стандартный подход в Kafka Streams
-
-### Альтернативные подходы для join топиков
-
-**1. Kafka Streams (выбранный) ✅**
-- Временные окна для join
-- Exactly-once semantics
-- Нативная интеграция с Kafka
-
-**2. ksqlDB (SQL для Kafka)**
-- SQL-подобный язык
-- Встроенная поддержка временных окон
-- Визуальный интерфейс
-- Простота для SQL разработчиков
-- Отдельный сервер ksqlDB
-
-**3. Apache NiFi (у вас уже есть)**
-- Визуальный интерфейс
-- Простота настройки
-- Ограниченная поддержка временных окон
-
-**4. Custom Application с Spring Kafka**
-- Простота реализации
-- Полный контроль над логикой
-- Нет встроенной поддержки временных окон
-
-**5. Apache Flink**
-- Мощный stream processing
-- Сложность развертывания
-- Отдельный кластер
-
-**6. Kafka Connect + Custom Processor**
-- Гибкость в обработке
-- Сложность реализации join логики
-- Нет встроенной поддержки временных окон
-
-### Конфигурация временных окон
-
-- **Тип окна:** Hopping Window (с перекрытием)
-- **Размер окна:** 10 секунд
-- **Шаг окна:** 5 секунд
-- **Логика:** Ожидание HostActivity в течение 10 секунд после получения Activity
-- **Fallback:** Если HostActivity не придет в течение окна - отправлять Activity без host_id 
+1. **Реализовать фильтрацию Debezium событий** - оставлять только INSERT/UPDATE
+2. **Добавить метрики и мониторинг** - Prometheus метрики
+3. **Улучшить error handling** - retry логика, dead letter queue
+4. **Добавить интеграционные тесты** - тестирование с реальными данными
+5. **Оптимизировать производительность** - tuning Kafka Streams параметров
+6. **Добавить документацию API** - OpenAPI спецификация 

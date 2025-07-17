@@ -1,4 +1,4 @@
-package com.openframe.stream.model;
+package com.openframe.stream.model.fleet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -9,5 +9,5 @@ public class HostActivity {
     private Long hostId;
     
     @JsonProperty("activity_id")
-    private String activityId; // Это timestamp, а не Long как я предполагал
+    private Long activityId; // Changed from String to Long for join with Activity.id
 } 
