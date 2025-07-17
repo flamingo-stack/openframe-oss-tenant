@@ -57,13 +57,8 @@ public class EventService {
         Event savedEvent = mongoTemplate.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
 
-        try {
-            kafkaTemplate.send("openframe.events", savedEvent);
-            log.debug("Event published to Kafka: {}", savedEvent.getId());
-        } catch (Exception e) {
-            log.error("Failed to publish event to Kafka: {}", savedEvent.getId(), e);
-            // Don't fail the operation if Kafka is unavailable
-        }
+        kafkaTemplate.send("openframe.events", savedEvent);
+        log.debug("Event published to Kafka: {}", savedEvent.getId());
         
         return savedEvent;
     }
@@ -82,16 +77,4 @@ public class EventService {
         
         return savedEvent;
     }
-
-    public void deleteEvent(String id) {
-        log.debug("Deleting event with ID: {}", id);
-        
-        Optional<Event> event = getEventById(id);
-        if (event.isPresent()) {
-            mongoTemplate.remove(event.get());
-            log.info("Event deleted: {}", id);
-        } else {
-            log.warn("Attempted to delete non-existent event: {}", id);
-        }
-    }
-} 
+}

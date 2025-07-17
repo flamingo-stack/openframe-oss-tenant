@@ -24,9 +24,7 @@ public class EventDataFetcher {
                             @InputArgument String from,
                             @InputArgument String to) {
         log.debug("Getting events for userId: {}, from: {}, to: {}", userId, from, to);
-        return eventService.getEvents(userId, 
-            from != null ? Instant.parse(from) : null, 
-            to != null ? Instant.parse(to) : null);
+        return eventService.getEvents(userId, Instant.parse(from), Instant.parse(to));
     }
 
     @DgsQuery

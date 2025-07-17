@@ -151,30 +151,4 @@ public class EventController {
         Event updatedEvent = eventService.updateEvent(id, event);
         return eventMapper.toEventResponse(updatedEvent);
     }
-
-    @Operation(summary = "Delete event", description = "Delete an event by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Event deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Event not found",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "500", description = "Internal server error",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    @DeleteMapping("/{id}")
-    @ResponseStatus(NO_CONTENT)
-    public void deleteEvent(
-            @Parameter(description = "Event ID")
-            @PathVariable String id,
-            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @Parameter(hidden = true) @RequestHeader(value = "X-API-Key-Id", required = false) String apiKeyId) {
-
-        log.info("Deleting event with ID: {} - userId: {}, apiKeyId: {}", id, userId, apiKeyId);
-
-        eventService.getEventById(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with ID: " + id));
-
-        eventService.deleteEvent(id);
-    }
 } 
