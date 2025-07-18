@@ -65,15 +65,5 @@ build:
     useBuildkit: true
     push: false
 manifests:
-  helm:
-    releases:
-      - name: tactical-rmm
-        chartPath: ../../../manifests/integrated-tools/tactical-rmm
-        valuesFiles:
-          - ../../../manifests/integrated-tools/tactical-rmm/values.yaml
-        values:
-          # Skaffold-specific overrides
-          tactical:
-            frontend:
-              image:
-                tag: latest
+  rawYaml:
+    - ../../../manifests/integrated-tools/tactical-rmm/tactical-frontend
