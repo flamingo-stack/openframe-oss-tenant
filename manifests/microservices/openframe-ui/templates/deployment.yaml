@@ -23,18 +23,11 @@ spec:
               name: http
           env:
             - name: VITE_API_URL
-              value: "https://reindeer-suitable-genuinely.ngrok-free.app/api"
+              value: {{ ternary (printf "%s/api" (required "deployment.url is required for ngrok ingress" .Values.deployment.url)) "https://openframe-gateway.192.168.100.100.nip.io/register/api" (eq .Values.deployment.ingress "ngrok") | quote }}
             - name: VITE_CLIENT_URL
-              value: "https://reindeer-suitable-genuinely.ngrok-free.app/client"
+              value: {{ ternary (printf "%s/client" (required "deployment.url is required for ngrok ingress" .Values.deployment.url)) "https://openframe-gateway.192.168.100.100.nip.io/register/client" (eq .Values.deployment.ingress "ngrok") | quote }}
             - name: VITE_GATEWAY_URL
-              value: "https://reindeer-suitable-genuinely.ngrok-free.app"
-          env:
-            - name: VITE_API_URL
-              value: "{{ ternary (print (required \"deployment.url is required for ngrok ingress\" .Values.deployment.url) \"/api\") \"https://openframe-gateway.192.168.100.100.nip.io/register/api\" (eq .Values.deployment.ingress \"ngrok\") }}"
-            - name: VITE_CLIENT_URL
-              value: "{{ ternary (print .Values.deployment.url \"/client\") \"https://openframe-gateway.192.168.100.100.nip.io/register/client\" (eq .Values.deployment.ingress \"ngrok\") }}"
-            - name: VITE_GATEWAY_URL
-              value: "{{ ternary .Values.deployment.url \"https://openframe-gateway.192.168.100.100.nip.io/register\" (eq .Values.deployment.ingress \"ngrok\") }}"
+              value: {{ ternary (required "deployment.url is required for ngrok ingress" .Values.deployment.url) "https://openframe-gateway.192.168.100.100.nip.io/register" (eq .Values.deployment.ingress "ngrok") | quote }}
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
