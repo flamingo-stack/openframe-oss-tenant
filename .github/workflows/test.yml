@@ -260,7 +260,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Verify app-of-apps.yaml is clean
+      - name: Verify values are clean
         run: |
           [ -f "$APP_OF_APPS_VALUES" ] || { echo "Error: $APP_OF_APPS_VALUES not found"; exit 1; }
           [ ! -s "$APP_OF_APPS_VALUES" ] || { echo "Error: $APP_OF_APPS_VALUES is not empty"; cat "$APP_OF_APPS_VALUES"; exit 1; }

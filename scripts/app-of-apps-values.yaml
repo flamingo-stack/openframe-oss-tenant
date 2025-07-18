@@ -1,10 +1,2 @@
 global:
   repoBranch: feature/helm-structure
-  autoSync: true
-
-
-apps:
-  openframe-config:
-    values:
-      config:
-        branch: main
