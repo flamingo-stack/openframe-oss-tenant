@@ -48,6 +48,14 @@ build:
     useBuildkit: true
     push: true
 manifests:
-  kustomize:
-    paths:
-    - ../../../manifests/integrated-tools/meshcentral/server
+  helm:
+    releases:
+      - name: meshcentral
+        chartPath: ../../../manifests/integrated-tools/meshcentral
+        valuesFiles:
+          - ../../../manifests/integrated-tools/meshcentral/values.yaml
+        values:
+          # Skaffold-specific overrides
+          server:
+            image:
+              tag: latest

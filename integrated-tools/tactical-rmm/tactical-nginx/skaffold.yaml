@@ -65,5 +65,16 @@ build:
     useBuildkit: true
     push: false
 manifests:
-  rawYaml:
-    - ../../../manifests/integrated-tools/tactical-rmm/tactical-nginx
+  helm:
+    releases:
+      - name: tactical-rmm
+        chartPath: ../../../manifests/integrated-tools/tactical-rmm
+        valuesFiles:
+          - ../../../manifests/integrated-tools/tactical-rmm/values.yaml
+        values:
+          # Skaffold-specific overrides
+          tactical:
+            nginx:
+              image:
+                tag: latest
+

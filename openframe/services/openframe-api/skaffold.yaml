@@ -27,3 +27,4 @@ manifests:
   kustomize:
     paths:
     - ../../../manifests/microservices/openframe-api
+
