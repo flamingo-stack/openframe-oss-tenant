@@ -1,6 +1,7 @@
 deployment:
   name: local         # or "cloud"
   ingress: nat      # "ngrok" or "nat"
+  # url: https://reindeer-suitable-genuinely.ngrok-free.app
 
 global:
   repoDir: manifests

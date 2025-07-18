@@ -1,5 +1,4 @@
 deployment:
-  name: local         # or "cloud"
   ingress: nat      # "ngrok" or "nat"
   # url: https://reindeer-suitable-genuinely.ngrok-free.app
 
@@ -7,36 +6,8 @@ global:
   repoBranch: feature/helm-structure
   autoSync: true
 
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: dmtkov
-    password: dckr_pat_F8RaMkC4mda5BSmT4yUlf8BwxiA
-    email: dmtkov@flamingo.cx
-  ghcr:
-    server: ghcr.io
-    username: CI
-    password: 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
-    email: CI@flamingo.cx
-
 
 apps:
-  grafana:
-    enabled: true
-
-  debezium-connect:
-    enabled: true
-  pinot: 
-    enabled: true
-  mongodb-exporter:
-    enabled: true
-  redis-exporter:
-    enabled: true
-
-  external-api: 
-    enabled: true
-  openframe-api: 
-    enabled: true
   openframe-gateway: 
     helm:
       values: |
@@ -44,12 +15,6 @@ apps:
           enabled: false
         servicemonitor:
           enabled: false
-  openframe-client: 
-    enabled: true
-  openframe-stream: 
-    enabled: true
-  openframe-ui: 
-    enabled: true
 
   mongo-express:
     enabled: false

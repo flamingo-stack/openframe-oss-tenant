@@ -11,6 +11,10 @@ inputs:
   changes:
     description: 'Changes output'
     required: true
+  app-of-apps-file:
+    description: 'Path to app-of-apps.yaml file'
+    required: false
+    default: 'scripts/helm-values/app-of-apps.yaml'
 
 runs:
   using: 'composite'
@@ -21,8 +25,16 @@ runs:
         COMMIT_SHA: "test-${{ inputs.commit-sha }}"
         MATRIX: '${{ inputs.matrix }}'
         CHANGES: '${{ inputs.changes }}'
+        APP_OF_APPS_FILE: '${{ inputs.app-of-apps-file }}'
       run: |
         set -euo pipefail
+        
+        # Validate required inputs
+        [ -n "$COMMIT_SHA" ] || { echo "Error: COMMIT_SHA is required" >&2; exit 1; }
+        [ -n "$MATRIX" ] || { echo "Error: MATRIX is required" >&2; exit 1; }
+        [ -n "$CHANGES" ] || { echo "Error: CHANGES is required" >&2; exit 1; }
+        [ -f "$APP_OF_APPS_FILE" ] || { echo "Error: App-of-apps file not found: $APP_OF_APPS_FILE" >&2; exit 1; }
+
         
         # Install yq if needed
         if ! command -v yq &> /dev/null; then
@@ -31,34 +43,25 @@ runs:
         fi
         
         echo "Updating Helm values with tag: $COMMIT_SHA"
-        
-        # Process each service
+                
+        # Process each changed service
         jq -c '.[]' <<< "$MATRIX" | while read -r item; do
           name=$(jq -r '.name' <<< "$item")
-          manifest_path=$(jq -r '.manifest_path' <<< "$item")
           changed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
           
           if [ "$changed" = "true" ]; then
-            values_file="$manifest_path/values.yaml"
+            echo "Processing changed service: $name"
             
-            if [ -f "$values_file" ]; then
-              # Determine image path based on service
-              case "$name" in
-                "authentik-postgresql") path=".postgres.image.tag" ;;
-                "tactical-"*) 
-                  service=$(echo "$name" | sed 's/tactical-//')
-                  path=".tactical.$service.image.tag" 
-                  ;;
-                "fleetmdm"|"meshcentral") path=".server.image.tag" ;;
-                *) path=".image.tag" ;;
-              esac
-              
-              # Update the values file
-              if yq eval "$path = \"$COMMIT_SHA\"" -i "$values_file" 2>/dev/null; then
-                echo "Updated $name ($path)"
-              else
-                echo "Failed to update $name" >&2
-              fi
+            # Add image tag to the app's helm values
+            if yq eval ".apps.$name.helm.values += \"\n        image:\n          tag: $COMMIT_SHA\"" -i "$APP_OF_APPS_FILE" 2>/dev/null; then
+              echo "Updated $name with image tag: $COMMIT_SHA"
+            else
+              echo "Failed to update $name" >&2
             fi
           fi
-        done 
+        done
+        
+        # Debug: Output the final values file
+        echo "=== Final app-of-apps.yaml content ==="
+        cat "$APP_OF_APPS_FILE"
+        echo "=== End of app-of-apps.yaml ===" 

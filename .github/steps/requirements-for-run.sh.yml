@@ -1,0 +1,35 @@
+name: Install tools and validate environment
+description: Install required tools (Helm, yq, ArgoCD, k3d) and validate the environment
+
+runs:
+  using: composite
+  steps:
+    - name: Install Helm
+      shell: bash
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- --version v3.17.3
+        command -v helm >/dev/null 2>&1 || { echo "Error: helm not installed"; exit 1; }
+
+    - name: Install yq
+      shell: bash
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+        command -v yq >/dev/null 2>&1 || { echo "Error: yq not installed"; exit 1; }
+
+    - name: Install ArgoCD CLI
+      shell: bash
+      run: |
+        curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 
+        sudo chmod +x argocd && sudo mv argocd /usr/local/bin/
+        command -v argocd >/dev/null 2>&1 || { echo "Error: argocd not installed"; exit 1; }
+
+    - name: Install k3d
+      shell: bash
+      run: |
+        curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash
+
+    - name: Configure system limits
+      shell: bash
+      run: |
+        sudo sysctl fs.inotify.max_user_instances=1500

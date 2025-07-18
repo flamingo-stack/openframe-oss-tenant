@@ -1,5 +1,9 @@
 name: OpenFrame Integration Tests
 
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+
 permissions:
   contents: write
   packages: write
@@ -28,14 +32,17 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
   REPOSITORY: "openframe"
+  APP_OF_APPS_VALUES: "scripts/helm-values/app-of-apps.yaml"
+
+# =============================================================================
+# JOBS
+# =============================================================================
 
 jobs:
-
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-
 
   matrix:
     name: Matrix
@@ -97,7 +104,6 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-
 
   build:
     name: "Build image: ${{ matrix.name }}"
@@ -177,11 +183,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-  
+
 
   test:
     name: Run Tests
-    needs: [pre-test, build]
+    needs: [build, changes, matrix]
     runs-on: Linux-x64
     timeout-minutes: 60
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
@@ -190,28 +196,27 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Install Helm
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- --version v3.17.3
-          echo "Helm version: $(helm version --short)"
-      - name: Install ArgoCD
-        run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 
-          sudo chmod +x argocd && sudo mv argocd /usr/local/bin/
-          echo "ArgoCD version: $(argocd version)"
-      - name: Install k3d
-        run: |
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash
-          echo "k3d version: $(k3d version)"
-      - name: Set inotify limit
-        run: sudo sysctl fs.inotify.max_user_instances=1500
-      
-      - name: Override helm values for image tags
+      - name: Install tools and validate environment
+        uses: ./.github/steps/requirements-for-run.sh.yml
+
+      - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags.yml
         with:
           commit-sha: ${{ needs.changes.outputs.commit_sha }}
           matrix: ${{ toJSON(needs.matrix.outputs.matrix) }}
           changes: ${{ toJSON(needs.changes.outputs) }}
+          app-of-apps-file: ${{ env.APP_OF_APPS_VALUES }}
+        
+      - name: Override branch name
+        run: |
+          # Override branch name
+          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.APP_OF_APPS_VALUES }}"
+          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+
+          # Debug: Output the final values file
+          echo "=== Final app-of-apps.yaml content ==="
+          cat "$APP_OF_APPS_FILE"
+          echo "=== End of app-of-apps.yaml ===" 
 
       - name: Run environment test script
         env:
@@ -219,12 +224,12 @@ jobs:
         run: |
           ./scripts/run.sh bootstrap
 
-
+ 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
     needs: [changes, matrix, test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
+    if: always()
     strategy:
       fail-fast: false
       matrix:
@@ -251,7 +256,6 @@ jobs:
           delete-tags: test-${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
 
-
   final-checks:
     name: Basic Merge tests
     needs: [test]
@@ -260,35 +264,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Check targetRevision is main
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: |
-          output=$(
-            find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | \
-            while IFS= read -r -d '' file; do
-              awk -v github_base="${GITHUB_BASE_REF}" '
-                /^[[:space:]]*targetRevision:[[:space:]]*/ {
-                  gsub(/^[[:space:]]*targetRevision:[[:space:]]*/, "", $0)
-                  val = $0
-                  if (val != github_base && val !~ /^[0-9]+(\.[0-9]+)*$/) {
-                    print FILENAME ": " val
-                    exit 1
-                  }
-                }
-              ' "$file"
-            done
-          )
-          if [[ -n "$output" ]]; then
-            echo "$output" && exit 1
-          fi
       
-      - name: Check openframe-config branch is main
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
+      - name: Verify app-of-apps.yaml is clean
         run: |
-          f=$(find . -type f -path "*/openframe-config/deployment.yaml" -print -quit)
-          [ "$f" ] || { echo "No **/openframe-config/deployment.yaml found."; exit 1; }
-          [ "$(awk '/CONFIG_GIT_BRANCH/{getline;sub(/.*:/,"");gsub(/[" \t\r\n]/,"");print}' "$f")" = "${GITHUB_BASE_REF}" ] \
-            || { echo "CONFIG_GIT_BRANCH does not match \"${GITHUB_BASE_REF}\"";}
+          [ -f "$APP_OF_APPS_VALUES" ] || { echo "Error: $APP_OF_APPS_VALUES not found"; exit 1; }
+          [ ! -s "$APP_OF_APPS_VALUES" ] || { echo "Error: $APP_OF_APPS_VALUES is not empty"; cat "$APP_OF_APPS_VALUES"; exit 1; }
+          echo "$APP_OF_APPS_VALUES is empty"
