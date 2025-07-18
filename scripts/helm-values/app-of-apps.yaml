@@ -8,13 +8,10 @@ global:
 
 
 apps:
-  openframe-gateway: 
-    helm:
-      values: |
-        registerJob:
-          enabled: false
-        servicemonitor:
-          enabled: false
+  openframe-config:
+    values: |
+      config:
+        branch: main
 
   mongo-express:
     enabled: false

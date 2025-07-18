@@ -15,12 +15,11 @@ apps:
   #   project: default
   #   namespace: default
   #   syncWave: "0"
-  #   helm:
-  #     values: |
-  #       registerJob:
-  #         enabled: false
-  #       servicemonitor:
-  #         enabled: false
+  #   values: |
+  #     registerJob:
+  #       enabled: false
+  #     servicemonitor:
+  #       enabled: false
 
   namespace-platform:
     enabled: true

@@ -6,8 +6,8 @@ deployment:
 global:
   repoDir: manifests
   appsDir: apps
-
   repoURL: https://github.com/Flamingo-CX/openframe.git
+
   repoBranch: main
   autoSync: true
 
@@ -25,3 +25,9 @@ registry:
 
 registerJob:
   enabled: true
+
+apps:
+  openframe-config:
+    values: |
+      config:
+        branch: main

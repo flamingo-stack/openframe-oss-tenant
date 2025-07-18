@@ -6,3 +6,6 @@ servicemonitor:
 image:
   repo: ghcr.io/flamingo-cx/openframe/openframe-config
   tag: latest
+
+config:
+  branch: "main"
