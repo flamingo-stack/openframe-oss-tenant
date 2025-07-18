@@ -45,7 +45,7 @@ runs:
         echo "Updating Helm values with tag: $COMMIT_SHA"
                 
         # Process each changed service
-        jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+        echo "$MATRIX" | jq -c '.[]' | while read -r item; do
           name=$(jq -r '.name' <<< "$item")
           changed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
           

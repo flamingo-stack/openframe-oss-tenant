@@ -257,7 +257,7 @@ jobs:
           exclude-tags: latest
 
   final-checks:
-    name: Basic Merge tests
+    name: Final tests
     needs: [test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
