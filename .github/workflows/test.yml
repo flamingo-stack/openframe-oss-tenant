@@ -179,67 +179,6 @@ jobs:
             ${{ env.BUILD_ARGS }}
   
 
-  pre-test:
-    name: Test Branch Creation
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    outputs:
-      GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Checkout new CI branch
-        id: create_branch
-        env:
-          GITHUB_HEAD_REF_CI: ${{ github.head_ref }}-CI
-        run: |
-          git config --global user.email "CI@flamingo.cx"
-          git config --global user.name "CI Account"
-          git checkout -b "${GITHUB_HEAD_REF_CI}"
-          git push origin "${GITHUB_HEAD_REF_CI}" --force
-          echo "GITHUB_HEAD_REF_CI=${GITHUB_HEAD_REF_CI}" >> $GITHUB_OUTPUT
-
-      - name: Change branch tags
-        env:
-          MATRIX: ${{ needs.matrix.outputs.matrix }}
-          CHANGES: ${{ toJSON(needs.changes.outputs) }}
-          COMMIT_SHA: test-${{ needs.changes.outputs.commit_sha }}
-        run: |
-          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
-            name=$(jq -r '.name' <<< "$item")
-            path=$(jq -r '.manifest_path' <<< "$item")
-            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
-
-            [ "$pushed" = "true" ] || continue
-
-            echo "$name → ${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
-            cd "$path"
-            kustomize edit set image "${name}=${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
-            cd - > /dev/null
-          done
-
-      - name: Change branch targetRevision paths
-        env:
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i -E "s|^([[:space:]]*targetRevision:[[:space:]]*)[a-zA-Z0-9_/-]+\$|\1${GITHUB_HEAD_REF_CI}|" "$f"
-          done
-
-      - name: Commit changes
-        env:
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          git add .
-          git commit -m "Tags and targeRevision changes [skip ci]" || echo "No changes"
-          git push origin "${GITHUB_HEAD_REF_CI}" --force
-    
-
   test:
     name: Run Tests
     needs: [pre-test, build]
@@ -249,57 +188,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
-      
-      - name: Install certutil (NSS tools)
-        run: |
-          if ! command -v certutil &> /dev/null; then
-            sudo apt-get update -yqq && sudo apt-get install -yqq libnss3-tools
-          fi
-          echo "certutil version: $(certutil --version)"
+          ref: ${{ github.head_ref }}
 
       - name: Install Helm
         run: |
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- --version v3.17.3
           echo "Helm version: $(helm version --short)"
-
       - name: Install ArgoCD
         run: |
           curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 
           sudo chmod +x argocd && sudo mv argocd /usr/local/bin/
           echo "ArgoCD version: $(argocd version)"
-      
       - name: Install k3d
         run: |
           curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash
           echo "k3d version: $(k3d version)"
-
       - name: Set inotify limit
         run: sudo sysctl fs.inotify.max_user_instances=1500
+      
+      - name: Override helm values for image tags
+        run: |
+          
 
       - name: Run environment test script
         env:
           TERM: dumb
         run: |
           ./scripts/run.sh bootstrap
-  
 
-  post-test:
-    name: Remove the CI branch
-    needs: [changes, matrix, pre-test, test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Delete CI branch
-        env:
-          GITHUB_HEAD_REF_CI: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          git push origin --delete "${GITHUB_HEAD_REF_CI}" || true
-  
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
