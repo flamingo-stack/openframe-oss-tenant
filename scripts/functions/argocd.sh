@@ -3,9 +3,10 @@
 wait_for_argocd_apps() {
   local namespace="argocd"
   local app="argocd-apps"
-  local timeout=${ARGOCD_TIMEOUT:-1500}  # 25 minutes to match Helm timeout, configurable via ARGOCD_TIMEOUT env var
+  local timeout=${ARGOCD_TIMEOUT:-1500} 
   local interval=5
   local elapsed=0
+  sleep 15
 
   while (( elapsed < timeout )); do
     status=$(kubectl -n "$namespace" get application "$app" -o json 2>/dev/null)

@@ -21,16 +21,16 @@ registry:
 
 apps:
   grafana:
-    enabled: false
+    enabled: true
 
   debezium-connect:
-    enabled: false
+    enabled: true
   pinot: 
-    enabled: false
+    enabled: true
   mongodb-exporter:
-    enabled: false
+    enabled: true
   redis-exporter:
-    enabled: false
+    enabled: true
 
   external-api: 
     enabled: true

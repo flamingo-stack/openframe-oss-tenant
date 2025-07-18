@@ -42,12 +42,10 @@ argocd_apps)
     helm upgrade --install app-of-apps "${ROOT_REPO_DIR}/manifests/app-of-apps" \
     --namespace argocd \
     --wait \
-    --timeout 25m \
-    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" 
-    # > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+    --timeout 60m \
+    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
     
-    wait_for_argocd_apps
-    #  >>"${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+    wait_for_argocd_apps > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
     stop_spinner_and_return_code $? || exit 1 
     
   elif [ "$ACTION" == "delete" ]; then
