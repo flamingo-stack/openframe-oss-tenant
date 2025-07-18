@@ -21,8 +21,7 @@ spec:
       helm:
         values: |
           deployment:
-            name: {{ $.Values.deployment.name | quote }}
-            ingress: {{ $.Values.deployment.ingress | quote }}
+{{ toYaml $.Values.deployment | indent 12 }}
 {{- if hasKey $app "helm" }}
 {{ index $app "helm" "values" | default "" | indent 10 }}
 {{- end }}
