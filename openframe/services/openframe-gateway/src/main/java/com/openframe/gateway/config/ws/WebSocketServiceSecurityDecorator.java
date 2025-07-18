@@ -43,7 +43,9 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 return defaultWebSocketHandler.handle(session);
             });
         } else {
-            return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
+            return defaultWebSocketService.handleRequest(exchange, session -> {
+                return defaultWebSocketHandler.handle(new WebSocketSessionWrapper(session));
+            });
         }
     }
 

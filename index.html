@@ -15,10 +15,51 @@
 <script type="module">
     import { connect, StringCodec } from 'https://cdn.skypack.dev/nats.ws';
 
-    const ws = new WebSocket("ws://localhost:8080");
-    ws.onopen = () => console.log("Connected!");
-    ws.onerror = (e) => console.error("Error", e);
+    let nc;
+    const sc = StringCodec();
 
+    // Connect to NATS WebSocket
+    async function connectToNats() {
+        try {
+            nc = await connect({
+                servers: "ws://localhost:8100/ws/nats"
+            });
+            console.log("Connected to NATS!");
+            
+            // Subscribe to messages
+            const sub = nc.subscribe("test");
+            for await (const msg of sub) {
+                const message = sc.decode(msg.data);
+                addToLog(`Received: ${message}`);
+            }
+        } catch (error) {
+            console.error("Error connecting to NATS:", error);
+        }
+    }
+
+    // Add send function
+    window.send = async function() {
+        const message = document.getElementById('msg').value;
+        if (message && nc && nc.isClosed() === false) {
+            try {
+                nc.publish("test", sc.encode(message));
+                addToLog(`Sent: ${message}`);
+                document.getElementById('msg').value = '';
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+        }
+    };
+
+    function addToLog(message) {
+        const log = document.getElementById('log');
+        const li = document.createElement('li');
+        li.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        log.appendChild(li);
+    }
+
+    // Connect when page loads
+    connectToNats();
 </script>
 </body>
 </html>
