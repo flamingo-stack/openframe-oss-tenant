@@ -66,7 +66,7 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
             log.warn("Invalid message structure for message extraction");
             return Optional.empty();
         }
-        return extractField(after, FIELD_MSG);
+        return parseAndExtractField(after, FIELD_MSG);
     }
 
     private Optional<JsonNode> parseJson(JsonNode rawNode) {

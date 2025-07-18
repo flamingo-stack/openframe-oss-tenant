@@ -2,6 +2,7 @@ package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.mapper.EventTypeMapper;
+import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.enums.IntegratedToolType;
 import com.openframe.data.model.enums.MessageType;
@@ -25,18 +26,20 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     private static final int MAX_VALUE_LENGTH = 10000;
 
     @Override
-    public DeserializedDebeziumMessage deserialize(DeserializedDebeziumMessage deserializedMessage, MessageType messageType) {
+    public DeserializedDebeziumMessage deserialize(CommonDebeziumMessage debeziumMessage, MessageType messageType) {
         try {
-            JsonNode after = deserializedMessage.getPayload().getAfter();
-            deserializedMessage.setAgentId(getAgentId(after).orElse(null));
-            deserializedMessage.setIngestDay(formatter.format(Instant.ofEpochMilli(deserializedMessage.getPayload().getTimestamp())));
-            deserializedMessage.setSourceEventType(getSourceEventType(after).orElse(UNKNOWN));
-            deserializedMessage.setToolEventId("%s_%s".formatted(messageType.getIntegratedToolType().name(), getEventToolId(after).orElse(UNKNOWN)));
-            deserializedMessage.setUnifiedEventType(getEventType(deserializedMessage.getSourceEventType(), messageType.getIntegratedToolType()));
-            deserializedMessage.setMessage(getMessage(after).orElse(null));
-            deserializedMessage.setIntegratedToolType(messageType.getIntegratedToolType());
-            deserializedMessage.setDetails(getDetails(after));
-            return deserializedMessage;
+            JsonNode after = debeziumMessage.getPayload().getAfter();
+            return DeserializedDebeziumMessage.builder()
+                .payload(debeziumMessage.getPayload())
+                .agentId(getAgentId(after).orElse(null))
+                .ingestDay(formatter.format(Instant.ofEpochMilli(debeziumMessage.getPayload().getTimestamp())))
+                .sourceEventType(getSourceEventType(after).orElse(UNKNOWN))
+                .toolEventId("%s_%s".formatted(messageType.getIntegratedToolType().name(), getEventToolId(after).orElse(UNKNOWN)))
+                .unifiedEventType(getEventType(getSourceEventType(after).orElse(UNKNOWN), messageType.getIntegratedToolType()))
+                .message(getMessage(after).orElse(null))
+                .integratedToolType(messageType.getIntegratedToolType())
+                .details(getDetails(after))
+                .build();
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Error converting Map to DebeziumMessage", e);
         }
