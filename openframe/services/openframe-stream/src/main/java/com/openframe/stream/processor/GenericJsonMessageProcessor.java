@@ -1,5 +1,6 @@
 package com.openframe.stream.processor;
 
+import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.stream.deserializer.KafkaMessageDeserializer;
@@ -37,7 +38,7 @@ public class GenericJsonMessageProcessor {
                 .collect(Collectors.toMap(KafkaMessageDeserializer::getType, Function.identity()));
     }
 
-    public void process(DeserializedDebeziumMessage message, MessageType type) {
+    public void process(CommonDebeziumMessage message, MessageType type) {
         DeserializedDebeziumMessage deserializedKafkaMessage = deserialize(message, type);
         IntegratedToolEnrichedData enrichedData = getExtraParams(deserializedKafkaMessage, type);
         type.getDestinationList().forEach(destination -> {
@@ -49,7 +50,7 @@ public class GenericJsonMessageProcessor {
         });
     }
 
-    private DeserializedDebeziumMessage deserialize(DeserializedDebeziumMessage message, MessageType type) {
+    private DeserializedDebeziumMessage deserialize(CommonDebeziumMessage message, MessageType type) {
         KafkaMessageDeserializer deserializer = deserializers.get(type);
         if (deserializer == null) {
             throw new IllegalArgumentException("The message type '%s' is not supported".formatted(type));

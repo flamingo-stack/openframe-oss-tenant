@@ -2,11 +2,16 @@ package com.openframe.data.model.debezium;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
 
 /**
  * Generic DebeziumMessage for type-safe message handling
  */
 @Data
+@SuperBuilder
+@NoArgsConstructor
 public class DebeziumMessage<T> {
 
     @JsonProperty("payload")
