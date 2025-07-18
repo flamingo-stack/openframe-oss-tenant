@@ -32,7 +32,7 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
   REPOSITORY: "openframe"
-  APP_OF_APPS_VALUES: "scripts/helm-values/app-of-apps.yaml"
+  APP_OF_APPS_VALUES: "scripts/app-of-apps-values.yaml"
 
 # =============================================================================
 # JOBS

@@ -37,7 +37,7 @@ source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
 source "${SCRIPT_DIR}/functions/develop.sh"
-export -f intercept_app switch_argocd_app_health
+export -f intercept_app
 
 source "${SCRIPT_DIR}/functions/argocd.sh"
 export -f wait_for_argocd_apps
