@@ -19,7 +19,7 @@ case "$ARG" in
 argocd)
   if [ "$ACTION" == "deploy" ]; then
 
-    start_spinner "Deploying ArgoCD and Apps"
+    start_spinner "Deploying ArgoCD"
     
     helm repo add argo https://argoproj.github.io/argo-helm > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
     helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
@@ -38,7 +38,7 @@ argocd)
   ;;
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then 
-    start_spinner "Waiting for ArgoCD Apps to become Healthy"
+    start_spinner "Deploying ArgoCD Apps"
 
     helm upgrade --install app-of-apps "${ROOT_REPO_DIR}/manifests/app-of-apps" \
     --namespace argocd \
@@ -100,9 +100,6 @@ app)
   elif [ "$ACTION" == "intercept" ]; then
     echo "Intercepting ${APP} at ${NAMESPACE} in intercept mode"
     intercept_app "$APP" "$NAMESPACE" "$ARG1" "$ARG2"
-  elif [ "$ACTION" == "health" ]; then
-    echo "Branch '${ARG1}' autosync is ${ARG2} for ${APP}"
-    switch_argocd_app_health "$APP" "$ARG1" "$ARG2"
   fi
   ;;
 # BUNDLE APPS
