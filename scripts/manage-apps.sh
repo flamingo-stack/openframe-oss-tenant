@@ -33,7 +33,7 @@ argocd)
 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
-    helm -n argocd delete argocd-wrapper
+    helm -n argocd delete argo-cd
   fi
   ;;
 argocd_apps)
@@ -51,8 +51,7 @@ argocd_apps)
     stop_spinner_and_return_code $? || exit 1 
     
   elif [ "$ACTION" == "delete" ]; then
-    echo "$APP is not supported in delete mode"
-    exit 0
+    helm -n argocd delete app-of-apps
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0

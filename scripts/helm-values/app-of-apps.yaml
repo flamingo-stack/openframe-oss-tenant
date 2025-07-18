@@ -18,7 +18,24 @@ registry:
     password: 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
     email: CI@flamingo.cx
 
+
 apps:
+  grafana:
+    enabled: false
+
+  debezium-connect:
+    enabled: false
+  pinot: 
+    enabled: false
+  mongodb-exporter:
+    enabled: false
+  redis-exporter:
+    enabled: false
+
+  external-api: 
+    enabled: true
+  openframe-api: 
+    enabled: true
   openframe-gateway: 
     helm:
       values: |
@@ -26,3 +43,25 @@ apps:
           enabled: false
         servicemonitor:
           enabled: false
+  openframe-client: 
+    enabled: true
+  openframe-stream: 
+    enabled: true
+  openframe-ui: 
+    enabled: true
+
+  mongo-express:
+    enabled: false
+  kafka-ui:
+    enabled: false
+
+  namespace-integrated-tools:
+    enabled: false
+  authentik: 
+    enabled: false
+  fleetmdm: 
+    enabled: false
+  meshcentral: 
+    enabled: false
+  tactical-rmm: 
+    enabled: false

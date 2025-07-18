@@ -24,12 +24,3 @@ registry:
 
 registerJob:
   enabled: true
-
-apps:
-  openframe-gateway: 
-    helm:
-      values: |
-        registerJob:
-          enabled: false
-        servicemonitor:
-          enabled: false
