@@ -15,7 +15,7 @@ apps:
   #   project: default
   #   namespace: default
   #   syncWave: "0"
-  #   values: |
+  #   values:
   #     registerJob:
   #       enabled: false
   #     servicemonitor:

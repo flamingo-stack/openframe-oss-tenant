@@ -58,8 +58,3 @@ runs:
             echo "Failed to update $name" >&2
           fi
         done
-        
-        # Debug: Output the final values file
-        echo "=== Final app-of-apps.yaml content ==="
-        cat "$APP_OF_APPS_FILE"
-        echo "=== End of app-of-apps.yaml ===" 

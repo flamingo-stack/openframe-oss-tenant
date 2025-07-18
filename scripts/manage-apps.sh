@@ -21,15 +21,15 @@ argocd)
 
     start_spinner "Deploying ArgoCD and Apps"
     
-    helm repo add argo https://argoproj.github.io/argo-helm \
-      && helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    helm repo add argo https://argoproj.github.io/argo-helm > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
     helm upgrade --install argo-cd argo/argo-cd \
     --version=8.1.3 \
     --namespace argocd \
     --create-namespace \
     --wait \
     --timeout 5m \
-    -f "${SCRIPT_DIR}/helm-values/argocd.yaml" > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    -f "${SCRIPT_DIR}/helm-values/argocd.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
@@ -43,9 +43,9 @@ argocd_apps)
     --namespace argocd \
     --wait \
     --timeout 60m \
-    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
     
-    wait_for_argocd_apps > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+    wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
     stop_spinner_and_return_code $? || exit 1 
     
   elif [ "$ACTION" == "delete" ]; then

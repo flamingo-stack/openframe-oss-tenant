@@ -28,6 +28,6 @@ registerJob:
 
 apps:
   openframe-config:
-    values: |
+    values:
       config:
         branch: main
