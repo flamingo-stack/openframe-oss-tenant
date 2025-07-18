@@ -154,7 +154,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
-            type=raw,value=test-${{ needs.changes.outputs.commit_sha }}
+            type=raw,value=${{ needs.changes.outputs.commit_sha }}
           labels: |
             org.opencontainers.image.vendor=FlamingoCX
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -202,9 +202,9 @@ jobs:
       - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags
         with:
-          commit-sha: ${{ needs.changes.outputs.commit_sha }}
-          matrix: ${{ toJSON(needs.matrix.outputs.matrix) }}
+          matrix: ${{ needs.matrix.outputs.matrix }}
           changes: ${{ toJSON(needs.changes.outputs) }}
+          commit-sha: ${{ needs.changes.outputs.commit_sha }}
           app-of-apps-file: ${{ env.APP_OF_APPS_VALUES }}
         
       - name: Override branch name
@@ -253,7 +253,7 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: test-${{ needs.changes.outputs.commit_sha }}
+          delete-tags: ${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
 
   final-checks:

@@ -97,7 +97,7 @@ jobs:
         run: |
           echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
           echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> $GITHUB_OUTPUT
-          echo "commit_sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "commit_sha=test-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
 
       - uses: dorny/paths-filter@v2
         id: filter
