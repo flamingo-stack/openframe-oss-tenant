@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class Activity {
     @JsonProperty("id")
-    private Long id;
+    private Integer id;
     
     @JsonProperty("created_at")
     private String createdAt;
@@ -31,5 +31,5 @@ public class Activity {
     
     // Enrichment fields (not from Debezium)
     private String agentId; // From Redis cache or Fleet DB lookup by hostId
-    private Long hostId; // From HostActivity join
+    private Integer hostId; // From HostActivity join
 } 

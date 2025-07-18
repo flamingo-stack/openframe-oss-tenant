@@ -1,5 +1,9 @@
 package com.openframe.stream.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.stream.model.fleet.ActivityMessage;
+import com.openframe.stream.model.fleet.HostActivityMessage;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +12,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +31,34 @@ public class KafkaStreamsConfig {
 
     @Value("${spring.application.name:openframe-stream}")
     private String applicationName;
+
+    private final ObjectMapper objectMapper;
+
+    public KafkaStreamsConfig(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Serde for ActivityMessage (DebeziumMessage<Activity>)
+     */
+    @Bean
+    public Serde<ActivityMessage> activityMessageSerde() {
+        return Serdes.serdeFrom(
+            new JsonSerializer<>(objectMapper),
+            new JsonDeserializer<>(ActivityMessage.class, objectMapper)
+        );
+    }
+
+    /**
+     * Serde for HostActivityMessage (DebeziumMessage<HostActivity>)
+     */
+    @Bean
+    public Serde<HostActivityMessage> hostActivityMessageSerde() {
+        return Serdes.serdeFrom(
+            new JsonSerializer<>(objectMapper),
+            new JsonDeserializer<>(HostActivityMessage.class, objectMapper)
+        );
+    }
 
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration kStreamsConfig() {

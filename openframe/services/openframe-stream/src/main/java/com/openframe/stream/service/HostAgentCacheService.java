@@ -25,7 +25,7 @@ public class HostAgentCacheService {
      * @return the agent ID, or null if not found
      */
     @Cacheable(value = "hostAgentCache", key = "#hostId", unless = "#result == null")
-    public String getAgentId(Long hostId) {
+    public String getAgentId(Integer hostId) {
         log.debug("Fetching agent ID for host: {}", hostId);
         try {
             return fleetHostRepository.findById(hostId)

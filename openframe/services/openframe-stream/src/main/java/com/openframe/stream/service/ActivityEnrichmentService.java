@@ -1,11 +1,9 @@
 package com.openframe.stream.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.stream.model.fleet.Activity;
 import com.openframe.stream.model.fleet.ActivityMessage;
 import com.openframe.stream.model.fleet.HostActivity;
 import com.openframe.stream.model.fleet.HostActivityMessage;
-import com.openframe.stream.repository.fleet.FleetHostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
@@ -15,21 +13,18 @@ import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.KeyValue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Bean;
 
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ActivityEnrichmentService {
 
-    private final StreamsBuilder streamsBuilder;
     private final Serde<ActivityMessage> activityMessageSerde;
     private final Serde<HostActivityMessage> hostActivityMessageSerde;
-    private final FleetHostRepository fleetHostRepository;
     private final HostAgentCacheService hostAgentCacheService;
-    private final ObjectMapper objectMapper;
 
     @Value("${kafka.topics.activities:fleet.activities.events}")
     private String activitiesTopic;
@@ -40,50 +35,49 @@ public class ActivityEnrichmentService {
     @Value("${kafka.topics.enriched-activities:fleet.mysql.events}")
     private String enrichedActivitiesTopic;
 
-    public StreamsBuilder getStreamsBuilder() {
-        return streamsBuilder;
-    }
+    private static final Duration JOIN_WINDOW_DURATION = Duration.ofSeconds(20);
 
-    private static final Duration JOIN_WINDOW_DURATION = Duration.ofSeconds(10);
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    public void buildStream() {
-        log.info("Building activity enrichment stream");
+    @Bean
+    public KStream<String, ActivityMessage> buildActivityEnrichmentStream(StreamsBuilder builder) {
+        log.info("Building activity enrichment stream (Spring Kafka Streams style)");
 
         // Create KStreams from input topics
-        KStream<String, ActivityMessage> activityStream = streamsBuilder
-            .stream(activitiesTopic, Consumed.with(Serdes.String(), activityMessageSerde));
+        KStream<String, ActivityMessage> activityStream = builder
+                .stream(activitiesTopic, Consumed.with(Serdes.String(), activityMessageSerde))
+                .selectKey((key, value) -> {
+                    if (value == null || value.getPayload() == null || value.getPayload().getAfter() == null) {
+                        return null;
+                    }
+                    return value.getPayload().getAfter().getId().toString();
+                });
 
-        KStream<String, HostActivityMessage> hostActivityStream = streamsBuilder
-            .stream(hostActivitiesTopic, Consumed.with(Serdes.String(), hostActivityMessageSerde));
+        KStream<String, HostActivityMessage> hostActivityStream = builder
+                .stream(hostActivitiesTopic, Consumed.with(Serdes.String(), hostActivityMessageSerde))
+                .filter((key, value) -> {
+                    if (value == null || value.getPayload() == null || value.getPayload().getAfter() == null) {
+                        return false;
+                    }
+                    HostActivity hostActivity = value.getPayload().getAfter();
+                    return hostActivity.getActivityId() != null;
+                })
+                .map((key, value) -> {
+                    HostActivity hostActivity = value.getPayload().getAfter();
+                    return new KeyValue<>(hostActivity.getActivityId().toString(), value);
+                });
 
-        // Transform HostActivity stream to use activity_id as key for join
-        KStream<String, HostActivityMessage> hostActivityStreamByActivityId = hostActivityStream
-            .filter((key, value) -> {
-                if (value == null || value.getPayload() == null || value.getPayload().getAfter() == null) {
-                    return false;
-                }
-                HostActivity hostActivity = value.getPayload().getAfter();
-                return hostActivity.getActivityId() != null;
-            })
-            .map((key, value) -> {
-                HostActivity hostActivity = value.getPayload().getAfter();
-                return new KeyValue<>(hostActivity.getActivityId().toString(), value);
-            });
-
-        // Join streams: Activity (left) with HostActivity (right) on activity_id
         KStream<String, ActivityMessage> enrichedStream = activityStream
-            .leftJoin(
-                hostActivityStreamByActivityId,
-                this::enrichActivityWithHostInfo,
-                JoinWindows.ofTimeDifferenceWithNoGrace(JOIN_WINDOW_DURATION),
-                StreamJoined.with(Serdes.String(), activityMessageSerde, hostActivityMessageSerde)
-            );
+                .leftJoin(
+                        hostActivityStream,
+                        this::enrichActivityWithHostInfo,
+                        JoinWindows.ofTimeDifferenceWithNoGrace(JOIN_WINDOW_DURATION),
+                        StreamJoined.with(Serdes.String(), activityMessageSerde, hostActivityMessageSerde)
+                );
 
         // Send to output topic
         enrichedStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), activityMessageSerde));
 
         log.info("Activity enrichment stream built successfully");
+        return enrichedStream;
     }
 
     private ActivityMessage enrichActivityWithHostInfo(ActivityMessage activity, HostActivityMessage hostActivity) {
@@ -101,12 +95,12 @@ public class ActivityEnrichmentService {
             // If we have HostActivity data, extract host_id
             if (hostActivity != null && hostActivity.getPayload() != null && hostActivity.getPayload().getAfter() != null) {
                 HostActivity hostActivityData = hostActivity.getPayload().getAfter();
-                Long hostId = hostActivityData.getHostId();
-                
+                Integer hostId = hostActivityData.getHostId();
+
                 if (hostId != null) {
                     activityData.setHostId(hostId);
                     log.debug("Set hostId {} for activity {}", hostId, activityData.getId());
-                    
+
                     // Try to get agentId from cache or database
                     String agentId = hostAgentCacheService.getAgentId(hostId);
                     if (agentId != null) {

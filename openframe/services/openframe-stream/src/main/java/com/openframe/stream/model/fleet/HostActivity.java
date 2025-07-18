@@ -6,8 +6,8 @@ import lombok.Data;
 @Data
 public class HostActivity {
     @JsonProperty("host_id")
-    private Long hostId;
+    private Integer hostId;
     
     @JsonProperty("activity_id")
-    private Long activityId; // Changed from String to Long for join with Activity.id
+    private Integer activityId;
 } 

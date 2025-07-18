@@ -21,7 +21,7 @@ public class FleetHost {
 
     @Id
     @Column(name = "id")
-    private Long id;
+    private Integer id;
 
     @Column(name = "uuid")
     private String uuid; // This is the agent_id
