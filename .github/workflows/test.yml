@@ -213,11 +213,6 @@ jobs:
           yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.APP_OF_APPS_VALUES }}"
           echo "Updated global.repoBranch to: ${{ github.head_ref }}"
 
-          # Debug: Output the final values file
-          echo "=== Final app-of-apps.yaml content ==="
-          cat "${{ env.APP_OF_APPS_VALUES }}"
-          echo "=== End of app-of-apps.yaml ===" 
-
       - name: Run environment test script
         env:
           TERM: dumb

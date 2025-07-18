@@ -22,7 +22,7 @@ runs:
     - name: Override Helm values
       shell: bash
       env:
-        COMMIT_SHA: "test-${{ inputs.commit-sha }}"
+        COMMIT_SHA: "${{ inputs.commit-sha }}"
         MATRIX: '${{ inputs.matrix }}'
         CHANGES: '${{ inputs.changes }}'
         APP_OF_APPS_FILE: '${{ inputs.app-of-apps-file }}'
