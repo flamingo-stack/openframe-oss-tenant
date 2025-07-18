@@ -1,10 +1,10 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: openframe-config
+  name: authentik-postgresql
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/openframe-config
+    - image: ghcr.io/flamingo-cx/openframe/authentik-postgresql
       context: .
       sync: 
         manual:
@@ -22,11 +22,8 @@ build:
 manifests:
   helm:
     releases:
-      - name: openframe-config
-        chartPath: ../../../manifests/microservices/openframe-config
+      - name: authentik-postgresql
+        chartPath: ../../../manifests/integrated-tools/authentik
         valuesFiles:
-          - ../../../manifests/microservices/openframe-config/values.yaml
-        setValues:
-          config:
-            branch:
-              "main"
+          - ../../../manifests/integrated-tools/authentik/values.yaml
+        # setValues:

@@ -86,7 +86,7 @@ app)
   if [ "$ACTION" == "dev" ]; then
     echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
     case "$APP" in
-      *openframe*)
+      *openframe*|external-api)
         cd "${ROOT_REPO_DIR}/openframe/services/${APP}"
         ;;
       meshcentral)

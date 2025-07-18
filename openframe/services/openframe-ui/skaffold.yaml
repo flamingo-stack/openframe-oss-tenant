@@ -15,12 +15,15 @@ build:
       hooks:
         before:
           - command: [ "mvn", "clean", "package", "-DskipTests"]
-      docker: {}
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: true
+    push: false
 manifests:
-  kustomize:
-    paths:
-    - ../../../manifests/microservices/openframe-ui
+  helm:
+    releases:
+      - name: openframe-ui
+        chartPath: ../../../manifests/microservices/openframe-ui
+        valuesFiles:
+          - ../../../manifests/microservices/openframe-ui/values.yaml
+        # setValues:

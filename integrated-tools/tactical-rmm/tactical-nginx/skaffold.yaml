@@ -1,11 +1,8 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: tactical-frontend
+  name: tactical-nginx
 build:
-  tagPolicy:
-    customTemplate:
-      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/tactical-nginx
       context: .
@@ -65,5 +62,10 @@ build:
     useBuildkit: true
     push: false
 manifests:
-  rawYaml:
-    - ../../../manifests/integrated-tools/tactical-rmm/tactical-nginx
+  helm:
+    releases:
+      - name: tactical-rmm
+        chartPath: ../../../manifests/integrated-tools/tactical-rmm
+        valuesFiles:
+          - ../../../manifests/integrated-tools/tactical-rmm/values.yaml
+        # setValues:

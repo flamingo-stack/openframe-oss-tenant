@@ -23,6 +23,7 @@ global:
   repoBranch: main    # Git branch to deploy from (main branch for production)
   autoSync: true      # Enable automatic synchronization for all ArgoCD applications
 
+# Registry credentials for pulling Docker images
 registry:
   docker:
     server: https://index.docker.io/v1/  # Docker Hub registry endpoint
@@ -50,22 +51,11 @@ apps:
 # This level receives values from app-of-apps and defines all ArgoCD applications
 # Each app has: enabled, project, namespace, syncWave, and optional values/syncOptions
 
-deployment:
-  name: local         # Deployment environment (inherited from app-of-apps)
-  ingress: nat        # Ingress strategy (inherited from app-of-apps)
-
-global:
-  repoDir: manifests  # Directory containing all Helm charts (inherited from app-of-apps)
-  repoURL: https://github.com/Flamingo-CX/openframe.git  # Git repository URL (inherited)
-  repoBranch: feature/helm-structure  # NOTE: Different from app-of-apps! (main vs feature branch)
-  autoSync: true      # Enable automatic synchronization (inherited from app-of-apps)
-
 apps:
   # =============================================================================
-  # PLATFORM SERVICES (Sync Wave 0 - Infrastructure First)
+  # SYNC WAVE 0: Platform Services (Infrastructure)
   # =============================================================================
-  # These are deployed first as they provide infrastructure for other services
-  # All platform services use the "platform" namespace and "platform" project
+  # These are deployed first as they provide foundational services
   
   namespace-platform:
     enabled: true     # Create the platform namespace
@@ -120,10 +110,9 @@ apps:
       ServerSideApply: true  # Use server-side apply for this app
 
   # =============================================================================
-  # DATASOURCES (Sync Wave 1 - Data Layer)
+  # SYNC WAVE 1: Datasources (Data Layer)
   # =============================================================================
-  # These are deployed second as they provide data storage for applications
-  # All datasources use the "datasources" namespace and "datasources" project
+  # These provide data storage and messaging infrastructure
   
   namespace-datasources:
     enabled: true     # Create the datasources namespace
@@ -186,64 +175,123 @@ apps:
     syncWave: "1"     # Deploy in sync wave 1
 
   # =============================================================================
-  # MICROSERVICES (Sync Wave 2 - Application Layer)
+  # SYNC WAVE 2: Microservices + Client Tools (Application Layer)
   # =============================================================================
-  # These are deployed third as they depend on platform and datasource services
-  # All microservices use the "microservices" namespace and "microservices" project
+  # These are the core OpenFrame services and development tools
   
   namespace-microservices:
     enabled: true     # Create the microservices namespace
     project: default  # Use default ArgoCD project
     namespace: microservices  # Kubernetes namespace for microservices
     syncWave: "2"     # Deploy in sync wave 2 (after datasources)
+    values:
+      ghcrRegistry:
+        server: ghcr.io
+        username: CI
+        password: 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
+        email: CI@flamingo.cx
     
   openframe-config:
     enabled: true     # Configuration management service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-config
+        tag: latest
+      config:
+        branch: main
     
   openframe-management:
     enabled: true     # Management interface service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
-    
-  external-api: 
-    enabled: true     # External API service
-    project: microservices  # Use microservices ArgoCD project
-    namespace: microservices  # Deploy to microservices namespace
-    syncWave: "2"     # Deploy in sync wave 2
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-management
+        tag: latest
     
   openframe-api: 
     enabled: true     # Main API service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-api
+        tag: latest
     
   openframe-gateway: 
     enabled: true     # API Gateway service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
+    values:
+      deployment:
+        ingress: nat
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
+        tag: latest
     
   openframe-client: 
     enabled: true     # Client service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-client
+        tag: latest
     
   openframe-stream: 
     enabled: true     # Stream processing service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-stream
+        tag: latest
     
   openframe-ui: 
     enabled: true     # User interface service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
     syncWave: "2"     # Deploy in sync wave 2
+    values:
+      deployment:
+        ingress: nat
+      registerJob:
+        enabled: true
+      image:
+        repo: ghcr.io/flamingo-cx/openframe/openframe-ui
+        tag: latest
 
   # =============================================================================
   # CLIENT TOOLS (Sync Wave 2 - Development Tools)
