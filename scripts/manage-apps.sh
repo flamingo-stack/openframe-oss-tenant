@@ -29,7 +29,7 @@ argocd)
     --create-namespace \
     --wait \
     --timeout 5m \
-    -f "${SCRIPT_DIR}/helm-values/argocd.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
@@ -44,7 +44,7 @@ argocd_apps)
     --namespace argocd \
     --wait \
     --timeout 60m \
-    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" \
+    -f "${SCRIPT_DIR}/app-of-apps-values.yaml" \
     > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
     wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
 
