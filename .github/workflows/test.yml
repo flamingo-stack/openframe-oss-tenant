@@ -91,7 +91,7 @@ jobs:
 
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
+        run: mvn clean install -am -Dcompress
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -197,7 +197,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Install tools and validate environment
-        uses: ./.github/steps/requirements-for-run
+        uses: ./.github/steps/requirements-for-run.sh
 
       - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags
@@ -212,6 +212,7 @@ jobs:
           # Override branch name
           yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.APP_OF_APPS_VALUES }}"
           echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+          cat "${{ env.APP_OF_APPS_VALUES }}"
 
       - name: Run environment test script
         env:

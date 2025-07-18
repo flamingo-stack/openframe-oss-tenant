@@ -35,15 +35,23 @@ runs:
         [ -n "$CHANGES" ] || { echo "Error: CHANGES is required" >&2; exit 1; }
         [ -f "$APP_OF_APPS_FILE" ] || { echo "Error: App-of-apps file not found: $APP_OF_APPS_FILE" >&2; exit 1; }
 
-        
         # Install yq if needed
         if ! command -v yq &> /dev/null; then
           wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
         fi
         
+        # Function to set image tags
+        set_image_tag() {
+          local path="$1"
+          if yq eval ".apps.$path = \"$COMMIT_SHA\"" -i "$APP_OF_APPS_FILE" 2>/dev/null; then
+            echo "Updated $path with image tag: $COMMIT_SHA"
+          else
+            echo "Failed to update $path" >&2
+          fi
+        }
+
         echo "Updating Helm values with tag: $COMMIT_SHA"
-            
         # Process each changed service
         jq -c '.[]' <<< "$MATRIX" | while read -r item; do
           name=$(jq -r '.name' <<< "$item")
@@ -52,9 +60,20 @@ runs:
           [ "$changed" = "true" ] || continue
           
           # Add image tag to the app's helm values
-          if yq eval ".apps.$name.values.image.tag = \"$COMMIT_SHA\"" -i "$APP_OF_APPS_FILE" 2>/dev/null; then
-            echo "Updated $name with image tag: $COMMIT_SHA"
-          else
-            echo "Failed to update $name" >&2
-          fi
+          case "$name" in
+            tactical-*)
+              component="${name#tactical-}"
+              set_image_tag "tactical-rmm.values.tactical.$component.image.tag"
+              ;;
+            authentik-postgresql)
+              set_image_tag "authentik.values.postgres.image.tag"
+              ;;
+            fleetmdm | meshcentral)
+              set_image_tag "$name.values.server.image.tag"
+              ;;
+            *)
+              set_image_tag "$name.values.image.tag"
+              ;;
+          esac
+
         done
