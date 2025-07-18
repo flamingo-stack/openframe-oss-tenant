@@ -1,0 +1,64 @@
+name: 'Override Helm Values'
+description: 'Override Helm values with image tags for changed services'
+
+inputs:
+  commit-sha:
+    description: 'Commit SHA for the image tag'
+    required: true
+  matrix:
+    description: 'Matrix configuration'
+    required: true
+  changes:
+    description: 'Changes output'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Override Helm values
+      shell: bash
+      env:
+        COMMIT_SHA: "test-${{ inputs.commit-sha }}"
+        MATRIX: '${{ inputs.matrix }}'
+        CHANGES: '${{ inputs.changes }}'
+      run: |
+        set -euo pipefail
+        
+        # Install yq if needed
+        if ! command -v yq &> /dev/null; then
+          wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+        fi
+        
+        echo "Updating Helm values with tag: $COMMIT_SHA"
+        
+        # Process each service
+        jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+          name=$(jq -r '.name' <<< "$item")
+          manifest_path=$(jq -r '.manifest_path' <<< "$item")
+          changed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
+          
+          if [ "$changed" = "true" ]; then
+            values_file="$manifest_path/values.yaml"
+            
+            if [ -f "$values_file" ]; then
+              # Determine image path based on service
+              case "$name" in
+                "authentik-postgresql") path=".postgres.image.tag" ;;
+                "tactical-"*) 
+                  service=$(echo "$name" | sed 's/tactical-//')
+                  path=".tactical.$service.image.tag" 
+                  ;;
+                "fleetmdm"|"meshcentral") path=".server.image.tag" ;;
+                *) path=".image.tag" ;;
+              esac
+              
+              # Update the values file
+              if yq eval "$path = \"$COMMIT_SHA\"" -i "$values_file" 2>/dev/null; then
+                echo "Updated $name ($path)"
+              else
+                echo "Failed to update $name" >&2
+              fi
+            fi
+          fi
+        done 

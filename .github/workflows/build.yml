@@ -152,7 +152,7 @@ jobs:
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
-        uses: ./.github/actions/format-build-args
+        uses: ./.github/steps/docker-format-build-args.yml
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
         env:
