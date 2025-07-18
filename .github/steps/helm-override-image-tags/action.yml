@@ -43,21 +43,19 @@ runs:
         fi
         
         echo "Updating Helm values with tag: $COMMIT_SHA"
-                
-        # Process each changed service
-        echo "$MATRIX" | jq -c '.[]' | while read -r item; do
-          name=$(jq -r '.name' <<< "$item")
-          changed=$(echo "$CHANGES" | jq -r --arg name "$name" '.[$name]')
-          
-          if [ "$changed" = "true" ] && [ -n "$name" ]; then
-            echo "Processing changed service: $name"
             
-            # Add image tag to the app's helm values
-            if yq eval ".apps.$name.helm.values.image.tag = \"$COMMIT_SHA\"" -i "$APP_OF_APPS_FILE" 2>/dev/null; then
-              echo "Updated $name with image tag: $COMMIT_SHA"
-            else
-              echo "Failed to update $name" >&2
-            fi
+        # Process each changed service
+        jq -c '.[]' <<< "$MATRIX" | while read -r item; do
+          name=$(jq -r '.name' <<< "$item")
+          changed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
+
+          [ "$changed" = "true" ] || continue
+          
+          # Add image tag to the app's helm values
+          if yq eval ".apps.$name.values.image.tag = \"$COMMIT_SHA\"" -i "$APP_OF_APPS_FILE" 2>/dev/null; then
+            echo "Updated $name with image tag: $COMMIT_SHA"
+          else
+            echo "Failed to update $name" >&2
           fi
         done
         
