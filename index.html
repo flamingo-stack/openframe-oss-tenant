@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>NATS WebSocket Client</title>
+</head>
+<body>
+<h1>NATS WebSocket</h1>
+
+<input id="msg" placeholder="Введите сообщение" />
+<button onclick="send()">Отправить</button>
+
+<ul id="log"></ul>
+
+<script type="module">
+    import { connect, StringCodec } from 'https://cdn.skypack.dev/nats.ws';
+
+    const ws = new WebSocket("ws://localhost:8080");
+    ws.onopen = () => console.log("Connected!");
+    ws.onerror = (e) => console.error("Error", e);
+
+</script>
+</body>
+</html>
