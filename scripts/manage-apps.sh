@@ -39,13 +39,15 @@ argocd)
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then 
     start_spinner "Waiting for ArgoCD Apps to become Healthy"
+
     helm upgrade --install app-of-apps "${ROOT_REPO_DIR}/manifests/app-of-apps" \
     --namespace argocd \
     --wait \
     --timeout 60m \
-    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
-    
+    -f "${SCRIPT_DIR}/helm-values/app-of-apps.yaml" \
+    > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
     wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+
     stop_spinner_and_return_code $? || exit 1 
     
   elif [ "$ACTION" == "delete" ]; then
