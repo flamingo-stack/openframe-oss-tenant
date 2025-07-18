@@ -7,7 +7,7 @@ global:
   appsDir: apps
 
   repoURL: https://github.com/Flamingo-CX/openframe.git
-  repoBranch: feature/helm-structure
+  repoBranch: main
   autoSync: true
 
 registry:

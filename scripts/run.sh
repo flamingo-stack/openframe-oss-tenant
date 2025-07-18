@@ -40,7 +40,7 @@ source "${SCRIPT_DIR}/functions/develop.sh"
 export -f intercept_app switch_argocd_app_health
 
 source "${SCRIPT_DIR}/functions/argocd.sh"
-export -f deploy_argocd delete_argocd wait_for_argocd_apps get_initial_secret
+export -f wait_for_argocd_apps
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do

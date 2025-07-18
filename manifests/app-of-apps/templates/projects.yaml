@@ -3,6 +3,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   description: Project for k8s platform apps.
   sourceRepos:
@@ -20,6 +22,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: datasources
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   description: Project for k8s datasources apps.
   sourceRepos:
@@ -37,6 +41,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: microservices
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   description: Project for k8s microservices apps.
   sourceRepos:
@@ -54,6 +60,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: integrated-tools
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   description: Project for k8s integrated-tools apps.
   sourceRepos:
@@ -71,6 +79,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: client-tools
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   description: Project for k8s client-tools apps.
   sourceRepos:

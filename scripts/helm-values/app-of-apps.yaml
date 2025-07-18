@@ -3,10 +3,6 @@ deployment:
   ingress: nat      # "ngrok" or "nat"
 
 global:
-  repoDir: manifests
-  appsDir: argocd-apps
-
-  repoURL: https://github.com/Flamingo-CX/openframe.git
   repoBranch: feature/helm-structure
   autoSync: true
 
@@ -21,9 +17,6 @@ registry:
     username: CI
     password: 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
     email: CI@flamingo.cx
-
-registerJob:
-  enabled: true
 
 apps:
   openframe-gateway: 

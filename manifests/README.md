@@ -1,197 +1,252 @@
-# OpenFrame Kubernetes Cluster
+# OpenFrame Kubernetes Manifests
 
-This directory contains the Kubernetes cluster configuration and deployment scripts for the OpenFrame platform using Kind (Kubernetes in Docker).
+This directory contains the complete Kubernetes deployment configuration for the OpenFrame platform, organized in a layered architecture that supports both local development (Kind) and production deployments.
 
-## Overview
+## Architecture Overview
 
-The OpenFrame platform consists of several components organized into different namespaces:
-
-1. Infrastructure (base components)
-2. Authentik (authentication service)
-3. Fleet (device management)
-4. MeshCentral (remote management)
-5. Tactical RMM (remote monitoring and management)
-
-## Infrastructure Components
-
-The infrastructure namespace contains the following core components:
+The OpenFrame platform follows a **layered deployment architecture** with clear separation of concerns:
 
 ```mermaid
 graph TD
-    A[Infrastructure] --> B[Ingress Nginx]
-    A --> C[Monitoring Stack]
-    A --> D[Loki]
-    A --> E[Redis]
-    A --> F[Kafka]
-    A --> G[MongoDB]
-    A --> H[Cassandra]
-    A --> I[NiFi]
-    A --> J[Zookeeper]
-    A --> K[Pinot]
-    A --> L[Config Server]
-    A --> M[API]
-    A --> N[Management]
-    A --> O[Stream]
-    A --> P[Gateway]
-    A --> Q[OpenFrame UI]
-
-    C --> D
-    F --> J
-    K --> J
-    M --> L
-    M --> G
-    M --> F
-    M --> H
-    M --> E
-    N --> L
-    N --> G
-    O --> F
-    O --> L
-    O --> H
-    O --> G
-    O --> D
-    P --> L
-    P --> G
-    P --> H
-    P --> D
-    Q --> M
-    Q --> N
+    A[App-of-Apps Layer] --> B[Platform Layer]
+    A --> C[Data Layer]
+    A --> D[Application Layer]
+    A --> E[Tooling Layer]
+    
+    B --> F[Infrastructure Services]
+    C --> G[Data Sources & Storage]
+    D --> H[Microservices]
+    E --> I[Management Tools]
+    
+    F --> J[Ingress, Monitoring, Security]
+    G --> K[Databases, Message Queues, Analytics]
+    H --> L[API, Gateway, UI, Management]
+    I --> M[Authentication, Device Management, RMM]
 ```
 
-## Application Dependencies
+## Directory Structure & Purpose
 
-```mermaid
-graph TD
-    A[Applications] --> B[Infrastructure]
-    B --> C[Authentik]
-    B --> D[Fleet]
-    B --> E[MeshCentral]
-    B --> F[Tactical RMM]
+### 🎯 **App-of-Apps Layer** (`app-of-apps/`)
+**Purpose**: GitOps deployment orchestration using ArgoCD
+- **`Chart.yaml`**: Helm chart definition for the entire platform
+- **`templates/`**: ArgoCD application definitions and project configurations
+- **`values.yaml`**: Global configuration values for all applications
 
-    B --> G[Base Services]
-    C --> H[Auth Services]
-    D --> I[Device Management]
-    E --> J[Remote Management]
-    F --> K[RMM Services]
-```
+**Key Components**:
+- ArgoCD application definitions for each layer
+- Project and namespace configurations
+- Docker registry secrets management
 
-## Deployment Order
+### 🏗️ **Platform Layer** (`platform/`)
+**Purpose**: Core infrastructure and observability services
+- **`ingress-nginx/`**: Kubernetes ingress controller
+- **`cert-manager/`**: SSL/TLS certificate management
+- **`grafana/`**: Metrics visualization and dashboards
+- **`prometheus/`**: Metrics collection and alerting
+- **`loki/`**: Log aggregation and querying
+- **`promtail/`**: Log shipping agent
+- **`ngrok-operator/`**: Secure tunnel management
 
-1. Infrastructure components (base services)
-2. Authentik (authentication)
-3. Fleet (device management)
-4. MeshCentral (remote management)
-5. Tactical RMM (remote monitoring)
+**Deployment Order**: 1st (required by all other layers)
 
-## Prerequisites
+### 💾 **Data Layer** (`datasources/`)
+**Purpose**: Data storage, messaging, and analytics infrastructure
+- **`mongodb/`**: Document database with monitoring
+- **`cassandra/`**: Distributed NoSQL database
+- **`redis/`**: In-memory cache and session store
+- **`kafka/`**: Distributed streaming platform
+- **`zookeeper/`**: Distributed coordination service
+- **`pinot/`**: Real-time analytics database
+- **`debezium-connect/`**: Change data capture
+- **`redis-exporter/`**, **`mongodb-exporter/`**: Monitoring exporters
 
-- Kubernetes cluster (Kind)
-- `kubectl` CLI
-- `helm` CLI
-- GitHub Container Registry (ghcr.io) access token (Environment variable: `GITHUB_TOKEN_CLASSIC`)
+**Deployment Order**: 2nd (required by microservices)
 
-## Deployment Scripts
+### 🔧 **Application Layer** (`microservices/`)
+**Purpose**: Core OpenFrame business logic and APIs
+- **`openframe-api/`**: Main REST API service
+- **`openframe-gateway/`**: API gateway and routing
+- **`openframe-management/`**: System management interface
+- **`openframe-stream/`**: Real-time data streaming service
+- **`openframe-config/`**: Configuration management service
+- **`openframe-client/`**: Client-side application logic
+- **`openframe-ui/`**: Web user interface
+- **`external-api/`**: External API integrations
+- **`namespace/`**: Application namespace configuration
 
-The deployment is managed through the following scripts:
+**Deployment Order**: 3rd (depends on data layer)
 
-- `run.sh`: Main deployment script for bootstrapping the cluster and deploying all components
-- `kind-cluster/scripts/kind-cluster.sh`: Kind cluster management script
-- `kind-cluster/scripts/deploy-apps.sh`: Reference script showing component dependencies
+### 🛠️ **Tooling Layer** (`integrated-tools/`)
+**Purpose**: Enterprise management and security tools
+- **`authentik/`**: Identity and access management
+- **`fleetmdm/`**: Device management and MDM
+- **`meshcentral/`**: Remote device management
+- **`tactical-rmm/`**: Remote monitoring and management
+- **`namespace/`**: Tooling namespace configuration
 
-## Component Versions
+**Deployment Order**: 4th (optional, depends on platform layer)
 
-Key component versions:
+### 🎨 **Client Tools Layer** (`client-tools/`)
+**Purpose**: Development and operational tooling
+- **`kafka-ui/`**: Kafka management interface
+- **`mongo-express/`**: MongoDB administration interface
+- **`debezium-ui/`**: Debezium monitoring interface
+- **`telepresence/`**: Local development proxy
+- **`namespace/`**: Client tools namespace configuration
 
-- Ingress Nginx: 4.12.0
-- Prometheus Stack: 69.8.2
-- Redis: 20.11.3
-- Kafka: 31.5.0
-- MongoDB: Latest
-- Cassandra: 12.2.1
-- Authentik: Latest
+**Deployment Order**: 5th (optional, for development/operations)
 
-## Directory Structure
+### 📦 **Apps Layer** (`apps/`)
+**Purpose**: Application-level Helm chart definitions
+- **`Chart.yaml`**: Application chart definition
+- **`templates/`**: Application-specific templates
+- **`values.yaml`**: Application configuration values
 
-```bash
-kind-cluster/
-├── apps/
-│   ├── infrastructure/    # Base infrastructure components
-│   ├── authentik/        # Authentication service
-│   ├── fleet/           # Device management
-│   ├── meshcentral/     # Remote management
-│   └── tactical-rmm/    # Remote monitoring
-├── scripts/             # Deployment and management scripts
-└── README.md           # This file
-```
+## Deployment Strategy
+
+### GitOps Approach
+The platform uses **ArgoCD** for GitOps deployment management:
+- All configurations are version-controlled
+- Automatic synchronization with Git repository
+- Declarative deployment state management
+- Rollback capabilities
+
+### Layered Deployment
+Deployments follow a strict dependency order:
+
+1. **Platform Layer** → Core infrastructure
+2. **Data Layer** → Storage and messaging
+3. **Application Layer** → Business logic
+4. **Tooling Layer** → Management tools
+5. **Client Tools Layer** → Operational tools
+
+### Environment Support
+- **Development**: Kind cluster with local resources
+- **Production**: Full Kubernetes cluster with enterprise resources
+- **Hybrid**: Mixed deployment strategies
+
+## Key Features
+
+### 🔐 **Security**
+- Certificate management with cert-manager
+- Identity management with Authentik
+- Secure ingress with nginx
+- Namespace isolation
+
+### 📊 **Observability**
+- Metrics collection with Prometheus
+- Log aggregation with Loki
+- Visualization with Grafana
+- Distributed tracing support
+
+### 🔄 **Scalability**
+- Horizontal pod autoscaling
+- Database clustering
+- Message queue partitioning
+- Load balancing
+
+### 🚀 **Development Experience**
+- Local development with Kind
+- Hot reloading with Telepresence
+- Management UIs for all components
+- Comprehensive monitoring
 
 ## Getting Started
 
-1. Set up your environment:
-
-   ```bash
-   export GITHUB_TOKEN_CLASSIC=your_github_token
-   ```
-
-2. Bootstrap the cluster and deploy components:
-
-   ```bash
-   ./run.sh b
-   ```
-
-   This will:
-   - Create the Kind cluster
-   - Deploy infrastructure components
-   - Deploy all applications in the correct order
-
-**NOTE:**
-
-To boostrap cluster and deploye only required app follow these steps:
-
+### Prerequisites
 ```bash
-# Bootstrap kubernetes cluster
-./run.sh u
+# Required tools
+kubectl
+helm
+docker
+kind (for local development)
 
-# List deployable apps
-./run.sh a
-
-# Deploy ingress and montoring as it is required by all apps
-./run.sh a ingress-nginx
-./run.sh a grafana
-./run.sh a loki
-./run.sh a promtail
-
-# Deploy needed app
-./run.sh a rmm
+# Environment variables
+export GITHUB_TOKEN_CLASSIC=your_github_token
 ```
 
-## Monitoring and Management
+### Quick Start (Local Development)
+```bash
+# Bootstrap complete platform
+./scripts/run.sh b
 
-- Grafana dashboards are available for monitoring
-- Prometheus and Loki for metrics and logs
-- Kafka UI for message queue management
-- Mongo Express for database management
-- NiFi for data flow management
+# Or step-by-step deployment
+./scripts/run.sh u                    # Create Kind cluster
+./scripts/manage-apps.sh list         # List available apps
+./scripts/manage-apps.sh deploy platform/ingress-nginx
+./scripts/manage-apps.sh deploy platform/grafana
+./scripts/manage-apps.sh deploy datasources/mongodb
+./scripts/manage-apps.sh deploy microservices/openframe-api
+```
+
+### Production Deployment
+```bash
+# Deploy ArgoCD application-of-applications
+helm install openframe-apps ./app-of-apps
+
+# ArgoCD will automatically deploy all layers
+# Monitor deployment status in ArgoCD UI
+```
+
+## Monitoring & Management
+
+### Access Points
+- **ArgoCD**: `https://argocd.localhost` (deployment management)
+- **Grafana**: `https://grafana.localhost` (metrics & logs)
+- **Kafka UI**: `https://kafka-ui.localhost` (message queue management)
+- **Mongo Express**: `https://mongo-express.localhost` (database management)
+- **OpenFrame UI**: `https://openframe.localhost` (main application)
+
+### Health Checks
+```bash
+# Check all pods
+kubectl get pods -A
+
+# Check ArgoCD applications
+kubectl get applications -n argocd
+
+# Check ingress status
+kubectl get ingress -A
+```
 
 ## Troubleshooting
 
-1. Check pod status:
+### Common Issues
+1. **Resource constraints**: Increase Kind cluster resources
+2. **Image pull errors**: Verify GitHub token and registry access
+3. **Service connectivity**: Check namespace and service configurations
+4. **Storage issues**: Verify persistent volume claims
 
-   ```bash
-   kubectl get pods -A
-   ```
+### Debug Commands
+```bash
+# View application logs
+kubectl logs -n <namespace> <pod-name>
 
-2. View logs:
+# Check service endpoints
+kubectl get endpoints -A
 
-   ```bash
-   kubectl logs -n <namespace> <pod-name>
-   ```
+# Verify configuration
+kubectl describe configmap -n <namespace> <config-name>
 
-3. Check service status:
-
-   ```bash
-   kubectl get svc -A
-   ```
+# Port forward for local access
+kubectl port-forward -n <namespace> <pod-name> <local-port>:<pod-port>
+```
 
 ## Contributing
 
-Please follow the project's contribution guidelines when submitting changes to this repository.
+When adding new components:
+
+1. **Follow the layered architecture** - place components in appropriate layers
+2. **Update dependencies** - modify ArgoCD application definitions
+3. **Add monitoring** - include Prometheus metrics and Loki logging
+4. **Document changes** - update this README and component documentation
+5. **Test thoroughly** - verify in both Kind and production environments
+
+## Architecture Benefits
+
+- **Modularity**: Each layer can be deployed independently
+- **Scalability**: Components can scale horizontally
+- **Maintainability**: Clear separation of concerns
+- **Observability**: Comprehensive monitoring and logging
+- **Security**: Multi-layered security approach
+- **Flexibility**: Support for multiple deployment environments
