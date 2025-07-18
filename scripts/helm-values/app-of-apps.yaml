@@ -3,15 +3,15 @@ deployment:
   # url: https://reindeer-suitable-genuinely.ngrok-free.app
 
 global:
-  repoBranch: feature/helm-structure
+  repoBranch: main
   autoSync: true
 
 
-apps:
-  openframe-config:
-    values: |
-      config:
-        branch: main
+# apps:
+#   openframe-config:
+#     values: |
+#       config:
+#         branch: main
 
   mongo-express:
     enabled: false

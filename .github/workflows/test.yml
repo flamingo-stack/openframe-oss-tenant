@@ -215,7 +215,7 @@ jobs:
 
           # Debug: Output the final values file
           echo "=== Final app-of-apps.yaml content ==="
-          cat "$APP_OF_APPS_FILE"
+          cat "${{ env.APP_OF_APPS_VALUES }}"
           echo "=== End of app-of-apps.yaml ===" 
 
       - name: Run environment test script

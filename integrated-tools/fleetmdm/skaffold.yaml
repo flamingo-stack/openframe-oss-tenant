@@ -31,3 +31,4 @@ manifests:
           server:
             image:
               tag: latest
+
