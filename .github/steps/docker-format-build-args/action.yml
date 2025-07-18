@@ -59,4 +59,4 @@ runs:
         echo -e "$BUILD_ARGS"
         echo "formatted_args<<EOF" >> $GITHUB_OUTPUT
         echo -e "$BUILD_ARGS" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT 

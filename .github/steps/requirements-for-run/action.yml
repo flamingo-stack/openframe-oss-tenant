@@ -32,4 +32,4 @@ runs:
     - name: Configure system limits
       shell: bash
       run: |
-        sudo sysctl fs.inotify.max_user_instances=1500
+        sudo sysctl fs.inotify.max_user_instances=1500 
