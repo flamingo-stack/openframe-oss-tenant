@@ -4,6 +4,7 @@ import com.openframe.core.model.IntegratedTool;
 import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpEntity;
@@ -23,7 +24,10 @@ import java.util.Optional;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class IntegratedToolService {
     private final IntegratedToolRepository toolRepository;
-    RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${debezium.connector.create}")
+    private String debeziumUrl;
 
     public List<IntegratedTool> getAllTools() {
         return toolRepository.findAll();
@@ -44,21 +48,13 @@ public class IntegratedToolService {
         log.info("Add debezium connector");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Create HTTP entity with headers and body
         HttpEntity<Object> requestEntity = new HttpEntity<>(debeziumConnector, headers);
 
-        // URL for the request
-        String url = "http://debezium-connect.datasources:8083/connectors";
-
-        // Send POST request and get response
         try {
-            // Send POST request and get response
-            ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(debeziumUrl, requestEntity, String.class);
             log.info("Added debezium connector. Response: {}", response.getStatusCode());
         } catch (Exception e) {
             log.error("Failed to add debezium connector", e);
-            throw e;
         }
 
     }

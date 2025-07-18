@@ -1,13 +1,11 @@
 package com.openframe.stream.handler;
 
-import com.openframe.data.model.debezium.ExtraParams;
-import com.openframe.data.model.kafka.DeserializedKafkaMessage;
-import com.openframe.stream.enumeration.Destination;
-import com.openframe.stream.enumeration.MessageType;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.data.model.enums.Destination;
+import com.openframe.data.model.enums.MessageType;
 
-import java.util.Map;
-
-public interface MessageHandler<U extends DeserializedKafkaMessage, V extends ExtraParams> {
+public interface MessageHandler<U extends DeserializedDebeziumMessage, V extends IntegratedToolEnrichedData> {
 
     MessageType getType();
 
