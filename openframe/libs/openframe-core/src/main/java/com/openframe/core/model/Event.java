@@ -18,6 +18,4 @@ public class Event {
     private String payload;
     private Instant timestamp;
     private String userId;
-    
-    // Getters, setters, and constructors
 }
