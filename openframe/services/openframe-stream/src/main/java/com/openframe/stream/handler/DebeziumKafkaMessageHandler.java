@@ -1,14 +1,20 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DebeziumMessage;
-import com.openframe.stream.enumeration.Destination;
+import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.data.model.kafka.IntegratedToolEventKafkaMessage;
+import com.openframe.data.model.enums.Destination;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
 
 @Slf4j
-public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> extends DebeziumMessageHandler<T, U> {
+public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEventKafkaMessage, DeserializedDebeziumMessage> {
+
+    @Value("${kafka.producer.topic.it.event.name}")
+    private String topic;
 
     protected final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -17,7 +23,28 @@ public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> 
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    protected void handleCreate(T message) {
+    @Override
+    protected IntegratedToolEventKafkaMessage transform(DeserializedDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+        IntegratedToolEventKafkaMessage message = new IntegratedToolEventKafkaMessage();
+        try {
+            message.setToolEventId(debeziumMessage.getToolEventId());
+            message.setUserId(enrichedData.getUserId());
+            message.setDeviceId(enrichedData.getMachineId());
+            message.setIngestDay(debeziumMessage.getIngestDay());
+            message.setToolType(debeziumMessage.getIntegratedToolType().name());
+            message.setEventType(debeziumMessage.getUnifiedEventType().name());
+            message.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
+            message.setSummary(debeziumMessage.getMessage());
+            message.setTimestamp(debeziumMessage.getPayload().getTimestamp());
+
+        } catch (Exception e) {
+            log.error("Error processing Kafka message", e);
+            throw e;
+        }
+        return message;
+    }
+
+    protected void handleCreate(IntegratedToolEventKafkaMessage message) {
         try {
             kafkaTemplate.send(getTopic(), message);
             log.info("Message sent to Kafka topic {}: {}", getTopic(), message);
@@ -27,13 +54,15 @@ public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> 
         }
     }
 
-    protected void handleRead(T message) {
+    protected void handleRead(IntegratedToolEventKafkaMessage message) {
         handleCreate(message);
     }
-    protected void handleUpdate(T message) {
+
+    protected void handleUpdate(IntegratedToolEventKafkaMessage message) {
         handleCreate(message);
     }
-    protected void handleDelete(T data) {
+
+    protected void handleDelete(IntegratedToolEventKafkaMessage data) {
     }
 
     @Override
@@ -41,6 +70,8 @@ public abstract class DebeziumKafkaMessageHandler<T, U extends DebeziumMessage> 
         return Destination.KAFKA;
     }
 
-    protected abstract String getTopic();
+    protected String getTopic() {
+        return topic;
+    }
 
 }

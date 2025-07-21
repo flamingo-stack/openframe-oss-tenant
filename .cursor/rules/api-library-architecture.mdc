@@ -1,0 +1,174 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# OpenFrame API Library Architecture
+
+## Overview
+OpenFrame uses a shared library approach to eliminate code duplication between GraphQL and REST APIs. The [api-library](mdc:openframe/libs/api-library) contains all common business logic, DTOs, and services.
+
+## Architecture Principles
+
+### Shared Business Logic
+- **DO**: Place all business logic in [api-library services](mdc:openframe/libs/api-library/src/main/java/com/openframe/api/service)
+- **DON'T**: Duplicate business logic between GraphQL and REST controllers
+- **Example**: [DeviceService](mdc:openframe/libs/api-library/src/main/java/com/openframe/api/service/DeviceService.java) handles device operations for both APIs
+
+### API-Specific Adapters
+- **GraphQL API**: Uses [openframe-api](mdc:openframe/services/openframe-api) with GraphQL-specific DTOs and mappers
+- **REST API**: Uses [external-api](mdc:openframe/services/external-api) with REST-specific DTOs and mappers
+- **Common DTOs**: Shared through [api-library DTOs](mdc:openframe/libs/api-library/src/main/java/com/openframe/api/dto)
+
+## Service Layer Pattern
+
+### Service Structure
+```
+api-library/
+├── service/           # Business logic services
+│   ├── DeviceService.java
+│   ├── DeviceFilterService.java
+│   └── TagService.java
+├── dto/              # Common DTOs
+│   ├── DeviceQueryResult.java
+│   ├── DeviceFilters.java
+│   └── PageInfo.java
+└── mapper/           # Internal mappings (if needed)
+```
+
+### Adding New Features
+1. **Create service in api-library** first with business logic
+2. **Add common DTOs** for data transfer
+3. **Create API-specific endpoints** that use the common service
+4. **Add mappers** to convert between common and API-specific DTOs
+
+## REST API Guidelines
+
+### Controller Pattern (Modern Spring Boot)
+- **DO**: Use DTO + Exceptions approach
+- **DON'T**: Use ResponseEntity everywhere
+- **Error Handling**: Use [ErrorResponse](mdc:openframe/libs/openframe-core/src/main/java/com/openframe/core/dto/ErrorResponse.java) from openframe-core
+
+```java
+// ✅ GOOD - Modern Spring Boot style
+@GetMapping("/{id}")
+@ResponseStatus(OK)
+public DeviceResponse getDevice(@PathVariable String id) {
+    Device device = deviceService.findById(id)
+        .orElseThrow(() -> new DeviceNotFoundException("Device not found: " + id));
+    return deviceMapper.toResponse(device);
+}
+
+// ❌ BAD - Old ResponseEntity style
+@GetMapping("/{id}")
+public ResponseEntity<DeviceResponse> getDevice(@PathVariable String id) {
+    return deviceService.findById(id)
+        .map(device -> ResponseEntity.ok(deviceMapper.toResponse(device)))
+        .orElse(ResponseEntity.notFound().build());
+}
+```
+
+### Exception Handling
+- **Global Handler**: Use [GlobalExceptionHandler](mdc:openframe/services/external-api/src/main/java/com/openframe/external/exception/GlobalExceptionHandler.java)
+- **Consistent Errors**: All errors return [ErrorResponse](mdc:openframe/libs/openframe-core/src/main/java/com/openframe/core/dto/ErrorResponse.java)
+- **Proper Status Codes**: Use @ResponseStatus annotations
+
+## GraphQL API Guidelines
+
+### DataFetcher Pattern
+- **Async Operations**: Keep CompletableFuture when there's real parallelism
+- **Batch Loading**: Use DataLoader for N+1 prevention
+- **Service Integration**: Call api-library services directly
+
+```java
+// ✅ GOOD - Async when beneficial
+@DgsQuery
+public CompletableFuture<DeviceFilters> deviceFilters(@InputArgument DeviceFilterInput filter) {
+    return deviceFilterService.getDeviceFilters(filter); // Parallel DB calls inside
+}
+
+// ✅ GOOD - Sync when appropriate
+@DgsQuery
+public Device device(@InputArgument String id) {
+    return deviceService.findById(id)
+        .orElseThrow(() -> new DeviceNotFoundException("Device not found: " + id));
+}
+```
+
+## Performance Patterns
+
+### Parallel Processing
+- **Use CompletableFuture** for genuine parallel operations (like [DeviceFilterService](mdc:openframe/libs/api-library/src/main/java/com/openframe/api/service/DeviceFilterService.java))
+- **Batch Operations**: Use batch queries to reduce N+1 problems
+- **Caching**: Implement at service layer, not controller layer
+
+### Database Strategy
+- **MongoDB**: Primary storage for entities
+- **Apache Pinot**: Analytics and aggregations
+- **Redis**: Caching and session storage
+
+## Dependency Management
+
+### Module Dependencies
+```
+external-api → api-library → openframe-core
+openframe-api → api-library → openframe-core
+```
+
+### Maven Configuration
+- **Versions**: Managed in parent POM
+- **Shared Dependencies**: Include in api-library
+- **API-Specific Dependencies**: Keep in respective modules
+
+## Common Patterns
+
+### DTO Conversion
+```java
+// Service returns common DTO
+DeviceQueryResult result = deviceService.queryDevices(criteria);
+
+// API-specific mapper converts to API DTO
+DeviceResponse response = deviceMapper.toDeviceResponse(result);
+```
+
+### Error Handling
+```java
+// Service throws domain exception
+throw new DeviceNotFoundException("Device not found: " + id);
+
+// GlobalExceptionHandler converts to ErrorResponse
+@ExceptionHandler(DeviceNotFoundException.class)
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public ErrorResponse handleDeviceNotFound(DeviceNotFoundException ex) {
+    return new ErrorResponse("DEVICE_NOT_FOUND", ex.getMessage());
+}
+```
+
+## Testing Strategy
+
+### Service Layer Tests
+- **Unit Tests**: Test business logic in api-library services
+- **Integration Tests**: Test database interactions
+- **Mock External Dependencies**: Use @MockBean for external services
+
+### API Layer Tests
+- **Controller Tests**: Test mapping and validation
+- **Integration Tests**: Test full request/response cycle
+- **Contract Tests**: Ensure API compatibility
+
+## Migration Guidelines
+
+### Adding New Endpoints
+1. **Identify Common Logic**: Extract to api-library service
+2. **Create Common DTOs**: For data transfer between layers
+3. **Add REST Endpoint**: In external-api with proper mapping
+4. **Add GraphQL Endpoint**: In openframe-api with same service
+5. **Update Documentation**: Both OpenAPI and GraphQL schema
+
+### Refactoring Existing Code
+1. **Extract Business Logic**: Move from controllers to api-library services
+2. **Unify DTOs**: Replace duplicate DTOs with common ones
+3. **Update Mappers**: Convert between API-specific and common DTOs
+4. **Remove Duplication**: Delete old duplicate services/DTOs
+5. **Update Dependencies**: Ensure proper module structure
