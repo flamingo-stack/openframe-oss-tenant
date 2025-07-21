@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/platform/promtail/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/kafka-stream
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/kafka-stream
       path: manifests/platform/promtail
 
   destination:

@@ -12,7 +12,7 @@ spec:
 
   sources:
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: main
+      targetRevision: feature/kafka-stream
       path: manifests/microservices/openframe-client
 
   destination:
