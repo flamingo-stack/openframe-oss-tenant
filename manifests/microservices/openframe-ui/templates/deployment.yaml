@@ -24,19 +24,19 @@ spec:
           env:
             - name: VITE_API_URL
               {{- if eq .Values.deployment.ingress "ngrok" }}
-              value: {{ printf "%s/api" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
+              value: {{ printf "https://%s/api" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
               {{- else }}
               value: "https://openframe-gateway.192.168.100.100.nip.io/api"
               {{- end }}
             - name: VITE_CLIENT_URL
               {{- if eq .Values.deployment.ingress "ngrok" }}
-              value: {{ printf "%s/client" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
+              value: {{ printf "https://%s/client" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
               {{- else }}
               value: "https://openframe-gateway.192.168.100.100.nip.io/client"
               {{- end }}
             - name: VITE_GATEWAY_URL
               {{- if eq .Values.deployment.ingress "ngrok" }}
-              value: {{ required "deployment.url is required for ngrok ingress" .Values.deployment.url | quote }}
+              value: {{ printf "https://%s" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
               {{- else }}
               value: "https://openframe-gateway.192.168.100.100.nip.io"
               {{- end }}
