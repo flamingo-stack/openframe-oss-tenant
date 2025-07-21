@@ -70,9 +70,6 @@ public class KafkaStreamsConfig {
         
         // Serialization configuration - using String for keys, custom Serde for values
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-        // Note: We'll use specific Serde for each stream instead of default value Serde
-        
-        // Processing configuration
         props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
         props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 1);
         

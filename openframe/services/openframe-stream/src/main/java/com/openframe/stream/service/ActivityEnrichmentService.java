@@ -81,42 +81,25 @@ public class ActivityEnrichmentService {
     }
 
     private ActivityMessage enrichActivityWithHostInfo(ActivityMessage activity, HostActivityMessage hostActivity) {
-        if (activity == null) {
+        if (activity == null || activity.getPayload() == null || activity.getPayload().getAfter() == null) {
+            log.warn("Activity or its data is null, skipping enrichment");
             return activity;
         }
+        Activity activityData = activity.getPayload().getAfter();
 
-        try {
-            Activity activityData = activity.getPayload().getAfter();
-            if (activityData == null) {
-                log.warn("Activity data is null, skipping enrichment");
-                return activity;
-            }
-
-            // If we have HostActivity data, extract host_id
-            if (hostActivity != null && hostActivity.getPayload() != null && hostActivity.getPayload().getAfter() != null) {
-                HostActivity hostActivityData = hostActivity.getPayload().getAfter();
-                Integer hostId = hostActivityData.getHostId();
-
-                if (hostId != null) {
-                    activityData.setHostId(hostId);
-                    log.debug("Set hostId {} for activity {}", hostId, activityData.getId());
-
-                    // Try to get agentId from cache or database
-                    String agentId = hostAgentCacheService.getAgentId(hostId);
-                    if (agentId != null) {
-                        activityData.setAgentId(agentId);
-                        log.debug("Enriched activity {} with agentId: {}", activityData.getId(), agentId);
-                    } else {
-                        log.warn("Could not find agentId for hostId: {}", hostId);
-                    }
-                }
-            } else {
-                log.debug("No HostActivity data found for activity {}", activityData.getId());
-            }
-
-        } catch (Exception e) {
-            log.error("Error enriching activity: {}", e.getMessage(), e);
+        if (hostActivity == null || hostActivity.getPayload() == null || hostActivity.getPayload().getAfter() == null) {
+            log.debug("No HostActivity data found for activity {}", activityData.getId());
+            return activity;
         }
+        Integer hostId = hostActivity.getPayload().getAfter().getHostId();
+        if (hostId == null) {
+            log.debug("HostActivity for activity {} has null hostId", activityData.getId());
+            return activity;
+        }
+        activityData.setHostId(hostId);
+        log.debug("Set hostId {} for activity {}", hostId, activityData.getId());
+
+        activityData.setAgentId(hostAgentCacheService.getAgentId(hostId));
 
         return activity;
     }
