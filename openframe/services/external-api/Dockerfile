@@ -1,27 +1,30 @@
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
-
-# Metadata
-LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
+# --- Builder stage ---
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
+COPY . .
 
-COPY target/*.jar app.jar
+RUN mvn clean install -pl openframe/services/external-api -am -Dcompress -DskipTests
+RUN pwd
+RUN ls -l
+RUN find . -name "*.jar" -type f
 
-# Add debugging tools
+
+# --- Runtime image ---
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
+
+LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
+WORKDIR /app
+
+COPY --from=builder /app/openframe/services/external-api/target/*.jar app.jar
+
 RUN apk add --no-cache iputils bind-tools netcat-openbsd curl && rm -rf /var/cache/apk/*
-
 EXPOSE 8092
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8092/management/v1/health || exit 1
 
-# Create a non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-# Change ownership of the application files
 RUN chown -R appuser:appgroup /app
-
-# Switch to the new user
 USER appuser
 
 ENTRYPOINT ["/bin/sh", "-c", "export CONTAINER_IP=$(hostname -i) && java -jar app.jar"]
