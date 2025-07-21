@@ -1,5 +1,5 @@
 deployment:
-  ingress: nat
+  ingress: localhost
   
 registerJob:
   enabled: true

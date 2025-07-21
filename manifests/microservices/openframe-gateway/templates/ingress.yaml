@@ -19,7 +19,7 @@ spec:
                 port:
                   number: 8100
 
-{{- else if eq .Values.deployment.ingress "nat" }}
+{{- else if eq .Values.deployment.ingress "localhost" }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

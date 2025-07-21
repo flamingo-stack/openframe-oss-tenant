@@ -1,6 +1,5 @@
 deployment:
-  ingress: ngrok
-  url: rhino-comic-openly.ngrok-free.app
+  ingress: localhost
 
 registerJob:
   enabled: true
@@ -10,6 +9,3 @@ servicemonitor:
 image:
   repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
   tag: latest
-
-allowedIPs:
-  - 213.111.64.191/32
