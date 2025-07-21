@@ -39,12 +39,6 @@ registry:
 registerJob:
   enabled: true       # Enable registration job for integrated tools
 
-apps:
-  openframe-config:
-    values:
-      config:
-        branch: main  # Git branch for configuration service
-
 # =============================================================================
 # 2. APPS VALUES (apps/values.yaml)
 # =============================================================================
@@ -68,30 +62,53 @@ apps:
     project: platform # Use platform ArgoCD project
     namespace: platform  # Deploy to platform namespace
     syncWave: "0"     # Deploy in sync wave 0
+    values:
+      registerJob:
+        enabled: true
+      ngrok-operator:
+        credentials:
+          apiKey: ""
+          authtoken: ""
     
   cert-manager:
     enabled: true     # Certificate management for TLS
     project: platform # Use platform ArgoCD project
     namespace: platform  # Deploy to platform namespace
     syncWave: "0"     # Deploy in sync wave 0
+    values:
+      registerJob:
+        enabled: true
     
   ingress-nginx:
     enabled: true     # NGINX ingress controller
     project: platform # Use platform ArgoCD project
     namespace: platform  # Deploy to platform namespace
     syncWave: "0"     # Deploy in sync wave 0
+    values:
+      registerJob:
+        enabled: true
     
   promtail:
     enabled: true     # Log aggregation agent
     project: platform # Use platform ArgoCD project
     namespace: platform  # Deploy to platform namespace
     syncWave: "0"     # Deploy in sync wave 0
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
     
   loki:
     enabled: true     # Log aggregation and storage
     project: platform # Use platform ArgoCD project
     namespace: platform  # Deploy to platform namespace
     syncWave: "0"     # Deploy in sync wave 0
+    values:
+      registerJob:
+        enabled: true
+      servicemonitor:
+        enabled: true
     
   prometheus:
     enabled: true     # Metrics collection and storage
@@ -100,6 +117,9 @@ apps:
     syncWave: "0"     # Deploy in sync wave 0
     syncOptions:
       ServerSideApply: true  # Use server-side apply for this app
+    values:
+      registerJob:
+        enabled: true
       
   grafana:
     enabled: true     # Metrics visualization and dashboards
@@ -108,6 +128,9 @@ apps:
     syncWave: "0"     # Deploy in sync wave 0
     syncOptions:
       ServerSideApply: true  # Use server-side apply for this app
+    values:
+      registerJob:
+        enabled: true
 
   # =============================================================================
   # SYNC WAVE 1: Datasources (Data Layer)
@@ -250,6 +273,8 @@ apps:
       image:
         repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
         tag: latest
+      allowedIPs:
+        - 0.0.0.0/0
     
   openframe-client: 
     enabled: true     # Client service

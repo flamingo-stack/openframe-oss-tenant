@@ -30,9 +30,6 @@ export -f flamingo
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help
 
-source "${SCRIPT_DIR}/functions/add_loopback_ip.sh"
-export -f add_loopback_ip
-
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
@@ -119,7 +116,6 @@ case "$ARG" in
     ;;
   s|start)
     start_spinner "Starting cluster"
-    add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     k3d cluster start $K3D_CLUSTER_NAME > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     stop_spinner_and_return_code $? || exit 1
     ;;
