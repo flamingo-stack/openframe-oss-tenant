@@ -5,9 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-/**
- * Generic DebeziumMessage for type-safe message handling
- */
+
 @Data
 @SuperBuilder
 @NoArgsConstructor

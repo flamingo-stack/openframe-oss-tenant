@@ -19,11 +19,11 @@ spec:
         valueFiles:
           - "$values/manifests/datasources/redis/helm-values.yaml"  # name is hardcoded
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/kafka-stream
+      targetRevision: main
       ref: values
     # Extra resources
     - repoURL: https://github.com/Flamingo-CX/openframe.git
-      targetRevision: feature/kafka-stream
+      targetRevision: main
       path: manifests/datasources/redis
 
   destination:
