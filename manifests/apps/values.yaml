@@ -22,7 +22,7 @@ apps:
     namespace: platform
     syncWave: "0"
   cert-manager:
-    enabled: true
+    enabled: false
     project: platform
     namespace: platform
     syncWave: "0"
