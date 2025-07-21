@@ -2,7 +2,7 @@
 apiVersion: ngrok.k8s.ngrok.com/v1alpha1
 kind: NgrokTrafficPolicy
 metadata:
-  name: restrict-ips
+  name: openframe-gateway
 spec:
   policy:
     on_http_request:
@@ -11,5 +11,11 @@ spec:
             config:
               enforce: true
               allow:
-                - 178.133.28.182/32
+              {{- if .Values.allowedIPs }}
+                {{- range .Values.allowedIPs }}
+                - {{ . | quote }}
+                {{- end }}
+              {{- else }}
+                - "0.0.0.0/0"
+              {{- end }}
 {{- end }}
