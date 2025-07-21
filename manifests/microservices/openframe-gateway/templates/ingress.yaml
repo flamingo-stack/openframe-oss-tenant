@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: ngrok
   rules:
-    - host: "reindeer-suitable-genuinely.ngrok-free.app"
+    - host: {{ required "deployment.url is required for ngrok ingress" .Values.deployment.url | quote }}
       http:
         paths:
           - path: /
