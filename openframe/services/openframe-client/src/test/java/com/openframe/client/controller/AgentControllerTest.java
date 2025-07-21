@@ -70,13 +70,12 @@ class AgentControllerTest {
 
     private void setupTestData() {
         registrationRequest = new AgentRegistrationRequest();
-        registrationRequest.setMachineId("test-machine");
         registrationRequest.setHostname("test-host");
         registrationRequest.setIp("192.168.1.1");
         registrationRequest.setMacAddress("00:11:22:33:44:55");
         registrationRequest.setOsUuid("test-os-uuid");
         registrationRequest.setAgentVersion("1.0.0");
-        registrationResponse = new AgentRegistrationResponse("client-id", "client-secret");
+        registrationResponse = new AgentRegistrationResponse("test-machine-id", "client-id", "client-secret");
 
         toolConnectionRequest = new ToolConnectionRequest();
         toolConnectionRequest.setOpenframeAgentId(OPENFRAME_AGENT_ID);
@@ -102,6 +101,7 @@ class AgentControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registrationRequest)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.machineId").value("test-machine-id"))
                 .andExpect(jsonPath("$.clientId").value("client-id"))
                 .andExpect(jsonPath("$.clientSecret").value("client-secret"));
     }
@@ -256,19 +256,6 @@ class AgentControllerTest {
     }
 
     @Test
-    void registerAgent_WithMissingRequiredFields_ReturnsBadRequest() throws Exception {
-        AgentRegistrationRequest invalidRequest = new AgentRegistrationRequest();
-
-        mockMvc.perform(post("/api/agents/register")
-                        .header("X-Initial-Key", "test-key")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("bad_request"))
-                .andExpect(jsonPath("$.message").value("Machine ID is required"));
-    }
-
-    @Test
     void registerAgent_WithDuplicateMachineId_ReturnsConflict() throws Exception {
         when(agentService.registerAgent(eq("test-key"), any(AgentRegistrationRequest.class)))
                 .thenThrow(new DuplicateConnectionException("Machine already registered"));
@@ -310,7 +297,6 @@ class AgentControllerTest {
         verify(agentService).registerAgent(
                 eq("test-key"),
                 argThat(request ->
-                        request.getMachineId().equals("test-machine") &&
                                 request.getHostname().equals("test-host") &&
                                 request.getIp().equals("192.168.1.1") &&
                                 request.getMacAddress().equals("00:11:22:33:44:55") &&
