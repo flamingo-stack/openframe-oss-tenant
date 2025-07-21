@@ -7,8 +7,18 @@
 <body>
 <h1>NATS WebSocket</h1>
 
-<input id="msg" placeholder="Введите сообщение" />
-<button onclick="send()">Отправить</button>
+<section>
+    <h2>Subscribe</h2>
+    <input id="subTopic" placeholder="Topic to subscribe" />
+    <button onclick="subscribe()">Subscribe</button>
+</section>
+
+<section>
+    <h2>Publish</h2>
+    <input id="pubTopic" placeholder="Topic to publish" />
+    <input id="pubMsg" placeholder="Message to publish" />
+    <button onclick="publish()">Publish</button>
+</section>
 
 <ul id="log"></ul>
 
@@ -25,29 +35,42 @@
                 servers: "ws://localhost:8100/ws/nats"
             });
             console.log("Connected to NATS!");
-            
-            // Subscribe to messages
-            const sub = nc.subscribe("test");
-            for await (const msg of sub) {
-                const message = sc.decode(msg.data);
-                addToLog(`Received: ${message}`);
-            }
+            addToLog("Connected to NATS server");
         } catch (error) {
             console.error("Error connecting to NATS:", error);
         }
     }
 
-    // Add send function
-    window.send = async function() {
-        const message = document.getElementById('msg').value;
-        if (message && nc && nc.isClosed() === false) {
-            try {
-                nc.publish("test", sc.encode(message));
-                addToLog(`Sent: ${message}`);
-                document.getElementById('msg').value = '';
-            } catch (error) {
-                console.error("Error sending message:", error);
+    // Subscribe to a topic entered by the user
+    window.subscribe = async function () {
+        const topic = document.getElementById('subTopic').value.trim();
+        if (!topic || !nc || nc.isClosed()) {
+            return;
+        }
+        addToLog(`Subscribing to "${topic}" ...`);
+        const sub = nc.subscribe(topic);
+        (async () => {
+            for await (const msg of sub) {
+                const message = sc.decode(msg.data);
+                addToLog(`[${topic}] Received: ${message}`);
             }
+        })();
+        document.getElementById('subTopic').value = '';
+    };
+
+    // Publish a message to the specified topic
+    window.publish = async function () {
+        const topic = document.getElementById('pubTopic').value.trim();
+        const message = document.getElementById('pubMsg').value;
+        if (!topic || !message || !nc || nc.isClosed()) {
+            return;
+        }
+        try {
+            nc.publish(topic, sc.encode(message));
+            addToLog(`[${topic}] Sent: ${message}`);
+            document.getElementById('pubMsg').value = '';
+        } catch (error) {
+            console.error("Error publishing message:", error);
         }
     };
 

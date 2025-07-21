@@ -6,3 +6,76 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+  
+  cloud:
+    stream:
+      # Set NATS as the default binder
+      default-binder: nats
+      
+      # Function definition for consumers
+      function:
+        definition: deviceDataConsumer
+      
+      # Binding configurations
+      bindings:
+        # Consumer binding
+        deviceDataConsumer-in-0:
+          destination: device.*.data
+          group: openframe-client
+          content-type: application/json
+          binder: nats
+        
+        # Default output binding for StreamBridge
+        output:
+          destination: default-output
+          content-type: application/json
+          binder: nats
+      
+      # NATS specific configuration
+      nats:
+        binder:
+          # NATS server connection
+          servers: nats://localhost:4222
+          
+        # Binding-specific NATS configuration
+        bindings:
+          deviceDataConsumer-in-0:
+            consumer:
+              subject: device.*.data
+              queue-group: openframe-client
+              max-messages: 100
+              ack-wait: 30s
+          
+          output:
+            producer:
+              subject-pattern: true
+      
+      # Enable dynamic destinations for StreamBridge
+      dynamic-destinations:
+        - device-commands-out-0
+
+# NATS connection properties
+nats:
+  spring:
+    server: nats://localhost:4222
+  connection:
+    timeout: 5s
+    max-reconnect: 10
+    reconnect-wait: 2s
+    
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,bindings
+  endpoint:
+    health:
+      show-details: always
+
+# Logging configuration
+logging:
+  level:
+    org.springframework.cloud.stream: DEBUG
+    io.nats: DEBUG
+    com.openframe.client: DEBUG

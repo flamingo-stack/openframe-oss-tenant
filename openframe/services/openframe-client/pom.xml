@@ -51,6 +51,13 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
+        <!-- Spring Cloud Stream with NATS Binder -->
+        <dependency>
+            <groupId>io.nats</groupId>
+            <artifactId>nats-spring-cloud-stream-binder</artifactId>
+            <version>0.6.2+3.5</version>
+        </dependency>
+
     </dependencies>
 
     <build>
