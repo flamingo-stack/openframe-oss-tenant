@@ -1,11 +1,13 @@
 package com.openframe.data.config;
 
+import com.mongodb.reactivestreams.client.MongoClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.cassandra.repository.config.EnableCassandraRepositories;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver;
 import org.springframework.data.mongodb.core.convert.DbRefResolver;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
@@ -27,23 +29,6 @@ public class DataConfiguration {
         public MappingMongoConverter mappingMongoConverter(MongoDatabaseFactory factory,
                                                            MongoMappingContext context,
                                                            MongoCustomConversions conversions) {
-            DbRefResolver dbRefResolver = new DefaultDbRefResolver(factory);
-            MappingMongoConverter converter = new MappingMongoConverter(dbRefResolver, context);
-            converter.setCustomConversions(conversions);
-            converter.setMapKeyDotReplacement("__dot__");
-            return converter;
-        }
-    }
-
-    @Configuration
-    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
-    @EnableReactiveMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
-    public static class ReactiveMongoConfiguration {
-
-        @Bean
-        public MappingMongoConverter reactiveMappingMongoConverter(MongoDatabaseFactory factory,
-                                                                   MongoMappingContext context,
-                                                                   MongoCustomConversions conversions) {
             DbRefResolver dbRefResolver = new DefaultDbRefResolver(factory);
             MappingMongoConverter converter = new MappingMongoConverter(dbRefResolver, context);
             converter.setCustomConversions(conversions);
