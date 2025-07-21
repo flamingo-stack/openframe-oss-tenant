@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: openframe-gateway
   annotations:
-    k8s.ngrok.com/traffic-policy: restrict-ips
+    k8s.ngrok.com/traffic-policy: openframe-gateway
 spec:
   ingressClassName: ngrok
   rules:
