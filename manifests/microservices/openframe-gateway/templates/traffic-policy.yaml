@@ -11,5 +11,5 @@ spec:
             config:
               enforce: true
               allow:
-                - 178.133.28.182
+                - 0.0.0.0/0
 {{- end }}
