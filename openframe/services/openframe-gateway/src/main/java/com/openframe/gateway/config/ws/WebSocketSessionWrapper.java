@@ -26,11 +26,37 @@ public class WebSocketSessionWrapper implements WebSocketSession {
     @Override
     public Flux<WebSocketMessage> receive() {
         return delegate.receive()
-                .map(message -> {
-                    String payloadAsText = message.getPayloadAsText();
-                    extractAndLogMessageInfo(payloadAsText);
-                    return message;
+                .handle((message, sink) -> {
+                    String payload = message.getPayloadAsText();
+                    extractAndLogMessageInfo(payload);
+                    
+                    // Check if this is a SUB operation for a topic containing "1234"
+                    if (isRestrictedSubscription(payload)) {
+                        // Send rejection message and don't proxy the original
+                        delegate.send(Mono.just(delegate.textMessage("Subscription denied: Access to topics containing '1234' is restricted")))
+                                .subscribe();
+                        log.warn("Blocked subscription attempt to restricted topic containing '1234'");
+                    } else {
+                        // Proxy the original message
+                        sink.next(message);
+                    }
                 });
+    }
+    
+    private boolean isRestrictedSubscription(String payload) {
+        if (payload == null || payload.trim().isEmpty()) {
+            return false;
+        }
+        
+        Matcher matcher = MESSAGE_PATTERN.matcher(payload.trim());
+        if (matcher.matches()) {
+            String operationType = matcher.group(1); // PUB or SUB
+            String topicName = matcher.group(2);     // topic name
+            
+            return "SUB".equals(operationType) && topicName.contains("1234");
+        }
+        
+        return false;
     }
     
     private void extractAndLogMessageInfo(String payload) {
