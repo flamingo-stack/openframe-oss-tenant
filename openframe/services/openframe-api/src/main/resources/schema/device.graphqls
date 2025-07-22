@@ -45,27 +45,27 @@ input PaginationInput {
 
 type Machine {
     id: ID!
-    machineId: String!
+    machineId: String!,
     ip: String
     macAddress: String
     osUuid: String
     agentVersion: String
-    status: DeviceStatus!
+    status: DeviceStatus
     lastSeen: DateTime
-    organizationId: String!
+    organizationId: String
     hostname: String
     displayName: String
     serialNumber: String
     manufacturer: String
     model: String
-    type: DeviceType!
+    type: DeviceType
     osType: String
     osVersion: String
     osBuild: String
     timezone: String
-    registeredAt: DateTime!
-    updatedAt: DateTime!
-    tags: [Tag!]!
+    registeredAt: DateTime
+    updatedAt: DateTime
+    tags: [Tag]
 }
 
 type Tag {

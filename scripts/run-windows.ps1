@@ -86,16 +86,6 @@ function Install-Tool {
             Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
             Move-Item -Path "$extractPath/windows-amd64/helm.exe" -Destination $toolInfo.installPath -Force
             Remove-Item -Path $extractPath -Recurse -Force
-        }
-        elseif ($tool -eq "kustomize") {
-            $extractPath = Join-Path $tempDir "kustomize-extract"
-            if (Test-Path $extractPath) {
-                Remove-Item -Path $extractPath -Recurse -Force
-            }
-            New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
-            Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
-            Move-Item -Path (Join-Path $extractPath "kustomize.exe") -Destination $toolInfo.installPath -Force
-            Remove-Item -Path $extractPath -Recurse -Force
         }elseif ($tool -eq "telepresence") {
             $extractPath = Join-Path $tempDir "telepresence-extract"
             if (Test-Path $extractPath) {

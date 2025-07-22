@@ -1,0 +1,204 @@
+
+apps:
+  # example-app:
+  #   enabled: true
+  #   project: default
+  #   namespace: default
+  #   syncWave: "0"
+  #   values:
+  #     registerJob:
+  #       enabled: false
+  #     servicemonitor:
+  #       enabled: false
+
+  namespace-platform:
+    enabled: true
+    project: default
+    namespace: platform
+    syncWave: "0"
+  ngrok-operator:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+  cert-manager:
+    enabled: false
+    project: platform
+    namespace: platform
+    syncWave: "0"
+  ingress-nginx:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+  promtail:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+  loki:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+  prometheus:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+    syncOptions:
+      ServerSideApply: true
+  grafana:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+    syncOptions:
+      ServerSideApply: true
+
+  namespace-datasources:
+    enabled: true
+    project: default
+    namespace: datasources
+    syncWave: "1"
+  mongodb:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  debezium-connect:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  pinot: 
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  zookeeper:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  cassandra:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  kafka:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  mongodb-exporter:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  redis:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  redis-exporter:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+
+  namespace-microservices:
+    enabled: true
+    project: default
+    namespace: microservices
+    syncWave: "2"
+  openframe-config:
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+    values:
+      config:
+        branch: main
+  openframe-management:
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+  external-api: 
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+  openframe-api: 
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+  openframe-gateway: 
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+  openframe-client: 
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+  openframe-stream: 
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+  openframe-ui: 
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
+
+  namespace-client-tools:
+    enabled: true
+    project: default
+    namespace: client-tools
+    syncWave: "2"
+  mongo-express:
+    enabled: true
+    project: client-tools
+    namespace: client-tools
+    syncWave: "2"
+  kafka-ui:
+    enabled: true
+    project: client-tools
+    namespace: client-tools
+    syncWave: "2"
+  telepresence:
+    enabled: true
+    project: client-tools
+    namespace: client-tools
+    syncWave: "2"
+
+  namespace-integrated-tools:
+    enabled: true
+    project: default
+    namespace: integrated-tools
+    syncWave: "3"
+  authentik: 
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  fleetmdm: 
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  meshcentral: 
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  tactical-rmm: 
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"

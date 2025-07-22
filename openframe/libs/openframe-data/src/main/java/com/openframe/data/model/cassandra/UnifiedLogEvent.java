@@ -54,8 +54,8 @@ public class UnifiedLogEvent {
         private String eventType;
 
         /** Cluster by event timestamp (descending for recent-first queries). */
-        @PrimaryKeyColumn(name = "timestamp", ordinal = 3, type = PrimaryKeyType.CLUSTERED, ordering = Ordering.DESCENDING)
-        private Instant timestamp;
+        @PrimaryKeyColumn(name = "event_timestamp", ordinal = 3, type = PrimaryKeyType.CLUSTERED, ordering = Ordering.DESCENDING)
+        private Instant eventTimestamp;
 
         /** Cluster by original event ID from the tool, for uniqueness. */
         @PrimaryKeyColumn(name = "tool_event_id", ordinal = 4, type = PrimaryKeyType.CLUSTERED)

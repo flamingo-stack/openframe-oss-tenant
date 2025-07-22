@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AgentRegistrationResponse {
+
+    private String machineId;
     private String clientId;
     private String clientSecret;
 } 

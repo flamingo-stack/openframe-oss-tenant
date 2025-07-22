@@ -8,9 +8,6 @@ import lombok.Data;
 @Data
 public class AgentRegistrationRequest {
     // Core identification
-    @NotBlank(message = "Machine ID is required")
-    private String machineId;   // Same as in OAuthClient, used for authentication and as primary ID
-
     private String hostname;
     private String organizationId;
 

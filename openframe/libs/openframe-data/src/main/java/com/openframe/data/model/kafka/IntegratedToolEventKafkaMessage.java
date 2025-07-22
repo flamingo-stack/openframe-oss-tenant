@@ -12,5 +12,5 @@ public class IntegratedToolEventKafkaMessage {
     private String eventType;
     private String severity;
     private String summary;
-    private Long timestamp;
+    private Long eventTimestamp;
 }

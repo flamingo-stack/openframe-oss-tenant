@@ -1,0 +1,8 @@
+global:
+  registerJob:
+    enabled: true
+
+postgres:
+  image: 
+    repo: ghcr.io/flamingo-cx/openframe/authentik-postgresql
+    tag: latest

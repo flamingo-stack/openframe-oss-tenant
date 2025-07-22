@@ -38,19 +38,7 @@ public class DataConfiguration {
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
     @EnableReactiveMongoRepositories(basePackages = "com.openframe.data.repository.mongo")
-    public static class ReactiveMongoConfiguration {
-
-        @Bean
-        public MappingMongoConverter reactiveMappingMongoConverter(MongoDatabaseFactory factory,
-                                                                   MongoMappingContext context,
-                                                                   MongoCustomConversions conversions) {
-            DbRefResolver dbRefResolver = new DefaultDbRefResolver(factory);
-            MappingMongoConverter converter = new MappingMongoConverter(dbRefResolver, context);
-            converter.setCustomConversions(conversions);
-            converter.setMapKeyDotReplacement("__dot__");
-            return converter;
-        }
-    }
+    public static class ReactiveMongoConfiguration {}
 
     @Configuration
     @ConditionalOnProperty(name = "spring.data.cassandra.enabled", havingValue = "true", matchIfMissing = false)

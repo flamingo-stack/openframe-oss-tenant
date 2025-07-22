@@ -1,0 +1,17 @@
+global:
+  registerJob:
+    enabled: true
+
+tactical:
+  frontend:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-frontend
+      tag: latest
+  nginx:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-nginx
+      tag: latest
+  base:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-base
+      tag: latest

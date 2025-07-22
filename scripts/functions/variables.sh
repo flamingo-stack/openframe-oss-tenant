@@ -6,7 +6,7 @@ export DOMAIN="${DOMAIN:-${IP}.nip.io}"
 
 export OS="$(uname)"         # Operating system
 export K8S_VERSION="v1.32.3" # Kubernetes version
-export ARGOCD_VERSION="3.0.3"
+export ARGOCD_VERSION="3.0.11"
 
 export SILENT="${SILENT:-false}"
 

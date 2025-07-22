@@ -1,0 +1,46 @@
+registerJob:
+  enabled: true
+
+
+kube-prometheus-stack:
+  global:
+    imagePullSecrets:
+      - name: docker-pat-secret
+
+  grafana:
+    enabled: false
+
+  alertmanager:
+    enabled: false
+
+  prometheus:
+    ingress:
+      enabled: false
+        
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      probeSelectorNilUsesHelmValues: false
+      scrapeConfigSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      externalPrefixNilUsesHelmValues: false
+      scrapeInterval: 15s
+      evaluationInterval: 15s
+      retention: 15d  
+      
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 2Gi
+          cpu: 1
+      
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: 
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
