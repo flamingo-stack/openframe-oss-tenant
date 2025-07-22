@@ -150,6 +150,29 @@ pub fn get_logs_directory() -> PathBuf {
     }
 }
 
+/// Returns the platform-specific secured directory path (admin/root access only)
+pub fn get_secured_directory() -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        let program_data =
+            std::env::var_os("ProgramData").expect("ProgramData environment variable not found");
+        let mut path = PathBuf::from(program_data);
+        path.push("OpenFrame");
+        path.push("secured");
+        path
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        PathBuf::from("/Library/Application Support/OpenFrame/secured")
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        PathBuf::from("/var/lib/openframe/secured")
+    }
+}
+
 /// Sets the correct platform-specific permissions on a directory
 pub fn set_directory_permissions(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
@@ -214,10 +237,70 @@ pub fn set_directory_permissions(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Sets admin-only permissions on a secured directory
+pub fn set_secured_directory_permissions(path: &Path) -> io::Result<()> {
+    #[cfg(target_os = "windows")]
+    {
+        info!(
+            "Setting Windows secured directory permissions for: {}",
+            path.display()
+        );
+
+        // On Windows, only give Administrators full control, remove all other access
+        let _ = Command::new("icacls")
+            .args([
+                path.to_str().unwrap(),
+                "/inheritance:r", // Remove inherited permissions
+                "/grant:r",
+                "Administrators:(OI)(CI)F", // Only admins get full control
+            ])
+            .status();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        info!(
+            "Setting macOS secured directory permissions for: {}",
+            path.display()
+        );
+
+        // Set ownership to root:wheel and 700 permissions (owner only)
+        let _ = Command::new("chown")
+            .args(["-R", "root:wheel", path.to_str().unwrap()])
+            .status();
+        let _ = Command::new("chmod")
+            .args(["-R", "700", path.to_str().unwrap()])
+            .status();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        info!(
+            "Setting Linux secured directory permissions for: {}",
+            path.display()
+        );
+
+        #[cfg(unix)]
+        {
+            // Set permissions to 700 (rwx------) - only owner can access
+            let permissions = fs::Permissions::from_mode(0o700);
+            fs::set_permissions(path, permissions)?;
+
+            // Set ownership to root:root
+            let _ = Command::new("chown")
+                .args(["-R", "root:root", path.to_str().unwrap()])
+                .status();
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Debug, Clone)]
 pub struct DirectoryManager {
     logs_dir: PathBuf,
     app_support_dir: PathBuf,
+    secured_dir: PathBuf,
     user_logs_dir: Option<PathBuf>, // For per-user logs when needed
 }
 
@@ -227,15 +310,17 @@ impl DirectoryManager {
         Self {
             logs_dir: get_logs_directory(),
             app_support_dir: get_app_support_directory(),
+            secured_dir: get_secured_directory(),
             user_logs_dir: None,
         }
     }
 
     /// Creates a new DirectoryManager with custom directories
-    pub fn with_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf) -> Self {
+    pub fn with_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
         Self {
             logs_dir,
             app_support_dir,
+            secured_dir: secured_dir,
             user_logs_dir: None,
         }
     }
@@ -251,6 +336,7 @@ impl DirectoryManager {
         Self {
             logs_dir: system_logs_dir,
             app_support_dir: system_app_dir,
+            secured_dir: get_secured_directory(),
             user_logs_dir: Some(user_logs),
         }
     }
@@ -258,12 +344,24 @@ impl DirectoryManager {
     /// Creates a development mode DirectoryManager that only uses user directories
     pub fn for_development() -> Self {
         let user_logs = Self::get_user_logs_directory();
-
+        
         // In development mode, use user logs for everything to avoid permission issues
         Self {
             logs_dir: user_logs.clone(),
             app_support_dir: user_logs.clone(),
+            secured_dir: user_logs.clone(),
             user_logs_dir: Some(user_logs),
+        }
+    }
+
+    /// Checks if this DirectoryManager is configured for development mode
+    fn is_development_mode(&self) -> bool {
+        // Development mode is detected when user_logs_dir is set and 
+        // the logs_dir points to a user directory (not system directory)
+        if let Some(user_logs) = &self.user_logs_dir {
+            self.logs_dir == *user_logs
+        } else {
+            false
         }
     }
 
@@ -336,6 +434,9 @@ impl DirectoryManager {
         // Create and verify application support directory
         self.create_directory_with_permissions(&self.app_support_dir, &dir_perms)?;
 
+        // Create and verify secured directory with admin-only permissions
+        self.create_secured_directory(&self.secured_dir)?;
+
         // If user logs directory is set, create and verify it too
         if let Some(user_logs) = &self.user_logs_dir {
             self.create_directory_with_permissions(user_logs, &dir_perms)?;
@@ -382,12 +483,51 @@ impl DirectoryManager {
         Ok(())
     }
 
+    /// Creates a secured directory with admin-only permissions if it doesn't exist
+    fn create_secured_directory(&self, path: &Path) -> Result<(), DirectoryError> {
+        if !path.exists() {
+            info!("Creating secured directory: {}", path.display());
+
+            // Create parent directories if they don't exist
+            if let Some(parent) = path.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| DirectoryError::CreateFailed(parent.to_path_buf(), e))?;
+                }
+            }
+
+            fs::create_dir_all(path)
+                .map_err(|e| DirectoryError::CreateFailed(path.to_path_buf(), e))?;
+
+            // In development mode, use regular permissions to avoid permission issues
+            if self.is_development_mode() {
+                info!("Development mode: using regular directory permissions for secured directory");
+                set_directory_permissions(path)
+                    .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
+            } else {
+                // Set admin-only permissions in production mode
+                set_secured_directory_permissions(path)
+                    .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
+            }
+        } else if !self.is_development_mode() {
+            // Directory exists, ensure it has correct secured permissions (production mode only)
+            info!("Updating secured permissions for: {}", path.display());
+            set_secured_directory_permissions(path)
+                .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
+        }
+
+        Ok(())
+    }
+
     /// Validates permissions on all directories
     pub fn validate_permissions(&self) -> Result<(), DirectoryError> {
         let dir_perms = Permissions::directory();
 
         self.validate_directory_permissions(&self.logs_dir, &dir_perms)?;
         self.validate_directory_permissions(&self.app_support_dir, &dir_perms)?;
+        
+        // Validate secured directory with special admin-only checks
+        self.validate_secured_directory_permissions(&self.secured_dir)?;
 
         // Validate user logs directory if set
         if let Some(user_logs) = &self.user_logs_dir {
@@ -434,12 +574,100 @@ impl DirectoryManager {
         Ok(())
     }
 
+    /// Validates permissions for the secured directory (admin-only access)
+    fn validate_secured_directory_permissions(&self, path: &Path) -> Result<(), DirectoryError> {
+        if !path.exists() {
+            return Err(DirectoryError::ValidationFailed(
+                path.to_path_buf(),
+                "Secured directory does not exist".to_string(),
+            ));
+        }
+
+        // In development mode, use more relaxed validation
+        if self.is_development_mode() {
+            // Just verify we can write to the directory in development mode
+            if !self.can_write_to_directory(path) {
+                return Err(DirectoryError::PermissionDenied(path.to_path_buf()));
+            }
+            return Ok(());
+        }
+
+        // Check admin-only permissions on Unix systems (production mode only)
+        #[cfg(unix)]
+        {
+            if let Ok(current) = Permissions::from_path(path) {
+                // For secured directory, we expect 700 permissions (owner only)
+                if current.mode & 0o777 != 0o700 {
+                    return Err(DirectoryError::ValidationFailed(
+                        path.to_path_buf(),
+                        format!(
+                            "Expected mode 700 for secured directory, got {:o}",
+                            current.mode & 0o777
+                        ),
+                    ));
+                }
+            }
+        }
+
+        // Verify only admin/root can write to the directory
+        if !self.is_admin_only_directory(path) {
+            return Err(DirectoryError::PermissionDenied(path.to_path_buf()));
+        }
+
+        Ok(())
+    }
+
+    /// Checks if directory is accessible only by admin/root
+    fn is_admin_only_directory(&self, path: &Path) -> bool {
+        #[cfg(target_os = "windows")]
+        {
+            // On Windows, we try to check if only Administrators have access
+            // This is a simplified check - in production, proper ACL inspection would be needed
+            Command::new("icacls")
+                .args([path.to_str().unwrap()])
+                .output()
+                .map(|output| {
+                    let output_str = String::from_utf8_lossy(&output.stdout);
+                    // Check if output contains only Administrator access
+                    output_str.contains("BUILTIN\\Administrators:(OI)(CI)F") 
+                        && !output_str.contains("Everyone:")
+                        && !output_str.contains("Users:")
+                })
+                .unwrap_or(false)
+        }
+
+        #[cfg(unix)]
+        {
+            // Check if the directory has 700 permissions and is owned by root
+            if let Ok(metadata) = fs::metadata(path) {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::MetadataExt;
+                    let mode = metadata.permissions().mode() & 0o777;
+                    let uid = metadata.uid();
+                    
+                    // Directory should have 700 permissions and be owned by root (uid 0)
+                    mode == 0o700 && uid == 0
+                }
+                #[cfg(not(unix))]
+                {
+                    true
+                }
+            } else {
+                false
+            }
+        }
+    }
+
     /// Attempts to fix permissions on all directories
     pub fn fix_permissions(&self) -> Result<(), DirectoryError> {
         let dir_perms = Permissions::directory();
 
         self.fix_directory_permissions(&self.logs_dir, &dir_perms)?;
         self.fix_directory_permissions(&self.app_support_dir, &dir_perms)?;
+        
+        // Fix secured directory with admin-only permissions
+        self.fix_secured_directory_permissions(&self.secured_dir)?;
 
         // Fix user logs directory if set
         if let Some(user_logs) = &self.user_logs_dir {
@@ -474,6 +702,28 @@ impl DirectoryManager {
         Ok(())
     }
 
+    /// Attempts to fix permissions for the secured directory (admin-only access)
+    fn fix_secured_directory_permissions(&self, path: &Path) -> Result<(), DirectoryError> {
+        if !path.exists() {
+            return Err(DirectoryError::ValidationFailed(
+                path.to_path_buf(),
+                "Secured directory does not exist".to_string(),
+            ));
+        }
+
+        if self.is_development_mode() {
+            // In development mode, use regular permissions
+            set_directory_permissions(path)
+                .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
+        } else {
+            // Set admin-only permissions in production mode
+            set_secured_directory_permissions(path)
+                .map_err(|e| DirectoryError::FixFailed(path.to_path_buf(), e.to_string()))?;
+        }
+
+        Ok(())
+    }
+
     /// Determines if a user can write to the given directory
     ///
     /// This is a cross-platform implementation that works on Windows, macOS, and Linux.
@@ -501,6 +751,11 @@ impl DirectoryManager {
     /// Returns the application support directory path
     pub fn app_support_dir(&self) -> &Path {
         &self.app_support_dir
+    }
+
+    /// Returns the secured directory path
+    pub fn secured_dir(&self) -> &Path {
+        &self.secured_dir
     }
 
     /// Returns the user logs directory path if set, or falls back to system logs
@@ -715,6 +970,53 @@ mod tests {
             let program_data = std::env::var_os("ProgramData").unwrap_or_default();
             let expected = PathBuf::from(program_data).join("OpenFrame");
             assert_eq!(app_dir, expected);
+        }
+    }
+
+    #[test]
+    fn test_secured_directory() {
+        let temp_dir = tempdir().unwrap();
+        let logs_dir = temp_dir.path().join("logs");
+        let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
+
+        let manager = DirectoryManager::with_all_custom_dirs(logs_dir, app_dir, secured_dir.clone());
+
+        // Test secured directory creation
+        assert!(manager.ensure_directories().is_ok());
+        assert!(secured_dir.exists());
+
+        // Test secured directory permissions (only on Unix systems with root)
+        #[cfg(unix)]
+        {
+            if unsafe { libc::geteuid() } == 0 {
+                // Only run this check if we're root
+                let metadata = fs::metadata(&secured_dir).unwrap();
+                assert_eq!(metadata.permissions().mode() & 0o777, 0o700);
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_secured_directory() {
+        let secured_dir = get_secured_directory();
+
+        #[cfg(target_os = "macos")]
+        assert_eq!(
+            secured_dir,
+            PathBuf::from("/Library/Application Support/OpenFrame/secured")
+        );
+
+        #[cfg(target_os = "linux")]
+        assert_eq!(secured_dir, PathBuf::from("/var/lib/openframe/secured"));
+
+        #[cfg(target_os = "windows")]
+        {
+            let program_data = std::env::var_os("ProgramData").unwrap_or_default();
+            let expected = PathBuf::from(program_data)
+                .join("OpenFrame")
+                .join("secured");
+            assert_eq!(secured_dir, expected);
         }
     }
 }
