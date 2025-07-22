@@ -105,9 +105,6 @@ verify_command() {
     "k3d")
         curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
         ;;
-    "kustomize")
-        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-        ;;
     esac
 }
 

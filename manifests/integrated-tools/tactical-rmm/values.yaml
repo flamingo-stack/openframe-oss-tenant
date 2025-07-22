@@ -1,0 +1,33 @@
+global:
+  registerJob:
+    enabled: true
+
+tactical:
+  backend:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-backend
+      tag: latest
+  celery:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-celery
+      tag: latest
+  celerybeat:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-celerybeat
+      tag: latest
+  frontend:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-frontend
+      tag: latest
+  nats:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-nats
+      tag: latest
+  nginx:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-nginx
+      tag: latest
+  websockets:
+    image:
+      repo: ghcr.io/flamingo-cx/openframe/tactical-websockets
+      tag: latest

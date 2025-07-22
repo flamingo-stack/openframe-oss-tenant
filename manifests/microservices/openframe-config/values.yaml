@@ -1,0 +1,11 @@
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
+
+image:
+  repo: ghcr.io/flamingo-cx/openframe/openframe-config
+  tag: latest
+
+config:
+  branch: "main"

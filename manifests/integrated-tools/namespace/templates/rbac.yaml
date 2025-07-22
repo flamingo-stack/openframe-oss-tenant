@@ -1,0 +1,25 @@
+{{- if .Values.rbac.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: allow-pod-access
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec"]
+    verbs: ["get", "list", "watch", "create"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-allow-pod-access
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: integrated-tools
+roleRef:
+  kind: Role
+  name: allow-pod-access
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

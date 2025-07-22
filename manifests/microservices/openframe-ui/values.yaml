@@ -1,0 +1,9 @@
+deployment:
+  ingress: localhost
+  
+registerJob:
+  enabled: true
+
+image:
+  repo: ghcr.io/flamingo-cx/openframe/openframe-ui
+  tag: latest

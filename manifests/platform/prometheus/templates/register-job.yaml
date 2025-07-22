@@ -1,0 +1,62 @@
+{{- if .Values.registerJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prometheus-primary
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: register
+        image: curlimages/curl:8.5.0
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Registering Prometheus..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+              echo "Still waiting..."
+              sleep 10
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/prometheus-primary" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "prometheus-primary",
+                  "toolType": "PROMETHEUS",
+                  "name": "Prometheus",
+                  "description": "Prometheus Metrics Database",
+                  "toolUrls": [
+                    {
+                      "url": "http://prometheus.platform.svc.cluster.local",
+                      "port": "80",
+                      "type": "API"
+                    }
+                  ],
+                  "category": "Metrics Database",
+                  "platformCategory": "OpenFrame Service",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Monitoring",
+                  "layerOrder": 2,
+                  "layerColor": "#78909C",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/health",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*","/metrics"],
+                  "debeziumConnector": null
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "Prometheus Registration complete."
+{{- end }}

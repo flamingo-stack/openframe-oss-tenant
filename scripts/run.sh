@@ -30,17 +30,14 @@ export -f flamingo
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help
 
-source "${SCRIPT_DIR}/functions/add_loopback_ip.sh"
-export -f add_loopback_ip
-
 source "${SCRIPT_DIR}/functions/wait.sh"
 export -f wait_for_app
 
 source "${SCRIPT_DIR}/functions/develop.sh"
-export -f intercept_app switch_argocd_app_health
+export -f intercept_app
 
 source "${SCRIPT_DIR}/functions/argocd.sh"
-export -f deploy_argocd delete_argocd wait_for_argocd_apps get_initial_secret
+export -f wait_for_argocd_apps
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -119,7 +116,6 @@ case "$ARG" in
     ;;
   s|start)
     start_spinner "Starting cluster"
-    add_loopback_ip > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     k3d cluster start $K3D_CLUSTER_NAME > "${DEPLOY_LOG_DIR}/cluster-start.log" 2>&1 && \
     stop_spinner_and_return_code $? || exit 1
     ;;

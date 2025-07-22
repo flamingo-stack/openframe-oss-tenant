@@ -1,0 +1,62 @@
+name: 'Format Build Arguments'
+description: 'Formats build arguments for Docker build'
+
+inputs:
+  build_args:
+    description: 'JSON string of build arguments'
+    required: false
+    default: '{}'
+
+outputs:
+  formatted_args:
+    description: 'Formatted build arguments'
+    value: ${{ steps.format.outputs.formatted_args }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Format build arguments
+      id: format
+      shell: bash
+      run: |
+        # Convert the build args to the correct format
+        BUILD_ARGS=""
+
+        # Debug the raw input
+        echo "Raw input:"
+        echo '${{ inputs.build_args }}'
+
+        echo
+        # Convert YAML object to key=value pairs using tr
+        if [ ! -z "${{ inputs.build_args }}" ]; then
+          # Process the build args and store in a temporary file
+          echo '${{ inputs.build_args }}' | \
+            tr -d "{}" | \
+            tr -d " " | \
+            tr -s "," "\n" | \
+            tr -s ":" "=" | \
+            grep -v '^$' > /tmp/build_args.txt
+
+          # Count total lines
+          total_lines=$(wc -l < /tmp/build_args.txt)
+          current_line=0
+
+          # Read from the temporary file and build the BUILD_ARGS string
+          while IFS= read -r line; do
+            current_line=$((current_line + 1))
+            echo "Processing: $line"
+            if [ $current_line -eq $total_lines ]; then
+              # Last line - don't add newline
+              BUILD_ARGS+="$line"
+            else
+              BUILD_ARGS+="$line\n"
+            fi
+          done < /tmp/build_args.txt
+        fi
+
+        echo
+        echo "Final BUILD_ARGS:"
+        echo -e "$BUILD_ARGS"
+        echo "formatted_args<<EOF" >> $GITHUB_OUTPUT
+        echo -e "$BUILD_ARGS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT 

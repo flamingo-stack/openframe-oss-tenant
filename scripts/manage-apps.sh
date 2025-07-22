@@ -18,28 +18,40 @@ fi
 case "$ARG" in
 argocd)
   if [ "$ACTION" == "deploy" ]; then
+
     start_spinner "Deploying ArgoCD"
-    deploy_argocd >"${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    
+    helm repo add argo https://argoproj.github.io/argo-helm > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    helm upgrade --install argo-cd argo/argo-cd \
+    --version=8.1.3 \
+    --namespace argocd \
+    --create-namespace \
+    --wait \
+    --timeout 5m \
+    -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
-    delete_argocd
-  elif [ "$ACTION" == "secret" ]; then
-    get_initial_secret
+    helm -n argocd delete argo-cd
   fi
   ;;
 argocd_apps)
   if [ "$ACTION" == "deploy" ]; then 
-    kubectl -n argocd patch cm/argocd-cm --type=merge --patch-file "${ROOT_REPO_DIR}/manifests/argocd/patch-argocd-cm.yaml" >"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-    kubectl -n argocd patch deployment argocd-repo-server --type='merge' \
-      -p='{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"docker-pat-secret"}]}}}}' >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log" 
-    kubectl -n argocd apply -k "${ROOT_REPO_DIR}/manifests/argocd" >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    start_spinner "Deploying ArgoCD Apps"
 
-    start_spinner "Waiting for ArgoCD Apps to become Healthy"
-    wait_for_argocd_apps >>"${DEPLOY_LOG_DIR}/deploy-argocd-apps.log"
+    helm upgrade --install app-of-apps "${ROOT_REPO_DIR}/manifests/app-of-apps" \
+    --namespace argocd \
+    --wait \
+    --timeout 60m \
+    -f "${SCRIPT_DIR}/helm-values.yaml" \
+    > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
+    wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+
     stop_spinner_and_return_code $? || exit 1 
     
   elif [ "$ACTION" == "delete" ]; then
-    kubectl -n argocd delete -k "${ROOT_REPO_DIR}/manifests/argocd"
+    helm -n argocd delete app-of-apps
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
@@ -74,7 +86,7 @@ app)
   if [ "$ACTION" == "dev" ]; then
     echo "Deploying ${APP} at ${NAMESPACE} in dev mode"
     case "$APP" in
-      *openframe*)
+      *openframe*|external-api)
         cd "${ROOT_REPO_DIR}/openframe/services/${APP}"
         ;;
       meshcentral)
@@ -88,9 +100,6 @@ app)
   elif [ "$ACTION" == "intercept" ]; then
     echo "Intercepting ${APP} at ${NAMESPACE} in intercept mode"
     intercept_app "$APP" "$NAMESPACE" "$ARG1" "$ARG2"
-  elif [ "$ACTION" == "health" ]; then
-    echo "Branch '${ARG1}' autosync is ${ARG2} for ${APP}"
-    switch_argocd_app_health "$APP" "$ARG1" "$ARG2"
   fi
   ;;
 # BUNDLE APPS
@@ -98,8 +107,9 @@ a | all)
   ACTION=${2}
 
   $0 argocd $ACTION &&
-    $0 argocd_apps $ACTION &&
-    $0 pki_cert $ACTION 
+    $0 argocd_apps $ACTION 
+    # &&
+    # $0 pki_cert $ACTION 
   ;;
 -h | --help | -Help | help)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
