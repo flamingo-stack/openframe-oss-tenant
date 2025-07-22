@@ -36,34 +36,34 @@ public class WebSocketSessionWrapper implements WebSocketSession {
         return delegate.receive()
                 .handle((message, sink) -> {
                     String payload = message.getPayloadAsText();
-                    
-                    // Handle CONNECT messages
-                    if (isConnectMessage(payload)) {
-                        if (validateConnectMessage(payload)) {
-                            log.info("CONNECT validation successful for device: {}", ALLOWED_DEVICE_NAME);
-                            sink.next(message); // Allow the connection
-                        } else {
-                            // Send rejection message and don't proxy the original
-                            delegate.send(Mono.just(delegate.textMessage("Connection denied: Only device-1234 is allowed to connect")))
-                                    .subscribe();
-                            log.warn("Blocked connection attempt from unauthorized device");
-                            return; // Don't forward the message
-                        }
-                    } else {
-                        // Handle PUB/SUB messages
-                        extractAndLogMessageInfo(payload);
-                        
-                        // Check if this is a SUB operation for a topic containing "1234"
-                        if (isRestrictedSubscription(payload)) {
-                            // Send rejection message and don't proxy the original
-                            delegate.send(Mono.just(delegate.textMessage("Subscription denied: Access to topics containing '1234' is restricted")))
-                                    .subscribe();
-                            log.warn("Blocked subscription attempt to restricted topic containing '1234'");
-                        } else {
-                            // Proxy the original message
-                            sink.next(message);
-                        }
-                    }
+                    sink.next(message);
+//                    // Handle CONNECT messages
+//                    if (isConnectMessage(payload)) {
+//                        if (validateConnectMessage(payload)) {
+//                            log.info("CONNECT validation successful for device: {}", ALLOWED_DEVICE_NAME);
+//                            sink.next(message); // Allow the connection
+//                        } else {
+//                            // Send rejection message and don't proxy the original
+//                            delegate.send(Mono.just(delegate.textMessage("Connection denied: Only device-1234 is allowed to connect")))
+//                                    .subscribe();
+//                            log.warn("Blocked connection attempt from unauthorized device");
+//                            return; // Don't forward the message
+//                        }
+//                    } else {
+//                        // Handle PUB/SUB messages
+//                        extractAndLogMessageInfo(payload);
+//
+//                        // Check if this is a SUB operation for a topic containing "1234"
+//                        if (isRestrictedSubscription(payload)) {
+//                            // Send rejection message and don't proxy the original
+//                            delegate.send(Mono.just(delegate.textMessage("Subscription denied: Access to topics containing '1234' is restricted")))
+//                                    .subscribe();
+//                            log.warn("Blocked subscription attempt to restricted topic containing '1234'");
+//                        } else {
+//                            // Proxy the original message
+//                            sink.next(message);
+//                        }
+//                    }
                 });
     }
     

@@ -33,7 +33,7 @@ public class NatsPublisherController {
     @PostMapping("/device/{deviceId}/test")
     public ResponseEntity<?> sendTestMessage(@PathVariable String deviceId) {
         try {
-            String topic = "device/" + deviceId + "/commands";
+            String topic = "device." + deviceId + ".commands";
             String message = "test-message";
             
             boolean result = natsPublisher.publish(topic, message);

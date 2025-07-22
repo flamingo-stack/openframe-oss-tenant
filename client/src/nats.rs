@@ -42,7 +42,7 @@ impl NatsService {
 
         let client = async_nats::ConnectOptions::new()
             .name("device-1234".to_string())
-            .user_and_password("device".to_string(), "".to_string())
+            .user_and_password("device".to_string(), "1234".to_string())
             .connect(NATS_SERVER_URL)
             .await
             .context("Failed to connect to NATS server")?;
