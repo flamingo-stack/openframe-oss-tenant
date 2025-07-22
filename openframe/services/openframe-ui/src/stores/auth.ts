@@ -12,7 +12,39 @@ export interface TokenResponse {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  // Cache for server-verified status
+  const authStatusCache = ref<boolean | null>(null)
+  
+  // Reactive function to check authentication status based on cookie presence  
   const isAuthenticated = ref(false)
+  
+  // Function to update authentication status based on cookie presence
+  function updateAuthStatus() {
+    // First check if we have the access_token cookie (this indicates active session)
+    const hasAccessTokenCookie = document.cookie
+      .split(';')
+      .some(cookie => cookie.trim().startsWith('access_token='))
+    
+    // If no cookie, definitely not authenticated
+    if (!hasAccessTokenCookie) {
+      isAuthenticated.value = false
+      return
+    }
+    
+    // If we have cookie and cached status, use cached
+    if (authStatusCache.value !== null) {
+      isAuthenticated.value = authStatusCache.value
+      return
+    }
+    
+    // If we have cookie but no cached status, assume authenticated
+    // (checkAuthStatus will verify this with server)
+    isAuthenticated.value = true
+  }
+  
+  // Initialize auth status on store creation
+  updateAuthStatus()
+  
   const config = ConfigService.getInstance()
 
   async function login(email: string, password: string): Promise<TokenResponse> {
@@ -43,14 +75,17 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       // Tokens are now set as HTTP-only cookies by the server
-      // No longer need to extract tokens from response
+      // Update cached status and refresh authentication status
       console.log('🔑 [AuthStore] Login successful, tokens set via HTTP-only cookies');
-      isAuthenticated.value = true;
+      authStatusCache.value = true;
+      updateAuthStatus();
       
       return data;
     } catch (error) {
       // Also clear refresh flag on error
       localStorage.removeItem('is_refreshing');
+      authStatusCache.value = false;
+      updateAuthStatus();
       throw error;
     }
   }
@@ -78,22 +113,21 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.ok) {
         console.log('✅ [AuthStore] Token refresh successful - new tokens set as HttpOnly cookies');
+        authStatusCache.value = true;
+        updateAuthStatus();
         return true;
       } else {
         console.log('❌ [AuthStore] Token refresh failed:', response.status);
+        authStatusCache.value = false;
+        updateAuthStatus();
         return false;
       }
     } catch (error) {
       console.error('❌ [AuthStore] Token refresh error:', error);
+      authStatusCache.value = false;
+      updateAuthStatus();
       return false;
     }
-  }
-
-  function setAuthenticated(authenticated: boolean) {
-    // Helper function to set authentication status
-    // Tokens are managed via HTTP-only cookies by the server
-    isAuthenticated.value = authenticated;
-    console.log(`🔑 [AuthStore] Authentication status set to: ${authenticated}`);
   }
 
   async function logout() {
@@ -111,10 +145,11 @@ export const useAuthStore = defineStore('auth', () => {
       console.warn('⚠️ [AuthStore] Logout request failed:', error);
     }
     
-    // Clear any localStorage remnants and update state  
+    // Clear any localStorage remnants and update cached status
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    isAuthenticated.value = false;
+    authStatusCache.value = false;
+    updateAuthStatus();
     console.log('🔑 [AuthStore] Logged out and cleared HttpOnly cookies');
   }
 
@@ -144,7 +179,8 @@ export const useAuthStore = defineStore('auth', () => {
       });
       
       const authenticated = response.ok;
-      isAuthenticated.value = authenticated;
+      authStatusCache.value = authenticated; // Update cache and refresh status
+      updateAuthStatus();
       console.log('🔑 [AuthStore] Auth status checked via server:', authenticated);
       return authenticated;
     } catch (error) {
@@ -157,7 +193,8 @@ export const useAuthStore = defineStore('auth', () => {
           stack: error.stack
         });
       }
-      isAuthenticated.value = false;
+      authStatusCache.value = false;
+      updateAuthStatus();
       return false;
     }
   }
@@ -237,10 +274,13 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Tokens are now set as HTTP-only cookies by the server
       console.log('🔑 [AuthStore] Registration successful, tokens set via HTTP-only cookies');
-      isAuthenticated.value = true;
+      authStatusCache.value = true;
+      updateAuthStatus();
       return data;
     } catch (error) {
       console.error('Registration error:', error);
+      authStatusCache.value = false;
+      updateAuthStatus();
       throw error;
     }
   }
@@ -250,7 +290,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     tryRefreshToken,
-    setAuthenticated,
     logout,
     checkAuthStatus,
     handleAuthError
