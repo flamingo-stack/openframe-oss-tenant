@@ -125,6 +125,7 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
     private com.openframe.api.dto.oauth.TokenResponse generateAppTokens(User user) {
         String accessToken = oauthService.generateAccessToken(user, "social");
         String refreshToken = oauthService.generateRefreshToken(user.getId(), "social");
+        log.debug("Generated refresh token for user {}: {}", user.getId(), refreshToken != null ? "SUCCESS" : "NULL");
 
         return com.openframe.api.dto.oauth.TokenResponse.builder()
             .accessToken(accessToken)

@@ -9,7 +9,10 @@ import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
 import com.openframe.data.repository.mongo.UserRepository;
+import com.openframe.security.cookie.CookieService;
 import com.openframe.security.jwt.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,7 @@ public class OAuthService {
     private final OAuthTokenRepository tokenRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final CookieService cookieService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
@@ -93,6 +97,40 @@ public class OAuthService {
         return register(userDTO, clientId, clientSecret);
     }
 
+    /**
+     * Main token processing method for OAuth endpoints
+     * Handles refresh_token from header and delegates other grant types to token()
+     */
+    public TokenResponse processTokenRequest(String grantType, String code, String username,
+                                             String password, String clientId, String clientSecret,
+                                             String refreshToken, HttpServletRequest httpRequest) {
+        if ("refresh_token".equals(grantType)) {
+            // Gateway extracts refresh token from cookies and passes it as header
+            if (refreshToken == null) {
+                throw new IllegalArgumentException("Refresh token not found");
+            }
+            return handleRefreshToken(refreshToken, clientId, clientSecret);
+        }
+
+        // Delegate to main token method for other grant types
+        return token(grantType, code, username, password, clientId, clientSecret);
+    }
+
+    public void setAuthenticationCookies(TokenResponse tokenResponse, HttpServletResponse httpResponse) {
+        cookieService.setAccessTokenCookie(httpResponse, tokenResponse.getAccessToken());
+        cookieService.setRefreshTokenCookie(httpResponse, tokenResponse.getRefreshToken());
+        log.debug("Set authentication cookies for token response");
+    }
+
+    public void clearAuthenticationCookies(HttpServletResponse httpResponse) {
+        cookieService.clearTokenCookies(httpResponse);
+        log.debug("Cleared authentication cookies");
+    }
+
+    /**
+     * Internal token method for standard OAuth grant types (not refresh_token)
+     * Use processTokenRequest() for requests that may include refresh_token from cookies
+     */
     public TokenResponse token(String grantType, String code,
                                String username, String password, String clientId, String clientSecret) {
         return switch (grantType) {
@@ -187,7 +225,7 @@ public class OAuthService {
                 .build();
     }
 
-    private TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {
+    public TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {
         validateClient(clientId, clientSecret);
 
         try {
@@ -237,15 +275,6 @@ public class OAuthService {
             log.error("Failed to validate refresh token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid refresh token");
         }
-    }
-
-    public TokenResponse handleRefreshToken(String clientId, String clientSecret, jakarta.servlet.http.HttpServletRequest request) {
-        String refreshToken = jwtService.getRefreshTokenFromCookies(request);
-        if (refreshToken == null) {
-            throw new IllegalArgumentException("Refresh token not found in secure cookies");
-        }
-
-        return handleRefreshToken(refreshToken, clientId, clientSecret);
     }
 
     public AuthorizationResponse authorize(String responseType, String clientId,
@@ -381,34 +410,5 @@ public class OAuthService {
                     log.error("Client not found: {}", clientId);
                     return new IllegalArgumentException("Client not found");
                 });
-    }
-
-    /**
-     * Process any token request (refresh or regular)
-     */
-    public TokenResponse processTokenRequest(String grantType, String code, String username,
-                                           String password, String clientId, String clientSecret,
-                                           jakarta.servlet.http.HttpServletRequest httpRequest) {
-        
-        if ("refresh_token".equals(grantType)) {
-            return handleRefreshToken(clientId, clientSecret, httpRequest);
-        }
-        
-        return token(grantType, code, username, password, clientId, clientSecret);
-    }
-
-    /**
-     * Set authentication cookies after successful token generation
-     */
-    public void setAuthenticationCookies(TokenResponse tokenResponse, jakarta.servlet.http.HttpServletResponse httpResponse) {
-        jwtService.setAccessTokenCookie(httpResponse, tokenResponse.getAccessToken());
-        jwtService.setRefreshTokenCookie(httpResponse, tokenResponse.getRefreshToken());
-    }
-
-    /**
-     * Clear authentication cookies (for logout)
-     */
-    public void clearAuthenticationCookies(jakarta.servlet.http.HttpServletResponse httpResponse) {
-        jwtService.clearTokenCookies(httpResponse);
     }
 }
