@@ -33,6 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
+        credentials: 'include', // Include cookies for authentication
         body: formData
       });
 
@@ -41,7 +42,11 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error(data.error_description || 'Login failed');
       }
 
-      await setTokens(data.access_token, data.refresh_token);
+      // Tokens are now set as HTTP-only cookies by the server
+      // No longer need to extract tokens from response
+      console.log('🔑 [AuthStore] Login successful, tokens set via HTTP-only cookies');
+      isAuthenticated.value = true;
+      
       return data;
     } catch (error) {
       // Also clear refresh flag on error
@@ -50,65 +55,143 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function refreshToken(refreshToken: string): Promise<TokenResponse> {
-    const formData = new URLSearchParams();
-    formData.append('grant_type', 'refresh_token');
-    formData.append('refresh_token', refreshToken);
-    formData.append('client_id', config.getConfig().clientId);
-    formData.append('client_secret', config.getConfig().clientSecret);
+  async function tryRefreshToken(): Promise<boolean> {
+    try {
+      console.log('🔄 [AuthStore] Attempting token refresh via HttpOnly cookies...');
+      
+      // SECURITY: Both tokens are now HttpOnly cookies with strict paths
+      // Access token cookie: Path=/ (included automatically)  
+      // Refresh token cookie: Path=/api/oauth/token (included automatically ONLY on this endpoint)
+      const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        credentials: 'include', // Include HttpOnly cookies
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: config.getConfig().clientId,
+          client_secret: config.getConfig().clientSecret
+          // No refresh_token parameter - it's automatically sent via HttpOnly cookie
+        })
+      });
 
-    const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: formData
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error_description || 'Token refresh failed');
+      if (response.ok) {
+        console.log('✅ [AuthStore] Token refresh successful - new tokens set as HttpOnly cookies');
+        return true;
+      } else {
+        console.log('❌ [AuthStore] Token refresh failed:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ [AuthStore] Token refresh error:', error);
+      return false;
     }
-
-    await setTokens(data.access_token, data.refresh_token);
-    return data;
   }
 
-  async function setTokens(accessToken: string, refreshToken: string) {
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
-    isAuthenticated.value = true;
+  function setAuthenticated(authenticated: boolean) {
+    // Helper function to set authentication status
+    // Tokens are managed via HTTP-only cookies by the server
+    isAuthenticated.value = authenticated;
+    console.log(`🔑 [AuthStore] Authentication status set to: ${authenticated}`);
   }
 
   async function logout() {
+    try {
+      // Call logout endpoint to clear HttpOnly cookies (both access and refresh tokens)
+      const response = await fetch(`${config.getConfig().apiUrl}/oauth/logout`, {
+        method: 'POST',
+        credentials: 'include' // Include cookies for clearing
+      });
+      
+      if (!response.ok) {
+        console.warn('⚠️ [AuthStore] Logout endpoint failed, continuing with local logout');
+      }
+    } catch (error) {
+      console.warn('⚠️ [AuthStore] Logout request failed:', error);
+    }
+    
+    // Clear any localStorage remnants and update state  
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     isAuthenticated.value = false;
+    console.log('🔑 [AuthStore] Logged out and cleared HttpOnly cookies');
   }
 
   async function checkAuthStatus() {
-    const accessToken = localStorage.getItem('access_token');
-    console.log('🔑 [AuthStore] Checking auth status, token exists:', !!accessToken);
-    isAuthenticated.value = !!accessToken;
-    console.log('🔑 [AuthStore] isAuthenticated set to:', isAuthenticated.value);
-    return isAuthenticated.value;
+    // Since tokens are in HTTP-only cookies, we can't access them directly
+    // Check authentication by making a request to a protected endpoint
+    const apiUrl = config.getConfig().apiUrl;
+    const fullUrl = `${apiUrl}/oauth/me`;
+    
+    console.log('🔑 [AuthStore] Checking auth status...');
+    console.log('🔑 [AuthStore] API URL:', apiUrl);
+    console.log('🔑 [AuthStore] Full URL:', fullUrl);
+    console.log('🔑 [AuthStore] Current domain:', window.location.hostname);
+    
+    try {
+      console.log('🔑 [AuthStore] Making fetch request...');
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        credentials: 'include' // Include cookies
+      });
+      
+      console.log('🔑 [AuthStore] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      const authenticated = response.ok;
+      isAuthenticated.value = authenticated;
+      console.log('🔑 [AuthStore] Auth status checked via server:', authenticated);
+      return authenticated;
+    } catch (error) {
+      console.error('🔑 [AuthStore] Auth check failed with error:', error);
+      console.error('🔑 [AuthStore] Error type:', typeof error);
+      if (error instanceof Error) {
+        console.error('🔑 [AuthStore] Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      isAuthenticated.value = false;
+      return false;
+    }
   }
 
-  async function handleAuthError(error: unknown) {
-    if (error instanceof Error) {
-      if (error.message.includes('token expired')) {
-        const storedRefreshToken = localStorage.getItem('refresh_token');
-        if (storedRefreshToken) {
-          try {
-            await refreshToken(storedRefreshToken);
-            return true;
-          } catch (refreshError) {
-            await logout();
-            return false;
-          }
+  async function handleAuthError(error: unknown): Promise<boolean> {
+    // This should be called by apollo client / rest client when they receive 401
+    console.log('🔑 [AuthStore] Handling auth error:', error);
+    
+    // Try to refresh token ONLY if it's an authentication error (401)
+    if (error instanceof Error && (
+        error.message.includes('401') || 
+        error.message.includes('token expired') || 
+        error.message.includes('Unauthorized')
+    )) {
+      console.log('🔑 [AuthStore] Attempting token refresh due to 401/expired token');
+      try {
+        const success = await tryRefreshToken();
+        if (success) {
+          console.log('🔑 [AuthStore] Token refresh successful');
+          return true;
+        } else {
+          console.log('🔑 [AuthStore] Token refresh failed, logging out');
+          await logout();
+          return false;
         }
+      } catch (refreshError) {
+        console.error('🔑 [AuthStore] Token refresh error:', refreshError);
+        await logout();
+        return false;
       }
     }
+    
+    // For non-auth errors, just log them
+    console.log('🔑 [AuthStore] Non-auth error, not attempting refresh');
     return false;
   }
 
@@ -130,6 +213,7 @@ export const useAuthStore = defineStore('auth', () => {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${credentials}`
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           email,
           password,
@@ -151,7 +235,9 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
-      await setTokens(data.access_token, data.refresh_token);
+      // Tokens are now set as HTTP-only cookies by the server
+      console.log('🔑 [AuthStore] Registration successful, tokens set via HTTP-only cookies');
+      isAuthenticated.value = true;
       return data;
     } catch (error) {
       console.error('Registration error:', error);
@@ -163,8 +249,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     login,
     register,
-    refreshToken,
-    setTokens,
+    tryRefreshToken,
+    setAuthenticated,
     logout,
     checkAuthStatus,
     handleAuthError

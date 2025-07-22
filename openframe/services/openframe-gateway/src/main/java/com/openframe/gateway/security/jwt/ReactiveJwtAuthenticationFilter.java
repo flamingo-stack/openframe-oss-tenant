@@ -48,10 +48,10 @@ public class ReactiveJwtAuthenticationFilter implements WebFilter, JwtAuthentica
             return chain.filter(exchange);
         }
 
-        String authHeader = getRequestAuthToken(exchange);
-        logAuthAttempt(method, path, authHeader);
+        String authToken = getRequestAuthToken(exchange);
+        logAuthAttempt(method, path, authToken);
 
-        String jwt = extractJwt(authHeader);
+        String jwt = extractJwt(authToken);
         if (jwt == null) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();

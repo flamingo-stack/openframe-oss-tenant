@@ -13,7 +13,7 @@ import org.springframework.web.server.ServerWebExchange;
 import java.time.Duration;
 import java.time.Instant;
 
-public interface  JwtAuthenticationOperations {
+public interface JwtAuthenticationOperations {
 
     String CLIENTS_PREFIX = "/clients";
     String DASHBOARD_PREFIX = "/api";
@@ -28,12 +28,23 @@ public interface  JwtAuthenticationOperations {
 
     default String getRequestAuthToken(Object request) {
         if (request instanceof HttpServletRequest httpRequest) {
+            String tokenFromCookie = getJwtService().getTokenFromCookies(httpRequest);
+            if (tokenFromCookie != null) {
+                return "Bearer " + tokenFromCookie;
+            }
+            //TODO add filtration to use header based token only for Agent
             String authorisationHeader = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
             if (authorisationHeader != null) {
                 return authorisationHeader;
             }
             return httpRequest.getParameter(AUTHORIZATION_QUERY_PARAM);
+
         } else if (request instanceof ServerWebExchange serverWebExchange) {
+            String tokenFromCookie = getJwtService().getTokenFromCookies(serverWebExchange);
+            if (tokenFromCookie != null) {
+                return "Bearer " + tokenFromCookie;
+            }
+
             ServerHttpRequest httpRequest = serverWebExchange.getRequest();
             String authorisationHeader = httpRequest.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
             if (authorisationHeader != null) {
@@ -100,7 +111,7 @@ public interface  JwtAuthenticationOperations {
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth/token")
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth/register")
                 || path.startsWith(DASHBOARD_PREFIX+"/oauth2")
-                || path.startsWith(DASHBOARD_PREFIX + "/sso/providers")
+                        || path.equals(DASHBOARD_PREFIX + "/sso/providers")
                 || path.startsWith(CLIENTS_PREFIX+"/api/agents/register")
                 || path.startsWith(getManagementPath())
                 || path.equals(DASHBOARD_PREFIX+"/.well-known/openid-configuration")

@@ -140,13 +140,13 @@ const processOAuthCallback = async () => {
     
     console.log('✅ [OAuthCallback] Token exchange successful:', tokenResponse);
 
-    // Store tokens in localStorage (like in regular login/register)
-    console.log('🔑 [OAuthCallback] Storing tokens in localStorage...');
-    await authStore.setTokens(tokenResponse.access_token, tokenResponse.refresh_token);
-    console.log('✅ [OAuthCallback] Tokens stored successfully');
+    // SECURITY: Tokens are now set as HttpOnly cookies by the server
+    // No need to store tokens in localStorage anymore
+    console.log('🔑 [OAuthCallback] Tokens automatically set as secure HttpOnly cookies');
 
     // Update auth store with new authentication state
     console.log('🔑 [OAuthCallback] Updating auth store...');
+    authStore.setAuthenticated(true);
     await authStore.checkAuthStatus();
     console.log('🔑 [OAuthCallback] Auth status:', authStore.isAuthenticated);
     

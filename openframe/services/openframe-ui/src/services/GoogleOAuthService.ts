@@ -286,6 +286,7 @@ export class GoogleOAuthService {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Include cookies for HttpOnly tokens
       body: JSON.stringify(socialAuthRequest)
     });
 
@@ -306,15 +307,23 @@ export class GoogleOAuthService {
       throw new Error(`Backend token exchange failed: ${response.status} ${response.statusText} - ${errorData}`);
     }
 
-    const tokens = await response.json();
+    const data = await response.json();
     
     this.addDebugInfo({
       action: 'backend_tokens_parsed',
-      tokenType: tokens.token_type,
-      expiresIn: tokens.expires_in
+      tokenType: data.token_type,
+      expiresIn: data.expires_in
     });
 
-    return tokens as TokenResponse;
+    // Backend now sets tokens as HttpOnly cookies and returns status info
+    // Return a compatible response structure
+    return {
+      access_token: 'set_via_cookie', // Placeholder since tokens are in cookies
+      refresh_token: 'set_via_cookie', // Placeholder since tokens are in cookies
+      token_type: data.token_type || 'Bearer',
+      expires_in: data.expires_in || 3600,
+      scope: 'openid profile email'
+    } as TokenResponse;
   }
 
   private static generateState(): string {

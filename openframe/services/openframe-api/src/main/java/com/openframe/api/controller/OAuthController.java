@@ -4,6 +4,9 @@ import com.openframe.api.dto.UserDTO;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.api.service.OAuthService;
+import com.openframe.security.jwt.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -22,42 +25,64 @@ import static com.openframe.core.constants.HttpHeaders.X_USER_ID;
 public class OAuthController {
 
     private final OAuthService oauthService;
+    private final JwtService jwtService;
 
     @PostMapping(value = "/token", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> token(
             @RequestParam String grant_type,
             @RequestParam(required = false) String code,
-            @RequestParam(required = false) String refresh_token,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String password,
             @RequestParam String client_id,
-            @RequestParam(required = false) String client_secret) {
+            @RequestParam(required = false) String client_secret,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         
         log.debug("Token request - grant_type: {}, client_id: {}", grant_type, client_id);
-        try {
-            TokenResponse response = oauthService.token(grant_type, code, refresh_token, 
-                username, password, client_id, client_secret);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(401)
-                .body(Map.of(
-                    "error", "invalid_request",
-                    "error_description", e.getMessage()
-                ));
-        } catch (Exception e) {
-            log.error("Token error: {}", e.getMessage(), e);
-            return ResponseEntity.status(400)
-                .body(Map.of(
-                    "error", "invalid_request",
-                    "error_description", "An error occurred processing the request"
-                ));
+
+        TokenResponse response = processTokenRequest(grant_type, code, username, password,
+                client_id, client_secret, httpRequest);
+
+        jwtService.setAccessTokenCookie(httpResponse, response.getAccessToken());
+
+        jwtService.setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+
+        return ResponseEntity.ok(Map.of(
+                "token_type", response.getTokenType(),
+                "expires_in", response.getExpiresIn(),
+                "message", "Authentication successful - tokens set as secure cookies"
+        ));
+    }
+
+    private TokenResponse processTokenRequest(String grantType, String code, String username,
+                                              String password, String clientId, String clientSecret, HttpServletRequest httpRequest) {
+
+        if ("refresh_token".equals(grantType)) {
+            return oauthService.handleRefreshToken(clientId, clientSecret, httpRequest);
         }
+
+        return oauthService.token(grantType, code, username, password, clientId, clientSecret);
     }
 
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> register(@RequestBody final UserDTO userDTO, 
-                                    @RequestHeader(value = AUTHORIZATION, required = true) String authHeader) {
-        return oauthService.handleRegistration(userDTO, authHeader);
+    public ResponseEntity<?> register(@RequestBody final UserDTO userDTO,
+                                      @RequestHeader(value = AUTHORIZATION, required = true) String authHeader,
+                                      HttpServletResponse httpResponse) {
+
+        log.debug("Registration request for email: {}", userDTO.getEmail());
+
+        TokenResponse response = oauthService.handleRegistration(userDTO, authHeader);
+
+        jwtService.setAccessTokenCookie(httpResponse, response.getAccessToken());
+
+        jwtService.setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+
+        return ResponseEntity.ok(Map.of(
+                "token_type", response.getTokenType(),
+                "expires_in", response.getExpiresIn(),
+                "message", "Registration successful - tokens set as secure cookies",
+                "email", userDTO.getEmail()
+        ));
     }
 
     @PostMapping("/authorize")
@@ -89,5 +114,24 @@ public class OAuthController {
                     "state", state
                 ));
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse httpResponse) {
+        log.debug("Logout request");
+
+        jwtService.clearTokenCookies(httpResponse);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Logout successful"
+        ));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+        return ResponseEntity.ok(Map.of(
+                "authenticated", true,
+                "message", "User is authenticated"
+        ));
     }
 } 
