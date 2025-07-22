@@ -1,0 +1,113 @@
+{{- if .Values.global.registerJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tactical-rmm
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: register
+        image: ghcr.io/sap/kubectl-container:v1.31.6
+        envFrom:
+        - configMapRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-postgres
+        env:
+        - name: TRMM_USER
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-default
+              key: TRMM_USER
+        - name: TRMM_PASS
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-default
+              key: TRMM_PASS
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Getting Tactical RMM API key..."
+            POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
+            TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c tactical-backend -- cat /opt/tactical/api_key.txt)
+
+            echo "Registering Tactical RMM..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+              echo "Still waiting..."
+              sleep 10
+            done
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-rmm" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "tool": {
+                  "id": "tactical-rmm",
+                  "toolType": "TACTICAL_RMM",
+                  "name": "Tactical RMM",
+                  "description": "Remote Monitoring and Management Platform",
+                  "toolUrls": [
+                    { "url": "http://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8000", "type": "API" },
+                    { "url": "http://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8080", "type": "DASHBOARD" },
+                    { "url": "ws://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8080", "type": "WS" }
+                  ],
+                  "category": "Device Management",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${TRMM_USER}"'",
+                    "password": "'"${TRMM_PASS}"'",
+                    "apiKey": {
+                      "key": "'"${TACTICAL_API_KEY}"'",
+                      "type": "HEADER",
+                      "keyName": "X-API-KEY"
+                    }
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 3,
+                  "layerColor": "#455A64",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnector": {
+                    "name": "tactical-rmm-psql-connector",
+                    "config": {
+                      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+                      "tasks.max": "1",
+                      "database.hostname": "'"${POSTGRES_HOST}"'",
+                      "database.port": "'"${POSTGRES_PORT}"'",
+                      "database.user": "'"${POSTGRES_USER}"'",
+                      "database.password": "'"${POSTGRES_PASSWORD}"'",
+                      "database.dbname": "'"${POSTGRES_DB}"'",
+                      "topic.prefix": "trmm_clients_users",
+                      "table.include.list": "public.logs_auditlog",
+                      "plugin.name": "pgoutput",
+                      "topic.creation.default.replication.factor": 1,
+                      "topic.creation.default.partitions": 10,
+                      "topic.creation.default.cleanup.policy": "compact",
+                      "topic.creation.default.compression.type": "lz4",
+                      "transforms": "route,addHeaders",
+                      "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
+                      "transforms.route.topic.regex": "trmm_clients_users\\.(.*)",
+                      "transforms.route.topic.replacement": "tactical-rmm.postgres.events",
+                      "transforms.addHeaders.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaders.header": "message-type",
+                      "transforms.addHeaders.value.literal": "TACTICAL_RMM_EVENT"
+                    }
+                  }
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "TacticalRMM Registration complete."
+{{- end }}

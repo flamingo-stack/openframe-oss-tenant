@@ -1,0 +1,8 @@
+registerJob:
+  enabled: true
+
+
+ngrok-operator:
+  credentials:
+    apiKey: "2zXpZ8Ka8DYjdNKXYcv4VznABha_7Laa3fUvZX5gyTt3kEat"
+    authtoken: "2yv5cuRsSW6gKpaaweVRzCNKYk9_6pozz69uPtSQT4vZ2uHpL"

@@ -3,9 +3,6 @@ kind: Config
 metadata:
   name: openframe-api
 build:
-  tagPolicy:
-    customTemplate:
-      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/openframe-api
       context: .
@@ -18,12 +15,15 @@ build:
       hooks:
         before:
           - command: [ "mvn", "clean", "package", "-DskipTests"]
-      docker: {}
   local:
     useDockerCLI: false
     useBuildkit: true
-    push: true
+    push: false
 manifests:
-  kustomize:
-    paths:
-    - ../../../manifests/microservices/openframe-api
+  helm:
+    releases:
+      - name: openframe-api
+        chartPath: ../../../manifests/microservices/openframe-api
+        valuesFiles:
+          - ../../../manifests/microservices/openframe-api/values.yaml
+        # setValues:

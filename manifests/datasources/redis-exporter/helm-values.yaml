@@ -1,5 +1,0 @@
-redisAddress: redis://redis-headless:6379
-
-image:
-  pullSecrets:
-    - docker-pat-secret

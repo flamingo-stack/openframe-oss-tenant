@@ -20,6 +20,13 @@ build:
     useBuildkit: true
     push: false
 manifests:
-  kustomize:
-    paths:
-    - ../../../manifests/microservices/openframe-config
+  helm:
+    releases:
+      - name: openframe-config
+        chartPath: ../../../manifests/microservices/openframe-config
+        valuesFiles:
+          - ../../../manifests/microservices/openframe-config/values.yaml
+        setValues:
+          config:
+            branch:
+              "main"

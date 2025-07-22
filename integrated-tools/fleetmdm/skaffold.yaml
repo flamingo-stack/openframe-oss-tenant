@@ -20,6 +20,10 @@ build:
     useBuildkit: true
     push: false
 manifests:
-  kustomize:
-    paths:
-    - ../../manifests/integrated-tools/fleetmdm
+  helm:
+    releases:
+      - name: fleetmdm
+        chartPath: ../../manifests/integrated-tools/fleetmdm
+        valuesFiles:
+          - ../../manifests/integrated-tools/fleetmdm/values.yaml
+        # setValues:

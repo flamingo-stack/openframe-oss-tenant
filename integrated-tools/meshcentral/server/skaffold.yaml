@@ -1,11 +1,8 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: openframe-meshcentral
+  name: meshcentral
 build:
-  tagPolicy:
-    customTemplate:
-      template:  "latest"
   artifacts:
     - image: ghcr.io/flamingo-cx/openframe/meshcentral
       context: .
@@ -48,6 +45,10 @@ build:
     useBuildkit: true
     push: true
 manifests:
-  kustomize:
-    paths:
-    - ../../../manifests/integrated-tools/meshcentral/server
+  helm:
+    releases:
+      - name: meshcentral
+        chartPath: ../../../manifests/integrated-tools/meshcentral
+        valuesFiles:
+          - ../../../manifests/integrated-tools/meshcentral/values.yaml
+        # setValues:

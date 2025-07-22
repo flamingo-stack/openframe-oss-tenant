@@ -77,7 +77,7 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
                     try {
                         return Optional.of(mapper.readTree(json));
                     } catch (IOException e) {
-                        log.error("Failed to parse JSON from node: {}, error: {}", 
+                        log.error("Failed to parse JSON from node: {}, error: {}",
                                  rawNode, e.getMessage(), e);
                         return Optional.empty();
                     }

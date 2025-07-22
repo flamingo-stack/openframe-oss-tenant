@@ -1,0 +1,53 @@
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
+
+
+promtail:
+  global:
+    imagePullSecrets: 
+      - name: docker-pat-secret
+  imagePullSecrets: 
+      - name: docker-pat-secret
+      
+  revisionHistoryLimit: 1
+
+  podsecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+
+  service:
+    enabled: true
+    labels:
+      app.kubernetes.io/instance: promtail
+
+  resources: 
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  extraVolumes:
+    - name: varlog
+      hostPath:
+        path: /var/promtail-log
+
+  extraVolumeMounts:
+    - name: varlog
+      mountPath: /var/promtail-log/host
+      readOnly: true
+
+  config:
+    clients:
+      - url: http://loki.platform.svc.cluster.local:3100/loki/api/v1/push
+    
+    snippets:
+      extraRelabelConfigs: 
+
+        # Drop logs from certain namespaces if necessary (e.g., kube-system)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: drop
+          regex: (kube-system|gmp-system|loki|promtail)

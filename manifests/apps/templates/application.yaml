@@ -1,0 +1,49 @@
+{{- range $name, $app := .Values.apps }}
+  {{- $skip := include "app.skip" (list $name $app $.Values) | trim | lower }}
+  {{- if ne $skip "true" }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ $app.syncWave | default "0" }}"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  project: {{ $app.project | default "default" }}
+
+  sources:
+    - repoURL: {{ $.Values.global.repoURL }}
+      targetRevision: {{ $.Values.global.repoBranch }}
+      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.global.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.global.repoDir $app.namespace $name }}{{ end }}"
+      helm:
+        values: |
+          deployment:
+{{ toYaml $.Values.deployment | indent 12 }}
+{{- if hasKey $app "values" }}
+{{- $values := index $app "values" | default "" }}
+{{ toYaml $values | indent 10 }}
+{{- end }}
+
+  destination:
+    name: in-cluster
+    namespace: {{ $app.namespace }}
+
+  {{- $autoSync := (hasKey $.Values.global "autoSync") | ternary $.Values.global.autoSync true }}
+  syncPolicy:
+    automated:
+      prune: {{ $autoSync }}
+      selfHeal: {{ $autoSync }}
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 30m
+  {{- end }}
+{{- end }}

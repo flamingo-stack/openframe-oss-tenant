@@ -2,7 +2,6 @@ package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.cassandra.UnifiedLogEvent;
-import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.Destination;
@@ -52,7 +51,7 @@ public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHan
         key.setIngestDay(debeziumMessage.getIngestDay());
         key.setToolType(debeziumMessage.getIntegratedToolType().name());
         key.setEventType(debeziumMessage.getUnifiedEventType().name());
-        key.setTimestamp(timestamp);
+        key.setEventTimestamp(timestamp);
         key.setToolEventId(debeziumMessage.getToolEventId());
 
         return key;

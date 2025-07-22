@@ -1,5 +1,9 @@
 name: OpenFrame Integration Tests
 
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+
 permissions:
   contents: write
   packages: write
@@ -28,14 +32,17 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
   REPOSITORY: "openframe"
+  HELM_VALUES_FILE: "scripts/helm-values.yaml"
+
+# =============================================================================
+# JOBS
+# =============================================================================
 
 jobs:
-
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-
 
   matrix:
     name: Matrix
@@ -84,7 +91,7 @@ jobs:
 
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
+        run: mvn clean install -am -Dcompress
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -97,7 +104,6 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-
 
   build:
     name: "Build image: ${{ matrix.name }}"
@@ -148,7 +154,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
-            type=raw,value=test-${{ needs.changes.outputs.commit_sha }}
+            type=raw,value=${{ needs.changes.outputs.commit_sha }}
           labels: |
             org.opencontainers.image.vendor=FlamingoCX
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -157,7 +163,7 @@ jobs:
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
-        uses: ./.github/actions/format-build-args
+        uses: ./.github/steps/docker-format-build-args
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
         env:
@@ -177,135 +183,49 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-  
 
-  pre-test:
-    name: Test Branch Creation
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    outputs:
-      GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Checkout new CI branch
-        id: create_branch
-        env:
-          GITHUB_HEAD_REF_CI: ${{ github.head_ref }}-CI
-        run: |
-          git config --global user.email "CI@flamingo.cx"
-          git config --global user.name "CI Account"
-          git checkout -b "${GITHUB_HEAD_REF_CI}"
-          git push origin "${GITHUB_HEAD_REF_CI}" --force
-          echo "GITHUB_HEAD_REF_CI=${GITHUB_HEAD_REF_CI}" >> $GITHUB_OUTPUT
-
-      - name: Change branch tags
-        env:
-          MATRIX: ${{ needs.matrix.outputs.matrix }}
-          CHANGES: ${{ toJSON(needs.changes.outputs) }}
-          COMMIT_SHA: test-${{ needs.changes.outputs.commit_sha }}
-        run: |
-          jq -c '.[]' <<< "$MATRIX" | while read -r item; do
-            name=$(jq -r '.name' <<< "$item")
-            path=$(jq -r '.manifest_path' <<< "$item")
-            pushed=$(jq -r --arg name "$name" '.[$name]' <<< "$CHANGES")
-
-            [ "$pushed" = "true" ] || continue
-
-            echo "$name → ${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
-            cd "$path"
-            kustomize edit set image "${name}=${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${COMMIT_SHA}"
-            cd - > /dev/null
-          done
-
-      - name: Change branch targetRevision paths
-        env:
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | while IFS= read -r -d '' f; do
-            sed -i -E "s|^([[:space:]]*targetRevision:[[:space:]]*)[a-zA-Z0-9_/-]+\$|\1${GITHUB_HEAD_REF_CI}|" "$f"
-          done
-
-      - name: Commit changes
-        env:
-          GITHUB_HEAD_REF_CI: ${{ steps.create_branch.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          git add .
-          git commit -m "Tags and targeRevision changes [skip ci]" || echo "No changes"
-          git push origin "${GITHUB_HEAD_REF_CI}" --force
-    
 
   test:
     name: Run Tests
-    needs: [pre-test, build]
+    needs: [build, changes, matrix]
     runs-on: Linux-x64
     timeout-minutes: 60
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
-      
-      - name: Install certutil (NSS tools)
-        run: |
-          if ! command -v certutil &> /dev/null; then
-            sudo apt-get update -yqq && sudo apt-get install -yqq libnss3-tools
-          fi
-          echo "certutil version: $(certutil --version)"
+          ref: ${{ github.head_ref }}
 
-      - name: Install Helm
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- --version v3.17.3
-          echo "Helm version: $(helm version --short)"
+      - name: Install tools and validate environment
+        uses: ./.github/steps/requirements-for-run.sh
 
-      - name: Install ArgoCD
+      - name: Override helm values
+        uses: ./.github/steps/helm-override-image-tags
+        with:
+          matrix: ${{ needs.matrix.outputs.matrix }}
+          changes: ${{ toJSON(needs.changes.outputs) }}
+          commit-sha: ${{ needs.changes.outputs.commit_sha }}
+          helm-values-file: ${{ env.HELM_VALUES_FILE }}
+        
+      - name: Override branch name
         run: |
-          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 
-          sudo chmod +x argocd && sudo mv argocd /usr/local/bin/
-          echo "ArgoCD version: $(argocd version)"
-      
-      - name: Install k3d
-        run: |
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.8.3 bash
-          echo "k3d version: $(k3d version)"
-
-      - name: Set inotify limit
-        run: sudo sysctl fs.inotify.max_user_instances=1500
+          # Override branch name
+          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+          cat "${{ env.HELM_VALUES_FILE }}"
 
       - name: Run environment test script
         env:
           TERM: dumb
         run: |
           ./scripts/run.sh bootstrap
-  
 
-  post-test:
-    name: Remove the CI branch
-    needs: [changes, matrix, pre-test, test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Delete CI branch
-        env:
-          GITHUB_HEAD_REF_CI: ${{ needs.pre-test.outputs.GITHUB_HEAD_REF_CI }}
-        run: |
-          git push origin --delete "${GITHUB_HEAD_REF_CI}" || true
-  
-
+ 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
     needs: [changes, matrix, test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
+    if: always()
     strategy:
       fail-fast: false
       matrix:
@@ -329,47 +249,20 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: test-${{ needs.changes.outputs.commit_sha }}
+          delete-tags: ${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
 
-
   final-checks:
-    name: Basic Merge tests
+    name: Final tests
     needs: [test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Check targetRevision is main
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: |
-          output=$(
-            find . -type f -name '*.yaml' -not -path '*/.git/*' -print0 | \
-            while IFS= read -r -d '' file; do
-              awk -v github_base="${GITHUB_BASE_REF}" '
-                /^[[:space:]]*targetRevision:[[:space:]]*/ {
-                  gsub(/^[[:space:]]*targetRevision:[[:space:]]*/, "", $0)
-                  val = $0
-                  if (val != github_base && val !~ /^[0-9]+(\.[0-9]+)*$/) {
-                    print FILENAME ": " val
-                    exit 1
-                  }
-                }
-              ' "$file"
-            done
-          )
-          if [[ -n "$output" ]]; then
-            echo "$output" && exit 1
-          fi
       
-      - name: Check openframe-config branch is main
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
+      - name: Verify values are clean
         run: |
-          f=$(find . -type f -path "*/openframe-config/deployment.yaml" -print -quit)
-          [ "$f" ] || { echo "No **/openframe-config/deployment.yaml found."; exit 1; }
-          [ "$(awk '/CONFIG_GIT_BRANCH/{getline;sub(/.*:/,"");gsub(/[" \t\r\n]/,"");print}' "$f")" = "${GITHUB_BASE_REF}" ] \
-            || { echo "CONFIG_GIT_BRANCH does not match \"${GITHUB_BASE_REF}\"";}
+          [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }
+          [ ! -s "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE is not empty"; cat "$HELM_VALUES_FILE"; exit 1; }
+          echo "$HELM_VALUES_FILE is empty"

@@ -9,6 +9,7 @@ import com.openframe.core.model.device.DeviceStatus;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AgentService {
 
     private final OAuthClientRepository oauthClientRepository;
@@ -24,23 +26,26 @@ public class AgentService {
     private final AgentRegistrationSecretValidator secretValidator;
     private final AgentSecretGenerator agentSecretGenerator;
     private final PasswordEncoder passwordEncoder;
+    private final MachineIdGenerator machineIdGenerator;
 
     @Transactional
     public AgentRegistrationResponse registerAgent(String initialKey, AgentRegistrationRequest request) {
         secretValidator.validate(initialKey);
 
-        if (oauthClientRepository.existsByMachineId(request.getMachineId())) {
-            throw new IllegalArgumentException("Machine already registered");
+        String machineId = machineIdGenerator.generate();
+        if (oauthClientRepository.existsByMachineId(machineId)) {
+            log.error("Generated non unique machine id");
+            throw new IllegalStateException("Failed to register client");
         }
 
-        String clientId = "agent_" + request.getMachineId();
+        String clientId = "agent_" + machineId;
         String clientSecret = agentSecretGenerator.generate();
 
         // Create and save OAuth client
         OAuthClient client = new OAuthClient();
         client.setClientId(clientId);
         client.setClientSecret(passwordEncoder.encode(clientSecret));
-        client.setMachineId(request.getMachineId());
+        client.setMachineId(machineId);
         client.setGrantTypes(new String[]{"client_credentials"});
         client.setScopes(new String[]{
                 "metrics:write",
@@ -51,7 +56,7 @@ public class AgentService {
         oauthClientRepository.save(client);
 
         Machine machine = new Machine();
-        machine.setMachineId(request.getMachineId());
+        machine.setMachineId(machineId);
         machine.setHostname(request.getHostname());
         machine.setIp(request.getIp());
         machine.setMacAddress(request.getMacAddress());
@@ -62,6 +67,6 @@ public class AgentService {
 
         machineRepository.save(machine);
 
-        return new AgentRegistrationResponse(clientId, clientSecret);
+        return new AgentRegistrationResponse(machineId, clientId, clientSecret);
     }
 }

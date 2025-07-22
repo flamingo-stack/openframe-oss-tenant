@@ -1,0 +1,56 @@
+registerJob:
+  enabled: true
+
+
+ingress-nginx:
+  controller:
+    # kind: "DaemonSet"
+    electionID: ingress-controller-leader
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+    terminationGracePeriodSeconds: 0
+
+    ingressClassResource:
+      name: nginx
+      enabled: true
+      default: false
+      controllerValue: "k8s.io/ingress-nginx"
+    podLabels:
+      name: ingress-nginx
+      component: ingress-nginx
+
+    tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Equal"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Equal"
+        effect: "NoSchedule"
+
+    publishService:
+      enabled: false
+    extraArgs:
+      publish-status-address: localhost
+      
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: false
+        additionalLabels:
+          release: "prometheus"
+
+    hostPort:
+      enabled: true
+      ports:
+        http: 80
+        https: 443
+
+    service:
+      type: NodePort
+      externalTrafficPolicy: Local
+    
+    serviceAccount:
+      imagePullSecretsNames:
+        - name: docker-pat-secret
