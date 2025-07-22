@@ -142,12 +142,11 @@ impl Client {
         let device_id = "123";
         
         let commands_topic = format!("device/{}/commands", device_id);
-        info!("Subscribing to device commands topic: {}", commands_topic);
 
-        // if let Err(e) = self.nats_service.subscribe_and_log(&commands_topic).await {
-        //     error!("Failed to subscribe to device commands: {}", e);
-        //     return Err(e);
-        // }
+        if let Err(e) = self.nats_service.subscribe_and_log(&commands_topic).await {
+            error!("Failed to subscribe to device commands: {}", e);
+            return Err(e);
+        }
 
         // info!("Successfully connected to NATS and subscribed to device commands");
 
