@@ -77,8 +77,8 @@ spec:
             name: tactical-postgres
 
       containers:
-      - name: tactical-nats
-        image: "{{ .Values.tactical.nats.image.repo }}:{{ .Values.tactical.nats.image.tag }}"
+      - name: tactical-base
+        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-nats"]
         ports:
         - containerPort: 9235
