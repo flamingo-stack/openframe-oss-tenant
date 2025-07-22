@@ -23,16 +23,12 @@ on:
         value: ${{ jobs.changes.outputs.openframe-management }}
       openframe-stream: 
         value: ${{ jobs.changes.outputs.openframe-stream }}
-      openframe-ui: 
-        value: ${{ jobs.changes.outputs.openframe-ui }}
       mongodb: 
         value: ${{ jobs.changes.outputs.mongodb }}
       cassandra: 
         value: ${{ jobs.changes.outputs.cassandra }}
       authentik-postgresql: 
         value: ${{ jobs.changes.outputs.authentik-postgresql }}
-      tactical-frontend: 
-        value: ${{ jobs.changes.outputs.tactical-frontend }}
       tactical-nginx: 
         value: ${{ jobs.changes.outputs.tactical-nginx }}
       tactical-backend: 
@@ -71,11 +67,9 @@ jobs:
       openframe-gateway: ${{ steps.filter.outputs.openframe-gateway }}
       openframe-management: ${{ steps.filter.outputs.openframe-management }}
       openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
-      openframe-ui: ${{ steps.filter.outputs.openframe-ui }}
       mongodb: ${{ steps.filter.outputs.mongodb }}
       cassandra: ${{ steps.filter.outputs.cassandra }}
       authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
-      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
       tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
       tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
@@ -123,13 +117,8 @@ jobs:
               - './openframe/services/openframe-management/**'
             openframe-stream:
               - './openframe/services/openframe-stream/**'
-            openframe-ui:
-              - './openframe/services/openframe-ui/**'
             authentik-postgresql:
               - './integrated-tools/authentik/postgresql/**'
-            tactical-frontend:
-              - './integrated-tools/tactical-rmm/tactical-frontend/**'
-              - './integrated-tools/tactical-rmm/shared/**'
             tactical-nginx:
               - './integrated-tools/tactical-rmm/tactical-nginx/**'
               - './integrated-tools/tactical-rmm/shared/**'

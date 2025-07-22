@@ -33,7 +33,7 @@ runs:
         [ -n "$COMMIT_SHA" ] || { echo "Error: COMMIT_SHA is required" >&2; exit 1; }
         [ -n "$MATRIX" ] || { echo "Error: MATRIX is required" >&2; exit 1; }
         [ -n "$CHANGES" ] || { echo "Error: CHANGES is required" >&2; exit 1; }
-        [ -f "$HELM_VALUES_FILE" ] && { echo "Error: File already exists: $HELM_VALUES_FILE" >&2; exit 1; }
+        [ -f "$HELM_VALUES_FILE" ] || { echo "Error: App-of-apps file not found: $HELM_VALUES_FILE" >&2; exit 1; }
 
         # Install yq if needed
         if ! command -v yq &> /dev/null; then
@@ -50,10 +50,6 @@ runs:
             echo "Failed to update $path" >&2
           fi
         }
-
-        # Create a new empty file
-        touch "$HELM_VALUES_FILE"
-        echo "reated new file: $HELM_VALUES_FILE"
 
         echo "Updating Helm values with tag: $COMMIT_SHA"
         # Process each changed service

@@ -199,7 +199,7 @@ jobs:
       - name: Install tools and validate environment
         uses: ./.github/steps/requirements-for-run.sh
 
-      - name: Create helm values
+      - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags
         with:
           matrix: ${{ needs.matrix.outputs.matrix }}
@@ -251,3 +251,18 @@ jobs:
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
+
+  final-checks:
+    name: Final tests
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Verify values are clean
+        run: |
+          [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }
+          [ ! -s "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE is not empty"; cat "$HELM_VALUES_FILE"; exit 1; }
+          echo "$HELM_VALUES_FILE is empty"
