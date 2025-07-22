@@ -21,8 +21,8 @@ spec:
 
   syncPolicy:
     automated:
-      selfHeal: true
-      prune: true
+      selfHeal: false
+      prune: false
     syncOptions:
       - CreateNamespace=false
     retry:
