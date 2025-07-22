@@ -10,7 +10,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 @EnableKafka
 @ComponentScan(basePackages = {"com.openframe.stream", "com.openframe.data.config", "com.openframe.core.config", "com.openframe.data"})
 public class StreamApplication {
- 
+
     public static void main(String[] args) {
         SpringApplication.run(StreamApplication.class, args);
     }

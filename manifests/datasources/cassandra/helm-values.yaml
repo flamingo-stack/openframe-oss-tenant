@@ -40,15 +40,15 @@ initDB:
     ingest_day      text,
     tool_type       text,
     event_type      text,
-    timestamp       timestamp,
+    event_timestamp timestamp,
     tool_event_id   text,
     user_id         text,
     device_id       text,
     severity        text,
     message         text,
     details         map<text, text>,
-    PRIMARY KEY ((ingest_day, tool_type), event_type, timestamp, tool_event_id)
-    ) WITH CLUSTERING ORDER BY (event_type ASC, timestamp DESC, tool_event_id ASC);
+    PRIMARY KEY ((ingest_day, tool_type), event_type, event_timestamp, tool_event_id)
+    ) WITH CLUSTERING ORDER BY (event_type ASC, event_timestamp DESC, tool_event_id ASC);
     
     CREATE INDEX IF NOT EXISTS idx_unified_logs_event_type ON unified_logs(event_type);
     CREATE INDEX IF NOT EXISTS idx_unified_logs_tool_type ON unified_logs(tool_type);

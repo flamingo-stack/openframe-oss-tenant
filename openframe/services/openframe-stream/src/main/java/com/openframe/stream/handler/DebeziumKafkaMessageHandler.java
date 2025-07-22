@@ -35,7 +35,7 @@ public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler
             message.setEventType(debeziumMessage.getUnifiedEventType().name());
             message.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
             message.setSummary(debeziumMessage.getMessage());
-            message.setTimestamp(debeziumMessage.getPayload().getTimestamp());
+            message.setEventTimestamp(debeziumMessage.getPayload().getTimestamp());
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);

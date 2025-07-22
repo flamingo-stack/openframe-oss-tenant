@@ -62,3 +62,4 @@ OpenFrame Gateway is an authentication proxy and unified entry point for multipl
 * **Security**: Supports different authorization scopes for API vs agent access
 * **Logging**: Includes detailed request logging with curl command generation
 * **Timeout Management**: Configures appropriate timeouts for proxied connections
+
