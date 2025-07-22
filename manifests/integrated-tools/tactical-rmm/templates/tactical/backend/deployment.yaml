@@ -43,8 +43,8 @@ spec:
           ']
 
       containers:
-      - name: tactical-backend
-        image: "{{ .Values.tactical.backend.image.repo }}:{{ .Values.tactical.backend.image.tag }}"
+      - name: tactical-base
+        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-backend"]
         ports:
         - containerPort: 8000
