@@ -31,8 +31,8 @@ spec:
           ']
 
       containers:
-      - name: tactical-celery
-        image: "{{ .Values.tactical.celery.image.repo }}:{{ .Values.tactical.celery.image.tag }}"
+      - name: tactical-base
+        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-celery"]
         envFrom:
         - configMapRef:

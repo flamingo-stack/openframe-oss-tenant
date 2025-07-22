@@ -31,8 +31,8 @@ spec:
           ']
 
       containers:
-      - name: tactical-websockets
-        image: "{{ .Values.tactical.websockets.image.repo }}:{{ .Values.tactical.websockets.image.tag }}"
+      - name: tactical-base
+        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-websockets"]
         ports:
         - containerPort: 8000
