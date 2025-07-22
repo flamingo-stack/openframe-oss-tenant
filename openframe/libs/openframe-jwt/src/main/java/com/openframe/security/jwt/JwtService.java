@@ -218,19 +218,6 @@ public class JwtService {
     }
 
     /**
-     * @deprecated Use setAccessTokenCookie() and setRefreshTokenCookie() instead for better security.
-     * This method is kept for backward compatibility but now uses strict paths.
-     */
-    @Deprecated(since = "1.0", forRemoval = true)
-    public void setTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
-        log.warn("DEPRECATED: setTokenCookies() - use setAccessTokenCookie() and setRefreshTokenCookie() instead");
-        log.info("Now using strict paths: access_token (Path=/), refresh_token (Path=/api/oauth/token)");
-
-        setAccessTokenCookie(response, accessToken);
-        setRefreshTokenCookie(response, refreshToken);
-    }
-
-    /**
      * Clear both access and refresh token cookies (for logout)
      * Uses the same paths as when they were set for proper clearing
      */
