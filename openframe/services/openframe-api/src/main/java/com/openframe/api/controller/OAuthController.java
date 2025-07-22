@@ -4,7 +4,6 @@ import com.openframe.api.dto.UserDTO;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.api.service.OAuthService;
-import com.openframe.security.jwt.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,6 @@ import static com.openframe.core.constants.HttpHeaders.X_USER_ID;
 public class OAuthController {
 
     private final OAuthService oauthService;
-    private final JwtService jwtService;
 
     @PostMapping(value = "/token", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> token(
@@ -40,28 +38,16 @@ public class OAuthController {
         
         log.debug("Token request - grant_type: {}, client_id: {}", grant_type, client_id);
 
-        TokenResponse response = processTokenRequest(grant_type, code, username, password,
+        TokenResponse response = oauthService.processTokenRequest(grant_type, code, username, password,
                 client_id, client_secret, httpRequest);
 
-        jwtService.setAccessTokenCookie(httpResponse, response.getAccessToken());
-
-        jwtService.setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        oauthService.setAuthenticationCookies(response, httpResponse);
 
         return ResponseEntity.ok(Map.of(
                 "token_type", response.getTokenType(),
                 "expires_in", response.getExpiresIn(),
                 "message", "Authentication successful - tokens set as secure cookies"
         ));
-    }
-
-    private TokenResponse processTokenRequest(String grantType, String code, String username,
-                                              String password, String clientId, String clientSecret, HttpServletRequest httpRequest) {
-
-        if ("refresh_token".equals(grantType)) {
-            return oauthService.handleRefreshToken(clientId, clientSecret, httpRequest);
-        }
-
-        return oauthService.token(grantType, code, username, password, clientId, clientSecret);
     }
 
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -73,9 +59,7 @@ public class OAuthController {
 
         TokenResponse response = oauthService.handleRegistration(userDTO, authHeader);
 
-        jwtService.setAccessTokenCookie(httpResponse, response.getAccessToken());
-
-        jwtService.setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        oauthService.setAuthenticationCookies(response, httpResponse);
 
         return ResponseEntity.ok(Map.of(
                 "token_type", response.getTokenType(),
@@ -120,7 +104,7 @@ public class OAuthController {
     public ResponseEntity<?> logout(HttpServletResponse httpResponse) {
         log.debug("Logout request");
 
-        jwtService.clearTokenCookies(httpResponse);
+        oauthService.clearAuthenticationCookies(httpResponse);
 
         return ResponseEntity.ok(Map.of(
                 "message", "Logout successful"

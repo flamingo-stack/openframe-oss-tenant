@@ -382,4 +382,33 @@ public class OAuthService {
                     return new IllegalArgumentException("Client not found");
                 });
     }
+
+    /**
+     * Process any token request (refresh or regular)
+     */
+    public TokenResponse processTokenRequest(String grantType, String code, String username,
+                                           String password, String clientId, String clientSecret,
+                                           jakarta.servlet.http.HttpServletRequest httpRequest) {
+        
+        if ("refresh_token".equals(grantType)) {
+            return handleRefreshToken(clientId, clientSecret, httpRequest);
+        }
+        
+        return token(grantType, code, username, password, clientId, clientSecret);
+    }
+
+    /**
+     * Set authentication cookies after successful token generation
+     */
+    public void setAuthenticationCookies(TokenResponse tokenResponse, jakarta.servlet.http.HttpServletResponse httpResponse) {
+        jwtService.setAccessTokenCookie(httpResponse, tokenResponse.getAccessToken());
+        jwtService.setRefreshTokenCookie(httpResponse, tokenResponse.getRefreshToken());
+    }
+
+    /**
+     * Clear authentication cookies (for logout)
+     */
+    public void clearAuthenticationCookies(jakarta.servlet.http.HttpServletResponse httpResponse) {
+        jwtService.clearTokenCookies(httpResponse);
+    }
 }
