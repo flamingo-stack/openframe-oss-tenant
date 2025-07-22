@@ -34,8 +34,11 @@ spring:
       # NATS specific configuration
       nats:
         binder:
-          # NATS server connection
-          servers: nats://localhost:4222
+          # NATS server connection with authentication
+          servers: nats://admin:secret@localhost:4222
+          # Alternative separate auth configuration
+          username: admin
+          password: secret
           
         # Binding-specific NATS configuration
         bindings:
@@ -57,7 +60,9 @@ spring:
 # NATS connection properties
 nats:
   spring:
-    server: nats://localhost:4222
+    server: nats://admin:secret@localhost:4222
+    username: admin
+    password: secret
   connection:
     timeout: 5s
     max-reconnect: 10
