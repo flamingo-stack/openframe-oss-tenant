@@ -20,9 +20,6 @@ wait_for_argocd_apps() {
       fi
     done
 
-    kubectl -n microservices get pods || true
-    kubectl -n microservices logs -l app=openframe-gateway -c openframe-gateway || true
-
     [ "$(wc -l < "$printed")" -eq "$(kubectl -n argocd get applications -o name | wc -l)" ] && break
     sleep 5
   done
