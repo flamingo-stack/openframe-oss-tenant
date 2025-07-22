@@ -11,10 +11,10 @@ inputs:
   changes:
     description: 'Changes output'
     required: true
-  app-of-apps-file:
-    description: 'Path to app-of-apps.yaml file'
+  helm-values-file:
+    description: 'Path to helm-values.yaml file'
     required: false
-    default: 'scripts/helm-values/app-of-apps.yaml'
+    default: 'scripts/helm-values.yaml'
 
 runs:
   using: 'composite'
@@ -25,7 +25,7 @@ runs:
         COMMIT_SHA: "${{ inputs.commit-sha }}"
         MATRIX: '${{ inputs.matrix }}'
         CHANGES: '${{ inputs.changes }}'
-        APP_OF_APPS_FILE: '${{ inputs.app-of-apps-file }}'
+        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
       run: |
         set -euo pipefail
         
@@ -33,7 +33,7 @@ runs:
         [ -n "$COMMIT_SHA" ] || { echo "Error: COMMIT_SHA is required" >&2; exit 1; }
         [ -n "$MATRIX" ] || { echo "Error: MATRIX is required" >&2; exit 1; }
         [ -n "$CHANGES" ] || { echo "Error: CHANGES is required" >&2; exit 1; }
-        [ -f "$APP_OF_APPS_FILE" ] || { echo "Error: App-of-apps file not found: $APP_OF_APPS_FILE" >&2; exit 1; }
+        [ -f "$HELM_VALUES_FILE" ] && { echo "Error: File already exists: $HELM_VALUES_FILE" >&2; exit 1; }
 
         # Install yq if needed
         if ! command -v yq &> /dev/null; then
@@ -44,12 +44,16 @@ runs:
         # Function to set image tags
         set_image_tag() {
           local path="$1"
-          if yq eval ".apps.$path = \"$COMMIT_SHA\"" -i "$APP_OF_APPS_FILE" 2>/dev/null; then
+          if yq eval ".apps.$path = \"$COMMIT_SHA\"" -i "$HELM_VALUES_FILE" 2>/dev/null; then
             echo "Updated $path with image tag: $COMMIT_SHA"
           else
             echo "Failed to update $path" >&2
           fi
         }
+
+        # Create a new empty file
+        touch "$HELM_VALUES_FILE"
+        echo "reated new file: $HELM_VALUES_FILE"
 
         echo "Updating Helm values with tag: $COMMIT_SHA"
         # Process each changed service

@@ -44,7 +44,7 @@ argocd_apps)
     --namespace argocd \
     --wait \
     --timeout 60m \
-    -f "${SCRIPT_DIR}/app-of-apps-values.yaml" \
+    -f "${SCRIPT_DIR}/helm-values.yaml" \
     > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
     wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
 

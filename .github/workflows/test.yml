@@ -32,7 +32,7 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
   REPOSITORY: "openframe"
-  APP_OF_APPS_VALUES: "scripts/app-of-apps-values.yaml"
+  HELM_VALUES_FILE: "scripts/helm-values.yaml"
 
 # =============================================================================
 # JOBS
@@ -199,20 +199,20 @@ jobs:
       - name: Install tools and validate environment
         uses: ./.github/steps/requirements-for-run.sh
 
-      - name: Override helm values
+      - name: Create helm values
         uses: ./.github/steps/helm-override-image-tags
         with:
           matrix: ${{ needs.matrix.outputs.matrix }}
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.commit_sha }}
-          app-of-apps-file: ${{ env.APP_OF_APPS_VALUES }}
+          helm-values-file: ${{ env.HELM_VALUES_FILE }}
         
       - name: Override branch name
         run: |
           # Override branch name
-          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.APP_OF_APPS_VALUES }}"
+          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
           echo "Updated global.repoBranch to: ${{ github.head_ref }}"
-          cat "${{ env.APP_OF_APPS_VALUES }}"
+          cat "${{ env.HELM_VALUES_FILE }}"
 
       - name: Run environment test script
         env:
@@ -251,18 +251,3 @@ jobs:
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest
-
-  final-checks:
-    name: Final tests
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Verify values are clean
-        run: |
-          [ -f "$APP_OF_APPS_VALUES" ] || { echo "Error: $APP_OF_APPS_VALUES not found"; exit 1; }
-          [ ! -s "$APP_OF_APPS_VALUES" ] || { echo "Error: $APP_OF_APPS_VALUES is not empty"; cat "$APP_OF_APPS_VALUES"; exit 1; }
-          echo "$APP_OF_APPS_VALUES is empty"
