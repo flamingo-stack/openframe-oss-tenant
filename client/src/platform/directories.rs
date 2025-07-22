@@ -18,7 +18,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tracing::{error, info, warn};
+use tracing::info;
 
 use super::permissions::{PermissionError, Permissions};
 

@@ -9,7 +9,7 @@
 
 <section>
     <h2>Subscribe</h2>
-    <input id="subTopic" placeholder="Topic to subscribe" />
+    <input id="subTopic" placeholder="Topic to subscribe" value="$SYS.ACCOUNT.*.*" />
     <button onclick="subscribe()">Subscribe</button>
 </section>
 
@@ -28,11 +28,26 @@
     let nc;
     const sc = StringCodec();
 
+    // Format JSON beautifully
+    function formatMessage(message) {
+        try {
+            // Try to parse as JSON
+            const jsonObj = JSON.parse(message);
+            // If successful, format with indentation
+            return JSON.stringify(jsonObj, null, 2);
+        } catch (error) {
+            // If not JSON, return as is
+            return message;
+        }
+    }
+
     // Connect to NATS WebSocket
     async function connectToNats() {
         try {
             nc = await connect({
-                servers: "ws://localhost:8100/ws/nats"
+                servers: "ws://localhost:8100/ws/nats",
+                user: "admin",
+                pass: "secret"
             });
             console.log("Connected to NATS!");
             addToLog("Connected to NATS server");
@@ -52,7 +67,8 @@
         (async () => {
             for await (const msg of sub) {
                 const message = sc.decode(msg.data);
-                addToLog(`[${topic}] Received: ${message}`);
+                const formattedMessage = formatMessage(message);
+                addToLog(`[${topic}] Received:\n${formattedMessage}`);
             }
         })();
         document.getElementById('subTopic').value = '';
@@ -77,7 +93,10 @@
     function addToLog(message) {
         const log = document.getElementById('log');
         const li = document.createElement('li');
-        li.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        // Use <pre> element to preserve formatting and whitespace
+        const pre = document.createElement('pre');
+        pre.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        li.appendChild(pre);
         log.appendChild(li);
     }
 

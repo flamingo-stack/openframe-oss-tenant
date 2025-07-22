@@ -15,6 +15,10 @@ categories = ["system", "monitoring"]
 name = "openframe"
 path = "src/main.rs"
 
+[[example]]
+name = "nats_example"
+path = "examples/nats_example.rs"
+
 [lib]
 name = "openframe"
 path = "src/lib.rs"
@@ -48,6 +52,7 @@ tracing-appender = "0.2"
 flate2 = "1.0"
 service-manager = "0.8"
 plist = "1.7.1"
+async-nats = { git = "https://github.com/AleTopp/nats.rs.git", branch = "main", features = ["websockets"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

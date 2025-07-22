@@ -1,13 +1,11 @@
 use anyhow::{Context, Result};
 use plist::Dictionary;
-use serde_json;
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
 };
-use std::collections::HashMap;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::{debug, info, warn};
 

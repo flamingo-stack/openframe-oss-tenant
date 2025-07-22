@@ -1,11 +1,7 @@
 use anyhow::Result;
-use directories::ProjectDirs;
-use semver;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{sleep, Duration};
 use tracing::{error, info};
 use uuid;
 
@@ -15,6 +11,7 @@ pub mod platform;
 
 pub mod logging;
 pub mod monitoring;
+pub mod nats;
 pub mod service;
 /// Cross-platform service manager adapters
 ///
@@ -27,6 +24,7 @@ pub mod system;
 pub mod updater;
 
 use crate::platform::DirectoryManager;
+use crate::nats::NatsService;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -90,6 +88,7 @@ impl Default for ClientConfiguration {
 pub struct Client {
     config: Arc<RwLock<ClientConfiguration>>,
     directory_manager: DirectoryManager,
+    nats_service: NatsService,
 }
 
 impl Client {
@@ -110,6 +109,7 @@ impl Client {
         Ok(Self {
             config,
             directory_manager,
+            nats_service: NatsService::new(),
         })
     }
 
@@ -129,6 +129,36 @@ impl Client {
 
         // Start periodic health checks
         self.directory_manager.perform_health_check()?;
+
+        // After registration and auth, connect to NATS
+        info!("Connecting to NATS server for device commands");
+        if let Err(e) = self.nats_service.connect().await {
+            error!("Failed to connect to NATS: {:?}", e);
+            error!("Error chain: {:#}", e);
+            return Err(e);
+        }
+
+        // Subscribe to device commands topic
+        let device_id = "123";
+        
+        let commands_topic = format!("device/{}/commands", device_id);
+        info!("Subscribing to device commands topic: {}", commands_topic);
+
+        // if let Err(e) = self.nats_service.subscribe_and_log(&commands_topic).await {
+        //     error!("Failed to subscribe to device commands: {}", e);
+        //     return Err(e);
+        // }
+
+        // info!("Successfully connected to NATS and subscribed to device commands");
+
+
+        // if let Err(e) = self.nats_service.subscribe_and_log("$SYS.SERVER.*.CLIENT.CONNECT").await {
+        //     error!("Failed to subscribe to SYS.SERVER.*.CLIENT.CONNECT: {}", e);
+        //     return Err(e);
+        // }
+
+        // info!("Successfully subscribed to SYS.SERVER.*.CLIENT.CONNECT");
+
 
         // Keep the client running
         loop {
