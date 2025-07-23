@@ -35,8 +35,9 @@ spec:
           - -c
           - |
             echo "Getting Tactical RMM API key..."
+            sleep 10
             POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
-            TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c tactical-backend -- cat /opt/tactical/api_key.txt)
+            TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c tactical-base -- cat /opt/tactical/api_key.txt)
 
             echo "Registering Tactical RMM..."
             echo "Waiting for OpenFrame Management API to become reachable..."
