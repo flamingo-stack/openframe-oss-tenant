@@ -69,7 +69,7 @@ import type { RuntimeConfig } from '../../config/runtime-config';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-let API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+let API_URL = `${runtimeConfig.gatewayUrl}/tools/fleetmdm-server/api/v1/fleet`;
 
 interface ConfigValue {
   [key: string]: string | number | boolean | null | ConfigValue | ConfigValue[] | Record<string, unknown>;
@@ -538,7 +538,7 @@ onMounted(() => {
 
 const handleConfigChange = (newConfig: RuntimeConfig) => {
   // Update the API URL when config changes
-  API_URL = `${newConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+  API_URL = `${newConfig.gatewayUrl}/tools/fleetmdm-server/api/v1/fleet`;
 };
 </script>
 
