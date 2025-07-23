@@ -224,7 +224,7 @@ interface Query {
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/fleetmdm-server/api/v1/fleet`;
 const router = useRouter();
 const toastService = ToastService.getInstance();
 

@@ -79,7 +79,7 @@ import { RACService } from '../../services/RACService';
 
 const configService = ConfigService.getInstance();
 const runtimeConfig = configService.getConfig();
-const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
+const API_URL = `${runtimeConfig.gatewayUrl}/tools/meshcentral-server`;
 const toastService = ToastService.getInstance();
 const racService = RACService.getInstance();
 
