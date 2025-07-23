@@ -105,9 +105,6 @@ verify_command() {
     "k3d")
         brew install k3d
         ;;
-    "kustomize")
-        brew install kustomize
-        ;;
     esac
 }
 

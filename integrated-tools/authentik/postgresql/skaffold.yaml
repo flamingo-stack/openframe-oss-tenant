@@ -1,0 +1,29 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: authentik-postgresql
+build:
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe/authentik-postgresql
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
+  local:
+    useDockerCLI: false
+    useBuildkit: true
+    push: false
+manifests:
+  helm:
+    releases:
+      - name: authentik-postgresql
+        chartPath: ../../../manifests/integrated-tools/authentik
+        valuesFiles:
+          - ../../../manifests/integrated-tools/authentik/values.yaml
+        # setValues:

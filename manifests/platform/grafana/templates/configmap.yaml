@@ -1,0 +1,23 @@
+{{- $dashboardRoot := "dashboards" }}
+{{- $folders := dict }}
+
+{{- /* Pass 1: Collect all unique folder names under dashboards/ */}}
+{{- range $path, $_ := $.Files.Glob (printf "%s/*/*.json" $dashboardRoot) }}
+  {{- $parts := splitList "/" $path }}
+  {{- $folder := index $parts 1 }}
+  {{- $_ := set $folders $folder true }}
+{{- end }}
+
+{{- /* Pass 2: Render a ConfigMap per folder */}}
+{{- range $folderName, $_ := $folders }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $folderName }}
+data:
+{{- range $path, $bytes := $.Files.Glob (printf "%s/%s/*.json" $dashboardRoot $folderName) }}
+  {{ base $path }}: |
+{{ $bytes | toString | indent 4 }}
+{{- end }}
+---
+{{- end }}

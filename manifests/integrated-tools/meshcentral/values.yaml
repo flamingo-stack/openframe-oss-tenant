@@ -1,0 +1,8 @@
+global:
+  registerJob:
+    enabled: true
+
+server:
+  image: 
+    repo: ghcr.io/flamingo-cx/openframe/meshcentral
+    tag: latest

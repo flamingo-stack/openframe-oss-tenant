@@ -1,0 +1,41 @@
+{{- if eq .Values.deployment.ingress "ngrok" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-gateway
+  annotations:
+    k8s.ngrok.com/traffic-policy: openframe-gateway
+spec:
+  ingressClassName: ngrok
+  rules:
+    - host: {{ required "deployment.url is required for ngrok ingress" .Values.deployment.url | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-gateway
+                port:
+                  number: 8100
+
+{{- else if eq .Values.deployment.ingress "localhost" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-gateway
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Disable SSL redirect for localhost
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-gateway
+                port:
+                  name: http
+{{- end }}

@@ -31,24 +31,16 @@ on:
         value: ${{ jobs.changes.outputs.cassandra }}
       authentik-postgresql: 
         value: ${{ jobs.changes.outputs.authentik-postgresql }}
-      tactical-frontend: 
-        value: ${{ jobs.changes.outputs.tactical-frontend }}
-      tactical-nginx: 
-        value: ${{ jobs.changes.outputs.tactical-nginx }}
-      tactical-backend: 
-        value: ${{ jobs.changes.outputs.tactical-backend }}
-      tactical-nats: 
-        value: ${{ jobs.changes.outputs.tactical-nats }}
-      tactical-websockets: 
-        value: ${{ jobs.changes.outputs.tactical-websockets }}
-      tactical-celery: 
-        value: ${{ jobs.changes.outputs.tactical-celery }}
-      tactical-celerybeat: 
-        value: ${{ jobs.changes.outputs.tactical-celerybeat }}
       fleetmdm: 
         value: ${{ jobs.changes.outputs.fleetmdm }}
       meshcentral: 
         value: ${{ jobs.changes.outputs.meshcentral }}
+      tactical-frontend: 
+        value: ${{ jobs.changes.outputs.tactical-frontend }}
+      tactical-nginx: 
+        value: ${{ jobs.changes.outputs.tactical-nginx }}
+      tactical-base: 
+        value: ${{ jobs.changes.outputs.tactical-base }}
       timestamp: 
         value: ${{ jobs.changes.outputs.timestamp }}
       timestamp_tag: 
@@ -75,15 +67,11 @@ jobs:
       mongodb: ${{ steps.filter.outputs.mongodb }}
       cassandra: ${{ steps.filter.outputs.cassandra }}
       authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
-      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
-      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
-      tactical-backend: ${{ steps.filter.outputs.tactical-backend }}
-      tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
-      tactical-websockets: ${{ steps.filter.outputs.tactical-websockets }}
-      tactical-celery: ${{ steps.filter.outputs.tactical-celery }}
-      tactical-celerybeat: ${{ steps.filter.outputs.tactical-celerybeat }}
       fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
       meshcentral: ${{ steps.filter.outputs.meshcentral }}
+      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
+      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
+      tactical-base: ${{ steps.filter.outputs.tactical-base }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
       commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
@@ -97,7 +85,7 @@ jobs:
         run: |
           echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
           echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> $GITHUB_OUTPUT
-          echo "commit_sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "commit_sha=test-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
 
       - uses: dorny/paths-filter@v2
         id: filter
@@ -127,28 +115,16 @@ jobs:
               - './openframe/services/openframe-ui/**'
             authentik-postgresql:
               - './integrated-tools/authentik/postgresql/**'
+            fleetmdm:
+              - './integrated-tools/fleetmdm/**'
+            meshcentral:
+              - './integrated-tools/meshcentral/server/**'
             tactical-frontend:
               - './integrated-tools/tactical-rmm/tactical-frontend/**'
               - './integrated-tools/tactical-rmm/shared/**'
             tactical-nginx:
               - './integrated-tools/tactical-rmm/tactical-nginx/**'
               - './integrated-tools/tactical-rmm/shared/**'
-            tactical-backend:
+            tactical-base:
               - './integrated-tools/tactical-rmm/tactical-base/**'
               - './integrated-tools/tactical-rmm/shared/**'
-            tactical-nats:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
-            tactical-websockets:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
-            tactical-celery:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
-            tactical-celerybeat:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
-            fleetmdm:
-              - './integrated-tools/fleetmdm/**'
-            meshcentral:
-              - './integrated-tools/meshcentral/server/**'

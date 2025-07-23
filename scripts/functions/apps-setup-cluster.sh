@@ -6,8 +6,6 @@ function setup_cluster() {
 
     echo "Updating helm repos indexes"
     helm repo update
-
-    add_loopback_ip
     
     # Check for port availability
     check_port_availability() {
