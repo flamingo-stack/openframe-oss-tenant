@@ -20,8 +20,8 @@ OpenFrame Gateway is an authentication proxy and unified entry point for multipl
 
 ## Key Files
 
-* `GatewaySecurityConfig.java`: Configures security and authentication
-* `ReactiveJwtAuthenticationFilter.java`: Validates JWT tokens for requests
+* `GatewaySecurityConfig.java`: Configures security and authentication using OAuth2 Resource Server
+* `CookieToHeaderFilter.java`: Converts JWT tokens from HttpOnly cookies to Authorization headers
 * `JwtToHeadersFilter.java`: Converts JWT claims to HTTP headers
 * `RestProxyService.java`: Proxies REST requests to integrated tools
 * `WebSocketGatewayConfig.java`: Manages WebSocket routing and connections

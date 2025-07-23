@@ -75,19 +75,13 @@ export class AuthService {
   private static configService = ConfigService.getInstance();
   private static runtimeConfig = AuthService.configService.getConfig();
 
-  private static getHeaders(includeAuth: boolean = false): HeadersInit {
+  private static getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     };
-
-    if (includeAuth) {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    }
-
+    
+    // No longer adding Authorization header - authentication via cookies
     return headers;
   }
 
@@ -95,11 +89,8 @@ export class AuthService {
     const data = await response.json();
     
     if (!response.ok) {
-      if (response.status === 401) {
-        // Auto logout if 401 response returned from api
-        this.logout();
-      }
-      
+      // Don't auto-logout here - let the calling code handle auth errors
+      // This prevents unexpected logouts during normal API calls
       const error = (data && data.error_description) || response.statusText;
       throw new OAuthError(
         data.error,
@@ -109,18 +100,10 @@ export class AuthService {
       );
     }
 
-    // Store tokens if they exist in response
-    if (data.access_token) {
-      console.log('🔑 [Auth] Storing access token');
-      localStorage.setItem('access_token', data.access_token);
-    }
-    if (data.refresh_token) {
-      console.log('🔑 [Auth] Storing refresh token');
-      localStorage.setItem('refresh_token', data.refresh_token);
-    }
-
-    // Wait a moment to ensure tokens are stored
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // SECURITY: Both access and refresh tokens are now set as HttpOnly cookies by server
+    // Access token: Path=/ (sent on all API requests)
+    // Refresh token: Path=/api/oauth/token (sent only on refresh requests)
+    console.log('🔑 [Auth] Tokens set as secure HttpOnly cookies with strict paths');
 
     return data;
   }
@@ -204,24 +187,12 @@ export class AuthService {
       const response = await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
       
       console.log('✅ [Auth] Login successful:', {
-        hasAccessToken: !!response.access_token,
-        hasRefreshToken: !!response.refresh_token,
         tokenType: response.token_type,
         expiresIn: response.expires_in
       });
 
-      // Store tokens immediately
-      if (response.access_token) {
-        console.log('🔑 [Auth] Storing access token');
-        localStorage.setItem('access_token', response.access_token);
-      }
-      if (response.refresh_token) {
-        console.log('🔑 [Auth] Storing refresh token');
-        localStorage.setItem('refresh_token', response.refresh_token);
-      }
-
-      // Wait a moment to ensure tokens are stored
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Tokens are now set as HTTP-only cookies by the server
+      console.log('🔑 [Auth] Tokens set as HTTP-only cookies by server');
 
       return response;
     } catch (error: unknown) {
@@ -252,18 +223,8 @@ export class AuthService {
         { headers }
       );
       
-      // Store tokens immediately
-      if (response.access_token) {
-        console.log('🔑 [Auth] Storing access token');
-        localStorage.setItem('access_token', response.access_token);
-      }
-      if (response.refresh_token) {
-        console.log('🔑 [Auth] Storing refresh token');
-        localStorage.setItem('refresh_token', response.refresh_token);
-      }
-
-      // Wait a moment to ensure tokens are stored
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Tokens are now set as HTTP-only cookies by the server
+      console.log('🔑 [Auth] Registration successful, tokens set as HTTP-only cookies by server');
 
       return response;
     } catch (error: unknown) {
@@ -330,9 +291,28 @@ export class AuthService {
     }
   }
 
-  static logout() {
+  /**
+   * @deprecated Use authStore.logout() instead for proper API logout and cookie clearing
+   * This method only clears localStorage and doesn't call the logout API
+   */
+  static async logout() {
+    console.warn('⚠️ [AuthService] DEPRECATED: Use authStore.logout() instead for proper logout');
+    
+    try {
+      // Call logout endpoint to clear HttpOnly cookies
+      await fetch(`${AuthService.runtimeConfig.apiUrl}/oauth/logout`, {
+        method: 'POST',
+        credentials: 'include' // Include cookies
+      });
+    } catch (error) {
+      console.warn('⚠️ [AuthService] Logout endpoint failed, continuing with local logout:', error);
+    }
+    
+    // Clear any localStorage remnants
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    
+    console.log('🔑 [AuthService] DEPRECATED logout completed - consider using authStore.logout()');
   }
 
   static isAuthenticated(): boolean {
@@ -348,10 +328,8 @@ export class AuthService {
   }
 
   static getAuthHeader(): Record<string, string> {
-    const token = this.getAccessToken();
-    if (token) {
-      return { 'Authorization': `Bearer ${token}` };
-    }
+    // No longer returning Authorization header - authentication via cookies
+    // Make sure to use credentials: 'include' in fetch requests instead
     return {};
   }
 } 

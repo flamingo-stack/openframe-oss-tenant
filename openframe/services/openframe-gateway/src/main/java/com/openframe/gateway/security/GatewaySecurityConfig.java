@@ -1,6 +1,6 @@
 package com.openframe.gateway.security;
 
-import com.openframe.gateway.security.jwt.ReactiveJwtAuthenticationFilter;
+import com.openframe.gateway.security.filter.CookieToHeaderFilter;
 import com.openframe.security.jwt.JwtConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.server.resource.authentication.Reacti
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Flux;
 
+import static com.openframe.gateway.security.SecurityConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
@@ -32,7 +33,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class GatewaySecurityConfig {
 
     private final ManagementServerProperties managementProperties;
-    private final ReactiveJwtAuthenticationFilter jwtAuthFilter;
+    private final CookieToHeaderFilter cookieToHeaderFilter;
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
@@ -58,7 +59,7 @@ public class GatewaySecurityConfig {
     }
 
     /* TODO:
-      - Have common registry of permitted path(now it's duplicated at JwtAuthenticationOperations and this class
+      - Consider extracting permitted paths configuration to a separate component for reusability
      */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(
@@ -72,7 +73,7 @@ public class GatewaySecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .addFilterAt(jwtAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterBefore(cookieToHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(reactiveJwtAuthenticationConverter()))
                 )
@@ -81,24 +82,24 @@ public class GatewaySecurityConfig {
                         .pathMatchers(
                                 "/error/**",
                                 "/health/**",
-                                "/clients/metrics/**",
-                                "/clients/api/agents/register",
-                                "/clients/oauth/token",
-                                "/api/oauth/token",
-                                "/api/oauth/register",
-                                "/api/oauth2/**",
-                                "/api/sso/providers",
+                                CLIENTS_PREFIX + "/metrics/**",
+                                CLIENTS_PREFIX + "/api/agents/register",
+                                CLIENTS_PREFIX + "/oauth/token",
+                                DASHBOARD_PREFIX + "/oauth/token",
+                                DASHBOARD_PREFIX + "/oauth/register",
+                                DASHBOARD_PREFIX + "/oauth2/**",
+                                DASHBOARD_PREFIX + "/sso/providers",
                                  managementContextPath + "/**",
-                                "/api/.well-known/openid-configuration"
+                                DASHBOARD_PREFIX + "/.well-known/openid-configuration"
                         ).permitAll()
-                        .pathMatchers("/api/**").hasRole("USER")
-                        .pathMatchers("/clients/**").hasRole("AGENT")
+                                .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
+                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
 //                        // Agent tools
-                        .pathMatchers("/tools/agent/**").hasRole("AGENT")
-                        .pathMatchers("/ws/tools/agent/**").hasRole("AGENT")
+                                .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
+                                .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
 //                        // Api tools
-                        .pathMatchers("/tools/**").hasRole("USER")
-                        .pathMatchers("/ws/tools/**").hasRole("USER")
+                                .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
+                                .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers("/**").permitAll()
                 )
                 .build();
