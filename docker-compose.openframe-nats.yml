@@ -10,4 +10,8 @@ services:
       - "8080:8080"      # WebSocket (через TLS)
     volumes:
       - ./nats.conf:/etc/nats/nats.conf
+      - nats-jetstream-data:/data/jetstream  # JetStream persistent storage
     command: ["-c", "/etc/nats/nats.conf"]
+
+volumes:
+  nats-jetstream-data:

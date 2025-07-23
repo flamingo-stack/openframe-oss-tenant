@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
-use async_nats::Client;
+use async_nats::{Client, jetstream, jetstream::consumer::PushConsumer};
 use futures::StreamExt;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -46,8 +47,43 @@ impl NatsService {
             .connect(NATS_SERVER_URL)
             .await
             .context("Failed to connect to NATS server")?;
+        
+        // jet stream
 
-        *self.client.write().await = Some(client);
+        let inbox = client.new_inbox();
+        let jetstream = jetstream::new(client);
+        let stream_name = String::from("EVENTS2");
+
+        let consumer: PushConsumer = jetstream
+        .create_stream(jetstream::stream::Config {
+            name: stream_name,
+            subjects: vec!["device.*.commands".to_string()],
+            ..Default::default()
+        })
+        .await?
+        // Then, on that `Stream` use method to create Consumer and bind to it too.
+        .create_consumer(jetstream::consumer::push::Config {
+            deliver_subject: inbox.clone(),
+            inactive_threshold: Duration::from_secs(60),
+            ..Default::default()
+        })
+        .await?;
+
+        let mut messages = consumer.messages().await?;
+
+        while let Some(message) = messages.next().await {
+            let message = message?;
+            println!(
+                "got message on subject {} with payload {:?}",
+                message.subject,
+                String::from_utf8_lossy(&message.payload)
+            );
+    
+            // acknowledge the message
+            message.ack().await.map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+        }
+
+        // *self.client.write().await = Some(client);
         Ok(())
     }
 
