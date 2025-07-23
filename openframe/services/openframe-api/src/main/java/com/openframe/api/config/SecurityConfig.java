@@ -10,8 +10,14 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Spring Security configuration for OpenFrame API service.
- * Configures JWT-based OAuth2 Resource Server to validate tokens.
- * Uses JwtDecoder from openframe-jwt library configuration.
+ * 
+ * Minimal configuration since Gateway already handles authentication/authorization.
+ * This config only enables OAuth2 Resource Server for @AuthenticationPrincipal support.
+ * 
+ * Gateway is responsible for:
+ * - JWT validation and filtering
+ * - PermitAll path handling  
+ * - Adding Authorization headers from cookies
  */
 @Configuration
 @EnableWebSecurity
@@ -22,17 +28,7 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers(
-                                "/error/**",
-                                "/actuator/health/**",
-                                "/oauth/token",
-                                "/oauth/register",
-                                "/oauth2/**",
-                                "/sso/providers",
-                                "/.well-known/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.decoder(jwtDecoder))
