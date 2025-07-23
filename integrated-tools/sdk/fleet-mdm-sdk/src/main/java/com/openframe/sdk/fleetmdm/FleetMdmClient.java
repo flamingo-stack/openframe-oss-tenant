@@ -53,8 +53,11 @@ public class FleetMdmClient {
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Failed to fetch hosts: " + response.body());
+        
+        if (response.statusCode() == 401) {
+            throw new RuntimeException("Authentication failed. Please check your API token. Response: " + response.body());
+        } else if (response.statusCode() != 200) {
+            throw new RuntimeException("Failed to fetch hosts. Status: " + response.statusCode() + ", Response: " + response.body());
         }
 
         ObjectMapper mapper = new ObjectMapper();
@@ -86,11 +89,13 @@ public class FleetMdmClient {
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() == 404) {
+        
+        if (response.statusCode() == 401) {
+            throw new RuntimeException("Authentication failed. Please check your API token. Response: " + response.body());
+        } else if (response.statusCode() == 404) {
             return null; // Host not found
-        }
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Failed to fetch host: " + response.body());
+        } else if (response.statusCode() != 200) {
+            throw new RuntimeException("Failed to fetch host. Status: " + response.statusCode() + ", Response: " + response.body());
         }
 
         ObjectMapper mapper = new ObjectMapper();

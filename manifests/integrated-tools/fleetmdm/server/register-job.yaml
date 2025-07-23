@@ -52,6 +52,7 @@ spec:
                   "toolType": "FLEET",
                   "name": "FleetMDM Server",
                   "description": "Fleet Device Management Platform",
+                  "description": "Fleet Device Management Platform",
                   "toolUrls": [
                     {
                       "url": "http://fleetmdm-server-0.fleetmdm-server.default.svc.cluster.local",
@@ -116,6 +117,7 @@ spec:
                       "schema.history.internal.kafka.topic": "fleet_mysql_schema_history",
                       "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092"
                     }
+                  }
                 }
               }' \
               --retry-delay 2 \

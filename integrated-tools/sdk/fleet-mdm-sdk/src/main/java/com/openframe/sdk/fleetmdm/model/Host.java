@@ -1,10 +1,12 @@
 package com.openframe.sdk.fleetmdm.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Host model from Fleet MDM
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Host {
     private Long id;
     private String hostname;
