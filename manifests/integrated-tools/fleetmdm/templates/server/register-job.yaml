@@ -35,6 +35,7 @@ spec:
           - -c
           - |
             echo "Getting FLEET_TOKEN..."
+            sleep 10
             POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
             FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
 

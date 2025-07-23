@@ -12,7 +12,7 @@ export class RACService {
     this.configService = ConfigService.getInstance();
     this.toastService = ToastService.getInstance();
     const runtimeConfig = this.configService.getConfig();
-    this.apiUrl = `${runtimeConfig.gatewayUrl}/tools/meshcentral`;
+    this.apiUrl = `${runtimeConfig.gatewayUrl}/tools/meshcentral-server`;
   }
 
   static getInstance(): RACService {
