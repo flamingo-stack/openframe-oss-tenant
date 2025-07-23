@@ -61,7 +61,7 @@ export class FleetService {
   private constructor() {
     const configService = ConfigService.getInstance();
     const config = configService.getConfig();
-    this.API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
+    this.API_URL = `${config.gatewayUrl}/tools/fleetmdm-server/api/v1/fleet`;
   }
 
   public static getInstance(): FleetService {
