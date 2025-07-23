@@ -36,6 +36,7 @@ public class WebSocketSessionWrapper implements WebSocketSession {
         return delegate.receive()
                 .handle((message, sink) -> {
                     String payload = message.getPayloadAsText();
+                    log.info("Received nats message: {}", payload);
                     sink.next(message);
 //                    // Handle CONNECT messages
 //                    if (isConnectMessage(payload)) {

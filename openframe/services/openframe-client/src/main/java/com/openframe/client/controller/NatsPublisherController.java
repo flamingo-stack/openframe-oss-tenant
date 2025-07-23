@@ -31,10 +31,10 @@ public class NatsPublisherController {
      * POST /api/nats/device/{deviceId}/test
      */
     @PostMapping("/device/{deviceId}/test")
-    public ResponseEntity<?> sendTestMessage(@PathVariable String deviceId) {
+    public ResponseEntity<?> sendTestMessage(@PathVariable String deviceId, @RequestBody String data) {
         try {
             String topic = "device." + deviceId + ".commands";
-            String message = "test-message";
+            String message = data;
             
             boolean result = natsPublisher.publish(topic, message);
             
