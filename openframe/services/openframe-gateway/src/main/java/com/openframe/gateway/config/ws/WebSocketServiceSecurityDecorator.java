@@ -19,7 +19,7 @@ import java.util.Set;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_AGENT_WS_ENDPOINT_PREFIX;
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_API_WS_ENDPOINT_PREFIX;
-import static com.openframe.gateway.security.jwt.JwtAuthenticationOperations.AUTHORIZATION_QUERY_PARAM;
+import static com.openframe.gateway.security.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor

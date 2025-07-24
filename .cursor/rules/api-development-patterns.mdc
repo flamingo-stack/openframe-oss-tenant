@@ -1,0 +1,391 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+---
+description: API development patterns and best practices for OpenFrame REST and GraphQL APIs
+globs:
+  - "openframe/services/*/src/main/java/**/controller/**"
+  - "openframe/services/*/src/main/java/**/service/**"
+  - "openframe/libs/api-library/**"
+alwaysApply: false
+---
+
+# API Development Patterns in OpenFrame
+
+OpenFrame follows a shared library approach to eliminate code duplication between GraphQL and REST APIs. Follow these patterns for consistent API development.
+
+## Shared Library Architecture
+
+### Business Logic in api-library
+- **DO**: Place all business logic in [api-library services](mdc:openframe/libs/api-library/src/main/java/com/openframe/api/service)
+- **DON'T**: Duplicate business logic between GraphQL and REST controllers
+- **Pattern**: Controllers are thin adapters that delegate to shared services
+
+```java
+// ✅ GOOD - Service in api-library
+@Service
+public class DeviceService {
+    public DeviceQueryResult queryDevices(DeviceFilterCriteria criteria) {
+        // Business logic here
+    }
+}
+
+// ✅ GOOD - REST controller delegates to service
+@RestController
+public class DeviceController {
+    private final DeviceService deviceService;
+
+    @GetMapping("/devices")
+    public DeviceResponse getDevices(@AuthenticationPrincipal AuthPrincipal principal) {
+        return deviceService.queryDevices(criteria);
+    }
+}
+```
+
+## Controller Patterns
+
+### Modern Spring Boot Style
+Use DTO + Exceptions approach instead of ResponseEntity everywhere:
+
+```java
+// ✅ GOOD - Modern Spring Boot style
+@GetMapping("/{id}")
+@ResponseStatus(OK)
+public DeviceResponse getDevice(@PathVariable String id) {
+    Device device = deviceService.findById(id)
+        .orElseThrow(() -> new DeviceNotFoundException("Device not found: " + id));
+    return deviceMapper.toResponse(device);
+}
+
+// ❌ BAD - Old ResponseEntity style
+@GetMapping("/{id}")
+public ResponseEntity<DeviceResponse> getDevice(@PathVariable String id) {
+    return deviceService.findById(id)
+        .map(device -> ResponseEntity.ok(deviceMapper.toResponse(device)))
+        .orElse(ResponseEntity.notFound().build());
+}
+```
+
+### Authentication Principal Pattern
+Always use `@AuthenticationPrincipal AuthPrincipal principal` for user context:
+
+```java
+@RestController
+@RequestMapping("/api-keys")
+public class ApiKeyController {
+    @GetMapping
+    public List<ApiKeyResponse> getApiKeys(@AuthenticationPrincipal AuthPrincipal principal) {
+        return apiKeyService.getApiKeysForUser(principal.getId());
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreateApiKeyResponse createApiKey(
+            @Valid @RequestBody CreateApiKeyRequest request,
+            @AuthenticationPrincipal AuthPrincipal principal) {
+        return apiKeyService.createApiKey(principal.getId(), request);
+    }
+}
+```
+
+**Reference**: [ApiKeyController.java](mdc:openframe/services/openframe-api/src/main/java/com/openframe/api/controller/ApiKeyController.java)
+
+## Error Handling Patterns
+
+### Global Exception Handler
+Use global exception handlers with consistent error responses:
+
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(DeviceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleDeviceNotFound(DeviceNotFoundException ex) {
+        return ErrorResponse.builder()
+            .code("DEVICE_NOT_FOUND")
+            .message(ex.getMessage())
+            .timestamp(LocalDateTime.now())
+            .build();
+    }
+}
+```
+
+### Custom Domain Exceptions
+Create specific exceptions for domain errors:
+
+```java
+public class ApiKeyNotFoundException extends RuntimeException {
+    public ApiKeyNotFoundException(String keyId) {
+        super("API key not found: " + keyId);
+    }
+}
+```
+
+**Reference**: [ErrorResponse.java](mdc:openframe/libs/openframe-core/src/main/java/com/openframe/core/dto/ErrorResponse.java)
+
+## DTO and Mapping Patterns
+
+### Record-based DTOs
+Use Java records for immutable DTOs:
+
+```java
+public record CreateApiKeyRequest(
+    @NotBlank String name,
+    String description,
+    @Future LocalDateTime expiresAt
+) {}
+
+public record ApiKeyResponse(
+    String id,
+    String name,
+    String description,
+    boolean enabled,
+    LocalDateTime createdAt,
+    LocalDateTime expiresAt
+) {}
+```
+
+### Service to DTO Conversion
+Convert between domain models and DTOs in dedicated mappers:
+
+```java
+@Component
+public class DeviceMapper {
+    public DeviceResponse toDeviceResponse(DeviceQueryResult result) {
+        return DeviceResponse.builder()
+            .id(result.getId())
+            .hostname(result.getHostname())
+            .status(result.getStatus())
+            .build();
+    }
+}
+```
+
+## Validation Patterns
+
+### Bean Validation
+Use Bean Validation annotations for request validation:
+
+```java
+public record DeviceRequest(
+    @NotBlank(message = "Hostname is required")
+    @Size(min = 3, max = 50, message = "Hostname must be between 3 and 50 characters")
+    String hostname,
+
+    @NotBlank(message = "Operating system is required")
+    String operatingSystem,
+
+    @Pattern(regexp = "^([0-9]{1,3}\\.){3}[0-9]{1,3}$", message = "Invalid IP address format")
+    String ipAddress
+) {}
+```
+
+### Controller Validation
+Use `@Valid` annotation in controller methods:
+
+```java
+@PostMapping
+@ResponseStatus(HttpStatus.CREATED)
+public DeviceResponse createDevice(@Valid @RequestBody DeviceRequest request) {
+    return deviceService.createDevice(request.toDevice());
+}
+```
+
+## Service Layer Patterns
+
+### Reactive Programming
+Use reactive patterns with Mono/Flux for non-blocking operations:
+
+```java
+@Service
+public class DeviceService {
+    public Mono<Device> getDeviceById(String id) {
+        return deviceRepository.findById(id)
+            .switchIfEmpty(Mono.error(new DeviceNotFoundException("Device not found: " + id)));
+    }
+
+    public Flux<Device> getAllDevices() {
+        return deviceRepository.findAll();
+    }
+}
+```
+
+### Exception Handling in Services
+Handle exceptions at the service layer and let global handlers catch them:
+
+```java
+@Service
+public class ApiKeyService {
+    public ApiKeyResponse getApiKeyById(String id, String userId) {
+        return apiKeyRepository.findByIdAndUserId(id, userId)
+            .map(this::mapToResponse)
+            .orElseThrow(() -> new ApiKeyNotFoundException(id));
+    }
+}
+```
+
+## Repository Patterns
+
+### Spring Data Reactive
+Use reactive repositories for non-blocking data access:
+
+```java
+public interface DeviceRepository extends ReactiveMongoRepository<Device, String> {
+    Flux<Device> findByUserIdOrderByCreatedAtDesc(String userId);
+    Mono<Device> findByIdAndUserId(String id, String userId);
+    Flux<Device> findByStatus(String status);
+}
+```
+
+### Custom Repository Methods
+Use descriptive method names that reflect business intent:
+
+```java
+// ✅ GOOD - Descriptive method names
+Flux<Device> findByUserIdOrderByCreatedAtDesc(String userId);
+Mono<Long> countByUserIdAndStatus(String userId, String status);
+
+// ❌ BAD - Generic method names
+Flux<Device> findByUserId(String userId);
+Mono<Long> countByUserIdAndField(String userId, String field);
+```
+
+## API Documentation Patterns
+
+### OpenAPI Documentation
+Use OpenAPI annotations for comprehensive API documentation:
+
+```java
+@RestController
+@RequestMapping("/api/devices")
+@Tag(name = "Devices", description = "Device management operations")
+public class DeviceController {
+
+    @Operation(summary = "Get all devices", description = "Retrieve all devices for the authenticated user")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Devices retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping
+    public List<DeviceResponse> getDevices(@AuthenticationPrincipal AuthPrincipal principal) {
+        return deviceService.getDevicesForUser(principal.getId());
+    }
+}
+```
+
+## Security Patterns
+
+### Endpoint Security
+Configure endpoint security based on roles and permissions:
+
+```java
+// Public endpoints
+@GetMapping("/public/status")
+public StatusResponse getPublicStatus() { }
+
+// Authenticated endpoints
+@GetMapping("/devices")
+public List<DeviceResponse> getDevices(@AuthenticationPrincipal AuthPrincipal principal) { }
+
+// Admin-only endpoints
+@PreAuthorize("hasRole('ADMIN')")
+@DeleteMapping("/admin/devices/{id}")
+public void deleteDevice(@PathVariable String id) { }
+```
+
+### Input Sanitization
+Sanitize user input to prevent security vulnerabilities:
+
+```java
+@Component
+public class InputSanitizer {
+    public String sanitize(String input) {
+        if (input == null) return null;
+        return policy.sanitize(input);
+    }
+}
+```
+
+## Common Anti-Patterns
+
+### ❌ Avoid These Patterns
+
+```java
+// Don't use ResponseEntity everywhere
+public ResponseEntity<String> getData() { }
+
+// Don't duplicate business logic in controllers
+@GetMapping("/devices")
+public List<Device> getDevices() {
+    // Business logic here - WRONG!
+    return repository.findAll().stream()
+        .filter(device -> device.isActive())
+        .collect(Collectors.toList());
+}
+
+// Don't use raw JWT or manual headers
+public void doSomething(@RequestHeader("X-User-Id") String userId) { }
+
+// Don't ignore validation
+public void createDevice(DeviceRequest request) { // Missing @Valid
+}
+```
+
+### ✅ Follow These Patterns Instead
+
+```java
+// Use clean DTOs with proper status codes
+@ResponseStatus(HttpStatus.OK)
+public List<DeviceResponse> getDevices() { }
+
+// Delegate to service layer
+@GetMapping("/devices")
+public List<DeviceResponse> getDevices(@AuthenticationPrincipal AuthPrincipal principal) {
+    return deviceService.getActiveDevicesForUser(principal.getId());
+}
+
+// Use AuthPrincipal
+public void doSomething(@AuthenticationPrincipal AuthPrincipal principal) { }
+
+// Always validate input
+public void createDevice(@Valid @RequestBody DeviceRequest request) { }
+```
+
+## Performance Patterns
+
+### Pagination
+Implement proper pagination for large datasets:
+
+```java
+@GetMapping("/devices")
+public Page<DeviceResponse> getDevices(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size,
+        @AuthenticationPrincipal AuthPrincipal principal) {
+    Pageable pageable = PageRequest.of(page, size);
+    return deviceService.getDevicesForUser(principal.getId(), pageable);
+}
+```
+
+### Caching
+Use appropriate caching strategies:
+
+```java
+@Service
+public class DeviceService {
+    @Cacheable(value = "devices", key = "#userId")
+    public List<DeviceResponse> getDevicesForUser(String userId) {
+        return deviceRepository.findByUserId(userId);
+    }
+}
+```
+
+## References
+
+- **API Library Structure**: [api-library](mdc:openframe/libs/api-library)
+- **Core DTOs**: [openframe-core DTOs](mdc:openframe/libs/openframe-core/src/main/java/com/openframe/core/dto)
+- **Error Handling**: [ErrorResponse](mdc:openframe/libs/openframe-core/src/main/java/com/openframe/core/dto/ErrorResponse.java)
+- **Authentication Patterns**: [authentication-patterns.mdc](mdc:.cursor/rules/authentication-patterns.mdc)

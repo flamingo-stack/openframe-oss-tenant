@@ -1,0 +1,250 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+---
+description: Authentication patterns and security practices for OpenFrame JWT cookie-based system
+globs:
+  - "openframe/services/*/src/main/java/**/security/**"
+  - "openframe/services/*/src/main/java/**/controller/**"
+  - "openframe/services/*/src/main/java/**/service/**"
+  - "openframe/libs/openframe-jwt/**"
+  - "openframe/services/openframe-ui/src/stores/auth.ts"
+alwaysApply: false
+---
+
+# Authentication Patterns in OpenFrame
+
+OpenFrame uses a secure, cookie-based JWT authentication system with Spring Security OAuth2 Resource Server. Follow these patterns for consistent authentication implementation.
+
+## Core Architecture Components
+
+### JWT + HttpOnly Cookies Pattern
+- **Access tokens**: Stored in `access_token` HttpOnly cookie with `Path=/`
+- **Refresh tokens**: Stored in `refresh_token` HttpOnly cookie with `Path=/api/oauth/token`
+- **Security**: Tokens are never exposed to client-side JavaScript
+- **Reference**: [CookieService.java](mdc:openframe/libs/openframe-jwt/src/main/java/com/openframe/security/cookie/CookieService.java)
+
+### Spring Security Configuration
+Always use Spring Security OAuth2 Resource Server in API services:
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) {
+        return http
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/oauth/token", "/oauth/register", "/.well-known/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.decoder(jwtDecoder))
+            )
+            .build();
+    }
+}
+```
+
+**Reference**: [SecurityConfig.java](mdc:openframe/services/openframe-api/src/main/java/com/openframe/api/config/SecurityConfig.java)
+
+## Controller Patterns
+
+### Use AuthPrincipal Instead of Raw JWT
+Always use `@AuthenticationPrincipal AuthPrincipal principal` in controllers:
+
+```java
+@RestController
+public class ApiController {
+    @GetMapping("/api-keys")
+    public List<ApiKeyResponse> getApiKeys(@AuthenticationPrincipal AuthPrincipal principal) {
+        return apiKeyService.getApiKeysForUser(principal.getId());
+    }
+}
+```
+
+**Never use**:
+- `@RequestHeader("X-User-Id") String userId`
+- `@AuthenticationPrincipal Jwt jwt` directly
+
+**Reference**: [AuthPrincipal.java](mdc:openframe/libs/openframe-jwt/src/main/java/com/openframe/security/authentication/AuthPrincipal.java)
+
+### OAuth Controller Pattern
+OAuth controllers should delegate cookie management to services:
+
+```java
+@PostMapping("/token")
+public ResponseEntity<?> token(
+        @RequestParam String grant_type,
+        @RequestParam(required = false) String code,
+        @RequestHeader(value = X_REFRESH_TOKEN, required = false) String refreshToken,
+        HttpServletRequest httpRequest,
+        HttpServletResponse httpResponse) {
+
+    TokenResponse response = oauthService.processTokenRequest(
+        grant_type, code, username, password, client_id, client_secret, refreshToken, httpRequest);
+
+    oauthService.setAuthenticationCookies(response, httpResponse);
+    return ResponseEntity.ok(response);
+}
+```
+
+**Reference**: [OAuthController.java](mdc:openframe/services/openframe-api/src/main/java/com/openframe/api/controller/OAuthController.java)
+
+## Service Layer Patterns
+
+### Cookie Management
+Always delegate cookie operations to `CookieService`:
+
+```java
+@Service
+public class OAuthService {
+    private final CookieService cookieService;
+
+    public void setAuthenticationCookies(TokenResponse tokens, HttpServletResponse response) {
+        cookieService.setAccessTokenCookie(tokens.getAccess_token(), response);
+        cookieService.setRefreshTokenCookie(tokens.getRefresh_token(), response);
+    }
+}
+```
+
+**Reference**: [OAuthService.java](mdc:openframe/services/openframe-api/src/main/java/com/openframe/api/service/OAuthService.java)
+
+### Token Processing Pattern
+Separate refresh token handling from other grant types:
+
+```java
+public TokenResponse processTokenRequest(String grantType, String refreshToken, ...) {
+    if ("refresh_token".equals(grantType)) {
+        if (refreshToken == null) {
+            throw new IllegalArgumentException("Refresh token not found");
+        }
+        return handleRefreshToken(refreshToken, clientId, clientSecret);
+    }
+
+    return token(grantType, code, username, password, clientId, clientSecret);
+}
+```
+
+## Gateway Security Patterns
+
+### Cookie-to-Header Filter
+Use `CookieToHeaderFilter` to convert cookies to headers for Spring Security:
+
+```java
+@Component
+public class CookieToHeaderFilter implements WebFilter {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        String accessToken = cookieService.getAccessTokenFromCookies(exchange);
+        if (accessToken != null) {
+            ServerHttpRequest request = exchange.getRequest().mutate()
+                .header(AUTHORIZATION, "Bearer " + accessToken)
+                .build();
+            return chain.filter(exchange.mutate().request(request).build());
+        }
+        return chain.filter(exchange);
+    }
+}
+```
+
+**Reference**: [CookieToHeaderFilter.java](mdc:openframe/services/openframe-gateway/src/main/java/com/openframe/gateway/security/filter/CookieToHeaderFilter.java)
+
+## Frontend Patterns
+
+### Authentication Store Pattern
+Use reactive authentication status based on cookie presence:
+
+```typescript
+export const useAuthStore = defineStore('auth', () => {
+  const authStatusCache = ref<boolean | null>(null)
+  const isAuthenticated = ref(false)
+
+  function updateAuthStatus() {
+    const hasAccessTokenCookie = document.cookie
+      .split(';')
+      .some(cookie => cookie.trim().startsWith('access_token='))
+
+    if (!hasAccessTokenCookie) {
+      isAuthenticated.value = false
+      return
+    }
+
+    if (authStatusCache.value !== null) {
+      isAuthenticated.value = authStatusCache.value
+      return
+    }
+
+    isAuthenticated.value = true
+  }
+})
+```
+
+**Reference**: [auth.ts](mdc:openframe/services/openframe-ui/src/stores/auth.ts)
+
+## Security Best Practices
+
+### Cookie Security
+- **Always use `HttpOnly`**: Prevents XSS attacks
+- **Use `Secure` flag**: Only over HTTPS in production
+- **Path restrictions**: Refresh tokens only sent to `/api/oauth/token`
+- **SameSite policy**: Configure appropriately for your domain setup
+
+### Token Management
+- **Access tokens**: Short-lived (15 minutes), stored with `Path=/`
+- **Refresh tokens**: Long-lived (7 days), stored with `Path=/api/oauth/token`
+- **Never expose tokens**: Client-side JavaScript cannot access HttpOnly cookies
+- **Automatic refresh**: Handle 401 errors by attempting token refresh
+
+### Authentication Flow
+1. **Login**: Server sets both tokens as HttpOnly cookies
+2. **API Request**: Gateway extracts access token from cookie → Authorization header
+3. **Token Refresh**: Gateway extracts refresh token only for `/api/oauth/token` endpoint
+4. **Logout**: Server clears both cookies
+
+## Common Anti-Patterns
+
+### ❌ Don't Do This
+```java
+// Don't use RequestHeader for user info
+@RequestHeader("X-User-Id") String userId
+
+// Don't manage cookies in controllers
+response.addCookie(new Cookie("access_token", token));
+
+// Don't use raw JWT in business logic
+public void doSomething(Jwt jwt) {
+    String userId = jwt.getSubject();
+}
+
+// Don't manually set authentication status in frontend
+isAuthenticated.value = true;
+```
+
+### ✅ Do This Instead
+```java
+// Use AuthPrincipal
+@AuthenticationPrincipal AuthPrincipal principal
+
+// Delegate to CookieService
+cookieService.setAccessTokenCookie(token, response);
+
+// Use AuthPrincipal wrapper
+public void doSomething(AuthPrincipal principal) {
+    String userId = principal.getId();
+}
+
+// Let status update automatically via cookies
+updateAuthStatus(); // Called after auth state changes
+```
+
+## References
+
+- **Architecture Documentation**: [authentication-architecture.md](mdc:docs/architecture/authentication-architecture.md)
+- **Core Cookie Service**: [CookieService.java](mdc:openframe/libs/openframe-jwt/src/main/java/com/openframe/security/cookie/CookieService.java)
+- **Gateway Security Config**: [GatewaySecurityConfig.java](mdc:openframe/services/openframe-gateway/src/main/java/com/openframe/gateway/security/GatewaySecurityConfig.java)
+- **API Security Config**: [SecurityConfig.java](mdc:openframe/services/openframe-api/src/main/java/com/openframe/api/config/SecurityConfig.java)
