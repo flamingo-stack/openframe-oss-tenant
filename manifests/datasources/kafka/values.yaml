@@ -108,6 +108,8 @@ kafka:
 
   # envs for advertised.listeners
   extraEnvVars:
+    - name: KAFKA_CFG_LISTENERS
+      value: "CLIENT://:9092,INTERNAL://:9094,CONTROLLER://:9093"
     - name: KAFKA_CFG_ADVERTISED_LISTENERS
       value: "CLIENT://kafka-broker-headless.datasources.svc.cluster.local:9092,INTERNAL://$(hostname -f):9094"
     - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP

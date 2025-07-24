@@ -26,6 +26,8 @@ spec:
           env:
             - name: BOOTSTRAP_SERVERS
               value: "kafka-broker-headless.datasources.svc.cluster.local:9092"
+            - name: GROUP_ID
+              value: "1"
             - name: CONFIG_STORAGE_TOPIC
               value: "connect-configs"
             - name: OFFSET_STORAGE_TOPIC
