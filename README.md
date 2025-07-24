@@ -360,7 +360,7 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE).
+This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International Public License](LICENSE).
 
 ## Support
 

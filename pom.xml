@@ -13,21 +13,23 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.0</version>
+        <version>3.4.1</version>
         <relativePath />
     </parent>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>24</java.version>
+        <maven.compiler.proc>full</maven.compiler.proc>
+        <bytebuddy.version>1.15.10</bytebuddy.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-cloud.version>2023.0.3</spring-cloud.version>
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
         <nifi.version>1.22.0</nifi.version>
         <logstash.version>8.0</logstash.version>
-        <spring-actuator.version>3.3.0</spring-actuator.version>
-        <spring-boot.version>3.3.0</spring-boot.version>
+        <spring-actuator.version>3.4.1</spring-actuator.version>
+        <spring-boot.version>3.4.1</spring-boot.version>
         <spring-retry.version>2.0.4</spring-retry.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <netflix.dgs.version>7.0.0</netflix.dgs.version>
         <kafka.version>3.6.0</kafka.version>
         <pinot.version>1.2.0</pinot.version>
@@ -310,6 +312,56 @@
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jsonwebtoken.version}</version>
             </dependency>
+            
+            <!-- Byte Buddy version management for JDK 24 compatibility -->
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <source>24</source>
+                        <target>24</target>
+                        <release>24</release>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                    <configuration>
+                        <argLine>
+                            -Dnet.bytebuddy.experimental=true
+                            -XX:+EnableDynamicAgentLoading
+                            --add-opens java.base/java.lang=ALL-UNNAMED
+                            --add-opens java.base/java.util=ALL-UNNAMED
+                        </argLine>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>
