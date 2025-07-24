@@ -22,10 +22,12 @@ graph TB
     end
 
     subgraph "Data Layer"
-        NF[Apache NiFi]
+        SS[Stream Service]
         KF[Kafka]
+        MG[MongoDB]
         CS[Cassandra]
         PT[Apache Pinot]
+        RD[Redis]
     end
 
     subgraph "Security Layer"
@@ -43,8 +45,8 @@ graph TB
     VPC --> MC
     VPC --> AK
     VPC --> FD
-    DS --> NF
-    NF --> KF
+    DS --> SS
+    SS --> KF
     KF --> CS
     KF --> PT
 ```
@@ -55,7 +57,7 @@ graph TB
 - **openframe-gateway**: API Gateway with JWT authentication and WebSocket support
 - **openframe-api**: GraphQL API service with OAuth2/OpenID Connect
 - **openframe-management**: Administrative service with scheduled tasks
-- **openframe-stream**: Stream processing service using Kafka and NiFi
+- **openframe-stream**: Stream processing service using Kafka for event streaming
 - **openframe-config**: Spring Cloud Config Server for centralized configuration
 - **openframe-client**: Agent management and authentication service
 - **openframe-ui**: Vue 3 + TypeScript frontend with PrimeVue components
@@ -74,7 +76,7 @@ graph TB
 - **Tool Integration**: Secure proxy for external tool APIs
 
 ### 4. Data Layer
-- **Apache NiFi 1.22.0**: Data pipeline management and stream processing
+- **Stream Processing Service**: Custom data pipeline management and stream processing
 - **Apache Kafka 3.6.0**: High-throughput pub/sub messaging
 - **MongoDB 7.x**: Application data and configurations
 - **Cassandra 4.x**: Time-series event data and audit logs
@@ -145,7 +147,7 @@ graph LR
 
     subgraph "Processing"
         KF[Kafka]
-        NF[NiFi]
+        ST[Stream Service]
         ML[ML Engine]
     end
 

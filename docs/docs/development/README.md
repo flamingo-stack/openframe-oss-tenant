@@ -72,7 +72,7 @@ Welcome to the OpenFrame development documentation! This comprehensive guide cov
 - **Netflix DGS Framework 7.0.0** for GraphQL
 - **Spring Security** with OAuth 2.0/OpenID Connect
 - **MongoDB 7.x**, **Cassandra 4.x**, **Apache Pinot 1.2.0**
-- **Apache Kafka 3.6.0** and **Apache NiFi 1.22.0**
+- **Apache Kafka 3.6.0** for event streaming
 
 ### Frontend Technologies
 - **Vue 3** with Composition API and **TypeScript**

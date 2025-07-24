@@ -17,10 +17,10 @@ OpenFrame integrates a curated list of open-source IT and security products into
    - All traffic securely routed through the gateway
 
 3. **Unified Data Layer**
-   - Data pipeline: Apache NiFi
-   - PubSub mechanism: Kafka
-   - Databases: Cassandra (indexed storage), Apache Pinot (real-time analytics)
-   - Standardized logging via NiFi, queried through GraphQL
+   - Event streaming: Apache Kafka for real-time data flow
+   - Databases: MongoDB (application data), Cassandra (time-series data), Apache Pinot (real-time analytics)
+   - Caching: Redis for performance optimization
+   - Data access: Unified GraphQL API layer
 
 4. **AI & Automation**
    - ML/DL frameworks for real-time anomaly detection
@@ -43,8 +43,10 @@ graph TD
     Openframe-Gateway -->|API Token| Tool[A Specific Open Source Tool]
     Tool --> DataLayer[Unified Data Layer]
     Openframe-Gateway --> Dashboard[Unified Dashboard & Visualization]
-    DataLayer -->|Kafka/NiFi| Cassandra
-    DataLayer -->|Kafka/NiFi| Pinot
+    DataLayer -->|Kafka| Cassandra
+    DataLayer -->|Kafka| Pinot
+    DataLayer --> MongoDB[MongoDB App Data]
+    DataLayer --> Redis[Redis Cache]
     Cassandra --> AI[ML/DL Anomaly Detection]
     Pinot --> AI
     AI --> Dashboard
@@ -82,19 +84,24 @@ sequenceDiagram
 #### Data Pipeline and Storage
 ```mermaid
 graph LR
-    ToolDBs[Open Source Tool DBs] --> Kafka[Kafka Pub/Sub]
-    Kafka --> NiFi[Apache NiFi Pipeline]
-    NiFi --> Cassandra[Indexed Storage - Cassandra]
-    NiFi --> Pinot[Real-time Analytics - Pinot]
+    ToolDBs[Open Source Tool DBs] --> Kafka[Kafka Event Streaming]
+    Kafka --> Stream[Stream Processing Service]
+    Stream --> MongoDB[Application Data - MongoDB]
+    Stream --> Cassandra[Time-Series Data - Cassandra]
+    Stream --> Pinot[Real-time Analytics - Pinot]
+    Stream --> Redis[Cache - Redis]
 ```
 
 #### AI/ML Integration
 ```mermaid
 graph TD
-    Logs[Unified Logs via NiFi] --> Pinot
+    Logs[Unified Logs via Stream Processing] --> Pinot
     Logs --> Cassandra
+    Events[Real-time Events] --> Kafka
+    Kafka --> Analytics[Analytics Engine]
     Pinot --> ML[ML/DL Anomaly Detection]
     Cassandra --> ML
+    Analytics --> ML
     ML --> AI_Chat[AI Chat & Automation]
     AI_Chat --> Openframe_MCP[Openframe MCP Server]
 ```
@@ -117,7 +124,7 @@ graph TD
     MCP_Client[MCP Clients: AI Tools, IDEs] --> MCP_Server[Openframe MCP Server]
     MCP_Server --> APIs[Openframe Unified APIs]
     APIs --> DataLayer[Unified Data Layer]
-    DataLayer --> LocalData[Local Data Sources: Cassandra, Pinot, NiFi]
+    DataLayer --> LocalData[Local Data Sources: MongoDB, Cassandra, Pinot, Redis]
     MCP_Server --> RemoteServices[Remote Services & Tools]
 ```
 
@@ -161,7 +168,7 @@ graph TD
 - **Security**: Spring Security with OAuth 2.0/OpenID Connect
 - **Data Storage**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0
 - **Event Streaming**: Apache Kafka 3.6.0
-- **Stream Processing**: Apache NiFi 1.22.0
+- **Stream Processing**: OpenFrame Stream Service with Kafka integration
 - **Caching**: Redis
 - **System Agent**: Rust-based cross-platform agent with Tokio runtime
 

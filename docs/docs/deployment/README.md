@@ -12,7 +12,7 @@ OpenFrame on Kubernetes consists of:
    - OpenFrame Stream (Spring Kafka)
    - OpenFrame Management (Spring Boot)
    - OpenFrame Config (Spring Cloud Config)
-   - OpenFrame NiFi (Data Pipeline)
+   - OpenFrame Stream Service (Data Pipeline)
 
 2. Frontend Services
    - OpenFrame UI (Vue.js)

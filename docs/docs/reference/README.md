@@ -43,7 +43,7 @@ This section provides comprehensive reference documentation for OpenFrame compon
 - **[API Service](services/openframe-api.md)** - GraphQL API and OAuth 2.0 implementation
 - **[Gateway Service](services/openframe-gateway.md)** - Reverse proxy and authentication
 - **[Client Service](services/openframe-client.md)** - Agent management and JWT issuance
-- **[Stream Service](services/openframe-stream.md)** - Kafka and NiFi data processing
+- **[Stream Service](services/openframe-stream.md)** - Kafka-based stream processing and data pipeline
 - **[Management Service](services/openframe-management.md)** - Scheduled tasks and administration
 - **[Config Service](services/openframe-config.md)** - Spring Cloud Config Server
 - **[UI Service](services/openframe-ui.md)** - Vue.js frontend with PrimeVue

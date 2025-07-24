@@ -144,7 +144,6 @@ t, client_tools               # Client tools
    - Kafka (`openframe_datasources_kafka`)
    - MongoDB (`openframe_datasources_mongodb`)
    - Cassandra (`openframe_datasources_cassandra`)
-   - NiFi (`openframe_datasources_nifi`)
    - Zookeeper (`openframe_datasources_zookeeper`)
    - Pinot (`openframe_datasources_pinot`)
 

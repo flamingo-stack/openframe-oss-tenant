@@ -17,8 +17,8 @@ graph TB
     subgraph "Data Collection"
         direction TB
         KAFKA[Kafka]
-        NIFI[NiFi]
-        COLLECTOR[Collectors]
+        STREAM[Stream Processing Service]
+        COLLECTOR[Data Collectors]
     end
 
     subgraph "Processing"
@@ -30,23 +30,25 @@ graph TB
 
     subgraph "Storage"
         direction TB
+        MONGO[MongoDB]
         CASS[Cassandra]
         PINOT[Pinot]
-        ES[Elasticsearch]
+        REDIS[Redis Cache]
     end
 
     OS --> KAFKA
     AG --> KAFKA
     LG --> KAFKA
     MET --> KAFKA
-    KAFKA --> NIFI
-    NIFI --> COLLECTOR
+    KAFKA --> STREAM
+    STREAM --> COLLECTOR
     COLLECTOR --> TRANSFORM
     TRANSFORM --> ENRICH
     ENRICH --> ML
+    ML --> MONGO
     ML --> CASS
     ML --> PINOT
-    ML --> ES
+    COLLECTOR --> REDIS
 ```
 
 ## Data Sources
@@ -93,15 +95,15 @@ graph LR
     PROCESSED --> METRICS
 ```
 
-### NiFi Processors
+### Stream Processing Components
 ```mermaid
 graph TB
-    subgraph "NiFi Processors"
+    subgraph "Stream Processing Service"
         direction TB
-        INGEST[Ingest]
-        VALIDATE[Validate]
-        TRANSFORM[Transform]
-        ROUTE[Route]
+        INGEST[Data Ingestion]
+        VALIDATE[Data Validation]
+        TRANSFORM[Data Transformation]
+        ROUTE[Data Routing]
     end
 
     INGEST --> VALIDATE
@@ -182,13 +184,13 @@ graph TB
 sequenceDiagram
     participant Source
     participant Kafka
-    participant NiFi
+    participant StreamService
     participant ML
     participant Storage
 
     Source->>Kafka: Send Log
-    Kafka->>NiFi: Process Log
-    NiFi->>ML: Analyze
+    Kafka->>StreamService: Process Log
+    StreamService->>ML: Analyze
     ML->>Storage: Store Results
 ```
 
@@ -197,14 +199,14 @@ sequenceDiagram
 sequenceDiagram
     participant Agent
     participant Kafka
-    participant NiFi
+    participant StreamService
     participant Pinot
     participant Cassandra
 
     Agent->>Kafka: Send Metrics
-    Kafka->>NiFi: Process Metrics
-    NiFi->>Pinot: Real-time Analytics
-    NiFi->>Cassandra: Historical Data
+    Kafka->>StreamService: Process Metrics
+    StreamService->>Pinot: Real-time Analytics
+    StreamService->>Cassandra: Historical Data
 ```
 
 ## Data Quality
