@@ -36,12 +36,6 @@ spec:
               value: "connect-status"
             - name: CONNECT_PLUGIN_PATH
               value: "/kafka/connect,/jdbc-drivers"
-            - name: LOG_LEVEL
-              value: "DEBUG"
-            - name: CONNECT_REST_REQUEST_TIMEOUT_MS
-              value: "120000"
-            - name: REQUEST_TIMEOUT_MS
-              value: "60000"
           volumeMounts:
             - name: jdbc-drivers-volume
               mountPath: /jdbc-drivers

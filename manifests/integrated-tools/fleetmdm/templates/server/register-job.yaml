@@ -54,15 +54,14 @@ spec:
                   "toolType": "FLEET",
                   "name": "FleetMDM Server",
                   "description": "Fleet Device Management Platform",
-                  "description": "Fleet Device Management Platform",
                   "toolUrls": [
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.default.svc.cluster.local",
+                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
                       "port": "8070",
                       "type": "API"
                     },
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.default.svc.cluster.local",
+                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
                       "port": "8070",
                       "type": "DASHBOARD"
                     }

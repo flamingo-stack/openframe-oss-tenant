@@ -4,7 +4,7 @@ registerJob:
 
 kafka:
   global:
-    imagePullSecrets: 
+    imagePullSecrets:
       - name: docker-pat-secret
 
   broker:
@@ -105,14 +105,3 @@ kafka:
     default.replication.factor=1
     offsets.topic.replication.factor=1
     transaction.state.log.replication.factor=1
-
-  # envs for advertised.listeners
-  extraEnvVars:
-    - name: KAFKA_CFG_LISTENERS
-      value: "CLIENT://:9092,INTERNAL://:9094,CONTROLLER://:9093"
-    - name: KAFKA_CFG_ADVERTISED_LISTENERS
-      value: "CLIENT://kafka-broker-headless.datasources.svc.cluster.local:9092,INTERNAL://$(hostname -f):9094"
-    - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
-      value: "CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
-    - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
-      value: "INTERNAL"
