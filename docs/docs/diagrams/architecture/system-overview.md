@@ -159,10 +159,10 @@ graph LR
     OS --> KF
     AG --> KF
     LG --> KF
-    KF --> NF
-    NF --> ML
-    NF --> CS
-    NF --> PT
+    KF --> ST
+    ST --> ML
+    ST --> CS
+    ST --> PT
 ```
 
 ## Next Steps
