@@ -48,20 +48,23 @@ OpenFrame is an enterprise-grade platform that combines powerful microservices a
 ## Technology Stack
 
 ### Backend
-- **Core Runtime**: Spring Boot 3.2.x, OpenJDK 21
-- **API Layer**: Netflix DGS Framework (GraphQL)
-- **Gateway**: Spring Cloud Gateway
-- **Security**: Spring Security with OAuth 2.0
-- **Data Storage**: MongoDB, Cassandra
-- **Event Streaming**: Apache Kafka
+- **Core Runtime**: Spring Boot 3.3.0, OpenJDK 21, Spring Cloud 2023.0.3
+- **API Layer**: Netflix DGS Framework 7.0.0 (GraphQL)
+- **Gateway**: Spring Cloud Gateway with WebFlux
+- **Security**: Spring Security with OAuth 2.0/OpenID Connect
+- **Data Storage**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0
+- **Event Streaming**: Apache Kafka 3.6.0
+- **Stream Processing**: OpenFrame Stream Service with Kafka integration
 - **Caching**: Redis
+- **System Agent**: Rust-based cross-platform agent with Tokio runtime
 
 ### Frontend
-- **Framework**: Vue.js 3 with TypeScript
-- **State Management**: Vuex
-- **Routing**: Vue Router
-- **UI Framework**: Vuetify
-- **Build Tool**: Vite
+- **Framework**: Vue 3 with Composition API and TypeScript
+- **State Management**: Pinia
+- **Routing**: Vue Router 4
+- **UI Framework**: PrimeVue 3.45.0
+- **GraphQL Client**: Apollo Client
+- **Build Tool**: Vite 5.0.10
 
 ### Infrastructure
 - **Container Orchestration**: Kubernetes
@@ -91,6 +94,7 @@ graph TB
     subgraph Data Layer
         MongoDB[(MongoDB)]
         Cassandra[(Cassandra)]
+        Pinot[(Apache Pinot)]
         Redis[(Redis)]
     end
 
@@ -101,6 +105,7 @@ graph TB
     API --> Data
     Data --> MongoDB
     Data --> Cassandra
+    Data --> Pinot
     Stream --> Redis
 ```
 

@@ -6,7 +6,7 @@ This guide explains how to use the OpenFrame scripts for development, deployment
 
 Before using these scripts, ensure you have:
 
-1. Required tools installed (script will check and help install if missing):
+1. **Required tools** (script will check and help install if missing):
    - k3d
    - docker
    - helm
@@ -16,14 +16,12 @@ Before using these scripts, ensure you have:
    - skaffold
    - jq
 
-2. Environment setup:
-   - `GITHUB_TOKEN_CLASSIC` environment variable set with your GitHub token. Create classic token with read/write permission on packages and do export on terminal before running script
-
-      ```bash
-      export GITHUB_TOKEN_CLASSIC=ghp_XxXx
-      ```
-
-   - Linux: Ensure `fs.inotify.max_user_instances` is set to at least 1500 (if not done script will do it for you)
+2. **Environment setup**:
+   - `GITHUB_TOKEN_CLASSIC` environment variable set with your GitHub token
+   ```bash
+   export GITHUB_TOKEN_CLASSIC=ghp_XxXx
+   ```
+   - Linux: Ensure `fs.inotify.max_user_instances` is set to at least 1500
 
 ## Basic Commands
 
@@ -63,7 +61,7 @@ Most commands support both short and long argument formats:
 
 ### Getting Help
 
-You can get help information at any time using the following flags:
+You can get help information at any time:
 
 ```bash
 # For general script help
@@ -80,49 +78,38 @@ You can get help information at any time using the following flags:
 ### Available Commands
 
 1. **Pre-check Environment**
-
-    ```bash
-    ./run.sh pre
-    ```
-
-    Checks and helps install required tools and validates environment setup.
+   ```bash
+   ./run.sh pre
+   ```
+   Checks and helps install required tools and validates environment setup.
 
 2. **Cluster Management**
-
-    ```bash
-    ./run.sh cluster    # Create new kind cluster
-    ./run.sh delete     # Delete cluster
-    ./run.sh start      # Start kind containers
-    ./run.sh stop       # Stop kind containers
-    ./run.sh cleanup    # Clean unused images from kind nodes
-    ```
+   ```bash
+   ./run.sh cluster    # Create new kind cluster
+   ./run.sh delete     # Delete cluster
+   ./run.sh start      # Start kind containers
+   ./run.sh stop       # Stop kind containers
+   ./run.sh cleanup    # Clean unused images from kind nodes
+   ```
 
 3. **Application Management**
-
-    ```bash
-    ./run.sh app <app-name> <action> [options]
-
-    # TO see applciation names, you one of below flags
-    ./run.sh a
-    ```
-
-    Actions:
-
-    - `deploy`: Deploy the application
-    - `delete`: Remove the application
-    - `dev`: Run in development mode with live build and deploy (`skaffold`)
-    - `intercept`: Enable interception with port forwarding (`telepresence intercept` mode)
+   ```bash
+   ./run.sh app <app-name> <action> [options]
+   ```
+   
+   Actions:
+   - `deploy`: Deploy the application
+   - `delete`: Remove the application
+   - `dev`: Run in development mode with live build and deploy (skaffold)
+   - `intercept`: Enable interception with port forwarding (telepresence intercept mode)
 
 4. **Bootstrap Options**
-
-    ```bash
-    ./run.sh bootstrap  # Setup cluster and deploy all apps
-    ./run.sh platform   # Setup cluster with only platform apps
-    ```
+   ```bash
+   ./run.sh bootstrap  # Setup cluster and deploy all apps
+   ./run.sh platform   # Setup cluster with only platform apps
+   ```
 
 ## Application Bundles
-
-The following application bundles are available:
 
 ### Quick Reference - Short and Long Arguments
 
@@ -157,7 +144,6 @@ t, client_tools               # Client tools
    - Kafka (`openframe_datasources_kafka`)
    - MongoDB (`openframe_datasources_mongodb`)
    - Cassandra (`openframe_datasources_cassandra`)
-   - NiFi (`openframe_datasources_nifi`)
    - Zookeeper (`openframe_datasources_zookeeper`)
    - Pinot (`openframe_datasources_pinot`)
 
@@ -211,7 +197,7 @@ t, client_tools               # Client tools
 ./run.sh app openframe_microservices_openframe_api dev
 ./run.sh app integrated_tools_meshcentral dev
 
-# intercept mode examples
+# Intercept mode examples
 ./run.sh app openframe_microservices_openframe_api intercept 8080 http
 ```
 
@@ -244,7 +230,7 @@ t, client_tools               # Client tools
 ./run.sh app openframe_microservices_openframe_api dev
 ```
 
-### 4. Intercept traffic (use local app like it is in k8s cluster)
+### 4. Intercept Traffic
 
 ```bash
 # Intercept specific service with port forwarding
@@ -270,18 +256,43 @@ The platform uses the following namespaces:
 - `integrated-tools`: Integrated external tools
 - `client-tools`: Development and monitoring tools
 
-## Script folder structure
+## Script Folder Structure
 
-- `./scripts`: root folder for all scripts
-- `./scripts/run.sh`: main script to run all other scripts (Don;t run other script individually, they will fail)
+- `./scripts`: Root folder for all scripts
+- `./scripts/run.sh`: Main script to run all other scripts (Don't run other scripts individually, they will fail)
 - `./scripts/functions`: Contains individual functions to be used in scripts in `./scripts`
 
 ## SSL Certificates
 
-Repository contains already created ca cert and private key to be used by cert-manager. 
+Repository contains already created CA cert and private key to be used by cert-manager.
 
 ## k3d Cluster and Registry Naming
 
-- The canonical k3d cluster name is `openframe-dev`.
-- The canonical k3d registry name is `k3d-openframe-registry`.
-- If you add or update scripts, always use these variables (see `scripts/functions/variables.sh`).
+- The canonical k3d cluster name is `openframe-dev`
+- The canonical k3d registry name is `k3d-openframe-registry`
+- If you add or update scripts, always use these variables (see `scripts/functions/variables.sh`)
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts**: Check if required ports are available
+2. **Tool installation**: Run `./run.sh pre` to verify all tools are installed
+3. **GitHub token**: Ensure `GITHUB_TOKEN_CLASSIC` is set and has proper permissions
+4. **Cluster issues**: Try `./run.sh delete` followed by `./run.sh cluster` to recreate
+
+### Useful Commands
+
+```bash
+# Check cluster status
+kubectl get nodes
+
+# View all namespaces
+kubectl get namespaces
+
+# Check pod status in a namespace
+kubectl get pods -n microservices
+
+# View logs for a service
+kubectl logs -n microservices deployment/openframe-api
+```

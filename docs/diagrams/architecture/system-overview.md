@@ -22,10 +22,12 @@ graph TB
     end
 
     subgraph "Data Layer"
-        NF[Apache NiFi]
+        SS[Stream Service]
         KF[Kafka]
+        MG[MongoDB]
         CS[Cassandra]
         PT[Apache Pinot]
+        RD[Redis]
     end
 
     subgraph "Security Layer"
@@ -43,45 +45,56 @@ graph TB
     VPC --> MC
     VPC --> AK
     VPC --> FD
-    DS --> NF
-    NF --> KF
+    DS --> SS
+    SS --> KF
     KF --> CS
     KF --> PT
 ```
 
 ## Core Components
 
-### 1. Deployment Management
-- Kubernetes-based deployment of all components
-- VPC isolation for open-source tools
-- Automated API key generation and management
-- Internal microservices orchestration
+### 1. Microservices Architecture
+- **openframe-gateway**: API Gateway with JWT authentication and WebSocket support
+- **openframe-api**: GraphQL API service with OAuth2/OpenID Connect
+- **openframe-management**: Administrative service with scheduled tasks
+- **openframe-stream**: Stream processing service using Kafka for event streaming
+- **openframe-config**: Spring Cloud Config Server for centralized configuration
+- **openframe-client**: Agent management and authentication service
+- **openframe-ui**: Vue 3 + TypeScript frontend with PrimeVue components
 
-### 2. Security Layer
-- JWT-based authentication via Spring Security
-- OpenFrame Gateway for request proxying
-- VPC isolation for open-source tools
-- Machine identity token management
-- WebSocket/API client agent support
+### 2. System Agent
+- **Rust Client**: Cross-platform agent for system monitoring and management
+- **Service Integration**: Runs as system service on Windows, macOS, and Linux
+- **Auto-Update**: Integrated with Velopack for seamless updates
+- **Secure Communication**: TLS-encrypted communication with platform
 
-### 3. Data Layer
-- Apache NiFi for data pipeline management
-- Kafka for pub/sub messaging
-- Cassandra for data storage
-- Apache Pinot for real-time analytics
-- Unified data structure and indexing
+### 3. Security Layer
+- **Authentication**: JWT-based with OAuth2/OpenID Connect via Spring Security
+- **API Gateway**: Request proxying and authentication validation
+- **Cookie-based JWT**: HTTP-only cookies converted to Authorization headers
+- **Agent Authentication**: Separate authentication flow for system agents
+- **Tool Integration**: Secure proxy for external tool APIs
 
-### 4. AI and Analytics
-- Deep/machine learning for anomaly detection
-- AI-powered issue resolution
-- Log analysis and inference
-- Automated problem resolution via MCP server
+### 4. Data Layer
+- **Stream Processing Service**: Custom data pipeline management and stream processing
+- **Apache Kafka 3.6.0**: High-throughput pub/sub messaging
+- **MongoDB 7.x**: Application data and configurations
+- **Cassandra 4.x**: Time-series event data and audit logs
+- **Apache Pinot 1.2.0**: Real-time analytics and OLAP queries
+- **Redis**: Caching and session storage
 
-### 5. Unified Interface
-- Integrated dashboard for all tools
-- NIST-compliant unified objects
-- SIEM-like log management
-- Automation and orchestration capabilities
+### 5. AI and Analytics
+- **Stream Processing**: Real-time data enrichment and anomaly detection
+- **ML/DL Integration**: Frameworks for intelligent operations
+- **GraphQL Analytics**: Unified query interface for data access
+- **Model Context Protocol**: AI workflow integration support
+
+### 6. Frontend and User Interface
+- **Vue 3**: Modern reactive frontend with Composition API
+- **PrimeVue**: Comprehensive component library
+- **Apollo Client**: GraphQL integration with caching
+- **Pinia**: State management with TypeScript support
+- **Real-time Updates**: WebSocket integration for live data
 
 ## Key Features
 
@@ -134,7 +147,7 @@ graph LR
 
     subgraph "Processing"
         KF[Kafka]
-        NF[NiFi]
+        ST[Stream Service]
         ML[ML Engine]
     end
 
@@ -146,10 +159,10 @@ graph LR
     OS --> KF
     AG --> KF
     LG --> KF
-    KF --> NF
-    NF --> ML
-    NF --> CS
-    NF --> PT
+    KF --> ST
+    ST --> ML
+    ST --> CS
+    ST --> PT
 ```
 
 ## Next Steps

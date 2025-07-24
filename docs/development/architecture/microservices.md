@@ -113,22 +113,26 @@ graph LR
 
     subgraph "Processing"
         KAFKA[Kafka]
-        NIFI[NiFi]
+        STREAM[Stream Processing Service]
         ML[ML Engine]
     end
 
     subgraph "Storage"
+        MONGO[MongoDB]
         CASS[Cassandra]
         PINOT[Pinot]
+        REDIS[Redis]
     end
 
     DB --> KAFKA
     LOG --> KAFKA
     METRICS --> KAFKA
-    KAFKA --> NIFI
-    NIFI --> ML
-    NIFI --> CASS
-    NIFI --> PINOT
+    KAFKA --> STREAM
+    STREAM --> ML
+    STREAM --> MONGO
+    STREAM --> CASS
+    STREAM --> PINOT
+    ML --> REDIS
 ```
 
 The data pipeline:
