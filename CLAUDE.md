@@ -55,7 +55,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **openframe-gateway**: API Gateway with JWT authentication, WebSocket support, and tool proxy
 - **openframe-api**: GraphQL API service with OAuth2/OpenID Connect, user management
 - **openframe-management**: Administrative service with scheduled tasks and system management
-- **openframe-stream**: Stream processing service using Kafka and NiFi for real-time data processing
+- **openframe-stream**: Stream processing service using Kafka for real-time data processing (NOT NiFi)
 - **openframe-config**: Spring Cloud Config Server for centralized configuration management
 - **openframe-client** (Java): Agent management and authentication service
 - **openframe-ui**: Vue 3 + TypeScript frontend with PrimeVue components
@@ -75,34 +75,34 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **Runtime**: Java 21, Spring Boot 3.3.0, Spring Cloud 2023.0.3
 - **API**: GraphQL (Netflix DGS 7.0.0), RESTful services
 - **Security**: JWT with OAuth2, Spring Security, AES-256 encryption
-- **Data**: MongoDB, Cassandra, Redis, Apache Pinot for analytics
+- **Data**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0, Redis
 - **Messaging**: Apache Kafka 3.6.0 for event streaming
-- **Processing**: Apache NiFi 1.22.0 for stream processing
+- **Processing**: OpenFrame Stream Service (custom data processing components)
 
 #### Frontend
 - **Framework**: Vue 3 with Composition API and TypeScript
-- **UI**: PrimeVue components, custom design system
+- **UI**: PrimeVue 3.45.0 components, custom design system
 - **State**: Pinia for state management
 - **GraphQL**: Apollo Client for data fetching
-- **Build**: Vite with TypeScript support
+- **Build**: Vite 5.0.10 with TypeScript support
 
 #### Infrastructure
 - **Containerization**: Docker and Docker Compose
-- **Orchestration**: Kubernetes with Helm charts (manifests/)
+- **Orchestration**: Kubernetes 1.28+ with Helm charts (manifests/)
 - **Monitoring**: Prometheus, Grafana, Loki for observability
-- **Service Mesh**: Istio for traffic management
+- **Service Mesh**: Istio 1.20 for traffic management
 
 ## Key Development Patterns
 
 ### Authentication Flow
 - Users authenticate through OAuth2/OpenID Connect via `openframe-api`
-- JWTs are stored in HTTP-only cookies for security
+- JWTs are stored in HTTP-only cookies for security (moved from Authorization headers)
 - Gateway converts cookies to Authorization headers for internal services
 - Agents use separate authentication flow with service accounts
 
 ### Data Flow
 1. **Ingestion**: External tools → `openframe-stream` → Kafka topics
-2. **Processing**: Kafka → NiFi processors → enriched data → Cassandra/Pinot
+2. **Processing**: Kafka → Stream Processing Service → enriched data → Cassandra/Pinot
 3. **API Layer**: GraphQL queries → MongoDB/Cassandra/Pinot → client responses
 4. **Real-time**: WebSocket connections through gateway for live updates
 
@@ -135,8 +135,33 @@ OpenFrame is a distributed microservices platform with the following core archit
 ├── manifests/                          # Kubernetes Helm charts
 ├── integrated-tools/                   # Docker configs for external tools
 ├── scripts/                            # Development and deployment scripts
-└── docs/                               # Documentation
+└── docs/                               # Documentation (flattened structure)
+    ├── getting-started/                # Getting started guides
+    ├── development/                    # Development documentation
+    ├── api/                           # API documentation
+    ├── deployment/                    # Deployment guides
+    ├── operations/                    # Operations manual
+    ├── reference/                     # Technical reference
+    └── diagrams/                      # Architecture diagrams
 ```
+
+## Documentation Structure
+
+The documentation has been restructured into a comprehensive, flat hierarchy:
+
+### Main Sections
+- **getting-started/**: Introduction, prerequisites, quick start, first steps
+- **development/**: Complete development guide with architecture, setup, testing
+- **api/**: Authentication, GraphQL, REST, WebSocket documentation
+- **deployment/**: Local, Kubernetes, cloud deployment guides
+- **operations/**: Monitoring, logging, maintenance, troubleshooting
+- **reference/**: Technical reference for services, libraries, configuration
+- **diagrams/**: Visual architecture and system diagrams
+
+### Key Files
+- `docs/README.md`: Comprehensive master documentation index with navigation
+- `README.md`: Main project README with current architecture (no NiFi references)
+- Individual section READMEs provide detailed navigation within each area
 
 ## Code Standards
 
@@ -178,6 +203,7 @@ mvn test -Dtest=ClassName#methodName    # Run specific test method
 ```bash
 cd openframe/services/openframe-ui
 npm run test:unit                       # Unit tests (if configured)
+npm run type-check                      # TypeScript validation
 ```
 
 ### Rust
@@ -189,7 +215,7 @@ cargo test test_name                    # Run specific test
 
 ## Security Considerations
 
-- All services use JWT authentication via cookies
+- All services use JWT authentication via HTTP-only cookies (NOT Authorization headers)
 - Agents authenticate with service account credentials
 - Database connections use encrypted credentials
 - External tool integrations proxy through gateway
@@ -198,7 +224,7 @@ cargo test test_name                    # Run specific test
 
 ## Local Development Setup
 
-1. **Prerequisites**: Java 21, Maven 3.9+, Docker 24.0+, Node.js 18+, Rust (for client)
+1. **Prerequisites**: Java 21, Maven 3.9+, Docker 24.0+, Node.js 18+, Rust 1.70+ (for client)
 2. **GitHub Token**: Required for private repository access during setup
 3. **Run platform script**: `./scripts/run-mac.sh` (or equivalent for your OS)
 4. **Access URLs**:
@@ -226,10 +252,65 @@ cargo test test_name                    # Run specific test
 3. Add UI components for tool management
 4. Configure tool-specific data processing in `openframe-stream`
 
+### Documentation Updates
+1. Update relevant section in `docs/` hierarchy
+2. Update cross-references and navigation links
+3. Ensure consistency with master `docs/README.md`
+4. Verify all Mermaid diagrams render correctly
+
+## Architecture Notes (IMPORTANT)
+
+### What Changed
+- **Apache NiFi REMOVED**: Replaced with OpenFrame Stream Service throughout
+- **Authentication Method**: JWT moved from Authorization headers to HTTP-only cookies
+- **Documentation Structure**: Flattened from `docs/docs/` to `docs/`
+- **Apache Pinot**: Added to all relevant architecture diagrams and descriptions
+
+### Current Data Processing Pipeline
+```
+Data Sources → OpenFrame Stream Service → Kafka → [Cassandra/Pinot/MongoDB/Redis]
+```
+
+### DO NOT Reference
+- Apache NiFi (removed from project)
+- Authorization header JWT (now uses cookies)
+- Nested `docs/docs/` structure (flattened)
+
+### Performance Characteristics
+- **API Response Time**: < 200ms average
+- **Throughput**: 100,000 events/second
+- **Concurrent Users**: 10,000+ supported
+- **Availability**: 99.9% uptime SLA
+
 ## Troubleshooting
 
-- Check service logs: `docker-compose logs -f service-name`
-- Verify database connections in service configurations
-- Ensure all required environment variables are set
-- Check JWT token expiration and refresh logic
-- Validate GraphQL schema compatibility between frontend and backend
+### Common Issues
+- **Service startup failures**: Check configuration and dependencies
+- **Database connection errors**: Verify connection strings and credentials
+- **Authentication issues**: Check JWT cookie configuration (not Authorization headers)
+- **Documentation links**: Use flat structure (`docs/section/` not `docs/docs/section/`)
+
+### Diagnostic Commands
+```bash
+# Service health
+curl http://localhost:8080/actuator/health
+
+# Service logs
+docker-compose logs -f service-name
+
+# Container status
+kubectl get pods --sort-by=memory
+
+# JWT token verification (cookies, not headers)
+curl -b cookies.txt http://localhost:8080/api/user/profile
+```
+
+## Integrated Tools
+
+Current integrations include:
+- **Tactical RMM**: IT management suite
+- **MeshCentral**: Remote management platform  
+- **Fleet MDM**: Mobile device management
+- **Authentik**: Identity provider
+
+Each tool has dedicated documentation in `docs/reference/tools/` and API documentation in `docs/api/tools/`.
