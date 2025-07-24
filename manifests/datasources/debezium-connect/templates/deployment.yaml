@@ -17,22 +17,6 @@ spec:
       imagePullSecrets:
         - name: docker-pat-secret
 
-      initContainers:
-        - name: download-jdbc-driver
-          image: curlimages/curl:latest
-          command:
-            - sh
-            - -c
-            - |
-              echo "Downloading Cassandra JDBC driver..."
-              curl -L -o /jdbc-drivers/cassandra-jdbc-wrapper-3.1.0.jar \
-                https://repo1.maven.org/maven2/com/github/adejanovski/cassandra-jdbc-wrapper/3.1.0/cassandra-jdbc-wrapper-3.1.0.jar
-              echo "JDBC driver downloaded successfully"
-              ls -la /jdbc-drivers/
-          volumeMounts:
-            - name: jdbc-drivers-volume
-              mountPath: /jdbc-drivers
-
       containers:
         - name: debezium-connect
           image: quay.io/debezium/connect:3.1.1.Final
@@ -52,6 +36,12 @@ spec:
               value: "connect-status"
             - name: CONNECT_PLUGIN_PATH
               value: "/kafka/connect,/jdbc-drivers"
+            - name: LOG_LEVEL
+              value: "DEBUG"
+            - name: CONNECT_REST_REQUEST_TIMEOUT_MS
+              value: "120000"
+            - name: REQUEST_TIMEOUT_MS
+              value: "60000"
           volumeMounts:
             - name: jdbc-drivers-volume
               mountPath: /jdbc-drivers
