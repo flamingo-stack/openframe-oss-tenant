@@ -125,7 +125,7 @@ function setup_cluster() {
     # Create a temporary k3d config file (without inlined registry config)
     TMP_CONFIG_FILE=$(mktemp)
     cat > "$TMP_CONFIG_FILE" <<EOF
-apiVersion: k3d.io/v1alpha4
+apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
   name: $K3D_CLUSTER_NAME
