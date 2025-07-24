@@ -16,3 +16,7 @@ data:
   MESH_TEMP_DIR: "/tmp/mesh"
   MESH_DIR: "/opt/mesh"
   MESH_PROTOCOL: "ws"
+
+  MESH_NGINX_NAT_HOST: "meshcentral-server.integrated-tools.svc.cluster.local"
+  MESH_NGINX_HOST: "meshcentral-server.integrated-tools.svc.cluster.local"
+  MESH_NGINX_PORT: "80"
