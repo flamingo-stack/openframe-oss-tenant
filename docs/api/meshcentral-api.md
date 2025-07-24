@@ -1,6 +1,6 @@
 # MeshCentral REST API
 
-This document describes the REST API for MeshCentral, which wraps MeshCentral's functionality with a REST interface.
+This document describes the REST API for MeshCentral, which wraps MeshCentral's functionality with a REST interface for OpenFrame integration.
 
 ## Authentication
 
@@ -117,71 +117,13 @@ Response:
 GET /api/deviceinfo?id={device_id}
 ```
 
-Response:
-```json
-{
-  "General": {
-    "Server Name": "DESKTOP-057QV01",
-    "Computer Name": "DESKTOP-057QV01",
-    "Hostname": "192.168.65.1",
-    "IP Address": "192.168.65.1",
-    "Icon": 8,
-    "AntiVirus": [
-      "Windows Defender, updated, enabled"
-    ],
-    "WindowsSecurityCenter": {
-      "antiVirus": "OK",
-      "autoUpdate": "OK",
-      "firewall": "PROBLEM"
-    }
-  },
-  "Operating System": {
-    "Name": "DESKTOP-057QV01",
-    "Version": "Microsoft Windows 11 Pro - 24H2/26100",
-    "Architecture": "ARM 64-bit Processor"
-  },
-  "Mesh Agent": {
-    "Mesh Agent": "Windows 32bit service",
-    "Last agent connection": "4/17/2025, 1:07:31 AM",
-    "Last agent address": "192.168.65.1"
-  },
-  "Networking": {
-    "Ethernet, localdomain": {
-      "MAC Layer": "MAC: 00:0C:29:D9:C4:3A",
-      "IPv4 Layer": "IP: 172.16.181.129, Mask: 255.255.255.0, Gateway: 172.16.181.2",
-      "IPv6 Layer": "IP: fe80::2b86:9a77:f07d:fd02%11"
-    }
-  },
-  "BIOS": {
-    "Vendor": "VMware, Inc.",
-    "Version": "VMW201.00V.24006586.BA64.2406042154"
-  },
-  "Motherboard": {
-    "Vendor": "VMware, Inc.",
-    "Name": "VBSA",
-    "Serial": "56AF58A39EA34D56",
-    "Version": "1",
-    "Identifier": "9EA34D56-58A3-56AF-1A56-A14A5CD9C43A",
-    "CPU": "Apple silicon",
-    "GPU1": "VMware SVGA 3D"
-  },
-  "Memory": {
-    "RAM slot #0": {
-      "Capacity/Speed": "8192 Mb, undefined Mhz",
-      "Part Number": "VMware Virtual RAM, VMW-8192MB"
-    },
-    "RAM slot #1": {
-      "Capacity/Speed": "2048 Mb, undefined Mhz",
-      "Part Number": "VMware Virtual RAM, VMW-2048MB"
-    }
-  },
-  "Storage": {
-    "VMware Virtual NVMe Disk": {
-      "Capacity": "65530Mb"
-    }
-  }
-}
-```
+Returns detailed device information including:
+- General information (server name, IP, antivirus status)
+- Operating system details
+- Mesh agent information
+- Network configuration
+- BIOS and motherboard details
+- Memory and storage information
 
 ### Run Command on Device
 
@@ -206,18 +148,7 @@ Parameters:
 
 ### Error Handling
 
-If an invalid command is provided, the API will return a list of available commands:
-
-```
-GET /api/invalid_command
-```
-
-Response:
-```json
-{
-  "error": "Invalid command. Possible commands are: edituser, listusers, listusersessions, listdevicegroups, listdevices, listusersofdevicegroup, listevents, logintokens, serverinfo, userinfo, adduser, removeuser, adddevicegroup, removedevicegroup, editdevicegroup, broadcast, showevents, addusertodevicegroup, removeuserfromdevicegroup, addusertodevice, removeuserfromdevice, sendinviteemail, generateinvitelink, config, movetodevicegroup, deviceinfo, removedevice, editdevice, addlocaldevice, addamtdevice, addusergroup, listusergroups, removeusergroup, runcommand, shell, upload, download, deviceopenurl, devicemessage, devicetoast, addtousergroup, removefromusergroup, removeallusersfromusergroup, devicesharing, devicepower, indexagenterrorlog, agentdownload, report, grouptoast, groupmessage, webrelay."
-}
-```
+If an invalid command is provided, the API will return a list of available commands with an error message listing all possible commands.
 
 ## Curl Examples
 
@@ -247,3 +178,6 @@ curl -X POST https://meshcentral.example.com/api/runcommand \
   }'
 ```
 
+## Integration with OpenFrame
+
+The MeshCentral API is integrated with OpenFrame through the gateway service, which proxies requests to the MeshCentral REST API. This allows unified access to device management capabilities within the OpenFrame platform.

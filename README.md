@@ -325,13 +325,38 @@ Documentation for getting started with OpenFrame is in development. For now, ple
 OpenFrame consists of seven core microservices and supporting libraries:
 
 ### Microservices
-* **openframe-gateway** - API Gateway with JWT authentication, WebSocket support, and tool proxy
-* **openframe-api** - GraphQL API service with OAuth2/OpenID Connect and user management
+
+* **openframe-gateway** - Authentication proxy and unified entry point
+  * Validates JWT tokens for all incoming requests
+  * Central routing layer for services and integrated tools  
+  * Supports REST and WebSocket communication protocols
+  * Routes: `/api/**` → API service, `/clients/**` → Client service, `/tools/**` → Tool proxy
+
+* **openframe-api** - Core backend service with GraphQL data access
+  * Complete OAuth 2.0 implementation with multiple grant types
+  * OpenID Connect discovery and userinfo endpoints
+  * JWT integration for token-based authentication
+  * GraphQL API for events and integrated tools
+  * Endpoints: `/oauth/token`, `/graphql`, `/.well-known/openid-configuration`
+
+* **openframe-client** - Agent management and authentication service
+  * Manages agent registration and JWT token issuance
+  * Tool connections between agents and various integrated tools
+  * WebSocket support for real-time metrics
+  * REST APIs for client and agent management
+  * Endpoints: `/api/agents/**`, `/oauth/token`, `/api/clients/**`
+
 * **openframe-management** - Administrative service with scheduled tasks and system management
+
 * **openframe-stream** - Stream processing service using Kafka and NiFi for real-time data processing
+
 * **openframe-config** - Spring Cloud Config Server for centralized configuration management
-* **openframe-client** - Agent management and authentication service (Java)
+
 * **openframe-ui** - Vue 3 + TypeScript frontend with PrimeVue components
+  * Visual hub for operators and administrators
+  * Displays integrated tools information and status
+  * Environment-driven configuration (API URLs, client secrets)
+  * Development: `npm run dev`, Production: `npm run build`
 
 ### System Agent
 * **client/** - Cross-platform Rust agent for system monitoring and management

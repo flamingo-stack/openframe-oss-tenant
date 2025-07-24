@@ -129,6 +129,8 @@ graph TD
 
 ### Development
 - [Setup Guide](development/setup.md) - Development environment setup
+- [Rust Client](development/rust-client.md) - Cross-platform agent development guide
+- [Scripts Usage](development/scripts.md) - OpenFrame development and deployment scripts
 - [Architecture](development/architecture.md) - System architecture and design
 - [Code Style](development/code-style.md) - Coding standards and practices
 - [Testing](development/testing.md) - Testing guidelines and practices
@@ -140,6 +142,7 @@ graph TD
 - [Endpoints](api/endpoints.md) - Available API endpoints
 - [WebSocket](api/websocket.md) - Real-time communication
 - [Integration](api/integration.md) - Integration guidelines
+- [MeshCentral API](api/meshcentral-api.md) - MeshCentral REST API reference
 
 ### Deployment
 - [Overview](deployment/deployment.md) - Deployment architecture
