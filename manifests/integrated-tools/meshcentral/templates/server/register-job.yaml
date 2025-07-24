@@ -57,7 +57,7 @@ spec:
                   "toolUrls": [
                     {
                       "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
-                      "port": "80",
+                      "port": "8383",
                       "type": "API"
                     },
                     {
