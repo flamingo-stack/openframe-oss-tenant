@@ -13,7 +13,10 @@ This guide will help you set up your development environment for OpenFrame's Jav
 ### Frontend Requirements
 - Node.js 18.0.0+
 - npm 9.0.0+
-- Vue.js CLI 5.0.0+
+
+### Rust Client Requirements
+- Rust 1.70+ with Cargo
+- Platform-specific dependencies (automatically handled)
 
 ## Backend Setup
 
@@ -92,13 +95,23 @@ VUE_APP_WS_URL=ws://localhost:8080/ws
 ### 3. Start Development Server
 
 ```bash
+# Use platform-specific startup script (recommended)
+./scripts/run-mac.sh              # macOS
+./scripts/run-linux.sh            # Linux
+./scripts/run-windows.ps1         # Windows
+
+# Or start services individually:
 # Start backend services
-cd services/openframe-api
+cd openframe/services/openframe-api
 mvn spring-boot:run
 
-# Start frontend development server
-cd services/openframe-ui
-npm run serve
+# Start frontend development server (separate terminal)
+cd openframe/services/openframe-ui
+npm run dev
+
+# Build Rust client agent
+cd client
+cargo build --release
 ```
 
 ## Development Tools
@@ -114,7 +127,7 @@ npm run serve
   - Git
   - Docker
 
-#### VS Code (Recommended for Frontend)
+#### VS Code (Recommended for Frontend and Rust)
 - Install VS Code
 - Install extensions:
   - Volar (Vue 3)
@@ -122,6 +135,7 @@ npm run serve
   - Prettier
   - GitLens
   - Docker
+  - rust-analyzer (for Rust client development)
 
 ### 2. Code Style
 
@@ -162,16 +176,17 @@ cd services/openframe-api
 mvn spring-boot:run
 
 # Start frontend development server
-cd services/openframe-ui
-npm run serve
+cd openframe/services/openframe-ui
+npm run dev
 ```
 
 ### 2. Accessing Services
 
-- Backend API: http://localhost:8080
-- Frontend UI: http://localhost:3000
-- API Documentation: http://localhost:8080/swagger-ui.html
-- Grafana Dashboard: http://localhost:3001
+- **Frontend UI**: http://localhost:8080
+- **GraphQL API**: http://localhost:8080/graphql
+- **Configuration Server**: http://localhost:8888
+- **GraphQL Playground**: http://localhost:8080/graphiql (if enabled)
+- **Grafana Dashboard**: Available via integrated tools setup
 
 ### 3. Development Workflow
 

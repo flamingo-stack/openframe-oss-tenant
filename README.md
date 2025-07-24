@@ -93,21 +93,28 @@ flowchart LR
 ### Backend Services
 
 * **Core Runtime**
-  * Spring Boot 3.2.x
+  * Spring Boot 3.3.0 with Spring Cloud 2023.0.3
   * OpenJDK 21
-  * Netflix DGS Framework (GraphQL)
-  * Spring Cloud Gateway
-  * Spring Security with OAuth 2.0
+  * Netflix DGS Framework 7.0.0 (GraphQL)
+  * Spring Cloud Gateway with WebFlux
+  * Spring Security with OAuth 2.0/OpenID Connect
 
 * **Stream Processing**
-  * Apache NiFi 2.0
+  * Apache NiFi 1.22.0
     * Custom processors for data enrichment
     * Real-time anomaly detection
     * Automated data routing
-  * Apache Kafka 3.6
+  * Apache Kafka 3.6.0
     * High-throughput event streaming
     * Multi-topic architecture
     * Exactly-once delivery semantics
+
+* **System Agent**
+  * Rust-based cross-platform agent
+    * Tokio async runtime for high-performance I/O
+    * System monitoring and management
+    * Auto-update capabilities with Velopack
+    * Service lifecycle management
 
 ### Data Storage
 
@@ -130,7 +137,7 @@ flowchart LR
     * Multi-datacenter replication
     * Tunable consistency
 
-* **Analytics Engine (Apache Pinot 1.0.0)**
+* **Analytics Engine (Apache Pinot 1.2.0)**
   * Real-time analytics
   * Complex aggregations
   * Time-series analysis
@@ -138,6 +145,15 @@ flowchart LR
     * Sub-second OLAP queries
     * Real-time ingestion
     * Multi-tenant support
+
+### Frontend
+
+* **Web Application**
+  * Vue 3 with Composition API and TypeScript
+  * PrimeVue component library for consistent UI
+  * Apollo Client for GraphQL integration
+  * Pinia for state management
+  * Vite for fast development and builds
 
 ### Infrastructure
 
@@ -169,12 +185,13 @@ flowchart LR
 
 ## Prerequisites
 
-* OpenJDK 21.0.1+
-* Maven 3.9.6+
-* Docker 24.0+ and Docker Compose 2.23+
-* Kubernetes 1.28+
-* Git 2.42+
-* GitHub Personal Access Token (Classic) with required permissions
+* **Java Development**: OpenJDK 21.0.1+, Maven 3.9.6+
+* **Frontend Development**: Node.js 18+ with npm
+* **Rust Development**: Rust 1.70+ with Cargo (for client agent)
+* **Containerization**: Docker 24.0+ and Docker Compose 2.23+
+* **Orchestration**: Kubernetes 1.28+ (for production deployment)
+* **Version Control**: Git 2.42+
+* **Authentication**: GitHub Personal Access Token (Classic) with `repo`, `read:packages`, and `write:packages` permissions
 
 ## Running Locally
 
@@ -249,14 +266,50 @@ You can create a new token by following these steps:
 Note: The token will be stored only for the current session and will need to be provided again for subsequent runs.
 
 You can monitor the startup progress in the console output. Once started, the application will be available at:
-- UI Dashboard: http://localhost:8080
-- GraphQL API: http://localhost:8080/graphql
+- **UI Dashboard**: http://localhost:8080
+- **GraphQL API**: http://localhost:8080/graphql
+- **Configuration Server**: http://localhost:8888
 
 To stop the application, press Ctrl+C in the terminal where the script is running.
 
-## Installation
+## Development Workflow
 
-Detailed installation instructions coming soon.
+### Building Individual Components
+
+```bash
+# Build all Java services and libraries
+mvn clean install
+
+# Build without tests (faster)
+mvn clean install -DskipTests
+
+# Build and run frontend locally
+cd openframe/services/openframe-ui
+npm install
+npm run dev
+
+# Build Rust client agent
+cd client
+cargo build --release
+```
+
+### Testing
+
+```bash
+# Run all Java tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=ClassName
+
+# Run frontend tests
+cd openframe/services/openframe-ui
+npm run type-check
+
+# Run Rust tests
+cd client
+cargo test
+```
 
 ## Usage
 
@@ -269,13 +322,25 @@ Documentation for getting started with OpenFrame is in development. For now, ple
 
 ## Core Components
 
-OpenFrame consists of several key modules:
+OpenFrame consists of seven core microservices and supporting libraries:
 
-* **openframe-core** - Shared libraries and utilities
-* **openframe-management** - Service orchestration and administration
-* **openframe-data** - Centralized data access layer
-* **openframe-security** - Security patterns and configurations
-* **openframe-gateway** - API routing and traffic management
+### Microservices
+* **openframe-gateway** - API Gateway with JWT authentication, WebSocket support, and tool proxy
+* **openframe-api** - GraphQL API service with OAuth2/OpenID Connect and user management
+* **openframe-management** - Administrative service with scheduled tasks and system management
+* **openframe-stream** - Stream processing service using Kafka and NiFi for real-time data processing
+* **openframe-config** - Spring Cloud Config Server for centralized configuration management
+* **openframe-client** - Agent management and authentication service (Java)
+* **openframe-ui** - Vue 3 + TypeScript frontend with PrimeVue components
+
+### System Agent
+* **client/** - Cross-platform Rust agent for system monitoring and management
+
+### Shared Libraries
+* **openframe-core** - Core models, utilities, and base configurations
+* **openframe-data** - Data access layer for MongoDB, Cassandra, Redis, and Kafka
+* **openframe-jwt** - JWT security implementation with cookie support
+* **api-library** - Common API services and DTOs
 
 ## Security Features
 
