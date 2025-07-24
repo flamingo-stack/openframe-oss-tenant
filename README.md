@@ -1,4 +1,4 @@
-# ![OpenFrame Logo](openframe/services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
+# OpenFrame
 
 [![OpenFrame Build Java & Container Images](https://github.com/Flamingo-CX/openframe/actions/workflows/build.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build.yml)
 
@@ -8,7 +8,7 @@ OpenFrame is a distributed platform that creates a unified layer for data, APIs,
 
 * **Unified Dashboard** - Single interface for managing all services and workflows
 * **Smart Automation** - Automated deployment and monitoring capabilities
-* **AI-Powered Insights** - Real-time anomaly detection and AI assistants ("copilots")
+* **AI-Powered Insights** - Real-time anomaly detection and AI assistants
 * **Enterprise Security** - Integrated security controls across all services
 * **High Performance** - Handles 100,000 events/second with sub-500ms latency
 * **Scalable Architecture** - Built on proven microservices principles
@@ -26,7 +26,7 @@ OpenFrame uses a modern microservices architecture with these key layers:
   * Circuit breaker patterns for resilience
 
 * **Processing Layer**
-  * Stream processing with Apache NiFi
+  * Stream processing with OpenFrame Stream Service
   * Event-driven architecture using Apache Kafka
   * Real-time anomaly detection
   * Data enrichment and transformation pipelines
@@ -56,15 +56,16 @@ flowchart TB
     end
 
     subgraph Processing_Layer
-        NiFi --> |Anomaly Detection|Kafka
-        Kafka --> |Events|CS[Cassandra]
+        Stream[Stream Processing Service] --> |Events|Kafka
         Kafka --> |Analytics|PT[Pinot]
+        Kafka --> |Storage|CS[Cassandra]
     end
 
     subgraph Data_Layer
         GraphQL --> MongoDB
         GraphQL --> CS
         GraphQL --> PT
+        GraphQL --> Redis[Redis Cache]
     end
 ```
 
@@ -72,17 +73,17 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    Sources[Data Sources] --> NiFi
+    Sources[Data Sources] --> Stream[Stream Processing Service]
 
-    subgraph NiFi[NiFi Processing]
+    subgraph Stream[Stream Processing]
         direction TB
         VP[Validate Payload] --> ED[Enrich Data]
         ED --> AD[Anomaly Detection]
         AD --> RT[Route Traffic]
     end
 
-    NiFi --> |Events|Kafka
-    NiFi --> |Alerts|Alert[Alert Service]
+    Stream --> |Events|Kafka
+    Stream --> |Alerts|Alert[Alert Service]
 
     Kafka --> |Raw Events|Cassandra
     Kafka --> |Metrics|Pinot
@@ -100,8 +101,8 @@ flowchart LR
   * Spring Security with OAuth 2.0/OpenID Connect
 
 * **Stream Processing**
-  * Apache NiFi 1.22.0
-    * Custom processors for data enrichment
+  * OpenFrame Stream Service
+    * Custom data processing components
     * Real-time anomaly detection
     * Automated data routing
   * Apache Kafka 3.6.0
@@ -204,14 +205,12 @@ OpenFrame provides platform-specific scripts to easily run the application local
 .\scripts\run-windows.ps1 -Help        # Show help message
 ```
 
-The Windows script now includes:
+The Windows script includes:
 - Automatic tool installation (kind, kubectl, helm, skaffold, jq, telepresence)
 - GitHub token validation
 - Docker Desktop status check
 - Network configuration for Kind
-- Seamless integration with Git Bash for running the main script
-
-Tools are installed to `~/bin` directory. The script will remind you to add this directory to your PATH if needed.
+- Seamless integration with Git Bash
 
 ### macOS
 ```bash
@@ -227,50 +226,19 @@ Tools are installed to `~/bin` directory. The script will remind you to add this
 ./scripts/run-linux.sh --help       # Show help message
 ```
 
-### Script Behavior
-
-The installation scripts provide two modes of operation:
-
-#### Interactive Mode (Default)
-- Prompts for user confirmation at key steps
-- Displays detailed progress information
-- Asks for cleanup preferences
-- Shows all informational messages
-
-#### Silent Mode
-- Suppresses non-essential output
-- Skips most confirmations
-- Skips cleanup prompts
-- Uses environment variables for automation
-
-Both modes will:
-- Always prompt for GitHub token (required for accessing private repositories)
-- Install required dependencies if missing
-- Set up the development environment
-- Configure network settings
-- Create and configure the Kind cluster
-
 ### GitHub Token
 
-The scripts require a GitHub Personal Access Token (Classic) for authentication. You will be prompted to enter the token during execution, regardless of the mode. The token should have the following permissions:
+The scripts require a GitHub Personal Access Token (Classic) for authentication with the following permissions:
 - `repo` - Full control of private repositories
 - `read:packages` - Read access to packages
 - `write:packages` - Write access to packages
 
-You can create a new token by following these steps:
-1. Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions
-4. Copy the generated token for use with the installation scripts
+Create a token at: GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
 
-Note: The token will be stored only for the current session and will need to be provided again for subsequent runs.
-
-You can monitor the startup progress in the console output. Once started, the application will be available at:
+Once started, the application will be available at:
 - **UI Dashboard**: http://localhost:8080
 - **GraphQL API**: http://localhost:8080/graphql
 - **Configuration Server**: http://localhost:8888
-
-To stop the application, press Ctrl+C in the terminal where the script is running.
 
 ## Development Workflow
 
@@ -311,15 +279,6 @@ cd client
 cargo test
 ```
 
-## Usage
-
-Documentation for getting started with OpenFrame is in development. For now, please refer to individual sections in our comprehensive guides:
-
-- [System Architecture](docs/system-architecture.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Security Overview](docs/security.md)
-
 ## Core Components
 
 OpenFrame consists of seven core microservices and supporting libraries:
@@ -348,7 +307,7 @@ OpenFrame consists of seven core microservices and supporting libraries:
 
 * **openframe-management** - Administrative service with scheduled tasks and system management
 
-* **openframe-stream** - Stream processing service using Kafka and NiFi for real-time data processing
+* **openframe-stream** - Stream processing service using Kafka for real-time data processing
 
 * **openframe-config** - Spring Cloud Config Server for centralized configuration management
 
@@ -385,19 +344,15 @@ OpenFrame consists of seven core microservices and supporting libraries:
 * Automated alerting
 * Health checks and probes
 
-## Roadmap
+## Documentation
 
-### Short Term
-* GraphQL Subscriptions
-* Enhanced batching and caching
-* Advanced NiFi processors
-* Real-time analytics improvements
-
-### Long Term
-* Multi-region deployment
-* Zero-trust architecture
-* AI/ML integration
-* Advanced OLAP capabilities
+For comprehensive documentation, see:
+- [Getting Started Guide](docs/getting-started/introduction.md)
+- [Development Setup](docs/development/setup/environment.md)
+- [API Documentation](docs/api/README.md)
+- [Deployment Guide](docs/deployment/README.md)
+- [Operations Manual](docs/operations/README.md)
+- [Architecture Overview](docs/development/architecture/overview.md)
 
 ## Contributing
 
@@ -406,10 +361,6 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
-
-## Acknowledgments
-
-OpenFrame builds upon many excellent open-source projects. We're grateful to all the communities that make this possible.
 
 ## Support
 
