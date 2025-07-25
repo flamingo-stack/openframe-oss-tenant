@@ -2,7 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: external-api
+  name: openframe-external-api
 spec:
   endpoints:
     - port: management
@@ -13,5 +13,5 @@ spec:
     - microservices
   selector:
     matchLabels:
-      app: external-api
+      app: openframe-external-api
 {{- end }}

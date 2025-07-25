@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: external-api
+  name: openframe-external-api
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -25,17 +25,17 @@ spec:
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/external-api" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-external-api" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "external-api",
+                  "id": "openframe-external-api",
                   "toolType": "OPENFRAME",
                   "name": "External API",
                   "description": "External API Gateway Service",
                   "toolUrls": [
                     {
-                      "url": "http://external-api.microservices.svc.cluster.local",
+                      "url": "http://openframe-external-api.microservices.svc.cluster.local",
                       "port": "8095",
                       "type": "API"
                     }

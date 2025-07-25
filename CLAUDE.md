@@ -124,7 +124,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 │   │   ├── openframe-stream/           # Kafka stream processing
 │   │   ├── openframe-config/           # Configuration server
 │   │   ├── openframe-client/           # Agent management service
-│   │   ├── external-api/               # External API integrations
+│   │   ├── openframe-external-api/               # External API integrations
 │   │   └── openframe-ui/               # Vue.js frontend
 │   └── libs/                           # Shared libraries
 │       ├── openframe-core/             # Core models and utilities

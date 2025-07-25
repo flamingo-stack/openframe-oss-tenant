@@ -11,7 +11,7 @@ import java.net.URI;
 
 /**
  * Service for resolving proxy URLs for integrated tools.
- * Used by both gateway and external-api services.
+ * Used by both gateway and openframe-external-api services.
  */
 @Service
 @RequiredArgsConstructor

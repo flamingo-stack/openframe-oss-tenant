@@ -72,7 +72,7 @@ public class OpenApiConfig {
                     .url("https://opensource.org/licenses/MIT")))
             .servers(List.of(
                 new Server()
-                        .url("/external-api")
+                        .url("/openframe-external-api")
                     .description("Kubernetes Gateway server")
             ))
             .addSecurityItem(new SecurityRequirement()
@@ -88,7 +88,7 @@ public class OpenApiConfig {
     @Bean
     public GroupedOpenApi externalApiGroup() {
         return GroupedOpenApi.builder()
-                .group("external-api")
+                .group("openframe-external-api")
                 .pathsToMatch("/tools/**", "/test/**", "/api/v1/**")
                 .pathsToExclude("/actuator/**", "/api/core/**")
                 .build();

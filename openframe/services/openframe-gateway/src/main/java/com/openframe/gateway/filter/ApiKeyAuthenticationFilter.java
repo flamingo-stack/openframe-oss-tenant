@@ -21,9 +21,9 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Global filter for API key authentication on /external-api/** endpoints
+ * Global filter for API key authentication on /openframe-external-api/** endpoints
  * Flow:
- * 1. Check if request is for /external-api/**
+ * 1. Check if request is for /openframe-external-api/**
  * 2. If yes, require X-API-Key header
  * 3. Validate API key (includes total requests increment)
  * 4. Check rate limits  
@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
 
-    private static final String EXTERNAL_API_PREFIX = "/external-api/";
+    private static final String EXTERNAL_API_PREFIX = "/openframe-external-api/";
     private static final String API_DOCS_PATH = "/api-docs";
     private static final String SWAGGER_UI_PATH = "/swagger-ui";
     private static final String SWAGGER_UI_HTML = "/swagger-ui.html";
@@ -73,7 +73,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
         
         if (apiKey == null || apiKey.trim().isEmpty()) {
             log.warn("No API key provided for external API endpoint: {}", path);
-            return handleUnauthorized(exchange, "API key is required for /external-api/** endpoints");
+            return handleUnauthorized(exchange, "API key is required for /openframe-external-api/** endpoints");
         }
         
         return apiKeyValidationService.validateApiKey(apiKey)
@@ -154,7 +154,7 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
     }
     
     /**
-     * Check if path is a direct Swagger/OpenAPI path (outside external-api)
+     * Check if path is a direct Swagger/OpenAPI path (outside openframe-external-api)
      */
     private boolean isDirectSwaggerPath(String path) {
         return path.startsWith(API_DOCS_PATH) ||
