@@ -30,4 +30,3 @@ manifests:
           config:
             branch:
               "main"
-
