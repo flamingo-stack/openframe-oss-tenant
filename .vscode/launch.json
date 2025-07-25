@@ -169,6 +169,21 @@
                 "VITE_GRAFANA_URL": "http://localhost:3000"
             },
             "console": "integratedTerminal"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "OpenFrame Frontend (K8s)",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/openframe/services/openframe-frontend/src",
+            "sourceMapPathOverrides": {
+                "webpack:///src/*": "${webRoot}/*"
+            },
+            "preLaunchTask": "npm: dev (frontend-k8s)",
+            "runtimeArgs": [
+                "--disable-web-security",
+                "--user-data-dir=${workspaceFolder}/.vscode/chrome-debug-profile"
+            ]
         }
     ]
 }
