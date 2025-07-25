@@ -31,10 +31,6 @@ kafka:
     # Do we need to create external access ??? https://github.com/bitnami/charts/issues/25030
     # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
     # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
-  
-  extraEnv:
-  - name: KAFKA_BROKER_ID
-    value: "1"
 
   # externalAccess:
   #   enabled: true
@@ -91,6 +87,13 @@ kafka:
         #   max.message.bytes: 64000
         #   flush.messages: 1
 
+      # internal consumer-group state topic so that single-broker dev clusters work
+      - name: __consumer_offsets
+        partitions: 50        # should match offsets.topic.num.partitions default
+        replicationFactor: 1
+        config:
+          cleanup.policy: compact
+
   metrics:
     jmx:
       enabled: true
@@ -110,6 +113,3 @@ kafka:
     offsets.topic.replication.factor=1
     transaction.state.log.replication.factor=1
     offsets.topic.auto.create.enable=true
-  extraEnv:
-    - name: KAFKA_BROKER_ID
-      value: "1"
