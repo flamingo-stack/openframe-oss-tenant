@@ -389,7 +389,7 @@ Use API keys for external access:
 
 ```bash
 curl -H "X-API-Key: ak_abc123.sk_def456" \
-     https://api.openframe.com/external-api/devices
+     https://api.openframe.com/openframe-external-api/devices
 ```
 
 ### 3. Server-to-Server
