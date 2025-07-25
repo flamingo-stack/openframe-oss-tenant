@@ -47,26 +47,21 @@ const refreshAccessToken = async (): Promise<void> => {
       throw new Error('Already on login page');
     }
 
-    // Get refresh token
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) {
-      console.error('❌ [Auth] No refresh token available');
-      throw new Error('No refresh token available');
+    // Use auth store for cookie-based refresh
+    const authStore = useAuthStore();
+    console.log('📤 [Auth] Making refresh token request via cookies...');
+    const success = await authStore.tryRefreshToken();
+    
+    if (!success) {
+      console.error('❌ [Auth] Token refresh failed');
+      throw new Error('Token refresh failed');
     }
-
-    console.log('📤 [Auth] Making refresh token request...');
-    const response = await AuthService.refreshToken(refreshToken);
-    console.log('✅ [Auth] Token refresh successful');
-
-    localStorage.setItem('access_token', response.access_token);
-    if (response.refresh_token) {
-      localStorage.setItem('refresh_token', response.refresh_token);
-    }
+    
+    console.log('✅ [Auth] Token refresh successful via HTTP-only cookies');
   } catch (error) {
     console.error('❌ [Auth] Token refresh failed:', error);
-    const authStore = useAuthStore();
-    await authStore.logout();
-    router.push('/login');
+    // Don't automatically logout here - let the calling code decide
+    // This prevents unexpected logouts during normal API operations
     throw error;
   }
 };
@@ -143,21 +138,14 @@ const handleGraphQLAuthError = (operation: any, forward: any): Observable<FetchR
 
 const httpLink = createHttpLink({
   uri: `${config.getConfig().apiUrl}/graphql`,
-  credentials: 'include',
+  credentials: 'include', // Always include cookies for authentication
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-const authLink = setContext(async (_, { headers }) => {
-  const token = localStorage.getItem('access_token');
-  return {
-    headers: {
-      ...headers,
-      authorization: token ? `Bearer ${token}` : '',
-    },
-  };
-});
+// No longer need authLink since authentication is handled via HTTP-only cookies
+// const authLink = setContext(...) - REMOVED
 
 // GraphQL error handling
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
@@ -183,7 +171,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
 // Create Apollo Client
 export const apolloClient = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]),
+  link: from([errorLink, httpLink]), // Removed authLink - authentication via cookies
   cache: new InMemoryCache({
     typePolicies: {
       IntegratedTool: {
@@ -220,10 +208,9 @@ export default apolloClient;
 export const restClient = {
   async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const makeRequest = async () => {
-      const token = localStorage.getItem('access_token');
       const defaultHeaders = {
-        'Accept': '*/*',
-        'Authorization': token ? `Bearer ${token}` : ''
+        'Accept': '*/*'
+        // No longer adding Authorization header - authentication via cookies
       };
 
       const headers = {
@@ -233,7 +220,8 @@ export const restClient = {
 
       const response = await fetch(url, {
         ...options,
-        headers
+        headers,
+        credentials: 'include' // Always include cookies for authentication
       });
 
       if (!response.ok) {

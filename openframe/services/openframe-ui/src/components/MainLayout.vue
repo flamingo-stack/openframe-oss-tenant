@@ -139,13 +139,14 @@ import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { OFButton } from '@/components/ui';
 import Sidebar from 'primevue/sidebar';
-import { AuthService } from '../services/AuthService';
+import { useAuthStore } from '@/stores/auth';
 import ThemeToggle from './ThemeToggle.vue'
 import { storeToRefs } from 'pinia'
 import { useThemeStore } from '@/stores/themeStore'
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const menuVisible = ref(false);
 const themeStore = useThemeStore()
 const { isDark } = storeToRefs(themeStore)
@@ -230,9 +231,15 @@ const toggleMenu = () => {
   menuVisible.value = !menuVisible.value;
 };
 
-const handleLogout = () => {
-  AuthService.logout();
-  router.push('/login');
+const handleLogout = async () => {
+  try {
+    await authStore.logout();
+    router.push('/login');
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even if logout fails, redirect to login
+    router.push('/login');
+  }
 };
 </script>
 
