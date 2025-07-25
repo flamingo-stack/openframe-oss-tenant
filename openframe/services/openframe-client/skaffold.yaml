@@ -27,3 +27,4 @@ manifests:
         valuesFiles:
           - ../../../manifests/microservices/openframe-client/values.yaml
         # setValues:
+
