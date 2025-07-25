@@ -31,6 +31,10 @@ kafka:
     # Do we need to create external access ??? https://github.com/bitnami/charts/issues/25030
     # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
     # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+  
+  extraEnv:
+  - name: KAFKA_BROKER_ID
+    value: "1"
 
   # externalAccess:
   #   enabled: true

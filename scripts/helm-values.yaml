@@ -1,28 +1,9 @@
-deployment:
-  name: local         # Deployment environment: "local" for development, "cloud" for production
-  ingress: localhost        # Ingress strategy: "ngrok" for local development with ngrok, "nat" for NAT traversal
-  # url: https://reindeer-suitable-genuinely.ngrok-free.app  # Optional: ngrok URL for local development
-
 global:
-  repoDir: manifests  # Directory containing all Helm charts in the Git repository
-  appsDir: apps       # Directory containing the apps chart (only defined in app-of-apps)
-  repoURL: https://github.com/Flamingo-CX/openframe.git  # Git repository URL for ArgoCD
-  repoBranch: feature/kafka-stream    # Git branch to deploy from (main branch for production)
+  repoBranch: feature/kafka-stream
   autoSync: true
 
 apps:
   openframe-config:
-    enabled: true     # Configuration management service
-    project: microservices  # Use microservices ArgoCD project
-    namespace: microservices  # Deploy to microservices namespace
-    syncWave: "2"     # Deploy in sync wave 2
     values:
-      registerJob:
-        enabled: true
-      servicemonitor:
-        enabled: true
-      image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-config
-        tag: latest
       config:
         branch: kafka-stream
