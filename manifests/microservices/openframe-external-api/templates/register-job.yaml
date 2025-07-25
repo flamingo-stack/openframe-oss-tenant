@@ -25,7 +25,7 @@ spec:
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-external-api" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/external-api" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
