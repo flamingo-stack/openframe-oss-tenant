@@ -1,6 +1,6 @@
 global:
   repoBranch: feature/kafka-stream
-  autoSync: true
+  autoSync: false
 
 apps:
   openframe-config:
