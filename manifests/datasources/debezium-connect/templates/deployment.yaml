@@ -34,6 +34,17 @@ spec:
               value: "connect-status"
             - name: CONNECT_PLUGIN_PATH
               value: "/kafka/connect,/jdbc-drivers"
+            # Enable automatic creation of required topics (CONNECT 2.8+ feature)
+            - name: CONNECT_TOPIC_CREATION_ENABLE
+              value: "true"
+            # Default group for any connector-requested topic
+            - name: CONNECT_TOPIC_CREATION_DEFAULT_PARTITIONS
+              value: "3"
+            - name: CONNECT_TOPIC_CREATION_DEFAULT_REPLICATION_FACTOR
+              value: "1"
+            # Ensure internal config/offset/status topics are compacted
+            - name: CONNECT_TOPIC_CREATION_DEFAULT_CLEANUP_POLICY
+              value: "compact"
           volumeMounts:
             - name: jdbc-drivers-volume
               mountPath: /jdbc-drivers
