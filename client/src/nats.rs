@@ -41,6 +41,9 @@ impl NatsService {
 
         // let client = async_nats::connect(NATS_SERVER_URL).await?;
 
+        let device_id = "1234";
+        let commands_topic = format!("device.{}.commands", device_id);
+
         let client = async_nats::ConnectOptions::new()
             .name("device-1234".to_string())
             .user_and_password("device".to_string(), "1234".to_string())
@@ -50,24 +53,26 @@ impl NatsService {
         
         // jet stream
 
-        let inbox = client.new_inbox();
+        // let inbox = client.new_inbox();
+        // log inbox
         let jetstream = jetstream::new(client);
-        let stream_name = String::from("EVENTS2");
+        let stream_name = String::from("DEVICE_COMMANDS");
+        let deliver_subject = format!("device.{}.commands.deliver", device_id);
+
+        println!("\nInbox topic: {}\n", deliver_subject);
 
         let consumer: PushConsumer = jetstream
-        .create_stream(jetstream::stream::Config {
-            name: stream_name,
-            subjects: vec!["device.*.commands".to_string()],
-            ..Default::default()
-        })
-        .await?
-        // Then, on that `Stream` use method to create Consumer and bind to it too.
-        .create_consumer(jetstream::consumer::push::Config {
-            deliver_subject: inbox.clone(),
-            inactive_threshold: Duration::from_secs(60),
-            ..Default::default()
-        })
-        .await?;
+            .create_stream(jetstream::stream::Config {
+                name: stream_name,
+                subjects: vec![commands_topic],
+                ..Default::default()
+            }).await?
+            .create_consumer(jetstream::consumer::push::Config {
+                deliver_subject: deliver_subject.clone(),
+                durable_name: Some(format!("device_{}_commands_consumer", device_id)),
+                inactive_threshold: Duration::from_secs(60),
+                ..Default::default()
+            }).await?;
 
         let mut messages = consumer.messages().await?;
 

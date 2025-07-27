@@ -1,0 +1,20 @@
+### Connect ###
+
+CONNECT {"verbose":false,"pedantic":false,"jwt":null,"nkey":null,"sig":null,"name":"device-1234","echo":true,"lang":"rust","version":"0.42.0","protocol":1,"tls_required":false,"user":"device","pass":"1234","auth_token":null,"headers":true,"no_responders":true}
+PING
+
+SUB _INBOX.8Hmtxm5pCyhC447k38pCu5.* 0
+PUB $JS.API.STREAM.CREATE.DEVICE_COMMANDS _INBOX.8Hmtxm5pCyhC447k38pCu5.8Hmtxm5pCyhC447k38pCqe 238
+{"name":"DEVICE_COMMANDS","max_bytes":0,"max_msgs":0,"max_msgs_per_subject":0,"discard":"old","subjects":["device.1234.commands"],"retention":"limits","max_consumers":0,"max_age":0,"storage":"file","num_replicas":0,"consumer_limits":null}
+
+PUB $JS.API.CONSUMER.CREATE.DEVICE_COMMANDS.device_1234_commands_consumer _INBOX.8Hmtxm5pCyhC447k38pCu5.8Hmtxm5pCyhC447k38pCxW 258
+{"action":"","config":{"ack_policy":"explicit","deliver_policy":"all","deliver_subject":"device.1234.commands.deliver","durable_name":"device_1234_commands_consumer","inactive_threshold":60000000000,"replay_policy":"instant"},"stream_name":"DEVICE_COMMANDS"}
+
+SUB device.1234.commands.deliver 1
+
+PONG
+
+
+### Message sent ###
+
+PUB $JS.ACK.DEVICE_COMMANDS.device_1234_commands_consumer.1.6.8.1753392043610559889.0 0
