@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre
 
 # Metadata
 LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
@@ -8,7 +8,9 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # Add debugging tools
-RUN apk add --no-cache iputils bind-tools netcat-openbsd curl && rm -rf /var/cache/apk/*
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends iputils-ping dnsutils netcat-openbsd curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8082
 

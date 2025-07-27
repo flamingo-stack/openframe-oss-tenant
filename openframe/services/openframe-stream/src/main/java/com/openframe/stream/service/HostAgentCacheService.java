@@ -52,6 +52,7 @@ public class HostAgentCacheService {
     private FleetMdmClient getFleetMdmClient() {
         if (fleetMdmClient == null) {
             Optional<IntegratedTool> optionalFleetInfo = integratedToolService.getToolById(IntegratedToolId.FLEET_SERVER_ID.getValue());
+            log.info("FleetMdmClient is null for host: {}", optionalFleetInfo.map(IntegratedTool::getCredentials).orElse(null));
             optionalFleetInfo.ifPresent(integratedTool -> {
                 this.fleetMdmClient = new FleetMdmClient(baseUrl, integratedTool.getCredentials().getApiKey().getKey());
             });

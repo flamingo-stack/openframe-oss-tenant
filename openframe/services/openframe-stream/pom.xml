@@ -87,7 +87,7 @@
             <artifactId>spring-cloud-stream-binder-kafka-streams</artifactId>
         </dependency>
 
-        <!-- Kafka Streams -->
+        <!-- Kafka Streams (default RocksDB JNI works on Debian/glibc) -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-streams</artifactId>
@@ -152,7 +152,7 @@
                             <artifactId>fleet-mdm-sdk</artifactId>
                             <version>1.0.0</version>
                             <packaging>jar</packaging>
-                            <file>${project.basedir}/integrated-tools/sdk/fleet-mdm-sdk/fleet-mdm-sdk-1.0.0.jar</file>
+                            <file>${project.basedir}/../../../integrated-tools/sdk/fleet-mdm-sdk/fleet-mdm-sdk-1.0.0.jar</file>
                         </configuration>
                     </execution>
                 </executions>
