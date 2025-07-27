@@ -98,8 +98,6 @@
             <groupId>com.openframe.sdk</groupId>
             <artifactId>fleet-mdm-sdk</artifactId>
             <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../../../integrated-tools/sdk/fleet-mdm-sdk/target/fleet-mdm-sdk-1.0.0.jar</systemPath>
         </dependency>
 
     </dependencies>
@@ -123,6 +121,39 @@
                         <goals>
                             <goal>repackage</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+            <!-- Install local Fleet MDM SDK jar into the developer's ~/.m2 so that
+                 the normal compile-scope dependency above resolves on any
+                 workstation or CI runner without a separate Maven module. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>install-fleet-mdm-sdk</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>com.openframe.sdk</groupId>
+                            <artifactId>fleet-mdm-sdk</artifactId>
+                            <version>1.0.0</version>
+                            <packaging>jar</packaging>
+                            <file>${project.basedir}/integrated-tools/sdk/fleet-mdm-sdk/fleet-mdm-sdk-1.0.0.jar</file>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
