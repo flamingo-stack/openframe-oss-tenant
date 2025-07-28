@@ -1,8 +1,4 @@
-@import "./styles/ods-colors.css";
-@import "./styles/ods-design-tokens.css";
-@import "./styles/ods-interaction-states.css";
-@import "./styles/ods-responsive-tokens.css";
-@import "./styles/ods-fluid-typography.css";
+@import "@flamingo/ui-kit/styles";
 
 @tailwind base;
 @tailwind components;
@@ -10,54 +6,17 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 170 100% 41%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 170 100% 41%;
-    --accent-foreground: 0 0% 4%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 23%;
-    --input: 0 0% 15%;
-    --ring: 170 100% 41%;
-    --radius: 0.5rem;
+    /* Font CSS variables for ui-kit compatibility */
+    --font-dm-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-azeret-mono: "Azeret Mono", ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
   }
   
   * {
-    box-sizing: border-box;
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    transition: background-color 0.3s ease, color 0.3s ease;
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-    font-family: var(--font-family-body);
+    @apply bg-background text-foreground;
+    font-family: var(--font-dm-sans);
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-family-heading);
-    font-weight: 600;
-    letter-spacing: -0.025em;
-  }
-}
-
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
 }
