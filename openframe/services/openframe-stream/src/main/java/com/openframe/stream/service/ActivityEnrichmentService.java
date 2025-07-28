@@ -1,5 +1,6 @@
 package com.openframe.stream.service;
 
+import com.openframe.data.model.enums.MessageType;
 import com.openframe.stream.model.fleet.Activity;
 import com.openframe.stream.model.fleet.ActivityMessage;
 import com.openframe.stream.model.fleet.HostActivity;
@@ -10,12 +11,20 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.kstream.ValueTransformerWithKey;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
+import org.apache.kafka.streams.processor.api.FixedKeyRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Bean;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+
+import static com.openframe.stream.listener.JsonKafkaListener.MESSAGE_TYPE_HEADER;
 
 @Service
 @RequiredArgsConstructor
@@ -26,16 +35,16 @@ public class ActivityEnrichmentService {
     private final Serde<HostActivityMessage> hostActivityMessageSerde;
     private final HostAgentCacheService hostAgentCacheService;
 
-    @Value("${kafka.topics.activities:fleet.activities.events}")
+    @Value("${kafka.consumer.topic.stream.fleet-mdm.activities}")
     private String activitiesTopic;
 
-    @Value("${kafka.topics.host-activities:fleet.host_activities.events}")
+    @Value("${kafka.consumer.topic.stream.fleet-mdm.host-activities}")
     private String hostActivitiesTopic;
 
-    @Value("${kafka.topics.enriched-activities:fleet.mysql.events}")
+    @Value("${kafka.consumer.topic.event.fleet-mdm.name}")
     private String enrichedActivitiesTopic;
 
-    private static final Duration JOIN_WINDOW_DURATION = Duration.ofSeconds(20);
+    private static final Duration JOIN_WINDOW_DURATION = Duration.ofSeconds(5);
 
     @Bean
     public KStream<String, ActivityMessage> buildActivityEnrichmentStream(StreamsBuilder builder) {
@@ -73,11 +82,13 @@ public class ActivityEnrichmentService {
                         StreamJoined.with(Serdes.String(), activityMessageSerde, hostActivityMessageSerde)
                 );
 
-        // Send to output topic
-        enrichedStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), activityMessageSerde));
+        // Add constant header using modern Processor API and send to output topic
+        KStream<String, ActivityMessage> withHeaderStream = enrichedStream.processValues(HeaderAdderFixedKey::new);
+
+        withHeaderStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), activityMessageSerde));
 
         log.info("Activity enrichment stream built successfully");
-        return enrichedStream;
+        return withHeaderStream;
     }
 
     private ActivityMessage enrichActivityWithHostInfo(ActivityMessage activity, HostActivityMessage hostActivity) {
@@ -102,5 +113,23 @@ public class ActivityEnrichmentService {
         activityData.setAgentId(hostAgentCacheService.getAgentId(hostId));
 
         return activity;
+    }
+
+    private static final class HeaderAdderFixedKey implements FixedKeyProcessor<String, ActivityMessage, ActivityMessage> {
+
+        private FixedKeyProcessorContext<String, ActivityMessage> context;
+
+        public void init(FixedKeyProcessorContext<String, ActivityMessage> context) {
+            this.context = context;
+        }
+
+        @Override
+        public void process(FixedKeyRecord<String, ActivityMessage> record) {
+            record.headers().add(MESSAGE_TYPE_HEADER, MessageType.FLEET_MDM_EVENT.name().getBytes(StandardCharsets.UTF_8));
+            context.forward(record);
+        }
+
+        @Override
+        public void close() { /* no-op */ }
     }
 } 

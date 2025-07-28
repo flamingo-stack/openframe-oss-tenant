@@ -49,6 +49,7 @@ public class EventTypeMapper {
         registerMapping(IntegratedToolType.MESHCENTRAL, "file.transfer", UnifiedEventType.FILE_TRANSFER);
         registerMapping(IntegratedToolType.MESHCENTRAL, "remote.session.start", UnifiedEventType.REMOTE_SESSION_START);
         registerMapping(IntegratedToolType.MESHCENTRAL, "remote.session.end", UnifiedEventType.REMOTE_SESSION_END);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "mesh.createmesh", UnifiedEventType.DEVICE_REGISTERED);
 
         // Additional MeshCentral event type mappings based on actual event data
         registerMapping(IntegratedToolType.MESHCENTRAL, "userconnect", UnifiedEventType.LOGIN);
@@ -77,5 +78,26 @@ public class EventTypeMapper {
         registerMapping(IntegratedToolType.TACTICAL, "script.executed", UnifiedEventType.SCRIPT_EXECUTED);
         registerMapping(IntegratedToolType.TACTICAL, "check.created", UnifiedEventType.MONITORING_CHECK_CREATED);
         registerMapping(IntegratedToolType.TACTICAL, "alert.triggered", UnifiedEventType.ALERT_TRIGGERED);
+
+        // Fleet MDM mappings (activity_type column values)
+        registerMapping(IntegratedToolType.FLEET, "user_logged_in", UnifiedEventType.LOGIN);
+        registerMapping(IntegratedToolType.FLEET, "user_failed_login", UnifiedEventType.LOGIN_FAILED);
+        registerMapping(IntegratedToolType.FLEET, "created_user", UnifiedEventType.USER_CREATED);
+        registerMapping(IntegratedToolType.FLEET, "changed_user_global_role", UnifiedEventType.USER_ROLE_CHANGED);
+        registerMapping(IntegratedToolType.FLEET, "fleet_enrolled", UnifiedEventType.DEVICE_REGISTERED);
+        // Generic fallbacks / additional common Fleet events
+        registerMapping(IntegratedToolType.FLEET, "deleted_user", UnifiedEventType.USER_DELETED);
+        registerMapping(IntegratedToolType.FLEET, "edited_user", UnifiedEventType.USER_UPDATED);
+        registerMapping(IntegratedToolType.FLEET, "deleted_host", UnifiedEventType.DEVICE_DELETED);
+        registerMapping(IntegratedToolType.FLEET, "changed_host_status", UnifiedEventType.DEVICE_UPDATED);
+        registerMapping(IntegratedToolType.FLEET, "policy_violation", UnifiedEventType.POLICY_VIOLATION);
+        registerMapping(IntegratedToolType.FLEET, "applied_policy", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.FLEET, "policy_compliance_checked", UnifiedEventType.COMPLIANCE_CHECK);
+        // Remote session events if Fleet supports such activities
+        registerMapping(IntegratedToolType.FLEET, "remote_session_start", UnifiedEventType.REMOTE_SESSION_START);
+        registerMapping(IntegratedToolType.FLEET, "remote_session_end", UnifiedEventType.REMOTE_SESSION_END);
+        // Alerting / monitoring examples
+        registerMapping(IntegratedToolType.FLEET, "alert_triggered", UnifiedEventType.ALERT_TRIGGERED);
+        registerMapping(IntegratedToolType.FLEET, "alert_resolved", UnifiedEventType.ALERT_RESOLVED);
     }
 }

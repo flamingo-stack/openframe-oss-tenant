@@ -24,7 +24,7 @@ import java.util.Optional;
 @Slf4j
 public class HostAgentCacheService {
 
-    @Value("${fleet.mdm.base-url:http://fleetmdm-server.integrated-tools.svc.cluster.local:8070}")
+    @Value("${fleet.mdm.base-url}")
     private String baseUrl;
 
     private FleetMdmClient fleetMdmClient;
