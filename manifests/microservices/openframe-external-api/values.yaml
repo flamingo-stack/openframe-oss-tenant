@@ -4,5 +4,5 @@ servicemonitor:
   enabled: true
 
 image:
-  repo: ghcr.io/flamingo-cx/openframe/external-api
+  repo: ghcr.io/flamingo-cx/openframe/openframe-external-api
   tag: latest

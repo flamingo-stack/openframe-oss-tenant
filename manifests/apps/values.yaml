@@ -125,7 +125,7 @@ apps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-  external-api: 
+  openframe-external-api: 
     enabled: true
     project: microservices
     namespace: microservices

@@ -18,7 +18,7 @@ OpenFrame uses a shared library approach to eliminate code duplication between G
 
 ### API-Specific Adapters
 - **GraphQL API**: Uses [openframe-api](mdc:openframe/services/openframe-api) with GraphQL-specific DTOs and mappers
-- **REST API**: Uses [external-api](mdc:openframe/services/external-api) with REST-specific DTOs and mappers
+- **REST API**: Uses [openframe-external-api](mdc:openframe/services/openframe-external-api) with REST-specific DTOs and mappers
 - **Common DTOs**: Shared through [api-library DTOs](mdc:openframe/libs/api-library/src/main/java/com/openframe/api/dto)
 
 ## Service Layer Pattern
@@ -70,7 +70,7 @@ public ResponseEntity<DeviceResponse> getDevice(@PathVariable String id) {
 ```
 
 ### Exception Handling
-- **Global Handler**: Use [GlobalExceptionHandler](mdc:openframe/services/external-api/src/main/java/com/openframe/external/exception/GlobalExceptionHandler.java)
+- **Global Handler**: Use [GlobalExceptionHandler](mdc:openframe/services/openframe-external-api/src/main/java/com/openframe/external/exception/GlobalExceptionHandler.java)
 - **Consistent Errors**: All errors return [ErrorResponse](mdc:openframe/libs/openframe-core/src/main/java/com/openframe/core/dto/ErrorResponse.java)
 - **Proper Status Codes**: Use @ResponseStatus annotations
 
@@ -112,7 +112,7 @@ public Device device(@InputArgument String id) {
 
 ### Module Dependencies
 ```
-external-api → api-library → openframe-core
+openframe-external-api → api-library → openframe-core
 openframe-api → api-library → openframe-core
 ```
 
@@ -162,7 +162,7 @@ public ErrorResponse handleDeviceNotFound(DeviceNotFoundException ex) {
 ### Adding New Endpoints
 1. **Identify Common Logic**: Extract to api-library service
 2. **Create Common DTOs**: For data transfer between layers
-3. **Add REST Endpoint**: In external-api with proper mapping
+3. **Add REST Endpoint**: In openframe-external-api with proper mapping
 4. **Add GraphQL Endpoint**: In openframe-api with same service
 5. **Update Documentation**: Both OpenAPI and GraphQL schema
 

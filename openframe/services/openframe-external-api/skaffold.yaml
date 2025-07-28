@@ -1,10 +1,10 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: external-api
+  name: openframe-external-api
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/external-api
+    - image: ghcr.io/flamingo-cx/openframe/openframe-external-api
       context: .
       sync: 
         manual:
@@ -22,8 +22,8 @@ build:
 manifests:
   helm:
     releases:
-      - name: external-api
-        chartPath: ../../../manifests/microservices/external-api
+      - name: openframe-external-api
+        chartPath: ../../../manifests/microservices/openframe-external-api
         valuesFiles:
-          - ../../../manifests/microservices/external-api/values.yaml
+          - ../../../manifests/microservices/openframe-external-api/values.yaml
         # setValues:
