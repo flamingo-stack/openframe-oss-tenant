@@ -32,7 +32,6 @@ public class ApiKey {
     private List<String> roles;
 
     // Metadata
-    @Builder.Default
     private boolean enabled = true;
     private Instant createdAt;
     private Instant updatedAt;
