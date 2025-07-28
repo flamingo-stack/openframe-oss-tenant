@@ -38,7 +38,7 @@ spec:
       volumes:
       - name: nats-config
         secret:
-          name: nats.conf
+          secretName: nats.conf
       - name: nats-jetstream-data
         persistentVolumeClaim:
           claimName: nats-jetstream 
