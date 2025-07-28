@@ -19,7 +19,7 @@ spec:
       containers:
         - name: nats
           image: nats:2.10-alpine
-          command: ["-c", "/etc/nats/nats.conf"]
+          command: ["nats-server", "-c", "/etc/nats/nats.conf"]
           ports:
             - containerPort: 4222
               name: client
