@@ -59,3 +59,4 @@ client/Cargo.lock
 *.json
 /.vscode/chrome-debug-profile
 /openframe/services/openframe-frontend/ui-kit
+/openframe/services/openframe-frontend/dist
