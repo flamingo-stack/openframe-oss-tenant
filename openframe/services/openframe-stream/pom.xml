@@ -98,6 +98,8 @@
             <groupId>com.openframe.sdk</groupId>
             <artifactId>fleet-mdm-sdk</artifactId>
             <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../../../integrated-tools/sdk/fleet-mdm-sdk/fleet-mdm-sdk-1.0.0.jar</systemPath>
         </dependency>
 
     </dependencies>
