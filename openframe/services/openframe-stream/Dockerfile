@@ -17,8 +17,8 @@ EXPOSE 8082
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8082/actuator/health || exit 1
 
-# Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Create a non-root user (Debian syntax)
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 # Change ownership of the application files
 RUN chown -R appuser:appgroup /app
