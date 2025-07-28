@@ -57,3 +57,4 @@ node_modules/
 /rmmagent
 client/Cargo.lock
 *.json
+/.vscode/chrome-debug-profile
