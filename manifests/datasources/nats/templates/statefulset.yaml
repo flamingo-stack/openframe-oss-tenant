@@ -17,28 +17,33 @@ spec:
         - name: docker-pat-secret
 
       containers:
-      - name: nats
-        image: nats:2.10-alpine
-        command: ["-c", "/etc/nats/nats.conf"]
-        ports:
-        - containerPort: 4222
-          name: client
-        - containerPort: 8222
-          name: monitoring
-        - containerPort: 8080
-          name: websocket
+        - name: nats
+          image: nats:2.10-alpine
+          command: ["-c", "/etc/nats/nats.conf"]
+          ports:
+            - containerPort: 4222
+              name: client
+            - containerPort: 8222
+              name: monitoring
+            - containerPort: 8080
+              name: websocket
 
-        volumeMounts:
-        - name: nats-config
-          mountPath: /etc/nats
-          subPath: nats.conf
-        - name: nats-jetstream-data
-          mountPath: /data/jetstream
-
+          volumeMounts:
+            - name: nats-config
+              mountPath: /etc/nats
+              subPath: nats.conf
+            - name: nats-jetstream-data
+              mountPath: /data/jetstream
       volumes:
-      - name: nats-config
-        secret:
-          secretName: nats.conf
-      - name: nats-jetstream-data
-        persistentVolumeClaim:
-          claimName: nats-jetstream 
+        - name: nats-config
+          secret:
+            secretName: nats.conf
+
+  volumeClaimTemplates:
+    - metadata:
+        name: nats-jetstream-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
