@@ -121,67 +121,6 @@
                     "endsPattern": "ready in"
                 }
             }
-        },
-        {
-            "label": "npm: dev (frontend-k8s)",
-            "type": "shell",
-            "command": "npm run dev",
-            "options": {
-                "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
-                "env": {
-                    "VITE_API_URL": "http://openframe-gateway.microservices.svc.cluster.local:8100/api"
-                }
-            },
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": true,
-                "clear": false
-            },
-            "isBackground": true,
-            "problemMatcher": {
-                "owner": "vite",
-                "source": "vite",
-                "pattern": {
-                    "regexp": "."
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "VITE.*ready",
-                    "endsPattern": "Local:.*http://localhost"
-                }
-            }
-        },
-        {
-            "label": "start-react-frontend",
-            "type": "shell",
-            "command": "cd ${workspaceFolder}/openframe/services/openframe-frontend && npm run dev",
-            "isBackground": true,
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
-            "problemMatcher": {
-                "owner": "vite",
-                "source": "vite",
-                "fileLocation": "relative", 
-                "pattern": {
-                    "regexp": "^(.*?):(\\d+):(\\d+):\\s+(warning|error)\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "Local:.*http://localhost:\\d+",
-                    "endsPattern": "ready in \\d+ms"
-                }
-            }
         }
     ]
 } 
