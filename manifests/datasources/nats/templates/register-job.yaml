@@ -35,8 +35,18 @@ spec:
                   "description": "Nats",
                   "toolUrls": [
                     {
-                      "url": "http://nats.datasources.svc.cluster.local",
-                      "port": "2181",
+                      "url": "http://nats-0.nats.datasources.svc.cluster.local",
+                      "port": "4222",
+                      "type": "COORDINATOR"
+                    },
+                    {
+                      "url": "http://nats-0.nats.datasources.svc.cluster.local",
+                      "port": "8222",
+                      "type": "COORDINATOR"
+                    },
+                    {
+                      "url": "http://nats-0.nats.datasources.svc.cluster.local",
+                      "port": "8080",
                       "type": "COORDINATOR"
                     }
                   ],
