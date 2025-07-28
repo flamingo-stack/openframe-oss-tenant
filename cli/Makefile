@@ -1,90 +1,181 @@
 # OpenFrame CLI Makefile
 
+.PHONY: build clean test install deps run help dev release
+
+# Variables
 BINARY_NAME=openframe
-VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-LDFLAGS=-ldflags "-X main.version=$(VERSION)"
+GO_FILES=$(shell find . -name "*.go" -type f)
+BUILD_DIR=build
+VERSION=$(shell git describe --tags --exact-match 2>/dev/null || echo "dev")
+COMMIT=$(shell git rev-parse --short HEAD)
+DATE=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 
-.PHONY: all build clean install uninstall test test-unit test-integration test-e2e help
+# Build flags
+LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)"
 
+# Default target
 all: build
 
-# Build the binary
-build:
+## Build the CLI binary
+build: deps
 	@echo "Building $(BINARY_NAME)..."
-	go build $(LDFLAGS) -o $(BINARY_NAME) .
-	@echo "Build complete: $(BINARY_NAME)"
+	@mkdir -p $(BUILD_DIR)
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) .
+	@echo "✅ Built $(BUILD_DIR)/$(BINARY_NAME)"
 
-# Clean build artifacts
+## Build for multiple platforms
+build-all: deps
+	@echo "Building for multiple platforms..."
+	@mkdir -p $(BUILD_DIR)
+	
+	# macOS
+	@GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 .
+	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 .
+	
+	# Linux
+	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 .
+	@GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 .
+	
+	# Windows
+	@GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe .
+	
+	@echo "✅ Built binaries for all platforms in $(BUILD_DIR)/"
+
+## Install dependencies
+deps:
+	@echo "Installing dependencies..."
+	@go mod tidy
+	@go mod download
+	@echo "✅ Dependencies installed"
+
+## Run tests
+test:
+	@echo "Running tests..."
+	@go test -v ./...
+	@echo "✅ Tests completed"
+
+## Run tests with coverage
+test-coverage:
+	@echo "Running tests with coverage..."
+	@go test -v -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "✅ Coverage report generated: coverage.html"
+
+## Install the CLI to GOPATH/bin
+install: build
+	@echo "Installing $(BINARY_NAME) to $(GOPATH)/bin..."
+	@cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/
+	@echo "✅ Installed $(BINARY_NAME)"
+
+## Install the CLI to /usr/local/bin (requires sudo)
+install-system: build
+	@echo "Installing $(BINARY_NAME) to /usr/local/bin..."
+	@sudo cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
+	@echo "✅ Installed $(BINARY_NAME) system-wide"
+
+## Run the CLI in development mode
+dev: build
+	@./$(BUILD_DIR)/$(BINARY_NAME) --help
+
+## Run with sample commands
+demo: build
+	@echo "🚀 Running OpenFrame CLI demo..."
+	@echo ""
+	@echo "1. Showing help:"
+	@./$(BUILD_DIR)/$(BINARY_NAME) --help
+	@echo ""
+	@echo "2. Showing cluster commands:"
+	@./$(BUILD_DIR)/$(BINARY_NAME) cluster --help
+	@echo ""
+	@echo "3. Showing dev commands:"
+	@./$(BUILD_DIR)/$(BINARY_NAME) dev --help
+
+## Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -f $(BINARY_NAME)
-	@echo "Clean complete"
+	@rm -rf $(BUILD_DIR)
+	@rm -f coverage.out coverage.html
+	@echo "✅ Cleaned"
 
-# Install binary to system
-install: build
-	@echo "Installing $(BINARY_NAME)..."
-	@if [ ! -w /usr/local/bin ]; then \
-		echo "Installing to /usr/local/bin (requires sudo)"; \
-		sudo cp $(BINARY_NAME) /usr/local/bin/; \
-		sudo chmod +x /usr/local/bin/$(BINARY_NAME); \
-	else \
-		echo "Installing to /usr/local/bin"; \
-		cp $(BINARY_NAME) /usr/local/bin/; \
-		chmod +x /usr/local/bin/$(BINARY_NAME); \
-	fi
-	@echo "Installation complete"
+## Format Go code
+fmt:
+	@echo "Formatting Go code..."
+	@go fmt ./...
+	@echo "✅ Code formatted"
 
-# Uninstall binary from system
-uninstall:
-	@echo "Uninstalling $(BINARY_NAME)..."
-	@if [ -f /usr/local/bin/$(BINARY_NAME) ]; then \
-		if [ ! -w /usr/local/bin ]; then \
-			sudo rm -f /usr/local/bin/$(BINARY_NAME); \
-		else \
-			rm -f /usr/local/bin/$(BINARY_NAME); \
-		fi; \
-		echo "Uninstallation complete"; \
-	else \
-		echo "$(BINARY_NAME) not found in /usr/local/bin"; \
-	fi
+## Lint Go code
+lint:
+	@echo "Linting Go code..."
+	@golangci-lint run
+	@echo "✅ Linting completed"
 
-# Run unit tests only
-test-unit:
-	@echo "Running unit tests..."
-	@go test -timeout=60s ./internal/app
-	@go test -timeout=60s ./internal/config
-	@go test -timeout=60s ./internal/utils
-	@go test -timeout=60s ./cmd
+## Run security scan
+security:
+	@echo "Running security scan..."
+	@gosec ./...
+	@echo "✅ Security scan completed"
 
-# Run integration tests only
-test-integration:
-	@echo "Running integration tests..."
-	@go test -timeout=120s ./tests/integration/...
+## Generate documentation
+docs:
+	@echo "Generating documentation..."
+	@mkdir -p docs
+	@go run . docs --dir docs/
+	@echo "✅ Documentation generated in docs/"
 
-# Run end-to-end tests only
-test-e2e:
-	@echo "Running end-to-end tests..."
-	@go test -timeout=300s ./tests/e2e/...
+## Create release archives
+release: clean build-all
+	@echo "Creating release archives..."
+	@mkdir -p releases
+	
+	# macOS
+	@tar -czf releases/$(BINARY_NAME)-$(VERSION)-darwin-amd64.tar.gz -C $(BUILD_DIR) $(BINARY_NAME)-darwin-amd64
+	@tar -czf releases/$(BINARY_NAME)-$(VERSION)-darwin-arm64.tar.gz -C $(BUILD_DIR) $(BINARY_NAME)-darwin-arm64
+	
+	# Linux  
+	@tar -czf releases/$(BINARY_NAME)-$(VERSION)-linux-amd64.tar.gz -C $(BUILD_DIR) $(BINARY_NAME)-linux-amd64
+	@tar -czf releases/$(BINARY_NAME)-$(VERSION)-linux-arm64.tar.gz -C $(BUILD_DIR) $(BINARY_NAME)-linux-arm64
+	
+	# Windows
+	@zip -j releases/$(BINARY_NAME)-$(VERSION)-windows-amd64.zip $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe
+	
+	@echo "✅ Release archives created in releases/"
 
-# Run all tests
-test:
-	@$(MAKE) test-unit
-	@$(MAKE) test-integration
-	@$(MAKE) test-e2e
-	@echo "All tests complete"
+## Quick development workflow
+quick: clean build test
+	@echo "✅ Quick build and test completed"
 
-# Show help
+## Full CI workflow
+ci: clean deps fmt lint security test build-all
+	@echo "✅ Full CI workflow completed"
+
+## Show available make targets
 help:
-	@echo "OpenFrame CLI Build Commands:"
-	@echo "  build        - Build the binary"
-	@echo "  clean        - Clean build artifacts"
-	@echo "  install      - Install binary to system"
-	@echo "  uninstall    - Uninstall binary from system"
+	@echo "OpenFrame CLI - Available Make Targets:"
 	@echo ""
-	@echo "Testing:"
-	@echo "  test         - Run all tests"
-	@echo "  test-unit    - Run unit tests only"
-	@echo "  test-integration - Run integration tests only"
-	@echo "  test-e2e     - Run end-to-end tests only"
+	@grep -E '^## ' Makefile | sed 's/## /  /'
 	@echo ""
-	@echo "  help         - Show this help" 
+	@echo "Examples:"
+	@echo "  make build          # Build the CLI"
+	@echo "  make install        # Build and install to GOPATH"
+	@echo "  make demo           # Run demo commands"
+	@echo "  make ci             # Full CI workflow"
+
+# Dependency checks
+check-deps:
+	@echo "Checking required dependencies..."
+	@command -v go >/dev/null 2>&1 || { echo "❌ Go is required but not installed"; exit 1; }
+	@command -v git >/dev/null 2>&1 || { echo "❌ Git is required but not installed"; exit 1; }
+	@echo "✅ Required dependencies found"
+
+# Docker build
+docker-build:
+	@echo "Building Docker image..."
+	@docker build -t openframe-cli:$(VERSION) .
+	@echo "✅ Docker image built: openframe-cli:$(VERSION)"
+
+# Update version in main.go
+update-version:
+	@echo "Updating version variables..."
+	@sed -i.bak 's/version = ".*"/version = "$(VERSION)"/' cmd/root.go
+	@rm cmd/root.go.bak
+	@echo "✅ Version updated to $(VERSION)"
