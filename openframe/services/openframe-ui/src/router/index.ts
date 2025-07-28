@@ -316,12 +316,11 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem('access_token');
+  const authStore = useAuthStore();
   console.log('🚦 [Router] ===== NAVIGATION GUARD =====');
   console.log('🚦 [Router] Navigation:', { 
     to: to.path, 
     from: from.path, 
-    token: !!token,
     toName: to.name,
     fromName: from.name,
     toMeta: to.meta
@@ -341,9 +340,16 @@ router.beforeEach(async (to, from, next) => {
   
   // Always allow access to auth pages
   if (!to.meta.requiresAuth) {
-    if (to.path === '/login' && token) {
-      console.log('↩️ [Router] Already logged in, redirecting to home');
-      next('/dashboard');
+    if (to.path === '/login') {
+      // Check if user is already authenticated
+      const isAuthenticated = await authStore.checkAuthStatus();
+      if (isAuthenticated) {
+        console.log('↩️ [Router] Already logged in, redirecting to home');
+        next('/dashboard');
+      } else {
+        console.log('➡️ [Router] Proceeding to login page');
+        next();
+      }
     } else {
       console.log('➡️ [Router] Proceeding to public route:', to.path);
       next();
@@ -351,9 +357,10 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // Handle protected routes
-  if (!token) {
-    console.log('🔒 [Router] No token found, redirecting to login');
+  // Handle protected routes - check authentication via server
+  const isAuthenticated = await authStore.checkAuthStatus();
+  if (!isAuthenticated) {
+    console.log('🔒 [Router] Not authenticated, redirecting to login');
     next('/login');
     return;
   }
@@ -365,19 +372,10 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // For all other protected routes, validate the token
-  try {
-    console.log('🔍 [Router] Verifying token validity...');
-    await AuthService.getUserInfo();
-    console.log('✅ [Router] Token is valid, proceeding to route');
-    next();
-  } catch (error) {
-    console.error('❌ [Router] Token validation failed:', error);
-    // Clear tokens and redirect to login
-    const authStore = useAuthStore();
-    authStore.logout();
-    next('/login');
-  }
+  // For navigation, just proceed if auth status check passed
+  // Don't do aggressive token validation on every route change
+  console.log('✅ [Router] Auth status valid, proceeding to route');
+  next();
 });
 
 export default router                                                                                

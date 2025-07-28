@@ -9,8 +9,7 @@ source "$(dirname "$0")/variables.sh"
 # Default values
 SILENT=false
 HELP=false
-REPO_URL_HTTPS="https://github.com/Flamingo-CX/openframe.git"
-REPO_URL_GIT="git@github.com:Flamingo-CX/openframe.git"
+GIT_REPO="github.com/Flamingo-CX/openframe.git"
 
 # Function to display messages based on silent mode
 write_status_message() {
@@ -97,7 +96,6 @@ verify_command() {
         ;;
     "skaffold")
         brew install skaffold
-        skaffold init --platform=docker
         ;;
     "jq")
         brew install jq
@@ -236,12 +234,13 @@ if [ ! -d "$REPO_PATH/.git" ]; then
         fi
     fi
 else
-    # Check if the repository is already cloned
-    if [ $REPO_URL_HTTPS != $(git remote get-url origin) ] && [ $REPO_URL_GIT != $(git remote get-url origin) ]; then
-        write_status_message "Current directory contains a different repository." "\033[33m"
-        exit 1
-    else
+    # Check if current URL contains the expected repository path
+    if [[ "$(git remote get-url origin)" == *"$GIT_REPO"* ]]; then
         write_status_message "Current directory is a Git repository." "\033[32m"
+    else
+        write_status_message "Current directory contains a different repository." "\033[33m"
+        write_status_message "Found: $(git remote get-url origin)" "\033[33m"
+        exit 1
     fi
 fi
 
@@ -268,7 +267,15 @@ if [ -n "$RUN_SCRIPT" ]; then
     cd "$(dirname "$RUN_SCRIPT")"
     caffeinate -dimsu & # Prevent display, idle, system, and user inactivity sleep
     caffeinate_pid=$!
-    ./run.sh $@
+    
+    # If no arguments provided, start the platform automatically
+    if [ $# -eq 0 ]; then
+        write_status_message "No arguments provided. Starting OpenFrame automatically..." "\033[36m"
+        ./run.sh b
+    else
+        ./run.sh $@
+    fi
+    
     # Cleanup
     if [[ -n "$caffeinate_pid" ]]; then
         kill "$caffeinate_pid"

@@ -26,26 +26,26 @@ spec:
               {{- if eq .Values.deployment.ingress "ngrok" }}
               value: {{ printf "https://%s/api" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
               {{- else }}
-              value: "https://localhost/api"
+              value: "http://localhost/api"
               {{- end }}
             - name: VITE_CLIENT_URL
               {{- if eq .Values.deployment.ingress "ngrok" }}
               value: {{ printf "https://%s/client" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
               {{- else }}
-              value: "https://localhost/client"
+              value: "http://localhost/client"
               {{- end }}
             - name: VITE_GATEWAY_URL
               {{- if eq .Values.deployment.ingress "ngrok" }}
               value: {{ printf "https://%s" (required "deployment.url is required for ngrok ingress" .Values.deployment.url) | quote }}
               {{- else }}
-              value: "https://localhost"
+              value: "http://localhost"
               {{- end }}
             - name: VITE_CLIENT_ID
               value: "openframe_web_dashboard"
             - name: VITE_CLIENT_SECRET
               value: "prod_secret"
             - name: VITE_GRAFANA_URL
-              value: "http://grafana.platform.svc.cluster.local"
+              value: "http://localhost:3000"
           livenessProbe:
             httpGet:
               path: /

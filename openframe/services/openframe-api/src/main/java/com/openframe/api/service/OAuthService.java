@@ -9,11 +9,13 @@ import com.openframe.core.model.User;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.data.repository.mongo.OAuthTokenRepository;
 import com.openframe.data.repository.mongo.UserRepository;
+import com.openframe.security.cookie.CookieService;
 import com.openframe.security.jwt.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -33,6 +34,7 @@ public class OAuthService {
     private final OAuthTokenRepository tokenRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final CookieService cookieService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.oauth2.token.access.expiration-seconds}")
@@ -76,48 +78,65 @@ public class OAuthService {
         return jwtService.generateToken(claims);
     }
 
-    public ResponseEntity<?> handleRegistration(UserDTO userDTO, String authHeader) {
-        try {
-            if (!authHeader.startsWith("Basic ")) {
-                throw new IllegalArgumentException("Client authentication required");
-            }
-
-            String base64Credentials = authHeader.substring("Basic ".length()).trim();
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
-            final String[] values = credentials.split(":", 2);
-
-            if (values.length != 2) {
-                throw new IllegalArgumentException("Invalid client credentials format");
-            }
-
-            final String clientId = values[0];
-            final String clientSecret = values[1];
-
-            TokenResponse response = register(userDTO, clientId, clientSecret);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(401)
-                    .body(Map.of(
-                            "error", "invalid_request",
-                            "error_description", e.getMessage()
-                    ));
-        } catch (Exception e) {
-            log.error("Registration error: {}", e.getMessage(), e);
-            return ResponseEntity.status(400)
-                    .body(Map.of(
-                            "error", "invalid_request",
-                            "error_description", "An error occurred processing the request"
-                    ));
+    public TokenResponse handleRegistration(UserDTO userDTO, String authHeader) {
+        if (!authHeader.startsWith("Basic ")) {
+            throw new IllegalArgumentException("Client authentication required");
         }
+
+        String base64Credentials = authHeader.substring("Basic ".length()).trim();
+        String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+        final String[] values = credentials.split(":", 2);
+
+        if (values.length != 2) {
+            throw new IllegalArgumentException("Invalid client credentials format");
+        }
+
+        final String clientId = values[0];
+        final String clientSecret = values[1];
+
+        return register(userDTO, clientId, clientSecret);
     }
 
-    public TokenResponse token(String grantType, String code, String refreshToken,
-            String username, String password, String clientId, String clientSecret) {
+    /**
+     * Main token processing method for OAuth endpoints
+     * Handles refresh_token from header and delegates other grant types to token()
+     */
+    public TokenResponse processTokenRequest(String grantType, String code, String username,
+                                             String password, String clientId, String clientSecret,
+                                             String refreshToken, HttpServletRequest httpRequest) {
+        if ("refresh_token".equals(grantType)) {
+            // Gateway extracts refresh token from cookies and passes it as header
+            if (refreshToken == null) {
+                throw new IllegalArgumentException("Refresh token not found");
+            }
+            return handleRefreshToken(refreshToken, clientId, clientSecret);
+        }
+
+        // Delegate to main token method for other grant types
+        return token(grantType, code, username, password, clientId, clientSecret);
+    }
+
+    public void setAuthenticationCookies(TokenResponse tokenResponse, HttpServletResponse httpResponse) {
+        cookieService.setAccessTokenCookie(httpResponse, tokenResponse.getAccessToken());
+        cookieService.setRefreshTokenCookie(httpResponse, tokenResponse.getRefreshToken());
+        log.debug("Set authentication cookies for token response");
+    }
+
+    public void clearAuthenticationCookies(HttpServletResponse httpResponse) {
+        cookieService.clearTokenCookies(httpResponse);
+        log.debug("Cleared authentication cookies");
+    }
+
+    /**
+     * Internal token method for standard OAuth grant types (not refresh_token)
+     * Use processTokenRequest() for requests that may include refresh_token from cookies
+     */
+    public TokenResponse token(String grantType, String code,
+                               String username, String password, String clientId, String clientSecret) {
         return switch (grantType) {
             case "authorization_code" -> handleAuthorizationCode(code, clientId, clientSecret);
             case "password" -> handlePasswordGrant(username, password, clientId, clientSecret);
             case "client_credentials" -> handleClientCredentials(clientId, clientSecret);
-            case "refresh_token" -> handleRefreshToken(refreshToken, clientId, clientSecret);
             default -> throw new IllegalArgumentException("Unsupported grant type: " + grantType);
         };
     }
@@ -206,7 +225,7 @@ public class OAuthService {
                 .build();
     }
 
-    private TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {
+    public TokenResponse handleRefreshToken(String refreshToken, String clientId, String clientSecret) {
         validateClient(clientId, clientSecret);
 
         try {

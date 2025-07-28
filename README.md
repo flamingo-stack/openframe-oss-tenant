@@ -1,4 +1,4 @@
-# ![OpenFrame Logo](openframe/services/openframe-ui/src/assets/openframe-logo-white.svg "OpenFrame Logo")
+# OpenFrame
 
 [![OpenFrame Build Java & Container Images](https://github.com/Flamingo-CX/openframe/actions/workflows/build.yml/badge.svg)](https://github.com/Flamingo-CX/openframe/actions/workflows/build.yml)
 
@@ -8,7 +8,7 @@ OpenFrame is a distributed platform that creates a unified layer for data, APIs,
 
 * **Unified Dashboard** - Single interface for managing all services and workflows
 * **Smart Automation** - Automated deployment and monitoring capabilities
-* **AI-Powered Insights** - Real-time anomaly detection and AI assistants ("copilots")
+* **AI-Powered Insights** - Real-time anomaly detection and AI assistants
 * **Enterprise Security** - Integrated security controls across all services
 * **High Performance** - Handles 100,000 events/second with sub-500ms latency
 * **Scalable Architecture** - Built on proven microservices principles
@@ -26,7 +26,7 @@ OpenFrame uses a modern microservices architecture with these key layers:
   * Circuit breaker patterns for resilience
 
 * **Processing Layer**
-  * Stream processing with Apache NiFi
+  * Stream processing with OpenFrame Stream Service
   * Event-driven architecture using Apache Kafka
   * Real-time anomaly detection
   * Data enrichment and transformation pipelines
@@ -56,15 +56,16 @@ flowchart TB
     end
 
     subgraph Processing_Layer
-        NiFi --> |Anomaly Detection|Kafka
-        Kafka --> |Events|CS[Cassandra]
+        Stream[Stream Processing Service] --> |Events|Kafka
         Kafka --> |Analytics|PT[Pinot]
+        Kafka --> |Storage|CS[Cassandra]
     end
 
     subgraph Data_Layer
         GraphQL --> MongoDB
         GraphQL --> CS
         GraphQL --> PT
+        GraphQL --> Redis[Redis Cache]
     end
 ```
 
@@ -72,17 +73,17 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    Sources[Data Sources] --> NiFi
+    Sources[Data Sources] --> Stream[Stream Processing Service]
 
-    subgraph NiFi[NiFi Processing]
+    subgraph Stream[Stream Processing]
         direction TB
         VP[Validate Payload] --> ED[Enrich Data]
         ED --> AD[Anomaly Detection]
         AD --> RT[Route Traffic]
     end
 
-    NiFi --> |Events|Kafka
-    NiFi --> |Alerts|Alert[Alert Service]
+    Stream --> |Events|Kafka
+    Stream --> |Alerts|Alert[Alert Service]
 
     Kafka --> |Raw Events|Cassandra
     Kafka --> |Metrics|Pinot
@@ -93,21 +94,28 @@ flowchart LR
 ### Backend Services
 
 * **Core Runtime**
-  * Spring Boot 3.2.x
+  * Spring Boot 3.3.0 with Spring Cloud 2023.0.3
   * OpenJDK 21
-  * Netflix DGS Framework (GraphQL)
-  * Spring Cloud Gateway
-  * Spring Security with OAuth 2.0
+  * Netflix DGS Framework 7.0.0 (GraphQL)
+  * Spring Cloud Gateway with WebFlux
+  * Spring Security with OAuth 2.0/OpenID Connect
 
 * **Stream Processing**
-  * Apache NiFi 2.0
-    * Custom processors for data enrichment
+  * OpenFrame Stream Service
+    * Custom data processing components
     * Real-time anomaly detection
     * Automated data routing
-  * Apache Kafka 3.6
+  * Apache Kafka 3.6.0
     * High-throughput event streaming
     * Multi-topic architecture
     * Exactly-once delivery semantics
+
+* **System Agent**
+  * Rust-based cross-platform agent
+    * Tokio async runtime for high-performance I/O
+    * System monitoring and management
+    * Auto-update capabilities with Velopack
+    * Service lifecycle management
 
 ### Data Storage
 
@@ -130,7 +138,7 @@ flowchart LR
     * Multi-datacenter replication
     * Tunable consistency
 
-* **Analytics Engine (Apache Pinot 1.0.0)**
+* **Analytics Engine (Apache Pinot 1.2.0)**
   * Real-time analytics
   * Complex aggregations
   * Time-series analysis
@@ -138,6 +146,15 @@ flowchart LR
     * Sub-second OLAP queries
     * Real-time ingestion
     * Multi-tenant support
+
+### Frontend
+
+* **Web Application**
+  * Vue 3 with Composition API and TypeScript
+  * PrimeVue component library for consistent UI
+  * Apollo Client for GraphQL integration
+  * Pinia for state management
+  * Vite for fast development and builds
 
 ### Infrastructure
 
@@ -169,12 +186,13 @@ flowchart LR
 
 ## Prerequisites
 
-* OpenJDK 21.0.1+
-* Maven 3.9.6+
-* Docker 24.0+ and Docker Compose 2.23+
-* Kubernetes 1.28+
-* Git 2.42+
-* GitHub Personal Access Token (Classic) with required permissions
+* **Java Development**: OpenJDK 21.0.1+, Maven 3.9.6+
+* **Frontend Development**: Node.js 18+ with npm
+* **Rust Development**: Rust 1.70+ with Cargo (for client agent)
+* **Containerization**: Docker 24.0+ and Docker Compose 2.23+
+* **Orchestration**: Kubernetes 1.28+ (for production deployment)
+* **Version Control**: Git 2.42+
+* **Authentication**: GitHub Personal Access Token (Classic) with `repo`, `read:packages`, and `write:packages` permissions
 
 ## Running Locally
 
@@ -187,14 +205,12 @@ OpenFrame provides platform-specific scripts to easily run the application local
 .\scripts\run-windows.ps1 -Help        # Show help message
 ```
 
-The Windows script now includes:
+The Windows script includes:
 - Automatic tool installation (kind, kubectl, helm, skaffold, jq, telepresence)
 - GitHub token validation
 - Docker Desktop status check
 - Network configuration for Kind
-- Seamless integration with Git Bash for running the main script
-
-Tools are installed to `~/bin` directory. The script will remind you to add this directory to your PATH if needed.
+- Seamless integration with Git Bash
 
 ### macOS
 ```bash
@@ -210,72 +226,105 @@ Tools are installed to `~/bin` directory. The script will remind you to add this
 ./scripts/run-linux.sh --help       # Show help message
 ```
 
-### Script Behavior
-
-The installation scripts provide two modes of operation:
-
-#### Interactive Mode (Default)
-- Prompts for user confirmation at key steps
-- Displays detailed progress information
-- Asks for cleanup preferences
-- Shows all informational messages
-
-#### Silent Mode
-- Suppresses non-essential output
-- Skips most confirmations
-- Skips cleanup prompts
-- Uses environment variables for automation
-
-Both modes will:
-- Always prompt for GitHub token (required for accessing private repositories)
-- Install required dependencies if missing
-- Set up the development environment
-- Configure network settings
-- Create and configure the Kind cluster
-
 ### GitHub Token
 
-The scripts require a GitHub Personal Access Token (Classic) for authentication. You will be prompted to enter the token during execution, regardless of the mode. The token should have the following permissions:
+The scripts require a GitHub Personal Access Token (Classic) for authentication with the following permissions:
 - `repo` - Full control of private repositories
 - `read:packages` - Read access to packages
 - `write:packages` - Write access to packages
 
-You can create a new token by following these steps:
-1. Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions
-4. Copy the generated token for use with the installation scripts
+Create a token at: GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
 
-Note: The token will be stored only for the current session and will need to be provided again for subsequent runs.
+Once started, the application will be available at:
+- **UI Dashboard**: http://localhost:8080
+- **GraphQL API**: http://localhost:8080/graphql
+- **Configuration Server**: http://localhost:8888
 
-You can monitor the startup progress in the console output. Once started, the application will be available at:
-- UI Dashboard: http://localhost:8080
-- GraphQL API: http://localhost:8080/graphql
+## Development Workflow
 
-To stop the application, press Ctrl+C in the terminal where the script is running.
+### Building Individual Components
 
-## Installation
+```bash
+# Build all Java services and libraries
+mvn clean install
 
-Detailed installation instructions coming soon.
+# Build without tests (faster)
+mvn clean install -DskipTests
 
-## Usage
+# Build and run frontend locally
+cd openframe/services/openframe-ui
+npm install
+npm run dev
 
-Documentation for getting started with OpenFrame is in development. For now, please refer to individual sections in our comprehensive guides:
+# Build Rust client agent
+cd client
+cargo build --release
+```
 
-- [System Architecture](docs/system-architecture.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Security Overview](docs/security.md)
+### Testing
+
+```bash
+# Run all Java tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=ClassName
+
+# Run frontend tests
+cd openframe/services/openframe-ui
+npm run type-check
+
+# Run Rust tests
+cd client
+cargo test
+```
 
 ## Core Components
 
-OpenFrame consists of several key modules:
+OpenFrame consists of seven core microservices and supporting libraries:
 
-* **openframe-core** - Shared libraries and utilities
-* **openframe-management** - Service orchestration and administration
-* **openframe-data** - Centralized data access layer
-* **openframe-security** - Security patterns and configurations
-* **openframe-gateway** - API routing and traffic management
+### Microservices
+
+* **openframe-gateway** - Authentication proxy and unified entry point
+  * Validates JWT tokens for all incoming requests
+  * Central routing layer for services and integrated tools  
+  * Supports REST and WebSocket communication protocols
+  * Routes: `/api/**` → API service, `/clients/**` → Client service, `/tools/**` → Tool proxy
+
+* **openframe-api** - Core backend service with GraphQL data access
+  * Complete OAuth 2.0 implementation with multiple grant types
+  * OpenID Connect discovery and userinfo endpoints
+  * JWT integration for token-based authentication
+  * GraphQL API for events and integrated tools
+  * Endpoints: `/oauth/token`, `/graphql`, `/.well-known/openid-configuration`
+
+* **openframe-client** - Agent management and authentication service
+  * Manages agent registration and JWT token issuance
+  * Tool connections between agents and various integrated tools
+  * WebSocket support for real-time metrics
+  * REST APIs for client and agent management
+  * Endpoints: `/api/agents/**`, `/oauth/token`, `/api/clients/**`
+
+* **openframe-management** - Administrative service with scheduled tasks and system management
+
+* **openframe-stream** - Stream processing service using Kafka for real-time data processing
+
+* **openframe-config** - Spring Cloud Config Server for centralized configuration management
+
+* **openframe-ui** - Vue 3 + TypeScript frontend with PrimeVue components
+  * Visual hub for operators and administrators
+  * Displays integrated tools information and status
+  * Environment-driven configuration (API URLs, client secrets)
+  * Development: `npm run dev`, Production: `npm run build`
+
+### System Agent
+* **client/** - Cross-platform Rust agent for system monitoring and management
+
+### Shared Libraries
+* **openframe-core** - Core models, utilities, and base configurations
+* **openframe-data** - Data access layer for MongoDB, Cassandra, Redis, and Kafka
+* **openframe-jwt** - JWT security implementation with cookie support
+* **api-library** - Common API services and DTOs
 
 ## Security Features
 
@@ -295,19 +344,15 @@ OpenFrame consists of several key modules:
 * Automated alerting
 * Health checks and probes
 
-## Roadmap
+## Documentation
 
-### Short Term
-* GraphQL Subscriptions
-* Enhanced batching and caching
-* Advanced NiFi processors
-* Real-time analytics improvements
-
-### Long Term
-* Multi-region deployment
-* Zero-trust architecture
-* AI/ML integration
-* Advanced OLAP capabilities
+For comprehensive documentation, see:
+- [Getting Started Guide](docs/getting-started/introduction.md)
+- [Development Setup](docs/development/setup/environment.md)
+- [API Documentation](docs/api/README.md)
+- [Deployment Guide](docs/deployment/README.md)
+- [Operations Manual](docs/operations/README.md)
+- [Architecture Overview](docs/development/architecture/overview.md)
 
 ## Contributing
 
@@ -315,11 +360,7 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE).
-
-## Acknowledgments
-
-OpenFrame builds upon many excellent open-source projects. We're grateful to all the communities that make this possible.
+This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International Public License](LICENSE).
 
 ## Support
 

@@ -45,7 +45,7 @@ interface FleetResponse {
 const configService = ConfigService.getInstance();
 const config = configService.getConfig();
 
-const API_URL = `${config.gatewayUrl}/tools/fleet/api/v1/fleet`;
+const API_URL = `${config.gatewayUrl}/tools/fleetmdm-server/api/v1/fleet`;
 
 const toastService = ToastService.getInstance();
 

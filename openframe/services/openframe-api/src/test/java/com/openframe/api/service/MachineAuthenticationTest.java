@@ -1,21 +1,21 @@
 package com.openframe.api.service;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import static org.mockito.ArgumentMatchers.any;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-
 import com.openframe.api.dto.oauth.TokenResponse;
 import com.openframe.core.model.OAuthClient;
 import com.openframe.data.repository.mongo.OAuthClientRepository;
 import com.openframe.security.jwt.JwtService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MachineAuthenticationTest {
@@ -43,7 +43,7 @@ class MachineAuthenticationTest {
 
         // Act
         TokenResponse response = oauthService.token(
-            "client_credentials", null, null, null, null, 
+                "client_credentials", null, null, null,
             "test_machine", "test_secret");
 
         // Assert

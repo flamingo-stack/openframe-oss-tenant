@@ -5,7 +5,7 @@ metadata:
   name: meshcentral-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:
@@ -57,7 +57,7 @@ spec:
                   "toolUrls": [
                     {
                       "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
-                      "port": "8383",
+                      "port": "80",
                       "type": "API"
                     },
                     {

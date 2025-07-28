@@ -20,6 +20,7 @@ import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import { DefaultApolloClient } from '@vue/apollo-composable'
 import { apolloClient } from './apollo/apolloClient'
+import { ConfigService } from '@/config/config.service'
 // Import UI components
 import * as UIComponents from './components/ui'
 
@@ -33,13 +34,45 @@ import 'primeflex/primeflex.css'
 import './style.css'
 import './assets/styles/theme.css'
 
-// Check authentication before app mount
-const token = localStorage.getItem('access_token')
-const currentPath = window.location.pathname
+const config = ConfigService.getInstance();
 
-if (!token && currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/oauth2/callback/google') {
-    window.location.href = '/login'
-} else {
+// Check authentication before app mount
+async function checkAuthAndMount() {
+    const currentPath = window.location.pathname
+
+    // Public routes that don't require authentication
+    const publicRoutes = ['/login', '/register', '/oauth2/callback/google']
+    const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route))
+
+    if (!isPublicRoute) {
+        // For protected routes, check authentication via server before mounting
+        try {
+            const response = await fetch(`${config.getConfig().apiUrl}/oauth/me`, {
+                method: 'GET',
+                credentials: 'include' // Include HTTP-only cookies
+            })
+            
+            if (!response.ok) {
+                console.log('🔒 [Main] Not authenticated, redirecting to login')
+                window.location.href = '/login'
+                return // Don't mount the app
+            } else {
+                console.log('✅ [Main] User authenticated, proceeding to app')
+            }
+        } catch (error) {
+            console.log('❌ [Main] Auth check failed, redirecting to login:', error)
+            window.location.href = '/login'
+            return // Don't mount the app
+        }
+    } else {
+        console.log('➡️ [Main] Public route, proceeding to app')
+    }
+
+    // Mount the app after auth check
+    mountApp()
+}
+
+function mountApp() {
     // Global URL change tracking
     console.log('�� [Main] Initial URL:', window.location.href);
 
@@ -100,3 +133,6 @@ if (!token && currentPath !== '/login' && currentPath !== '/register' && current
     
     app.mount('#app')
 }
+
+// Start the authentication check and app mounting process
+checkAuthAndMount();

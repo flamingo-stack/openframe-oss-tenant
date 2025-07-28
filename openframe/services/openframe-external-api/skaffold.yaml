@@ -1,0 +1,29 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: openframe-external-api
+build:
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe/openframe-external-api
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
+  local:
+    useDockerCLI: false
+    useBuildkit: true
+    push: false
+manifests:
+  helm:
+    releases:
+      - name: openframe-external-api
+        chartPath: ../../../manifests/microservices/openframe-external-api
+        valuesFiles:
+          - ../../../manifests/microservices/openframe-external-api/values.yaml
+        # setValues:

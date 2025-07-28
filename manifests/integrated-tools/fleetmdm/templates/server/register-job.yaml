@@ -5,7 +5,7 @@ metadata:
   name: fleetmdm-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:
@@ -36,6 +36,10 @@ spec:
           - |
             echo "Getting FLEET_TOKEN..."
             POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
+            until kubectl exec -n integrated-tools "$POD" -- test -f /etc/fleet/api_token.txt 2>/dev/null; do
+              echo "Waiting for /etc/fleet/api_token.txt to be available..."
+              sleep 5
+            done
             FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
 
             echo "Registering FleetMDM Server..."
@@ -55,12 +59,12 @@ spec:
                   "description": "Fleet Device Management Platform",
                   "toolUrls": [
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.default.svc.cluster.local",
+                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
                       "port": "8070",
                       "type": "API"
                     },
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.default.svc.cluster.local",
+                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
                       "port": "8070",
                       "type": "DASHBOARD"
                     }
@@ -117,6 +121,7 @@ spec:
                       "schema.history.internal.kafka.topic": "fleet_mysql_schema_history",
                       "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092"
                     }
+                  }
                 }
               }' \
               --retry-delay 2 \

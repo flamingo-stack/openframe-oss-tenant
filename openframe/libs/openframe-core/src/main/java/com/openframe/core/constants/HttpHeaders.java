@@ -13,6 +13,7 @@ public final class HttpHeaders {
     public static final String X_API_KEY = "X-API-Key";
     public static final String X_USER_ID = "X-User-Id";
     public static final String X_API_KEY_ID = "X-API-Key-Id";
+    public static final String X_REFRESH_TOKEN = "X-Refresh-Token";
     
     // User context headers
     public static final String X_USER_EMAIL = "X-User-Email";
