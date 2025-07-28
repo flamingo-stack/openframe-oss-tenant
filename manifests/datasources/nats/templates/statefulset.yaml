@@ -30,7 +30,7 @@ spec:
 
           volumeMounts:
             - name: nats-config
-              mountPath: /etc/nats
+              mountPath: /etc/nats/nats.conf
               subPath: nats.conf
             - name: nats-jetstream-data
               mountPath: /data/jetstream
