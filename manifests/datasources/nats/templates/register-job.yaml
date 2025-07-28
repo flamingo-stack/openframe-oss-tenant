@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: nats-primary
+  name: nats
   annotations:
     "argocd.argoproj.io/hook": PostSync
     # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -25,11 +25,11 @@ spec:
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/nats-primary" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/nats" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "nats-primary",
+                  "id": "nats",
                   "toolType": "NATS",
                   "name": "Nats",
                   "description": "Nats",
