@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './hooks/useAuth'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
@@ -17,9 +18,15 @@ import { ProfilePage } from './pages/ProfilePage'
 import { Toaster } from '@flamingo/ui-kit/components/ui'
 
 function App() {
+  // Set the platform type for proper ODS theming
+  useEffect(() => {
+    document.body.setAttribute('data-app-type', 'openframe');
+  }, []);
+
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen"
+           data-app-type="openframe">
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />

@@ -169,6 +169,89 @@
                 "VITE_GRAFANA_URL": "http://localhost:3000"
             },
             "console": "integratedTerminal"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "OpenFrame React Frontend - Development",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "env": {
+                "NODE_ENV": "development",
+                "NEXT_PUBLIC_APP_TYPE": "openframe",
+                "NEXT_PUBLIC_API_URL": "http://localhost:8080",
+                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "http://localhost:8080/graphql",
+                "NEXT_PUBLIC_WS_ENDPOINT": "ws://localhost:8080/ws",
+                "NEXT_PUBLIC_PLATFORM": "openframe",
+                "NEXT_PUBLIC_DEV_URL": "http://localhost:4000",
+                "DEBUG": "vite:*"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "OpenFrame React Frontend - Debug Mode",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "env": {
+                "NODE_ENV": "development",
+                "NEXT_PUBLIC_APP_TYPE": "openframe",
+                "NEXT_PUBLIC_API_URL": "http://localhost:8080",
+                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "http://localhost:8080/graphql",
+                "NEXT_PUBLIC_WS_ENDPOINT": "ws://localhost:8080/ws",
+                "NEXT_PUBLIC_PLATFORM": "openframe",
+                "NEXT_PUBLIC_DEV_URL": "http://localhost:4000",
+                "DEBUG": "*",
+                "VITE_DEBUG": "true"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "trace": true
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "OpenFrame React Frontend - Chrome Debug",
+            "url": "http://localhost:4000",
+            "webRoot": "${workspaceFolder}/openframe/services/openframe-frontend/src",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+            "runtimeArgs": [
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor"
+            ]
+        },
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "OpenFrame React Frontend - Edge Debug",
+            "url": "http://localhost:4000",
+            "webRoot": "${workspaceFolder}/openframe/services/openframe-frontend/src",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "userDataDir": "${workspaceFolder}/.vscode/edge-debug-profile"
         }
     ]
 }
