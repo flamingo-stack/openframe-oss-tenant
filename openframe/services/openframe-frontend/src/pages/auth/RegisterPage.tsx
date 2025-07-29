@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@flamingo/ui-kit/components/ui';
+import { useToast } from '@flamingo/ui-kit/hooks';
 import { useAuthStore } from '@/stores/auth';
 import { AuthFormContainer } from '@/components/auth/AuthFormContainer';
 import { FormField } from '@/components/auth/FormField';
@@ -10,6 +11,7 @@ import { PasswordField } from '@/components/auth/PasswordField';
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const authStore = useAuthStore();
+  const { toast } = useToast();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -17,19 +19,24 @@ export const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>(undefined);
 
 
   const handleRegister = async () => {
-    setError(undefined);
-
     if (!email || !password || !firstName || !lastName) {
-      setError('Please fill in all fields');
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -37,10 +44,21 @@ export const RegisterPage = () => {
       setIsLoading(true);
       await authStore.register(email, password, firstName, lastName);
       console.log('✅ [Register] Registration successful, redirecting to dashboard');
+      
+      toast({
+        title: "Welcome to OpenFrame!",
+        description: "Your account has been created successfully",
+        variant: "success"
+      });
+      
       navigate('/dashboard');
     } catch (err: any) {
       const errorMessage = err.message || 'Registration failed. Please try again.';
-      setError(errorMessage);
+      toast({
+        title: "Registration Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
       console.error('❌ [Register] Registration failed:', err);
     } finally {
       setIsLoading(false);
@@ -51,7 +69,6 @@ export const RegisterPage = () => {
     <AuthFormContainer
       title="Create Account"
       subtitle="Join OpenFrame and start your journey"
-      error={error}
       maxWidth="2xl"
     >
       <div className="space-y-4">

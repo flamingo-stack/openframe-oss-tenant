@@ -168,6 +168,48 @@ function LoginPage() {
 
 ## Development Patterns
 
+### Toast System for Error Reporting
+ALWAYS use the unified Sonner-based toast system for error reporting, never custom error divs:
+
+**Setup**: Add `<Toaster />` from 'sonner' to your App.tsx:
+```typescript
+import { Toaster } from 'sonner';
+
+export const App = () => {
+  return (
+    <ApolloProvider client={apolloClient}>
+      <RouterProvider router={router} />
+      <Toaster />
+    </ApolloProvider>
+  );
+};
+```
+
+**Usage**: Use the `useToast` hook from UI-Kit:
+```typescript
+import { useToast } from '@flamingo/ui-kit/hooks';
+
+function AuthComponent() {
+  const { toast } = useToast();
+  
+  const handleError = (error: Error) => {
+    toast({
+      title: "Operation Failed",
+      description: error.message || "Something went wrong",
+      variant: "destructive"
+    });
+  };
+  
+  const handleSuccess = () => {
+    toast({
+      title: "Success!",
+      description: "Operation completed successfully",
+      variant: "success"
+    });
+  };
+}
+```
+
 ### Authentication Integration
 Use UI-Kit authentication components for OpenFrame SSO with dynamic loading states:
 
@@ -315,6 +357,7 @@ npm run test:coverage                       # Coverage report
 4. **Platform theming** is handled automatically by UI-Kit
 5. **NO FORMS** - never use `<form>` elements or form submissions
 6. **NEVER REPLACE SHARED COMPONENTS WITH MANUAL DESIGN** - If UI-Kit components don't work as expected, fix the underlying issue or use proper ODS theming variables, never replace with hardcoded values
+7. **ALWAYS USE TOAST FOR ERROR REPORTING** - Use `useToast` hook from UI-Kit for all error/success messages, never create custom error divs
 
 ### Multi-Platform-Hub Rules
 1. **Reference ONLY** - never copy components

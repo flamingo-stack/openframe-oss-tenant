@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvidersList, type SSOConfigStatus } from '@flamingo/ui-kit/components/features';
 import { Button } from '@flamingo/ui-kit/components/ui';
+import { useToast } from '@flamingo/ui-kit/hooks';
 import { useAuthStore } from '@/stores/auth';
 import { ssoService } from '@/services/sso';
 import { GoogleOAuthService } from '@/services/GoogleOAuthService';
@@ -12,12 +13,12 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [enabledProviders, setEnabledProviders] = useState<SSOConfigStatus[]>([]);
   
   const navigate = useNavigate();
   const location = useLocation();
   const authStore = useAuthStore();
+  const { toast } = useToast();
   
   const from = location.state?.from?.pathname || '/dashboard';
 
@@ -91,10 +92,13 @@ export const LoginPage = () => {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    setError('');
 
     if (!email || !password) {
-      setError('Please enter both email and password');
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password",
+        variant: "destructive"
+      });
       setIsLoading(false);
       return;
     }
@@ -104,13 +108,23 @@ export const LoginPage = () => {
       await authStore.login(email, password);
       console.log('✅ [Login] Login successful, navigating to:', from);
       
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in",
+        variant: "success"
+      });
+      
       // Wait a moment to ensure tokens are stored
       await new Promise(resolve => setTimeout(resolve, 100));
       
       navigate(from, { replace: true });
     } catch (error: any) {
       console.error('❌ [Login] Login failed:', error);
-      setError(error.message || 'Login failed. Please try again.');
+      toast({
+        title: "Login Failed",
+        description: error.message || "Login failed. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -120,7 +134,6 @@ export const LoginPage = () => {
     <AuthFormContainer
       title="Welcome back"
       subtitle="Sign in to access your account"
-      error={error}
     >
       <div className="space-y-4">
         <FormField
