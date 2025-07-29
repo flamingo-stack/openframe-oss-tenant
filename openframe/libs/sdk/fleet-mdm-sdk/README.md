@@ -18,7 +18,7 @@ Add the SDK to your project dependencies:
 
 ```xml
 <dependency>
-    <groupId>com.openframe.sdk</groupId>
+    <groupId>com.openframe</groupId>
     <artifactId>fleet-mdm-sdk</artifactId>
     <version>1.0.0</version>
 </dependency>
