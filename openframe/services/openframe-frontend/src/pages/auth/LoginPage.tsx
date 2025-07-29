@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvidersList, type SSOConfigStatus } from '@flamingo/ui-kit/components/features';
+import { Button } from '@flamingo/ui-kit/components/ui';
 import { useAuthStore } from '@/stores/auth';
 import { ssoService } from '@/services/sso';
 import { GoogleOAuthService } from '@/services/GoogleOAuthService';
+import { AuthFormContainer } from '@/components/auth/AuthFormContainer';
+import { FormField } from '@/components/auth/FormField';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -86,8 +89,7 @@ export const LoginPage = () => {
     localStorage.removeItem('oauth_initiate_error_debug');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     setIsLoading(true);
     setError('');
 
@@ -115,76 +117,61 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ods-bg flex items-center justify-center p-4">
-      <div className="bg-ods-card rounded-lg shadow-lg p-6 w-full max-w-md border border-ods-border">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-ods-text-primary mb-2">Welcome back</h1>
-          <p className="text-ods-text-secondary">Sign in to access your account</p>
-        </div>
+    <AuthFormContainer
+      title="Welcome back"
+      subtitle="Sign in to access your account"
+      error={error}
+    >
+      <div className="space-y-4">
+        <FormField
+          id="email"
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          required
+        />
         
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
+        <FormField
+          id="password"
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-ods-text-primary mb-2">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-ods-bg border border-ods-border rounded-md focus:outline-none focus:ring-2 focus:ring-ods-accent text-ods-text-primary"
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-ods-text-primary mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-ods-bg border border-ods-border rounded-md focus:outline-none focus:ring-2 focus:ring-ods-accent text-ods-text-primary"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-ods-accent text-white py-2 px-4 rounded-md hover:bg-ods-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-        
-        <div className="mt-6">
-          <AuthProvidersList
-            enabledProviders={enabledProviders}
-            onProviderClick={handleProviderClick}
-            loading={isLoading}
-            showDivider={enabledProviders.length > 0}
-            dividerText="or"
-          />
-        </div>
-        
-        <div className="text-center mt-6">
-          <p className="text-ods-text-secondary">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-ods-accent hover:underline font-medium">
-              Create one
-            </Link>
-          </p>
-        </div>
+        <Button
+          variant="primary"
+          size="lg"
+          className="w-full"
+          loading={isLoading}
+          onClick={handleLogin}
+        >
+          {isLoading ? 'Signing in...' : 'Sign In'}
+        </Button>
       </div>
-    </div>
+      
+      <div className="mt-6">
+        <AuthProvidersList
+          enabledProviders={enabledProviders}
+          onProviderClick={handleProviderClick}
+          loading={isLoading}
+          showDivider={enabledProviders.length > 0}
+          dividerText="or"
+        />
+      </div>
+      
+      <div className="text-center mt-6">
+        <p className="text-ods-text-secondary">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-ods-accent hover:underline font-medium">
+            Create one
+          </Link>
+        </p>
+      </div>
+    </AuthFormContainer>
   );
 };

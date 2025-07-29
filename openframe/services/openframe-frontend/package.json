@@ -11,12 +11,14 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@flamingo/ui-kit": "file:./ui-kit",
     "@apollo/client": "^3.8.0",
+    "@flamingo/ui-kit": "file:./ui-kit",
     "@tanstack/react-query": "^4.32.0",
     "graphql": "^16.8.0",
     "graphql-tag": "^2.12.6",
+    "highlight.js": "^11.11.1",
     "react": "^18.2.0",
+    "react-datepicker": "^8.4.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.0.0",
     "zustand": "^4.4.0"
