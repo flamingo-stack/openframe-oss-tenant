@@ -94,11 +94,13 @@ export const LoginPage = () => {
     setIsLoading(true);
 
     if (!email || !password) {
+      console.log('🍞 [Toast] Showing missing info toast...');
       toast({
         title: "Missing Information",
         description: "Please enter both email and password",
         variant: "destructive"
       });
+      console.log('🍞 [Toast] Missing info toast call completed');
       setIsLoading(false);
       return;
     }
@@ -120,11 +122,13 @@ export const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (error: any) {
       console.error('❌ [Login] Login failed:', error);
+      console.log('🍞 [Toast] Attempting to show error toast...');
       toast({
         title: "Login Failed",
         description: error.message || "Login failed. Please try again.",
         variant: "destructive"
       });
+      console.log('🍞 [Toast] Toast call completed');
     } finally {
       setIsLoading(false);
     }

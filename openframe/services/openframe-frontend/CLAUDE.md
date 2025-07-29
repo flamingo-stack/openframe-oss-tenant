@@ -381,6 +381,77 @@ npm run test:coverage                       # Coverage report
 - **OpenFrame API**: http://localhost:8080/graphql
 - **UI-Kit Storybook**: (if available) http://localhost:6006
 
+## Browser Automation with Browser MCP
+
+### Overview
+Browser MCP is a Model Context Protocol (MCP) server that enables AI-powered browser automation. It can be used to automate testing, UI interactions, and browser-based tasks for the OpenFrame Frontend.
+
+### Setup Instructions
+1. **Install Browser MCP Chrome Extension**
+   - Visit the Chrome Web Store and install the Browser MCP extension
+   - Or download from: https://chromewebstore.google.com/detail/browser-mcp-automate-your/bjfgambnhccakkhmkepdoekmckoijdlc
+
+2. **Configure MCP Server**
+   - Follow setup instructions at: https://docs.browsermcp.io/setup-server
+   - The MCP server connects your AI tools (Claude, Cursor, VS Code) to the browser
+
+3. **Enable in Your AI Tool**
+   - For Claude Desktop: Configure MCP settings to include Browser MCP
+   - For Cursor/VS Code: Install the Browser MCP extension and configure
+
+### Use Cases for OpenFrame Frontend
+
+#### Automated Testing
+```typescript
+// Example: Test authentication flow
+// Claude/Cursor can automate this via Browser MCP
+// 1. Navigate to login page
+// 2. Click SSO provider button
+// 3. Complete OAuth flow
+// 4. Verify redirect to dashboard
+```
+
+#### UI Component Testing
+```typescript
+// Test UI-Kit components in real browser environment
+// 1. Navigate to component demo page
+// 2. Interact with buttons, modals, forms
+// 3. Capture screenshots for visual regression
+// 4. Test responsive behavior
+```
+
+#### Development Workflow Automation
+- Auto-refresh browser on code changes
+- Capture console logs and errors
+- Take screenshots of UI states
+- Test different user flows
+- Verify GraphQL API integrations
+
+### Browser MCP Commands
+When using Claude/Cursor with Browser MCP enabled:
+- `navigate to [URL]` - Open a page
+- `click on [element]` - Click UI elements
+- `type [text] in [field]` - Fill input fields
+- `take screenshot` - Capture current state
+- `get console logs` - Retrieve browser console output
+
+### Integration with OpenFrame Development
+1. **Start the development server**: `npm run dev`
+2. **Enable Browser MCP** in your AI tool
+3. **Use AI to automate**:
+   - Testing authentication flows with UI-Kit components
+   - Verifying OpenFrame theming
+   - Testing GraphQL queries and mutations
+   - Checking responsive design
+   - Debugging client-side routing
+
+### Best Practices
+- Use Browser MCP for repetitive testing tasks
+- Automate visual regression testing
+- Test error states and edge cases
+- Verify toast notifications appear correctly
+- Check loading states for dynamic components
+
 ## Troubleshooting
 
 ### Common Issues
@@ -388,6 +459,7 @@ npm run test:coverage                       # Coverage report
 - **Theming issues**: Verify NEXT_PUBLIC_APP_TYPE is set to 'openframe'
 - **Component not found**: Check UI-Kit exports, never create custom UI
 - **Build errors**: Run type-check on both main project and UI-Kit
+- **Browser MCP connection**: Ensure Chrome extension is installed and MCP server is running
 
 ### Diagnostic Commands
 ```bash
@@ -399,4 +471,9 @@ npm run type-check
 
 # Check development server
 npm run dev
+
+# For Browser MCP issues
+# 1. Check Chrome extension is enabled
+# 2. Verify MCP server is running
+# 3. Check AI tool MCP configuration
 ```
