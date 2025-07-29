@@ -50,7 +50,7 @@
         <module>openframe/libs/openframe-core</module>
         <module>openframe/libs/openframe-data</module>
         <module>openframe/libs/openframe-jwt</module>
-        <module>openframe/libs/sdk/fleet-mdm-sdk</module>
+        <module>openframe/libs/sdk/fleetmdm</module>
         <module>openframe/libs/api-library</module>
 
         <!-- Services -->
