@@ -36,8 +36,8 @@ var clusterCmd = &cobra.Command{
 This command group provides cluster lifecycle management functionality
 that replaces the shell script cluster operations:
 
-  - create/up - Create a new cluster with interactive configuration
-  - delete/down - Remove a cluster and clean up resources  
+  - create - Create a new cluster with interactive configuration
+  - delete - Remove a cluster and clean up resources  
   - start - Start an existing stopped cluster
   - list - Show all managed clusters
   - status - Display detailed cluster information
@@ -45,8 +45,7 @@ that replaces the shell script cluster operations:
 
 Supports multiple cluster types:
   - K3d - Lightweight Kubernetes in Docker (recommended for local development)
-  - GKE - Google Kubernetes Engine (cloud)
-  - EKS - Amazon Elastic Kubernetes Service (cloud)
+  - GKE - Google Kubernetes Engine (not yet available)
 
 Examples:
   # Create cluster interactively (replaces: ./run.sh k)
@@ -57,7 +56,6 @@ Examples:
 
   # Start cluster (replaces: ./run.sh s)
   openframe cluster start
-
 `,
 }
 
@@ -519,10 +517,11 @@ func runClusterStatus(cmd *cobra.Command, args []string) error {
 	if len(status.Nodes) > 0 {
 		fmt.Fprintf(out, "\n INFO  \n")
 		fmt.Fprintf(out, "       Node Details:\n")
-		fmt.Fprintf(out, "Name                                 | Role   | Status                               | Age\n")
+		fmt.Fprintf(out, "%-40s | %-13s | %-10s | %s\n", "Name", "Role", "Status", "Age")
+		fmt.Fprintf(out, "%s\n", strings.Repeat("-", 80))
 
 		for _, node := range status.Nodes {
-			fmt.Fprintf(out, "%-36s | %-6s | %-36s | %s\n",
+			fmt.Fprintf(out, "%-40s | %-13s | %-10s | %s\n",
 				node.Name,
 				node.Role,
 				node.Status,

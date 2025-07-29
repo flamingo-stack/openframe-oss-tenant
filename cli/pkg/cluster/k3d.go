@@ -48,12 +48,12 @@ func (k *K3dProvider) Create(ctx context.Context, config *ClusterConfig) error {
 		} else {
 			fmt.Printf("Existing cluster '%s' found. Deleting before recreation...\n", config.Name)
 		}
-		
+
 		// Delete the existing cluster
 		if err := k.Delete(context.Background(), config.Name); err != nil {
 			return fmt.Errorf("failed to delete existing cluster: %w", err)
 		}
-		
+
 		if k.options.Output != nil {
 			fmt.Fprintf(k.options.Output, "Existing cluster '%s' deleted successfully.\n", config.Name)
 		} else {
@@ -77,13 +77,13 @@ func (k *K3dProvider) Create(ctx context.Context, config *ClusterConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to check port availability: %w", err)
 	}
-	
+
 	// Create config file
 	configFile, err := k.createK3dConfig(config, systemInfo, ports)
 	if err != nil {
 		return fmt.Errorf("failed to create k3d config: %w", err)
 	}
-	
+
 	defer os.Remove(configFile)
 
 	// Clean up any existing resources
@@ -137,24 +137,39 @@ func (k *K3dProvider) Delete(ctx context.Context, name string) error {
 
 // List returns all K3d clusters
 func (k *K3dProvider) List(ctx context.Context) ([]*ClusterInfo, error) {
-	cmd := exec.CommandContext(ctx, "k3d", "cluster", "list", "--output", "json")
+	cmd := exec.CommandContext(ctx, "k3d", "cluster", "list", "--no-headers")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list k3d clusters: %w", err)
 	}
 
-	// Parse the JSON output (simplified - would need proper JSON parsing)
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	var clusters []*ClusterInfo
 
 	for _, line := range lines {
-		if strings.Contains(line, "name") {
-			// Simplified parsing - in production, use proper JSON unmarshaling
-			name := strings.Split(line, "\"")[3]
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) >= 3 {
+			// Extract cluster name, servers, and agents info
+			name := fields[0]
+
+			// Get detailed node information for this cluster
+			nodes, _ := k.getNodeInfo(ctx, name)
+
+			// Determine status based on whether we can get node info
+			status := "Running"
+			if len(nodes) == 0 {
+				status = "Not Ready"
+			}
+
 			info := &ClusterInfo{
 				Name:   name,
 				Type:   ClusterTypeK3d,
-				Status: "Running",
+				Status: status,
+				Nodes:  nodes,
 			}
 			clusters = append(clusters, info)
 		}
@@ -204,24 +219,22 @@ func (k *K3dProvider) IsAvailable() error {
 	if err != nil {
 		return fmt.Errorf("k3d is not installed or not in PATH")
 	}
-	
+
 	// Check if Docker is running
 	cmd := exec.Command("docker", "ps")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("Docker is not running.\n\nTo fix this:\n  - On macOS: Start Docker Desktop from Applications\n  - On Linux: Run 'sudo systemctl start docker'\n  - Or run: 'docker --version' to verify Docker installation")
 	}
-	
+
 	return nil
 }
 
 // GetSupportedVersions returns supported K3s versions for K3d
 func (k *K3dProvider) GetSupportedVersions() []string {
 	return []string{
-		"v1.31.5-k3s1",
+		"v1.33.0-k3s1",
+		"v1.32.0-k3s1",
 		"v1.31.0-k3s1",
-		"v1.30.0-k3s1",
-		"v1.29.0-k3s1",
-		"v1.28.0-k3s1",
 	}
 }
 
@@ -358,9 +371,9 @@ func (k *K3dProvider) isPortAvailable(port int) bool {
 // createK3dConfig creates a temporary k3d configuration file
 func (k *K3dProvider) createK3dConfig(config *ClusterConfig, systemInfo *SystemInfo, ports *PortInfo) (string, error) {
 	// Select appropriate image based on architecture
-	image := "rancher/k3s:v1.31.5-k3s1"
+	image := "rancher/k3s:v1.33.0-k3s1"
 	if systemInfo.IsARM64 {
-		image = "rancher/k3s:v1.31.5-k3s1"
+		image = "rancher/k3s:v1.33.0-k3s1"
 	}
 
 	if config.KubernetesVersion != "" {
@@ -562,7 +575,7 @@ func (k *K3dProvider) waitForClusterReady(ctx context.Context, name string) erro
 func (k *K3dProvider) getNodeInfo(ctx context.Context, name string) ([]NodeInfo, error) {
 	contextName := fmt.Sprintf("k3d-%s", name)
 	cmd := exec.CommandContext(ctx, "kubectl", "--context", contextName, "get", "nodes",
-		"--no-headers", "-o", "custom-columns=NAME:.metadata.name,ROLES:.metadata.labels,STATUS:.status.conditions[-1].type,AGE:.metadata.creationTimestamp")
+		"--no-headers", "-o", "custom-columns=NAME:.metadata.name,ROLES:.metadata.labels['node-role\\.kubernetes\\.io/control-plane'],STATUS:.status.conditions[?(@.type=='Ready')].status,AGE:.metadata.creationTimestamp")
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -580,18 +593,49 @@ func (k *K3dProvider) getNodeInfo(ctx context.Context, name string) ([]NodeInfo,
 		fields := strings.Fields(line)
 		if len(fields) >= 4 {
 			role := "worker"
-			if strings.Contains(fields[1], "control-plane") {
+			if fields[1] != "<none>" && fields[1] != "" {
 				role = "control-plane"
+			}
+
+			status := "NotReady"
+			if fields[2] == "True" {
+				status = "Ready"
+			}
+
+			// Parse age from timestamp
+			age := "unknown"
+			if len(fields) > 3 {
+				age = k.parseAge(fields[3])
 			}
 
 			nodes = append(nodes, NodeInfo{
 				Name:   fields[0],
 				Role:   role,
-				Status: fields[2],
-				Age:    fields[3],
+				Status: status,
+				Age:    age,
 			})
 		}
 	}
 
 	return nodes, nil
+}
+
+// parseAge converts a timestamp to a human-readable age
+func (k *K3dProvider) parseAge(timestamp string) string {
+	// Parse timestamp format: 2024-01-01T12:00:00Z
+	t, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return "unknown"
+	}
+
+	duration := time.Since(t)
+	if duration < time.Minute {
+		return fmt.Sprintf("%ds", int(duration.Seconds()))
+	} else if duration < time.Hour {
+		return fmt.Sprintf("%dm", int(duration.Minutes()))
+	} else if duration < 24*time.Hour {
+		return fmt.Sprintf("%dh", int(duration.Hours()))
+	} else {
+		return fmt.Sprintf("%dd", int(duration.Hours()/24))
+	}
 }

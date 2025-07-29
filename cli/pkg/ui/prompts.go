@@ -40,7 +40,7 @@ func ClusterWizard() (*ClusterConfiguration, error) {
 	config.Name = name
 
 	// Step 2: Cluster type selection
-	clusterTypes := []string{"K3d (Local)"}
+	clusterTypes := []string{"K3d (Local)", "GKE (cloud)"}
 	typePrompt := promptui.Select{
 		Label: "Select cluster type",
 		Items: clusterTypes,
@@ -134,9 +134,16 @@ func boolToString(b bool) string {
 // ConfirmAction prompts the user to confirm an action
 func ConfirmAction(message string) (bool, error) {
 	prompt := promptui.Prompt{
-		Label:     message,
-		IsConfirm: true,
-		Default:   "y",
+		Label:     message + " (Y/n)",
+		IsConfirm: false,
+		Default:   "Y",
+		Validate: func(input string) error {
+			input = strings.ToLower(strings.TrimSpace(input))
+			if input == "" || input == "y" || input == "yes" || input == "n" || input == "no" {
+				return nil
+			}
+			return fmt.Errorf("please enter Y/y/yes or N/n/no")
+		},
 	}
 
 	result, err := prompt.Run()
@@ -147,7 +154,8 @@ func ConfirmAction(message string) (bool, error) {
 		return false, err
 	}
 
-	return result == "y" || result == "Y", nil
+	result = strings.ToLower(strings.TrimSpace(result))
+	return result == "" || result == "y" || result == "yes", nil
 }
 
 // SelectFromList prompts the user to select from a list of options

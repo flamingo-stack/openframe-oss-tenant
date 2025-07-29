@@ -1,350 +1,233 @@
-# OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
+# OpenFrame CLI
 
-A modern, user-friendly CLI that replaces shell scripts with an interactive terminal UI for managing OpenFrame Kubernetes deployments. Built following CLI design best practices with wizard-style interactive prompts.
+A modern CLI tool for managing OpenFrame Kubernetes clusters and development workflows. Provides an interactive, user-friendly alternative to shell scripts with comprehensive cluster lifecycle management.
 
-## Key Features
+## Features
 
-- **Interactive Wizard** - Step-by-step guided setup with smart defaults  
-- **Cluster Management** - K3d, Kind, and cloud provider support  
-- **Helm Integration** - App-of-Apps pattern with ArgoCD  
-- **Developer Tools** - Telepresence, Skaffold workflows  
-- **Prerequisite Checking** - Validates tools before running  
+- **🎯 Interactive Cluster Creation** - Guided wizard with intelligent defaults
+- **⚡ K3d Cluster Management** - Fast local Kubernetes clusters optimized for development  
+- **📊 Cluster Status & Monitoring** - Real-time cluster health and node information
+- **🔧 Smart System Detection** - Automatically configures based on your system resources
+- **🛠 Developer-Friendly** - Simple commands with clear output and error handling
 
-## 🆚 Shell Script Replacement
+## Installation
 
-This CLI completely replaces the existing shell scripts with equivalent functionality:
+### Build from Source
+
+```bash
+# Clone and build
+git clone <repository-url>
+cd openframe/cli
+
+# Build the CLI
+make build
+
+# Install to GOPATH/bin (optional)
+make install
+
+# Or copy to system PATH
+cp build/openframe /usr/local/bin/
+```
+
+### Development
+
+```bash
+# Development workflow (build, test, lint)
+make dev
+
+# Quick check (build and unit tests)
+make check
+
+# Full test pipeline
+make test
+
+# Clean build artifacts
+make clean
+```
+
+## Shell Script Migration
+
+This CLI replaces the existing shell scripts:
 
 | Shell Script | CLI Command | Description |
 |--------------|-------------|-------------|
-| `./run.sh b` | `openframe bootstrap` | Bootstrap entire platform |
-| `./run.sh k` | `openframe cluster create` | Create cluster only |
-| `./run.sh d` | `openframe cluster delete` | Delete cluster |
-| `./run.sh s` | `openframe cluster start` | Start cluster |
-| `./run.sh stop` | `openframe cluster stop` | Stop cluster |
-| `./run.sh c` | `openframe cluster cleanup` | Clean up images |
-| `./run.sh app <name> dev` | `openframe dev skaffold <name>` | Development mode |
-| `./run.sh app <name> intercept` | `openframe dev intercept <name>` | Telepresence intercept |
+| `./run.sh k` | `openframe cluster create` | Create cluster interactively |
+| `./run.sh d` | `openframe cluster delete` | Delete cluster with confirmation |
+| `./run.sh s` | `openframe cluster start` | Start stopped cluster |
+| `./run.sh c` | `openframe cluster cleanup` | Clean up cluster resources |
 
 ## Quick Start
 
 ### Prerequisites
 
-Before using the OpenFrame CLI, ensure you have the following tools installed:
+- **Docker** - Must be running for K3d clusters
+- **kubectl** - Kubernetes command-line tool  
+- **K3d** - Local Kubernetes cluster runtime
 
-- **Go 1.21+** - For building the CLI
-- **Docker** - For running local clusters
-- **kubectl** - Kubernetes command-line tool
-- **Helm** - Package manager for Kubernetes
-- **K3d** or **Kind** - Local Kubernetes cluster tools
-
-Optional developer tools:
-- **Telepresence** - For service intercepts
-- **Skaffold** - For continuous development
-- **ArgoCD CLI** - For GitOps management
-
-### Installation
-
-#### From Source
+### Basic Usage
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd openframe/cli
-
-# Build and install
-make build
-make install
-
-# Or install system-wide (requires sudo)
-make install-system
-```
-
-#### Using Go Install
-
-```bash
-go install github.com/flamingo/openframe-cli@latest
-```
-
-### Usage
-
-#### Create a Cluster (Interactive Wizard)
-
-```bash
-# Start the interactive wizard
+# Create a cluster with interactive wizard
 openframe cluster create
 
-# The wizard will guide you through:
-# 1. Cluster configuration (name, type, version)
-# 2. Component selection
-# 3. Deployment mode
-# 4. Installation process
-```
-
-#### Create a Cluster (Command Line)
-
-```bash
-# Create a K3d cluster with specific options
-openframe cluster create my-cluster --type k3d --nodes 3 --version v1.29.0
-
-# Create without installing OpenFrame components
-openframe cluster create my-cluster --skip-charts
-```
-
-#### List and Manage Clusters
-
-```bash
-# List all clusters
+# List all clusters  
 openframe cluster list
 
-# Show cluster status
-openframe cluster status my-cluster
+# Check cluster status
+openframe cluster status
 
 # Delete a cluster
-openframe cluster delete my-cluster
-```
-
-#### Developer Workflows
-
-```bash
-# Intercept a service for local development
-openframe dev intercept openframe-api 8090
-
-# Run Skaffold continuous development
-openframe dev skaffold openframe-ui
-
-# Port forward a service
-openframe dev port-forward mongodb 27017:27017 --namespace datasources
-
-# Check development environment status
-openframe dev status
+openframe cluster delete
 ```
 
 ## Commands
 
 ### Cluster Management
 
-- `openframe cluster create [NAME]` - Create a new cluster with interactive wizard
-- `openframe cluster delete [NAME]` - Delete a cluster and cleanup resources
-- `openframe cluster list` - List all managed clusters
-- `openframe cluster status [NAME]` - Show detailed cluster information
+#### `openframe cluster create [NAME]`
+Creates a new K3d cluster with interactive configuration wizard.
 
-### Developer Tools
+**Options:**
+- `--type k3d` - Cluster type (currently only K3d supported)
+- `--nodes N` - Number of worker nodes (default: 3)  
+- `--version VERSION` - Kubernetes version (e.g., v1.31.5-k3s1)
+- `--skip-wizard` - Use command-line flags instead of interactive wizard
+- `--dry-run` - Show what would be created without actually creating
 
-- `openframe dev intercept [SERVICE] [PORT]` - Intercept service traffic with Telepresence
-- `openframe dev skaffold [SERVICE]` - Start Skaffold development workflow
-- `openframe dev port-forward [SERVICE] [PORTS]` - Forward ports from cluster services
-- `openframe dev status` - Show development environment status
+**Examples:**
+```bash
+# Interactive creation (recommended)
+openframe cluster create
 
-## Configuration
+# Create with specific options
+openframe cluster create dev-cluster --nodes 2 --version v1.31.5-k3s1
 
-### Cluster Types
+# Quick creation without prompts
+openframe cluster create test --skip-wizard --nodes 1
+```
 
-**K3d (Recommended for local development)**
-- Lightweight Kubernetes in Docker
-- Fast startup and teardown
-- Excellent for development workflows
-
-**Kind**
-- Kubernetes in Docker (alternative to K3d)
-- More compatible with some tools
-- Good for CI/CD environments
-
-**GKE (Google Cloud)**
-- Managed Kubernetes on Google Cloud
-- Production-ready with auto-scaling
-- Requires GCP account and credentials
-
-**EKS (AWS)**
-- Managed Kubernetes on AWS
-- Enterprise features and integrations
-- Requires AWS account and credentials
-
-### Deployment Modes
-
-**Local Development**
-- Development-focused setup
-- Hot reload and debugging tools enabled
-- Minimal resource requirements
-- Developer tools pre-configured
-
-**Production-like**
-- Production-similar setup
-- Monitoring, logging, and security enabled
-- External tools integrated
-- Higher resource requirements
-
-**Minimal**
-- Basic setup with core services only
-- Lowest resource usage
-- Perfect for testing or resource-constrained environments
-
-### Component Selection
-
-During cluster creation, you can choose which components to install:
-
-- **ArgoCD** - GitOps continuous delivery platform
-- **Monitoring** - Prometheus, Grafana, and Loki stack
-- **OpenFrame API** - Core OpenFrame API service
-- **OpenFrame UI** - Web-based user interface
-- **External Tools** - MeshCentral, Tactical RMM, Fleet MDM
-- **Developer Tools** - Telepresence and Skaffold integration
-
-## Development
-
-### Building from Source
+#### `openframe cluster list`
+Shows all managed clusters with their status and node count.
 
 ```bash
-# Install dependencies
-make deps
-
-# Build the CLI
-make build
-
-# Run tests
-make test
-
-# Build for all platforms
-make build-all
-
-# Run the full CI workflow
-make ci
+openframe cluster list
+# NAME                 TYPE       STATUS     NODES          
+# ────────────────────────────────────────────────────────────
+# openframe-dev        k3d        Running    4              
 ```
 
-### Project Structure
+#### `openframe cluster status [NAME]`
+Displays detailed information about a specific cluster.
 
-```
-cli/
-├── cmd/                    # Cobra commands
-│   ├── root.go            # Root command and global flags
-│   ├── cluster.go         # Cluster management commands
-│   └── dev.go             # Developer workflow commands
-├── pkg/                   # Core packages
-│   ├── cluster/           # Cluster provider implementations
-│   ├── helm/              # Helm chart installation logic
-│   └── ui/                # Interactive UI components
-├── go.mod                 # Go module dependencies
-├── main.go                # CLI entry point
-├── Makefile              # Build and development commands
-└── README.md             # This file
+```bash
+openframe cluster status my-cluster
 ```
 
-### Adding New Cluster Providers
+Shows:
+- Cluster metadata (name, type, status, node count)
+- Individual node details (name, role, status, age)  
+- Installed Helm applications
 
-To add support for a new cluster provider:
+#### `openframe cluster delete [NAME]`
+Removes a cluster and cleans up all resources.
 
-1. Implement the `ClusterProvider` interface in `pkg/cluster/`
-2. Add the provider to the cluster type enum
-3. Update the wizard UI to include the new option
-4. Add provider creation logic in `cmd/cluster.go`
+**Options:**
+- `--force` - Skip confirmation prompt
 
-### Adding New Components
+**Examples:**
+```bash
+# Interactive deletion with confirmation
+openframe cluster delete my-cluster
 
-To add a new installable component:
+# Force deletion without confirmation  
+openframe cluster delete my-cluster --force
+```
 
-1. Add the component to the wizard in `pkg/ui/prompts.go`
-2. Add Helm chart installation logic in `pkg/helm/installer.go`
-3. Update the configuration summary display
+#### `openframe cluster start [NAME]`
+Starts a previously stopped cluster.
+
+```bash
+openframe cluster start my-cluster
+```
+
+#### `openframe cluster cleanup [NAME]`  
+Removes unused Docker images and resources from cluster nodes.
+
+```bash
+openframe cluster cleanup my-cluster
+```
+
+## Cluster Configuration
+
+### Interactive Wizard
+
+The cluster creation wizard guides you through:
+
+1. **Cluster Name** - Default: `openframe-dev`
+2. **Cluster Type** - Currently supports K3d only
+3. **Kubernetes Version** - Choose from available K3s versions
+4. **Node Count** - Worker nodes (default: 3, automatically adds 1 control plane)
+
+### System Detection
+
+The CLI automatically detects your system and optimizes settings:
+
+- **CPU Detection** - Configures optimal worker node count
+- **Memory Detection** - Ensures sufficient resources
+- **Architecture Detection** - Selects appropriate container images (ARM64/x86_64)
+- **Port Detection** - Finds available ports (80, 443, 6550) or alternatives
+
+### Default Configuration
+
+- **Control Plane**: 1 node
+- **Worker Nodes**: 3 nodes (adjustable)
+- **Kubernetes Version**: v1.31.5-k3s1
+- **Container Runtime**: K3s
+- **Load Balancer**: Built-in (Traefik disabled)
+- **Port Mappings**: 
+  - HTTP: 80 → cluster port 80
+  - HTTPS: 443 → cluster port 443
+  - API: 6550 → cluster API server
 
 ## Examples
 
-### Complete Development Setup
+### Basic Cluster Management
 
 ```bash
-# Create a development cluster with all tools
-openframe cluster create dev-cluster
+# Create a cluster interactively
+openframe cluster create
 
-# Intercept the API service for local development
-openframe dev intercept openframe-api 8090
+# Create with specific name and settings
+openframe cluster create my-dev --nodes 2
 
-# In another terminal, start your local API server on port 8090
-# Traffic from the cluster will now route to your local service
-
-# Start continuous development for the UI
-openframe dev skaffold openframe-ui
-```
-
-### Production-like Testing
-
-```bash
-# Create a production-like cluster
-openframe cluster create prod-test --type k3d --nodes 5
-
-# Check cluster status and installed components
-openframe cluster status prod-test
-
-# Access monitoring dashboards
-openframe dev port-forward grafana 3000:80 --namespace platform
-```
-
-### Multi-cluster Development
-
-```bash
-# Create multiple clusters for different purposes
-openframe cluster create api-dev --type k3d --nodes 2
-openframe cluster create ui-dev --type kind --nodes 1
+# Check cluster status
+openframe cluster status my-dev
 
 # List all clusters
 openframe cluster list
 
-# Switch between clusters using kubectl
-kubectl config use-context k3d-api-dev
-kubectl config use-context kind-ui-dev
+# Clean up cluster resources
+openframe cluster cleanup my-dev
+
+# Delete cluster
+openframe cluster delete my-dev
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
+**Docker not running**
+- Start Docker Desktop (macOS) or `sudo systemctl start docker` (Linux)
+- Verify with `docker ps`
+
 **Cluster creation fails**
-- Check Docker is running and has sufficient resources
-- Ensure ports 80, 443, and 6550 are available
-- Verify K3d or Kind is installed and in PATH
+- Check Docker has sufficient resources (4GB+ RAM recommended)
+- Ensure K3d is installed: `k3d version`
+- Verify ports are available (will auto-detect alternatives)
 
-**Service intercept fails**
-- Check Telepresence is installed and connected
-- Verify the service exists in the specified namespace
-- Ensure the target port is not already in use locally
+**Kubectl not working**
+- Cluster automatically configures kubeconfig
+- Check context: `kubectl config current-context`
+- Should show `k3d-<cluster-name>`
 
-**Skaffold development fails**
-- Check `skaffold.yaml` exists in the service directory
-- Verify Docker images can be built
-- Ensure cluster has sufficient resources
-
-**Helm installation fails**
-- Check cluster has sufficient resources
-- Verify Helm repositories are accessible
-- Review cluster logs for specific errors
-
-### Getting Help
-
-- Use `openframe --help` for command usage
-- Use `openframe <command> --help` for specific command help
-- Check cluster status with `openframe cluster status`
-- Review development environment with `openframe dev status`
-
-### Log Locations
-
-- Cluster creation logs: `~/.openframe/logs/`
-- Kubernetes logs: `kubectl logs <pod-name> -n <namespace>`
-- ArgoCD application status: ArgoCD UI or `argocd app list`
-
-## Contributing
-
-We welcome contributions! Please see our [contributing guidelines](../CONTRIBUTING.md) for details on:
-
-- Code style and conventions
-- Testing requirements
-- Pull request process
-- Issue reporting
-
-## License
-
-This project is licensed under the [MIT License](../LICENSE).
-
-## Support
-
-For support and questions:
-
-- Create an issue in the repository
-- Check the [OpenFrame documentation](../docs/)
-- Join our community discussions
