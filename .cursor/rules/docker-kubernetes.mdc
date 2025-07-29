@@ -20,7 +20,7 @@ This document outlines the container and orchestration best practices for the Op
 Example Dockerfile:
 ```dockerfile
 # Use specific version of OpenJDK
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
 
 # Add metadata
 LABEL maintainer="OpenFrame Team <team@openframe.com>"
@@ -58,7 +58,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /build/target/openframe-api.jar /app/
 RUN addgroup -S openframe && adduser -S openframe -G openframe
