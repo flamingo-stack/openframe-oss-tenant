@@ -29,11 +29,36 @@ func NewK3dProvider(opts ProviderOptions) *K3dProvider {
 
 // Create creates a new K3d cluster based on the existing shell script logic
 func (k *K3dProvider) Create(ctx context.Context, config *ClusterConfig) error {
-	// Check if cluster already exists
+	// In dry-run mode, skip actual operations
+	if k.options.DryRun {
+		if k.options.Output != nil {
+			fmt.Fprintf(k.options.Output, "DRY RUN: Would create k3d cluster '%s' with %d nodes\n", config.Name, config.NodeCount)
+		} else {
+			fmt.Printf("DRY RUN: Would create k3d cluster '%s' with %d nodes\n", config.Name, config.NodeCount)
+		}
+		return nil
+	}
+
+	// Check if cluster already exists and delete it if it does
 	if exists, err := k.clusterExists(config.Name); err != nil {
 		return fmt.Errorf("failed to check if cluster exists: %w", err)
 	} else if exists {
-		return fmt.Errorf("cluster %s already exists", config.Name)
+		if k.options.Output != nil {
+			fmt.Fprintf(k.options.Output, "Existing cluster '%s' found. Deleting before recreation...\n", config.Name)
+		} else {
+			fmt.Printf("Existing cluster '%s' found. Deleting before recreation...\n", config.Name)
+		}
+		
+		// Delete the existing cluster
+		if err := k.Delete(context.Background(), config.Name); err != nil {
+			return fmt.Errorf("failed to delete existing cluster: %w", err)
+		}
+		
+		if k.options.Output != nil {
+			fmt.Fprintf(k.options.Output, "Existing cluster '%s' deleted successfully.\n", config.Name)
+		} else {
+			fmt.Printf("Existing cluster '%s' deleted successfully.\n", config.Name)
+		}
 	}
 
 	// Get system information for optimal node configuration
@@ -52,12 +77,13 @@ func (k *K3dProvider) Create(ctx context.Context, config *ClusterConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to check port availability: %w", err)
 	}
-
+	
 	// Create config file
 	configFile, err := k.createK3dConfig(config, systemInfo, ports)
 	if err != nil {
 		return fmt.Errorf("failed to create k3d config: %w", err)
 	}
+	
 	defer os.Remove(configFile)
 
 	// Clean up any existing resources
@@ -173,10 +199,18 @@ func (k *K3dProvider) Status(ctx context.Context, name string) (*ClusterInfo, er
 
 // IsAvailable checks if K3d is installed and available
 func (k *K3dProvider) IsAvailable() error {
+	// Check if k3d is installed
 	_, err := exec.LookPath("k3d")
 	if err != nil {
 		return fmt.Errorf("k3d is not installed or not in PATH")
 	}
+	
+	// Check if Docker is running
+	cmd := exec.Command("docker", "ps")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("Docker is not running.\n\nTo fix this:\n  - On macOS: Start Docker Desktop from Applications\n  - On Linux: Run 'sudo systemctl start docker'\n  - Or run: 'docker --version' to verify Docker installation")
+	}
+	
 	return nil
 }
 
@@ -275,17 +309,38 @@ func (k *K3dProvider) getAvailablePorts() (*PortInfo, error) {
 
 	// Check HTTP port
 	if !k.isPortAvailable(ports.HTTP) {
-		ports.HTTP = 8080
+		// Try alternative HTTP ports
+		alternativeHTTP := []int{8080, 9080, 10080}
+		for _, port := range alternativeHTTP {
+			if k.isPortAvailable(port) {
+				ports.HTTP = port
+				break
+			}
+		}
 	}
 
 	// Check HTTPS port
 	if !k.isPortAvailable(ports.HTTPS) {
-		ports.HTTPS = 8443
+		// Try alternative HTTPS ports
+		alternativeHTTPS := []int{8443, 9443, 10443}
+		for _, port := range alternativeHTTPS {
+			if k.isPortAvailable(port) {
+				ports.HTTPS = port
+				break
+			}
+		}
 	}
 
 	// Check API port
 	if !k.isPortAvailable(ports.APIPort) {
-		ports.APIPort = 6551
+		// Try alternative API ports
+		alternativeAPI := []int{6551, 6552, 6553}
+		for _, port := range alternativeAPI {
+			if k.isPortAvailable(port) {
+				ports.APIPort = port
+				break
+			}
+		}
 	}
 
 	return ports, nil
@@ -293,10 +348,11 @@ func (k *K3dProvider) getAvailablePorts() (*PortInfo, error) {
 
 // isPortAvailable checks if a port is available
 func (k *K3dProvider) isPortAvailable(port int) bool {
-	// Try to bind to the port
+	// Use lsof to check if port is in use
 	cmd := exec.Command("lsof", "-i", fmt.Sprintf(":%d", port))
 	err := cmd.Run()
-	return err != nil // If lsof fails, port is available
+	// If lsof returns 0, port is in use; if non-zero, port is available
+	return err != nil
 }
 
 // createK3dConfig creates a temporary k3d configuration file
@@ -393,7 +449,11 @@ func (k *K3dProvider) clusterExists(name string) (bool, error) {
 	cmd := exec.Command("k3d", "cluster", "list")
 	output, err := cmd.Output()
 	if err != nil {
-		return false, err
+		// Check if it's a Docker connectivity issue
+		if strings.Contains(err.Error(), "docker") || strings.Contains(err.Error(), "Docker") {
+			return false, fmt.Errorf("Docker is not running.\n\nTo fix this:\n  - On macOS: Start Docker Desktop from Applications\n  - On Linux: Run 'sudo systemctl start docker'\n  - Or run: 'docker --version' to verify Docker installation")
+		}
+		return false, fmt.Errorf("failed to list k3d clusters: %w", err)
 	}
 	return strings.Contains(string(output), name), nil
 }

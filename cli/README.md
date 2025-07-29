@@ -1,14 +1,14 @@
-# 🚀 OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
+# OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
 
 A modern, user-friendly CLI that replaces shell scripts with an interactive terminal UI for managing OpenFrame Kubernetes deployments. Built following CLI design best practices with wizard-style interactive prompts.
 
-## ✨ Key Features
+## Key Features
 
-🎯 **Interactive Wizard** - Step-by-step guided setup with smart defaults  
-⚙️ **Cluster Management** - K3d, Kind, and cloud provider support  
-📦 **Helm Integration** - App-of-Apps pattern with ArgoCD  
-🛠️ **Developer Tools** - Telepresence, Skaffold workflows  
-🔧 **Prerequisite Checking** - Validates tools before running  
+- **Interactive Wizard** - Step-by-step guided setup with smart defaults  
+- **Cluster Management** - K3d, Kind, and cloud provider support  
+- **Helm Integration** - App-of-Apps pattern with ArgoCD  
+- **Developer Tools** - Telepresence, Skaffold workflows  
+- **Prerequisite Checking** - Validates tools before running  
 
 ## 🆚 Shell Script Replacement
 

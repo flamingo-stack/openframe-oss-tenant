@@ -3,52 +3,50 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/flamingo/openframe-cli/pkg/cluster"
-	"github.com/flamingo/openframe-cli/pkg/helm"
 	"github.com/flamingo/openframe-cli/pkg/ui"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
 var (
-	clusterName   string
-	clusterType   string
-	nodeCount     int
-	k8sVersion    string
-	skipWizard    bool
-	installCharts bool
-	valuesFile    string
-	verbose       bool
-	dryRun        bool
+	clusterName string
+	clusterType string
+	nodeCount   int
+	k8sVersion  string
+	skipWizard  bool
+	verbose     bool
+	dryRun      bool
+	force       bool
 )
 
 // clusterCmd represents the cluster command
 var clusterCmd = &cobra.Command{
 	Use:     "cluster",
 	Aliases: []string{"k"},
-	Short:   "🎯 Manage Kubernetes clusters",
-	Long: `🎯 Cluster Management - Create, manage, and clean up Kubernetes clusters
+	Short:   "Manage Kubernetes clusters",
+	Long: `Cluster Management - Create, manage, and clean up Kubernetes clusters
 
 This command group provides cluster lifecycle management functionality
 that replaces the shell script cluster operations:
 
-  • create/up - Create a new cluster with interactive configuration
-  • delete/down - Remove a cluster and clean up resources  
-  • start - Start an existing stopped cluster
-  • list - Show all managed clusters
-  • status - Display detailed cluster information
-  • cleanup - Remove unused images and resources
+  - create/up - Create a new cluster with interactive configuration
+  - delete/down - Remove a cluster and clean up resources  
+  - start - Start an existing stopped cluster
+  - list - Show all managed clusters
+  - status - Display detailed cluster information
+  - cleanup - Remove unused images and resources
 
 Supports multiple cluster types:
-  🚀 K3d - Lightweight Kubernetes in Docker (recommended for local development)
-  🔧 Kind - Kubernetes in Docker (alternative local option)
-  ☁️  GKE - Google Kubernetes Engine (cloud)
-  📡 EKS - Amazon Elastic Kubernetes Service (cloud)
+  - K3d - Lightweight Kubernetes in Docker (recommended for local development)
+  - GKE - Google Kubernetes Engine (cloud)
+  - EKS - Amazon Elastic Kubernetes Service (cloud)
 
 Examples:
   # Create cluster interactively (replaces: ./run.sh k)
@@ -66,26 +64,26 @@ Examples:
 // createCmd represents the cluster create command
 var createCmd = &cobra.Command{
 	Use:   "create [NAME]",
-	Short: "Create a new Kubernetes cluster with OpenFrame",
-	Long: `Create a new Kubernetes cluster and optionally install OpenFrame components.
+	Short: "Create a new Kubernetes cluster",
+	Long: `Create a new Kubernetes cluster with default OpenFrame configuration.
 
-This command provides an interactive wizard that guides you through:
-  1. Cluster configuration (type, version, node count)
-  2. Component selection (API, UI, monitoring, external tools)
-  3. Deployment mode (development, production-like, minimal)
-
-The wizard creates the cluster and installs the selected components using
-Helm charts and ArgoCD for GitOps deployment.
+This command creates a local Kubernetes cluster suitable for OpenFrame development.
+If a cluster with the same name already exists, it will be deleted and recreated.
+The cluster is created with sensible defaults and does not install OpenFrame components.
+Use the bootstrap command to create a cluster and install OpenFrame components.
 
 Examples:
-  # Interactive wizard (recommended)
+  # Create cluster with default name (openframe-dev)
   openframe cluster create
+
+  # Create cluster with custom name
+  openframe cluster create my-cluster
 
   # Create with specific options
   openframe cluster create my-cluster --type k3d --nodes 3
 
-  # Create cluster only (no OpenFrame installation)
-  openframe cluster create my-cluster --skip-charts`,
+  # Create minimal cluster
+  openframe cluster create --nodes 1`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runCreateCluster,
 }
@@ -162,7 +160,6 @@ Examples:
 	RunE: runStartCluster,
 }
 
-
 // cleanupCmd represents the cluster cleanup command
 var cleanupCmd = &cobra.Command{
 	Use:     "cleanup [NAME]",
@@ -189,29 +186,42 @@ func init() {
 	clusterCmd.AddCommand(createCmd, deleteCmd, listCmd, statusCmd, startCmd, cleanupCmd)
 
 	// Create command flags
-	createCmd.Flags().StringVarP(&clusterType, "type", "t", "", "Cluster type (k3d, kind, gke, eks)")
-	createCmd.Flags().IntVarP(&nodeCount, "nodes", "n", 0, "Number of worker nodes")
+	createCmd.Flags().StringVarP(&clusterType, "type", "t", "", "Cluster type (k3d, gke, eks)")
+	createCmd.Flags().IntVarP(&nodeCount, "nodes", "n", 3, "Number of worker nodes (default 3)")
 	createCmd.Flags().StringVarP(&k8sVersion, "version", "v", "", "Kubernetes version")
 	createCmd.Flags().BoolVar(&skipWizard, "skip-wizard", false, "Skip interactive wizard")
-	createCmd.Flags().BoolVar(&installCharts, "install-charts", true, "Install OpenFrame Helm charts")
-	createCmd.Flags().StringVarP(&valuesFile, "values", "f", "", "Helm values file")
 	createCmd.Flags().BoolVar(&verbose, "verbose", false, "Verbose output")
 	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Dry run mode")
+
+	// Delete command flags
+	deleteCmd.Flags().BoolVarP(&force, "force", "f", false, "Skip confirmation prompt")
 
 	// Global flags
 	clusterCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "Verbose output")
 }
 
+// GetClusterCmd returns the cluster command for testing purposes
+func GetClusterCmd() *cobra.Command {
+	return clusterCmd
+}
+
+// ResetGlobalFlags resets global flag variables for testing
+func ResetGlobalFlags() {
+	clusterName = ""
+	clusterType = ""
+	nodeCount = 0
+	k8sVersion = ""
+	skipWizard = false
+	verbose = false
+	dryRun = false
+	force = false
+}
+
 func runCreateCluster(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// Get repository root
-	repoPath, err := findRepoRoot()
-	if err != nil {
-		return fmt.Errorf("failed to find repository root: %w", err)
-	}
-
 	var config *ui.ClusterConfiguration
+	var err error
 
 	if skipWizard {
 		// Use provided flags to create configuration
@@ -219,13 +229,12 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 			Name:              getClusterName(args),
 			Type:              parseClusterType(clusterType),
 			KubernetesVersion: k8sVersion,
-			NodeCount:         nodeCount,
-			EnableComponents:  getDefaultComponents(),
+			NodeCount:         getNodeCount(nodeCount),
 		}
 	} else {
 		// Run interactive wizard
-		fmt.Println("🚀 Welcome to OpenFrame Cluster Creation Wizard")
-		fmt.Println("This wizard will guide you through creating a Kubernetes cluster and installing OpenFrame.")
+		fmt.Println("Welcome to OpenFrame Cluster Creation Wizard")
+		fmt.Println("This wizard will guide you through creating a Kubernetes cluster.")
 		fmt.Println()
 
 		config, err = ui.ClusterWizard()
@@ -240,19 +249,21 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 
 	// Show configuration summary
-	if err := showConfigSummary(config); err != nil {
+	if err := showConfigSummary(config, dryRun, skipWizard, cmd.OutOrStdout()); err != nil {
 		return err
 	}
 
 	// Create cluster provider
-	provider, err := createClusterProvider(config.Type)
+	provider, err := createClusterProvider(config.Type, verbose || globalVerbose, cmd.OutOrStdout())
 	if err != nil {
 		return err
 	}
 
-	// Check if provider is available
-	if err := provider.IsAvailable(); err != nil {
-		return fmt.Errorf("cluster provider not available: %w", err)
+	// Check if provider is available (skip in dry-run mode)
+	if !dryRun {
+		if err := provider.IsAvailable(); err != nil {
+			return fmt.Errorf("cluster provider not available: %w", err)
+		}
 	}
 
 	// Create cluster configuration
@@ -264,43 +275,20 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create the cluster
-	fmt.Printf("📦 Creating %s cluster '%s'...\n", config.Type, config.Name)
+	if !dryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "Creating %s cluster '%s'...\n", config.Type, config.Name)
+	}
 	if err := provider.Create(ctx, clusterConfig); err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
-	fmt.Printf("✅ Cluster '%s' created successfully!\n", config.Name)
-
-	// Install Helm charts if requested
-	if installCharts && hasChartsToInstall(config) {
-		fmt.Println("\n📋 Installing OpenFrame components...")
-
-		kubeContext := fmt.Sprintf("k3d-%s", config.Name)
-		if config.Type == cluster.ClusterTypeKind {
-			kubeContext = fmt.Sprintf("kind-%s", config.Name)
-		}
-
-		installer := helm.NewChartInstaller(kubeContext, verbose, dryRun)
-
-		if err := installer.InstallOpenFrameStack(ctx, config, repoPath); err != nil {
-			return fmt.Errorf("failed to install OpenFrame stack: %w", err)
-		}
-
-		fmt.Println("✅ OpenFrame components installed successfully!")
-
-		// Wait for ArgoCD if installed
-		if config.EnableComponents["ArgoCD"] {
-			fmt.Println("⏳ Waiting for ArgoCD applications to sync...")
-			if err := installer.WaitForArgoCD(ctx); err != nil {
-				fmt.Printf("⚠️  Warning: ArgoCD sync timeout: %v\n", err)
-			} else {
-				fmt.Println("✅ ArgoCD applications synced!")
-			}
-		}
+	if !dryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "Cluster '%s' created successfully!\n", config.Name)
+		fmt.Fprintf(cmd.OutOrStdout(), "\nNext steps:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  • Use 'openframe bootstrap' to install OpenFrame components\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  • Check cluster status: openframe cluster status\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  • Access cluster: kubectl get nodes\n")
 	}
-
-	// Show next steps
-	showNextSteps(config, repoPath)
 
 	return nil
 }
@@ -335,14 +323,16 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 		clusterName = selected
 	}
 
-	// Confirm deletion
-	confirmed, err := ui.ConfirmAction(fmt.Sprintf("Are you sure you want to delete cluster '%s'? This action cannot be undone", clusterName))
-	if err != nil {
-		return err
-	}
-	if !confirmed {
-		fmt.Println("Deletion cancelled.")
-		return nil
+	// Confirm deletion (unless forced)
+	if !force {
+		confirmed, err := ui.ConfirmAction(fmt.Sprintf("Are you sure you want to delete cluster '%s'? This action cannot be undone", clusterName))
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			fmt.Println("Deletion cancelled.")
+			return nil
+		}
 	}
 
 	// Determine cluster type and create provider
@@ -351,18 +341,18 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to detect cluster type: %w", err)
 	}
 
-	provider, err := createClusterProvider(clusterType)
+	provider, err := createClusterProvider(clusterType, false, os.Stdout)
 	if err != nil {
 		return err
 	}
 
 	// Delete the cluster
-	fmt.Printf("🗑️  Deleting cluster '%s'...\n", clusterName)
+	fmt.Fprintf(cmd.OutOrStdout(), "Deleting cluster '%s'...\n", clusterName)
 	if err := provider.Delete(ctx, clusterName); err != nil {
 		return fmt.Errorf("failed to delete cluster: %w", err)
 	}
 
-	fmt.Printf("✅ Cluster '%s' deleted successfully!\n", clusterName)
+	fmt.Fprintf(cmd.OutOrStdout(), "Cluster '%s' deleted successfully!\n", clusterName)
 	return nil
 }
 
@@ -410,8 +400,6 @@ func runStartCluster(cmd *cobra.Command, args []string) error {
 	switch clusterType {
 	case cluster.ClusterTypeK3d:
 		startCmd = exec.CommandContext(ctx, "k3d", "cluster", "start", clusterName)
-	case cluster.ClusterTypeKind:
-		return fmt.Errorf("kind clusters cannot be started/stopped - they are always running")
 	default:
 		return fmt.Errorf("unsupported cluster type for start operation: %s", clusterType)
 	}
@@ -420,10 +408,9 @@ func runStartCluster(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to start cluster: %w", err)
 	}
 
-	pterm.Success.Printf("✅ Cluster '%s' started successfully!\n", clusterName)
+	pterm.Success.Printf("Cluster '%s' started successfully!\n", clusterName)
 	return nil
 }
-
 
 func runCleanupCluster(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
@@ -441,76 +428,56 @@ func runCleanupCluster(cmd *cobra.Command, args []string) error {
 	switch clusterType {
 	case cluster.ClusterTypeK3d:
 		return cleanupK3dCluster(ctx, clusterName)
-	case cluster.ClusterTypeKind:
-		return cleanupKindCluster(ctx, clusterName)
 	default:
 		return fmt.Errorf("cleanup not supported for cluster type: %s", clusterType)
 	}
 }
 
 func cleanupK3dCluster(ctx context.Context, clusterName string) error {
-	// Get cluster nodes (following shell script logic)
-	nodeNames := []string{
-		fmt.Sprintf("k3d-%s-agent-0", clusterName),
-		fmt.Sprintf("k3d-%s-agent-1", clusterName),
-		fmt.Sprintf("k3d-%s-agent-2", clusterName),
-		fmt.Sprintf("k3d-%s-server-0", clusterName),
+	// Get actual cluster nodes instead of hardcoded names
+	cmd := exec.CommandContext(ctx, "docker", "ps", "--format", "{{.Names}}", "--filter", fmt.Sprintf("name=k3d-%s", clusterName))
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to list cluster containers: %w", err)
+	}
+
+	nodeNames := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(nodeNames) == 1 && nodeNames[0] == "" {
+		pterm.Info.Println("No cluster nodes found to cleanup")
+		return nil
 	}
 
 	cleanedCount := 0
 	for _, nodeName := range nodeNames {
-		pterm.Info.Printf("Cleaning up %s...\n", nodeName)
-
-		cmd := exec.CommandContext(ctx, "docker", "exec", nodeName, "crictl", "rmi", "--prune")
-		if err := cmd.Run(); err != nil {
-			pterm.Warning.Printf("Failed to cleanup %s: %v\n", nodeName, err)
-		} else {
-			cleanedCount++
-		}
-	}
-
-	if cleanedCount > 0 {
-		pterm.Success.Printf("✅ Cleaned up %d cluster nodes\n", cleanedCount)
-	} else {
-		pterm.Warning.Println("No nodes were cleaned up")
-	}
-
-	return nil
-}
-
-func cleanupKindCluster(ctx context.Context, clusterName string) error {
-	// For Kind, we can clean up using Docker directly
-	pterm.Info.Println("Cleaning up Kind cluster images...")
-
-	// Get Kind cluster containers
-	cmd := exec.CommandContext(ctx, "docker", "ps", "-a", "--format", "{{.Names}}", "--filter", fmt.Sprintf("label=io.x-k8s.kind.cluster=%s", clusterName))
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("failed to get Kind containers: %w", err)
-	}
-
-	containers := strings.Split(strings.TrimSpace(string(output)), "\n")
-	cleanedCount := 0
-
-	for _, container := range containers {
-		if container == "" {
+		if nodeName == "" {
 			continue
 		}
 
-		pterm.Info.Printf("Cleaning up %s...\n", container)
+		// Check if container exists and is running
+		checkCmd := exec.CommandContext(ctx, "docker", "inspect", "--format", "{{.State.Status}}", nodeName)
+		if output, err := checkCmd.Output(); err != nil {
+			continue // Container doesn't exist, skip
+		} else if !strings.Contains(string(output), "running") {
+			continue // Container is not running, skip
+		}
 
-		cmd := exec.CommandContext(ctx, "docker", "exec", container, "crictl", "rmi", "--prune")
-		if err := cmd.Run(); err != nil {
-			pterm.Warning.Printf("Failed to cleanup %s: %v\n", container, err)
+		pterm.Info.Printf("Cleaning up %s...\n", nodeName)
+
+		cleanupCmd := exec.CommandContext(ctx, "docker", "exec", nodeName, "crictl", "rmi", "--prune")
+		if err := cleanupCmd.Run(); err != nil {
+			// Only show warning if verbose mode is on
+			if verbose {
+				pterm.Warning.Printf("Failed to cleanup %s: %v\n", nodeName, err)
+			}
 		} else {
 			cleanedCount++
 		}
 	}
 
 	if cleanedCount > 0 {
-		pterm.Success.Printf("✅ Cleaned up %d cluster containers\n", cleanedCount)
+		pterm.Success.Printf("Cleaned up %d cluster nodes\n", cleanedCount)
 	} else {
-		pterm.Warning.Println("No containers were cleaned up")
+		pterm.Info.Println("No nodes were cleaned up")
 	}
 
 	return nil
@@ -518,10 +485,11 @@ func cleanupKindCluster(ctx context.Context, clusterName string) error {
 
 func runClusterStatus(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+	out := cmd.OutOrStdout()
 
 	clusterName := getClusterName(args)
 
-	pterm.DefaultSection.Printf("📊 Cluster Status: %s\n", clusterName)
+	fmt.Fprintf(out, "\n# Cluster Status: %s\n\n", clusterName)
 
 	// Determine cluster type
 	clusterType, err := detectClusterType(clusterName)
@@ -530,7 +498,7 @@ func runClusterStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create provider and get status
-	provider, err := createClusterProvider(clusterType)
+	provider, err := createClusterProvider(clusterType, false, out)
 	if err != nil {
 		return err
 	}
@@ -540,44 +508,40 @@ func runClusterStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get cluster status: %w", err)
 	}
 
-	// Display status information
-	statusData := [][]string{
-		{"Property", "Value"},
-		{"Name", status.Name},
-		{"Type", string(status.Type)},
-		{"Status", status.Status},
-		{"Nodes", fmt.Sprintf("%d", len(status.Nodes))},
-	}
-
-	pterm.DefaultTable.WithHasHeader().WithData(statusData).Render()
+	// Display status information in table format
+	fmt.Fprintf(out, "Property | Value\n")
+	fmt.Fprintf(out, "Name     | %s\n", status.Name)
+	fmt.Fprintf(out, "Type     | %s\n", string(status.Type))
+	fmt.Fprintf(out, "Status   | %s\n", status.Status)
+	fmt.Fprintf(out, "Nodes    | %d\n", len(status.Nodes))
 
 	// Show node details
 	if len(status.Nodes) > 0 {
-		pterm.Info.Println("\n🔧 Node Details:")
-		nodeData := [][]string{{"Name", "Role", "Status", "Age"}}
+		fmt.Fprintf(out, "\n INFO  \n")
+		fmt.Fprintf(out, "       Node Details:\n")
+		fmt.Fprintf(out, "Name                                 | Role   | Status                               | Age\n")
 
 		for _, node := range status.Nodes {
-			nodeData = append(nodeData, []string{
+			fmt.Fprintf(out, "%-36s | %-6s | %-36s | %s\n",
 				node.Name,
 				node.Role,
 				node.Status,
 				node.Age,
-			})
+			)
 		}
-
-		pterm.DefaultTable.WithHasHeader().WithData(nodeData).Render()
 	}
 
 	// Check for running applications
-	pterm.Info.Println("\n📦 Installed Applications:")
-	if err := showInstalledApps(ctx); err != nil {
-		pterm.Warning.Printf("Failed to get installed applications: %v\n", err)
+	fmt.Fprintf(out, "\n INFO  \n")
+	fmt.Fprintf(out, "       Installed Applications:\n")
+	if err := showInstalledApps(ctx, out); err != nil {
+		fmt.Fprintf(out, " WARNING  Failed to get installed applications: %v\n", err)
 	}
 
 	return nil
 }
 
-func showInstalledApps(ctx context.Context) error {
+func showInstalledApps(ctx context.Context, out io.Writer) error {
 	// Check for Helm releases
 	cmd := exec.CommandContext(ctx, "helm", "list", "--all-namespaces", "--output", "table")
 	output, err := cmd.Output()
@@ -586,15 +550,26 @@ func showInstalledApps(ctx context.Context) error {
 	}
 
 	if strings.TrimSpace(string(output)) == "" {
-		pterm.Info.Println("No Helm releases found")
+		fmt.Fprintf(out, "No Helm releases found\n")
 		return nil
 	}
 
-	fmt.Println(string(output))
+	fmt.Fprintf(out, "%s", string(output))
 	return nil
 }
 
 // Helper functions
+
+func getDefaultClusterName() string {
+	return "openframe-dev"
+}
+
+func getNodeCount(nodeCount int) int {
+	if nodeCount == 0 {
+		return 3 // Default to 3 nodes
+	}
+	return nodeCount
+}
 
 func getClusterName(args []string) string {
 	if len(args) > 0 {
@@ -607,25 +582,10 @@ func parseClusterType(typeStr string) cluster.ClusterType {
 	switch typeStr {
 	case "k3d":
 		return cluster.ClusterTypeK3d
-	case "kind":
-		return cluster.ClusterTypeKind
-	case "gke":
-		return cluster.ClusterTypeGKE
-	case "eks":
-		return cluster.ClusterTypeEKS
+	// case "gke":
+	// 	return cluster.ClusterTypeGKE
 	default:
 		return cluster.ClusterTypeK3d // Default
-	}
-}
-
-func getDefaultComponents() map[string]bool {
-	return map[string]bool{
-		"ArgoCD":          true,
-		"OpenFrame API":   true,
-		"OpenFrame UI":    true,
-		"Monitoring":      false,
-		"External Tools":  false,
-		"Developer Tools": false,
 	}
 }
 
@@ -634,26 +594,27 @@ func validateConfig(config *ui.ClusterConfiguration) error {
 		return fmt.Errorf("cluster name cannot be empty")
 	}
 	if config.NodeCount < 1 {
-		config.NodeCount = 1 // Default to 1 node
+		config.NodeCount = 3 // Default to 3 nodes
 	}
 	return nil
 }
 
-func showConfigSummary(config *ui.ClusterConfiguration) error {
-	fmt.Printf("\n📋 Configuration Summary:\n")
-	fmt.Printf("  Cluster Name: %s\n", config.Name)
-	fmt.Printf("  Cluster Type: %s\n", config.Type)
-	fmt.Printf("  Kubernetes Version: %s\n", config.KubernetesVersion)
-	fmt.Printf("  Node Count: %d\n", config.NodeCount)
-	fmt.Printf("  Deployment Mode: %s\n", config.DeploymentMode)
+func showConfigSummary(config *ui.ClusterConfiguration, dryRun bool, skipWizard bool, out io.Writer) error {
+	fmt.Fprintf(out, "\nConfiguration Summary:\n")
+	fmt.Fprintf(out, "  Cluster Name: %s\n", config.Name)
+	fmt.Fprintf(out, "  Cluster Type: %s\n", config.Type)
+	fmt.Fprintf(out, "  Kubernetes Version: %s\n", config.KubernetesVersion)
+	fmt.Fprintf(out, "  Node Count: %d\n", config.NodeCount)
 
-	fmt.Printf("  Components:\n")
-	for component, enabled := range config.EnableComponents {
-		status := "❌"
-		if enabled {
-			status = "✅"
-		}
-		fmt.Printf("    %s %s\n", status, component)
+	// Skip confirmation in dry-run mode or when wizard is skipped
+	if dryRun {
+		fmt.Fprintf(out, "\nDRY RUN MODE - No actual changes will be made\n")
+		return nil
+	}
+
+	if skipWizard {
+		fmt.Fprintf(out, "\nProceeding with cluster creation...\n")
+		return nil
 	}
 
 	confirmed, err := ui.ConfirmAction("Proceed with cluster creation?")
@@ -666,62 +627,19 @@ func showConfigSummary(config *ui.ClusterConfiguration) error {
 	return nil
 }
 
-func createClusterProvider(clusterType cluster.ClusterType) (cluster.ClusterProvider, error) {
+func createClusterProvider(clusterType cluster.ClusterType, verbose bool, output io.Writer) (cluster.ClusterProvider, error) {
 	opts := cluster.ProviderOptions{
-		Verbose: globalVerbose,
+		Verbose: verbose,
 		DryRun:  dryRun,
+		Output:  output,
 	}
 
 	switch clusterType {
 	case cluster.ClusterTypeK3d:
 		return cluster.NewK3dProvider(opts), nil
-	case cluster.ClusterTypeKind:
-		return cluster.NewKindProvider(opts), nil
 	default:
 		return nil, fmt.Errorf("unsupported cluster type: %s", clusterType)
 	}
-}
-
-func hasChartsToInstall(config *ui.ClusterConfiguration) bool {
-	for _, enabled := range config.EnableComponents {
-		if enabled {
-			return true
-		}
-	}
-	return false
-}
-
-func showNextSteps(config *ui.ClusterConfiguration, repoPath string) {
-	fmt.Printf("\n🎉 OpenFrame cluster '%s' is ready!\n\n", config.Name)
-
-	fmt.Println("📋 Next Steps:")
-	fmt.Println("  1. Check cluster status:")
-	fmt.Printf("     kubectl get nodes\n\n")
-
-	if config.EnableComponents["OpenFrame UI"] {
-		fmt.Println("  2. Access OpenFrame UI:")
-		fmt.Println("     http://localhost (once ingress is ready)")
-		fmt.Println()
-	}
-
-	if config.EnableComponents["ArgoCD"] {
-		fmt.Println("  3. Access ArgoCD:")
-		fmt.Println("     kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d")
-		fmt.Println("     kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443")
-		fmt.Println("     https://localhost:8080 (admin / <password from above>)")
-		fmt.Println()
-	}
-
-	if config.EnableComponents["Developer Tools"] {
-		fmt.Println("  4. Developer commands:")
-		fmt.Printf("     openframe dev intercept <service> <port>\n")
-		fmt.Printf("     openframe dev skaffold <service>\n")
-		fmt.Println()
-	}
-
-	fmt.Println("  5. Manage cluster:")
-	fmt.Printf("     openframe cluster status %s\n", config.Name)
-	fmt.Printf("     openframe cluster delete %s\n", config.Name)
 }
 
 func findRepoRoot() (string, error) {
@@ -759,13 +677,6 @@ func listAllClusters(ctx context.Context) ([]*cluster.ClusterInfo, error) {
 		}
 	}
 
-	// Check Kind clusters
-	if kindProvider := cluster.NewKindProvider(cluster.ProviderOptions{}); kindProvider.IsAvailable() == nil {
-		if clusters, err := kindProvider.List(ctx); err == nil {
-			allClusters = append(allClusters, clusters...)
-		}
-	}
-
 	return allClusters, nil
 }
 
@@ -779,18 +690,6 @@ func detectClusterType(name string) (cluster.ClusterType, error) {
 			for _, c := range clusters {
 				if c.Name == name {
 					return cluster.ClusterTypeK3d, nil
-				}
-			}
-		}
-	}
-
-	// Check Kind
-	kindProvider := cluster.NewKindProvider(cluster.ProviderOptions{})
-	if kindProvider.IsAvailable() == nil {
-		if clusters, err := kindProvider.List(ctx); err == nil {
-			for _, c := range clusters {
-				if c.Name == name {
-					return cluster.ClusterTypeKind, nil
 				}
 			}
 		}

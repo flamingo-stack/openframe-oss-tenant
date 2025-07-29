@@ -100,55 +100,16 @@ type SystemInfo struct {
 	OptimalNodes int    `yaml:"optimalNodes"`
 }
 
-// DeploymentModes defines the available deployment modes
-var DeploymentModes = map[string]string{
-	"development": "Development mode with hot reload and debugging tools",
-	"production":  "Production-like setup with monitoring and security",
-	"minimal":     "Minimal setup with core services only",
-}
-
-// DefaultComponents defines the default component selection for each mode
-var DefaultComponents = map[string]map[string]bool{
-	"development": {
-		"argocd":          true,
-		"monitoring":      false,
-		"openframe-core":  true,
-		"openframe-ui":    true,
-		"external-tools":  false,
-		"developer-tools": true,
-	},
-	"production": {
-		"argocd":          true,
-		"monitoring":      true,
-		"openframe-core":  true,
-		"openframe-ui":    true,
-		"external-tools":  true,
-		"developer-tools": false,
-	},
-	"minimal": {
-		"argocd":          true,
-		"monitoring":      false,
-		"openframe-core":  true,
-		"openframe-ui":    false,
-		"external-tools":  false,
-		"developer-tools": false,
-	},
-}
-
 // SupportedClusterTypes lists the supported cluster providers
 var SupportedClusterTypes = []string{
 	"k3d",
-	"kind",
 	"gke",
-	"eks",
 }
 
 // RequiredTools lists tools that must be available for each cluster type
 var RequiredTools = map[string][]string{
-	"k3d":  {"docker", "k3d", "kubectl", "helm"},
-	"kind": {"docker", "kind", "kubectl", "helm"},
-	"gke":  {"gcloud", "kubectl", "helm"},
-	"eks":  {"aws", "kubectl", "helm"},
+	"k3d": {"docker", "k3d", "kubectl", "helm"},
+	"gke": {"gcloud", "kubectl", "helm"},
 }
 
 // OptionalTools lists optional tools that enhance functionality
@@ -190,18 +151,6 @@ func (c *ClusterBootstrapConfig) ValidateConfig() error {
 
 	if c.APIPort == 0 {
 		c.APIPort = 6550
-	}
-
-	// Set default components if none specified
-	if len(c.Components) == 0 {
-		if mode, ok := DefaultComponents[c.DeploymentMode]; ok {
-			c.Components = make(map[string]bool)
-			for k, v := range mode {
-				c.Components[k] = v
-			}
-		} else {
-			c.Components = DefaultComponents["development"]
-		}
 	}
 
 	return nil

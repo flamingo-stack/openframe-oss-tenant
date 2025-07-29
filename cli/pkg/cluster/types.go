@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
@@ -9,10 +10,8 @@ import (
 type ClusterType string
 
 const (
-	ClusterTypeKind ClusterType = "kind"
-	ClusterTypeK3d  ClusterType = "k3d"
-	ClusterTypeGKE  ClusterType = "gke"
-	ClusterTypeEKS  ClusterType = "eks"
+	ClusterTypeK3d ClusterType = "k3d"
+	ClusterTypeGKE ClusterType = "gke"
 )
 
 // ClusterConfig holds configuration for cluster creation
@@ -78,4 +77,5 @@ type ClusterProvider interface {
 type ProviderOptions struct {
 	Verbose bool
 	DryRun  bool
+	Output  io.Writer
 }

@@ -19,18 +19,18 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "openframe",
 	Short: "OpenFrame CLI - Kubernetes cluster bootstrapping and development tools",
-	Long: `🚀 OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
+	Long: `OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
 
 OpenFrame CLI replaces the shell scripts with a modern, interactive terminal UI
 for managing OpenFrame Kubernetes deployments. Built following best practices
 for CLI design with wizard-style interactive prompts.
 
 Key Features:
-  🎯 Interactive Wizard - Step-by-step guided setup
-  ⚙️  Cluster Management - K3d, Kind, and cloud provider support
-  📦 Helm Integration - App-of-Apps pattern with ArgoCD
-  🛠️  Developer Tools - Telepresence, Skaffold workflows
-  🔧 Prerequisite Checking - Validates tools before running
+  - Interactive Wizard - Step-by-step guided setup
+  - Cluster Management - K3d, Kind, and cloud provider support
+  - Helm Integration - App-of-Apps pattern with ArgoCD
+  - Developer Tools - Telepresence, Skaffold workflows
+  - Prerequisite Checking - Validates tools before running
 
 The CLI provides both interactive modes for new users and flag-based
 operation for automation and power users.`,
