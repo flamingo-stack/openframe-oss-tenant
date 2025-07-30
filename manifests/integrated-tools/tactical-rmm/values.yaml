@@ -1,3 +1,6 @@
+deployment:
+  ingress: localhost
+
 global:
   registerJob:
     enabled: true
