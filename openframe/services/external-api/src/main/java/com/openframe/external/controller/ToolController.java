@@ -2,10 +2,9 @@ package com.openframe.external.controller;
 
 import com.openframe.api.service.ToolService;
 import com.openframe.core.dto.ErrorResponse;
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.ToolFilter;
-import com.openframe.external.dto.ToolResponse;
-import com.openframe.external.dto.ToolsResponse;
+import com.openframe.external.dto.tool.ToolFilterCriteria;
+import com.openframe.external.dto.tool.ToolFilterResponse;
+import com.openframe.external.dto.tool.ToolsResponse;
 import com.openframe.external.mapper.ToolMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -60,19 +58,34 @@ public class ToolController {
         log.info("Getting tools - enabled: {}, type: {}, search: {}, category: {} - userId: {}, apiKeyId: {}", 
                 enabled, type, search, category, userId, apiKeyId);
 
-        ToolFilter filter = ToolFilter.builder()
+        ToolFilterCriteria filterCriteria = ToolFilterCriteria.builder()
                 .enabled(enabled)
                 .type(type)
-                .search(search)
                 .category(category)
                 .build();
 
-        List<IntegratedTool> tools = toolService.getIntegratedTools(filter);
-        List<ToolResponse> toolResponses = toolMapper.toToolResponseList(tools);
+        var result = toolService.queryTools(toolMapper.toToolFilterOptions(filterCriteria), search);
+        return toolMapper.toToolsResponse(result);
+    }
 
-        return ToolsResponse.builder()
-                .tools(toolResponses)
-                .total(toolResponses.size())
-                .build();
+    @Operation(summary = "Get tool filters", description = "Retrieve available filter options for tools")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved tool filters",
+                    content = @Content(schema = @Schema(implementation = ToolFilterResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing API key",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/filters")
+    @ResponseStatus(OK)
+    public ToolFilterResponse getToolFilters(
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @Parameter(hidden = true) @RequestHeader(value = "X-API-Key-Id", required = false) String apiKeyId) {
+
+        log.info("Getting tool filters - userId: {}, apiKeyId: {}", userId, apiKeyId);
+
+        var filters = toolService.getToolFilters();
+        return toolMapper.toToolFilterResponse(filters);
     }
 } 

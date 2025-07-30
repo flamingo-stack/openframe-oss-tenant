@@ -1,9 +1,9 @@
 package com.openframe.api.service;
 
-import com.openframe.api.dto.DeviceFilterOptions;
-import com.openframe.api.dto.DeviceQueryResult;
-import com.openframe.api.dto.PageInfo;
-import com.openframe.api.dto.PaginationCriteria;
+import com.openframe.api.dto.shared.CursorPageInfo;
+import com.openframe.api.dto.shared.CursorPaginationCriteria;
+import com.openframe.api.dto.device.DeviceFilterOptions;
+import com.openframe.api.dto.device.DeviceQueryResult;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.MachineTag;
 import com.openframe.core.model.Tag;
@@ -15,8 +15,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -46,47 +44,44 @@ public class DeviceService {
     }
 
     public DeviceQueryResult queryDevices(DeviceFilterOptions filterOptions,
-                                          PaginationCriteria paginationCriteria,
+                                          CursorPaginationCriteria paginationCriteria,
                                           String search) {
         log.debug("Querying devices with filter: {}, pagination: {}, search: {}",
                 filterOptions, paginationCriteria, search);
 
-        PaginationCriteria normalizedPagination = paginationCriteria.normalize();
+        CursorPaginationCriteria normalizedPagination = paginationCriteria.normalize();
         Query query = buildDeviceQuery(filterOptions, search);
-        long totalCount = countMachines(query);
-
-        PageRequest pageRequest = createPageRequest(normalizedPagination);
-        List<Machine> machines = findMachinesWithPagination(query, pageRequest);
-
-        int totalPages = (int) Math.ceil((double) totalCount / normalizedPagination.getPageSize());
-
-        PageInfo pageInfo = PageInfo.builder()
-                .hasNextPage(normalizedPagination.getPage() < totalPages)
-                .hasPreviousPage(normalizedPagination.getPage() > 1)
-                .currentPage(normalizedPagination.getPage())
-                .totalPages(totalPages)
-                .build();
+        
+        List<Machine> pageItems = fetchPageItems(query, normalizedPagination);
+        boolean hasNextPage = pageItems.size() == normalizedPagination.getLimit();
+        
+        CursorPageInfo pageInfo = buildPageInfo(pageItems, hasNextPage, normalizedPagination.hasCursor());
 
         return DeviceQueryResult.builder()
-                .devices(machines)
+                .devices(pageItems)
                 .pageInfo(pageInfo)
-                .filteredCount(machines.size())
+                .filteredCount(pageItems.size())
                 .build();
     }
-
-    private List<Machine> findMachinesWithPagination(@NotNull Query query, @NotNull PageRequest pageRequest) {
-        log.debug("Finding machines with pagination - page: {}, size: {}",
-                pageRequest.getPageNumber(), pageRequest.getPageSize());
-        List<Machine> machines = machineRepository.findMachinesWithPagination(query, pageRequest);
-        log.debug("Found {} machines", machines.size());
-        return machines;
+    
+    private List<Machine> fetchPageItems(@NotNull Query query, CursorPaginationCriteria criteria) {
+        List<Machine> machines = machineRepository.findMachinesWithCursor(
+            query, criteria.getCursor(), criteria.getLimit() + 1);
+        return machines.size() > criteria.getLimit() 
+            ? machines.subList(0, criteria.getLimit())
+            : machines;
     }
-
-    private long countMachines(@NotNull Query query) {
-        log.debug("Counting machines with query");
-        long count = machineRepository.countMachines(query);
-        log.debug("Machine count: {}", count);
-        return count;
+    
+    private CursorPageInfo buildPageInfo(List<Machine> pageItems, boolean hasNextPage, boolean hasPreviousPage) {
+        String startCursor = pageItems.isEmpty() ? null : pageItems.getFirst().getId();
+        String endCursor = pageItems.isEmpty() ? null : pageItems.getLast().getId();
+        
+        return CursorPageInfo.builder()
+                .hasNextPage(hasNextPage)
+                .hasPreviousPage(hasPreviousPage)
+                .startCursor(startCursor)
+                .endCursor(endCursor)
+                .build();
     }
 
     private Query buildDeviceQuery(DeviceFilterOptions filter, String search) {
@@ -132,12 +127,5 @@ public class DeviceService {
         queryFilter.setOrganizationIds(filter.getOrganizationIds());
         queryFilter.setTagNames(filter.getTagNames());
         return queryFilter;
-    }
-
-    private PageRequest createPageRequest(PaginationCriteria pagination) {
-        int normalizedPage = Math.max(PaginationCriteria.DEFAULT_PAGE, pagination.getPage());
-        int normalizedPageSize = Math.min(PaginationCriteria.MAX_PAGE_SIZE,
-                Math.max(1, pagination.getPageSize()));
-        return PageRequest.of(normalizedPage - 1, normalizedPageSize, Sort.by(SORT_FIELD).ascending());
     }
 } 

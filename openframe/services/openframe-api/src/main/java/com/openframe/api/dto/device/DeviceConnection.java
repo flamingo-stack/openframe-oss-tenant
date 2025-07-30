@@ -1,6 +1,6 @@
 package com.openframe.api.dto.device;
 
-import com.openframe.api.dto.PageInfo;
+import com.openframe.api.dto.shared.CursorPageInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 public class DeviceConnection {
     private List<DeviceEdge> edges;
-    private PageInfo pageInfo;
+    private CursorPageInfo pageInfo;
     private int filteredCount;
-} 
+}
