@@ -34,7 +34,6 @@
          <dependency>
              <groupId>com.openframe</groupId>
              <artifactId>fleetmdm</artifactId>
-            <version>1.0.0</version>
          </dependency>
 
         <!-- Spring Cloud -->

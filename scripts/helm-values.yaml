@@ -1,9 +1,0 @@
-global:
-  repoBranch: feature/kafka-stream    # Git branch to deploy from (main branch for production)
-  autoSync: false      # Enable automatic synchronization for all ArgoCD applications
-
-apps:
-  openframe-config:
-    values:
-      config:
-        branch: kafka-stream
