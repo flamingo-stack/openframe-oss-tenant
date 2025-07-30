@@ -56,3 +56,4 @@ node_modules/
 /agent/infrastructure/tactical-rmm/rmm_build_1740724424
 /rmmagent
 client/Cargo.lock
+*.json

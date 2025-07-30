@@ -5,7 +5,7 @@ metadata:
   name: fleetmdm-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:
@@ -35,8 +35,11 @@ spec:
           - -c
           - |
             echo "Getting FLEET_TOKEN..."
-            sleep 10
             POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
+            until kubectl exec -n integrated-tools "$POD" -- test -f /etc/fleet/api_token.txt 2>/dev/null; do
+              echo "Waiting for /etc/fleet/api_token.txt to be available..."
+              sleep 5
+            done
             FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
 
             echo "Registering FleetMDM Server..."

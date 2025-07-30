@@ -14,7 +14,7 @@
 deployment:
   name: local         # Deployment environment: "local" for development, "cloud" for production
   ingress: localhost        # Ingress strategy: "ngrok" for local development with ngrok, "nat" for NAT traversal
-  # url: https://reindeer-suitable-genuinely.ngrok-free.app  # Optional: ngrok URL for local development
+  # url: rhino-comic-openly.ngrok-free.app  # Optional: ngrok URL for local development
 
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository

@@ -48,11 +48,11 @@ jobs:
               "artifact_name": "openframe-api"
             },
             {
-              "name": "external-api",
+              "name": "openframe-external-api",
               "type": ["java", "container"],
-              "path": "./openframe/services/external-api",
-              "manifest_path": "./manifests/microservices/external-api",
-              "artifact_name": "external-api"
+              "path": "./openframe/services/openframe-external-api",
+              "manifest_path": "./manifests/microservices/openframe-external-api",
+              "artifact_name": "openframe-external-api"
             },
             {
               "name": "openframe-client",
