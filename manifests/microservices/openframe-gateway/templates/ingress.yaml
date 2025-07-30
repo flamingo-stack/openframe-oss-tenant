@@ -28,6 +28,9 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - localhost
   rules:
     - host: localhost
       http:
