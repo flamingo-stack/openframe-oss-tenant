@@ -15,7 +15,7 @@ EXPOSE 8082
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8082/actuator/health || exit 1
 
-# Create a non-root user (Alpine syntax)
+# Create a non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Change ownership of the application files
