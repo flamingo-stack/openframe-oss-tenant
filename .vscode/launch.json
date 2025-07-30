@@ -173,19 +173,16 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "OpenFrame React Frontend - Development",
+            "name": "OpenFrame Frontend - K8s Cluster",
             "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
             "runtimeExecutable": "npm",
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "NODE_ENV": "development",
-                "NEXT_PUBLIC_APP_TYPE": "openframe",
-                "NEXT_PUBLIC_API_URL": "http://localhost:8080",
-                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "http://localhost:8080/graphql",
-                "NEXT_PUBLIC_WS_ENDPOINT": "ws://localhost:8080/ws",
-                "NEXT_PUBLIC_PLATFORM": "openframe",
-                "NEXT_PUBLIC_DEV_URL": "http://localhost:4000",
-                "DEBUG": "vite:*"
+                "VITE_API_URL": "http://localhost/api",
+                "VITE_GRAPHQL_ENDPOINT": "http://localhost/api/graphql",
+                "VITE_WS_ENDPOINT": "ws://localhost/api/ws",
+                "VITE_APP_TYPE": "openframe"
             },
             "console": "integratedTerminal",
             "sourceMaps": true,
@@ -198,60 +195,70 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "OpenFrame React Frontend - Debug Mode",
+            "name": "OpenFrame Frontend - Gateway Debug",
             "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
             "runtimeExecutable": "npm",
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "NODE_ENV": "development",
-                "NEXT_PUBLIC_APP_TYPE": "openframe",
-                "NEXT_PUBLIC_API_URL": "http://localhost:8080",
-                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "http://localhost:8080/graphql",
-                "NEXT_PUBLIC_WS_ENDPOINT": "ws://localhost:8080/ws",
-                "NEXT_PUBLIC_PLATFORM": "openframe",
-                "NEXT_PUBLIC_DEV_URL": "http://localhost:4000",
-                "DEBUG": "*",
-                "VITE_DEBUG": "true"
+                "VITE_API_URL": "http://localhost:8100/api",
+                "VITE_GRAPHQL_ENDPOINT": "http://localhost:8100/api/graphql",
+                "VITE_WS_ENDPOINT": "ws://localhost:8100/api/ws",
+                "VITE_APP_TYPE": "openframe"
             },
             "console": "integratedTerminal",
             "sourceMaps": true,
             "smartStep": true,
             "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "trace": true
-        },
-        {
-            "type": "chrome",
-            "request": "launch",
-            "name": "OpenFrame React Frontend - Chrome Debug",
-            "url": "http://localhost:4000",
-            "webRoot": "${workspaceFolder}/openframe/services/openframe-frontend/src",
-            "sourceMaps": true,
-            "smartStep": true,
-            "skipFiles": [
                 "<node_internals>/**",
                 "node_modules/**"
-            ],
-            "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
-            "runtimeArgs": [
-                "--disable-web-security",
-                "--disable-features=VizDisplayCompositor"
             ]
         },
         {
-            "type": "msedge",
+            "type": "node",
             "request": "launch",
-            "name": "OpenFrame React Frontend - Edge Debug",
-            "url": "http://localhost:4000",
-            "webRoot": "${workspaceFolder}/openframe/services/openframe-frontend/src",
+            "name": "OpenFrame Frontend - K8s (Clean Start)",
+            "preLaunchTask": "frontend-with-port-cleanup",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "env": {
+                "NODE_ENV": "development",
+                "VITE_API_URL": "http://localhost/api",
+                "VITE_GRAPHQL_ENDPOINT": "http://localhost/api/graphql",
+                "VITE_WS_ENDPOINT": "ws://localhost/api/ws",
+                "VITE_APP_TYPE": "openframe"
+            },
+            "console": "integratedTerminal",
             "sourceMaps": true,
             "smartStep": true,
             "skipFiles": [
                 "<node_internals>/**",
                 "node_modules/**"
-            ],
-            "userDataDir": "${workspaceFolder}/.vscode/edge-debug-profile"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "OpenFrame Frontend - Gateway Debug (Clean Start)",
+            "preLaunchTask": "frontend-with-port-cleanup",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "env": {
+                "NODE_ENV": "development",
+                "VITE_API_URL": "http://localhost:8100/api",
+                "VITE_GRAPHQL_ENDPOINT": "http://localhost:8100/api/graphql",
+                "VITE_WS_ENDPOINT": "ws://localhost:8100/api/ws",
+                "VITE_APP_TYPE": "openframe"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
         }
     ]
 }

@@ -1,5 +1,6 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 // Auth pages
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -48,7 +49,17 @@ import { RACRemoteConnection } from '@/pages/rac/RACRemoteConnection';
 import { RACFileTransfer } from '@/pages/rac/RACFileTransfer';
 import { RACSettings } from '@/pages/rac/RACSettings';
 
+// Layout wrapper for protected routes
+const ProtectedLayout = () => (
+  <ProtectedRoute>
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
+  </ProtectedRoute>
+);
+
 export const router = createBrowserRouter([
+  // Auth routes (no layout)
   {
     path: '/login',
     element: <LoginPage />
@@ -61,118 +72,94 @@ export const router = createBrowserRouter([
     path: '/oauth2/callback/google',
     element: <OAuthCallbackPage />
   },
+  // Root redirect
   {
     path: '/',
     element: <Navigate to="/dashboard" replace />
   },
+  // Protected routes with layout
   {
-    path: '/dashboard',
-    element: (
-      <ProtectedRoute>
-        <DashboardPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/devices',
-    element: (
-      <ProtectedRoute>
-        <DevicesPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/monitoring',
-    element: (
-      <ProtectedRoute>
-        <MonitoringPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/tools',
-    element: (
-      <ProtectedRoute>
-        <ToolsPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/settings',
-    element: (
-      <ProtectedRoute>
-        <SettingsPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/sso',
-    element: (
-      <ProtectedRoute>
-        <SSOPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/api-keys',
-    element: (
-      <ProtectedRoute>
-        <ApiKeysPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/profile',
-    element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    )
+    element: <ProtectedLayout />,
+    children: [
+      {
+        path: '/dashboard',
+        element: <DashboardPage />
+      },
+      {
+        path: '/devices',
+        element: <DevicesPage />
+      },
+      {
+        path: '/monitoring',
+        element: <MonitoringPage />
+      },
+      {
+        path: '/tools',
+        element: <ToolsPage />
+      },
+      {
+        path: '/settings',
+        element: <SettingsPage />
+      },
+      {
+        path: '/sso',
+        element: <SSOPage />
+      },
+      {
+        path: '/api-keys',
+        element: <ApiKeysPage />
+      },
+      {
+        path: '/profile',
+        element: <ProfilePage />
+      }
+    ]
   },
   // MDM Routes
   {
     path: '/mdm',
-    element: (
-      <ProtectedRoute>
-        <MDMLayout />
-      </ProtectedRoute>
-    ),
+    element: <ProtectedLayout />,
     children: [
       {
-        index: true,
-        element: <Navigate to="/mdm/dashboard" replace />
-      },
-      {
-        path: 'dashboard',
-        element: <MDMDashboard />
-      },
-      {
-        path: 'devices', 
-        element: <MDMDevices />
-      },
-      {
-        path: 'profiles',
-        element: <MDMProfiles />
-      },
-      {
-        path: 'policies',
-        element: <MDMPolicies />
-      },
-      {
-        path: 'queries',
-        element: <MDMQueries />
-      },
-      {
-        path: 'settings',
-        element: <MDMSettings />,
+        element: <MDMLayout />,
         children: [
           {
             index: true,
-            element: <Navigate to="/mdm/settings/org_info" replace />
+            element: <Navigate to="/mdm/dashboard" replace />
           },
           {
-            path: ':category',
-            element: <MDMSettingsCategory />
+            path: 'dashboard',
+            element: <MDMDashboard />
+          },
+          {
+            path: 'devices', 
+            element: <MDMDevices />
+          },
+          {
+            path: 'profiles',
+            element: <MDMProfiles />
+          },
+          {
+            path: 'policies',
+            element: <MDMPolicies />
+          },
+          {
+            path: 'queries',
+            element: <MDMQueries />
+          },
+          {
+            path: 'settings',
+            element: <MDMSettings />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="/mdm/settings/org_info" replace />
+              },
+              {
+                path: ':category',
+                element: <MDMSettingsCategory />
+              }
+            ]
           }
         ]
       }
@@ -181,55 +168,56 @@ export const router = createBrowserRouter([
   // RMM Routes
   {
     path: '/rmm',
-    element: (
-      <ProtectedRoute>
-        <RMMLayout />
-      </ProtectedRoute>
-    ),
+    element: <ProtectedLayout />,
     children: [
       {
-        index: true,
-        element: <Navigate to="/rmm/dashboard" replace />
-      },
-      {
-        path: 'dashboard',
-        element: <RMMDashboard />
-      },
-      {
-        path: 'devices',
-        element: <RMMDevices />
-      },
-      {
-        path: 'monitoring',
-        element: <RMMMonitoring />
-      },
-      {
-        path: 'scripts',
-        element: <RMMScripts />
-      },
-      {
-        path: 'events',
-        element: <RMMEvents />
-      },
-      {
-        path: 'bulkops',
-        element: <RMMBulkOps />
-      },
-      {
-        path: 'automation',
-        element: <RMMAutomation />
-      },
-      {
-        path: 'settings',
-        element: <RMMSettings />,
+        element: <RMMLayout />,
         children: [
           {
             index: true,
-            element: <Navigate to="/rmm/settings/general" replace />
+            element: <Navigate to="/rmm/dashboard" replace />
           },
           {
-            path: ':category',
-            element: <RMMSettingsCategory />
+            path: 'dashboard',
+            element: <RMMDashboard />
+          },
+          {
+            path: 'devices',
+            element: <RMMDevices />
+          },
+          {
+            path: 'monitoring',
+            element: <RMMMonitoring />
+          },
+          {
+            path: 'scripts',
+            element: <RMMScripts />
+          },
+          {
+            path: 'events',
+            element: <RMMEvents />
+          },
+          {
+            path: 'bulkops',
+            element: <RMMBulkOps />
+          },
+          {
+            path: 'automation',
+            element: <RMMAutomation />
+          },
+          {
+            path: 'settings',
+            element: <RMMSettings />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="/rmm/settings/general" replace />
+              },
+              {
+                path: ':category',
+                element: <RMMSettingsCategory />
+              }
+            ]
           }
         ]
       }
@@ -238,43 +226,44 @@ export const router = createBrowserRouter([
   // RAC Routes
   {
     path: '/rac',
-    element: (
-      <ProtectedRoute>
-        <RACLayout />
-      </ProtectedRoute>
-    ),
+    element: <ProtectedLayout />,
     children: [
       {
-        index: true,
-        element: <Navigate to="/rac/dashboard" replace />
-      },
-      {
-        path: 'dashboard',
-        element: <RACDashboard />
-      },
-      {
-        path: 'devices',
-        element: <RACDevices />
-      },
-      {
-        path: 'remote-connection',
-        element: <RACRemoteConnection />
-      },
-      {
-        path: 'remote-connection/:id',
-        element: <RACRemoteConnection />
-      },
-      {
-        path: 'file-transfer',
-        element: <RACFileTransfer />
-      },
-      {
-        path: 'file-transfer/:id',
-        element: <RACFileTransfer />
-      },
-      {
-        path: 'settings',
-        element: <RACSettings />
+        element: <RACLayout />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/rac/dashboard" replace />
+          },
+          {
+            path: 'dashboard',
+            element: <RACDashboard />
+          },
+          {
+            path: 'devices',
+            element: <RACDevices />
+          },
+          {
+            path: 'remote-connection',
+            element: <RACRemoteConnection />
+          },
+          {
+            path: 'remote-connection/:id',
+            element: <RACRemoteConnection />
+          },
+          {
+            path: 'file-transfer',
+            element: <RACFileTransfer />
+          },
+          {
+            path: 'file-transfer/:id',
+            element: <RACFileTransfer />
+          },
+          {
+            path: 'settings',
+            element: <RACSettings />
+          }
+        ]
       }
     ]
   }

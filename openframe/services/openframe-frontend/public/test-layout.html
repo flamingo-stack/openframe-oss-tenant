@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Layout</title>
+    <script>
+        // Test if the app is accessible
+        fetch('http://localhost:4000/dashboard')
+            .then(res => {
+                document.getElementById('status').textContent = `Status: ${res.status} ${res.statusText}`;
+                return res.text();
+            })
+            .then(html => {
+                document.getElementById('response').textContent = html.substring(0, 500) + '...';
+            })
+            .catch(err => {
+                document.getElementById('status').textContent = `Error: ${err.message}`;
+            });
+    </script>
+</head>
+<body>
+    <h1>OpenFrame Layout Test</h1>
+    <p id="status">Loading...</p>
+    <pre id="response"></pre>
+    <hr>
+    <p><a href="http://localhost:4000">Go to app</a></p>
+    <p><a href="http://localhost:4000/login">Go to login</a></p>
+    <p><a href="http://localhost:4000/dashboard">Go to dashboard</a></p>
+</body>
+</html>

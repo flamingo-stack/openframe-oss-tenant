@@ -18,10 +18,21 @@ OpenFrame Frontend is a **pure React client-side application** that serves as th
 ```bash
 cd openframe/services/openframe-frontend
 npm install                                 # Install dependencies
-npm run dev                                 # Start development server
+npm run dev                                 # Start development server (foreground)
+nohup npm run dev > dev.log 2>&1 &         # Start development server (background)
 npm run build                               # Build for production
 npm run preview                             # Preview production build
 npm run type-check                          # TypeScript type checking
+```
+
+### Important: API URL Configuration
+When running against the Kubernetes cluster, ensure the API URL is correctly set:
+```bash
+# Set via environment variable
+VITE_API_URL=http://localhost/api npm run dev
+
+# Or use .env.local file (preferred)
+echo "VITE_API_URL=http://localhost/api" >> .env.local
 ```
 
 ### UI-Kit Integration
@@ -377,8 +388,10 @@ npm run test:coverage                       # Coverage report
 
 ## Access URLs
 
-- **Development**: http://localhost:5173 (Vite default)
-- **OpenFrame API**: http://localhost:8080/graphql
+- **Development**: http://localhost:4000 (configured port)
+- **OpenFrame API (K8s)**: http://localhost/api
+- **OpenFrame GraphQL (K8s)**: http://localhost/api/graphql
+- **OpenFrame API (Local)**: http://localhost:8100/api (when running gateway in debug mode)
 - **UI-Kit Storybook**: (if available) http://localhost:6006
 
 ## Browser Automation with Browser MCP
@@ -452,9 +465,115 @@ When using Claude/Cursor with Browser MCP enabled:
 - Verify toast notifications appear correctly
 - Check loading states for dynamic components
 
+## Debugging Session Instructions
+
+Every debugging session should follow these steps to ensure a clean environment:
+
+### 1. Kill Existing Processes on Port 4000
+```bash
+# Find and kill any process using port 4000
+lsof -ti:4000 | xargs kill -9 2>/dev/null || true
+
+# Alternative for Linux
+# fuser -k 4000/tcp 2>/dev/null || true
+
+# Alternative for Windows
+# netstat -ano | findstr :4000
+# taskkill /PID <PID> /F
+```
+
+### 2. Start Frontend Development Server
+```bash
+# Navigate to frontend directory
+cd openframe/services/openframe-frontend
+
+# Install dependencies if needed
+npm install
+
+# IMPORTANT: Set correct API URL for K8s cluster
+export VITE_API_URL=http://localhost/api
+export VITE_CLIENT_ID=openframe_web_dashboard
+export VITE_CLIENT_SECRET=prod_secret
+
+# Start development server in background (use nohup to prevent hanging)
+nohup npm run dev > dev.log 2>&1 &
+FRONTEND_PID=$!
+
+# Wait for server to start
+sleep 5
+
+# Verify server is running
+curl http://localhost:4000 || echo "Server not responding"
+
+# Monitor logs
+tail -f dev.log
+```
+
+### 3. Check Logs and Debug
+```bash
+# Monitor frontend logs
+tail -f ~/.npm/_logs/*.log
+
+# Check browser console for errors
+# Use Browser MCP to capture console logs:
+# - Navigate to http://localhost:4000
+# - Open developer tools or use Browser MCP's get_console_logs
+
+# Check for TypeScript errors
+npm run type-check
+
+# Check for build errors
+npm run build
+```
+
+### Automated Debug Script
+Create a debug script for convenience:
+
+```bash
+#!/bin/bash
+# save as: scripts/debug-frontend.sh
+
+echo "🔧 Starting OpenFrame Frontend Debug Session..."
+
+# Step 1: Kill port 4000
+echo "1️⃣ Killing existing processes on port 4000..."
+lsof -ti:4000 | xargs kill -9 2>/dev/null || true
+
+# Step 2: Set environment variables for K8s cluster
+echo "2️⃣ Setting environment variables..."
+export VITE_API_URL=http://localhost/api
+export VITE_CLIENT_ID=openframe_web_dashboard
+export VITE_CLIENT_SECRET=prod_secret
+
+# Step 3: Start frontend
+echo "3️⃣ Starting frontend development server..."
+cd openframe/services/openframe-frontend
+nohup npm run dev > dev.log 2>&1 &
+FRONTEND_PID=$!
+
+# Step 4: Wait and check
+echo "4️⃣ Waiting for server startup..."
+sleep 5
+
+# Step 5: Verify
+if curl -s http://localhost:4000 > /dev/null; then
+    echo "✅ Frontend running at http://localhost:4000"
+    echo "📋 Frontend PID: $FRONTEND_PID"
+    echo "🔗 API URL: $VITE_API_URL"
+else
+    echo "❌ Frontend failed to start"
+    tail -n 50 dev.log
+fi
+
+# Step 6: Monitor (optional)
+echo "📊 Monitoring logs (Ctrl+C to stop)..."
+tail -f dev.log
+```
+
 ## Troubleshooting
 
 ### Common Issues
+- **Port 4000 Already in Use**: Follow step 1 of debugging instructions above
 - **UI-Kit import errors**: Ensure UI-Kit is properly installed and built
 - **Theming issues**: Verify NEXT_PUBLIC_APP_TYPE is set to 'openframe'
 - **Component not found**: Check UI-Kit exports, never create custom UI
@@ -463,6 +582,9 @@ When using Claude/Cursor with Browser MCP enabled:
 
 ### Diagnostic Commands
 ```bash
+# Check what's using port 4000
+lsof -i:4000
+
 # Check UI-Kit build
 cd ui-kit && npm run type-check
 
@@ -471,6 +593,9 @@ npm run type-check
 
 # Check development server
 npm run dev
+
+# View recent npm logs
+ls -la ~/.npm/_logs/
 
 # For Browser MCP issues
 # 1. Check Chrome extension is enabled
