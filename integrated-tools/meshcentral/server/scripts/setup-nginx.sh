@@ -43,7 +43,7 @@ export MESH_USER_ENCODED=$(cat ${MESH_DIR}/mesh_user_encoded)
 export MESH_PASS_ENCODED=$(cat ${MESH_DIR}/mesh_pass_encoded)
 
 # Generate nginx config from template
-envsubst '${MESH_PASS_ENCODED} ${MESH_USER_ENCODED} ${MESH_DIR} ${MESH_USER} ${MESH_PASS} ${MESH_PROTOCOL} ${MESH_NGINX_HOST} ${MESH_EXTERNAL_PORT}' </nginx.conf.template >/etc/nginx/nginx.conf
+envsubst '${MESH_PASS_ENCODED} ${MESH_USER_ENCODED} ${MESH_DIR} ${MESH_USER} ${MESH_PASS} ${MESH_PROTOCOL} ${MESH_NGINX_PROTOCOL} ${MESH_NGINX_HOST} ${MESH_EXTERNAL_PORT}' </nginx.conf.template >/etc/nginx/nginx.conf
 
 # Start nginx
 nginx 
