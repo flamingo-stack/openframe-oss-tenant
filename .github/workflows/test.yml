@@ -195,6 +195,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+      
+      - name: Log in to Docker Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: dmtkov
+          password: dckr_pat_F8RaMkC4mda5BSmT4yUlf8BwxiA
 
       - name: Install tools and validate environment
         uses: ./.github/steps/requirements-for-run.sh
