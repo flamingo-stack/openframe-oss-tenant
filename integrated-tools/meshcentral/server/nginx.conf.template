@@ -81,7 +81,7 @@ http {
             if ($args = "") {
                 set $query_sep "?";
             }
-            set $proxy_mesh_url "http://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}/$target_path$is_args$args${query_sep}user=${MESH_USER}&pass=${MESH_PASS}";
+            set $proxy_mesh_url "https://${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}/$target_path$is_args$args${query_sep}user=${MESH_USER}&pass=${MESH_PASS}";
             
             # Define proxy configuration
             proxy_pass $proxy_mesh_url;
