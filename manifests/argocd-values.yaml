@@ -19,3 +19,7 @@ configs:
         end
       end
       return hs
+
+redis:  # needed due to limits at public aws-registry 
+  image:
+    repository: docker.io/library/redis
