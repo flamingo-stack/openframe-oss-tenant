@@ -1,3 +1,6 @@
+global:
+  imagePullSecrets:
+    - name: docker-pat-secret
 
 fullnameOverride: argocd
 
@@ -16,7 +19,3 @@ configs:
         end
       end
       return hs
-
-repoServer:
-  imagePullSecrets:
-    - name: docker-pat-secret
