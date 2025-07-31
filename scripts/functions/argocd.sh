@@ -24,7 +24,6 @@ wait_for_argocd_apps() {
     sleep 5
   done
 
-
   rm -f "$printed"
   echo "All ArgoCD apps are Healthy and Synced"
 }
