@@ -29,7 +29,13 @@ argocd)
     --create-namespace \
     --wait \
     --timeout 5m \
-    -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    --debug  \
+    -f "manifests/argocd-values.yaml" || {
+      echo "❌ Helm upgrade failed. Dumping pod statuses..."
+      kubectl -n argocd get pods -o wide
+      kubectl -n argocd describe pods
+      kubectl -n argocd logs deployment/argocd-server || true
+    }
 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
