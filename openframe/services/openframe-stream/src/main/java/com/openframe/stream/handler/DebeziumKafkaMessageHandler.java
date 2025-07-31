@@ -3,15 +3,18 @@ package com.openframe.stream.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.data.model.enums.EventHandlerType;
 import com.openframe.data.model.kafka.IntegratedToolEventKafkaMessage;
 import com.openframe.data.model.enums.Destination;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.MessageDeliveryException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
-public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEventKafkaMessage, DeserializedDebeziumMessage> {
+@Component
+public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEventKafkaMessage, DeserializedDebeziumMessage> {
 
     @Value("${kafka.producer.topic.it.event.name}")
     private String topic;
@@ -63,6 +66,11 @@ public abstract class DebeziumKafkaMessageHandler extends DebeziumMessageHandler
     }
 
     protected void handleDelete(IntegratedToolEventKafkaMessage data) {
+    }
+
+    @Override
+    public EventHandlerType getType() {
+        return EventHandlerType.COMMON_TYPE;
     }
 
     @Override
