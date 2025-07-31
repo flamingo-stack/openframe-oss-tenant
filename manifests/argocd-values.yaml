@@ -1,6 +1,6 @@
 # global: 
 #   imagePullSecrets:
-#     - name: docker-pat-secret  # not available yet
+#     - name: docker-pat-secret
 
 fullnameOverride: argocd
 
@@ -19,7 +19,3 @@ configs:
         end
       end
       return hs
-
-# redis:  # needed due to limits at public aws-registry 
-#   image:
-#     repository: docker.io/library/redis
