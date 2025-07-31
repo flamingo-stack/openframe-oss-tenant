@@ -8,7 +8,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # Add debugging tools
-RUN apk add --no-cache iputils bind-tools netcat-openbsd curl && rm -rf /var/cache/apk/*
+RUN apk add --no-cache libstdc++ iputils bind-tools netcat-openbsd curl
 
 EXPOSE 8095
 

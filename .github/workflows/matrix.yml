@@ -41,6 +41,18 @@ jobs:
               "artifact_name": "openframe-jwt"
             },
             {
+              "name": "api-library",
+              "type": ["java"],
+              "path": "./openframe/libs/api-library",
+              "artifact_name": "api-library"
+            },
+            {
+              "name": "sdk-fleetmdm",
+              "type": ["java"],
+              "path": "./openframe/libs/sdk/fleetmdm",
+              "artifact_name": "fleetmdm"
+            },
+            {
               "name": "openframe-api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",

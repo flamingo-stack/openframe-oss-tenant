@@ -11,6 +11,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-jwt }}
       api-library: 
         value: ${{ jobs.changes.outputs.api-library }}
+      sdk-fleetmdm: 
+        value: ${{ jobs.changes.outputs.sdk-fleetmdm }}
       openframe-api: 
         value: ${{ jobs.changes.outputs.openframe-api }}
       openframe-external-api: 
@@ -59,6 +61,7 @@ jobs:
       openframe-data: ${{ steps.filter.outputs.openframe-data }}
       openframe-jwt: ${{ steps.filter.outputs.openframe-jwt }}
       api-library: ${{ steps.filter.outputs.api-library }}
+      sdk-fleetmdm: ${{ steps.filter.outputs.sdk-fleetmdm }}
       openframe-api: ${{ steps.filter.outputs.openframe-api }}
       openframe-external-api: ${{ steps.filter.outputs.openframe-external-api }}
       openframe-client: ${{ steps.filter.outputs.openframe-client }}
@@ -106,6 +109,8 @@ jobs:
               - './openframe/libs/api-library/**'
               - './openframe/libs/openframe-data/**'
               - './openframe/libs/openframe-core/**'
+            sdk-fleetmdm:
+              - './openframe/libs/sdk-fleetmdm/**'
             openframe-api:
               - './openframe/services/openframe-api/**'
               - './openframe/libs/api-library/**'
@@ -135,6 +140,7 @@ jobs:
               - './openframe/libs/openframe-data/**'
             openframe-stream:
               - './openframe/services/openframe-stream/**'
+              - './openframe/libs/sdk-fleetmdm/**'
               - './openframe/libs/openframe-core/**'
               - './openframe/libs/openframe-data/**'
             openframe-ui:

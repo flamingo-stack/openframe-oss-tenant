@@ -25,11 +25,15 @@ kind: Ingress
 metadata:
   name: openframe-gateway
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Disable SSL redirect for localhost
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - localhost
   rules:
-    - http:
+    - host: localhost
+      http:
         paths:
           - path: /
             pathType: Prefix
