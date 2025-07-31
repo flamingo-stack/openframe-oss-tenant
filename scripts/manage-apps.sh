@@ -21,15 +21,15 @@ argocd)
 
     start_spinner "Deploying ArgoCD"
     
-    helm repo add argo https://argoproj.github.io/argo-helm > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
-    helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    helm repo add argo https://argoproj.github.io/argo-helm 
+    helm repo update
     helm upgrade --install argo-cd argo/argo-cd \
     --version=8.1.3 \
     --namespace argocd \
     --create-namespace \
     --wait \
     --timeout 5m \
-    -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+    -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml"
 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
@@ -44,9 +44,8 @@ argocd_apps)
     --namespace argocd \
     --wait \
     --timeout 60m \
-    -f "${SCRIPT_DIR}/helm-values.yaml" \
-    > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
-    wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
+    -f "${SCRIPT_DIR}/helm-values.yaml" 
+    wait_for_argocd_apps
 
     stop_spinner_and_return_code $? || exit 1 
     
