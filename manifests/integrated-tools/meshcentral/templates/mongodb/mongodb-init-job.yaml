@@ -34,21 +34,43 @@ spec:
           echo "MongoDB service is accessible, waiting additional time for startup..."
           sleep 10
 
-          echo "Checking if replica set is already initialized..."
+          echo "Checking replica set status..."
           INIT_STATUS=$(mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
           echo "Current replica set status: $INIT_STATUS"
 
           if [ "$INIT_STATUS" != "1" ]; then
-            echo "Replica set not initialized. Running rs.initiate()..."
-            INIT_RESULT=$(mongosh --host "$MONGO_HOST" --eval '
-              rs.initiate({
-                _id: "rs0",
-                members: [
-                  { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
-                ]
-              });
+            echo "Replica set needs initialization or repair..."
+            
+            # First try to reconfigure if already initialized but corrupted
+            RECONFIG_RESULT=$(mongosh --host "$MONGO_HOST" --eval '
+              try {
+                rs.reconfig({
+                  _id: "rs0",
+                  members: [
+                    { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+                  ]
+                }, {force: true});
+              } catch(e) {
+                if (e.message.includes("already initialized")) {
+                  print("Replica set corrupted, attempting force reconfigure...");
+                  rs.reconfig({
+                    _id: "rs0", 
+                    members: [
+                      { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+                    ]
+                  }, {force: true});
+                } else {
+                  print("Initializing new replica set...");
+                  rs.initiate({
+                    _id: "rs0",
+                    members: [
+                      { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+                    ]
+                  });
+                }
+              }
             ' --quiet)
-            echo "rs.initiate() result: $INIT_RESULT"
+            echo "Replica set setup result: $RECONFIG_RESULT"
             
             echo "Waiting for replica set to stabilize..."
             sleep 10
