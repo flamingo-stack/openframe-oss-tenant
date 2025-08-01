@@ -1,0 +1,15 @@
+global:
+  repoBranch: fix/mesh-serverid
+  autoSync: false
+
+apps:
+  # namespace-integrated-tools:
+  #   enabled: false
+  authentik: 
+    enabled: false
+  fleetmdm: 
+    enabled: false
+  # meshcentral: 
+  #   enabled: false 
+  tactical-rmm: 
+    enabled: false
