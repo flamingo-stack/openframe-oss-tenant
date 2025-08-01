@@ -2,8 +2,6 @@
 
 set -euo pipefail
 
-readonly CERT_DIR="$HOME/.openframe-certs"
-
 # Install mkcert if not available
 install_mkcert() {
   if command -v mkcert >/dev/null 2>&1; then
@@ -49,8 +47,22 @@ create_certificates() {
   if [ ! -f "$CERT_DIR/localhost.pem" ] || [ ! -f "$CERT_DIR/localhost-key.pem" ]; then
     echo "Generating localhost certificates..."
     (cd "$CERT_DIR" && mkcert localhost 127.0.0.1 ::1)
-    echo "✅ Local certificates created: $CERT_DIR/localhost.pem"
+
+    # Normalize filenames
+    mv "$CERT_DIR"/localhost+2.pem "$CERT_DIR/localhost.pem"
+    mv "$CERT_DIR"/localhost+2-key.pem "$CERT_DIR/localhost-key.pem"
+    echo "Local certificates created: $CERT_DIR/localhost.pem"
   else
-    echo "✅ Local certificates already exist: $CERT_DIR/localhost.pem"
+    echo "Local certificates already exist: $CERT_DIR/localhost.pem"
   fi
+}
+
+delete_certificates() {
+  echo "Removing localhost certificates from $CERT_DIR..."
+
+  rm -f "$CERT_DIR"/localhost.pem \
+        "$CERT_DIR"/localhost-key.pem \
+        "$CERT_DIR"/localhost+*.pem
+
+  echo "Certificates removed."
 }

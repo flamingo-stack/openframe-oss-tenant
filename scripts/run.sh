@@ -8,6 +8,7 @@ fi
 
 export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ROOT_REPO_DIR="${SCRIPT_DIR}/.."
+export readonly CERT_DIR="$HOME/.openframe-certs"
 
 # Convert Windows paths to Git Bash paths if running on Windows
 if [[ "$OS" == *"NT"* ]] || [[ "$OS" == "MINGW"* ]] || [[ "$OS" == "CYGWIN"* ]]; then
@@ -40,7 +41,7 @@ source "${SCRIPT_DIR}/functions/argocd.sh"
 export -f wait_for_argocd_apps
 
 source "${SCRIPT_DIR}/functions/certificates.sh"
-export -f create_certificates
+export -f create_certificates delete_certificates
 
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
@@ -71,9 +72,9 @@ if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
 fi
 
 ARG=$1
-NAMESPACE=$2
-APP=$3
-ACTION=$4
+NAMESPACE=${2:-}
+APP=${3:-}
+ACTION=${4:-}
 
 if [ "$ACTION" == "intercept" ] || [ "$ACTION" == "health" ]; then
   ARG1="$5"
