@@ -21,8 +21,8 @@ Rules:
 {{- $app := index . 1 -}}      {{/* app spec */}}
 {{- $vals := index . 2 -}}     {{/* root .Values */}}
 
-{{- $deployment := get $vals.deployment "name" | default "local" }}
-{{- $ingress := get $vals.deployment "ingress" | default "ngrok" }}
+{{- $deployment := $vals.deployment.name | default "local" }}
+{{- $ingress := ternary "localhost" "ngrok" ($vals.deployment.ingress.localhost.enabled | default false) }}
 
 {{/* ── Validate deployment config ── */}}
 {{- if not (or (eq $deployment "local") (eq $deployment "cloud")) }}
