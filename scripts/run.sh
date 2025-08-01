@@ -39,6 +39,9 @@ export -f intercept_app
 source "${SCRIPT_DIR}/functions/argocd.sh"
 export -f wait_for_argocd_apps
 
+source "${SCRIPT_DIR}/functions/certificates.sh"
+export -f create_certificates
+
 # Source remaining functions
 for s in "${SCRIPT_DIR}/functions/apps-"*.sh; do
   if [ -f "$s" ]; then

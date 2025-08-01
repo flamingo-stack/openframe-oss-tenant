@@ -57,13 +57,14 @@ argocd_apps)
     exit 0
   fi
   ;;
-pki_cert)
+certificates)
   if [ "$ACTION" == "deploy" ]; then
     start_spinner "Add Trusted PKI certificates"
-    trust_ca > "${DEPLOY_LOG_DIR}/pki.log"
+    create_certificates > "${DEPLOY_LOG_DIR}/certificates.log"
     stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
-    untrust_ca
+    echo "$APP is not supported in dev mode"
+    exit 0
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
@@ -105,11 +106,9 @@ app)
 # BUNDLE APPS
 a | all)
   ACTION=${2}
-
-  $0 argocd $ACTION &&
+  $0 certificates $ACTION && 
+    $0 argocd $ACTION &&
     $0 argocd_apps $ACTION 
-    # &&
-    # $0 pki_cert $ACTION 
   ;;
 -h | --help | -Help | help)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
