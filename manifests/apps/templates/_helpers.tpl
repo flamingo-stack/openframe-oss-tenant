@@ -22,7 +22,9 @@ Rules:
 {{- $vals := index . 2 -}}     {{/* root .Values */}}
 
 {{- $deployment := $vals.deployment.name | default "local" }}
-{{- $ingress := ternary "localhost" "ngrok" ($vals.deployment.ingress.localhost.enabled | default false) }}
+{{- $localhost := $vals.deployment.ingress.localhost.enabled | default false }}
+{{- $ngrok := $vals.deployment.ingress.ngrok.enabled | default false }}
+{{- $ingress := ternary "localhost" "ngrok" $localhost }}
 
 {{/* ── Validate deployment config ── */}}
 {{- if not (or (eq $deployment "local") (eq $deployment "cloud")) }}
