@@ -4,7 +4,7 @@ registerJob:
 
 kafka:
   global:
-    imagePullSecrets: 
+    imagePullSecrets:
       - name: docker-pat-secret
 
   broker:
@@ -82,10 +82,23 @@ kafka:
       - name: integrated-tool.events.pinot
         partitions: 1
         replicationFactor: 1
+      - name: fleet.activities.events
+        partitions: 1
+        replicationFactor: 1
+      - name: fleet.host_activities.events
+        partitions: 1
+        replicationFactor: 1
         ## https://kafka.apache.org/documentation/#topicconfigs
         # config:
         #   max.message.bytes: 64000
         #   flush.messages: 1
+
+      # internal consumer-group state topic so that single-broker dev clusters work
+      - name: __consumer_offsets
+        partitions: 50        # should match offsets.topic.num.partitions default
+        replicationFactor: 1
+        config:
+          cleanup.policy: compact
 
   metrics:
     jmx:
@@ -105,3 +118,6 @@ kafka:
     default.replication.factor=1
     offsets.topic.replication.factor=1
     transaction.state.log.replication.factor=1
+    transaction.state.log.min.isr=1
+    min.insync.replicas=1
+    offsets.topic.auto.create.enable=true

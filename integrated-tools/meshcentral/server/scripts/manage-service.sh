@@ -38,8 +38,9 @@ wait_for_meshcentral_to_start() {
       fi
     fi
 
-    if echo "$RESPONSE" | grep -q "server"; then
-      echo "[meshcentral] Level 1 passed: MeshCentral WebSocket is responsive!"
+    # Check if mesh_server_id file was successfully created
+    if [ -f "${MESH_DIR}/mesh_server_id" ]; then
+      echo "[meshcentral] Level 1 passed: MeshCentral API is responsive and server ID created!"
       break
     fi
 

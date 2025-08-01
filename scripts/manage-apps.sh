@@ -24,7 +24,7 @@ argocd)
     helm repo add argo https://argoproj.github.io/argo-helm > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
     helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
     helm upgrade --install argo-cd argo/argo-cd \
-    --version=8.1.3 \
+    --version=8.1.4 \
     --namespace argocd \
     --create-namespace \
     --wait \
