@@ -28,13 +28,16 @@ Validate TLS certificate format and structure
 {{- if and (gt (len $cert) 100) (gt (len $key) 100) -}}
 true
 {{- else -}}
-{{- fail "ERROR: Certificate or key content is too short" -}}
+{{- printf "WARNING: Certificate or key content is too short\n" | print -}}
+false
 {{- end -}}
 {{- else -}}
-{{- fail "ERROR: Private key must be in PKCS#8, RSA, or EC format with proper PEM headers" -}}
+{{- printf "WARNING: Private key must be in PKCS#8, RSA, or EC format with proper PEM headers\n" | print -}}
+false
 {{- end -}}
 {{- else -}}
-{{- fail "ERROR: Certificate must be in PEM format with proper headers" -}}
+{{- printf "WARNING: Certificate must be in PEM format with proper headers\n" | print -}}
+false
 {{- end -}}
 {{- end -}}
 {{- end -}}

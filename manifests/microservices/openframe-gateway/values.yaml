@@ -11,7 +11,7 @@ deployment:
   # Ingress configuration - enable only ONE of the following
   ingress:
     localhost:
-      enabled: false
+      enabled: true
       # TLS configuration (optional)
       tls:
         # Certificate and key content (use --set-file)
@@ -22,7 +22,7 @@ deployment:
         #   -----BEGIN PRIVATE KEY-----
         #   ...
     ngrok:
-      enabled: true
+      enabled: false
       # URL is required when ngrok is enabled
       url: your-ngrok-domain.ngrok.io
 
