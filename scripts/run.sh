@@ -88,7 +88,8 @@ case "$ARG" in
       stop_spinner_and_return_code $? || exit 1
     else
       start_spinner "Setting up cluster"
-      setup_cluster > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
+      setup_cluster 
+      # > "${DEPLOY_LOG_DIR}/setup-cluster.log" 2>&1
       stop_spinner_and_return_code $? || exit 1
     fi
     ;;
