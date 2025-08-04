@@ -65,7 +65,7 @@ if [ "$OPENFRAME_RECURSIVE_CALL" -eq 0 ]; then
     rm -rf "${DEPLOY_LOG_DIR}"
   fi
   if [ "$1" != "" ]; then
-    start_spinner "Create log directory for deployment (${DEPLOY_LOG_DIR})"
+    start_spinner "Creating log directory (${DEPLOY_LOG_DIR})"
     mkdir -p "${DEPLOY_LOG_DIR}"
     stop_spinner_and_return_code $? || exit 1
   fi

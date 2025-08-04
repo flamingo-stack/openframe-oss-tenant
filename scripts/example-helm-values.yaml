@@ -12,7 +12,6 @@
 # It defines global settings, registry credentials, and deployment environment
 
 deployment:
-  name: local         # or "cloud"
   # Ingress configuration - enable only ONE of the following
   ingress:
     localhost:
@@ -25,6 +24,11 @@ deployment:
       enabled: false  # Enable ngrok ingress for external access
       # URL is required when ngrok is enabled
       url: https://reindeer-suitable-genuinely.ngrok-free.app
+      credentials:
+          apiKey: ""
+          authtoken: ""
+      allowedIPs:
+        - 0.0.0.0/0
 
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository
@@ -75,10 +79,6 @@ apps:
     values:
       registerJob:
         enabled: true
-      ngrok-operator:
-        credentials:
-          apiKey: ""
-          authtoken: ""
     
   cert-manager:
     enabled: true     # Certificate management for TLS
@@ -287,8 +287,6 @@ apps:
       image:
         repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
         tag: latest
-      allowedIPs:
-        - 0.0.0.0/0
     
   openframe-client: 
     enabled: true     # Client service

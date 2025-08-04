@@ -25,11 +25,10 @@ deployment:
       enabled: false
       # URL is required when ngrok is enabled
       url: your-ngrok-domain.ngrok.io
+      allowedIPs:
+        - 0.0.0.0/0
 
 # Application configuration
 image:
   repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
   tag: latest
-
-allowedIPs:
-  - 0.0.0.0/0

@@ -12,7 +12,7 @@ spec:
               enforce: true
               allow:
               {{- if .Values.allowedIPs }}
-                {{- range .Values.allowedIPs }}
+                {{- range .Values.deployment.ingress.ngrok.allowedIPs }}
                 - {{ . | quote }}
                 {{- end }}
               {{- else }}

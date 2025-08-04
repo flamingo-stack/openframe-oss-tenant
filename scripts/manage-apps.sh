@@ -61,7 +61,7 @@ argocd_apps)
   ;;
 certificates)
   if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Add Trusted PKI certificates"
+    start_spinner "Creating localhost certificates"
     create_certificates > "${DEPLOY_LOG_DIR}/certificates.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
