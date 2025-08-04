@@ -5,7 +5,11 @@
 function setup_cluster() {
 
     echo "Updating helm repos indexes"
-    helm repo update
+    if helm repo list >/dev/null 2>&1; then
+        helm repo update
+    else
+        echo "No helm repositories found, skipping update"
+    fi
     
     # Check for port availability
     check_port_availability() {
