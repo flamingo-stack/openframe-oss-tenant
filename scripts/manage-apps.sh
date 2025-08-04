@@ -24,12 +24,12 @@ argocd)
     helm repo add argo https://argoproj.github.io/argo-helm > "${DEPLOY_LOG_DIR}/deploy-argocd.log"
     helm repo update >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
     helm upgrade --install argo-cd argo/argo-cd \
-    --version=8.1.3 \
-    --namespace argocd \
-    --create-namespace \
-    --wait \
-    --timeout 5m \
-    -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
+      --version=8.1.4 \
+      --namespace argocd \
+      --create-namespace \
+      --wait \
+      --timeout 5m \
+      -f "${ROOT_REPO_DIR}/manifests/argocd-values.yaml" >> "${DEPLOY_LOG_DIR}/deploy-argocd.log"
 
     stop_spinner_and_return_code $? || exit 1 
   elif [ "$ACTION" == "delete" ]; then
@@ -41,11 +41,13 @@ argocd_apps)
     start_spinner "Deploying ArgoCD Apps"
 
     helm upgrade --install app-of-apps "${ROOT_REPO_DIR}/manifests/app-of-apps" \
-    --namespace argocd \
-    --wait \
-    --timeout 60m \
-    -f "${SCRIPT_DIR}/helm-values.yaml" \
-    > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
+      --namespace argocd \
+      --wait \
+      --timeout 60m \
+      -f "${SCRIPT_DIR}/helm-values.yaml" \
+      --set-file deployment.ingress.localhost.tls.cert=${CERT_DIR}/localhost.pem \
+      --set-file deployment.ingress.localhost.tls.key=${CERT_DIR}/localhost-key.pem \
+      > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
     wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
 
     stop_spinner_and_return_code $? || exit 1 
@@ -57,13 +59,13 @@ argocd_apps)
     exit 0
   fi
   ;;
-pki_cert)
+certificates)
   if [ "$ACTION" == "deploy" ]; then
-    start_spinner "Add Trusted PKI certificates"
-    trust_ca > "${DEPLOY_LOG_DIR}/pki.log"
+    start_spinner "Creating localhost certificates"
+    create_certificates > "${DEPLOY_LOG_DIR}/certificates.log" 2>&1
     stop_spinner_and_return_code $? || exit 1
   elif [ "$ACTION" == "delete" ]; then
-    untrust_ca
+    delete_certificates
   elif [ "$ACTION" == "dev" ]; then
     echo "$APP is not supported in dev mode"
     exit 0
@@ -105,11 +107,9 @@ app)
 # BUNDLE APPS
 a | all)
   ACTION=${2}
-
-  $0 argocd $ACTION &&
+  $0 certificates $ACTION && 
+    $0 argocd $ACTION &&
     $0 argocd_apps $ACTION 
-    # &&
-    # $0 pki_cert $ACTION 
   ;;
 -h | --help | -Help | help)
   cat $0 | grep -v cat | grep ")" | tr -d ")" | tr -s "|" "," | tr -d "*"
