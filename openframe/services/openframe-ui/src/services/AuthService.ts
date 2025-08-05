@@ -1,8 +1,8 @@
 import { authConfig } from '../config/auth.config';
-import axios from 'axios';
+
 import { ConfigService } from '../config/config.service';
-import { apolloClient } from '../apollo/apolloClient';
-import { gql } from '@apollo/client/core';
+
+
 import { restClient } from '../apollo/apolloClient';
 
 export interface LoginCredentials {
@@ -75,7 +75,7 @@ export class AuthService {
   private static configService = ConfigService.getInstance();
   private static runtimeConfig = AuthService.configService.getConfig();
 
-  private static getHeaders(): HeadersInit {
+  /* UNUSED - keeping for reference\n  private static getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
@@ -184,7 +184,7 @@ export class AuthService {
         clientId: authConfig.clientId
       });
 
-      const response = await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
+      const response = await restClient.post<TokenResponse>(`${import.meta.env.VITE_AUTH_URL}/oauth/token`, formData);
       
       console.log('✅ [Auth] Login successful:', {
         tokenType: response.token_type,
@@ -218,7 +218,7 @@ export class AuthService {
       };
 
       const response = await restClient.post<TokenResponse>(
-        `${AuthService.runtimeConfig.apiUrl}/oauth/register`, 
+        `${import.meta.env.VITE_AUTH_URL || 'http://localhost:9000'}/oauth/register`, 
         data,
         { headers }
       );

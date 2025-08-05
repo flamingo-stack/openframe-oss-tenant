@@ -47,7 +47,7 @@ async function checkAuthAndMount() {
     if (!isPublicRoute) {
         // For protected routes, check authentication via server before mounting
         try {
-            const response = await fetch(`${config.getConfig().apiUrl}/oauth/me`, {
+            const response = await fetch(`${import.meta.env.VITE_AUTH_URL}/oauth/me`, {
                 method: 'GET',
                 credentials: 'include' // Include HTTP-only cookies
             })

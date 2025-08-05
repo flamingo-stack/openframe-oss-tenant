@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { OAuthError } from '@/errors/OAuthError'
-import { ConfigService } from '@/config/config.service'
 
 export interface TokenResponse {
   access_token: string;
@@ -9,6 +7,7 @@ export interface TokenResponse {
   token_type: string;
   expires_in: number;
   scope: string;
+  tenant_domain?: string;
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -44,9 +43,14 @@ export const useAuthStore = defineStore('auth', () => {
   
   // Initialize auth status on store creation
   updateAuthStatus()
-  
-  const config = ConfigService.getInstance()
 
+  // Authorization Server URLs
+  const AUTH_SERVER_URL = import.meta.env.VITE_AUTH_URL
+
+  /**
+   * Form-based login using Authorization Server OAuth2 token endpoint
+   * This uses the standard OAuth2 password grant flow
+   */
   async function login(email: string, password: string): Promise<TokenResponse> {
     try {
       // Clear any stale refresh flags
@@ -56,26 +60,25 @@ export const useAuthStore = defineStore('auth', () => {
       formData.append('grant_type', 'password');
       formData.append('username', email);
       formData.append('password', password);
-      formData.append('client_id', config.getConfig().clientId);
-      formData.append('client_secret', config.getConfig().clientSecret);
-      formData.append('scope', 'openid profile email');
+      formData.append('client_id', 'openframe-ui');
+      formData.append('scope', 'openid profile email openframe.read openframe.write');
 
-      const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth/token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + btoa('openframe-ui:openframe-ui-secret') // Basic auth for client
         },
-        credentials: 'include', // Include cookies for authentication
+        credentials: 'include', // Include cookies for HttpOnly token setting
         body: formData
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error_description || 'Login failed');
+        throw new Error(data.error_description || data.error || 'Login failed');
       }
 
-      // Tokens are now set as HTTP-only cookies by the server
-      // Update cached status and refresh authentication status
+      // Tokens are now set as HTTP-only cookies by the Authorization Server
       console.log('🔑 [AuthStore] Login successful, tokens set via HTTP-only cookies');
       authStatusCache.value = true;
       updateAuthStatus();
@@ -90,23 +93,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Token refresh using Authorization Server OAuth2 token endpoint
+   */
   async function tryRefreshToken(): Promise<boolean> {
     try {
       console.log('🔄 [AuthStore] Attempting token refresh via HttpOnly cookies...');
       
       // SECURITY: Both tokens are now HttpOnly cookies with strict paths
       // Access token cookie: Path=/ (included automatically)  
-      // Refresh token cookie: Path=/api/oauth/token (included automatically ONLY on this endpoint)
-      const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
+      // Refresh token cookie: Path=/oauth/token (included automatically ONLY on this endpoint)
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth/token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + btoa('openframe-ui:openframe-ui-secret')
         },
         credentials: 'include', // Include HttpOnly cookies
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          client_id: config.getConfig().clientId,
-          client_secret: config.getConfig().clientSecret
           // No refresh_token parameter - it's automatically sent via HttpOnly cookie
         })
       });
@@ -130,10 +135,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Logout using Authorization Server
+   */
   async function logout() {
     try {
       // Call logout endpoint to clear HttpOnly cookies (both access and refresh tokens)
-      const response = await fetch(`${config.getConfig().apiUrl}/oauth/logout`, {
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth/logout`, {
         method: 'POST',
         credentials: 'include' // Include cookies for clearing
       });
@@ -148,140 +156,186 @@ export const useAuthStore = defineStore('auth', () => {
     // Clear any localStorage remnants and update cached status
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('is_refreshing');
+    
     authStatusCache.value = false;
     updateAuthStatus();
-    console.log('🔑 [AuthStore] Logged out and cleared HttpOnly cookies');
+    
+    console.log('🚪 [AuthStore] User logged out, cookies cleared');
   }
 
-  async function checkAuthStatus() {
-    // Since tokens are in HTTP-only cookies, we can't access them directly
-    // Check authentication by making a request to a protected endpoint
-    const apiUrl = config.getConfig().apiUrl;
-    const fullUrl = `${apiUrl}/oauth/me`;
-    
-    console.log('🔑 [AuthStore] Checking auth status...');
-    console.log('🔑 [AuthStore] API URL:', apiUrl);
-    console.log('🔑 [AuthStore] Full URL:', fullUrl);
-    console.log('🔑 [AuthStore] Current domain:', window.location.hostname);
-    
+  /**
+   * Check authentication status with Authorization Server
+   */
+  async function checkAuthStatus(): Promise<boolean> {
     try {
-      console.log('🔑 [AuthStore] Making fetch request...');
-      const response = await fetch(fullUrl, {
+      // Try to access a protected endpoint to verify authentication
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth/me`, {
         method: 'GET',
-        credentials: 'include' // Include cookies
+        credentials: 'include', // Include HttpOnly cookies
       });
-      
-      console.log('🔑 [AuthStore] Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
-      const authenticated = response.ok;
-      authStatusCache.value = authenticated; // Update cache and refresh status
+
+      const isValid = response.ok;
+      authStatusCache.value = isValid;
       updateAuthStatus();
-      console.log('🔑 [AuthStore] Auth status checked via server:', authenticated);
-      return authenticated;
+      
+      return isValid;
     } catch (error) {
-      console.error('🔑 [AuthStore] Auth check failed with error:', error);
-      console.error('🔑 [AuthStore] Error type:', typeof error);
-      if (error instanceof Error) {
-        console.error('🔑 [AuthStore] Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-      }
+      console.error('❌ [AuthStore] Auth status check failed:', error);
       authStatusCache.value = false;
       updateAuthStatus();
       return false;
     }
   }
 
-  async function handleAuthError(error: unknown): Promise<boolean> {
-    // This should be called by apollo client / rest client when they receive 401
-    console.log('🔑 [AuthStore] Handling auth error:', error);
-    
-    // Try to refresh token ONLY if it's an authentication error (401)
-    if (error instanceof Error && (
-        error.message.includes('401') || 
-        error.message.includes('token expired') || 
-        error.message.includes('Unauthorized')
-    )) {
-      console.log('🔑 [AuthStore] Attempting token refresh due to 401/expired token');
-      try {
-        const success = await tryRefreshToken();
-        if (success) {
-          console.log('🔑 [AuthStore] Token refresh successful');
-          return true;
-        } else {
-          console.log('🔑 [AuthStore] Token refresh failed, logging out');
-          await logout();
-          return false;
-        }
-      } catch (refreshError) {
-        console.error('🔑 [AuthStore] Token refresh error:', refreshError);
-        await logout();
-        return false;
-      }
-    }
-    
-    // For non-auth errors, just log them
-    console.log('🔑 [AuthStore] Non-auth error, not attempting refresh');
-    return false;
-  }
-
-  async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
+  /**
+   * User registration using Authorization Server
+   */
+  async function register(email: string, password: string, firstName: string, lastName: string, tenantId: string = 'default'): Promise<TokenResponse> {
     try {
-      const config = ConfigService.getInstance().getConfig();
-      const credentials = btoa(`${config.clientId}:${config.clientSecret}`);
-      const apiUrl = `${config.apiUrl}/oauth/register`;
-      console.log('Attempting to register with URL:', apiUrl);
-      console.log('Environment variables:', {
-        apiUrl: config.apiUrl, 
-        clientId: config.clientId,
-        clientSecret: config.clientSecret
-      });
+      // Clear any stale refresh flags
+      localStorage.removeItem('is_refreshing');
 
-      const response = await fetch(apiUrl, {
+      const requestBody = {
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        password: password,
+        tenant_id: tenantId
+      };
+
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`
+          'Authorization': 'Basic ' + btoa('openframe-ui:openframe-ui-secret') // Basic auth for client
         },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          email,
-          password,
-          first_name: firstName,
-          last_name: lastName
-        })
+        credentials: 'include', // Include cookies for HttpOnly token setting
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
       if (!response.ok) {
-        if (data.error_description) {
-          throw new OAuthError(data.error || 'invalid_request', data.error_description);
-        } else if (data.message) {
-          throw new OAuthError('invalid_request', data.message);
-        } else if (data.error) {
-          throw new OAuthError(data.error, 'Registration failed');
-        } else {
-          throw new OAuthError('server_error', 'Registration failed. Please try again.');
-        }
+        throw new Error(data.error_description || data.error || 'Registration failed');
       }
 
-      // Tokens are now set as HTTP-only cookies by the server
-      console.log('🔑 [AuthStore] Registration successful, tokens set via HTTP-only cookies');
+      // Tokens are now set as HTTP-only cookies by the Authorization Server
+      console.log('🎉 [AuthStore] Registration successful, tokens set via HTTP-only cookies');
       authStatusCache.value = true;
       updateAuthStatus();
+      
       return data;
     } catch (error) {
-      console.error('Registration error:', error);
+      // Also clear refresh flag on error
+      localStorage.removeItem('is_refreshing');
       authStatusCache.value = false;
       updateAuthStatus();
       throw error;
+    }
+  }
+
+  /**
+   * User registration with tenant domain for multi-tenant setup
+   */
+  async function registerWithDomain(email: string, password: string, firstName: string, lastName: string, tenantDomain: string): Promise<TokenResponse> {
+    try {
+      // Clear any stale refresh flags
+      localStorage.removeItem('is_refreshing');
+
+      const requestBody = {
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        password: password,
+        tenant_domain: tenantDomain
+      };
+
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('openframe-ui:openframe-ui-secret')
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error_description || data.error || 'Registration failed');
+      }
+
+      console.log('🎉 [AuthStore] Registration with domain successful');
+      authStatusCache.value = true;
+      updateAuthStatus();
+      
+      return data;
+    } catch (error) {
+      localStorage.removeItem('is_refreshing');
+      authStatusCache.value = false;
+      updateAuthStatus();
+      throw error;
+    }
+  }
+
+  /**
+   * Google SSO authentication
+   */
+  async function authenticateWithGoogle(code: string, state?: string, redirectUri?: string): Promise<TokenResponse> {
+    try {
+      const request = {
+        code,
+        state,
+        redirectUri: redirectUri || `${window.location.origin}/oauth2/callback/google`
+      };
+
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(request)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error_description || data.error || 'Google authentication failed');
+      }
+
+      // Tokens are now set as HTTP-only cookies by the Authorization Server
+      console.log('🔑 [AuthStore] Google SSO successful, tokens set via HTTP-only cookies');
+      authStatusCache.value = true;
+      updateAuthStatus();
+      
+      return data;
+    } catch (error) {
+      authStatusCache.value = false;
+      updateAuthStatus();
+      throw error;
+    }
+  }
+
+  /**
+   * Get SSO providers
+   */
+  async function getSSProviders() {
+    try {
+      const response = await fetch(`${AUTH_SERVER_URL}/sso/providers`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch SSO providers');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch SSO providers:', error);
+      return [];
     }
   }
 
@@ -289,9 +343,12 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     login,
     register,
-    tryRefreshToken,
+    registerWithDomain,
     logout,
+    tryRefreshToken,
     checkAuthStatus,
-    handleAuthError
+    updateAuthStatus,
+    authenticateWithGoogle,
+    getSSProviders
   }
 })

@@ -21,6 +21,16 @@
           <InputText id="email" v-model="email" type="email" class="w-full" />
         </div>
         <div class="of-form-group">
+          <label for="tenantDomain" class="of-form-label">Company Domain</label>
+          <InputText 
+            id="tenantDomain" 
+            v-model="tenantDomain" 
+            placeholder="company.com" 
+            class="w-full" 
+          />
+          <small class="domain-help">Your team will be redirected to this domain after login</small>
+        </div>
+        <div class="of-form-group">
           <label for="password" class="of-form-label">Password</label>
           <div class="password-wrapper">
             <input
@@ -94,6 +104,7 @@ const toastService = ToastService.getInstance()
 const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
+const tenantDomain = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
@@ -153,8 +164,8 @@ const passwordStrength = computed(() => {
 })
 
 const handleSubmit = async () => {
-  if (!email.value || !password.value || !firstName.value || !lastName.value) {
-    toastService.showError('Please fill in all fields')
+  if (!email.value || !password.value || !firstName.value || !lastName.value || !tenantDomain.value) {
+    toastService.showError('Please fill in all fields including company domain')
     return
   }
 
@@ -168,14 +179,33 @@ const handleSubmit = async () => {
     return
   }
 
+  // Validate domain format (basic)
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}$/.test(tenantDomain.value)) {
+    toastService.showError('Please enter a valid domain (e.g., company.com)')
+    return
+  }
+
   try {
     loading.value = true
-    await authStore.register(email.value, password.value, firstName.value, lastName.value)
-    toastService.showSuccess('Registration successful!')
-    router.push('/dashboard')
+    
+    // Register with tenant domain
+    await authStore.registerWithDomain(
+      email.value, 
+      password.value, 
+      firstName.value, 
+      lastName.value, 
+      tenantDomain.value
+    )
+    
+    toastService.showSuccess('Welcome to OpenFrame! Redirecting to your domain...')
+    
+    // Redirect to tenant domain after short delay
+    setTimeout(() => {
+      window.location.href = `https://${tenantDomain.value}`
+    }, 2000)
   } catch (err: any) {
     const errorMessage = err.message || 'Registration failed. Please try again.'
-    toastService.showError(errorMessage, err.error)
+    toastService.showError(errorMessage)
   } finally {
     loading.value = false
   }
@@ -402,6 +432,13 @@ const handleSubmit = async () => {
 }
 
 .strength-text {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.domain-help {
   font-size: 0.75rem;
   color: var(--text-color-secondary);
   margin-top: 0.25rem;

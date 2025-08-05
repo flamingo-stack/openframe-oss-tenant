@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFrame Authorization Server</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+
+        p {
+            color: #6b7280;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            text-align: left;
+            margin: 24px 0;
+        }
+
+        .feature-list li {
+            margin: 8px 0;
+            color: #374151;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+        }
+
+        .endpoints {
+            margin-top: 32px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .endpoints h3 {
+            margin-bottom: 16px;
+            color: #374151;
+        }
+
+        .endpoints code {
+            background: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+        }
+
+        .endpoints ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .endpoints li {
+            margin: 8px 0;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OpenFrame Authorization Server</h1>
+        <p th:text="${message}">Welcome to OpenFrame Authorization Server</p>
+        
+        <p>
+            This is the central OAuth2/OIDC authorization server for the OpenFrame ecosystem.
+            It provides secure authentication and authorization services for all OpenFrame applications.
+        </p>
+
+        <div class="feature-list">
+            <h3>Features:</h3>
+            <ul>
+                <li>✅ OAuth 2.1 Authorization Server</li>
+                <li>✅ OpenID Connect 1.0 Support</li>
+                <li>✅ Local User Authentication</li>
+                <li>✅ Federated Identity (Google OAuth2)</li>
+                <li>✅ Role-Based Access Control (RBAC)</li>
+                <li>✅ Multi-Tenant Ready Architecture</li>
+                <li>✅ JWT Token with Custom Claims</li>
+            </ul>
+        </div>
+
+        <a href="/login" class="btn">Sign In</a>
+
+        <div class="endpoints">
+            <h3>OAuth2/OIDC Endpoints:</h3>
+            <ul>
+                <li><strong>Authorization:</strong> <code>/oauth2/authorize</code></li>
+                <li><strong>Token:</strong> <code>/oauth2/token</code></li>
+                <li><strong>JWK Set:</strong> <code>/.well-known/jwks.json</code></li>
+                <li><strong>User Info:</strong> <code>/userinfo</code></li>
+                <li><strong>Token Revocation:</strong> <code>/oauth2/revoke</code></li>
+                <li><strong>Token Introspection:</strong> <code>/oauth2/introspect</code></li>
+                <li><strong>OpenID Configuration:</strong> <code>/.well-known/openid_configuration</code></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html> 
