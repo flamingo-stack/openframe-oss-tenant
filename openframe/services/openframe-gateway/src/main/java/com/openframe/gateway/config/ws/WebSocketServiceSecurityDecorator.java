@@ -1,5 +1,7 @@
 package com.openframe.gateway.config.ws;
 
+import com.openframe.gateway.config.ws.nats.NatsMessageValidator;
+import com.openframe.gateway.config.ws.nats.NatsWebSocketSessionWrapper;
 import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
-import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_AGENT_WS_ENDPOINT_PREFIX;
-import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.TOOLS_API_WS_ENDPOINT_PREFIX;
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.*;
 import static com.openframe.gateway.security.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -28,6 +29,7 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
     private final WebSocketService defaultWebSocketService;
     private final JwtService jwtService;
+    private final NatsMessageValidator natsMessageValidator;
 
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler defaultWebSocketHandler) {
@@ -40,6 +42,12 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
                 Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
                 processSessionClosedEvent(session, disposable);
+
+                if (isNatsEndpoint(path)) {
+                    NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session, natsMessageValidator, jwt);
+                    return defaultWebSocketHandler.handle(natsSession);
+                }
+
                 return defaultWebSocketHandler.handle(session);
             });
         } else {
@@ -48,8 +56,12 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
     }
 
     private boolean isSecuredEndpoint(String path) {
-        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX).stream()
+        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX, NATS_WS_ENDPOINT_PREFIX).stream()
                 .anyMatch(path::startsWith);
+    }
+
+    private boolean isNatsEndpoint(String path) {
+        return path.equals(NATS_WS_ENDPOINT_PREFIX);
     }
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {

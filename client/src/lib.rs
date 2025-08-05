@@ -107,7 +107,9 @@ pub struct Client {
 
 impl Client {
     // TODO: get from args during installation and save to file during installation
-    const GATEWAY_URL: &'static str = "https://openframe-gateway.192.168.100.100.nip.io";
+    const GATEWAY_HOST: &'static str = "openframe-gateway.192.168.100.100.nip.io";
+    const GATEWAY_HTTP_URL: &'static str = "https://" + GATEWAY_HOST;
+    const GATEWAY_WS_URL: &'static str = "wss://" + GATEWAY_HOST;
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
@@ -135,7 +137,7 @@ impl Client {
 
         // Initialize registration client
         let registration_client = RegistrationClient::new(
-            Self::GATEWAY_URL.to_string(),
+            Self::GATEWAY_HTTP_URL.to_string(),
             http_client.clone()
         ).context("Failed to create registration client")?;
         
@@ -157,7 +159,7 @@ impl Client {
 
         // Initialize authentication client
         let auth_client = AuthClient::new(
-            Self::GATEWAY_URL.to_string(),
+            Self::GATEWAY_GATEWAY_HTTP_URLURL.to_string(),
             http_client
         );
         
@@ -183,6 +185,31 @@ impl Client {
             config_service
         );
 
+        // Initialize NATS connection manager
+        let nats_connection_manager = NatsConnectionManager::new(GGATEWAY_WS_URL, config_service);
+        
+        // Initialize tool agent file client
+        let tool_agent_file_client = ToolAgentFileClient::new(http_client.clone(), config_service.get_server_url().await?);
+
+        // Initialize tool installer
+        let tool_installer = ToolInstaller::new(directory_manager.clone());
+
+        // Initialize NATS message publisher
+        let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());
+
+        // Initialize tool connection message publisher
+        let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
+
+        // Initialize tool installation service
+        let tool_installation_service = ToolInstallationService::new(
+            tool_agent_file_client,
+            tool_installer,
+            tool_connection_message_publisher
+        );
+
+        // Initialize tool installation message listener
+        let tool_installation_message_listener = ToolInstallationMessageListener::new(nats_connection_manager.clone(), tool_installation_service);
+
         Ok(Self {
             config,
             directory_manager,
@@ -199,6 +226,12 @@ impl Client {
         // Processors retry it till success
         self.registration_processor.process().await?;
         self.auth_processor.process().await?;
+
+        // Connect to NATS
+        nats_connection_manager.connect().await?;
+
+        // Start tool installation message listener
+        tool_installation_message_listener.listen().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

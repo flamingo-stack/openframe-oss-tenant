@@ -9,6 +9,7 @@ import com.openframe.core.model.ToolType;
 import com.openframe.data.repository.mongo.MachineRepository;
 import com.openframe.data.repository.mongo.ToolConnectionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ToolConnectionService {
 
     private final ToolConnectionRepository toolConnectionRepository;
@@ -91,6 +93,9 @@ public class ToolConnectionService {
         connection.setStatus(ConnectionStatus.CONNECTED);
         connection.setConnectedAt(Instant.now());
         ToolConnection saved = toolConnectionRepository.save(connection);
+
+        log.info("Saved tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentId);
+
         return convertToResponse(saved);
     }
 

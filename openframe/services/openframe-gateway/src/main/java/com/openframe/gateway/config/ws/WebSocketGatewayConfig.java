@@ -1,5 +1,6 @@
 package com.openframe.gateway.config.ws;
 
+import com.openframe.gateway.config.ws.nats.NatsMessageValidator;
 import com.openframe.security.jwt.JwtService;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -18,6 +19,7 @@ public class WebSocketGatewayConfig {
 
     static final String TOOLS_AGENT_WS_ENDPOINT_PREFIX = "/ws/tools/agent";
     static final String TOOLS_API_WS_ENDPOINT_PREFIX = "/ws/tools";
+    static final String NATS_WS_ENDPOINT_PREFIX = "/ws/nats";
 
     /*
            Currently if one device have valid open-frame machine JWT token, it can send WS request,
@@ -45,6 +47,9 @@ public class WebSocketGatewayConfig {
                         .path(TOOLS_API_WS_ENDPOINT_PREFIX + "{toolId}/**")
                         .filters(f -> f.filter(toolApiWebSocketProxyUrlFilter))
                         .uri("no://op"))
+                .route("nats_websocket_route", r -> r
+                        .path(NATS_WS_ENDPOINT_PREFIX)
+                        .uri("ws://localhost:8080"))
                 .build();
     }
 
@@ -52,9 +57,10 @@ public class WebSocketGatewayConfig {
     @Primary
     public WebSocketService webSocketServiceDecorator(
             JwtService jwtService,
-            WebSocketService defaultWebSocketService
+            WebSocketService defaultWebSocketService,
+            NatsMessageValidator natsMessageValidator
     ) {
-        return new WebSocketServiceSecurityDecorator(defaultWebSocketService, jwtService);
+        return new WebSocketServiceSecurityDecorator(defaultWebSocketService, jwtService, natsMessageValidator);
     }
 
 

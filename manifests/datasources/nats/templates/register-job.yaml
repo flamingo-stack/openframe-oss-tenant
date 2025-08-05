@@ -35,19 +35,19 @@ spec:
                   "description": "Nats",
                   "toolUrls": [
                     {
-                      "url": "http://nats-0.nats.datasources.svc.cluster.local",
+                      "url": "nats://nats-0.nats.datasources.svc.cluster.local",
                       "port": "4222",
-                      "type": "COORDINATOR"
+                      "type": "NATS"
                     },
                     {
-                      "url": "http://nats-0.nats.datasources.svc.cluster.local",
+                      "url": "ws://nats-0.nats.datasources.svc.cluster.local",
                       "port": "8222",
-                      "type": "COORDINATOR"
+                      "type": "WS"
                     },
                     {
                       "url": "http://nats-0.nats.datasources.svc.cluster.local",
                       "port": "8080",
-                      "type": "COORDINATOR"
+                      "type": "DASHBOARD"
                     }
                   ],
                   "category": "Service Discovery",
@@ -68,5 +68,5 @@ spec:
               }' \
               --retry-delay 2 \
               --retry-all-errors
-            echo "Zookeeper Registration complete."
+            echo "Nats Registration complete."
 {{- end }}

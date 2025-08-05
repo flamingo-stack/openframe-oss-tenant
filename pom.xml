@@ -30,6 +30,7 @@
         <lombok.version>1.18.30</lombok.version>
         <netflix.dgs.version>7.0.0</netflix.dgs.version>
         <kafka.version>3.6.0</kafka.version>
+        <nats.version>0.6.2+3.5</nats.version>
         <pinot.version>1.2.0</pinot.version>
         <micrometer.version>1.14.1</micrometer.version>
         <simpleclient.version>0.16.0</simpleclient.version>

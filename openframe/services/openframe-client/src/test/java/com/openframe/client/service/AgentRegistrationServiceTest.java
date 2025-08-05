@@ -2,6 +2,10 @@ package com.openframe.client.service;
 
 import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
+import com.openframe.client.service.agentregistration.AgentRegistrationService;
+import com.openframe.client.service.agentregistration.AgentRegistrationToolService;
+import com.openframe.client.service.agentregistration.MachineIdGenerator;
+import com.openframe.client.service.agentregistration.MachineNatsRegistrationService;
 import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
@@ -22,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AgentServiceTest {
+class AgentRegistrationServiceTest {
 
     @Mock
     private OAuthClientRepository oauthClientRepository;
@@ -42,13 +46,19 @@ class AgentServiceTest {
     @Mock
     private MachineIdGenerator machineIdGenerator;
 
+    @Mock
+    private MachineNatsRegistrationService machineNatsRegistrationService;
+
+    @Mock
+    private AgentRegistrationToolService agentRegistrationToolService;
+
     @Captor
     private ArgumentCaptor<OAuthClient> oauthClientCaptor;
 
     @Captor
     private ArgumentCaptor<Machine> machineCaptor;
 
-    private AgentService agentService;
+    private AgentRegistrationService agentRegistrationService;
     private AgentRegistrationRequest request;
     private static final String INITIAL_KEY = "test-initial-key";
     private static final String MACHINE_ID = "test-machine-id";
@@ -56,7 +66,7 @@ class AgentServiceTest {
 
     @BeforeEach
     void setUp() {
-        agentService = new AgentService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder, machineIdGenerator);
+        agentRegistrationService = new AgentRegistrationService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder, machineIdGenerator, machineNatsRegistrationService, agentRegistrationToolService);
         request = createTestRequest();
     }
 
@@ -69,7 +79,7 @@ class AgentServiceTest {
         when(oauthClientRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         when(machineRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         
-        AgentRegistrationResponse response = agentService.registerAgent(INITIAL_KEY, request);
+        AgentRegistrationResponse response = agentRegistrationService.register(INITIAL_KEY, request);
         
         assertNotNull(response);
         assertEquals(MACHINE_ID, response.getMachineId());
@@ -88,7 +98,6 @@ class AgentServiceTest {
         assertEquals("agent_" + MACHINE_ID, savedClient.getClientId());
         assertEquals("encoded-secret", savedClient.getClientSecret());
         assertArrayEquals(new String[]{"client_credentials"}, savedClient.getGrantTypes());
-        assertArrayEquals(new String[]{"metrics:write", "agentgateway:proxy"}, savedClient.getScopes());
         assertArrayEquals(new String[]{"AGENT"}, savedClient.getRoles());
 
         verify(machineRepository).save(machineCaptor.capture());
@@ -110,7 +119,7 @@ class AgentServiceTest {
         
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> agentService.registerAgent(INITIAL_KEY, request)
+                () -> agentRegistrationService.register(INITIAL_KEY, request)
         );
         assertEquals("Failed to register client", exception.getMessage());
 

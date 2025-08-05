@@ -111,4 +111,18 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "TacticalRMM Registration complete."
+            
+            echo "Registering Tactical RMM Agent..."
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/tactical-rmm-agent" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "toolAgent": {
+                  "id": "tactical-rmm-agent",
+                  "version": "1.0"
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "TacticalRMM Agent Registration complete."
 {{- end }}

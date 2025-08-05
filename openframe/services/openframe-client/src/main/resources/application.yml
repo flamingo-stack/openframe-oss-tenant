@@ -6,3 +6,39 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+  cloud:
+    stream:
+      function:
+        definition: machineConnectedListener;machineDisconnectionListener,toolConnectionListener
+      bindings:
+        machineConnectedListener-in-0:
+          destination: $SYS.ACCOUNT.DEVICES.CONNECT
+          group: client-service-machine-connected
+          content-type: application/json
+        machineDisconnectionListener-in-0:
+          destination: $SYS.ACCOUNT.DEVICES.DISCONNECT
+          group: client-service-machine-disconnected
+          content-type: application/json
+        toolConnectionListener-in-0:
+          destination: machine.*.toolconnection
+          group: client-service-machine-tool-connection
+          content-type: application/json
+      binders:
+        nats:
+          type: nats
+          environment:
+            spring:
+              nats:
+                servers: nats://nats-0.nats.datasources.svc.cluster.local
+      default-binder: nats
+
+# TODO: nats connection retries and delays
+# TODO: DLQ
+
+#  nats:
+#    spring:
+#      server: nats://nats-0.nats.datasources.svc.cluster.local
+#    connection:
+#      timeout: 5s
+#      max-reconnect: 10
+#      reconnect-wait: 2s

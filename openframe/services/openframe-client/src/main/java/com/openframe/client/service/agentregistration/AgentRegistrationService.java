@@ -1,7 +1,8 @@
-package com.openframe.client.service;
+package com.openframe.client.service.agentregistration;
 
 import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
+import com.openframe.client.service.AgentSecretGenerator;
 import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
@@ -16,10 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
+import static com.openframe.client.service.AgentAuthService.CLIENT_CREDENTIALS_GRANT_TYPE;
+import static java.lang.String.format;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AgentService {
+public class AgentRegistrationService {
+
+    private static final String AGENT_ROLE = "AGENT";
+    private static final String CLIENT_ID_TEMPLATE = "agent_%s";
 
     private final OAuthClientRepository oauthClientRepository;
     private final MachineRepository machineRepository;
@@ -27,34 +34,48 @@ public class AgentService {
     private final AgentSecretGenerator agentSecretGenerator;
     private final PasswordEncoder passwordEncoder;
     private final MachineIdGenerator machineIdGenerator;
+    private final MachineNatsRegistrationService machineNatsRegistrationService;
+    private final AgentRegistrationToolService agentRegistrationToolService;
 
     @Transactional
-    public AgentRegistrationResponse registerAgent(String initialKey, AgentRegistrationRequest request) {
+    // TODO: works?
+    public AgentRegistrationResponse register(String initialKey, AgentRegistrationRequest request) {
         secretValidator.validate(initialKey);
 
         String machineId = machineIdGenerator.generate();
+        String clientId = buildClientId(machineId);
+        String clientSecret = agentSecretGenerator.generate();
+
+        saveOAuthClient(machineId, clientId, clientSecret);
+        saveMachine(machineId, request);
+
+//        machineNatsRegistrationService.register(machineId);
+        agentRegistrationToolService.publishInstallationMessages(machineId);
+
+        return new AgentRegistrationResponse(machineId, clientId, clientSecret);
+    }
+
+    private void saveOAuthClient(String machineId, String clientId, String clientSecret) {
         if (oauthClientRepository.existsByMachineId(machineId)) {
-            log.error("Generated non unique machine id");
+            log.error("Generated non unique machine id {}", machineId);
             throw new IllegalStateException("Failed to register client");
         }
 
-        String clientId = "agent_" + machineId;
-        String clientSecret = agentSecretGenerator.generate();
-
-        // Create and save OAuth client
         OAuthClient client = new OAuthClient();
         client.setClientId(clientId);
         client.setClientSecret(passwordEncoder.encode(clientSecret));
         client.setMachineId(machineId);
-        client.setGrantTypes(new String[]{"client_credentials"});
-        client.setScopes(new String[]{
-                "metrics:write",
-                "agentgateway:proxy"
-        });
-        client.setRoles(new String[]{"AGENT"});
+        client.setGrantTypes(new String[]{CLIENT_CREDENTIALS_GRANT_TYPE});
+        client.setRoles(new String[]{AGENT_ROLE});
 
         oauthClientRepository.save(client);
+    }
 
+    private String buildClientId(String machineId) {
+        return format(CLIENT_ID_TEMPLATE, machineId);
+    }
+
+    private void saveMachine(String machineId, AgentRegistrationRequest request) {
         Machine machine = new Machine();
         machine.setMachineId(machineId);
         machine.setHostname(request.getHostname());
@@ -66,7 +87,6 @@ public class AgentService {
         machine.setStatus(DeviceStatus.ACTIVE);
 
         machineRepository.save(machine);
-
-        return new AgentRegistrationResponse(machineId, clientId, clientSecret);
     }
+
 }
