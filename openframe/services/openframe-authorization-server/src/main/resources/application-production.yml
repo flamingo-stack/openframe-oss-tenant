@@ -1,0 +1,17 @@
+# Production Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: production
+
+# Production domain validation - strict format only
+domain:
+  validation:
+    regex: "^([a-zA-Z0-9-]{1,63}\\.)+[a-zA-Z]{2,}$"
+
+# Production cookie configuration
+openframe:
+  security:
+    cookie:
+      secure: true
+      same-site: None 

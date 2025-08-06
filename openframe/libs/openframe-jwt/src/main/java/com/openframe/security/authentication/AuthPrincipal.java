@@ -45,6 +45,16 @@ public class AuthPrincipal {
     private final List<String> scopes;
 
     /**
+     * Tenant ID from 'tenant_id' claim
+     */
+    private final String tenantId;
+
+    /**
+     * Tenant domain from 'tenant_domain' claim
+     */
+    private final String tenantDomain;
+
+    /**
      * Creates AuthPrincipal from JWT token
      */
     public static AuthPrincipal fromJwt(Jwt jwt) {
@@ -55,6 +65,8 @@ public class AuthPrincipal {
                 .lastName(getLastNameFromJwt(jwt))
                 .roles(jwt.getClaimAsStringList("roles"))
                 .scopes(jwt.getClaimAsStringList("scope"))
+                .tenantId(jwt.getClaimAsString("tenant_id"))
+                .tenantDomain(jwt.getClaimAsString("tenant_domain"))
                 .build();
     }
 

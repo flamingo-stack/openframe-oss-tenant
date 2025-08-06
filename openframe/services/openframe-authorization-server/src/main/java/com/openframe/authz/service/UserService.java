@@ -3,6 +3,7 @@ package com.openframe.authz.service;
 import com.openframe.authz.document.User;
 import com.openframe.authz.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +28,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${domain.validation.regex}")
+    private String domainValidationRegex;
 
     // ============ SIMPLE CRUD OPERATIONS (via Repository) ============
 
@@ -103,7 +106,7 @@ public class UserService {
     }
     
     private boolean isValidDomain(String domain) {
-        return domain.matches("^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\\.([a-zA-Z]{2,}|[a-zA-Z]{2,}\\.[a-zA-Z]{2,})$");
+        return domain.matches(domainValidationRegex);
     }
 
     /**

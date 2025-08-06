@@ -78,15 +78,11 @@ const handleSubmit = async () => {
     const tokenResponse = await authStore.login(email.value, password.value)
     toastService.showSuccess('Welcome back!')
     
-    // Check if user has a tenant domain to redirect to
-    if (tokenResponse.tenant_domain && tokenResponse.tenant_domain !== 'localhost:3000') {
-      toastService.showSuccess('Redirecting to your domain...')
-      setTimeout(() => {
-        window.location.href = `https://${tokenResponse.tenant_domain}`
-      }, 1500)
-    } else {
+    // For local development, always redirect to dashboard
+    toastService.showSuccess('Login successful! Redirecting to dashboard...')
+    setTimeout(() => {
       router.push('/dashboard')
-    }
+    }, 1500)
   } catch (error: any) {
     toastService.showError(error.message || 'Login failed. Please try again.')
   } finally {

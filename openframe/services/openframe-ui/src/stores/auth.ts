@@ -169,8 +169,8 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function checkAuthStatus(): Promise<boolean> {
     try {
-      // Try to access a protected endpoint to verify authentication
-      const response = await fetch(`${AUTH_SERVER_URL}/oauth/me`, {
+      // Try to access a protected endpoint to verify authentication via API Gateway
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/me`, {
         method: 'GET',
         credentials: 'include', // Include HttpOnly cookies
       });
@@ -204,7 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
         tenant_id: tenantId
       };
 
-      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/register`, {
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export const useAuthStore = defineStore('auth', () => {
         tenant_domain: tenantDomain
       };
 
-      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/register`, {
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

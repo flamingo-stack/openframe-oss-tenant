@@ -30,7 +30,6 @@ public class TokenResponse {
     @JsonProperty("scope")
     private String scope;
     
-    // OpenFrame specific fields for multi-tenant support
     @JsonProperty("tenant_id")
     private String tenantId;
     

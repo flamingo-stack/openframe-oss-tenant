@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.openframe.authz", "com.openframe.core"})
+@ComponentScan(basePackages = {"com.openframe.authz", "com.openframe.core", "com.openframe.security"})
 public class OpenFrameAuthorizationServerApplication {
 
     public static void main(String[] args) {

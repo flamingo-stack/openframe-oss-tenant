@@ -1,7 +1,7 @@
 package com.openframe.authz.controller;
 
-import com.openframe.authz.dto.UserRegistrationRequest;
 import com.openframe.authz.dto.TokenResponse;
+import com.openframe.authz.dto.UserRegistrationRequest;
 import com.openframe.authz.service.OAuthService;
 import com.openframe.authz.service.RegistrationService;
 import com.openframe.security.authentication.AuthPrincipal;
@@ -98,6 +98,14 @@ public class OAuthController {
      */
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal AuthPrincipal principal) {
+        if (principal == null) {
+            log.warn("No authenticated principal found");
+            return ResponseEntity.status(401).body(Map.of(
+                    "error", "unauthorized",
+                    "error_description", "No authenticated user found"
+            ));
+        }
+
         log.debug("Getting current user info for: {}", principal.getId());
 
         return ResponseEntity.ok(Map.of(
@@ -107,7 +115,8 @@ public class OAuthController {
                         "email", principal.getEmail(),
                         "displayName", principal.getDisplayName(),
                         "roles", principal.getRoles(),
-                        "tenantId", "default" // TODO: get from user context
+                        "tenantId", principal.getTenantId() != null ? principal.getTenantId() : "default",
+                        "tenantDomain", principal.getTenantDomain() != null ? principal.getTenantDomain() : "default"
                 )
         ));
     }

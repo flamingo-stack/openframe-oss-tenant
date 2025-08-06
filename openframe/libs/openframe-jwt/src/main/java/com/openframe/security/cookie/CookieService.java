@@ -35,6 +35,9 @@ public class CookieService {
     @Value("${openframe.security.cookie.secure:false}")
     private boolean cookieSecure;
 
+    @Value("${openframe.security.cookie.same-site:Lax}")
+    private String cookieSameSite;
+
     /**
      * Set access token as HttpOnly cookie with Path=/ (sent on all API requests)
      */
@@ -113,6 +116,10 @@ public class CookieService {
         if (cookieDomain != null && !cookieDomain.isBlank()) {
             cookie.setDomain(cookieDomain);
         }
+
+        // Add SameSite attribute from configuration
+        cookie.setAttribute("SameSite", cookieSameSite);
+
         return cookie;
     }
 
@@ -128,6 +135,10 @@ public class CookieService {
         if (cookieDomain != null && !cookieDomain.isBlank()) {
             cookie.setDomain(cookieDomain);
         }
+
+        // Add SameSite attribute from configuration
+        cookie.setAttribute("SameSite", cookieSameSite);
+
         return cookie;
     }
 } 

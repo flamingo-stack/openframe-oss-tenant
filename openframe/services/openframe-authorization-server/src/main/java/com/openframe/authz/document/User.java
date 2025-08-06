@@ -1,6 +1,9 @@
 package com.openframe.authz.document;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -65,10 +68,6 @@ public class User {
 
     public boolean isActive() {
         return "ACTIVE".equals(status);
-    }
-
-    public boolean isLocked() {
-        return "LOCKED".equals(status);
     }
 
     public String getFullName() {

@@ -7,18 +7,17 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.openframe.authz.document.User;
 import com.openframe.authz.dto.SSOProvider;
 import com.openframe.authz.dto.SocialAuthRequest;
 import com.openframe.authz.exception.SocialAuthException;
-import com.openframe.authz.service.OAuthService;
-import com.openframe.authz.document.User;
 import com.openframe.authz.repository.TenantAwareSSOConfigRepository;
 import com.openframe.authz.repository.UserRepository;
+import com.openframe.authz.service.OAuthService;
 import com.openframe.core.model.SSOConfig;
 import com.openframe.core.service.EncryptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -36,9 +35,6 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
     private final UserRepository userRepository;
     private final TenantAwareSSOConfigRepository ssoConfigRepository;
     private final EncryptionService encryptionService;
-
-    @Value("${openframe.security.jwt.access-token-expiration:900}")
-    private int accessTokenExpirationSeconds;
 
     @Override
     public com.openframe.authz.dto.TokenResponse authenticate(SocialAuthRequest request) {
@@ -123,17 +119,14 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
         String lastName = (String) payload.get("family_name");
         String googleUserId = payload.getSubject();
 
-        // Try to find existing user by Google ID first
         Optional<User> existingUser = userRepository.findByExternalUserIdAndLoginProvider(googleUserId, "GOOGLE");
         if (existingUser.isPresent()) {
             return existingUser.get();
         }
 
-        // Try to find by email
         Optional<User> userByEmail = userRepository.findByEmail(email);
         if (userByEmail.isPresent()) {
             User user = userByEmail.get();
-            // Link Google account
             user.setExternalUserId(googleUserId);
             user.setLoginProvider("GOOGLE");
             user.setEmailVerified(true);
@@ -141,11 +134,14 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
             return userRepository.save(user);
         }
 
+        String tenantDomain = extractTenantDomainFromEmail(email);
+
         User newUser = User.builder()
                 .email(email)
                 .firstName(firstName)
                 .lastName(lastName)
                 .tenantId(tenantId != null ? tenantId : "default")
+                .tenantDomain(tenantDomain)
                 .roles(List.of("USER"))
                 .loginProvider("GOOGLE")
                 .externalUserId(googleUserId)
@@ -157,7 +153,14 @@ public class GoogleAuthStrategy implements SocialAuthStrategy {
         return userRepository.save(newUser);
     }
 
+    private String extractTenantDomainFromEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "default";
+        }
+        return email.substring(email.indexOf("@") + 1);
+    }
+
     private com.openframe.authz.dto.TokenResponse generateAppTokens(User user) {
-        return oauthService.generateTokens(user, "openframe-ui", "social");
+        return oauthService.generateTokens(user, "openframe-ui");
     }
 }

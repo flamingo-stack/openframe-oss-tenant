@@ -25,10 +25,11 @@
           <InputText 
             id="tenantDomain" 
             v-model="tenantDomain" 
-            placeholder="company.com" 
+            placeholder="localhost" 
             class="w-full" 
+            disabled
           />
-          <small class="domain-help">Your team will be redirected to this domain after login</small>
+          <small class="domain-help">Local development - domain is automatically set to localhost</small>
         </div>
         <div class="of-form-group">
           <label for="password" class="of-form-label">Password</label>
@@ -104,7 +105,7 @@ const toastService = ToastService.getInstance()
 const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
-const tenantDomain = ref('')
+const tenantDomain = ref('localhost') // Hardcoded for local development
 const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
@@ -165,7 +166,7 @@ const passwordStrength = computed(() => {
 
 const handleSubmit = async () => {
   if (!email.value || !password.value || !firstName.value || !lastName.value || !tenantDomain.value) {
-    toastService.showError('Please fill in all fields including company domain')
+    toastService.showError('Please fill in all fields')
     return
   }
 
@@ -176,12 +177,6 @@ const handleSubmit = async () => {
 
   if (passwordStrength.value.percentage < 50) {
     toastService.showError('Password is too weak. Please use a stronger password.')
-    return
-  }
-
-  // Validate domain format (basic)
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}$/.test(tenantDomain.value)) {
-    toastService.showError('Please enter a valid domain (e.g., company.com)')
     return
   }
 
@@ -197,12 +192,12 @@ const handleSubmit = async () => {
       tenantDomain.value
     )
     
-    toastService.showSuccess('Welcome to OpenFrame! Redirecting to your domain...')
+    toastService.showSuccess('Welcome to OpenFrame! Redirecting to dashboard...')
     
-    // Redirect to tenant domain after short delay
+    // Redirect to dashboard for local development
     setTimeout(() => {
-      window.location.href = `https://${tenantDomain.value}`
-    }, 2000)
+      router.push('/dashboard')
+    }, 1500)
   } catch (err: any) {
     const errorMessage = err.message || 'Registration failed. Please try again.'
     toastService.showError(errorMessage)

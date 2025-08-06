@@ -21,9 +21,4 @@ public enum SSOProvider {
         }
         return null;
     }
-
-    public static String getDisplayName(String provider) {
-        SSOProvider ssoProvider = fromProvider(provider);
-        return ssoProvider != null ? ssoProvider.getDisplayName() : provider;
-    }
 }

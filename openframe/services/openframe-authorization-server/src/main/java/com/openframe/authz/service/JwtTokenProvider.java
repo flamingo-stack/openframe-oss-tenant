@@ -89,7 +89,6 @@ public class JwtTokenProvider {
         try {
             Jwt jwt = jwtService.decodeToken(refreshToken);
             
-            // Validate that it's a refresh token
             String tokenType = jwt.getClaimAsString("token_type");
             if (!"refresh".equals(tokenType)) {
                 throw new IllegalArgumentException("Not a refresh token");

@@ -3,7 +3,6 @@ package com.openframe.authz.service;
 import com.openframe.authz.document.User;
 import com.openframe.authz.dto.TokenResponse;
 import com.openframe.security.cookie.CookieService;
-import com.openframe.authz.service.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * OAuth2 service for token management and authentication
@@ -49,17 +44,11 @@ public class OAuthService {
             throw new IllegalArgumentException("Invalid client_id");
         }
 
-        switch (grantType) {
-            case "password":
-                return handlePasswordGrant(username, password, clientId);
-            case "refresh_token":
-                return handleRefreshTokenGrant(refreshToken, clientId);
-            case "authorization_code":
-                // TODO: Implement authorization code grant
-                throw new UnsupportedOperationException("Authorization code grant not yet implemented");
-            default:
-                throw new IllegalArgumentException("Unsupported grant type: " + grantType);
-        }
+        return switch (grantType) {
+            case "password" -> handlePasswordGrant(username, password, clientId);
+            case "refresh_token" -> handleRefreshTokenGrant(refreshToken, clientId);
+            default -> throw new IllegalArgumentException("Unsupported grant type: " + grantType);
+        };
     }
 
     /**
@@ -86,7 +75,7 @@ public class OAuthService {
         // Update last login
         userService.updateLastLogin(user.getId());
 
-        return generateTokens(user, clientId, "password");
+        return generateTokens(user, clientId);
     }
 
     /**
@@ -98,7 +87,6 @@ public class OAuthService {
         }
 
         try {
-            // Validate and extract user ID from refresh token
             String userId = jwtTokenProvider.extractUserIdFromRefreshToken(refreshToken);
             User user = userService.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -107,7 +95,7 @@ public class OAuthService {
                 throw new IllegalArgumentException("Account is disabled");
             }
 
-            return generateTokens(user, clientId, "refresh_token");
+            return generateTokens(user, clientId);
 
         } catch (Exception e) {
             log.error("Invalid refresh token: {}", e.getMessage());
@@ -118,7 +106,7 @@ public class OAuthService {
     /**
      * Generate access and refresh tokens for user
      */
-    public TokenResponse generateTokens(User user, String clientId, String grantType) {
+    public TokenResponse generateTokens(User user, String clientId) {
         try {
             String accessToken = jwtTokenProvider.generateAccessToken(user, clientId);
             String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), clientId);

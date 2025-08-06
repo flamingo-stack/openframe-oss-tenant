@@ -1,8 +1,8 @@
 package com.openframe.authz.service;
 
 import com.openframe.authz.document.User;
-import com.openframe.authz.dto.UserRegistrationRequest;
 import com.openframe.authz.dto.TokenResponse;
+import com.openframe.authz.dto.UserRegistrationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,7 +57,7 @@ public class RegistrationService {
         );
 
         // Generate tokens using OAuthService
-        return oauthService.generateTokens(user, clientId, "registration");
+        return oauthService.generateTokens(user, clientId);
     }
 
     /**
@@ -79,14 +79,5 @@ public class RegistrationService {
         // - Check if tenant is active
         // - Check if current user has access to the tenant
         log.debug("Validated tenant: {}", tenantId);
-    }
-
-    /**
-     * Get current tenant ID - placeholder for tenant resolution logic
-     */
-    @SuppressWarnings("unused")
-    private String getCurrentTenantId() {
-        // TODO: Implement proper tenant resolution from context, domain, etc.
-        return "localhost";
     }
 }

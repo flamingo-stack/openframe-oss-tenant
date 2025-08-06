@@ -1,8 +1,11 @@
 package com.openframe.authz.exception;
 
+import lombok.Getter;
+
 /**
  * Exception for social authentication errors
  */
+@Getter
 public class SocialAuthException extends RuntimeException {
     private final String errorCode;
 
@@ -16,7 +19,4 @@ public class SocialAuthException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    public String getErrorCode() {
-        return errorCode;
-    }
 }

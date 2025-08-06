@@ -7,14 +7,6 @@ spring:
   
   profiles:
     active: local
-  
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/openframe-authz
-      auto-index-creation: true
-    redis:
-      host: localhost
-      port: 6379
 
 logging:
   level:
@@ -67,11 +59,9 @@ jwt:
       WCF8tQL1/DdeHALwemnWrgyc
       -----END PRIVATE KEY-----
 
-# Security encryption configuration
-security:
-  encryption:
-    password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
-    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
+domain:
+  validation:
+    regex: "^localhost$"
 
 ---
 # Local Development Profile
@@ -91,6 +81,20 @@ security:
   encryption:
     password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
     salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
+  oauth2:
+    token:
+      access:
+        expiration-seconds: 900  # 15 minutes
+      refresh:
+        expiration-seconds: 604800  # 7 days
+
+# Cookie configuration
+openframe:
+  security:
+    cookie:
+      domain: null
+      secure: true
+      same-site: None
 
 jwt:
   issuer: openframe
