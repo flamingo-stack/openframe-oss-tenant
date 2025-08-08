@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public abstract class IntegratedToolEventDeserializer implements KafkaMessageDeserializer {
@@ -37,16 +38,18 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     public DeserializedDebeziumMessage deserialize(CommonDebeziumMessage debeziumMessage, MessageType messageType) {
         try {
             JsonNode after = debeziumMessage.getPayload().getAfter();
+            long eventTimestamp = getEffectiveTimestamp(debeziumMessage, after);
             return DeserializedDebeziumMessage.builder()
                 .payload(debeziumMessage.getPayload())
                 .agentId(getAgentId(after).orElse(null))
-                .ingestDay(formatter.format(Instant.ofEpochMilli(debeziumMessage.getPayload().getTimestamp())))
+                .ingestDay(formatter.format(Instant.ofEpochMilli(eventTimestamp)))
                 .sourceEventType(getSourceEventType(after).orElse(UNKNOWN))
                 .toolEventId(generateCompositeId(debeziumMessage, messageType, after))
                 .unifiedEventType(getEventType(getSourceEventType(after).orElse(UNKNOWN), messageType.getIntegratedToolType()))
                 .message(getMessage(after).orElse(null))
                 .integratedToolType(messageType.getIntegratedToolType())
                 .details(getDetails(after))
+                .eventTimestamp(eventTimestamp)
                 .build();
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Error converting Map to DebeziumMessage", e);
@@ -57,6 +60,23 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     protected abstract Optional<String> getSourceEventType(JsonNode afterField);
     protected abstract Optional<String> getEventToolId(JsonNode afterField);
     protected abstract Optional<String> getMessage(JsonNode afterField);
+    
+    /**
+     * Extract event timestamp from the source data. Override to provide tool-specific implementation.
+     * Returns empty if no timestamp field is available in the event.
+     */
+    protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
+        return Optional.empty();
+    }
+    
+    /**
+     * Get effective timestamp for the event - uses event timestamp from source data if available,
+     * falls back to Debezium processing timestamp
+     */
+    private long getEffectiveTimestamp(CommonDebeziumMessage message, JsonNode after) {
+        return getSourceEventTimestamp(after)
+                .orElse(message.getPayload().getTimestamp());
+    }
     
     /**
      * Generates composite ID: tool_table_id_value or tool_table_hash_value for missing PKs
@@ -131,6 +151,18 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
         return EventTypeMapper.mapToUnifiedType(toolType, sourceEventType);
     }
 
+    /**
+     * Safely extract a string field from a JsonNode.
+     * Shared utility method for consistent field parsing across all deserializers.
+     */
+    protected Optional<String> parseStringField(JsonNode node, String fieldName) {
+        return Optional.ofNullable(node)
+            .map(n -> n.get(fieldName))
+            .filter(field -> !field.isNull() && !field.isMissingNode())
+            .map(JsonNode::asText)
+            .filter(StringUtils::isNotBlank);
+    }
+    
     /**
      * Recursively convert JsonNode to Map<String, String>
      * Handles nested objects and arrays by flattening them with dot notation

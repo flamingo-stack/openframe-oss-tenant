@@ -3,6 +3,7 @@ package com.openframe.stream.deserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
+import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -104,5 +105,12 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
                 .filter(StringUtils::isNotBlank)
                 .or(() -> Optional.of(idNode.asText())
                         .filter(StringUtils::isNotBlank));
+    }
+
+    @Override
+    protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
+        return parseJson(afterField)
+                .flatMap(event -> extractField(event, "time"))
+                .flatMap(TimestampParser::parseIso8601);
     }
 }

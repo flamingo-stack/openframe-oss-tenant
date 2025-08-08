@@ -2,8 +2,8 @@ package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.model.enums.MessageType;
+import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -11,6 +11,13 @@ import java.util.Optional;
 @Component
 @Slf4j
 public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
+    // Field name constants
+    private static final String FIELD_AGENT_ID = "agentid";
+    private static final String FIELD_OBJECT_TYPE = "object_type";
+    private static final String FIELD_ACTION = "action";
+    private static final String FIELD_ID = "id";
+    private static final String FIELD_MESSAGE = "message";
+    private static final String FIELD_ENTRY_TIME = "entry_time";
 
     @Override
     public MessageType getType() {
@@ -19,43 +26,33 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
 
     @Override
     protected Optional<String> getAgentId(JsonNode after) {
-        return parseField(after, "agentid");
+        return parseStringField(after, FIELD_AGENT_ID);
     }
 
     @Override
     protected Optional<String> getSourceEventType(JsonNode after) {
-        Optional<String> objectType = parseField(after, "object_type");
-        Optional<String> action = parseField(after, "action");
-        Optional<String> result = Optional.empty();
+        Optional<String> objectType = parseStringField(after, FIELD_OBJECT_TYPE);
+        Optional<String> action = parseStringField(after, FIELD_ACTION);
+        
         if (objectType.isPresent() && action.isPresent()) {
-            result = Optional.of("%s.%s".formatted(objectType.get(), action.get()));
-        } else if (objectType.isPresent()) {
-            result = objectType;
-        } else if (action.isPresent()) {
-            result = action;
+            return Optional.of("%s.%s".formatted(objectType.get(), action.get()));
         }
-
-        return result;
+        return objectType.or(() -> action);
     }
 
     @Override
     protected Optional<String> getEventToolId(JsonNode after) {
-        return parseField(after, "id");
+        return parseStringField(after, FIELD_ID);
     }
 
     @Override
     protected Optional<String> getMessage(JsonNode after) {
-        return parseField(after, "message");
+        return parseStringField(after, FIELD_MESSAGE);
     }
 
-
-    private Optional<String> parseField(JsonNode rawNode, String fieldName) {
-        return Optional.ofNullable(rawNode)
-                .flatMap(node -> {
-                    JsonNode fieldNode = node.get(fieldName);
-                    return fieldNode != null && StringUtils.isNotBlank(fieldNode.asText())
-                            ? Optional.of(fieldNode.asText())
-                            : Optional.empty();
-                });
+    @Override
+    protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
+        return parseStringField(afterField, FIELD_ENTRY_TIME)
+                .flatMap(TimestampParser::parsePostgreSqlTimestamp);
     }
 }
