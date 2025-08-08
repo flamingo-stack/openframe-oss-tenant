@@ -3,6 +3,7 @@ package com.openframe.stream.deserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.mapper.EventTypeMapper;
 import com.openframe.data.model.debezium.CommonDebeziumMessage;
+import com.openframe.data.model.debezium.DebeziumMessage;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.enums.IntegratedToolType;
 import com.openframe.data.model.enums.MessageType;
@@ -85,27 +86,19 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     private String generateCompositeId(CommonDebeziumMessage message, MessageType messageType, JsonNode after) {
         String toolName = messageType.getIntegratedToolType().name().toLowerCase();
         String tableName = extractTableName(message);
-        Optional<String> primaryKeyValue = getEventToolId(after);
-        String compositeKey;
-        if (primaryKeyValue.isPresent() && !UNKNOWN.equals(primaryKeyValue.get())) {
-            compositeKey = String.format(COMPOSITE_KEY_PATTERN, 
-                toolName, 
-                tableName, 
-                primaryKeyValue.get()
-            );
-        } else {
-            log.warn("Event missing primary key from {}.{} - using content hash fallback", toolName, tableName);
-
-            String contentHash = Integer.toHexString(
-                Objects.hash(toolName, tableName, after.toString())
-            );
-            
-            compositeKey = String.format(HASH_KEY_PATTERN,
-                toolName,
-                tableName,
-                contentHash
-            );
-        }
+        
+        String compositeKey = getEventToolId(after)
+                .filter(id -> !UNKNOWN.equals(id))
+                .map(id -> String.format(COMPOSITE_KEY_PATTERN, toolName, tableName, id))
+                .orElseGet(() -> {
+                    log.warn("Event missing primary key from {}.{} - using content hash fallback", toolName, tableName);
+                    
+                    String contentHash = Integer.toHexString(
+                        Objects.hash(toolName, tableName, after.toString())
+                    );
+                    
+                    return String.format(HASH_KEY_PATTERN, toolName, tableName, contentHash);
+                });
         
         //Generate deterministic UUID
         UUID uuid = UUID.nameUUIDFromBytes(compositeKey.getBytes());
@@ -117,20 +110,21 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
      * Handles different database types: PostgreSQL/MySQL use "table", MongoDB uses "collection"
      */
     private String extractTableName(CommonDebeziumMessage message) {
-        if (message == null || message.getPayload() == null) {
-            return DEFAULT_TABLE_NAME;
-        }
-        var source = message.getPayload().getSource();
-        if (source == null) {
-            return DEFAULT_TABLE_NAME;
-        }
-        if (source.getTable() != null && !source.getTable().trim().isEmpty()) {
-            return source.getTable().trim();
-        }
-        if (source.getCollection() != null && !source.getCollection().trim().isEmpty()) {
-            return source.getCollection().trim();
-        }
-        return DEFAULT_TABLE_NAME;
+        return Optional.ofNullable(message)
+                .map(CommonDebeziumMessage::getPayload)
+                .map(DebeziumMessage.Payload::getSource)
+                .flatMap(source -> {
+                    String table = source.getTable();
+                    if (table != null && !table.trim().isEmpty()) {
+                        return Optional.of(table.trim());
+                    }
+                    String collection = source.getCollection();
+                    if (collection != null && !collection.trim().isEmpty()) {
+                        return Optional.of(collection.trim());
+                    }
+                    return Optional.empty();
+                })
+                .orElse(DEFAULT_TABLE_NAME);
     }
     
     /**
