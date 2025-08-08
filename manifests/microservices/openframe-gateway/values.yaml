@@ -1,11 +1,34 @@
-deployment:
-  ingress: localhost
-
-registerJob:
-  enabled: true
+# Monitoring configuration
 servicemonitor:
   enabled: true
 
+# Job configuration
+registerJob:
+  enabled: true
+
+# Deployment configuration
+deployment:
+  # Ingress configuration - enable only ONE of the following
+  ingress:
+    localhost:
+      enabled: true
+      # TLS configuration (optional)
+      tls:
+        # Certificate and key content (use --set-file)
+        # cert: |
+        #   -----BEGIN CERTIFICATE-----
+        #   ...
+        # key: |
+        #   -----BEGIN PRIVATE KEY-----
+        #   ...
+    ngrok:
+      enabled: false
+      # URL is required when ngrok is enabled
+      url: your-ngrok-domain.ngrok.io
+      allowedIPs:
+        - 0.0.0.0/0
+
+# Application configuration
 image:
   repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
   tag: latest
