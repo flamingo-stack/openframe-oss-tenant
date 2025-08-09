@@ -75,11 +75,8 @@ ARG=$1
 NAMESPACE=${2:-}
 APP=${3:-}
 ACTION=${4:-}
-
-if [ "$ACTION" == "intercept" ] || [ "$ACTION" == "health" ]; then
-  ARG1="$5"
-  ARG2="$6"
-fi
+ARG1=${5:-}
+ARG2=${6:-}
 
 case "$ARG" in
   k|cluster)
