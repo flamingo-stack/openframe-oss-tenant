@@ -53,6 +53,6 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
     @Override
     protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
         return parseStringField(afterField, FIELD_ENTRY_TIME)
-                .flatMap(TimestampParser::parsePostgreSqlTimestamp);
+                .flatMap(TimestampParser::parseIso8601);
     }
 }

@@ -1,5 +1,6 @@
 package com.openframe.data.model.kafka;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -12,5 +13,7 @@ public class IntegratedToolEventKafkaMessage {
     private String eventType;
     private String severity;
     private String summary;
+    
+    @JsonProperty("event_timestamp")
     private Long eventTimestamp;
 }

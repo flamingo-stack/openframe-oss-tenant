@@ -46,7 +46,7 @@ public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
     @Override
     protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
         return parseStringField(afterField, FIELD_CREATED_AT)
-                .flatMap(TimestampParser::parseMySqlDateTime);
+                .flatMap(TimestampParser::parseIso8601);
     }
 
     @Override
