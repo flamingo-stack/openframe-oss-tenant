@@ -2,7 +2,7 @@
   "tableName": "logs",
   "tableType": "REALTIME",
   "segmentsConfig": {
-    "timeColumnName": "event_timestamp",
+    "timeColumnName": "eventTimestamp",
     "timeType": "MILLISECONDS",
     "replication": "1",
     "segmentAssignmentStrategy": "BalanceNumSegmentAssignmentStrategy",
@@ -32,9 +32,9 @@
       "deviceId"
     ],
     "rangeIndexColumns": [
-      "event_timestamp"
+      "eventTimestamp"
     ],
-    "sortedColumn": ["event_timestamp"],
+    "sortedColumn": ["eventTimestamp"],
     "streamConfigs": {
       "streamType": "kafka",
       "stream.kafka.topic.name": "integrated-tool.events.pinot",

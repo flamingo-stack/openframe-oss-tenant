@@ -40,7 +40,7 @@ public class PinotQueryBuilder {
     private static final String SQL_ASC = " ASC";
     
     private static final String TEXT_MATCH_FUNCTION = "TEXT_MATCH";
-    private static final String EVENT_TIMESTAMP_FIELD = "event_timestamp";
+    private static final String EVENT_TIMESTAMP_FIELD = "eventTimestamp";
     private static final String TIMESTAMP_DESC = EVENT_TIMESTAMP_FIELD + SQL_DESC;
     private static final String TIMESTAMP_ASC = EVENT_TIMESTAMP_FIELD + SQL_ASC;
     

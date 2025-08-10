@@ -32,8 +32,8 @@ public class PinotClientLogRepository implements PinotLogRepository {
     public List<LogProjection> findLogs(LocalDate startDate, LocalDate endDate, List<String> toolTypes, List<String> eventTypes, 
                                   List<String> severities, String cursor, int limit) {
         PinotQueryBuilder queryBuilder = new PinotQueryBuilder(logsTable)
-            .select("toolEventId", "ingestDay", "toolType", "eventType", "severity", "userId", "deviceId", "summary", "event_timestamp")
-            .whereDateRange("event_timestamp", startDate, endDate)
+            .select("toolEventId", "ingestDay", "toolType", "eventType", "severity", "userId", "deviceId", "summary", "eventTimestamp")
+            .whereDateRange("eventTimestamp", startDate, endDate)
             .whereIn("toolType", toolTypes)
             .whereIn("eventType", eventTypes)
             .whereIn("severity", severities)
@@ -48,8 +48,8 @@ public class PinotClientLogRepository implements PinotLogRepository {
     public List<LogProjection> searchLogs(LocalDate startDate, LocalDate endDate, List<String> toolTypes, List<String> eventTypes, 
                                     List<String> severities, String searchTerm, String cursor, int limit) {
         PinotQueryBuilder queryBuilder = new PinotQueryBuilder(logsTable)
-            .select("toolEventId", "ingestDay", "toolType", "eventType", "severity", "userId", "deviceId", "summary", "event_timestamp")
-            .whereDateRange("event_timestamp", startDate, endDate)
+            .select("toolEventId", "ingestDay", "toolType", "eventType", "severity", "userId", "deviceId", "summary", "eventTimestamp")
+            .whereDateRange("eventTimestamp", startDate, endDate)
             .whereIn("toolType", toolTypes)
             .whereIn("eventType", eventTypes)
             .whereIn("severity", severities)
@@ -66,7 +66,7 @@ public class PinotClientLogRepository implements PinotLogRepository {
         PinotQueryBuilder queryBuilder = new PinotQueryBuilder(logsTable)
             .select("eventType")
             .distinct()
-            .whereDateRange("event_timestamp", startDate, endDate)
+            .whereDateRange("eventTimestamp", startDate, endDate)
             .whereIn("toolType", toolTypes)
             .whereIn("severity", severities)
             .orderBy("eventType");
@@ -79,7 +79,7 @@ public class PinotClientLogRepository implements PinotLogRepository {
         PinotQueryBuilder queryBuilder = new PinotQueryBuilder(logsTable)
             .select("severity")
             .distinct()
-            .whereDateRange("event_timestamp", startDate, endDate)
+            .whereDateRange("eventTimestamp", startDate, endDate)
             .whereIn("toolType", toolTypes)
             .whereIn("eventType", eventTypes)
             .orderBy("severity");
@@ -92,7 +92,7 @@ public class PinotClientLogRepository implements PinotLogRepository {
         PinotQueryBuilder queryBuilder = new PinotQueryBuilder(logsTable)
             .select("toolType")
             .distinct()
-            .whereDateRange("event_timestamp", startDate, endDate)
+            .whereDateRange("eventTimestamp", startDate, endDate)
             .whereIn("eventType", eventTypes)
             .whereIn("severity", severities)
             .orderBy("toolType");
@@ -127,7 +127,7 @@ public class PinotClientLogRepository implements PinotLogRepository {
                 projection.userId = resultSet.getString(rowIndex, columnIndexMap.get("userId"));
                 projection.deviceId = resultSet.getString(rowIndex, columnIndexMap.get("deviceId"));
                 projection.summary = resultSet.getString(rowIndex, columnIndexMap.get("summary"));
-                projection.eventTimestamp = Instant.ofEpochMilli(resultSet.getLong(rowIndex, columnIndexMap.get("event_timestamp")));
+                projection.eventTimestamp = Instant.ofEpochMilli(resultSet.getLong(rowIndex, columnIndexMap.get("eventTimestamp")));
                 return projection;
             };
         });
