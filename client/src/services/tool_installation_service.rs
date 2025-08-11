@@ -1,18 +1,23 @@
-struct ToolInstallationService {
-    nats_message_publisher: NatsMessagePublisher,
+use crate::clients::tool_agent_file_client::ToolAgentFileClient;
+use crate::services::tool_installer::ToolInstaller;
+use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
+
+pub struct ToolInstallationService {
+    tool_agent_file_client: ToolAgentFileClient,
+    tool_installer: ToolInstaller,
+    tool_connection_message_publisher: ToolConnectionMessagePublisher,
 }
 
 impl ToolInstallationService {
     pub fn new(
-        tool_agent_file_client: ToolAgentFileClient
+        tool_agent_file_client: ToolAgentFileClient,
         tool_installer: ToolInstaller,
-        tool_connection_message_publisher: ToolConnectionMessagePublisher, 
-
+        tool_connection_message_publisher: ToolConnectionMessagePublisher,
     ) -> Self {
         Self {
             tool_agent_file_client,
             tool_installer,
-            tool_connection_message_publisher
+            tool_connection_message_publisher,
         }
     }
 

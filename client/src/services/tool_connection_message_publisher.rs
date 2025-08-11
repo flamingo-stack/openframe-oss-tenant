@@ -1,4 +1,6 @@
-struct ToolConnectionMessagePublisher {
+use crate::services::nats_message_publisher::NatsMessagePublisher;
+
+pub struct ToolConnectionMessagePublisher {
     nats_message_publisher: NatsMessagePublisher,
 }
 

@@ -17,7 +17,7 @@ pub struct NatsConnectionManager {
 
 impl NatsConnectionManager {
     
-    const NATS_CONNECTION_URL_TEMPLATE: &str = "wss://{host}/ws/nats?authorization={token}";
+    const NATS_CONNECTION_URL_TEMPLATE: &str = "{host}/ws/nats?authorization={token}";
     const NATS_DEVICE_USER: &str = "device";
     const NATS_DEVICE_PASSWORD: &str = "1234";
     
@@ -36,7 +36,7 @@ impl NatsConnectionManager {
         let client = async_nats::ConnectOptions::new()
             .name(machine_id)
             .user_and_password(NATS_DEVICE_USER.to_string(), NATS_DEVICE_PASSWORD.to_string())
-            .connect(NATS_SERVER_URL)
+            .connect(build_nats_connection_url())
             .await
             .context("Failed to connect to NATS server")?;
 
@@ -45,7 +45,7 @@ impl NatsConnectionManager {
         Ok(())
     }
 
-     fn get_nats_connection_url(&self) -> String {
+     fn build_nats_connection_url(&self) -> String {
         let token = self.config_service.get_token().await?;
         let host = self.nats_server_url;
         format!(NATS_CONNECTION_URL_TEMPLATE, host, token)

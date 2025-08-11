@@ -41,7 +41,7 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installer::ToolInstaller;
 use crate::services::tool_installation_service::ToolInstallationService;
-use crate::services::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
@@ -115,9 +115,8 @@ pub struct Client {
 }
 
 impl Client {
-    // TODO: get from args during installation and save to file during installation
     const GATEWAY_HTTP_URL: &str = "https://localhost";
-    const GATEWAY_WS_URL: &str   = "wss://localhost";
+    const GATEWAY_WS_URL: &str = "wss://localhost";
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
@@ -194,7 +193,7 @@ impl Client {
         );
 
         // Initialize NATS connection manager
-        let nats_connection_manager = NatsConnectionManager::new(GGATEWAY_WS_URL, config_service);
+        let nats_connection_manager = NatsConnectionManager::new(Self::GATEWAY_WS_URL, config_service);
         
         // Initialize tool agent file client
         let tool_agent_file_client = ToolAgentFileClient::new(http_client.clone(), config_service.get_server_url().await?);
@@ -238,10 +237,10 @@ impl Client {
         self.auth_processor.process().await?;
 
         // Connect to NATS
-        nats_connection_manager.connect().await?;
+        self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener
-        tool_installation_message_listener.listen().await?;
+        self.tool_installation_message_listener.listen().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

@@ -1,9 +1,10 @@
-struct ToolInstaller {
-    tool_folder_path: PathBuf,
+use crate::platform::DirectoryManager;
+
+pub struct ToolInstaller {
+    directory_manager: DirectoryManager,
 }
 
 impl ToolInstaller {
-
     pub fn new(directory_manager: DirectoryManager) -> Self {
         let tool_folder_path = directory_manager.secured_dir().join("tool_agent");
         directory_manager.ensure_directories()

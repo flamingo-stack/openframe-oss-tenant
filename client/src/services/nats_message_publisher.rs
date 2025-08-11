@@ -1,4 +1,6 @@
-struct NatsMessagePublisher {
+use crate::services::nats_connection_manager::NatsConnectionManager;
+
+pub struct NatsMessagePublisher {
     nats_connection_manager: NatsConnectionManager,
 }
 
