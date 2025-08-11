@@ -68,6 +68,9 @@ public class AuthorizationServerConfig {
     @Value("${jwt.issuer:openframe}")
     private String issuer;
 
+    @Value("${openframe.auth.client.id}")
+    private String configuredClientId;
+
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
@@ -101,9 +104,6 @@ public class AuthorizationServerConfig {
         return registration;
     }
 
-    @Value("${openframe.auth.client.id}")
-    private String configuredClientId;
-
     @Bean
     public RegisteredClient openframeClient() {
         return RegisteredClient.withId(UUID.randomUUID().toString())
@@ -121,7 +121,7 @@ public class AuthorizationServerConfig {
                 .requireAuthorizationConsent(false)
                 .build())
             .tokenSettings(TokenSettings.builder()
-                .reuseRefreshTokens(false)
+                .reuseRefreshTokens(true)
                 .refreshTokenTimeToLive(Duration.ofDays(7))
                 .build())
             .build();
@@ -133,7 +133,6 @@ public class AuthorizationServerConfig {
             GoogleSSOProperties googleSSOProperties,
             RegisteredClient openframeClient) {
         
-        // Return dynamic repository that supports both static and database clients
         return new DatabaseRegisteredClientRepository(ssoConfigService, googleSSOProperties, openframeClient);
     }
 

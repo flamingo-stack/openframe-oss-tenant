@@ -3,99 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenFrame Authorization Server</title>
+    <title>OpenFrame • Authorization Server</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-        }
-
-        h1 {
-            color: #667eea;
-            margin-bottom: 16px;
-        }
-
-        p {
-            color: #6b7280;
-            margin-bottom: 24px;
-            line-height: 1.6;
-        }
-
-        .feature-list {
-            text-align: left;
-            margin: 24px 0;
-        }
-
-        .feature-list li {
-            margin: 8px 0;
-            color: #374151;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: #5a67d8;
-        }
-
-        .endpoints {
-            margin-top: 32px;
-            padding: 20px;
-            background: #f9fafb;
-            border-radius: 8px;
-            text-align: left;
-        }
-
-        .endpoints h3 {
-            margin-bottom: 16px;
-            color: #374151;
-        }
-
-        .endpoints code {
-            background: #e5e7eb;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 14px;
-        }
-
-        .endpoints ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .endpoints li {
-            margin: 8px 0;
-            color: #6b7280;
-        }
+        :root { --of-primary: #f59e0b; --of-primary-600: #d97706; --of-text: #111827; --of-muted: #6b7280; --of-border: #e5e7eb; --of-bg: #f5f7fb; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--of-bg); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; padding: 24px; color: var(--of-text); }
+        .container { background: #fff; border: 1px solid var(--of-border); border-radius: 12px; padding: 28px; text-align: left; box-shadow: 0 6px 24px rgba(17,24,39,0.06); max-width: 720px; width: 100%; }
+        h1 { color: var(--of-text); margin: 0 0 8px; font-size: 20px; }
+        p { color: var(--of-muted); margin: 0 0 16px; line-height: 1.5; font-size: 14px; }
+        .feature-list { margin: 16px 0; }
+        .feature-list h3 { font-size: 14px; margin-bottom: 6px; color: var(--of-text); }
+        .feature-list li { margin: 6px 0; color: var(--of-text); font-size: 14px; }
+        .btn { display: inline-block; padding: 10px 14px; background: var(--of-primary); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all .15s ease; border: 1px solid var(--of-primary); }
+        .btn:hover { background: var(--of-primary-600); border-color: var(--of-primary-600); }
+        .endpoints { margin-top: 16px; padding: 16px; background: #fff; border: 1px solid var(--of-border); border-radius: 8px; }
+        .endpoints h3 { margin: 0 0 10px; color: var(--of-text); font-size: 14px; }
+        .endpoints code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 13px; }
+        .endpoints ul { list-style: none; padding: 0; margin: 0; }
+        .endpoints li { margin: 6px 0; color: var(--of-muted); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 OpenFrame Authorization Server</h1>
+        <h1>OpenFrame Authorization Server</h1>
         <p th:text="${message}">Welcome to OpenFrame Authorization Server</p>
         
         <p>
@@ -123,11 +52,11 @@
             <ul>
                 <li><strong>Authorization:</strong> <code>/oauth2/authorize</code></li>
                 <li><strong>Token:</strong> <code>/oauth2/token</code></li>
-                <li><strong>JWK Set:</strong> <code>/.well-known/jwks.json</code></li>
+                <li><strong>JWK Set:</strong> <code>/oauth2/jwks</code></li>
                 <li><strong>User Info:</strong> <code>/userinfo</code></li>
                 <li><strong>Token Revocation:</strong> <code>/oauth2/revoke</code></li>
                 <li><strong>Token Introspection:</strong> <code>/oauth2/introspect</code></li>
-                <li><strong>OpenID Configuration:</strong> <code>/.well-known/openid_configuration</code></li>
+                <li><strong>OpenID Configuration:</strong> <code>/.well-known/openid-configuration</code></li>
             </ul>
         </div>
     </div>
