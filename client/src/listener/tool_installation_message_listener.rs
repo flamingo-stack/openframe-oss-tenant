@@ -22,27 +22,29 @@ impl ToolInstallationMessageListener {
     }
 
     pub async fn listen(&self) -> Result<()> {
-        let client_guard = self.nats_connection_manager.get_client().read().await;
-        if let Some(client) = &*client_guard {
-            let jetstream = jetstream::new(client);
-            let machine_id = "TODO_MACHINE_ID".to_string(); // Replace with actual machine_id source
-            let consumer = self.create_consumer(&jetstream, &machine_id).await?;
-            let mut messages = consumer.messages().await?;
-            while let Some(message) = messages.next().await {
-                let message = message?;
-                let payload = String::from_utf8_lossy(&message.payload);
-                let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload).unwrap();
-                self.tool_installation_service.install(tool_installation_message).await?;
-                message.ack().await.map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-            }
+        let client = self.nats_connection_manager.get_client()?;
+        let js = jetstream::new(client.clone());
+
+        let machine_id = "TODO_MACHINE_ID".to_string(); // TODO: Replace with actual machine_id source
+
+        let consumer = self.create_consumer(&js, &machine_id).await?;
+
+        let mut messages = consumer.messages().await?;
+        while let Some(message) = messages.next().await {
+            let message = message?;
+            let payload = String::from_utf8_lossy(&message.payload);
+            let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
+            self.tool_installation_service.install(tool_installation_message).await?;
+            message.ack().await.map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
         }
         Ok(())
     }
 
-    async fn create_consumer(&self, jetstream: &JetStream, machine_id: &str) -> Result<PushConsumer> {
+    async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> Result<PushConsumer> {
         let deliver_subject = Self::build_deliver_subject(machine_id);
         let consumer_configuration = Self::build_consumer_configuration(&deliver_subject, machine_id);
-        let consumer = jetstream.create_consumer(Self::STREAM_NAME, consumer_configuration).await?;
+        let stream = js.get_stream(Self::STREAM_NAME).await?;
+        let consumer = stream.create_consumer(consumer_configuration).await?;
         Ok(consumer)
     }
 
@@ -55,12 +57,12 @@ impl ToolInstallationMessageListener {
         }
     }
 
-    async fn build_deliver_subject(machine_id: String) -> String {
-        format!("machine.{}.toolinstallation", machine_id)
+    fn build_deliver_subject(machine_id: &str) -> String {
+        format!("machine.{}.tool-installation", machine_id)
     }
 
-    async fn build_durable_name(machine_id: String) -> String {
-        format!("machine_{}_toolinstallation_consumer", machine_id)
+    fn build_durable_name(machine_id: &str) -> String {
+        format!("machine_{}_tool-installation_consumer", machine_id)
     }
 
 }
