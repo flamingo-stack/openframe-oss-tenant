@@ -37,6 +37,10 @@ public class IntegratedToolService {
         return toolRepository.findByType(toolType);
     }
 
+    public Optional<IntegratedTool> getToolById(String toolId) {
+        return toolRepository.findById(toolId);
+    }
+
     public IntegratedTool saveTool(IntegratedTool tool) {
         if (tool.getDebeziumConnector() != null) {
             createDebeziumConnector(tool.getDebeziumConnector());
