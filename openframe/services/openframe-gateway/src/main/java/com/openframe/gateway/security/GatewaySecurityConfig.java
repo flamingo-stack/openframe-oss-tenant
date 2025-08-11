@@ -1,7 +1,6 @@
 package com.openframe.gateway.security;
 
 import com.openframe.gateway.security.filter.CookieToHeaderFilter;
-import com.openframe.security.jwt.JwtConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
@@ -11,16 +10,20 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.ReactiveAuthenticationManagerResolver;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerReactiveAuthenticationManagerResolver;
+import org.springframework.security.oauth2.server.resource.authentication.JwtReactiveAuthenticationManager;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static com.openframe.gateway.security.SecurityConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -42,7 +45,7 @@ public class GatewaySecurityConfig {
         rolesConverter.setAuthorityPrefix("ROLE_");
 
         JwtGrantedAuthoritiesConverter scopesConverter = new JwtGrantedAuthoritiesConverter();
-        scopesConverter.setAuthoritiesClaimName("scopes");
+        scopesConverter.setAuthoritiesClaimName("scope");
         scopesConverter.setAuthorityPrefix("SCOPE_");
 
         ReactiveJwtAuthenticationConverter jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
@@ -64,7 +67,8 @@ public class GatewaySecurityConfig {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(
             ServerHttpSecurity http,
-            @Value("${management.endpoints.web.base-path}") String managementBasePath
+            @Value("${management.endpoints.web.base-path}") String managementBasePath,
+            ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver
     ) {
         String managementContextPath = isNotBlank(managementBasePath)
                 ? managementBasePath: "/actuator";
@@ -75,7 +79,7 @@ public class GatewaySecurityConfig {
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .addFilterBefore(cookieToHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(reactiveJwtAuthenticationConverter()))
+                        .authenticationManagerResolver(issuerResolver)
                 )
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS,    "/**").permitAll()
@@ -89,7 +93,7 @@ public class GatewaySecurityConfig {
                                 DASHBOARD_PREFIX + "/oauth/register",
                                 DASHBOARD_PREFIX + "/oauth2/**",
                                 DASHBOARD_PREFIX + "/sso/providers",
-                                 managementContextPath + "/**",
+                                managementContextPath + "/**",
                                 DASHBOARD_PREFIX + "/.well-known/openid-configuration"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
@@ -106,8 +110,13 @@ public class GatewaySecurityConfig {
     }
 
     @Bean
-    public ReactiveJwtDecoder reactiveJwtDecoder(JwtConfig jwtUtils) throws Exception {
-        return NimbusReactiveJwtDecoder.withPublicKey(jwtUtils.loadPublicKey()).build();
+    public JwtIssuerReactiveAuthenticationManagerResolver jwtIssuerAuthenticationManagerResolver() {
+        return new JwtIssuerReactiveAuthenticationManagerResolver(issuer -> {
+            var decoder = ReactiveJwtDecoders.fromIssuerLocation(issuer);
+            var manager = new JwtReactiveAuthenticationManager(decoder);
+            manager.setJwtAuthenticationConverter(reactiveJwtAuthenticationConverter());
+            return Mono.just(manager);
+        });
     }
 
 }

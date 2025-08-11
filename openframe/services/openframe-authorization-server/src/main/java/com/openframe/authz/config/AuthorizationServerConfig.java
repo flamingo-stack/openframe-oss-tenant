@@ -21,6 +21,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -55,15 +56,6 @@ import static com.openframe.authz.tenant.TenantContext.getTenantId;
 @Configuration
 @EnableWebSecurity
 public class AuthorizationServerConfig {
-
-    @Value("${jwt.privateKey.value}")
-    private String privateKeyPem;
-
-    @Value("${jwt.publicKey.value}")
-    private String publicKeyPem;
-
-    @Value("${jwt.issuer:openframe}")
-    private String issuer;
 
     @Value("${openframe.auth.client.id}")
     private String configuredClientId;
@@ -122,7 +114,15 @@ public class AuthorizationServerConfig {
     @Bean
     public FilterRegistrationBean<org.springframework.web.filter.ForwardedHeaderFilter> forwardedHeaderFilter() {
         var reg = new FilterRegistrationBean<>(new org.springframework.web.filter.ForwardedHeaderFilter());
-        reg.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
+        return reg;
+    }
+
+    // Register our synthetic X-Forwarded-Prefix writer before ForwardedHeaderFilter
+    @Bean
+    public FilterRegistrationBean<com.openframe.authz.tenant.TenantForwardedPrefixFilter> tenantForwardedPrefixFilter() {
+        var reg = new FilterRegistrationBean<>(new com.openframe.authz.tenant.TenantForwardedPrefixFilter());
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 15);
         return reg;
     }
 
@@ -182,33 +182,30 @@ public class AuthorizationServerConfig {
      * JWT token customizer to add custom claims
      */
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer() {
+    public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(com.openframe.authz.service.UserService userService) {
         return context -> {
-            // Add tenant claims only to ID Token
-            if ("id_token".equals(context.getTokenType().getValue())
-                    && context.getPrincipal().getPrincipal() instanceof User user) {
-                context.getClaims().claims(claims -> {
-                    // Tenant claims
-                    claims.put("tenant_id", user.getTenantId());
-                    claims.put("tenant_domain", user.getTenantDomain());
-                    // User profile claims
-                    claims.put("userId", user.getId());
-                    claims.put("email", user.getEmail());
-                    claims.put("firstName", user.getFirstName());
-                    claims.put("lastName", user.getLastName());
-                    claims.put("roles", user.getRoles());
-                });
-            }
+            var authentication = context.getPrincipal();
+            var authorities = authentication.getAuthorities();
+            var roles = authorities.stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(a -> a != null && a.startsWith("ROLE_"))
+                    .map(a -> a.substring(5))
+                    .toList();
 
-            // Add minimal authorization claims to Access Token for resource servers
-            if ("access_token".equals(context.getTokenType().getValue())
-                    && context.getPrincipal().getPrincipal() instanceof User user) {
+            String tenantId = getTenantId();
+
+            User user = userService.findByEmail(authentication.getName());
+
+            if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
-                    // Keep PII out; include only what API needs for authZ
-                    claims.put("tenant_id", user.getTenantId());
-                    claims.put("tenant_domain", user.getTenantDomain());
-                    claims.put("userId", user.getId());
-                    claims.put("roles", user.getRoles());
+                    if (tenantId != null && !tenantId.isBlank()) {
+                        claims.put("tenant_id", tenantId);
+                    }
+                    if (user != null) {
+                        claims.put("tenant_domain", user.getTenantDomain());
+                        claims.put("userId", user.getId());
+                    }
+                    claims.put("roles", roles);
                 });
             }
         };

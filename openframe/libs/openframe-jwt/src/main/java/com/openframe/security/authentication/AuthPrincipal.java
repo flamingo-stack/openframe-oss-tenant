@@ -60,17 +60,40 @@ public class AuthPrincipal {
      * Creates AuthPrincipal from JWT token
      */
     public static AuthPrincipal fromJwt(Jwt jwt) {
-        String id = jwt.getClaimAsString("userId");
+        // Prefer userId; fallback to sub
+        String userIdClaim = jwt.getClaimAsString("userId");
+        String sub = jwt.getSubject();
+        String id = (userIdClaim != null && !userIdClaim.isBlank()) ? userIdClaim : sub;
+
+        // Roles list (optional)
         List<String> roles = jwt.getClaimAsStringList("roles");
         roles = (roles != null) ? roles : emptyList();
+
+        // Scope: support list or space-delimited string
         List<String> scopes = jwt.getClaimAsStringList("scope");
-        scopes = (scopes != null) ? scopes : emptyList();
+        if (scopes == null) {
+            String scopeStr = jwt.getClaimAsString("scope");
+            if (scopeStr != null && !scopeStr.isBlank()) {
+                scopes = java.util.Arrays.stream(scopeStr.split(" "))
+                        .filter(s -> !s.isBlank())
+                        .toList();
+            } else {
+                scopes = emptyList();
+            }
+        }
+
         String tenantId = jwt.getClaimAsString("tenant_id");
         String tenantDomain = jwt.getClaimAsString("tenant_domain");
 
+        // Email: prefer explicit claim; fallback to sub if it looks like email
+        String email = jwt.getClaimAsString("email");
+        if ((email == null || email.isBlank()) && sub != null && sub.contains("@")) {
+            email = sub;
+        }
+
         return AuthPrincipal.builder()
                 .id(id)
-                .email(jwt.getClaimAsString("email"))
+                .email(email)
                 .firstName(getFirstNameFromJwt(jwt))
                 .lastName(getLastNameFromJwt(jwt))
                 .roles(roles)

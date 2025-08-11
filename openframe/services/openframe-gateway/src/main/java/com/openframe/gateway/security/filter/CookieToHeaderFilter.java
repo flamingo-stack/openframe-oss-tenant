@@ -11,7 +11,6 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-import static com.openframe.core.constants.HttpHeaders.X_REFRESH_TOKEN;
 import static com.openframe.gateway.security.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
@@ -61,16 +60,6 @@ public class CookieToHeaderFilter implements WebFilter {
             requestBuilder.header(AUTHORIZATION, "Bearer " + accessToken);
             headersAdded = true;
             log.debug("Added Authorization header from token");
-        }
-
-        String path = request.getPath().value();
-        if (path.equals("/api/oauth/token")) {
-            String refreshToken = cookieService.getRefreshTokenFromCookies(exchange);
-            if (refreshToken != null) {
-                requestBuilder.header(X_REFRESH_TOKEN, refreshToken);
-                headersAdded = true;
-                log.debug("Added {} header from refresh_token cookie", X_REFRESH_TOKEN);
-            }
         }
 
         if (headersAdded) {

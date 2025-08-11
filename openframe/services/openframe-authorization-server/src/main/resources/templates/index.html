@@ -48,15 +48,15 @@
         <a href="/login" class="btn">Sign In</a>
 
         <div class="endpoints">
-            <h3>OAuth2/OIDC Endpoints:</h3>
+            <h3>OAuth2/OIDC Endpoints (tenant-prefixed):</h3>
             <ul>
-                <li><strong>Authorization:</strong> <code>/oauth2/authorize</code></li>
-                <li><strong>Token:</strong> <code>/oauth2/token</code></li>
-                <li><strong>JWK Set:</strong> <code>/oauth2/jwks</code></li>
-                <li><strong>User Info:</strong> <code>/userinfo</code></li>
-                <li><strong>Token Revocation:</strong> <code>/oauth2/revoke</code></li>
-                <li><strong>Token Introspection:</strong> <code>/oauth2/introspect</code></li>
-                <li><strong>OpenID Configuration:</strong> <code>/.well-known/openid-configuration</code></li>
+                <li><strong>Authorization:</strong> <code>/{tenantId}/oauth2/authorize</code></li>
+                <li><strong>Token:</strong> <code>/{tenantId}/oauth2/token</code></li>
+                <li><strong>JWK Set:</strong> <code>/{tenantId}/oauth2/jwks</code></li>
+                <li><strong>User Info:</strong> <code>/{tenantId}/userinfo</code></li>
+                <li><strong>Token Revocation:</strong> <code>/{tenantId}/oauth2/revoke</code></li>
+                <li><strong>Token Introspection:</strong> <code>/{tenantId}/oauth2/introspect</code></li>
+                <li><strong>OpenID Configuration:</strong> <code>/{tenantId}/.well-known/openid-configuration</code></li>
             </ul>
         </div>
     </div>
