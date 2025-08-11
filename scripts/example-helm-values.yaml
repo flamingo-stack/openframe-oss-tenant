@@ -12,9 +12,23 @@
 # It defines global settings, registry credentials, and deployment environment
 
 deployment:
-  name: local         # Deployment environment: "local" for development, "cloud" for production
-  ingress: localhost        # Ingress strategy: "ngrok" for local development with ngrok, "nat" for NAT traversal
-  # url: rhino-comic-openly.ngrok-free.app  # Optional: ngrok URL for local development
+  # Ingress configuration - enable only ONE of the following
+  ingress:
+    localhost:
+      enabled: true   # Enable localhost ingress with nginx
+      # TLS configuration (optional)
+      # tls:
+      #   cert: |
+      #   key: |
+    ngrok:
+      enabled: false  # Enable ngrok ingress for external access
+      # URL is required when ngrok is enabled
+      url: https://reindeer-suitable-genuinely.ngrok-free.app
+      credentials:
+          apiKey: ""
+          authtoken: ""
+      allowedIPs:
+        - 0.0.0.0/0
 
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository
@@ -65,10 +79,6 @@ apps:
     values:
       registerJob:
         enabled: true
-      ngrok-operator:
-        credentials:
-          apiKey: ""
-          authtoken: ""
     
   cert-manager:
     enabled: true     # Certificate management for TLS
@@ -265,7 +275,11 @@ apps:
     syncWave: "2"     # Deploy in sync wave 2
     values:
       deployment:
-        ingress: nat
+        ingress:
+          localhost:
+            enabled: true
+          ngrok:
+            enabled: false
       registerJob:
         enabled: true
       servicemonitor:
@@ -273,8 +287,6 @@ apps:
       image:
         repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
         tag: latest
-      allowedIPs:
-        - 0.0.0.0/0
     
   openframe-client: 
     enabled: true     # Client service
@@ -311,7 +323,11 @@ apps:
     syncWave: "2"     # Deploy in sync wave 2
     values:
       deployment:
-        ingress: nat
+        ingress:
+          localhost:
+            enabled: true
+          ngrok:
+            enabled: false
       registerJob:
         enabled: true
       image:

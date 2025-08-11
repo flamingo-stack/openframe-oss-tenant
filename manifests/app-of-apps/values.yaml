@@ -1,7 +1,17 @@
 deployment:
   name: local         # or "cloud"
-  ingress: localhost      # "localhost" or "ngrok"
-  # url: https://reindeer-suitable-genuinely.ngrok-free.app
+  # Ingress configuration - enable only ONE of the following
+  ingress:
+    localhost:
+      enabled: true   # Enable localhost ingress with nginx
+      # TLS configuration (optional)
+      # tls:
+      #   cert: |
+      #   key: |
+    ngrok:
+      enabled: false  # Enable ngrok ingress for external access
+      # URL is required when ngrok is enabled
+      url: https://reindeer-suitable-genuinely.ngrok-free.app
 
 global:
   repoDir: manifests

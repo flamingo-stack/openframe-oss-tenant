@@ -22,9 +22,9 @@ spec:
         values: |
           deployment:
 {{ toYaml $.Values.deployment | indent 12 }}
-{{- if hasKey $app "values" }}
-{{- $values := index $app "values" | default "" }}
-{{ toYaml $values | indent 10 }}
+{{- $appValues := include "app.values" (list $name $app $.Values) | trim }}
+{{- if ne $appValues "" }}
+{{ $appValues | indent 10 }}
 {{- end }}
 
   destination:
