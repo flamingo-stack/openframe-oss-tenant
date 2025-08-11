@@ -13,16 +13,22 @@ public class JsonKafkaListener {
 
     private final GenericJsonMessageProcessor messageProcessor;
 
+    public static final String MESSAGE_TYPE_HEADER = "message-type";
+
     public JsonKafkaListener(GenericJsonMessageProcessor messageProcessor) {
         this.messageProcessor = messageProcessor;
     }
 
     @KafkaListener(
-            topics = {"${kafka.consumer.topic.event.meshcentral.name}", "${kafka.consumer.topic.event.tactical-rmm.name}"},
+            topics = {
+                    "${kafka.consumer.topic.event.meshcentral.name}",
+                    "${kafka.consumer.topic.event.tactical-rmm.name}",
+                    "${kafka.consumer.topic.event.fleet-mdm.name}"
+            },
             groupId = "${spring.kafka.consumer.group-id}",
             containerFactory = "debeziumKafkaListenerContainerFactory"
     )
-    public void listenIntegratedToolsEvents(@Payload CommonDebeziumMessage debeziumMessage, @Header("message-type") MessageType messageType) {
+    public void listenIntegratedToolsEvents(@Payload CommonDebeziumMessage debeziumMessage, @Header(MESSAGE_TYPE_HEADER) MessageType messageType) {
         messageProcessor.process(debeziumMessage, messageType);
     }
 }

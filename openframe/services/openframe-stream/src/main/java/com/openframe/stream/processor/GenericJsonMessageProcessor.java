@@ -3,6 +3,7 @@ package com.openframe.stream.processor;
 import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.data.model.enums.EventHandlerType;
 import com.openframe.stream.deserializer.KafkaMessageDeserializer;
 import com.openframe.data.model.enums.DataEnrichmentServiceType;
 import com.openframe.data.model.enums.Destination;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 @Service
 public class GenericJsonMessageProcessor {
 
-    private final Map<MessageType, Map<Destination, MessageHandler>> handlers;
+    private final Map<EventHandlerType, Map<Destination, MessageHandler>> handlers;
     private final Map<DataEnrichmentServiceType, DataEnrichmentService> dataEnrichmentServices;
     private final Map<MessageType, KafkaMessageDeserializer> deserializers;
 
@@ -42,7 +43,7 @@ public class GenericJsonMessageProcessor {
         DeserializedDebeziumMessage deserializedKafkaMessage = deserialize(message, type);
         IntegratedToolEnrichedData enrichedData = getExtraParams(deserializedKafkaMessage, type);
         type.getDestinationList().forEach(destination -> {
-            MessageHandler handler = handlers.get(type).get(destination);
+            MessageHandler handler = handlers.get(type.getEventHandlerType()).get(destination);
             if (handler == null) {
                 throw new IllegalArgumentException("No handler found for type: " + type);
             }
