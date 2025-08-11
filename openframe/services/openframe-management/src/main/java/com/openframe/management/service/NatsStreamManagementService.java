@@ -40,7 +40,7 @@ public class NatsStreamManagementService {
             log.info("Stream {} exists", streamName);
             return true;
         } catch (JetStreamApiException e) {
-            if (e.getApiErrorCode() == 400) {
+            if (e.getErrorCode() == 404) {
                 log.info("Stream {} doesn't exist", streamName);
                 return false;
             }

@@ -13,6 +13,6 @@ nats:
     connection-timeout: 5s
     max-reconnect: 10
     reconnect-wait: 2s
-    username: admin
-    password: secretpassword
+    username: service
+    password: service_pass
     # no max reconnects

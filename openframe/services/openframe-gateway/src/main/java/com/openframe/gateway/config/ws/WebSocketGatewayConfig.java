@@ -47,9 +47,10 @@ public class WebSocketGatewayConfig {
                         .path(TOOLS_API_WS_ENDPOINT_PREFIX + "{toolId}/**")
                         .filters(f -> f.filter(toolApiWebSocketProxyUrlFilter))
                         .uri("no://op"))
+                // TODO: config
                 .route("nats_websocket_route", r -> r
                         .path(NATS_WS_ENDPOINT_PREFIX)
-                        .uri("ws://localhost:8080"))
+                        .uri("ws://ws://nats-0.nats.datasources.svc.cluster.local:8222"))
                 .build();
     }
 

@@ -15,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/agents")
 @RequiredArgsConstructor
+// TODO: remove tool connection manipulation methods
 public class AgentController {
 
     private final AgentRegistrationService agentRegistrationService;

@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NatsConsumerManagementService {
 
-  private final Connection natsConnection;
+//  private final Connection natsConnection;
 
   public void create(String streamName, ConsumerConfiguration consumerConfiguration) {
-    try {
-      JetStreamManagement jetStreamManagement = natsConnection.jetStreamManagement();
-      jetStreamManagement.createConsumer(streamName, consumerConfiguration);
-    } catch (Exception e) {
-      throw new NatsException("Error during consumer creation", e);
-    }
+//    try {
+//      JetStreamManagement jetStreamManagement = natsConnection.jetStreamManagement();
+//      jetStreamManagement.createConsumer(streamName, consumerConfiguration);
+//    } catch (Exception e) {
+//      throw new NatsException("Error during consumer creation", e);
+//    }
   }
 }

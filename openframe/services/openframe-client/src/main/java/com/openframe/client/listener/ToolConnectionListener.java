@@ -6,6 +6,7 @@ import com.openframe.data.model.nats.ToolConnectionMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
@@ -18,8 +19,8 @@ public class ToolConnectionListener {
 
     private final ToolConnectionService toolConnectionService;
 
-    @Bean
     // TODO: configure retry number
+    // TODO: make idempotent
     public Consumer<Message<ToolConnectionMessage>> toolConnectionListener() {
         return message -> {
             ToolConnectionMessage toolConnectionMessage = message.getPayload();
