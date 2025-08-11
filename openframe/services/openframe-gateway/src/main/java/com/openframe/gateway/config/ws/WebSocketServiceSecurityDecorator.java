@@ -44,19 +44,23 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 processSessionClosedEvent(session, disposable);
 
                 if (isNatsEndpoint(path)) {
-                    NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session, natsMessageValidator, jwt);
+//                    NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session, natsMessageValidator, jwtNatsMessageValidator, jwt);
+                    NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session);
                     return defaultWebSocketHandler.handle(natsSession);
                 }
 
                 return defaultWebSocketHandler.handle(session);
             });
         } else {
-            return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
+            log.debug("Use default session");
+            return defaultWebSocketService.handleRequest(exchange, session -> {
+                return defaultWebSocketHandler.handle(new NatsWebSocketSessionWrapper(session));
+            });
         }
     }
 
     private boolean isSecuredEndpoint(String path) {
-        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX, NATS_WS_ENDPOINT_PREFIX).stream()
+        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX/*, NATS_WS_ENDPOINT_PREFIX*/).stream()
                 .anyMatch(path::startsWith);
     }
 

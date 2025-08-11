@@ -41,12 +41,12 @@ spec:
                     },
                     {
                       "url": "ws://nats-0.nats.datasources.svc.cluster.local",
-                      "port": "8222",
+                      "port": "8080",
                       "type": "WS"
                     },
                     {
                       "url": "http://nats-0.nats.datasources.svc.cluster.local",
-                      "port": "8080",
+                      "port": "8222",
                       "type": "DASHBOARD"
                     }
                   ],

@@ -27,15 +27,27 @@ impl NatsConnectionManager {
     }
 
     pub async fn connect(&self) -> Result<()> {
+        info!("Connecting to NATS server");
+
         let connection_url = self.build_nats_connection_url().await?;
         let machine_id = self.config_service.get_machine_id().await?;
 
+        // TODO: token fallback and connection retry
         let client = async_nats::ConnectOptions::new()
             .name(machine_id)
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
+            .max_reconnects(Some(10))
+            .retry_on_initial_connect()
+            .reconnect_delay_callback(|attempt| {
+                println!("\n\nFallback: reconnecting to NATS server, attempt: {}\n\n", attempt);
+                std::time::Duration::from_secs(5)
+            })
             .connect(&connection_url)
+
             .await
             .context("Failed to connect to NATS server")?;
+
+        info!("Connected to NATS server");
 
         *self.client.write().await = Some(Arc::new(client));
 

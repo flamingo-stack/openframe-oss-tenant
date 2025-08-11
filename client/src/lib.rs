@@ -118,7 +118,7 @@ pub struct Client {
 
 impl Client {
     const GATEWAY_HTTP_URL: &'static str = "https://localhost";
-    const GATEWAY_WS_URL: &'static str = "wss://localhost";
+    const GATEWAY_WS_URL: &'static str = "ws://localhost:8100";
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
@@ -248,7 +248,7 @@ impl Client {
         self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener
-        self.tool_installation_message_listener.listen().await?;
+        // self.tool_installation_message_listener.listen().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

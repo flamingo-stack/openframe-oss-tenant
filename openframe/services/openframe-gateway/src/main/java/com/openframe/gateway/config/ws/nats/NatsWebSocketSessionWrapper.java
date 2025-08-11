@@ -15,25 +15,29 @@ public class NatsWebSocketSessionWrapper implements WebSocketSession {
 
     @Delegate
     private final WebSocketSession delegate;
-    private final NatsMessageValidator natsMessageValidator;
-    private final Jwt jwt;
+//    private final NatsMessageValidator natsMessageValidator;
+//    private final Jwt jwt;
 
     
     @Override
     public Flux<WebSocketMessage> receive() {
+//        return delegate.receive()
+//                .handle((message, sink) -> {
+//                    // TODO: message
+//                    String payload = message.getPayloadAsText();
+//                    log.debug("Received nats message:" + payload);
+//                    sink.next(message);
+////                    NatsMessageValidationResult validationResult = natsMessageValidator.validate(payload, jwt);
+////                    if (!validationResult.isValid()) {
+////                        sink.next(message);
+////                    } else {
+////                        String validationMessage = validationResult.getMessage();
+////                        delegate.send(Mono.just(delegate.textMessage(validationMessage)));
+////                    }
+//                });
         return delegate.receive()
-                .handle((message, sink) -> {
-                    // TODO: message
-                    String payload = message.getPayloadAsText();
-                    log.debug("Received nats message:" + payload);
-                    sink.next(message);
-//                    NatsMessageValidationResult validationResult = natsMessageValidator.validate(payload, jwt);
-//                    if (!validationResult.isValid()) {
-//                        sink.next(message);
-//                    } else {
-//                        String validationMessage = validationResult.getMessage();
-//                        delegate.send(Mono.just(delegate.textMessage(validationMessage)));
-//                    }
+                .map(message -> {
+                    return message;
                 });
     }
 }

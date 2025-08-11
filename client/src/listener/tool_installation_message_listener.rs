@@ -6,6 +6,7 @@ use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
+use tracing::info;
 use crate::models::ToolInstallationMessage;
 
 pub struct ToolInstallationMessageListener {
@@ -22,6 +23,7 @@ impl ToolInstallationMessageListener {
     }
 
     pub async fn listen(&self) -> Result<()> {
+        info!("Listening for tool installation messages");
         let client = self.nats_connection_manager
             .get_client()
             .await?;
