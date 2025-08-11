@@ -7,4 +7,6 @@ credentials:
   admin_user: "admin"            
   admin_pass: "secretpassword"  
   device_user: "deviceuser"     
-  device_pass: "devicepassword" 
+  device_pass: "devicepassword"
+  service_user: "service"
+  service_pass: "servicepassword"
