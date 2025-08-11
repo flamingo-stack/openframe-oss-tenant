@@ -52,6 +52,8 @@ service-manager = "0.8"
 plist = "1.7.1"
 # System information collection dependencies
 hostname = "0.3"
+bytes = "1.10.1"
+async-nats = "0.42.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
