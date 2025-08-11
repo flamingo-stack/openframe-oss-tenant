@@ -37,6 +37,7 @@ public class NatsWebSocketSessionWrapper implements WebSocketSession {
 //                });
         return delegate.receive()
                 .map(message -> {
+                    String payload = message.getPayloadAsText();
                     return message;
                 });
     }

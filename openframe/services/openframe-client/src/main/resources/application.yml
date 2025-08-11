@@ -12,11 +12,11 @@ spring:
         definition: machineConnectedListener;machineDisconnectionListener,toolConnectionListener
       bindings:
         machineConnectedListener-in-0:
-          destination: $SYS.*.*.*
+          destination: $SYS.ACCOUNT.*.*
           group: client-service-machine-connected
           content-type: application/json
         machineDisconnectionListener-in-0:
-          destination: $SYS.*.*.*
+          destination: $SYS.ACCOUNT.*.*
           group: client-service-machine-disconnected
           content-type: application/json
         toolConnectionListener-in-0:
