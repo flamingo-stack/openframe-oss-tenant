@@ -22,20 +22,29 @@ impl ToolInstallationMessageListener {
     }
 
     pub async fn listen(&self) -> Result<()> {
-        let client = self.nats_connection_manager.get_client()?;
-        let js = jetstream::new(client.clone());
+        let client = self.nats_connection_manager
+            .get_client()
+            .await?;
+        let js = jetstream::new((*client).clone());
 
         let machine_id = "TODO_MACHINE_ID".to_string(); // TODO: Replace with actual machine_id source
 
+        // TODO: manage consumer here?
+        // TODO: async nats process multithreading by default?
         let consumer = self.create_consumer(&js, &machine_id).await?;
 
+        // TODO: create generic subscriber
         let mut messages = consumer.messages().await?;
         while let Some(message) = messages.next().await {
             let message = message?;
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
+
+            // TODO: add error handling
             self.tool_installation_service.install(tool_installation_message).await?;
-            message.ack().await.map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+
+            message.ack().await
+                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
         }
         Ok(())
     }

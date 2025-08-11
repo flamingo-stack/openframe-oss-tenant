@@ -33,6 +33,7 @@ impl AgentRegistrationService {
         }
     }
 
+    // TODO: log failure reason(backend response)
     pub async fn register_agent(&self) -> Result<AgentRegistrationResponse> {
         let registration_request = self.build_registration_request()?;
         
