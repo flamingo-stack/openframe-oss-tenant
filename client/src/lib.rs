@@ -16,6 +16,7 @@ pub mod models;
 pub mod platform;
 pub mod clients;
 pub mod services;
+pub mod listener;
 
 pub mod logging;
 pub mod monitoring;
@@ -35,7 +36,7 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::{AgentAuthService, AgentRegistrationService, InitialAuthenticationProcessor};
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient};
-use crate::services::DeviceDataFetcher;
+use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::shared_token_service::SharedTokenService;
 use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;

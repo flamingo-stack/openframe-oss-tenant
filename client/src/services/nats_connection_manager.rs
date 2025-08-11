@@ -1,12 +1,8 @@
 use anyhow::{Context, Result};
-use async_nats::{Client, jetstream, jetstream::consumer::PushConsumer};
-use futures::StreamExt;
-use std::sync::Arc;
-use std::time::Duration;
+use async_nats::Client;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
-
-const NATS_SERVER_URL: &str = "ws://localhost:8100/ws/nats";
+use crate::services::agent_configuration_service::AgentConfigurationService;
 
 #[derive(Debug, Clone)]
 pub struct NatsConnectionManager {
@@ -17,7 +13,7 @@ pub struct NatsConnectionManager {
 
 impl NatsConnectionManager {
     
-    const NATS_CONNECTION_URL_TEMPLATE: &str = "{host}/ws/nats?authorization={token}";
+    const NATS_CONNECTION_URL_TEMPLATE: &str = "{}/ws/nats?authorization={}";
     const NATS_DEVICE_USER: &str = "device";
     const NATS_DEVICE_PASSWORD: &str = "1234";
     
@@ -30,13 +26,13 @@ impl NatsConnectionManager {
     }
 
     pub async fn connect(&self) -> Result<()> {
-        let connection_url = self.get_nats_connection_url().await?;
+        let connection_url = self.build_nats_connection_url().await?;
         let machine_id = self.config_service.get_machine_id().await?;
 
         let client = async_nats::ConnectOptions::new()
             .name(machine_id)
-            .user_and_password(NATS_DEVICE_USER.to_string(), NATS_DEVICE_PASSWORD.to_string())
-            .connect(build_nats_connection_url())
+            .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
+            .connect(&connection_url)
             .await
             .context("Failed to connect to NATS server")?;
 
@@ -45,9 +41,9 @@ impl NatsConnectionManager {
         Ok(())
     }
 
-     fn build_nats_connection_url(&self) -> String {
-        let token = self.config_service.get_token().await?;
-        let host = self.nats_server_url;
-        format!(NATS_CONNECTION_URL_TEMPLATE, host, token)
+    pub async fn build_nats_connection_url(&self) -> Result<String> {
+        let token = self.config_service.get_access_token().await?;
+        let host = &self.nats_server_url;
+        Ok(format!("{}/ws/nats?authorization={}", host, token))
     }
 }

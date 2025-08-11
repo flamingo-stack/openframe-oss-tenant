@@ -5,7 +5,7 @@ use tracing::{info, error, debug, warn};
 use crate::clients::RegistrationClient;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse, AgentConfiguration};
-use crate::services::DeviceDataFetcher;
+use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::platform::directories::DirectoryManager;
 
 #[derive(Clone)]

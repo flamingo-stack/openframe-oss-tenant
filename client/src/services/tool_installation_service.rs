@@ -1,6 +1,8 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installer::ToolInstaller;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
+use crate::models::nats::tool_installation_message::ToolInstallationMessage;
+use tracing::info;
 
 pub struct ToolInstallationService {
     tool_agent_file_client: ToolAgentFileClient,
@@ -21,7 +23,8 @@ impl ToolInstallationService {
         }
     }
 
-    pub async fn install(&self, tool_id: String, tool_installation_message: ToolInstallationMessage) -> Result<()> {
+    pub async fn install(&self, tool_id: String, tool_installation_message: ToolInstallationMessage) -> anyhow::Result<()> {
+        let machine_id = tool_installation_message.tool_id.clone();
         info!("Installing tool {} with version {}", tool_id, tool_installation_message.version);
 
         let tool_agent_file_bytes = self.tool_agent_file_client.get_tool_agent_id(tool_id).await?;

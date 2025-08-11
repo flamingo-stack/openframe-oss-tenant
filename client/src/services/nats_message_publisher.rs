@@ -1,4 +1,5 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
+use serde::Serialize;
 
 pub struct NatsMessagePublisher {
     nats_connection_manager: NatsConnectionManager,

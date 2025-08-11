@@ -28,15 +28,17 @@ impl ToolInstallationMessageListener {
 
                 message.ack().await.map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
             }
+        }
+        Ok(())
     }
 
-    fn async create_consumer(jetstream: JetStream) -> PushConsumer {
+    async fn create_consumer(jetstream: JetStream) -> PushConsumer {
         let deliver_subject = self.build_deliver_subject(machine_id);
         let consumer_configuration = self.build_consumer_configuration();
         jetstream.create_consumer(consumer_configuration).await?;
     }
 
-    fn async build_consumer_configuration() -> jetstream::consumer::push::Config {
+    async fn build_consumer_configuration() -> jetstream::consumer::push::Config {
         return jetstream::consumer::push::Config {
             deliver_subject: deliver_subject.clone(),
             durable_name: Some(format!("device_{}_commands_consumer", device_id)),
@@ -45,7 +47,7 @@ impl ToolInstallationMessageListener {
         }
     }
 
-    fn async build_deliver_subject(machine_id: String) -> String {
+    async fn build_deliver_subject(machine_id: String) -> String {
         format!(DELIVER_SUBJECT_TEMPLATE, machine_id)
     }
 }

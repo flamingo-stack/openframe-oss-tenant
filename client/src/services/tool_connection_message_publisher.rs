@@ -12,9 +12,9 @@ impl ToolConnectionMessagePublisher {
         Self { nats_message_publisher }
     }
 
-    pub async fn publish(&self, machine_id: String, tool_agent_id: String) -> Result<()> {
-        let topic = self.build_topic_name(machine_id);
-        let message = self.build_message(tool_agent_id);
+    pub async fn publish(&self, machine_id: String, tool_agent_id: String) -> Result<(), Box<dyn std::error::Error>> {
+        let topic = self.build_topic_name(machine_id).await;
+        let message = self.build_message(tool_agent_id).await;
         self.nats_message_publisher.publish(topic, message).await
     }
 

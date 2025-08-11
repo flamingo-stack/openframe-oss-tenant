@@ -8,6 +8,9 @@ pub mod tool_installation_service;
 pub mod tool_connection_message_publisher;
 pub mod nats_connection_manager;
 pub mod nats_message_publisher;
+pub mod device_data_fetcher;
+pub mod initial_authentication_processor;
+pub mod registration_processor;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
