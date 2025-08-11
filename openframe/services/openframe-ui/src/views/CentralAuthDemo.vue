@@ -48,13 +48,6 @@
         <!-- SSO Registration Options -->
         <div class="sso-options">
           <div class="sso-option">
-            <button @click="handleOpenFrameSSORegister" class="btn-sso openframe" :disabled="registerLoading || !registerForm.tenantName">
-              <i class="pi pi-shield"></i>
-              <span>Register with OpenFrame SSO</span>
-            </button>
-          </div>
-          
-          <div class="sso-option">
             <button @click="handleGoogleSSORegister" class="btn-sso google" :disabled="registerLoading || !registerForm.tenantName">
               <i class="pi pi-google"></i>
               <span>Register with Google</span>
@@ -184,27 +177,6 @@
                 <p class="tenant-domain">{{ tenant.tenantDomain }}</p>
               </div>
 
-              <!-- Password Login -->
-              <div v-if="(tenant.authProviders ?? tenant.auth_providers ?? []).includes('password')" class="auth-method">
-                <form @submit.prevent="handlePasswordLogin(tenant)">
-                  <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input
-                      v-model="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      class="form-input"
-                      required
-                      :disabled="loading"
-                    />
-                  </div>
-                  
-                  <button type="submit" class="btn-primary" :disabled="loading || !password">
-                    <i v-if="loading" class="pi pi-spin pi-spinner"></i>
-                    <span v-else>Sign In</span>
-                  </button>
-                </form>
-              </div>
 
               <!-- Alternative methods -->
               <div v-if="(tenant.authProviders ?? tenant.auth_providers ?? []).includes('openframe-sso') || (tenant.authProviders ?? tenant.auth_providers ?? []).includes('google')" class="alternative-methods">
@@ -268,7 +240,7 @@ onMounted(() => {
 
 // Login form data
 const email = ref('')
-const password = ref('')
+  // Password login removed
 const loading = ref(false)
 const showProviders = ref(false)
 const discoveredTenants = ref<TenantDiscoveryResponse.TenantInfo[]>([])
@@ -336,41 +308,10 @@ async function handleEmailSubmit() {
 function goBack() {
   showProviders.value = false
   discoveredTenants.value = []
-  password.value = ''
+  // no-op: password login removed
 }
 
-// Handle password login
-async function handlePasswordLogin(tenant: TenantDiscoveryResponse.TenantInfo) {
-  if (!password.value) return
-  
-  loading.value = true
-  try {
-    console.log('🔐 [CentralAuth] Attempting password login for tenant:', tenant.tenantName)
-    
-    const tokenResponse = await authStore.login(email.value, password.value)
-    console.log('✅ [CentralAuth] Login successful:', tokenResponse)
-    
-    toast.add({
-      severity: 'success',
-      summary: 'Login Successful',
-      detail: `Welcome back to ${tenant.tenantName}!`,
-      life: 3000
-    })
-    
-    // Redirect to dashboard
-    router.push('/dashboard')
-  } catch (error: any) {
-    console.error('❌ [CentralAuth] Password login failed:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Login Failed',
-      detail: error.message || 'Invalid email or password',
-      life: 5000
-    })
-  } finally {
-    loading.value = false
-  }
-}
+// Password login removed
 
 // Handle OpenFrame SSO
 async function handleOpenFrameSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
@@ -382,8 +323,11 @@ async function handleOpenFrameSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
     const codeVerifier = generateCodeVerifier()
     const codeChallenge = await generateCodeChallenge(codeVerifier)
     sessionStorage.setItem('pkce:code_verifier', codeVerifier)
+    // Keep tenant domain for post-auth redirect
+    const domain = (tenant.tenantDomain ?? (tenant as any).tenant_domain ?? 'localhost') as string
+    sessionStorage.setItem('auth:tenant_domain', domain)
 
-    // Standard GET redirect to /oauth2/authorize with PKCE
+    // Standard GET redirect to tenant-prefixed /oauth2/authorize with PKCE
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: 'openframe_web_dashboard',
@@ -397,7 +341,8 @@ async function handleOpenFrameSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
         userEmail: email.value
       })
     })
-    window.location.href = `${import.meta.env.VITE_AUTH_URL}/oauth2/authorize?${params.toString()}`
+    const tenantId = (tenant.tenantId ?? (tenant as any).tenant_id) as string
+    window.location.href = `${import.meta.env.VITE_AUTH_URL}/${tenantId}/oauth2/authorize?${params.toString()}`
     
   } catch (error: any) {
     console.error('❌ [CentralAuth] SSO failed:', error)
@@ -417,55 +362,7 @@ const isPasswordMatch = computed(() => {
          registerForm.password === registerForm.confirmPassword
 })
 
-// Handle OpenFrame SSO registration
-async function handleOpenFrameSSORegister() {
-  if (!registerForm.tenantName) {
-    toast.add({
-      severity: 'error',
-      summary: 'Organization Required',
-      detail: 'Please enter an organization name first',
-      life: 5000
-    })
-    return
-  }
-
-  registerLoading.value = true
-  try {
-    console.log('🔗 [CentralAuth] Starting OpenFrame SSO registration for tenant:', registerForm.tenantName)
-    
-    // PKCE
-    const codeVerifier = generateCodeVerifier()
-    const codeChallenge = await generateCodeChallenge(codeVerifier)
-    sessionStorage.setItem('pkce:code_verifier', codeVerifier)
-
-    // Standard GET redirect to /oauth2/authorize with PKCE
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: 'openframe_web_dashboard',
-      redirect_uri: window.location.origin + '/oauth2/callback/openframe-sso',
-      scope: 'openid profile email offline_access',
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-      state: JSON.stringify({
-        action: 'register',
-        tenantName: registerForm.tenantName,
-        tenantDomain: registerForm.tenantDomain
-      })
-    })
-    window.location.href = `${import.meta.env.VITE_AUTH_URL}/oauth2/authorize?${params.toString()}`
-    
-  } catch (error: any) {
-    console.error('❌ [CentralAuth] SSO registration failed:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'SSO Registration Failed',
-      detail: error.message || 'Failed to start SSO registration',
-      life: 5000
-    })
-  } finally {
-    registerLoading.value = false
-  }
-}
+// Removed OpenFrame SSO registration button/flow per request
 
 // Handle Google SSO for login - using standard OAuth2 flow
 async function handleGoogleSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
@@ -507,6 +404,7 @@ async function handleGoogleSSORegister() {
     // For now, use localhost as the default tenant domain
     // TODO: In production, use the actual tenant domain
     const tempTenantId = 'temp-' + registerForm.tenantName.toLowerCase().replace(/[^a-z0-9]/g, '-')
+    sessionStorage.setItem('auth:tenant_domain', registerForm.tenantDomain || 'localhost')
     
     // Use AuthService to initiate Google SSO for registration
     await AuthService.initiateGoogleSSO(tempTenantId, 'register')
@@ -549,27 +447,27 @@ async function handleManualRegistration() {
   registerLoading.value = true
   try {
     console.log('📝 [CentralAuth] Attempting manual registration for tenant:', registerForm.tenantName)
-    
-    const response = await AuthService.register({
+
+    // PKCE
+    const codeVerifier = generateCodeVerifier()
+    const codeChallenge = await generateCodeChallenge(codeVerifier)
+    sessionStorage.setItem('pkce:code_verifier', codeVerifier)
+    sessionStorage.setItem('auth:tenant_domain', registerForm.tenantDomain || 'localhost')
+
+    // Call auto-registration to get authorization redirect_url
+    const { redirect_url } = await AuthService.registerAuto({
       email: registerForm.email,
       password: registerForm.password,
       firstName: registerForm.firstName,
       lastName: registerForm.lastName,
       tenantName: registerForm.tenantName,
-      tenantDomain: registerForm.tenantDomain
+      tenantDomain: registerForm.tenantDomain,
+      pkceChallenge: codeChallenge,
+      redirectUri: window.location.origin + '/oauth2/callback/openframe-sso'
     })
-    
-    console.log('✅ [CentralAuth] Registration successful:', response)
-    
-    toast.add({
-      severity: 'success',
-      summary: 'Registration Successful',
-      detail: `Organization "${registerForm.tenantName}" created successfully!`,
-      life: 3000
-    })
-    
-    // Redirect to dashboard
-    router.push('/dashboard')
+
+    // Continue OAuth flow
+    window.location.href = redirect_url
   } catch (error: any) {
     console.error('❌ [CentralAuth] Registration failed:', error)
     toast.add({

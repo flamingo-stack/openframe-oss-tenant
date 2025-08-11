@@ -96,8 +96,7 @@ cors:
 openframe:
   auth:
     client:
-      id: ${OPENFRAME_CLIENT_ID:openframe_web_dashboard}
-      secret: ${OPENFRAME_CLIENT_SECRET:secret}
+      id: openframe_web_dashboard
   tenants:
     default-tenant: localhost
     default-domain: localhost

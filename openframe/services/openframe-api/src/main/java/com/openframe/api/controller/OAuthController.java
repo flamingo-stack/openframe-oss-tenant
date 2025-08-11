@@ -34,8 +34,8 @@ public class OAuthController {
                         "email", principal.getEmail(),
                         "displayName", principal.getDisplayName(),
                         "roles", principal.getRoles(),
-                        "tenantId", principal.getTenantId() != null ? principal.getTenantId() : "default",
-                        "tenantDomain", principal.getTenantDomain() != null ? principal.getTenantDomain() : "default"
+                        "tenantId", principal.getTenantId(),
+                        "tenantDomain", principal.getTenantDomain()
                 )
         ));
     }

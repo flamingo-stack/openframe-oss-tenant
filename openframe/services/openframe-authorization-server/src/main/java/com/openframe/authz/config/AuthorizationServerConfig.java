@@ -2,7 +2,6 @@ package com.openframe.authz.config;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.openframe.authz.document.User;
@@ -16,6 +15,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -42,15 +44,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.UUID;
+
+import static com.openframe.authz.tenant.TenantContext.getTenantId;
 
 /**
  * OAuth2 Authorization Server Configuration
@@ -71,30 +68,47 @@ public class AuthorizationServerConfig {
     @Value("${openframe.auth.client.id}")
     private String configuredClientId;
 
+    @Value("${openframe.security.jwt.access-token-expiration:900}")
+    private long accessTokenExpirationSeconds;
+
+    @Value("${openframe.security.jwt.refresh-token-expiration:604800}")
+    private long refreshTokenExpirationSeconds;
+
     @Bean
     @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
-                                                                     org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource,
-                                                                     TokenResponseCookieFilter tokenResponseCookieFilter) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-        
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-            .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+    public SecurityFilterChain authorizationServerSecurityFilterChain(
+            HttpSecurity http,
+            org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource,
+            TokenResponseCookieFilter tokenResponseCookieFilter) throws Exception {
+
+        var as = new OAuth2AuthorizationServerConfigurer();
+        // multi-tenant: allow multi-issuer; issuer resolved from request (Forwarded headers respected)
+        AuthorizationServerSettings settings = AuthorizationServerSettings
+                .builder()
+                .multipleIssuersAllowed(true)
+                .build();
+
+        // Use non-deprecated API instead of http.apply(as)
+        http.with(as, config -> {
+            config.oidc(Customizer.withDefaults());
+            config.authorizationServerSettings(settings);
+        });
+        var endpoints = as.getEndpointsMatcher();
 
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource))
-            .exceptionHandling((exceptions) -> exceptions
-                .defaultAuthenticationEntryPointFor(
-                    new LoginUrlAuthenticationEntryPoint("/login"),
-                    new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
-                )
-            )
-            .oauth2ResourceServer((resourceServer) -> resourceServer
-                .jwt(Customizer.withDefaults()));
+                .securityMatcher(endpoints)
+                .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+                .csrf(csrf -> csrf.ignoringRequestMatchers(endpoints))
+                .cors(c -> c.configurationSource(corsConfigurationSource))
+                .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
+                        new LoginUrlAuthenticationEntryPoint("/login"),
+                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
+                .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()));
 
         return http.build();
     }
 
+    // Register token response cookie filter at servlet layer for /oauth2/token
     @Bean
     public FilterRegistrationBean<TokenResponseCookieFilter> tokenResponseCookieFilterRegistration(
             TokenResponseCookieFilter filter) {
@@ -102,6 +116,14 @@ public class AuthorizationServerConfig {
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         registration.addUrlPatterns("/oauth2/token");
         return registration;
+    }
+
+    // Forwarded headers support for issuer/X-Forwarded-* behind proxies
+    @Bean
+    public FilterRegistrationBean<org.springframework.web.filter.ForwardedHeaderFilter> forwardedHeaderFilter() {
+        var reg = new FilterRegistrationBean<>(new org.springframework.web.filter.ForwardedHeaderFilter());
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return reg;
     }
 
     @Bean
@@ -116,14 +138,12 @@ public class AuthorizationServerConfig {
             .scope(OidcScopes.PROFILE)
             .scope(OidcScopes.EMAIL)
             .scope("offline_access")
-            .clientSettings(ClientSettings.builder()
-                .requireProofKey(true)
-                .requireAuthorizationConsent(false)
-                .build())
+                .clientSettings(ClientSettings.builder().requireProofKey(true).build())
             .tokenSettings(TokenSettings.builder()
-                .reuseRefreshTokens(true)
-                .refreshTokenTimeToLive(Duration.ofDays(7))
-                .build())
+                    .accessTokenTimeToLive(Duration.ofSeconds(accessTokenExpirationSeconds))
+                    .refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenExpirationSeconds))
+                    .reuseRefreshTokens(true)
+                    .build())
             .build();
     }
 
@@ -137,50 +157,15 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = loadKeysFromConfig();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-            .privateKey(privateKey)
-            .keyID("openframe-key-1")
-            .build();
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
-
-    private KeyPair loadKeysFromConfig() {
-        try {
-            // Очищуємо PEM формат від заголовків і переносів рядків
-            String privateKeyContent = privateKeyPem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s", "");
-                
-            String publicKeyContent = publicKeyPem
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s", "");
-
-            // Декодуємо Base64
-            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyContent);
-            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyContent);
-
-            // Створюємо KeyFactory
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-
-            // Створюємо приватний ключ
-            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-            RSAPrivateKey privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
-
-            // Створюємо публічний ключ
-            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
-            RSAPublicKey publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
-
-            return new KeyPair(publicKey, privateKey);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to load JWT keys from configuration", ex);
-        }
+    public JWKSource<SecurityContext> jwkSource(com.openframe.authz.keys.TenantKeyService tenantKeyService) {
+        return (jwkSelector, securityContext) -> {
+            String tenantId = getTenantId();
+            if (tenantId == null || tenantId.isBlank()) {
+                throw new IllegalStateException("Tenant id not resolved for JWK request");
+            }
+            RSAKey tenantKey = tenantKeyService.getOrCreateActiveKey(tenantId);
+            return jwkSelector.select(new JWKSet(tenantKey));
+        };
     }
 
     @Bean
@@ -193,27 +178,36 @@ public class AuthorizationServerConfig {
         return new NimbusJwtEncoder(jwkSource);
     }
 
-    @Bean
-    public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder()
-            .issuer(issuer) // TODO: Use dynamic issuer based on environment
-            .build();
-    }
-
     /**
      * JWT token customizer to add custom claims
      */
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer() {
         return context -> {
-            if (context.getPrincipal().getPrincipal() instanceof User user) {
+            // Add tenant claims only to ID Token
+            if ("id_token".equals(context.getTokenType().getValue())
+                    && context.getPrincipal().getPrincipal() instanceof User user) {
                 context.getClaims().claims(claims -> {
+                    // Tenant claims
+                    claims.put("tenant_id", user.getTenantId());
+                    claims.put("tenant_domain", user.getTenantDomain());
+                    // User profile claims
                     claims.put("userId", user.getId());
-                    claims.put("tenantId", user.getTenantId());
-                    claims.put("tenantDomain", user.getTenantDomain());
                     claims.put("email", user.getEmail());
                     claims.put("firstName", user.getFirstName());
                     claims.put("lastName", user.getLastName());
+                    claims.put("roles", user.getRoles());
+                });
+            }
+
+            // Add minimal authorization claims to Access Token for resource servers
+            if ("access_token".equals(context.getTokenType().getValue())
+                    && context.getPrincipal().getPrincipal() instanceof User user) {
+                context.getClaims().claims(claims -> {
+                    // Keep PII out; include only what API needs for authZ
+                    claims.put("tenant_id", user.getTenantId());
+                    claims.put("tenant_domain", user.getTenantDomain());
+                    claims.put("userId", user.getId());
                     claims.put("roles", user.getRoles());
                 });
             }
@@ -253,5 +247,18 @@ public class AuthorizationServerConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * AuthenticationManager for programmatic authentication (e.g., in RegistrationController).
+     * Uses our UserDetailsService and PasswordEncoder.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService,
+                                                       PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(provider);
     }
 }

@@ -25,6 +25,7 @@ export interface TokenResponse {
   token_type: string;
   expires_in: number;
   scope?: string;
+  tenant_domain?: string;
 }
 
 export interface UserInfo {
@@ -78,60 +79,48 @@ export class AuthService {
   private static configService = ConfigService.getInstance();
   private static runtimeConfig = AuthService.configService.getConfig();
 
+  // Error handling implemented below as a single public static method
+
   /**
-   * Handle errors from API calls
+   * Auto-registration that returns an authorization redirect URL.
+   * Backend expects camelCase fields and returns { redirect_url }.
    */
-  private static async handleError(error: unknown): Promise<Error> {
-    console.error('❌ [Auth] API Error:', error);
-    
-    if (error instanceof Error) {
-      return error;
-    }
-    
-    if (typeof error === 'object' && error !== null) {
-      const errorObj = error as any;
-      if (errorObj.message) {
-        return new Error(errorObj.message);
-      }
-      if (errorObj.error_description) {
-        return new Error(errorObj.error_description);
-      }
-    }
-    
-    return new Error('An unexpected error occurred');
-  }
+  static async registerAuto(payload: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    tenantName: string;
+    tenantDomain: string;
+    pkceChallenge: string;
+    redirectUri: string;
+  }): Promise<{ redirect_url: string }> {
+    try {
+      // Backend expects snake_case keys per AutoRegistrationRequest @JsonProperty
+      const body = {
+        email: payload.email,
+        password: payload.password,
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        tenant_name: payload.tenantName,
+        tenant_domain: payload.tenantDomain,
+        pkce_challenge: payload.pkceChallenge,
+        redirect_uri: payload.redirectUri
+      };
 
-  /* UNUSED - keeping for reference\n  private static getHeaders(): HeadersInit {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    };
-    
-    // No longer adding Authorization header - authentication via cookies
-    return headers;
-  }
-
-  private static async handleResponse<T>(response: Response): Promise<T> {
-    const data = await response.json();
-    
-    if (!response.ok) {
-      // Don't auto-logout here - let the calling code handle auth errors
-      // This prevents unexpected logouts during normal API calls
-      const error = (data && data.error_description) || response.statusText;
-      throw new OAuthError(
-        data.error,
-        error,
-        data.state,
-        response.status
+      const response = await restClient.post<{ redirect_url: string }>(
+        `${import.meta.env.VITE_AUTH_URL}/oauth/register`,
+        body
       );
+
+      if (!response?.redirect_url) {
+        throw new Error('Invalid register response: redirect_url missing');
+      }
+
+      return response;
+    } catch (error: unknown) {
+      throw await AuthService.handleError(error);
     }
-
-    // SECURITY: Both access and refresh tokens are now set as HttpOnly cookies by server
-    // Access token: Path=/ (sent on all API requests)
-    // Refresh token: Path=/api/oauth/token (sent only on refresh requests)
-    console.log('🔑 [Auth] Tokens set as secure HttpOnly cookies with strict paths');
-
-    return data;
   }
 
   static async handleError(error: unknown): Promise<never> {

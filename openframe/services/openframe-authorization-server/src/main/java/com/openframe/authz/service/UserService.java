@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.UUID.randomUUID;
+
 /**
  * Simplified User Service for Authorization Server
  * Only essential operations needed for authentication and user management
@@ -89,6 +91,7 @@ public class UserService {
         
         // Create user using simplified builder pattern
         User user = User.builder()
+                .id(randomUUID().toString())
             .tenantId(tenantId)
             .tenantDomain(tenantDomain)
             .email(email)
@@ -121,12 +124,13 @@ public class UserService {
         }
         
         User user = User.builder()
+                .id(randomUUID().toString())
             .tenantId(tenantId)
             .email(email)
             .firstName(firstName)
             .lastName(lastName)
             .status("ACTIVE")
-            .emailVerified(true) // OAuth users are pre-verified
+                .emailVerified(true)
             .loginProvider(loginProvider)
             .externalUserId(externalUserId)
             .lastLogin(Instant.now())
@@ -190,64 +194,7 @@ public class UserService {
         mongoTemplate.updateFirst(query, update, User.class);
     }
 
-    /**
-     * Find user by username and tenant (for backward compatibility)
-     * In our simplified model, username = email
-     */
-    public User findByUsernameAndTenant(String username, String tenantId) {
-        return findByEmailAndTenant(username, tenantId);
-    }
-
-    /**
-     * Create user (for backward compatibility with DataInitializer)
-     */
-    public User createUser(String tenantId, String username, String email, String password) {
-        // In simplified model, username is email, no domain for backward compatibility
-        return registerUser(tenantId, null, email, extractFirstName(email), extractLastName(email), password);
-    }
-
-    /**
-     * Assign role (for backward compatibility with DataInitializer)
-     */
-    public void assignRole(String userId, String roleId, String assignedBy) {
-        // For simplified model, we'll use role name instead of roleId
-        // Convert roleId to role name if it's a standard role
-        String roleName = convertRoleIdToName(roleId);
-        addRole(userId, roleName);
-    }
-
-    /**
-     * Extract first name from email (simple fallback)
-     */
-    private String extractFirstName(String email) {
-        if (email == null) return "User";
-        String localPart = email.substring(0, email.indexOf('@'));
-        return localPart.substring(0, 1).toUpperCase() + localPart.substring(1);
-    }
-
-    /**
-     * Extract last name from email (simple fallback)
-     */
-    private String extractLastName(String email) {
-        return ""; // Empty for now
-    }
-
-    /**
-     * Convert role ID to role name for backward compatibility
-     */
-    private String convertRoleIdToName(String roleId) {
-        // Simple mapping for common roles
-        switch (roleId) {
-            case "default-user-role-id":
-            case "user-role":
-                return "USER";
-            case "admin-role":
-            case "default-admin-role-id":
-                return "ADMIN";
-            default:
-                return "USER"; // Default fallback
-        }
-    }
+    // Backward-compatibility helpers removed
 
     /**
      * Create user from SSO provider (Google, Microsoft, etc.)

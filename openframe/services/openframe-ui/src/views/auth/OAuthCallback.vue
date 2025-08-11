@@ -50,11 +50,10 @@ onMounted(async () => {
     const isAuthenticated = await authStore.checkAuthStatus()
     
     if (isAuthenticated) {
-      console.log('🔑 [OAuth Callback] Authentication successful, redirecting to dashboard')
-      
-      // Check if there's a redirect URL in state or use default
-      const redirectUrl = state ? decodeURIComponent(state) : '/'
-      await router.push(redirectUrl)
+      console.log('🔑 [OAuth Callback] Authentication successful, redirecting to tenant domain')
+      // Use tenant domain captured before auth
+      const tenantDomain = sessionStorage.getItem('auth:tenant_domain') || 'localhost'
+      window.location.href = `https://${tenantDomain}`
     } else {
       console.error('🔑 [OAuth Callback] Authentication failed after OAuth callback')
       throw new Error('Authentication failed')
@@ -81,12 +80,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--surface-ground);
 }
 
 .loading-container {
   text-align: center;
-  background: white;
+  background: var(--surface-card);
   padding: 3rem;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -98,7 +97,7 @@ onMounted(async () => {
   width: 50px;
   height: 50px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1.5rem;
@@ -110,14 +109,14 @@ onMounted(async () => {
 }
 
 h2 {
-  color: #333;
+  color: var(--text-color);
   margin-bottom: 1rem;
   font-size: 1.5rem;
   font-weight: 600;
 }
 
 p {
-  color: #666;
+  color: var(--text-color-secondary);
   margin: 0;
   font-size: 1rem;
 }

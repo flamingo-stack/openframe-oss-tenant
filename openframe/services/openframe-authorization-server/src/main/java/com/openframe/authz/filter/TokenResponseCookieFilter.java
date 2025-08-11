@@ -7,17 +7,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Filter that intercepts OAuth2 token responses and sets tokens as HttpOnly cookies
@@ -48,7 +45,7 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter {
 
             try {
                 byte[] body = wrapped.getContentAsByteArray();
-                if (response.getStatus() == 200 && body != null && body.length > 0) {
+                if (response.getStatus() == 200 && body.length > 0) {
                     JsonNode tokenResponse = objectMapper.readTree(body);
 
                     JsonNode accessNode = tokenResponse.get("access_token");

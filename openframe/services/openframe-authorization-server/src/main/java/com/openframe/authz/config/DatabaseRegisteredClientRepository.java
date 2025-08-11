@@ -11,8 +11,6 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,7 +24,7 @@ public class DatabaseRegisteredClientRepository implements RegisteredClientRepos
 
     private final SSOConfigService ssoConfigService;
     private final GoogleSSOProperties googleSSOProperties;
-    private final RegisteredClient staticOpenFrameClient;
+    private final RegisteredClient openFrameClient;
 
     @Override
     public void save(RegisteredClient registeredClient) {
@@ -38,8 +36,8 @@ public class DatabaseRegisteredClientRepository implements RegisteredClientRepos
     @Override
     public RegisteredClient findById(String id) {
         // First check if it's the static OpenFrame client
-        if (staticOpenFrameClient.getId().equals(id)) {
-            return staticOpenFrameClient;
+        if (openFrameClient.getId().equals(id)) {
+            return openFrameClient;
         }
 
         // Try to find as SSO provider
@@ -51,8 +49,8 @@ public class DatabaseRegisteredClientRepository implements RegisteredClientRepos
         log.debug("Looking for client: {}", clientId);
 
         // First check if it's the static OpenFrame client
-        if (staticOpenFrameClient.getClientId().equals(clientId)) {
-            return staticOpenFrameClient;
+        if (openFrameClient.getClientId().equals(clientId)) {
+            return openFrameClient;
         }
 
         // Try to find as SSO provider client

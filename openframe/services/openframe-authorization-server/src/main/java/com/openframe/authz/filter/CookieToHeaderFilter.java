@@ -15,7 +15,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Filter that converts HttpOnly cookies to Authorization headers
@@ -38,7 +39,6 @@ public class CookieToHeaderFilter extends OncePerRequestFilter {
         if (isTokenEndpoint(requestPath)) {
             final String refreshToken = extractRefreshTokenFromCookies(request);
 
-            // Do NOT inject client Basic header for PKCE SPA clients
             HttpServletRequestWrapper wrappedRequest = new HttpServletRequestWrapper(request) {
                 @Override
                 public String getParameter(String name) {

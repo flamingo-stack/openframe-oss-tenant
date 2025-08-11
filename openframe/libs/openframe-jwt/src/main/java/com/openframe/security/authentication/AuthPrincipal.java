@@ -6,6 +6,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 /**
  * Wrapper for authenticated principal information extracted from JWT token.
  * Provides clean access to user claims without working with raw JWT.
@@ -58,34 +60,32 @@ public class AuthPrincipal {
      * Creates AuthPrincipal from JWT token
      */
     public static AuthPrincipal fromJwt(Jwt jwt) {
+        String id = jwt.getClaimAsString("userId");
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        roles = (roles != null) ? roles : emptyList();
+        List<String> scopes = jwt.getClaimAsStringList("scope");
+        scopes = (scopes != null) ? scopes : emptyList();
+        String tenantId = jwt.getClaimAsString("tenant_id");
+        String tenantDomain = jwt.getClaimAsString("tenant_domain");
+
         return AuthPrincipal.builder()
-                .id(jwt.getSubject())
+                .id(id)
                 .email(jwt.getClaimAsString("email"))
                 .firstName(getFirstNameFromJwt(jwt))
                 .lastName(getLastNameFromJwt(jwt))
-                .roles(jwt.getClaimAsStringList("roles"))
-                .scopes(jwt.getClaimAsStringList("scope"))
-                .tenantId(jwt.getClaimAsString("tenant_id"))
-                .tenantDomain(jwt.getClaimAsString("tenant_domain"))
+                .roles(roles)
+                .scopes(scopes)
+                .tenantId(tenantId)
+                .tenantDomain(tenantDomain)
                 .build();
     }
 
     private static String getFirstNameFromJwt(Jwt jwt) {
-        // Try 'given_name' first (standard OAuth2 claim), then 'firstName'
-        String firstName = jwt.getClaimAsString("given_name");
-        if (firstName == null) {
-            firstName = jwt.getClaimAsString("firstName");
-        }
-        return firstName;
+        return jwt.getClaimAsString("firstName");
     }
 
     private static String getLastNameFromJwt(Jwt jwt) {
-        // Try 'family_name' first (standard OAuth2 claim), then 'lastName'
-        String lastName = jwt.getClaimAsString("family_name");
-        if (lastName == null) {
-            lastName = jwt.getClaimAsString("lastName");
-        }
-        return lastName;
+        return jwt.getClaimAsString("lastName");
     }
 
     /**
