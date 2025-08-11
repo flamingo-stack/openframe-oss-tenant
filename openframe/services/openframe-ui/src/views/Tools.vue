@@ -141,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, watch, onMounted, computed } from '@vue/runtime-core';
 import { useQuery, provideApolloClient } from '@vue/apollo-composable';
 import { apolloClient } from '../apollo/apolloClient';
 import gql from 'graphql-tag';
@@ -151,7 +151,6 @@ import { ApolloError } from '@apollo/client/errors';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import AuthDebug from '../components/AuthDebug.vue';
-import { getLogoUrl } from '@/services/LogoService';
 import { storeToRefs } from 'pinia';
 import { useThemeStore } from '@/stores/themeStore';
 import { getDisplayName } from '../utils/displayUtils';
@@ -162,7 +161,6 @@ import { OFButton } from '../components/ui';
 
 // Get theme store
 const themeStore = useThemeStore();
-const { isDark } = storeToRefs(themeStore);
 
 // Import all logos
 import authentikLogo from '@/assets/authentik-logo.svg'
@@ -190,40 +188,42 @@ import postgresqlLogo from '@/assets/postgresql-logo.svg'
 provideApolloClient(apolloClient);
 
 const INTEGRATED_TOOLS_QUERY = gql`
-  query GetIntegratedTools($filter: ToolFilter) {
-    integratedTools(filter: $filter) {
-      id
-      name
-      description
-      icon
-      toolUrls {
-        url
-        port
-        type
-      }
-      type
-      toolType
-      category
-      platformCategory
-      enabled
-      credentials {
-        username
-        password
-        apiKey {
-          key
+  query GetIntegratedTools($filter: ToolFilterInput, $search: String) {
+    integratedTools(filter: $filter, search: $search) {
+      tools {
+        id
+        name
+        description
+        icon
+        toolUrls {
+          url
+          port
           type
-          keyName
         }
+        type
+        toolType
+        category
+        platformCategory
+        enabled
+        credentials {
+          username
+          password
+          apiKey {
+            key
+            type
+            keyName
+          }
+        }
+        layer
+        layerOrder
+        layerColor
+        metricsPath
+        healthCheckEndpoint
+        healthCheckInterval
+        connectionTimeout
+        readTimeout
+        allowedEndpoints
       }
-      layer
-      layerOrder
-      layerColor
-      metricsPath
-      healthCheckEndpoint
-      healthCheckInterval
-      connectionTimeout
-      readTimeout
-      allowedEndpoints
     }
   }
 `;
@@ -263,9 +263,9 @@ const { result, loading, error, refetch } = useQuery(
   () => ({
     filter: {
       enabled: filter.value.enabled,
-      category: filter.value.category,
-      search: filter.value.search || undefined
-    }
+      category: filter.value.category
+    },
+    search: filter.value.search || undefined
   }),
   {
     fetchPolicy: 'network-only',
@@ -280,7 +280,7 @@ const retryFetch = async (attempts = 3, delay = 1000) => {
   for (let i = 0; i < attempts; i++) {
     try {
       const result = await refetch();
-      if (result?.data) {
+      if (result?.data?.integratedTools?.tools) {
         return result;
       }
     } catch (e) {
@@ -377,10 +377,10 @@ watch(error, (newError: ApolloError | null) => {
 // Watch result with immediate effect
 watch(result, (newResult) => {
   console.log('Result changed:', newResult);
-  if (newResult?.integratedTools) {
-    console.log('Received tools:', newResult.integratedTools);
+  if (newResult?.integratedTools?.tools) {
+    console.log('Received tools:', newResult.integratedTools.tools);
     // Add detailed logging for debugging credentials
-    newResult.integratedTools.forEach((tool: IntegratedTool) => {
+    newResult.integratedTools.tools.forEach((tool: IntegratedTool) => {
       if (tool.credentials?.apiKey) {
         console.log(`Tool ${tool.name} has API Key:`, {
           key: tool.credentials.apiKey.key,
@@ -392,7 +392,7 @@ watch(result, (newResult) => {
         console.log(`Tool ${tool.name} URLs:`, tool.toolUrls);
       }
     });
-    tools.value = newResult.integratedTools;
+    tools.value = newResult.integratedTools.tools;
   }
 }, { immediate: true });
 
@@ -482,7 +482,7 @@ const openToolUrl = (toolUrl: any) => {
 
 // Add debounce function
 const debounce = (fn: Function, delay: number) => {
-  let timeout: number;
+  let timeout: any;
   return (...args: any[]) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => fn(...args), delay);

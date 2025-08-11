@@ -1,13 +1,19 @@
 package com.openframe.external.mapper;
 
+import com.openframe.api.dto.tool.ToolFilterOptions;
+import com.openframe.api.dto.tool.ToolFilters;
+import com.openframe.api.dto.tool.ToolList;
 import com.openframe.core.model.IntegratedTool;
 import com.openframe.core.model.ToolCredentials;
 import com.openframe.core.model.ToolUrl;
 import com.openframe.core.model.ToolApiKey;
-import com.openframe.external.dto.ToolResponse;
-import com.openframe.external.dto.ToolUrlResponse;
-import com.openframe.external.dto.ToolCredentialsResponse;
-import com.openframe.external.dto.ToolApiKeyResponse;
+import com.openframe.external.dto.tool.ToolFilterResponse;
+import com.openframe.external.dto.tool.ToolResponse;
+import com.openframe.external.dto.tool.ToolsResponse;
+import com.openframe.external.dto.tool.ToolUrlResponse;
+import com.openframe.external.dto.tool.ToolCredentialsResponse;
+import com.openframe.external.dto.tool.ToolApiKeyResponse;
+import com.openframe.external.dto.tool.ToolFilterCriteria;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -36,14 +42,36 @@ public class ToolMapper {
                 .build();
     }
 
-    public List<ToolResponse> toToolResponseList(List<IntegratedTool> tools) {
-        if (tools == null) {
-            return null;
+    public ToolsResponse toToolsResponse(ToolList result) {
+        if (result == null) {
+            return ToolsResponse.builder()
+                    .tools(List.of())
+                    .build();
         }
 
-        return tools.stream()
+        List<ToolResponse> tools = result.getTools().stream()
                 .map(this::toToolResponse)
                 .collect(Collectors.toList());
+
+        return ToolsResponse.builder()
+                .tools(tools)
+                .build();
+    }
+
+    public ToolFilterResponse toToolFilterResponse(ToolFilters filters) {
+        if (filters == null) {
+            return ToolFilterResponse.builder()
+                    .types(List.of())
+                    .categories(List.of())
+                    .platformCategories(List.of())
+                    .build();
+        }
+
+        return ToolFilterResponse.builder()
+                .types(filters.getTypes())
+                .categories(filters.getCategories())
+                .platformCategories(filters.getPlatformCategories())
+                .build();
     }
 
     private List<ToolUrlResponse> toToolUrlResponseList(List<ToolUrl> toolUrls) {
@@ -66,27 +94,6 @@ public class ToolMapper {
                 .build();
     }
 
-    private List<ToolUrl> toToolUrlList(List<ToolUrlResponse> toolUrlResponses) {
-        if (toolUrlResponses == null) {
-            return null;
-        }
-        return toolUrlResponses.stream()
-                .map(this::toToolUrl)
-                .collect(Collectors.toList());
-    }
-
-    private ToolUrl toToolUrl(ToolUrlResponse toolUrlResponse) {
-        if (toolUrlResponse == null) {
-            return null;
-        }
-        return ToolUrl.builder()
-                .url(toolUrlResponse.getUrl())
-                .port(toolUrlResponse.getPort())
-                .type(toolUrlResponse.getType() != null ? 
-                    com.openframe.core.model.ToolUrlType.valueOf(toolUrlResponse.getType()) : null)
-                .build();
-    }
-
     private ToolCredentialsResponse toToolCredentialsResponse(ToolCredentials credentials) {
         if (credentials == null) {
             return null;
@@ -96,17 +103,6 @@ public class ToolMapper {
                 .password(credentials.getPassword())
                 .apiKey(toToolApiKeyResponse(credentials.getApiKey()))
                 .build();
-    }
-
-    private ToolCredentials toToolCredentials(ToolCredentialsResponse credentialsResponse) {
-        if (credentialsResponse == null) {
-            return null;
-        }
-        ToolCredentials credentials = new ToolCredentials();
-        credentials.setUsername(credentialsResponse.getUsername());
-        credentials.setPassword(credentialsResponse.getPassword());
-        credentials.setApiKey(toToolApiKey(credentialsResponse.getApiKey()));
-        return credentials;
     }
 
     private ToolApiKeyResponse toToolApiKeyResponse(ToolApiKey apiKey) {
@@ -120,15 +116,16 @@ public class ToolMapper {
                 .build();
     }
 
-    private ToolApiKey toToolApiKey(ToolApiKeyResponse apiKeyResponse) {
-        if (apiKeyResponse == null) {
-            return null;
+    public ToolFilterOptions toToolFilterOptions(ToolFilterCriteria criteria) {
+        if (criteria == null) {
+            return ToolFilterOptions.builder().build();
         }
-        ToolApiKey apiKey = new ToolApiKey();
-        apiKey.setKey(apiKeyResponse.getKey());
-        apiKey.setType(apiKeyResponse.getType() != null ? 
-            com.openframe.core.model.APIKeyType.valueOf(apiKeyResponse.getType()) : null);
-        apiKey.setKeyName(apiKeyResponse.getKeyName());
-        return apiKey;
+        
+        return ToolFilterOptions.builder()
+                .enabled(criteria.getEnabled())
+                .type(criteria.getType())
+                .category(criteria.getCategory())
+                .platformCategory(criteria.getPlatformCategory())
+                .build();
     }
 } 

@@ -2,12 +2,15 @@ package com.openframe.data.repository.mongo;
 
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.device.filter.MachineQueryFilter;
-import org.springframework.data.domain.PageRequest;
+import org.bson.types.ObjectId;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CustomMachineRepositoryImpl implements CustomMachineRepository {
 
     private final MongoTemplate mongoTemplate;
@@ -17,14 +20,19 @@ public class CustomMachineRepositoryImpl implements CustomMachineRepository {
     }
 
     @Override
-    public List<Machine> findMachinesWithPagination(Query query, PageRequest pageRequest) {
-        query.with(pageRequest);
+    public List<Machine> findMachinesWithCursor(Query query, String cursor, int limit) {
+        if (cursor != null && !cursor.trim().isEmpty()) {
+            try {
+                ObjectId cursorId = new ObjectId(cursor);
+                query.addCriteria(Criteria.where("_id").lt(cursorId));
+            } catch (IllegalArgumentException ex) {
+                log.warn("Invalid ObjectId cursor format: {}", cursor);
+            }
+        }
+        query.limit(limit);
+        query.with(Sort.by(Sort.Direction.DESC, "_id"));
+        
         return mongoTemplate.find(query, Machine.class);
-    }
-
-    @Override
-    public long countMachines(Query query) {
-        return mongoTemplate.count(query, Machine.class);
     }
 
     @Override

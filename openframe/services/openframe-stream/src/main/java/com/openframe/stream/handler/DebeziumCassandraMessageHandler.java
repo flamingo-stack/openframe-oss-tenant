@@ -54,7 +54,7 @@ public class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<Unif
 
     protected UnifiedLogEvent.UnifiedLogEventKey createKey(DeserializedDebeziumMessage debeziumMessage) {
         UnifiedLogEvent.UnifiedLogEventKey key = new UnifiedLogEvent.UnifiedLogEventKey();
-        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getPayload().getTimestamp());
+        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getEventTimestamp());
 
         key.setIngestDay(debeziumMessage.getIngestDay());
         key.setToolType(debeziumMessage.getIntegratedToolType().name());

@@ -171,6 +171,11 @@ const menuItems: MenuItem[] = [
     path: '/devices'
   },
   {
+    label: 'Logs',
+    icon: 'pi pi-list',
+    path: '/logs'
+  },
+  {
     label: 'Integrated Tools',
     icon: 'pi pi-wrench',
     children: [

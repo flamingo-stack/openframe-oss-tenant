@@ -6,6 +6,7 @@ import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
 import DevicesView from '../views/DevicesView.vue'
+import LogsView from '../views/LogsView.vue'
 import MDMLayout from '../views/mdm/MDMLayout.vue'
 import MDMDashboard from '../views/mdm/Dashboard.vue'
 import MDMDevices from '../views/mdm/Devices.vue'
@@ -29,7 +30,6 @@ import RACDevices from '../views/rac/Devices.vue'
 import RACRemoteConnection from '../views/rac/RemoteConnection.vue'
 import RACFileTransfer from '../views/rac/FileTransfer.vue'
 import RACSettings from '../views/rac/Settings.vue'
-import { AuthService } from '@/services/AuthService';
 import { useAuthStore } from '@/stores/auth';
 
 const router = createRouter({
@@ -75,6 +75,16 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Devices',
         icon: 'pi pi-desktop'
+      }
+    },
+    {
+      path: '/logs',
+      name: 'logs',
+      component: LogsView,
+      meta: { 
+        requiresAuth: true,
+        title: 'Logs',
+        icon: 'pi pi-list'
       }
     },
     {

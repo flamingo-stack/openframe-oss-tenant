@@ -20,13 +20,13 @@ public class GraphQLExceptionHandler extends SimpleDataFetcherExceptionHandler {
             DataFetcherExceptionHandlerParameters handlerParameters) {
         
         Throwable exception = handlerParameters.getException();
-        System.out.println("GraphQL error occurred: " + exception.getMessage());
+        log.error("GraphQL error occurred", exception);
 
         GraphQLError error;
 
         if (exception instanceof PinotQueryException) {
             error = GraphQLError.newError()
-                .message("Failed to fetch device filters. Please try again later.")
+                .message("Query failed. Please try again later.")
                 .extensions(java.util.Map.of(
                     "code", "PINOT_QUERY_ERROR",
                     "timestamp", System.currentTimeMillis()
