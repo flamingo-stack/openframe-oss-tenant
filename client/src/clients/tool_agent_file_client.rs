@@ -1,3 +1,7 @@
+use reqwest::Client;
+use anyhow::Result;
+use bytes::Bytes;
+
 struct ToolAgentFileClient {
     http_client: Client,
     base_url: String,

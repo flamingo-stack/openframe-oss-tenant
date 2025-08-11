@@ -38,6 +38,13 @@ use crate::clients::{RegistrationClient, AuthClient};
 use crate::services::DeviceDataFetcher;
 use crate::services::shared_token_service::SharedTokenService;
 use crate::services::encryption_service::EncryptionService;
+use crate::clients::tool_agent_file_client::ToolAgentFileClient;
+use crate::services::tool_installer::ToolInstaller;
+use crate::services::tool_installation_service::ToolInstallationService;
+use crate::services::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
+use crate::services::nats_connection_manager::NatsConnectionManager;
+use crate::services::nats_message_publisher::NatsMessagePublisher;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -103,13 +110,14 @@ pub struct Client {
     directory_manager: DirectoryManager,
     registration_processor: RegistrationProcessor,
     auth_processor: InitialAuthenticationProcessor,
+    nats_connection_manager: NatsConnectionManager,
+    tool_installation_message_listener: ToolInstallationMessageListener,
 }
 
 impl Client {
     // TODO: get from args during installation and save to file during installation
-    const GATEWAY_HOST: &'static str = "openframe-gateway.192.168.100.100.nip.io";
-    const GATEWAY_HTTP_URL: &'static str = "https://" + GATEWAY_HOST;
-    const GATEWAY_WS_URL: &'static str = "wss://" + GATEWAY_HOST;
+    const GATEWAY_HTTP_URL: &str = "https://localhost";
+    const GATEWAY_WS_URL: &str   = "wss://localhost";
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
@@ -159,7 +167,7 @@ impl Client {
 
         // Initialize authentication client
         let auth_client = AuthClient::new(
-            Self::GATEWAY_GATEWAY_HTTP_URLURL.to_string(),
+            Self::GATEWAY_HTTP_URL.to_string(),
             http_client
         );
         
@@ -215,6 +223,8 @@ impl Client {
             directory_manager,
             registration_processor,
             auth_processor,
+            nats_connection_manager,
+            tool_installation_message_listener,
         })
     }
 
