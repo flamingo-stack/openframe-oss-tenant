@@ -9,4 +9,4 @@ credentials:
   device_user: "deviceuser"     
   device_pass: "devicepassword"
   service_user: "service"
-  service_pass: "servicepassword"
+

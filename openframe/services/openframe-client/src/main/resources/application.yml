@@ -7,19 +7,19 @@ spring:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
   cloud:
+    function:
+      definition: machineConnectedConsumer;machineDisconnectionConsumer;toolConnectionConsumer
     stream:
-      function:
-        definition: machineConnectedListener;machineDisconnectionListener,toolConnectionListener
       bindings:
-        machineConnectedListener-in-0:
-          destination: $SYS.ACCOUNT.*.*
+        machineConnectedConsumer-in-0:
+          destination: $SYS.ACCOUNT.DEVICES.CONNECT
           group: client-service-machine-connected
           content-type: application/json
-        machineDisconnectionListener-in-0:
-          destination: $SYS.ACCOUNT.*.*
+        machineDisconnectionConsumer-in-0:
+          destination: $SYS.ACCOUNT.DEVICES.DISCONNECT
           group: client-service-machine-disconnected
           content-type: application/json
-        toolConnectionListener-in-0:
+        toolConnectionConsumer-in-0:
           destination: machine.*.toolconnection
           group: client-service-machine-tool-connection
           content-type: application/json
@@ -27,10 +27,19 @@ spring:
         nats:
           type: nats
           environment:
-            spring:
-              nats:
-                servers: nats://nats-0.nats.datasources.svc.cluster.local
+            nats:
+              servers: nats://nats-0.nats.datasources.svc.cluster.local
       default-binder: nats
+
+nats:
+  spring:
+    server: nats://nats-0.nats.datasources.svc.cluster.local
+    username: service
+    password: service_pass
+  connection:
+    timeout: 5s
+    max-reconnect: 10
+    reconnect-wait: 2s
 
 # TODO: nats connection retries and delays
 # TODO: DLQ

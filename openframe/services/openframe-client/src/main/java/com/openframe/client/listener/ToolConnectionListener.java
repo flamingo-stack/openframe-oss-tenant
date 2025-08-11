@@ -21,7 +21,8 @@ public class ToolConnectionListener {
 
     // TODO: configure retry number
     // TODO: make idempotent
-    public Consumer<Message<ToolConnectionMessage>> toolConnectionListener() {
+    @Bean
+    public Consumer<Message<ToolConnectionMessage>> toolConnectionConsumer() {
         return message -> {
             ToolConnectionMessage toolConnectionMessage = message.getPayload();
 
