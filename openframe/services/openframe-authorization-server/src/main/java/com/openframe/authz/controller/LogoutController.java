@@ -28,7 +28,6 @@ public class LogoutController {
         try {
             log.info("Processing logout request");
             
-            // Clear all authentication cookies
             cookieService.clearTokenCookies(response);
             
             return ResponseEntity.ok(Map.of(
@@ -43,20 +42,5 @@ public class LogoutController {
                 "message", "Logout failed"
             ));
         }
-    }
-
-    /**
-     * Check authentication status based on cookies
-     */
-    @GetMapping("/status")
-    public ResponseEntity<Map<String, Object>> getAuthStatus(
-            @CookieValue(value = "access_token", required = false) String accessToken) {
-        
-        boolean authenticated = accessToken != null && !accessToken.isEmpty();
-        
-        return ResponseEntity.ok(Map.of(
-            "authenticated", authenticated,
-            "hasAccessToken", accessToken != null
-        ));
     }
 }

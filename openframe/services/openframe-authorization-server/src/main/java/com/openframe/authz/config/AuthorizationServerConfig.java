@@ -8,7 +8,9 @@ import com.openframe.authz.document.User;
 import com.openframe.authz.filter.TokenResponseCookieFilter;
 import com.openframe.authz.service.SSOConfigService;
 import com.openframe.authz.service.UserService;
+import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
 import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +46,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -55,6 +58,7 @@ import static com.openframe.authz.tenant.TenantContext.getTenantId;
  */
 @Configuration
 @EnableWebSecurity
+@Slf4j
 public class AuthorizationServerConfig {
 
     @Value("${openframe.auth.client.id}")
@@ -74,13 +78,11 @@ public class AuthorizationServerConfig {
             TokenResponseCookieFilter tokenResponseCookieFilter) throws Exception {
 
         var as = new OAuth2AuthorizationServerConfigurer();
-        // multi-tenant: allow multi-issuer; issuer resolved from request (Forwarded headers respected)
         AuthorizationServerSettings settings = AuthorizationServerSettings
                 .builder()
                 .multipleIssuersAllowed(true)
                 .build();
 
-        // Use non-deprecated API instead of http.apply(as)
         http.with(as, config -> {
             config.oidc(Customizer.withDefaults());
             config.authorizationServerSettings(settings);
@@ -100,7 +102,6 @@ public class AuthorizationServerConfig {
         return http.build();
     }
 
-    // Register token response cookie filter at servlet layer for /oauth2/token
     @Bean
     public FilterRegistrationBean<TokenResponseCookieFilter> tokenResponseCookieFilterRegistration(
             TokenResponseCookieFilter filter) {
@@ -110,18 +111,16 @@ public class AuthorizationServerConfig {
         return registration;
     }
 
-    // Forwarded headers support for issuer/X-Forwarded-* behind proxies
     @Bean
-    public FilterRegistrationBean<org.springframework.web.filter.ForwardedHeaderFilter> forwardedHeaderFilter() {
-        var reg = new FilterRegistrationBean<>(new org.springframework.web.filter.ForwardedHeaderFilter());
+    public FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+        var reg = new FilterRegistrationBean<>(new ForwardedHeaderFilter());
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
         return reg;
     }
 
-    // Register our synthetic X-Forwarded-Prefix writer before ForwardedHeaderFilter
     @Bean
-    public FilterRegistrationBean<com.openframe.authz.tenant.TenantForwardedPrefixFilter> tenantForwardedPrefixFilter() {
-        var reg = new FilterRegistrationBean<>(new com.openframe.authz.tenant.TenantForwardedPrefixFilter());
+    public FilterRegistrationBean<TenantForwardedPrefixFilter> tenantForwardedPrefixFilter() {
+        var reg = new FilterRegistrationBean<>(new TenantForwardedPrefixFilter());
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 15);
         return reg;
     }
@@ -161,9 +160,12 @@ public class AuthorizationServerConfig {
         return (jwkSelector, securityContext) -> {
             String tenantId = getTenantId();
             if (tenantId == null || tenantId.isBlank()) {
+                log.error("JWKS request without resolved tenant id");
                 throw new IllegalStateException("Tenant id not resolved for JWK request");
             }
             RSAKey tenantKey = tenantKeyService.getOrCreateActiveKey(tenantId);
+            String kid = tenantKey.getKeyID();
+            log.debug("Serving JWKS for tenantId='{}' with kid='{}'", tenantId, kid);
             return jwkSelector.select(new JWKSet(tenantKey));
         };
     }

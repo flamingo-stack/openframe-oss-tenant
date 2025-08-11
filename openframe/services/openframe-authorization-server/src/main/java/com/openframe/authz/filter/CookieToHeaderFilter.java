@@ -35,7 +35,6 @@ public class CookieToHeaderFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         log.debug("Processing request: {} {}", request.getMethod(), requestPath);
 
-        // Only process OAuth2 token endpoint requests
         if (isTokenEndpoint(requestPath)) {
             final String refreshToken = extractRefreshTokenFromCookies(request);
 

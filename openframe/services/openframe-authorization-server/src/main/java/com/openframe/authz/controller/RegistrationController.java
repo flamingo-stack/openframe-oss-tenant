@@ -2,6 +2,7 @@ package com.openframe.authz.controller;
 
 import com.openframe.authz.dto.UserRegistrationRequest;
 import com.openframe.authz.service.RegistrationService;
+import com.openframe.core.constants.HttpHeaders;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -41,7 +42,7 @@ public class RegistrationController {
             @Valid @RequestBody com.openframe.authz.dto.AutoRegistrationRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        registrationService.registerUser(
+        var tenant = registrationService.registerUser(
                 new UserRegistrationRequest(
                         request.getEmail(),
                         request.getFirstName(),
@@ -59,7 +60,8 @@ public class RegistrationController {
         new HttpSessionSecurityContextRepository().saveContext(context, httpRequest, httpResponse);
 
         String base = getBaseUrl(httpRequest);
-        String tenantId = com.openframe.authz.tenant.TenantContext.getTenantId();
+        // Prefer resolved tenant from service, fallback to TenantContext
+        String tenantId = tenant != null ? tenant.getId() : com.openframe.authz.tenant.TenantContext.getTenantId();
         if (tenantId == null || tenantId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "tenant_missing"));
         }
@@ -78,9 +80,9 @@ public class RegistrationController {
 
 
     private static String getBaseUrl(HttpServletRequest req) {
-        String proto = nvl(req.getHeader("X-Forwarded-Proto"), req.getScheme());
-        String host = nvl(req.getHeader("X-Forwarded-Host"), req.getServerName());
-        String port = nvl(req.getHeader("X-Forwarded-Port"),
+        String proto = nvl(req.getHeader(HttpHeaders.X_FORWARDED_PROTO), req.getScheme());
+        String host = nvl(req.getHeader(HttpHeaders.X_FORWARDED_HOST), req.getServerName());
+        String port = nvl(req.getHeader(HttpHeaders.X_FORWARDED_PORT),
                 (req.getServerPort() == 80 || req.getServerPort() == 443) ? "" : ":" + req.getServerPort());
         return proto + "://" + host + (host.contains(":") || port.isEmpty() ? "" : port);
     }

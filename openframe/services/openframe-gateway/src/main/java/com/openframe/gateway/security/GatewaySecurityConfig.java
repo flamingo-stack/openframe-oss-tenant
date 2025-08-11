@@ -2,6 +2,7 @@ package com.openframe.gateway.security;
 
 import com.openframe.gateway.security.filter.CookieToHeaderFilter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -33,6 +34,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @EnableWebFluxSecurity
 @EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
 @RequiredArgsConstructor
+@Slf4j
 public class GatewaySecurityConfig {
 
     private final ManagementServerProperties managementProperties;
@@ -112,6 +114,7 @@ public class GatewaySecurityConfig {
     @Bean
     public JwtIssuerReactiveAuthenticationManagerResolver jwtIssuerAuthenticationManagerResolver() {
         return new JwtIssuerReactiveAuthenticationManagerResolver(issuer -> {
+            log.info("Creating Gateway JwtDecoder for issuer: {}", issuer);
             var decoder = ReactiveJwtDecoders.fromIssuerLocation(issuer);
             var manager = new JwtReactiveAuthenticationManager(decoder);
             manager.setJwtAuthenticationConverter(reactiveJwtAuthenticationConverter());

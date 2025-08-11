@@ -22,18 +22,8 @@ import java.util.regex.Pattern;
 public class TenantService {
 
     private final TenantRepository tenantRepository;
-    private final SSOConfigService ssoConfigService;
     
-    @Value("${openframe.tenants.default-tenant:localhost}")
-    private String defaultTenantName;
-    
-    @Value("${openframe.tenants.default-domain:localhost}")
-    private String defaultTenantDomain;
-    
-    // Tenant name validation pattern (3-50 alphanumeric chars, hyphens, underscores)
     private static final Pattern TENANT_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,50}$");
-    
-    // Domain validation pattern (basic domain format)
     private static final Pattern DOMAIN_PATTERN = Pattern.compile("^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.[a-zA-Z]{2,}$");
     
     /**
@@ -78,14 +68,7 @@ public class TenantService {
 
         return savedTenant;
     }
-    
-    /**
-     * Find tenant by name (case-insensitive)
-     */
-    public Optional<Tenant> findByName(String tenantName) {
-        return tenantRepository.findByNameIgnoreCase(tenantName);
-    }
-    
+
     /**
      * Find tenant by domain
      */
@@ -109,16 +92,7 @@ public class TenantService {
         }
         return !tenantRepository.existsByNameIgnoreCase(tenantName);
     }
-    
-    /**
-     * Check if tenant can accept new registrations
-     */
-    public boolean canRegister(String tenantName) {
-        return findByName(tenantName)
-                .map(Tenant::canRegister)
-                .orElse(false);
-    }
-    
+
     /**
      * Close registration for a tenant (typically after first user for single-tenant)
      */
@@ -130,14 +104,6 @@ public class TenantService {
         });
     }
 
-    
-    /**
-     * Get all active tenants
-     */
-    public List<Tenant> getActiveTenants() {
-        return tenantRepository.findByStatus("ACTIVE");
-    }
-    
     /**
      * Validate tenant name format
      */

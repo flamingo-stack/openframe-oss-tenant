@@ -35,11 +35,9 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter {
         
         String requestPath = request.getRequestURI();
         
-        // Only process OAuth2 token endpoint responses
         if (isTokenEndpoint(requestPath)) {
             log.debug("Intercepting token endpoint response to set cookies");
             
-            // Wrap response to capture the JSON content (supports OutputStream and Writer)
             ContentCachingResponseWrapper wrapped = new ContentCachingResponseWrapper(response);
             filterChain.doFilter(request, wrapped);
 
@@ -61,7 +59,6 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 log.error("Failed to parse token response and set cookies", e);
             } finally {
-                // Write original body back to the client
                 wrapped.copyBodyToResponse();
             }
             return;

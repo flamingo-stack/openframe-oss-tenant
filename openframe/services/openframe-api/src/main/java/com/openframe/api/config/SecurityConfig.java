@@ -1,5 +1,6 @@
 package com.openframe.api.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,16 +24,18 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @Configuration
 @EnableWebSecurity
+@Slf4j
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         JwtIssuerAuthenticationManagerResolver issuerResolver = new JwtIssuerAuthenticationManagerResolver(
-                issuer -> {
-                    var decoder = JwtDecoders.fromIssuerLocation(issuer);
-                    JwtAuthenticationProvider provider = new JwtAuthenticationProvider(decoder);
-                    return provider::authenticate;
-                }
+            issuer -> {
+                log.info("Creating JwtDecoder for issuer: {}", issuer);
+                var decoder = JwtDecoders.fromIssuerLocation(issuer);
+                JwtAuthenticationProvider provider = new JwtAuthenticationProvider(decoder);
+                return provider::authenticate;
+            }
         );
         return http
                 .csrf(AbstractHttpConfigurer::disable)

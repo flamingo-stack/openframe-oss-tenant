@@ -9,18 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface SSOConfigRepository extends MongoRepository<SSOConfig, String> {
-    
-    Optional<SSOConfig> findByProviderAndTenantId(String provider, String tenantId);
-    
+
     Optional<SSOConfig> findByTenantIdAndProvider(String tenantId, String provider);
-    
-    Optional<SSOConfig> findByProvider(String provider);
-    
-    List<SSOConfig> findByEnabledTrue();
-    
-    List<SSOConfig> findByEnabledTrueAndTenantId(String tenantId);
-    
-    List<SSOConfig> findByTenantId(String tenantId);
-    
     List<SSOConfig> findByTenantIdAndEnabledTrue(String tenantId);
 }
