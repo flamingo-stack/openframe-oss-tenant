@@ -13,6 +13,12 @@ public interface UserRepository extends MongoRepository<User, String> {
     
     Optional<User> findByEmail(String email);
     
+    /**
+     * Find all users with the same email across all tenants
+     * Used for tenant discovery and SSO
+     */
+    List<User> findAllByEmail(String email);
+    
     Optional<User> findByEmailAndTenantId(String email, String tenantId);
     
     Optional<User> findByExternalUserIdAndLoginProvider(String externalUserId, String loginProvider);
@@ -27,4 +33,9 @@ public interface UserRepository extends MongoRepository<User, String> {
     boolean existsByEmailAndTenantId(String email, String tenantId);
     
     long countByTenantId(String tenantId);
+    
+    /**
+     * Count how many tenants a user has accounts in
+     */
+    long countByEmail(String email);
 }

@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * User registration request DTO for multi-tenant domain-based registration
+ * User registration request DTO for multi-tenant registration
  */
 @Data
 @Builder
@@ -35,13 +35,35 @@ public class UserRegistrationRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
     
-    @NotBlank(message = "Tenant domain is required")
-    @JsonProperty("tenant_domain")
-    private String tenantDomain; // Domain where user will be redirected after login
+    /**
+     * Organization/tenant name for registration
+     * This will be used to create a new tenant if it doesn't exist
+     */
+    @NotBlank(message = "Organization name is required")
+    @JsonProperty("tenant_name")
+    private String tenantName;
     
-    // Generate tenant ID from domain (e.g., "company.com" -> "company")
-    public String getTenantId() {
-        if (tenantDomain == null) return "default";
-        return tenantDomain.split("\\.")[0].toLowerCase();
+    /**
+     * Tenant domain (optional, will be generated if not provided)
+     * For development: localhost
+     * For production: {tenantName}.openframe.io
+     */
+    @JsonProperty("tenant_domain")
+    private String tenantDomain;
+    
+    /**
+     * Get tenant domain, generating one if not provided
+     */
+    public String getTenantDomain() {
+        if (tenantDomain != null && !tenantDomain.trim().isEmpty()) {
+            return tenantDomain.trim();
+        }
+        
+        // Generate domain based on tenant name
+        if ("localhost".equalsIgnoreCase(tenantName)) {
+            return "localhost";
+        }
+        
+        return tenantName.toLowerCase() + ".openframe.io";
     }
 }

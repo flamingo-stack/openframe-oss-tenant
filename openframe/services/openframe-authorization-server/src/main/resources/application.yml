@@ -1,21 +1,38 @@
-server:
-  port: 9000
-
+# OpenFrame Authorization Server Configuration
 spring:
   application:
     name: openframe-authorization-server
   
   profiles:
     active: local
+    
+  # MongoDB Configuration
+  data:
+    mongodb:
+      uri: mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
 
-logging:
-  level:
-    root: INFO
-    com.openframe: DEBUG
+  # Spring Cloud Config
+  cloud:
+    config:
+      enabled: false
+
+# JWT Config is excluded via @ComponentScan excludeFilters in main application class
+
+# Server Configuration
+server:
+  port: 9000
+  forward-headers-strategy: native
+  ssl:
+    enabled: true
+    key-store: classpath:keystore.p12
+    key-store-type: PKCS12
+    key-store-password: changeit
+    key-alias: openframe
 
 # JWT Configuration
+
 jwt:
-  issuer: openframe
+  issuer: https://localhost:9000
   audience: openframe-web
   publicKey:
     value: |
@@ -59,84 +76,86 @@ jwt:
       WCF8tQL1/DdeHALwemnWrgyc
       -----END PRIVATE KEY-----
 
-domain:
-  validation:
-    regex: "^localhost$"
+# CORS Configuration
+cors:
+  allowed-origins:
+    - https://localhost
+    - http://localhost:3000
+    - http://localhost:5173
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  allowed-headers:
+    - "*"
+  allow-credentials: true
 
----
-# Local Development Profile
-spring:
-  config:
-    activate:
-      on-profile: local
-  data:
-    mongodb:
-      uri: mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000
-    redis:
-      host: redis-master.datasources.svc.cluster.local
-      port: 6379
-
-# Security encryption configuration (required for EncryptionService)
-security:
-  encryption:
-    password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
-    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
-  oauth2:
-    token:
-      access:
-        expiration-seconds: 900  # 15 minutes
-      refresh:
-        expiration-seconds: 604800  # 7 days
-
-# Cookie configuration
+# OpenFrame Configuration
 openframe:
+  auth:
+    client:
+      id: ${OPENFRAME_CLIENT_ID:openframe_web_dashboard}
+      secret: ${OPENFRAME_CLIENT_SECRET:secret}
+  tenants:
+    default-tenant: localhost
+    default-domain: localhost
+  
+  # Domain validation regex (only localhost for local development)
+  domain:
+    validation:
+      regex: "^localhost$"
+  
+  # OAuth2 Token Configuration
   security:
+    jwt:
+      access-token-expiration: 900    # 15 minutes
+      refresh-token-expiration: 604800 # 7 days
     cookie:
       domain: null
       secure: true
       same-site: None
 
-jwt:
-  issuer: openframe
-  audience: openframe-web
-  publicKey:
-    value: |
-      -----BEGIN PUBLIC KEY-----
-      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2hOutXmTOhEp7FHCXRpn
-      6rkyeQRStHcNe5GF/+6fejfP7N4lIAe33YGyrlLB8++p2/RcWYd6ZBNb7mYX/XaI
-      cRpsgraHxMjsQ8Lyio8QkuDX7HFzW5W4MFGMSBYv8zK95FNPGGK2LEdRf+DtaYzk
-      XpqrkJTgfw7jFqEVCiC9Eg6ryHO0UppDjb8ho2XZIpWgAcW4Qf+iXaRWCR+FN4tR
-      9LF/vBmqH13CQD9jazqSTR5mMp9ih9sG0SqEAYxAhENXtLjf+yH2uDplu0RaFkuv
-      ec8Qg5aglrDzTK4wpF1avJXCmndDt2VbfMMCehiLI31LPm8qNoJo87KF71gvE+kW
-      cQIDAQAB
-      -----END PUBLIC KEY-----
-  privateKey:
-    value: |
-      -----BEGIN PRIVATE KEY-----
-      MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDaE661eZM6ESns
-      UcJdGmfquTJ5BFK0dw17kYX/7p96N8/s3iUgB7fdgbKuUsHz76nb9FxZh3pkE1vu
-      Zhf9dohxGmyCtofEyOxDwvKKjxCS4NfscXNblbgwUYxIFi/zMr3kU08YYrYsR1F/
-      4O1pjORemquQlOB/DuMWoRUKIL0SDqvIc7RSmkONvyGjZdkilaABxbhB/6JdpFYJ
-      H4U3i1H0sX+8GaofXcJAP2NrOpJNHmYyn2KH2wbRKoQBjECEQ1e0uN/7Ifa4OmW7
-      RFoWS695zxCDlqCWsPNMrjCkXVq8lcKad0O3ZVt8wwJ6GIsjfUs+byo2gmjzsoXv
-      WC8T6RZxAgMBAAECggEAGsiuaAaJtmjeQR1HkGofrOdYaMmcTiLjH96fL8Wt255t
-      kKuLXBQ77l4xb7ylVUxbDIibgQ7P0ZPDx5N4IH7Fl5KbFNt4mwrhuG7XSCegbacP
-      jgWJxAwERmxK8khF/7TR4sWioh2ZlKBLxQzUoTvsiSauVKscVC6kEHxHRRUBSRgU
-      bW+yj6ZzMzA7Eh12JnnYSJDt5IFvNC3Isx/L/xlEsSId4AE5YQDWZeM+9C0pD9Xi
-      aVaF4CZZQo7S3yJzHOBw3GbMJzw04ZuVvpQndgTd8AKOPD4wJQWT08LMq+s1hXT8
-      GIJ5mGrQnw9S7AZDN9dPOL0XjR//4VjACOv64nLCywKBgQD3M9dVI4bc6Y5QKc4+
-      iefeh13GPK9DOS+EjGNlyOuwmamdIn2TXxBq3kQn2hfRt8aP6pJUJllc/paOQKwo
-      Kj9BXeE3MRgP0F/e+M+F8BCR5tVlFz/Tsh6O1KEBFHnqeVebBhiq94Ohd66LLJ9k
-      88bdAlbXKtPledT8I4YnyMD5fwKBgQDh1n1tE6ODFgw+0uiuXWqbr8Rsdwlcgncy
-      aMBJC99mVbWqNOyMJSRhV0u4Fubo5qtEtHw/prYZ78Arpx/rQMWlvCfxXbo9Dzkx
-      Jwk/pKYYxS8q6weReFLHEBbMV0OmLpXm0gaRqRoZVNeXvMs5QVTaMDuIjMOa6QdY
-      AuUR1XGIDwKBgB3164hHGQZXTEdM+dE8l5yx3Vy0aC2GlcrD1Rw2ANLTnOoNjxi4
-      cd3x+GK4HSDu3CL/NCL8zuHlfUvabMMlc6sxfKVazubDw4rbrxM1qFx2lLB+4959
-      fRSkkqr111zivgps77pw60Q7pCz8CImMvjJ1IR9M8oeif3zbtVvHChRzAoGBAIix
-      vzFqlaoeikLsfhIsUP7zIL1WP8BS57sHVHviR9I1RsRDTHp3cNHKePZwRkvqcvgf
-      FqWgTtDcIUFK4zMN/ZQXk0WxKa0TrdZmfl6bVj3f/HDJ2cbfQZtjzajZmQTZZbpU
-      nc1EwZtbkzMw/wEk3itCzoYUTcFSEzPebLCitRlZAoGBAMiJvEEuXOnRR/8M2znW
-      RW8sW+h2Y7z4VyCUe0uWcwQ8m9SSIvxGrQScBAgSFIvucH2O2ViXXPL9ysiKvDab
-      M1L84p9zp0LUoEKCkInzRxey0rPLjRSiYRoqiJpSXisX4uUZ8H/paG17p9vNRYM8
-      WCF8tQL1/DdeHALwemnWrgyc
-      -----END PRIVATE KEY-----
+  # SSO Configuration
+  sso:
+    google:
+      authorization-url: https://accounts.google.com/o/oauth2/v2/auth
+      token-url: https://oauth2.googleapis.com/token
+      user-info-url: https://www.googleapis.com/oauth2/v2/userinfo
+      redirect-uri: https://localhost/oauth2/callback/google
+      scopes: openid,profile,email
+      enabled: true
+      display-name: Google
+
+# Security OAuth2 Token Configuration (for CookieService)
+security:
+  oauth2:
+    token:
+      access:
+        expiration-seconds: 900
+      refresh:
+        expiration-seconds: 604800
+  encryption:
+    password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
+    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
+
+  # SSO Configuration
+  sso:
+    openframe:
+      client-id: openframe-sso
+      client-secret: openframe-sso-secret
+      authorization-url: https://localhost:9000/oauth2/authorize
+      token-url: https://localhost:9000/oauth2/token
+      redirect-uri: https://localhost/oauth2/callback/openframe-sso
+      scopes: openid,profile,email
+
+# Logging Configuration
+logging:
+  level:
+    com.openframe: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.security.oauth2.server.authorization.web.OAuth2TokenEndpointFilter: TRACE
+    org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationProvider: TRACE
+    org.springframework.security.oauth2.server.authorization: TRACE

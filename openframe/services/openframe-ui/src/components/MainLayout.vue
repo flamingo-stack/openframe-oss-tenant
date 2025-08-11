@@ -234,11 +234,11 @@ const toggleMenu = () => {
 const handleLogout = async () => {
   try {
     await authStore.logout();
-    router.push('/login');
+            router.push('/central-auth-demo');
   } catch (error) {
     console.error('Logout error:', error);
     // Even if logout fails, redirect to login
-    router.push('/login');
+            router.push('/central-auth-demo');
   }
 };
 </script>

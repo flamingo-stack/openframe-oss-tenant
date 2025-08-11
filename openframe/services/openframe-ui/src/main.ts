@@ -41,7 +41,7 @@ async function checkAuthAndMount() {
     const currentPath = window.location.pathname
 
     // Public routes that don't require authentication
-    const publicRoutes = ['/login', '/register', '/oauth2/callback/google']
+    const publicRoutes = ['/login', '/register', '/oauth2/callback/google', '/oauth2/callback/openframe-sso']
     const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route))
 
     if (!isPublicRoute) {

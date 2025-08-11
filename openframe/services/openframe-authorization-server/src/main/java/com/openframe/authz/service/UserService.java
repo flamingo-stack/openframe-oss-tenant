@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,7 +30,7 @@ public class UserService {
     private final MongoTemplate mongoTemplate;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${domain.validation.regex}")
+    @Value("${openframe.domain.validation.regex}")
     private String domainValidationRegex;
 
     // ============ SIMPLE CRUD OPERATIONS (via Repository) ============
@@ -246,5 +247,40 @@ public class UserService {
             default:
                 return "USER"; // Default fallback
         }
+    }
+
+    /**
+     * Create user from SSO provider (Google, Microsoft, etc.)
+     */
+    public User createUserFromSSO(String email, String firstName, String lastName, 
+                                  String tenantId, String ssoProvider) {
+        User user = new User();
+        user.setEmail(email);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setTenantId(tenantId);
+        user.setStatus("ACTIVE");
+        user.setEmailVerified(true); // SSO providers typically verify email
+        user.setCreatedAt(LocalDateTime.now());
+        user.setLastLogin(Instant.now());
+        
+        // Set SSO metadata
+        user.setLoginProvider(ssoProvider.toUpperCase());
+        user.setPasswordHash(null); // No password for SSO users
+        
+        // Set default role
+        user.setRoles(List.of("USER"));
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Find user by email and tenant ID (for SSO login)
+     */
+    public Optional<User> findByEmailAndTenantId(String email, String tenantId) {
+        return userRepository.findByEmail(email)
+                .stream()
+                .filter(user -> tenantId.equals(user.getTenantId()))
+                .findFirst();
     }
 }

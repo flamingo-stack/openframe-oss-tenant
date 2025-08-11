@@ -3,7 +3,7 @@ import { restClient } from '../apollo/apolloClient';
 
 export class SSOService {
   private static readonly BASE_URL = '/sso';
-  private static readonly AUTH_SERVER_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:9000';
+  private static readonly AUTH_SERVER_URL = import.meta.env.VITE_AUTH_URL;
 
   /**
    * Get enabled SSO providers for login buttons

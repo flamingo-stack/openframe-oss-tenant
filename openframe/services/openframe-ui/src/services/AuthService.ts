@@ -1,9 +1,10 @@
 import { authConfig } from '../config/auth.config';
-
 import { ConfigService } from '../config/config.service';
-
-
 import { restClient } from '../apollo/apolloClient';
+import type { 
+  TenantDiscoveryResponse, 
+  TenantAvailabilityResponse
+} from '../types/auth';
 
 export interface LoginCredentials {
   email: string;
@@ -14,6 +15,8 @@ export interface RegisterCredentials extends LoginCredentials {
   firstName?: string;
   lastName?: string;
   confirmPassword: string;
+  tenantName?: string;
+  tenantDomain?: string;
 }
 
 export interface TokenResponse {
@@ -74,6 +77,29 @@ export class OAuthError extends Error {
 export class AuthService {
   private static configService = ConfigService.getInstance();
   private static runtimeConfig = AuthService.configService.getConfig();
+
+  /**
+   * Handle errors from API calls
+   */
+  private static async handleError(error: unknown): Promise<Error> {
+    console.error('❌ [Auth] API Error:', error);
+    
+    if (error instanceof Error) {
+      return error;
+    }
+    
+    if (typeof error === 'object' && error !== null) {
+      const errorObj = error as any;
+      if (errorObj.message) {
+        return new Error(errorObj.message);
+      }
+      if (errorObj.error_description) {
+        return new Error(errorObj.error_description);
+      }
+    }
+    
+    return new Error('An unexpected error occurred');
+  }
 
   /* UNUSED - keeping for reference\n  private static getHeaders(): HeadersInit {
     const headers: HeadersInit = {
@@ -184,7 +210,7 @@ export class AuthService {
         clientId: authConfig.clientId
       });
 
-      const response = await restClient.post<TokenResponse>(`${import.meta.env.VITE_AUTH_URL}/oauth/token`, formData);
+      const response = await restClient.post<TokenResponse>(`${import.meta.env.VITE_AUTH_URL}/oauth2/token`, formData);
       
       console.log('✅ [Auth] Login successful:', {
         tokenType: response.token_type,
@@ -197,7 +223,7 @@ export class AuthService {
       return response;
     } catch (error: unknown) {
       console.error('❌ [Auth] Login failed:', error);
-      throw this.handleError(error);
+      throw await AuthService.handleError(error);
     }
   }
 
@@ -208,7 +234,8 @@ export class AuthService {
         password: credentials.password,
         first_name: credentials.firstName || '',
         last_name: credentials.lastName || '',
-        confirm_password: credentials.confirmPassword
+        tenant_name: credentials.tenantName || 'localhost', // Default to localhost for development
+        tenant_domain: credentials.tenantDomain || 'localhost' // Default to localhost for development
       };
 
       const authString = btoa(`${authConfig.clientId}:${authConfig.clientSecret}`);
@@ -218,7 +245,7 @@ export class AuthService {
       };
 
       const response = await restClient.post<TokenResponse>(
-        `${import.meta.env.VITE_AUTH_URL || 'http://localhost:9000'}/oauth/register`, 
+        `${import.meta.env.VITE_AUTH_URL}/oauth/register`, 
         data,
         { headers }
       );
@@ -228,9 +255,51 @@ export class AuthService {
 
       return response;
     } catch (error: unknown) {
-      throw this.handleError(error);
+      throw await AuthService.handleError(error);
     }
   }
+
+  /**
+   * Discover tenants for a given email
+   * Used in the returning user flow to show available authentication options
+   */
+  static async discoverTenants(email: string): Promise<TenantDiscoveryResponse> {
+    try {
+      const authUrl = import.meta.env.VITE_AUTH_URL;
+      const url = `${authUrl}/tenant/discover?email=${encodeURIComponent(email)}`;
+      
+      console.log('🔍 [Auth] Starting tenant discovery for email:', email);
+      console.log('🔍 [Auth] Using URL:', url);
+      console.log('🔍 [Auth] VITE_AUTH_URL:', import.meta.env.VITE_AUTH_URL);
+      
+      const response = await restClient.post<TenantDiscoveryResponse>(url);
+      
+      console.log('🔍 [Auth] Tenant discovery successful for email:', email);
+      console.log('🔍 [Auth] Response:', response);
+      return response;
+    } catch (error: unknown) {
+      console.error('❌ [Auth] Tenant discovery failed:', error);
+      throw await AuthService.handleError(error);
+    }
+  }
+
+  /**
+   * Check if a tenant name is available for registration
+   */
+  static async checkTenantAvailability(tenantName: string): Promise<TenantAvailabilityResponse> {
+    try {
+      const response = await restClient.get<TenantAvailabilityResponse>(
+        `${import.meta.env.VITE_AUTH_URL}/tenant/availability?name=${encodeURIComponent(tenantName)}`
+      );
+      
+      console.log('✅ [Auth] Tenant availability checked for:', tenantName);
+      return response;
+    } catch (error: unknown) {
+      throw await AuthService.handleError(error);
+    }
+  }
+
+
 
   static async refreshToken(refreshToken: string): Promise<TokenResponse> {
     try {
@@ -241,9 +310,9 @@ export class AuthService {
         client_secret: authConfig.clientSecret
       });
 
-      return await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
+      return await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth2/token`, formData);
     } catch (error: unknown) {
-      throw this.handleError(error);
+      throw await AuthService.handleError(error);
     }
   }
 
@@ -251,7 +320,7 @@ export class AuthService {
     try {
       return await restClient.get<UserInfo>(`${AuthService.runtimeConfig.apiUrl}/.well-known/userinfo`);
     } catch (error: unknown) {
-      throw this.handleError(error);
+      throw await AuthService.handleError(error);
     }
   }
 
@@ -271,7 +340,45 @@ export class AuthService {
       );
       return data.redirect_url;
     } catch (error: unknown) {
-      throw this.handleError(error);
+      throw await AuthService.handleError(error);
+    }
+  }
+
+  /**
+   * Exchange OAuth2 authorization code for tokens
+   * This is the standard OAuth2 flow used by Spring Authorization Server
+   */
+  static async exchangeCodeForTokens(code: string, state?: string): Promise<TokenResponse> {
+    try {
+      console.log('🔗 [Auth] Exchanging authorization code for tokens');
+      
+      const formData = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: window.location.origin + window.location.pathname, // Current callback URL
+        client_id: import.meta.env.VITE_CLIENT_ID,
+        code_verifier: sessionStorage.getItem('pkce:code_verifier') || ''
+      });
+
+      if (state) {
+        console.log('🔗 [Auth] Including state in token exchange:', state);
+      }
+
+      const response = await restClient.post<TokenResponse>(
+        `${import.meta.env.VITE_AUTH_URL}/oauth2/token`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+      
+      console.log('✅ [Auth] Token exchange successful - tokens set as HttpOnly cookies by server');
+      return response;
+    } catch (error: unknown) {
+      console.error('❌ [Auth] Token exchange failed:', error);
+      throw await AuthService.handleError(error);
     }
   }
 
@@ -285,9 +392,9 @@ export class AuthService {
         client_secret: authConfig.clientSecret
       });
 
-      return await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth/token`, formData);
+      return await restClient.post<TokenResponse>(`${AuthService.runtimeConfig.apiUrl}/oauth2/token`, formData);
     } catch (error: unknown) {
-      throw this.handleError(error);
+      throw await AuthService.handleError(error);
     }
   }
 
@@ -332,4 +439,46 @@ export class AuthService {
     // Make sure to use credentials: 'include' in fetch requests instead
     return {};
   }
+
+  /**
+   * Get Google OAuth2 authorization URL for specific tenant
+   */
+  public static async getGoogleAuthUrl(tenantId: string, state?: string): Promise<string> {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_AUTH_URL || 'http://localhost:9000'}/oauth2/google/authorize/${tenantId}?state=${state || tenantId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to get Google auth URL')
+      }
+
+      const data = await response.json()
+      return data.authUrl
+    } catch (error) {
+      console.error('Google auth URL error:', error)
+      throw await this.handleError(error)
+    }
+  }
+
+  /**
+   * Initiate Google SSO for login/registration (redirect to Google)
+   */
+  public static async initiateGoogleSSO(tenantId: string, action: 'login' | 'register' = 'login'): Promise<void> {
+    try {
+      const state = JSON.stringify({ action, tenantId, provider: 'google' })
+      const authUrl = await this.getGoogleAuthUrl(tenantId, state)
+      window.location.href = authUrl
+    } catch (error) {
+      console.error('Google SSO initiation failed:', error)
+      throw await this.handleError(error)
+    }
+  }
 } 
+
+export default AuthService;

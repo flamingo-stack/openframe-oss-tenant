@@ -4,7 +4,7 @@ import { onError } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
 import { createHttpLink } from '@apollo/client/link/http';
 import { useAuthStore } from '@/stores/auth';
-import { AuthService } from '@/services/AuthService';
+import AuthService from '@/services/AuthService';
 import router from '@/router';
 import type { IntegratedTool, ToolUrlType, APIKeyType } from '@/types/graphql';
 import { ConfigService } from '@/config/config.service';

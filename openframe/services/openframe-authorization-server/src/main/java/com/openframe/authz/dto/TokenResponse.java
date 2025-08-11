@@ -15,6 +15,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TokenResponse {
     
+    @JsonProperty("user_id")
+    private String userId;
+    
     @JsonProperty("access_token")
     private String accessToken;
     
@@ -29,6 +32,9 @@ public class TokenResponse {
     
     @JsonProperty("scope")
     private String scope;
+    
+    @JsonProperty("tenant_name")
+    private String tenantName;
     
     @JsonProperty("tenant_id")
     private String tenantId;

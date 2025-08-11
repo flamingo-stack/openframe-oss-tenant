@@ -12,6 +12,7 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import AuthService from '@/services/AuthService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -39,9 +40,11 @@ onMounted(async () => {
       throw new Error('No authorization code received')
     }
     
-    // The Authorization Server has already set the cookies
-    // We just need to verify auth status and redirect
-    console.log('🔑 [OAuth Callback] Authorization code received, checking auth status...')
+    // Exchange authorization code for tokens using standard OAuth2 flow
+    console.log('🔑 [OAuth Callback] Exchanging authorization code for tokens...')
+    console.log('🔑 [OAuth Callback] VITE_AUTH_URL:', import.meta.env.VITE_AUTH_URL)
+    console.log('🔑 [OAuth Callback] redirect_uri:', window.location.origin + window.location.pathname)
+    await AuthService.exchangeCodeForTokens(code, state)
     
     // Check if we're now authenticated (cookies should be set by Authorization Server)
     const isAuthenticated = await authStore.checkAuthStatus()
@@ -60,9 +63,9 @@ onMounted(async () => {
   } catch (error) {
     console.error('🔑 [OAuth Callback] Error during OAuth callback:', error)
     
-    // Redirect to login with error message
+    // Redirect to central auth with error message
     await router.push({
-      path: '/login',
+      path: '/central-auth-demo',
       query: { 
         error: 'oauth_failed',
         message: error instanceof Error ? error.message : 'OAuth authentication failed'

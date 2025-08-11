@@ -2,6 +2,7 @@ package com.openframe.authz.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,15 +15,16 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Simple Security Configuration for Authorization Server
- * Allows OAuth endpoints without complex authorization server setup
+ * Security Configuration for Default Requests
+ * This handles all non-Authorization Server requests
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -30,7 +32,10 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight
                 .requestMatchers(
                     "/oauth/**",           // OAuth endpoints
-                        "/oauth2/**",          // Social OAuth endpoints
+                    "/oauth2/**",          // Social OAuth endpoints
+                    "/login",              // Login page
+                    "/favicon.ico",        // Favicon
+                    "/tenant/**",          // Tenant discovery endpoints
                     "/sso/**",             // SSO providers
                     "/actuator/health",    // Health check
                     "/.well-known/**",     // OpenID configuration
@@ -38,13 +43,23 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
+            .formLogin(form -> form.loginPage("/login").permitAll())
             .build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "https://localhost:*", "https://localhost", "http://localhost"));
+        configuration.setAllowedOriginPatterns(List.of(
+            "http://localhost:*", 
+            "https://localhost:*", 
+            "https://localhost", 
+            "http://localhost",
+            "https://localhost:3000",
+            "http://localhost:3000",
+            "https://localhost:5173",
+            "http://localhost:5173"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

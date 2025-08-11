@@ -17,28 +17,14 @@ export const useAuthStore = defineStore('auth', () => {
   // Reactive function to check authentication status based on cookie presence  
   const isAuthenticated = ref(false)
   
-  // Function to update authentication status based on cookie presence
+  // Function to update authentication status from cache
   function updateAuthStatus() {
-    // First check if we have the access_token cookie (this indicates active session)
-    const hasAccessTokenCookie = document.cookie
-      .split(';')
-      .some(cookie => cookie.trim().startsWith('access_token='))
-    
-    // If no cookie, definitely not authenticated
-    if (!hasAccessTokenCookie) {
-      isAuthenticated.value = false
-      return
-    }
-    
-    // If we have cookie and cached status, use cached
+    // HttpOnly cookies are not readable from JS; rely on server-verified cache
     if (authStatusCache.value !== null) {
       isAuthenticated.value = authStatusCache.value
-      return
+    } else {
+      isAuthenticated.value = false
     }
-    
-    // If we have cookie but no cached status, assume authenticated
-    // (checkAuthStatus will verify this with server)
-    isAuthenticated.value = true
   }
   
   // Initialize auth status on store creation
@@ -63,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
       formData.append('client_id', 'openframe-ui');
       formData.append('scope', 'openid profile email openframe.read openframe.write');
 
-      const response = await fetch(`${AUTH_SERVER_URL}/oauth/token`, {
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -100,19 +86,18 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       console.log('🔄 [AuthStore] Attempting token refresh via HttpOnly cookies...');
       
-      // SECURITY: Both tokens are now HttpOnly cookies with strict paths
-      // Access token cookie: Path=/ (included automatically)  
-      // Refresh token cookie: Path=/oauth/token (included automatically ONLY on this endpoint)
-      const response = await fetch(`${AUTH_SERVER_URL}/oauth/token`, {
+      // Use standard OAuth2 token endpoint with refresh_token grant
+      // Our CookieToHeaderFilter will extract refresh_token from HttpOnly cookie
+      const response = await fetch(`${AUTH_SERVER_URL}/oauth2/token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic ' + btoa('openframe-ui:openframe-ui-secret')
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
         credentials: 'include', // Include HttpOnly cookies
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          // No refresh_token parameter - it's automatically sent via HttpOnly cookie
+          client_id: import.meta.env.VITE_CLIENT_ID as string
+          // refresh_token will be automatically extracted from HttpOnly cookie by CookieToHeaderFilter
         })
       });
 
@@ -191,7 +176,7 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * User registration using Authorization Server
    */
-  async function register(email: string, password: string, firstName: string, lastName: string, tenantId: string = 'default'): Promise<TokenResponse> {
+  async function register(email: string, password: string, firstName: string, lastName: string, tenantName: string = 'localhost'): Promise<TokenResponse> {
     try {
       // Clear any stale refresh flags
       localStorage.removeItem('is_refreshing');
@@ -201,7 +186,7 @@ export const useAuthStore = defineStore('auth', () => {
         first_name: firstName,
         last_name: lastName,
         password: password,
-        tenant_id: tenantId
+        tenant_name: tenantName // Changed from tenant_id to tenant_name
       };
 
       const response = await fetch(`${AUTH_SERVER_URL}/oauth/register`, {

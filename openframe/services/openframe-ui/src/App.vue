@@ -23,7 +23,7 @@ import Toast from 'primevue/toast';
 
 const route = useRoute();
 const isAuthPage = computed(() => {
-  return ['/login', '/register', '/oauth2/callback/google'].includes(route.path);
+  return ['/central-auth-demo', '/oauth2/callback/google'].includes(route.path);
 });
 
 const themeStore = useThemeStore();

@@ -52,9 +52,9 @@ public class CookieService {
      * This way it's ONLY sent to refresh endpoint, not on every request
      */
     public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie refreshCookie = createSecureServletCookie(REFRESH_TOKEN_COOKIE, refreshToken, refreshTokenExpirationSeconds, "/api/oauth/token");
+        Cookie refreshCookie = createSecureServletCookie(REFRESH_TOKEN_COOKIE, refreshToken, refreshTokenExpirationSeconds, "/oauth2/token");
         response.addCookie(refreshCookie);
-        log.debug("Set refresh token cookie with Path=/api/oauth/token (expires in {} seconds)", refreshTokenExpirationSeconds);
+        log.debug("Set refresh token cookie with Path=/oauth2/token (expires in {} seconds)", refreshTokenExpirationSeconds);
     }
 
     /**
@@ -99,9 +99,9 @@ public class CookieService {
     public void clearTokenCookies(HttpServletResponse response) {
         Cookie clearAccessCookie = createClearServletCookie(ACCESS_TOKEN_COOKIE, "/");
         response.addCookie(clearAccessCookie);
-        Cookie clearRefreshCookie = createClearServletCookie(REFRESH_TOKEN_COOKIE, "/api/oauth/token");
+        Cookie clearRefreshCookie = createClearServletCookie(REFRESH_TOKEN_COOKIE, "/oauth2/token");
         response.addCookie(clearRefreshCookie);
-        log.debug("Cleared access token cookie (Path=/) and refresh token cookie (Path=/api/oauth/token)");
+        log.debug("Cleared access token cookie (Path=/) and refresh token cookie (Path=/oauth2/token)");
     }
 
     /**
@@ -117,8 +117,7 @@ public class CookieService {
             cookie.setDomain(cookieDomain);
         }
 
-        // Add SameSite attribute from configuration
-        cookie.setAttribute("SameSite", cookieSameSite);
+        cookie.setAttribute("SameSite", this.cookieSameSite);
 
         return cookie;
     }
@@ -136,7 +135,6 @@ public class CookieService {
             cookie.setDomain(cookieDomain);
         }
 
-        // Add SameSite attribute from configuration
         cookie.setAttribute("SameSite", cookieSameSite);
 
         return cookie;
