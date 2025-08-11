@@ -194,10 +194,10 @@ impl Service {
         //                 }
         //             }
         //         }
-        //         info!(
-        //             "Hey Flamingos 🦩, I'm your new Rust OpenFrame Service [heartbeat: {}]",
-        //             timestamp
-        //         );
+        //         // info!(
+        //         //     "Hey Flamingos 🦩, I'm your new Rust OpenFrame Service [heartbeat: {}]",
+        //         //     timestamp
+        //         // );
         //     }
         // });
 

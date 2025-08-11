@@ -141,6 +141,9 @@ impl Client {
         // Initialize HTTP client
         let http_client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
+            // disable TLS verification for dev mode only
+            // TODO: need more smart way to handle this?
+            .danger_accept_invalid_certs(std::env::var("OPENFRAME_DEV_MODE").is_ok())
             .build()
             .context("Failed to create HTTP client")?;
 
@@ -199,7 +202,7 @@ impl Client {
         
         // Initialize tool agent file client
         let tool_agent_file_client = ToolAgentFileClient::new(
-            http_client.clone(), 
+            http_client.clone(),
             Self::GATEWAY_HTTP_URL.to_string()
         );
 
