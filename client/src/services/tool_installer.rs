@@ -1,29 +1,30 @@
 use crate::platform::DirectoryManager;
 use tokio::fs::File;
-use crate::models::tool_installation_result::ToolInstallationResult;
 use bytes::Bytes;
+use anyhow::Context;
+use tokio::io::AsyncWriteExt;
+use crate::models::ToolInstallationResult;
 
 pub struct ToolInstaller {
-    directory_manager: DirectoryManager,
+    pub directory_manager: DirectoryManager,
 }
 
 impl ToolInstaller {
     pub fn new(directory_manager: DirectoryManager) -> Self {
-        let tool_folder_path = directory_manager.secured_dir().join("tool_agent");
         directory_manager.ensure_directories()
-            .with_context(|| "Failed to ensure secured directory exists")?;
-
-        Ok(Self { tool_folder_path })
+            .with_context(|| "Failed to ensure secured directory exists").unwrap();
+        Self { directory_manager }
     }
 
-    pub async fn install(&self, tool_id: String, fileBytes: Bytes) -> anyhow::Result<ToolInstallationResult> {
-        let tool_folder_path = self.directory_manager.join(tool_id);
-        let file_path = tool_folder_path.join("tool_agent");
-        let mut file = File::create(file_path).await?;
-        file.write_all(&fileBytes).await?;
+    pub async fn install(&self, tool_id: String, file_bytes: Bytes) -> anyhow::Result<ToolInstallationResult> {
+        let tool_folder_path = self.directory_manager.app_support_dir();
+        let file_path = tool_folder_path.join(tool_id.clone() + "_agent");
+        File::create(file_path).await?
+            .write_all(&file_bytes).await?;
 
         // Run command to install tool if needed
+        let tool_agent_id = tool_id.clone() + "_agent_id";
 
-        Ok(ToolInstallationResult { tool_agent_id: tool_id + "_agent_id" })
+        Ok(ToolInstallationResult { tool_agent_id })
     }
 }

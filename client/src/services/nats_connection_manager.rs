@@ -3,29 +3,29 @@ use async_nats::Client;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 use crate::services::agent_configuration_service::AgentConfigurationService;
+use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct NatsConnectionManager {
-    client: Arc<RwLock<Option<Client>>>,
+    client: Option<Client>,
     nats_server_url: String,
     config_service: AgentConfigurationService,
 }
 
 impl NatsConnectionManager {
     
-    const NATS_CONNECTION_URL_TEMPLATE: &str = "{}/ws/nats?authorization={}";
-    const NATS_DEVICE_USER: &str = "device";
-    const NATS_DEVICE_PASSWORD: &str = "1234";
+    const NATS_DEVICE_USER: &'static str = "device";
+    const NATS_DEVICE_PASSWORD: &'static str = "1234";
     
     pub fn new(nats_server_url: &str, config_service: AgentConfigurationService) -> Self {
         Self {
-            client: Arc::new(RwLock::new(None)),
+            client: None,
             nats_server_url: nats_server_url.to_string(),
             config_service,
         }
     }
 
-    pub async fn connect(&self) -> Result<()> {
+    pub async fn connect(&mut self) -> Result<()> {
         let connection_url = self.build_nats_connection_url().await?;
         let machine_id = self.config_service.get_machine_id().await?;
 
@@ -36,14 +36,23 @@ impl NatsConnectionManager {
             .await
             .context("Failed to connect to NATS server")?;
 
-        *self.client.write().await = Some(client);
+        self.client = Some(client);
 
         Ok(())
     }
 
-    pub async fn build_nats_connection_url(&self) -> Result<String> {
+    async fn build_nats_connection_url(&self) -> Result<String> {
         let token = self.config_service.get_access_token().await?;
         let host = &self.nats_server_url;
         Ok(format!("{}/ws/nats?authorization={}", host, token))
     }
+
+    pub fn get_client(&self) -> Result<&Client> {
+        match &self.client {
+            Some(client) => Ok(client),
+            None => Err(anyhow::anyhow!("NATS client is not initialized. Call connect() first.")),
+        }
+    }
+
+
 }

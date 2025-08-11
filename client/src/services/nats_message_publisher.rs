@@ -1,6 +1,8 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use serde::Serialize;
+use anyhow::{Result, Context};
 
+#[derive(Clone)]
 pub struct NatsMessagePublisher {
     nats_connection_manager: NatsConnectionManager,
 }
@@ -10,8 +12,13 @@ impl NatsMessagePublisher {
         Self { nats_connection_manager }
     }
 
+    // TODO: error handling, publish acc, what to do if failed?
     pub async fn publish<T: Serialize>(&self, subject: &str, payload: T) -> Result<()> {
         let payload_json = serde_json::to_string(&payload).context("Failed to serialize payload")?;
-        self.nats_connection_manager.publish(subject, payload_json.into()).await
+        let client = self.nats_connection_manager.get_client()
+            .context("NATS client is not initialized. Call connect() first.")?;
+        client.publish(subject.to_string(), payload_json.into()).await
+            .context("Failed to publish message to NATS")?;
+        Ok(())
     }
 }

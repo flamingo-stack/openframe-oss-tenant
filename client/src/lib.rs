@@ -33,7 +33,7 @@ pub mod updater;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService, InitialAuthenticationProcessor};
+use crate::services::{AgentAuthService, AgentRegistrationService};
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
@@ -43,6 +43,7 @@ use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installer::ToolInstaller;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
@@ -116,8 +117,8 @@ pub struct Client {
 }
 
 impl Client {
-    const GATEWAY_HTTP_URL: &str = "https://localhost";
-    const GATEWAY_WS_URL: &str = "wss://localhost";
+    const GATEWAY_HTTP_URL: &'static str = "https://localhost";
+    const GATEWAY_WS_URL: &'static str = "wss://localhost";
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
@@ -168,7 +169,7 @@ impl Client {
         // Initialize authentication client
         let auth_client = AuthClient::new(
             Self::GATEWAY_HTTP_URL.to_string(),
-            http_client
+            http_client.clone()
         );
         
         // Initialize encryption service
@@ -177,27 +178,30 @@ impl Client {
         // Initialize shared token service
         let shared_token_service = SharedTokenService::new(
             directory_manager.clone(),
-            encryption_service
+            encryption_service.clone()
         );
         
         // Initialize authentication service
         let auth_service = AgentAuthService::new(
             auth_client,
             config_service.clone(),
-            shared_token_service
+            shared_token_service.clone()
         );
         
         // Initialize authentication processor
         let auth_processor = InitialAuthenticationProcessor::new(
-            auth_service,
-            config_service
+            auth_service.clone(),
+            config_service.clone()
         );
 
         // Initialize NATS connection manager
-        let nats_connection_manager = NatsConnectionManager::new(Self::GATEWAY_WS_URL, config_service);
+        let nats_connection_manager = NatsConnectionManager::new(Self::GATEWAY_WS_URL, config_service.clone());
         
         // Initialize tool agent file client
-        let tool_agent_file_client = ToolAgentFileClient::new(http_client.clone(), config_service.get_server_url().await?);
+        let tool_agent_file_client = ToolAgentFileClient::new(
+            http_client.clone(), 
+            Self::GATEWAY_HTTP_URL.to_string()
+        );
 
         // Initialize tool installer
         let tool_installer = ToolInstaller::new(directory_manager.clone());

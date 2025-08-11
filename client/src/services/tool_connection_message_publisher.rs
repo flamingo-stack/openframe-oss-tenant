@@ -1,3 +1,4 @@
+use crate::models::ToolConnectionMessage;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 
 pub struct ToolConnectionMessagePublisher {
@@ -6,23 +7,21 @@ pub struct ToolConnectionMessagePublisher {
 
 impl ToolConnectionMessagePublisher {
 
-    const TOPIC_TEMPLATE: &str = "machine.{}.toolconnection";
-
     pub fn new(nats_message_publisher: NatsMessagePublisher) -> Self {
         Self { nats_message_publisher }
     }
 
-    pub async fn publish(&self, machine_id: String, tool_agent_id: String) -> Result<(), Box<dyn std::error::Error>> {
-        let topic = self.build_topic_name(machine_id).await;
-        let message = self.build_message(tool_agent_id).await;
-        self.nats_message_publisher.publish(topic, message).await
+    pub async fn publish(&self, machine_id: String, tool_agent_id: String) -> anyhow::Result<()> {
+        let topic = Self::build_topic_name(machine_id);
+        let message = Self::build_message(tool_agent_id);
+        self.nats_message_publisher.publish(&topic, message).await
     }
 
-    fn async build_topic_name(machine_id: String) -> String {
-        format!(TOPIC_TEMPLATE, machine_id)
+    fn build_topic_name(machine_id: String) -> String {
+        format!("machine.{}.toolconnection", machine_id)
     }
 
-    fn async build_message(tool_agent_id: String) -> ToolConnectionMessage {
+    fn build_message(tool_agent_id: String) -> ToolConnectionMessage {
         ToolConnectionMessage {
             tool_agent_id,
         }
