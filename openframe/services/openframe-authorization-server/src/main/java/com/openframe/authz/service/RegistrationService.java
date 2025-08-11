@@ -17,7 +17,7 @@ public class RegistrationService {
     private final UserService userService;
     private final TenantService tenantService;
 
-    public Tenant registerUser(UserRegistrationRequest request, String authHeader) {
+    public Tenant registerUser(UserRegistrationRequest request) {
         Tenant tenant = getOrCreateTenant(request);
         if (!tenant.canRegister()) {
             throw new IllegalArgumentException("Registration is closed for this organization");
@@ -32,12 +32,13 @@ public class RegistrationService {
                 request.getPassword()
         );
 
-        tenantService.closeRegistration(tenant.getId());
+        tenant.setRegistrationOpen(false);
 
         if (tenant.getOwnerId() == null) {
             tenant.setOwnerId(user.getId());
-            tenantService.save(tenant);
         }
+
+        tenantService.save(tenant);
 
         return tenant;
     }

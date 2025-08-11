@@ -37,13 +37,18 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter {
         
         if (isTokenEndpoint(requestPath)) {
             log.debug("Intercepting token endpoint response to set cookies");
-            
+
             ContentCachingResponseWrapper wrapped = new ContentCachingResponseWrapper(response);
             filterChain.doFilter(request, wrapped);
 
             try {
                 byte[] body = wrapped.getContentAsByteArray();
-                if (response.getStatus() == 200 && body.length > 0) {
+                int status = wrapped.getStatus();
+                String contentType = wrapped.getContentType();
+                log.debug("Token endpoint downstream response: status={}, contentType={}, bodySize={} bytes",
+                        status, contentType, body.length);
+
+                if (status == 200 && body.length > 0) {
                     JsonNode tokenResponse = objectMapper.readTree(body);
 
                     JsonNode accessNode = tokenResponse.get("access_token");
@@ -55,6 +60,8 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter {
                         cookieService.setRefreshTokenCookie(wrapped, refreshNode.asText());
                     }
                     log.debug("Successfully set tokens as HttpOnly cookies");
+                } else {
+                    log.warn("Token endpoint returned non-200 or empty body: status={}, bodySize={}", status, body.length);
                 }
             } catch (Exception e) {
                 log.error("Failed to parse token response and set cookies", e);

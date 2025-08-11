@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.openframe.authz.tenant.TenantContext.getTenantId;
+
 @RestController
 @RequestMapping(path = "/oauth", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
@@ -50,7 +52,7 @@ public class RegistrationController {
                         request.getPassword(),
                         request.getTenantName(),
                         request.getTenantDomain()
-                ), null);
+                ));
 
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
@@ -61,7 +63,7 @@ public class RegistrationController {
 
         String base = getBaseUrl(httpRequest);
         // Prefer resolved tenant from service, fallback to TenantContext
-        String tenantId = tenant != null ? tenant.getId() : com.openframe.authz.tenant.TenantContext.getTenantId();
+        String tenantId = tenant != null ? tenant.getId() : getTenantId();
         if (tenantId == null || tenantId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "tenant_missing"));
         }

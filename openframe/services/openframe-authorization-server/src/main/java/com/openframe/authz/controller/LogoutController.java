@@ -5,7 +5,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -13,7 +15,7 @@ import java.util.Map;
  * Controller for handling logout and token cleanup
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping({"/oauth"})
 @RequiredArgsConstructor
 @Slf4j
 public class LogoutController {
@@ -27,7 +29,7 @@ public class LogoutController {
     public ResponseEntity<Map<String, String>> logout(HttpServletResponse response) {
         try {
             log.info("Processing logout request");
-            
+
             cookieService.clearTokenCookies(response);
             
             return ResponseEntity.ok(Map.of(

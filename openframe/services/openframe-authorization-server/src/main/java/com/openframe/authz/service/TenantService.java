@@ -4,11 +4,9 @@ import com.openframe.authz.document.Tenant;
 import com.openframe.authz.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -91,17 +89,6 @@ public class TenantService {
             return false;
         }
         return !tenantRepository.existsByNameIgnoreCase(tenantName);
-    }
-
-    /**
-     * Close registration for a tenant (typically after first user for single-tenant)
-     */
-    public void closeRegistration(String tenantId) {
-        tenantRepository.findById(tenantId).ifPresent(tenant -> {
-            tenant.closeRegistration();
-            tenantRepository.save(tenant);
-            log.info("Closed registration for tenant: {}", tenant.getName());
-        });
     }
 
     /**
