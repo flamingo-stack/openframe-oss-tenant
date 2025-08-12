@@ -109,8 +109,7 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
 
     @Override
     protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
-        return parseJson(afterField)
-                .flatMap(event -> extractField(event, "time"))
+        return parseStringField(afterField, "time")
                 .flatMap(TimestampParser::parseIso8601);
     }
 }
