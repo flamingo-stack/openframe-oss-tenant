@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openframe-authorization-server
+  labels:
+    app: openframe-authorization-server
+spec:
+  selector:
+    app: openframe-authorization-server
+  ports:
+    - port: 8090
+      targetPort: 8090
+      name: http
+    - port: 8091
+      targetPort: 8091
+      name: management
+  type: ClusterIP

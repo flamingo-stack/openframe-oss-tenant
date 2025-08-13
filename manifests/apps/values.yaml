@@ -154,6 +154,11 @@ apps:
     project: microservices
     namespace: microservices
     syncWave: "2"
+  openframe-authorization-server:
+    enabled: true
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
   openframe-gateway: 
     enabled: true
     project: microservices
