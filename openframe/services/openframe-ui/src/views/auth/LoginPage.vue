@@ -143,7 +143,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { AuthService } from '../../services/AuthService'
+import { authService } from '../../services/AuthService'
 import { ToastService } from '../../services/ToastService'
 import type { TenantInfo } from '../../types/auth'
 
@@ -191,7 +191,7 @@ async function handleEmailSubmit() {
   error.value = ''
 
   try {
-    const response = await AuthService.discoverTenants(email.value)
+    const response = await authService.discoverTenants(email.value)
     
     if (response.has_existing_accounts) {
       tenants.value = response.tenants
@@ -224,13 +224,20 @@ async function handlePasswordLogin() {
   error.value = ''
 
   try {
-    await authStore.login(email.value, password.value)
-    toastService.showSuccess('Welcome back!')
-    
-    // Redirect to dashboard
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 1000)
+    // For password login, we need to determine the tenant
+    // For now, use the first tenant with password auth
+    const targetTenant = tenants.value.find(t => t.auth_providers.includes('password'))
+    if (targetTenant) {
+      // Store tenant info and redirect to Gateway login
+      sessionStorage.setItem('auth:tenant_id', targetTenant.tenant_id)
+      sessionStorage.setItem('auth:tenant_domain', targetTenant.tenant_domain)
+      
+      // Use Gateway's login endpoint
+      const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(targetTenant.tenant_id)}`;
+      window.location.href = loginUrl;
+    } else {
+      throw new Error('No password authentication available for this tenant')
+    }
   } catch (err: any) {
     error.value = err.message || 'Login failed. Please check your password.'
   } finally {
@@ -248,7 +255,7 @@ async function handleOpenFrameLogin() {
     // Use the first tenant with OpenFrame SSO
     const targetTenant = tenants.value.find(t => t.auth_providers.includes('openframe_sso'))
     if (targetTenant) {
-      await AuthService.openFrameSSO(targetTenant.tenant_name)
+      await authService.openFrameSSO(targetTenant.tenant_name)
       toastService.showSuccess('OpenFrame SSO successful!')
       
       // Redirect to the tenant's OpenFrame URL

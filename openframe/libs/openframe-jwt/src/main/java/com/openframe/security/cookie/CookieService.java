@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpCookie;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -30,7 +31,7 @@ public class CookieService {
     private int refreshTokenExpirationSeconds;
 
     @Value("${openframe.security.cookie.domain:#{null}}")
-    private String cookieDomain;
+    private String domain;
 
     @Value("${openframe.security.cookie.secure:false}")
     private boolean cookieSecure;
@@ -38,23 +39,27 @@ public class CookieService {
     @Value("${openframe.security.cookie.same-site:Lax}")
     private String cookieSameSite;
 
-    /**
-     * Set access token as HttpOnly cookie with Path=/ (sent on all API requests)
-     */
-    public void setAccessTokenCookie(HttpServletResponse response, String accessToken) {
-        Cookie accessCookie = createSecureServletCookie(ACCESS_TOKEN_COOKIE, accessToken, accessTokenExpirationSeconds, "/");
-        response.addCookie(accessCookie);
-        log.debug("Set access token cookie with Path=/ (expires in {} seconds)", accessTokenExpirationSeconds);
+
+    public ResponseCookie createAccessTokenCookie(String accessToken) {
+        return createCookie(ACCESS_TOKEN_COOKIE, accessToken, "/");
     }
 
     /**
-     * Set refresh token as HttpOnly cookie with strict Path=/api/oauth/token
-     * This way it's ONLY sent to refresh endpoint, not on every request
+     * Створює ResponseCookie для refresh token з налаштуваннями з CookieService
      */
-    public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie refreshCookie = createSecureServletCookie(REFRESH_TOKEN_COOKIE, refreshToken, refreshTokenExpirationSeconds, "/oauth2/token");
-        response.addCookie(refreshCookie);
-        log.debug("Set refresh token cookie with Path=/oauth2/token (expires in {} seconds)", refreshTokenExpirationSeconds);
+    public ResponseCookie createRefreshTokenCookie(String refreshToken) {
+        return createCookie(REFRESH_TOKEN_COOKIE, refreshToken,"/oauth2/token/refresh");
+    }
+
+    public ResponseCookie createCookie(String name, String value, String path) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path(path)
+                .maxAge(accessTokenExpirationSeconds)
+                .domain(domain)
+                .build();
     }
 
     /**
@@ -63,13 +68,6 @@ public class CookieService {
      */
     public String getAccessTokenFromCookies(ServerWebExchange exchange) {
         return getCookieValueFromExchange(exchange, ACCESS_TOKEN_COOKIE);
-    }
-
-    /**
-     * Get refresh token from ServerWebExchange cookies (reactive environment)
-     */
-    public String getRefreshTokenFromCookies(ServerWebExchange exchange) {
-        return getCookieValueFromExchange(exchange, REFRESH_TOKEN_COOKIE);
     }
 
     /**
@@ -99,27 +97,9 @@ public class CookieService {
     public void clearTokenCookies(HttpServletResponse response) {
         Cookie clearAccessCookie = createClearServletCookie(ACCESS_TOKEN_COOKIE, "/");
         response.addCookie(clearAccessCookie);
-        Cookie clearRefreshCookie = createClearServletCookie(REFRESH_TOKEN_COOKIE, "/oauth2/token");
+        Cookie clearRefreshCookie = createClearServletCookie(REFRESH_TOKEN_COOKIE, "/oauth2/token/refresh");
         response.addCookie(clearRefreshCookie);
-        log.debug("Cleared access token cookie (Path=/) and refresh token cookie (Path=/oauth2/token)");
-    }
-
-    /**
-     * Create a secure servlet cookie with specified path
-     */
-    private Cookie createSecureServletCookie(String name, String value, int maxAgeSeconds, String path) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setMaxAge(maxAgeSeconds);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(cookieSecure);
-        cookie.setPath(path);
-        if (cookieDomain != null && !cookieDomain.isBlank()) {
-            cookie.setDomain(cookieDomain);
-        }
-
-        cookie.setAttribute("SameSite", this.cookieSameSite);
-
-        return cookie;
+        log.debug("Cleared access token cookie (Path=/) and refresh token cookie (Path=/oauth2/token/refresh)");
     }
 
     /**
@@ -131,8 +111,8 @@ public class CookieService {
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
         cookie.setPath(path);
-        if (cookieDomain != null && !cookieDomain.isBlank()) {
-            cookie.setDomain(cookieDomain);
+        if (domain != null && !domain.isBlank()) {
+            cookie.setDomain(domain);
         }
 
         cookie.setAttribute("SameSite", cookieSameSite);

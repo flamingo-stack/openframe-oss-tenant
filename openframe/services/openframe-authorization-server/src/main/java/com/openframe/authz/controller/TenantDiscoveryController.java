@@ -30,7 +30,7 @@ public class TenantDiscoveryController {
      * Discover tenants and authentication providers for a given email
      * Used in the returning user flow
      */
-    @PostMapping(value = "/discover", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/discover", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TenantDiscoveryResponse> discoverTenants(
             @RequestParam @Email @NotBlank String email) {
         

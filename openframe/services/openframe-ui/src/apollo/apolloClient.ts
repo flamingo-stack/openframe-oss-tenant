@@ -4,14 +4,22 @@ import { onError } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
 import { createHttpLink } from '@apollo/client/link/http';
 import { useAuthStore } from '@/stores/auth';
-import AuthService from '@/services/AuthService';
+import { AuthService } from '@/services/AuthService';
 import router from '@/router';
 import type { IntegratedTool, ToolUrlType, APIKeyType } from '@/types/graphql';
 import { ConfigService } from '@/config/config.service';
 
 let isRefreshing = false;
 let pendingRequests: Function[] = [];
+let lastRefreshAttempt = 0;
+const REFRESH_COOLDOWN = 5000; // 5 seconds cooldown between refresh attempts
 const config = ConfigService.getInstance();
+
+// Log configuration for debugging
+console.log('🔧 [ApolloClient] Configuration:', {
+  apiUrl: config.getConfig().apiUrl,
+  gatewayUrl: config.getConfig().gatewayUrl
+});
 
 const resolvePendingRequests = () => {
   pendingRequests.forEach((callback) => callback());
@@ -28,8 +36,9 @@ const isAuthError = (error: any): boolean => {
     error?.message?.includes('Unauthorized') ||
     error?.message?.includes('Not authenticated');
 
-  // Check error response
-  const isAuthErrorResponse = error?.response?.status === 401 ||
+  // Check error response (for both fetch and axios-style errors)
+  const isAuthErrorResponse = error?.status === 401 || // fetch API
+    error?.response?.status === 401 || // axios-style
     error?.response?.data?.error === 'invalid_request' ||
     error?.response?.data?.error === 'invalid_token' ||
     error?.response?.data?.error === 'invalid_grant' ||
@@ -50,13 +59,7 @@ const refreshAccessToken = async (): Promise<void> => {
     // Use auth store for cookie-based refresh
     const authStore = useAuthStore();
     console.log('📤 [Auth] Making refresh token request via cookies...');
-    const success = await authStore.tryRefreshToken();
-    
-    if (!success) {
-      console.error('❌ [Auth] Token refresh failed');
-      throw new Error('Token refresh failed');
-    }
-    
+    await authStore.refreshToken();
     console.log('✅ [Auth] Token refresh successful via HTTP-only cookies');
   } catch (error) {
     console.error('❌ [Auth] Token refresh failed:', error);
@@ -68,10 +71,19 @@ const refreshAccessToken = async (): Promise<void> => {
 
 // Handle auth errors for REST requests
 const handleRestAuthError = async <T>(retryCallback: () => Promise<T>): Promise<T> => {
+  const now = Date.now();
+  
+  // Check cooldown to prevent too frequent refresh attempts
+  if (now - lastRefreshAttempt < REFRESH_COOLDOWN) {
+    console.log('⏰ [Auth] Refresh cooldown active, skipping refresh attempt');
+    throw new Error('Token refresh cooldown active');
+  }
+  
   // Handle concurrent refresh requests
   if (!isRefreshing) {
     console.log('🔄 [Auth] Starting token refresh flow');
     isRefreshing = true;
+    lastRefreshAttempt = now;
 
     try {
       await refreshAccessToken();
@@ -208,6 +220,34 @@ export default apolloClient;
 export const restClient = {
   async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const makeRequest = async () => {
+                   // Determine the base URL based on the endpoint
+             let baseUrl: string;
+             if (url.startsWith('/oauth/')) {
+               // OAuth endpoints go to Gateway
+               baseUrl = config.getConfig().gatewayUrl;
+             } else if (url.startsWith('/register') || url.startsWith('/oauth2/') || url.startsWith('/tenant/')) {
+        // API endpoints, registration, OAuth2 endpoints, and tenant discovery go to Authorization Server
+        baseUrl = config.getConfig().apiUrl;
+      } else {
+        // Default to API URL
+        baseUrl = config.getConfig().apiUrl;
+      }
+
+      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+      
+      console.log('🌐 [REST] Request:', {
+        originalUrl: url,
+        baseUrl,
+        fullUrl,
+        endpoint: url.startsWith('/oauth/') ? 'Gateway' : 
+                  url.startsWith('/register') || url.startsWith('/oauth2/') || url.startsWith('/tenant/') ? 'Auth Server' : 'API',
+        method: options.method || 'GET',
+        config: {
+          apiUrl: config.getConfig().apiUrl,
+          gatewayUrl: config.getConfig().gatewayUrl
+        }
+      });
+      
       const defaultHeaders = {
         'Accept': '*/*'
         // No longer adding Authorization header - authentication via cookies
@@ -218,7 +258,7 @@ export const restClient = {
         ...(options.headers || {})
       };
 
-      const response = await fetch(url, {
+      const response = await fetch(fullUrl, {
         ...options,
         headers,
         credentials: 'include' // Always include cookies for authentication
@@ -234,13 +274,18 @@ export const restClient = {
         });
 
         const error = new Error() as any;
-        error.status = response.status;
+        error.status = response.status; // This is what isAuthError checks for
         error.name = 'ApiError';
         error.response = { 
           status: response.status, 
           data: errorText 
         };
         error.message = errorText || response.statusText;
+        
+        // Log if this is an auth error for debugging
+        if (response.status === 401) {
+          console.log('🔐 [REST] 401 Unauthorized detected, will trigger token refresh');
+        }
         
         throw error;
       }
@@ -254,9 +299,11 @@ export const restClient = {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
+        console.log('📦 [REST] Response data (JSON):', data);
         return data as T;
       } else {
         const text = await response.text();
+        console.log('📦 [REST] Response data (text):', text);
         return text as T;
       }
     };
@@ -266,8 +313,15 @@ export const restClient = {
     } catch (error: any) {
       console.error('❌ [REST] Request error:', error);
 
+      // Don't attempt refresh for oauth endpoints to prevent infinite loops
+      if (url.includes('/oauth/refresh') || url.includes('/oauth/login') || url.includes('/oauth/logout')) {
+        console.log('🚫 [REST] OAuth endpoint detected, skipping token refresh to prevent loops');
+        throw error;
+      }
+
       // Handle auth errors with token refresh
       if (isAuthError(error)) {
+        console.log('🔄 [REST] Auth error detected, attempting token refresh...');
         return await handleRestAuthError(makeRequest);
       }
 

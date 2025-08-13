@@ -5,7 +5,6 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.openframe.authz.document.User;
-import com.openframe.authz.filter.TokenResponseCookieFilter;
 import com.openframe.authz.service.SSOConfigService;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
@@ -46,6 +45,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.time.Duration;
@@ -61,8 +61,14 @@ import static com.openframe.authz.tenant.TenantContext.getTenantId;
 @Slf4j
 public class AuthorizationServerConfig {
 
-    @Value("${openframe.auth.client.id}")
-    private String configuredClientId;
+    @Value("${openframe.auth.gateway.client.id}")
+    private String gatewayClientId;
+
+    @Value("${openframe.auth.gateway.client.secret}")
+    private String gatewayClientSecret;
+
+    @Value("${openframe.auth.gateway.redirect-uri}")
+    private String gatewayRedirectUri;
 
     @Value("${openframe.security.jwt.access-token-expiration:900}")
     private long accessTokenExpirationSeconds;
@@ -74,8 +80,7 @@ public class AuthorizationServerConfig {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
-            org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource,
-            TokenResponseCookieFilter tokenResponseCookieFilter) throws Exception {
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
 
         var as = new OAuth2AuthorizationServerConfigurer();
         AuthorizationServerSettings settings = AuthorizationServerSettings
@@ -103,15 +108,6 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<TokenResponseCookieFilter> tokenResponseCookieFilterRegistration(
-            TokenResponseCookieFilter filter) {
-        FilterRegistrationBean<TokenResponseCookieFilter> registration = new FilterRegistrationBean<>(filter);
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        registration.addUrlPatterns("/oauth2/token");
-        return registration;
-    }
-
-    @Bean
     public FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
         var reg = new FilterRegistrationBean<>(new ForwardedHeaderFilter());
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
@@ -126,23 +122,28 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public RegisteredClient openframeClient() {
+    public RegisteredClient gatewayClient() {
         return RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId(configuredClientId)
+            .clientId(gatewayClientId)
+            .clientSecret(passwordEncoder().encode(gatewayClientSecret))
             .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .redirectUri("https://localhost/oauth2/callback/openframe-sso")
+            .redirectUri(gatewayRedirectUri)
             .scope(OidcScopes.OPENID)
             .scope(OidcScopes.PROFILE)
             .scope(OidcScopes.EMAIL)
             .scope("offline_access")
-                .clientSettings(ClientSettings.builder().requireProofKey(true).build())
+            .clientSettings(ClientSettings.builder()
+                .requireProofKey(true)
+                .requireAuthorizationConsent(false)
+                .build())
             .tokenSettings(TokenSettings.builder()
-                    .accessTokenTimeToLive(Duration.ofSeconds(accessTokenExpirationSeconds))
-                    .refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenExpirationSeconds))
-                    .reuseRefreshTokens(true)
-                    .build())
+                .accessTokenTimeToLive(Duration.ofSeconds(accessTokenExpirationSeconds))
+                .refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenExpirationSeconds))
+                .reuseRefreshTokens(false)
+                .build())
             .build();
     }
 
@@ -150,9 +151,9 @@ public class AuthorizationServerConfig {
     public RegisteredClientRepository registeredClientRepository(
             SSOConfigService ssoConfigService,
             GoogleSSOProperties googleSSOProperties,
-            RegisteredClient openframeClient) {
+            RegisteredClient gatewayClient) {
         
-        return new DatabaseRegisteredClientRepository(ssoConfigService, googleSSOProperties, openframeClient);
+        return new DatabaseRegisteredClientRepository(ssoConfigService, googleSSOProperties, gatewayClient);
     }
 
     @Bean

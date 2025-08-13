@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import RegisterPage from '../views/auth/RegisterPage.vue'
 import CentralAuthDemo from '../views/CentralAuthDemo.vue'
-import OAuthCallback from '../views/auth/OAuthCallback.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
@@ -36,29 +34,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/auth/register',
-      name: 'Register',
-      component: RegisterPage,
-      meta: { requiresAuth: false }
-    },
-    {
       path: '/central-auth-demo',
       name: 'CentralAuthDemo',
       component: CentralAuthDemo,
       meta: { requiresAuth: false }
     },
-    {
-      path: '/oauth2/callback/google',
-      name: 'oauth-callback-google',
-      component: OAuthCallback,
-      meta: { requiresAuth: false }
-    },
-    {
-      path: '/oauth2/callback/openframe-sso',
-      name: 'oauth-callback-openframe-sso',
-      component: OAuthCallback,
-      meta: { requiresAuth: false }
-    },
+
     {
       path: '/',
       redirect: '/central-auth-demo'
@@ -67,6 +48,7 @@ const router = createRouter({
       path: '/login',
       redirect: '/central-auth-demo'
     },
+    // keep /register redirect for backward compatibility
     {
       path: '/register',
       redirect: '/central-auth-demo'
@@ -371,9 +353,10 @@ router.beforeEach(async (to, from, next) => {
   // Always allow access to auth pages
   if (!to.meta.requiresAuth) {
     if (to.path === '/central-auth-demo') {
-      // Check if user is already authenticated
-      const isAuthenticated = await authStore.checkAuthStatus();
-      if (isAuthenticated) {
+      // Check if user is already authenticated (await backend)
+      const ok = await authStore.updateAuthStatus();
+      console.log('🔍 [Router] Auth status check:', { isAuthenticated: ok, path: to.path });
+      if (ok) {
         console.log('↩️ [Router] Already logged in, redirecting to dashboard');
         next('/dashboard');
       } else {
@@ -387,9 +370,10 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // Handle protected routes - check authentication via server
-  const isAuthenticated = await authStore.checkAuthStatus();
-  if (!isAuthenticated) {
+  // Handle protected routes - check authentication via cookies
+  const ok = await authStore.updateAuthStatus();
+  console.log('🔍 [Router] Protected route auth check:', { isAuthenticated: ok, path: to.path });
+  if (!ok) {
     console.log('🔒 [Router] Not authenticated, redirecting to demo page');
     next('/central-auth-demo');
     return;

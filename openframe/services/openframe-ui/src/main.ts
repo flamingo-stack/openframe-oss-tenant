@@ -41,27 +41,27 @@ async function checkAuthAndMount() {
     const currentPath = window.location.pathname
 
     // Public routes that don't require authentication
-    const publicRoutes = ['/login', '/register', '/oauth2/callback/google', '/oauth2/callback/openframe-sso']
+    const publicRoutes = ['/login', '/register', '/central-auth-demo', '/oauth2/callback/google', '/oauth2/callback/openframe-sso']
     const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route))
 
     if (!isPublicRoute) {
         // For protected routes, check authentication via server before mounting
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/oauth/me`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/me`, {
                 method: 'GET',
                 credentials: 'include' // Include HTTP-only cookies
             })
-            
+
             if (!response.ok) {
-                console.log('🔒 [Main] Not authenticated, redirecting to login')
-                window.location.href = '/login'
+                console.log('🔒 [Main] Not authenticated, redirecting to central auth')
+                window.location.href = '/central-auth-demo'
                 return // Don't mount the app
             } else {
                 console.log('✅ [Main] User authenticated, proceeding to app')
             }
         } catch (error) {
-            console.log('❌ [Main] Auth check failed, redirecting to login:', error)
-            window.location.href = '/login'
+            console.log('❌ [Main] Auth check failed, redirecting to central auth:', error)
+            window.location.href = '/central-auth-demo'
             return // Don't mount the app
         }
     } else {

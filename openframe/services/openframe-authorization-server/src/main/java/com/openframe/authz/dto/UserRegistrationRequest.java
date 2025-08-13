@@ -1,6 +1,5 @@
 package com.openframe.authz.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,11 +23,9 @@ public class UserRegistrationRequest {
     private String email;
     
     @NotBlank(message = "First name is required")
-    @JsonProperty("first_name")
     private String firstName;
     
     @NotBlank(message = "Last name is required")  
-    @JsonProperty("last_name")
     private String lastName;
     
     @NotBlank(message = "Password is required")
@@ -40,7 +37,6 @@ public class UserRegistrationRequest {
      * This will be used to create a new tenant if it doesn't exist
      */
     @NotBlank(message = "Organization name is required")
-    @JsonProperty("tenant_name")
     private String tenantName;
     
     /**
@@ -48,7 +44,6 @@ public class UserRegistrationRequest {
      * For development: localhost
      * For production: {tenantName}.openframe.io
      */
-    @JsonProperty("tenant_domain")
     private String tenantDomain;
     
     /**

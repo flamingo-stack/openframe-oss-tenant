@@ -24,7 +24,7 @@ public class DatabaseRegisteredClientRepository implements RegisteredClientRepos
 
     private final SSOConfigService ssoConfigService;
     private final GoogleSSOProperties googleSSOProperties;
-    private final RegisteredClient openFrameClient;
+    private final RegisteredClient gatewayClient;
 
     @Override
     public void save(RegisteredClient registeredClient) {
@@ -35,9 +35,9 @@ public class DatabaseRegisteredClientRepository implements RegisteredClientRepos
 
     @Override
     public RegisteredClient findById(String id) {
-        // First check if it's the static OpenFrame client
-        if (openFrameClient.getId().equals(id)) {
-            return openFrameClient;
+        // Check if it's the gateway client
+        if (gatewayClient.getId().equals(id)) {
+            return gatewayClient;
         }
 
         // Try to find as SSO provider
@@ -48,9 +48,9 @@ public class DatabaseRegisteredClientRepository implements RegisteredClientRepos
     public RegisteredClient findByClientId(String clientId) {
         log.debug("Looking for client: {}", clientId);
 
-        // First check if it's the static OpenFrame client
-        if (openFrameClient.getClientId().equals(clientId)) {
-            return openFrameClient;
+        // Check if it's the gateway client
+        if (gatewayClient.getClientId().equals(clientId)) {
+            return gatewayClient;
         }
 
         // Try to find as SSO provider client

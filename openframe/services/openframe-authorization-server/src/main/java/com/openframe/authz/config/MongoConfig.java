@@ -15,8 +15,6 @@ import java.util.Date;
 @EnableMongoAuditing
 public class MongoConfig {
 
-
-
     @Bean
     public MongoCustomConversions customConversions() {
         return new MongoCustomConversions(Arrays.asList(

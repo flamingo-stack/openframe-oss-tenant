@@ -6,3 +6,21 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+
+# OpenFrame Gateway OAuth2 Configuration
+openframe:
+  auth:
+    server:
+      url: https://localhost:9000
+  gateway:
+    oauth:
+      client-id: openframe-gateway
+      client-secret: openframe-gateway-secret
+      redirect-uri: https://localhost/oauth/callback
+      enable: true
+
+# Logging
+logging:
+  level:
+    com.openframe.gateway: DEBUG
+    org.springframework.web: DEBUG

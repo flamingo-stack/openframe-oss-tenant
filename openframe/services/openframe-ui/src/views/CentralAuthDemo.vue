@@ -211,7 +211,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { AuthService } from '@/services/AuthService'
+import { authService } from '@/services/AuthService'
 import { useAuthStore } from '@/stores/auth'
 import type { TenantDiscoveryResponse } from '@/types/auth'
 
@@ -286,7 +286,7 @@ async function handleEmailSubmit() {
   try {
     console.log('🔍 [CentralAuth] Discovering tenants for email:', email.value)
     
-    const response = await AuthService.discoverTenants(email.value)
+    const response = await authService.discoverTenants(email.value)
     discoveredTenants.value = response.tenants || []
     showProviders.value = true
     
@@ -319,30 +319,16 @@ async function handleOpenFrameSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
   try {
     console.log('🔗 [CentralAuth] Attempting OpenFrame SSO for tenant:', (tenant.tenantName ?? (tenant as any).tenant_name))
     
-    // PKCE
-    const codeVerifier = generateCodeVerifier()
-    const codeChallenge = await generateCodeChallenge(codeVerifier)
-    sessionStorage.setItem('pkce:code_verifier', codeVerifier)
-    // Keep tenant domain for post-auth redirect
-    const domain = (tenant.tenantDomain ?? (tenant as any).tenant_domain ?? 'localhost') as string
-    sessionStorage.setItem('auth:tenant_domain', domain)
-
-    // Standard GET redirect to tenant-prefixed /oauth2/authorize with PKCE
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: 'openframe_web_dashboard',
-      redirect_uri: window.location.origin + '/oauth2/callback/openframe-sso',
-      scope: 'openid profile email offline_access',
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-      state: JSON.stringify({
-        action: 'login',
-        targetTenant: (tenant.tenantId ?? (tenant as any).tenant_id),
-        userEmail: email.value
-      })
-    })
     const tenantId = (tenant.tenantId ?? (tenant as any).tenant_id) as string
-    window.location.href = `${import.meta.env.VITE_AUTH_URL}/${tenantId}/oauth2/authorize?${params.toString()}`
+    const domain = (tenant.tenantDomain ?? (tenant as any).tenant_domain ?? 'localhost') as string
+    
+    // Store tenant info in session storage
+    sessionStorage.setItem('auth:tenant_id', tenantId)
+    sessionStorage.setItem('auth:tenant_domain', domain)
+    
+    // Use Gateway's login endpoint
+    const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tenantId)}`;
+    window.location.href = loginUrl;
     
   } catch (error: any) {
     console.error('❌ [CentralAuth] SSO failed:', error)
@@ -364,14 +350,15 @@ const isPasswordMatch = computed(() => {
 
 // Removed OpenFrame SSO registration button/flow per request
 
-// Handle Google SSO for login - using standard OAuth2 flow
+// Handle Google SSO for login - using Gateway OAuth2 flow
 async function handleGoogleSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
   loading.value = true
   try {
     console.log('🔗 [CentralAuth] Attempting Google SSO for tenant:', tenant.tenantName)
     
-    // Use AuthService to initiate Google SSO
-    await AuthService.initiateGoogleSSO(tenant.tenantId, 'login')
+    // Use Gateway's login endpoint for Google SSO
+    const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tenant.tenantId)}`;
+    window.location.href = loginUrl;
     
   } catch (error: any) {
     console.error('❌ [CentralAuth] Google SSO failed:', error)
@@ -385,7 +372,7 @@ async function handleGoogleSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
   }
 }
 
-// Handle Google SSO for registration - using standard OAuth2 flow
+// Handle Google SSO for registration - using Gateway OAuth2 flow
 async function handleGoogleSSORegister() {
   if (!registerForm.tenantName) {
     toast.add({
@@ -406,8 +393,9 @@ async function handleGoogleSSORegister() {
     const tempTenantId = 'temp-' + registerForm.tenantName.toLowerCase().replace(/[^a-z0-9]/g, '-')
     sessionStorage.setItem('auth:tenant_domain', registerForm.tenantDomain || 'localhost')
     
-    // Use AuthService to initiate Google SSO for registration
-    await AuthService.initiateGoogleSSO(tempTenantId, 'register')
+    // Use Gateway's login endpoint for Google SSO
+    const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tempTenantId)}`;
+    window.location.href = loginUrl;
     
   } catch (error: any) {
     console.error('❌ [CentralAuth] Google SSO registration failed:', error)
@@ -448,32 +436,31 @@ async function handleManualRegistration() {
   try {
     console.log('📝 [CentralAuth] Attempting manual registration for tenant:', registerForm.tenantName)
 
-    // PKCE
-    const codeVerifier = generateCodeVerifier()
-    const codeChallenge = await generateCodeChallenge(codeVerifier)
-    sessionStorage.setItem('pkce:code_verifier', codeVerifier)
+    // Store tenant info in session storage
     sessionStorage.setItem('auth:tenant_domain', registerForm.tenantDomain || 'localhost')
 
-    // Call auto-registration to get authorization redirect_url
-    const { redirect_url } = await AuthService.registerAuto({
+    // Minimal registration via Authorization Server (no PKCE, no redirect)
+    await (await import('@/services/AuthService')).AuthService.registerOrganization({
       email: registerForm.email,
-      password: registerForm.password,
       firstName: registerForm.firstName,
       lastName: registerForm.lastName,
+      password: registerForm.password,
       tenantName: registerForm.tenantName,
-      tenantDomain: registerForm.tenantDomain,
-      pkceChallenge: codeChallenge,
-      redirectUri: window.location.origin + '/oauth2/callback/openframe-sso'
+      tenantDomain: registerForm.tenantDomain
     })
 
-    // Continue OAuth flow
-    window.location.href = redirect_url
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Organization successfully registered. You can now sign in.',
+      life: 4000
+    })
   } catch (error: any) {
     console.error('❌ [CentralAuth] Registration failed:', error)
     toast.add({
       severity: 'error',
       summary: 'Registration Failed',
-      detail: error.message || 'Failed to create organization',
+      detail: error?.message || 'Failed to create organization',
       life: 5000
     })
   } finally {
