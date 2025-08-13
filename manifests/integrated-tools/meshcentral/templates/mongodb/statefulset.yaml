@@ -59,7 +59,8 @@ spec:
               mountPath: /usr/local/bin/readiness-command.sh
               subPath: readiness-command.sh
             - name: mongo-keyfile
-              mountPath: /etc/mongo-secrets
+              mountPath: /etc/mongo-secrets/keyfile
+              subPath: keyfile
               readOnly: true
 
       volumes:
