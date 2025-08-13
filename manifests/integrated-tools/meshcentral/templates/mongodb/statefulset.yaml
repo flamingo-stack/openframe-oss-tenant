@@ -61,7 +61,6 @@ spec:
             - name: mongo-keyfile
               mountPath: /etc/mongo-secrets/keyfile
               subPath: keyfile
-              readOnly: true
 
       volumes:
         - name: init-script
