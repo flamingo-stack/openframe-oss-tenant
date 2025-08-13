@@ -8,10 +8,10 @@ spec:
   selector:
     app: openframe-authorization-server
   ports:
-    - port: 8090
-      targetPort: 8090
+    - port: 9005
+      targetPort: 9005
       name: http
-    - port: 8091
-      targetPort: 8091
+    - port: 9006
+      targetPort: 9006
       name: management
   type: ClusterIP

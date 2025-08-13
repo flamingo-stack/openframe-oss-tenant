@@ -24,9 +24,9 @@ spec:
         - name: openframe-authorization-server
           image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
           ports:
-            - containerPort: 8090
+            - containerPort: 9005
               name: http
-            - containerPort: 8091
+            - containerPort: 9006
               name: management
           envFrom:
             - secretRef:
