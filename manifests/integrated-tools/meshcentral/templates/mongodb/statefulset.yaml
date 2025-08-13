@@ -35,9 +35,9 @@ spec:
             - configMapRef:
                 name: meshcentral-mongodb
           readinessProbe:
-            tcpSocket:
-              port: 27017
-            initialDelaySeconds: 5
+            exec:
+              command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
@@ -55,12 +55,19 @@ spec:
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
-              
+            - name: readiness-command
+              mountPath: /usr/local/bin/readiness-command.sh
+              subPath: readiness-command.sh
+
       volumes:
         - name: init-script
           configMap:
             name: meshcentral-mongodb-init
             defaultMode: 0755  
+        - name: readiness-command
+          configMap:
+            name: meshcentral-mongodb-readiness
+            defaultMode: 0755
 
   volumeClaimTemplates:
     - metadata:
