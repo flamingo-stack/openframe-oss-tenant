@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-public interface IntegratedToolRepository extends MongoRepository<IntegratedTool, String>, BaseIntegratedToolRepository<Optional<IntegratedTool>, Boolean, String> {
+public interface IntegratedToolRepository extends MongoRepository<IntegratedTool, String>, BaseIntegratedToolRepository<Optional<IntegratedTool>, Boolean, String>, CustomIntegratedToolRepository {
     @Override
     Optional<IntegratedTool> findByType(String type);
 } 

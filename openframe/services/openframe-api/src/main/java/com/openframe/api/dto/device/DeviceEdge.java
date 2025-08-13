@@ -13,4 +13,4 @@ import lombok.NoArgsConstructor;
 public class DeviceEdge {
     private Machine node;
     private String cursor;
-} 
+}

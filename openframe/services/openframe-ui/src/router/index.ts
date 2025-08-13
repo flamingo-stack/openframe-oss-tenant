@@ -6,6 +6,7 @@ import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
 import DevicesView from '../views/DevicesView.vue'
+import LogsView from '../views/LogsView.vue'
 import MDMLayout from '../views/mdm/MDMLayout.vue'
 import MDMDashboard from '../views/mdm/Dashboard.vue'
 import MDMDevices from '../views/mdm/Devices.vue'
@@ -88,6 +89,16 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Devices',
         icon: 'pi pi-desktop'
+      }
+    },
+    {
+      path: '/logs',
+      name: 'logs',
+      component: LogsView,
+      meta: { 
+        requiresAuth: true,
+        title: 'Logs',
+        icon: 'pi pi-list'
       }
     },
     {

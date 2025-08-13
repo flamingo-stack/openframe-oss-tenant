@@ -1,9 +1,9 @@
 package com.openframe.api.service;
 
-import com.openframe.api.dto.DeviceFilterOptions;
-import com.openframe.api.dto.DeviceFilters;
-import com.openframe.api.dto.FilterOption;
-import com.openframe.api.dto.TagFilterOption;
+import com.openframe.api.dto.device.DeviceFilterOptions;
+import com.openframe.api.dto.device.DeviceFilters;
+import com.openframe.api.dto.device.DeviceFilterOption;
+import com.openframe.api.dto.device.TagFilterOption;
 import com.openframe.data.repository.pinot.PinotDeviceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -62,12 +62,12 @@ public class DeviceFilterService {
                 );
     }
 
-    private List<FilterOption> convertMapToFilterOptions(Map<String, Integer> repositoryOptions) {
+    private List<DeviceFilterOption> convertMapToFilterOptions(Map<String, Integer> repositoryOptions) {
         if (repositoryOptions == null || repositoryOptions.isEmpty()) {
             return new ArrayList<>();
         }
         return repositoryOptions.entrySet().stream()
-                .map(entry -> FilterOption.builder()
+                .map(entry -> DeviceFilterOption.builder()
                         .value(entry.getKey())
                         .count(entry.getValue())
                         .build())
