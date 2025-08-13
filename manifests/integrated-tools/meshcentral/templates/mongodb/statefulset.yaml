@@ -25,11 +25,7 @@ spec:
       containers:
         - name: mongodb
           image: mongo:8.0.9
-          command: 
-            - "mongod"
-            - "--bind_ip_all"
-            - "--replSet"
-            - "rs0"
+          args: ["--bind_ip_all", "--replSet", "rs0"]
           ports:
             - name: mongodb
               containerPort: 27017
@@ -56,6 +52,15 @@ spec:
           volumeMounts:
             - name: mongo-data
               mountPath: /data/db
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+              
+      volumes:
+        - name: init-script
+          configMap:
+            name: meshcentral-mongodb-init
+            defaultMode: 0755  
 
   volumeClaimTemplates:
     - metadata:
