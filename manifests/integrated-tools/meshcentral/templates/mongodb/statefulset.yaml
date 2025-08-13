@@ -25,7 +25,7 @@ spec:
       containers:
         - name: mongodb
           image: mongo:8.0.9
-          args: ["--bind_ip_all", "--replSet", "rs0"]
+          args: ["--bind_ip_all","--replSet","rs0","--keyFile","/etc/mongo-secrets/keyfile","--auth"]
           ports:
             - name: mongodb
               containerPort: 27017
@@ -58,6 +58,9 @@ spec:
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh
               subPath: readiness-command.sh
+            - name: mongo-keyfile
+              mountPath: /etc/mongo-secrets
+              readOnly: true
 
       volumes:
         - name: init-script
@@ -68,6 +71,10 @@ spec:
           configMap:
             name: meshcentral-mongodb-readiness
             defaultMode: 0755
+        - name: mongo-keyfile
+          secret:
+            secretName: meshcentral-mongodb-keyfile
+            defaultMode: 0440
 
   volumeClaimTemplates:
     - metadata:
