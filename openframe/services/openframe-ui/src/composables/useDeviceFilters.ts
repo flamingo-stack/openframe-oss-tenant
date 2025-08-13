@@ -2,16 +2,7 @@ import { ref } from 'vue';
 import { computed, watch } from '@vue/runtime-core';
 import { useQuery } from '@vue/apollo-composable';
 import { GET_DEVICE_FILTERS } from '../graphql/queries';
-import type { DeviceFilters, DeviceFilterInput, DeviceType, DeviceStatus } from '../types/graphql';
-
-export interface DeviceFilter {
-  search?: string;
-  statuses?: DeviceStatus[];
-  deviceTypes?: DeviceType[];
-  osTypes?: string[];
-  organizationIds?: string[];
-  tagNames?: string[];
-}
+import type { DeviceFilters, DeviceFilterInput } from '../types/graphql';
 
 export function useDeviceFilters(filter: DeviceFilterInput | null = null) {
   const deviceFilters = ref<DeviceFilters | null>(null);
