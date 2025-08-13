@@ -1148,40 +1148,42 @@ const deleteApiKey = async (id: number) => {
 provideApolloClient(apolloClient);
 
 const INTEGRATED_TOOLS_QUERY = gql`
-  query GetIntegratedTools($filter: ToolFilter) {
+  query GetIntegratedTools($filter: ToolFilterInput) {
     integratedTools(filter: $filter) {
-      id
-      name
-      description
-      icon
-      toolUrls {
-        url
-        port
-        type
-      }
-      type
-      toolType
-      category
-      platformCategory
-      enabled
-      credentials {
-        username
-        password
-        apiKey {
-          key
+      tools {
+        id
+        name
+        description
+        icon
+        toolUrls {
+          url
+          port
           type
-          keyName
         }
+        type
+        toolType
+        category
+        platformCategory
+        enabled
+        credentials {
+          username
+          password
+          apiKey {
+            key
+            type
+            keyName
+          }
+        }
+        layer
+        layerOrder
+        layerColor
+        metricsPath
+        healthCheckEndpoint
+        healthCheckInterval
+        connectionTimeout
+        readTimeout
+        allowedEndpoints
       }
-      layer
-      layerOrder
-      layerColor
-      metricsPath
-      healthCheckEndpoint
-      healthCheckInterval
-      connectionTimeout
-      readTimeout
-      allowedEndpoints
     }
   }
 `;
