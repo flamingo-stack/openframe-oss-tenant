@@ -52,11 +52,11 @@ RUN mkdir -p /app/logs /app/config && \
 USER openframe
 
 # Expose port
-EXPOSE 9000
+EXPOSE 9005
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:9000/actuator/health || exit 1
+  CMD curl -f http://localhost:9005/actuator/health || exit 1
 
 # Set JVM options
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport"
