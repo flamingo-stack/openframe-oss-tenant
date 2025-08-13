@@ -14,7 +14,7 @@ spec:
         app: meshcentral-mongodb
     spec:
       {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets: 
+      imagePullSecrets:
         - name: docker-pat-secret
       {{- end }}
       securityContext:
@@ -26,11 +26,6 @@ spec:
         - name: mongodb
           image: mongo:8.0.9
           args: ["--bind_ip_all","--replSet","rs0","--keyFile","/etc/mongo-secrets/keyfile","--auth"]
-          securityContext:
-            runAsUser: 999       # MongoDB's built-in UID in the official image
-            runAsGroup: 999
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
           ports:
             - name: mongodb
               containerPort: 27017
