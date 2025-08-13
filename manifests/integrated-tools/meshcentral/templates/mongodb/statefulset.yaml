@@ -75,7 +75,7 @@ spec:
         - name: mongo-keyfile
           secret:
             secretName: meshcentral-mongodb-keyfile
-            defaultMode: 0400 
+            defaultMode: 0755 
 
   volumeClaimTemplates:
     - metadata:
