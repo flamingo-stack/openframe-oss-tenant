@@ -1,14 +1,17 @@
 deployment:
-  name: local    
-  # Ingress configuration - enable only ONE of the following
-  ingress:
-    localhost:
-      enabled: true   # Enable localhost ingress with nginx
-    ngrok:
-      enabled: false  # Enable ngrok ingress for external access
-      credentials:
-        apiKey: "30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
-        authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+  selfHosted:
+    enabled: true    
+    # Ingress configuration - enable only ONE of the following
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx
+      ngrok:
+        enabled: false  # Enable ngrok ingress for external access
+        credentials:
+          apiKey: "30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
+          authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+  saas:
+    enabled: false
 
 global:
   repoDir: manifests
