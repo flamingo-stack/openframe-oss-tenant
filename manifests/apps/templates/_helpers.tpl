@@ -13,7 +13,7 @@ Rules:
      - If ingress is "ngrok" → skip "ingress-nginx"
      - If ingress is "localhost" → skip "ngrok-operator"
    - If deployment.saas is enabled:
-     - Skip "openframe-authorization-server"
+     - Skip "openframe-authorization-server" "ingress-nginx" "ngrok-operator"
 3. Everything else is included
 */}}
 
@@ -34,7 +34,11 @@ Rules:
   true
 
 {{/* ── Skip authorization server for SaaS deployment ── */}}
-{{- else if and $saas (eq $name "openframe-authorization-server") }}
+{{- else if and $saas (or
+    (eq $name "openframe-authorization-server")
+    (eq $name "ngrok-operator")
+    (eq $name "ingress-nginx")
+) }}
   true
 
 {{/* ── Skip based on ingress type for self-hosted ── */}}
