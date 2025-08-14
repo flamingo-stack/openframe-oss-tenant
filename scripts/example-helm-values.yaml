@@ -33,6 +33,10 @@ deployment:
           - 0.0.0.0/0
   saas:
     disabled: false
+    # Ingress configuration for SaaS deployment
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx for SaaS
 
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository
