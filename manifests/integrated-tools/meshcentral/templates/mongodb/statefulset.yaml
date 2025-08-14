@@ -57,6 +57,10 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/bash","-lc","/usr/local/bin/mongo-init.sh > /var/log/mongo-init.log 2>&1 &"]
           livenessProbe:
             tcpSocket:
               port: 27017
@@ -70,6 +74,10 @@ spec:
               mountPath: /data/db
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: init-script
+              mountPath: /usr/local/bin/mongo-init.sh
+              subPath: mongo-init.sh
               readOnly: true
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh
