@@ -1,0 +1,2 @@
+global: # Git repository URL for ArgoCD
+  repoBranch: feature/meshserver-init-wait
