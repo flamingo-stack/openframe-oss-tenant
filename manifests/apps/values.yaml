@@ -12,6 +12,10 @@ deployment:
           authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
   saas:
     enabled: false
+    # Ingress configuration for SaaS deployment
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx for SaaS
 
 global:
   repoDir: manifests

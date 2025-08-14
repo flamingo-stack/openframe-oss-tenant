@@ -8,50 +8,40 @@ Usage:
 
 Rules:
 1. If `enabled: false` → skip
-2. Otherwise:
-   - If deployment.selfHosted is enabled:
-     - If ingress is "ngrok" → skip "ingress-nginx"
-     - If ingress is "localhost" → skip "ngrok-operator"
-   - If deployment.saas is enabled:
-     - Skip "openframe-authorization-server" "ingress-nginx" "ngrok-operator"
-3. Everything else is included
+2. If deployment.selfHosted.enabled and ingress.localhost.enabled → skip "ngrok-operator"
+3. If deployment.selfHosted.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
+4. If deployment.saas.enabled and ingress.localhost.enabled → skip "openframe-authorization-server" and "ngrok-operator"
 */}}
 
 {{- define "app.skip" -}}
+{{- $name := index . 0 -}}
+{{- $app := index . 1 -}}
+{{- $vals := index . 2 -}}
 
-{{- $name := index . 0 -}}     {{/* app key name */}}
-{{- $app := index . 1 -}}      {{/* app spec */}}
-{{- $vals := index . 2 -}}     {{/* root .Values */}}
-
-{{- $selfHosted := $vals.deployment.selfHosted.enabled | default false }}
-{{- $saas := $vals.deployment.saas.enabled | default false }}
-{{- $localhost := $vals.deployment.selfHosted.ingress.localhost.enabled | default false }}
-{{- $ngrok := $vals.deployment.selfHosted.ingress.ngrok.enabled | default false }}
-{{- $ingress := ternary "localhost" "ngrok" $localhost }}
-
-{{/* ── Skip if explicitly disabled ── */}}
+{{/* Skip if explicitly disabled */}}
 {{- if and (hasKey $app "enabled") (eq $app.enabled false) }}
   true
+{{- else }}
 
-{{/* ── Skip authorization server for SaaS deployment ── */}}
-{{- else if and $saas (or
-    (eq $name "openframe-authorization-server")
-    (eq $name "ngrok-operator")
-) }}
+{{/* Extract deployment and ingress configuration */}}
+{{- $selfHosted := $vals.deployment.selfHosted.enabled | default false }}
+{{- $saas := $vals.deployment.saas.enabled | default false }}
+{{- $selfHostedLocalhost := $vals.deployment.selfHosted.ingress.localhost.enabled | default false }}
+{{- $selfHostedNgrok := $vals.deployment.selfHosted.ingress.ngrok.enabled | default false }}
+{{- $saasLocalhost := $vals.deployment.saas.ingress.localhost.enabled | default false }}
+
+{{/* Apply skipping logic */}}
+{{- if and $selfHosted $selfHostedLocalhost (eq $name "ngrok-operator") }}
   true
-
-{{/* ── Skip based on ingress type for self-hosted ── */}}
-{{- else if and $selfHosted (or
-      (and (eq $ingress "ngrok") (eq $name "ingress-nginx"))
-      (and (eq $ingress "localhost") (eq $name "ngrok-operator"))
-    ) }}
+{{- else if and $selfHosted $selfHostedNgrok (eq $name "ingress-nginx") }}
   true
-
-{{/* ── Default: do not skip ── */}}
+{{- else if and $saas $saasLocalhost (or (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
+  true
 {{- else }}
   false
 {{- end }}
 
+{{- end }}
 {{- end }}
 
 {{/*
