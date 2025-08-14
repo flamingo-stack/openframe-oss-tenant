@@ -12,6 +12,9 @@ deployment:
           authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
   saas:
     enabled: false
+    ingress:
+      localhost:
+        enabled: true   # Always enabled for SaaS deployment
 
 global:
   repoDir: manifests
