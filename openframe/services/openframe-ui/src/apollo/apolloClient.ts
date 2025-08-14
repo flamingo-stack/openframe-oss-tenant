@@ -220,18 +220,28 @@ export default apolloClient;
 export const restClient = {
   async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const makeRequest = async () => {
-                   // Determine the base URL based on the endpoint
+             // Determine the base URL based on the endpoint
              let baseUrl: string;
              if (url.startsWith('/oauth/')) {
-               // OAuth endpoints go to Gateway
+               // OAuth endpoints go to Gateway (BFF)
                baseUrl = config.getConfig().gatewayUrl;
-             } else if (url.startsWith('/register') || url.startsWith('/oauth2/') || url.startsWith('/tenant/')) {
-        // API endpoints, registration, OAuth2 endpoints, and tenant discovery go to Authorization Server
-        baseUrl = config.getConfig().apiUrl;
-      } else {
-        // Default to API URL
-        baseUrl = config.getConfig().apiUrl;
-      }
+             } else if (
+               url.startsWith('/register') ||
+               url.startsWith('/oauth2/') ||
+               url.startsWith('/tenant/') ||
+               url.startsWith('/oauth/') ||
+               url.startsWith('/sas/')
+             ) {
+               // All Authorization Server endpoints now go through Gateway with /sas prefix
+               baseUrl = config.getConfig().gatewayUrl;
+               // Ensure /sas prefix is present for Auth Server calls
+               if (url.startsWith('/tenant/') || url.startsWith('/oauth2/') || url.startsWith('/register')) {
+                 url = `/sas${url}`;
+               }
+             } else {
+               // Default to API URL
+               baseUrl = config.getConfig().apiUrl;
+             }
 
       const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
       
@@ -240,7 +250,7 @@ export const restClient = {
         baseUrl,
         fullUrl,
         endpoint: url.startsWith('/oauth/') ? 'Gateway' : 
-                  url.startsWith('/register') || url.startsWith('/oauth2/') || url.startsWith('/tenant/') ? 'Auth Server' : 'API',
+                  url.startsWith('/sas/') ? 'Auth Server via Gateway' : 'API',
         method: options.method || 'GET',
         config: {
           apiUrl: config.getConfig().apiUrl,

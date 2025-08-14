@@ -20,15 +20,26 @@ public class TenantContextFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             // Resolve tenantId in order:
-            // 1) from path: /{tenantId}/...
+            // 1) from path after servlet context-path (e.g., "/sas/{tenantId}/..." → "/{tenantId}/...")
             String tenantId = null;
-            String path = request.getRequestURI();
-            if (path != null && path.length() > 1) {
-                String[] parts = path.split("/", 3); // ["", maybeTenant, rest]
+            String requestUri = request.getRequestURI();
+            String contextPath = request.getContextPath(); // e.g., "/sas" or ""
+            String appPath;
+            if (requestUri == null) {
+                appPath = "/";
+            } else if (contextPath != null && !contextPath.isEmpty() && requestUri.startsWith(contextPath)) {
+                appPath = requestUri.substring(contextPath.length());
+                if (appPath.isEmpty()) appPath = "/";
+            } else {
+                appPath = requestUri;
+            }
+
+            if (appPath != null && appPath.length() > 1) {
+                String[] parts = appPath.split("/", 3); // ["", maybeTenant, rest]
                 if (parts.length >= 3) {
                     String maybeTenant = parts[1];
                     String rest = "/" + parts[2];
-                    // Recognize tenant only for SAS-prefixed endpoints
+                    // Recognize tenant only for SAS endpoints
                     if (!maybeTenant.isBlank() && (rest.startsWith("/oauth2/")
                             || rest.startsWith("/.well-known/")
                             || rest.startsWith("/connect/")

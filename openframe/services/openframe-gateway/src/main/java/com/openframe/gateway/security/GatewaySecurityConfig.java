@@ -16,10 +16,7 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerReactiveAuthenticationManagerResolver;
-import org.springframework.security.oauth2.server.resource.authentication.JwtReactiveAuthenticationManager;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
@@ -106,16 +103,4 @@ public class GatewaySecurityConfig {
                 )
                 .build();
     }
-
-    @Bean
-    public JwtIssuerReactiveAuthenticationManagerResolver jwtIssuerAuthenticationManagerResolver() {
-        return new JwtIssuerReactiveAuthenticationManagerResolver(issuer -> {
-            log.info("Creating Gateway JwtDecoder for issuer: {}", issuer);
-            var decoder = ReactiveJwtDecoders.fromIssuerLocation(issuer);
-            var manager = new JwtReactiveAuthenticationManager(decoder);
-            manager.setJwtAuthenticationConverter(reactiveJwtAuthenticationConverter());
-            return Mono.just(manager);
-        });
-    }
-
 }

@@ -170,6 +170,13 @@
             </button>
           </div>
 
+          <!-- Selected organization hint (when only one tenant found) -->
+          <div v-if="discoveredTenants.length === 1" class="org-summary">
+            <i class="pi pi-building mr-2"></i>
+            <span class="org-label">Organization:</span>
+            <span class="org-name">{{ (discoveredTenants[0].tenantName ?? (discoveredTenants[0] as any).tenant_name) }}</span>
+          </div>
+
           <div v-if="discoveredTenants.length > 0">
             <div v-for="tenant in discoveredTenants" :key="tenant.tenantName" class="tenant-section">
               <div class="tenant-info">
@@ -503,6 +510,22 @@ async function handleManualRegistration() {
   color: var(--text-color-secondary);
   font-size: 1rem;
   margin: 0;
+}
+
+/* Organization summary (sign-in step) */
+.org-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 16px;
+  color: var(--text-color);
+}
+.org-label {
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+.org-name {
+  font-weight: 600;
 }
 
 .auth-content {

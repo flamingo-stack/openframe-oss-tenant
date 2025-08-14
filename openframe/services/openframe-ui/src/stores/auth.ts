@@ -56,16 +56,23 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     console.log('🚪 [AuthStore] Logout initiated');
-    if (currentTenantId.value) {
-      authService.logout(currentTenantId.value);
+    // Resolve tenantId with fallbacks
+    const stored = currentTenantId.value
+      || authService.getCurrentTenantId()
+      || sessionStorage.getItem('auth:tenant_id');
+
+    if (stored && stored.length > 0) {
+      authService.logout(stored);
+    } else {
+      console.warn('⚠️ [AuthStore] Missing tenantId for logout; attempting redirect without it');
+      // As a last resort, navigate to homepage; backend cannot logout without tenant
+      window.location.href = '/';
     }
-    
-    // Clear local state
+
+    // Clear local state immediately
     isAuthenticated.value = false;
     currentTenantId.value = null;
     authService.setCurrentTenantId('');
-    
-    // Clear session storage
     sessionStorage.removeItem('currentTenantId');
     console.log('🧹 [AuthStore] Local state cleared');
   }

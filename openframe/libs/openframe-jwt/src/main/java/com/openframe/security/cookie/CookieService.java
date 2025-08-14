@@ -48,7 +48,7 @@ public class CookieService {
      * Створює ResponseCookie для refresh token з налаштуваннями з CookieService
      */
     public ResponseCookie createRefreshTokenCookie(String refreshToken) {
-        return createCookie(REFRESH_TOKEN_COOKIE, refreshToken,"/oauth2/token/refresh");
+        return createCookie(REFRESH_TOKEN_COOKIE, refreshToken,"/oauth/refresh");
     }
 
     public ResponseCookie createCookie(String name, String value, String path) {
@@ -89,34 +89,5 @@ public class CookieService {
 
         log.debug("Cookie {} not found in request", cookieName);
         return null;
-    }
-
-    /**
-     * Clear both access and refresh token cookies with their respective paths
-     */
-    public void clearTokenCookies(HttpServletResponse response) {
-        Cookie clearAccessCookie = createClearServletCookie(ACCESS_TOKEN_COOKIE, "/");
-        response.addCookie(clearAccessCookie);
-        Cookie clearRefreshCookie = createClearServletCookie(REFRESH_TOKEN_COOKIE, "/oauth2/token/refresh");
-        response.addCookie(clearRefreshCookie);
-        log.debug("Cleared access token cookie (Path=/) and refresh token cookie (Path=/oauth2/token/refresh)");
-    }
-
-    /**
-     * Create a cookie for clearing (empty value, maxAge=0)
-     */
-    private Cookie createClearServletCookie(String name, String path) {
-        Cookie cookie = new Cookie(name, "");
-        cookie.setMaxAge(0);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(cookieSecure);
-        cookie.setPath(path);
-        if (domain != null && !domain.isBlank()) {
-            cookie.setDomain(domain);
-        }
-
-        cookie.setAttribute("SameSite", cookieSameSite);
-
-        return cookie;
     }
 } 

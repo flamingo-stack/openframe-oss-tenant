@@ -27,7 +27,17 @@ public class TenantForwardedPrefixFilter extends OncePerRequestFilter {
 
         String tenantId = TenantContext.getTenantId();
         String existing = request.getHeader(X_FORWARDED_PREFIX);
-        String path = request.getRequestURI();
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path;
+        if (requestUri == null) {
+            path = "/";
+        } else if (contextPath != null && !contextPath.isEmpty() && requestUri.startsWith(contextPath)) {
+            path = requestUri.substring(contextPath.length());
+            if (path.isEmpty()) path = "/";
+        } else {
+            path = requestUri;
+        }
 
         // Only add X-Forwarded-Prefix for SAS endpoints; skip login to keep /login unprefixed
         boolean sasEndpoint = path != null && (

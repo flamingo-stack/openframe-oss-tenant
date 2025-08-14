@@ -31,6 +31,9 @@ public class AuthController {
     @Value("${openframe.auth.server.url}")
     private String authServerUrl;
 
+    @Value("${openframe.auth.server.authorize-url}")
+    private String authUrl;
+
     @Value("${openframe.gateway.oauth.client-id}")
     private String clientId;
 
@@ -45,12 +48,10 @@ public class AuthController {
         log.info("🔑 [AuthController] /auth/login called with tenantId: {}", tenantId);
         log.debug("Starting OAuth2 login flow for tenant: {}", tenantId);
         
-        // Generate PKCE verifier/challenge and state on backend
         String codeVerifier = PKCEUtils.generateCodeVerifier();
         String codeChallenge = PKCEUtils.generateCodeChallenge(codeVerifier);
         String state = PKCEUtils.generateState();
 
-        // Persist verifier and tenant in session under this state
         session.getAttributes().put("oauth:state", state);
         session.getAttributes().put("oauth:code_verifier:" + state, codeVerifier);
         session.getAttributes().put("oauth:tenant_id:" + state, tenantId);
@@ -69,14 +70,12 @@ public class AuthController {
                                                WebSession session) {
         log.debug("Processing OAuth2 callback with state: {}", state);
         
-        // Validate state and pull verifier/tenant from session
         OAuthSessionData sessionData = validateAndExtractSessionData(session, state);
         if (sessionData == null) {
             log.warn("Invalid OAuth2 state or missing session data for state: {}", state);
             return Mono.just(ResponseEntity.badRequest().build());
         }
 
-        // Exchange code for tokens
         return exchangeCodeForTokens(sessionData, code)
             .map(tokens -> createSuccessResponse(tokens, sessionData.tenantId()));
     }
@@ -98,28 +97,23 @@ public class AuthController {
     public Mono<ResponseEntity<Void>> logout(@RequestParam String tenantId, WebSession session) {
         log.debug("Logging out user for tenant: {}", tenantId);
         
-        // Clear session data
         session.getAttributes().clear();
         
-        // Create response with cleared cookies
         HttpHeaders headers = new HttpHeaders();
         
-        // Clear access token cookie
         ResponseCookie clearedAccess = ResponseCookie.from("access_token", "")
             .path("/")
             .maxAge(0)
             .build();
         
-        // Clear refresh token cookie
         ResponseCookie clearedRefresh = ResponseCookie.from("refresh_token", "")
-            .path("/oauth2/token/refresh")
+            .path("/oauth/refresh")
             .maxAge(0)
             .build();
         
         headers.add(HttpHeaders.SET_COOKIE, clearedAccess.toString());
         headers.add(HttpHeaders.SET_COOKIE, clearedRefresh.toString());
         
-        // Redirect to home page
         headers.add(HttpHeaders.LOCATION, "/");
         
         log.debug("Successfully logged out user for tenant: {}", tenantId);
@@ -129,7 +123,7 @@ public class AuthController {
     private String buildAuthorizeUrl(String tenantId, String codeChallenge, String state) {
         return String.format(
             "%s/%s/oauth2/authorize?response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256&redirect_uri=%s&scope=openid%%20profile%%20email%%20offline_access&state=%s",
-            authServerUrl,
+            authUrl,
             tenantId,
             clientId,
             codeChallenge,

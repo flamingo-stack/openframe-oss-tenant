@@ -2,9 +2,7 @@ import { restClient } from '../apollo/apolloClient';
 import type { TenantDiscoveryResponse, TokenResponse } from '../types/auth';
 
 export class AuthService {
-  private static readonly BASE_URL = import.meta.env.VITE_API_URL;
   private static readonly GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'https://localhost';
-  private static readonly AUTH_URL = import.meta.env.VITE_AUTH_URL;
 
   /**
    * Initiate OAuth2 login flow through Gateway
@@ -43,7 +41,7 @@ export class AuthService {
    */
   public async discoverTenants(email: string): Promise<TenantDiscoveryResponse> {
     const response = await restClient.get<TenantDiscoveryResponse>(
-      `${AuthService.AUTH_URL}/tenant/discover?email=${encodeURIComponent(email)}`
+      `${AuthService.GATEWAY_URL}/sas/tenant/discover?email=${encodeURIComponent(email)}`
     );
     return response;
   }
@@ -53,13 +51,13 @@ export class AuthService {
    * Redirects to Gateway's login endpoint
    */
   public async openFrameSSO(tenantName: string): Promise<void> {
-    const loginUrl = `${AuthService.BASE_URL}/oauth/login?tenantId=${encodeURIComponent(tenantName)}`;
+    const loginUrl = `${AuthService.GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tenantName)}`;
     window.location.href = loginUrl;
   }
 
   // Tenant availability (Authorization Server)
   public static async checkTenantAvailability(name: string): Promise<{ is_available: boolean; message?: string; suggested_url?: string }>{
-    const url = `${AuthService.AUTH_URL}/tenant/availability?name=${encodeURIComponent(name)}`;
+    const url = `${AuthService.GATEWAY_URL}/sas/tenant/availability?name=${encodeURIComponent(name)}`;
     return restClient.get(url);
   }
 
@@ -72,7 +70,7 @@ export class AuthService {
     tenantName: string;
     tenantDomain?: string;
   }): Promise<any> {
-    const url = `${AuthService.AUTH_URL}/oauth/register`;
+    const url = `${AuthService.GATEWAY_URL}/sas/oauth/register`;
     const body: Record<string, unknown> = {
       email: payload.email,
       firstName: payload.firstName,
