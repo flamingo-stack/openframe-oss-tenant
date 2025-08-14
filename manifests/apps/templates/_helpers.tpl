@@ -37,7 +37,6 @@ Rules:
 {{- else if and $saas (or
     (eq $name "openframe-authorization-server")
     (eq $name "ngrok-operator")
-    (eq $name "ingress-nginx")
 ) }}
   true
 
