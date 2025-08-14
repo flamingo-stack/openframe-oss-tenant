@@ -5,11 +5,14 @@ set -a
 [ -f /etc/environment ] && source /etc/environment
 set +a
 
-# Ensure environment variables are set
-: "${MONGODB_HOST:?Required}"
-: "${MONGODB_PORT:?Required}"
+# Ensure mandatory root credentials are set (host/port will be overridden to localhost)
 : "${MONGO_INITDB_ROOT_USERNAME:?Required}"
 : "${MONGO_INITDB_ROOT_PASSWORD:?Required}"
+
+# Always talk to the mongod instance via the loop-back interface so that the
+# "localhost exception" is active until authentication is configured.
+DB_HOST="127.0.0.1"
+DB_PORT="27017"
 
 
 apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
@@ -24,14 +27,14 @@ echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
 echo "Checking replica set status..."
-INIT_STATUS=$(mongosh --host "${MONGODB_HOST}:${MONGODB_PORT}" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
+INIT_STATUS=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
 echo "Current replica set status: $INIT_STATUS"
 
 if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
 
 # First try to reconfigure if already initialized but corrupted
-RECONFIG_RESULT=$(mongosh --host "${MONGODB_HOST}:${MONGODB_PORT}" --eval '
+RECONFIG_RESULT=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval '
     try {
     rs.reconfig({
         _id: "rs0",
@@ -66,7 +69,7 @@ sleep 10
 
 echo "Checking replica set status after initialization..."
 for i in {1..30}; do
-    STATUS=$(mongosh --host "${MONGODB_HOST}:${MONGODB_PORT}" --eval "rs.status().ok" --quiet)
+    STATUS=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval "rs.status().ok" --quiet)
     if [ "$STATUS" = "1" ]; then
     echo "Replica set is ready!"
     break
@@ -79,9 +82,9 @@ echo "Replica set is already initialized"
 fi
 
 echo "Checking admin user..."
-if ! mongosh --host "${MONGODB_HOST}:${MONGODB_PORT}" -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
+if ! mongosh --host "${DB_HOST}:${DB_PORT}" --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
 echo "Creating admin user..."
-mongosh --host "${MONGODB_HOST}:${MONGODB_PORT}" --eval "
+mongosh --host "${DB_HOST}:${DB_PORT}" --eval "
     db.getSiblingDB('admin').createUser({
     user: '$MONGO_INITDB_ROOT_USERNAME',
     pwd: '$MONGO_INITDB_ROOT_PASSWORD',
@@ -98,4 +101,4 @@ echo "Admin user already exists"
 fi
 
 echo "Final replica set status:"
-mongosh --host "${MONGODB_HOST}:${MONGODB_PORT}" --eval "rs.status()" --quiet
+mongosh --host "${DB_HOST}:${DB_PORT}" --eval "rs.status()" --quiet
