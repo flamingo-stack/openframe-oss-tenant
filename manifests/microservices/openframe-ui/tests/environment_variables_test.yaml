@@ -1,0 +1,145 @@
+suite: test environment variable configuration
+templates:
+  - templates/deployment.yaml
+tests:
+  # SelfHosted ngrok environment variables
+  - it: should set ngrok URLs for selfHosted ngrok deployment
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.saas.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_API_URL
+            value: "https://test.ngrok.io/api"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_URL
+            value: "https://test.ngrok.io/client"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_GATEWAY_URL
+            value: "https://test.ngrok.io"
+
+  # SelfHosted localhost environment variables
+  - it: should set localhost URLs for selfHosted localhost deployment
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_API_URL
+            value: "https://localhost/api"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_URL
+            value: "https://localhost/client"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_GATEWAY_URL
+            value: "https://localhost"
+
+  # SaaS localhost environment variables
+  - it: should set localhost URLs for saas localhost deployment
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_API_URL
+            value: "https://localhost/api"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_URL
+            value: "https://localhost/client"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_GATEWAY_URL
+            value: "https://localhost"
+
+  # Environment variable count validation
+  - it: should have exactly 6 environment variables for localhost
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 6
+
+  - it: should have exactly 6 environment variables for ngrok
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 6
+
+  # Dynamic URL validation with different ngrok domains
+  - it: should handle different ngrok domains correctly
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "my-custom-domain.ngrok.app"
+      deployment.saas.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_API_URL
+            value: "https://my-custom-domain.ngrok.app/api"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_GATEWAY_URL
+            value: "https://my-custom-domain.ngrok.app"
+
+  # Validation of all static environment variables
+  - it: should include all required static environment variables
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_ID
+            value: "openframe_web_dashboard"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_SECRET
+            value: "prod_secret"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_GRAFANA_URL
+            value: "https://localhost:3000"

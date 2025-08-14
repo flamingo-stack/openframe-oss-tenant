@@ -13,18 +13,28 @@ Validate deployment configuration: exactly one deployment type must be enabled
 {{- end -}}
 
 {{/*
-Validate that only one ingress is enabled (only when selfHosted is enabled)
+Validate ingress configuration for the enabled deployment type
 */}}
 {{- define "chart.validateIngress" -}}
 {{- $selfHosted := .Values.deployment.selfHosted.enabled | default false -}}
+{{- $saas := .Values.deployment.saas.enabled | default false -}}
+
 {{- if $selfHosted -}}
+{{/* Self-hosted: exactly one ingress (localhost OR ngrok) must be enabled */}}
 {{- $localhost := .Values.deployment.selfHosted.ingress.localhost.enabled | default false -}}
 {{- $ngrok := .Values.deployment.selfHosted.ingress.ngrok.enabled | default false -}}
 {{- $ingressCount := 0 -}}
 {{- if $localhost }}{{ $ingressCount = add $ingressCount 1 }}{{ end -}}
 {{- if $ngrok }}{{ $ingressCount = add $ingressCount 1 }}{{ end -}}
 {{- if ne $ingressCount 1 -}}
-{{- fail (printf "ERROR: Exactly one ingress must be enabled when selfHosted is true. Currently localhost=%t, ngrok=%t" $localhost $ngrok) -}}
+{{- fail (printf "ERROR: Exactly one ingress must be enabled for selfHosted deployment. Currently localhost=%t, ngrok=%t" $localhost $ngrok) -}}
+{{- end -}}
+
+{{- else if $saas -}}
+{{/* SaaS: only localhost ingress must be enabled */}}
+{{- $saasLocalhost := .Values.deployment.saas.ingress.localhost.enabled | default false -}}
+{{- if not $saasLocalhost -}}
+{{- fail "ERROR: localhost ingress must be enabled for SaaS deployment" -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -37,11 +47,17 @@ Complete validation: validates both deployment and ingress configuration
 {{- include "chart.validateIngress" . -}}
 {{- end -}}
 
+
 {{/*
-Validate TLS certificate format and structure
+Validate TLS certificate format and structure for any deployment type
 */}}
 {{- define "chart.localhost.hasTLS" -}}
-{{- $tls := .Values.deployment.selfHosted.ingress.localhost.tls | default "" -}}
+{{- $tls := "" -}}
+{{- if .Values.deployment.selfHosted.enabled -}}
+{{- $tls = .Values.deployment.selfHosted.ingress.localhost.tls | default "" -}}
+{{- else if .Values.deployment.saas.enabled -}}
+{{- $tls = .Values.deployment.saas.ingress.localhost.tls | default "" -}}
+{{- end -}}
 {{- if and $tls $tls.cert $tls.key -}}
 {{- $cert := $tls.cert | toString | trim -}}
 {{- $key := $tls.key | toString | trim -}}
@@ -52,17 +68,8 @@ Validate TLS certificate format and structure
 {{/* Ensure minimum content length (more than just headers) */}}
 {{- if and (gt (len $cert) 100) (gt (len $key) 100) -}}
 true
-{{- else -}}
-{{- printf "WARNING: Certificate or key content is too short\n" | print -}}
-false
 {{- end -}}
-{{- else -}}
-{{- printf "WARNING: Private key must be in PKCS#8, RSA, or EC format with proper PEM headers\n" | print -}}
-false
 {{- end -}}
-{{- else -}}
-{{- printf "WARNING: Certificate must be in PEM format with proper headers\n" | print -}}
-false
 {{- end -}}
 {{- end -}}
 {{- end -}}

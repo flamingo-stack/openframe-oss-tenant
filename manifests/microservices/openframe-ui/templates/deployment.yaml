@@ -24,21 +24,21 @@ spec:
               name: http
           env:
             - name: VITE_API_URL
-              {{- if .Values.deployment.selfHosted.ingress.ngrok.enabled }}
+              {{- if and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.ngrok.enabled }}
               value: {{ printf "https://%s/api" (required "deployment.selfHosted.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.selfHosted.ingress.ngrok.url) | quote }}
-              {{- else }}
+              {{- else if or (and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
               value: "https://localhost/api"
               {{- end }}
             - name: VITE_CLIENT_URL
-              {{- if .Values.deployment.selfHosted.ingress.ngrok.enabled }}
+              {{- if and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.ngrok.enabled }}
               value: {{ printf "https://%s/client" (required "deployment.selfHosted.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.selfHosted.ingress.ngrok.url) | quote }}
-              {{- else }}
+              {{- else if or (and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
               value: "https://localhost/client"
               {{- end }}
             - name: VITE_GATEWAY_URL
-              {{- if .Values.deployment.selfHosted.ingress.ngrok.enabled }}
+              {{- if and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.ngrok.enabled }}
               value: {{ printf "https://%s" (required "deployment.selfHosted.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.selfHosted.ingress.ngrok.url) | quote }}
-              {{- else }}
+              {{- else if or (and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
               value: "https://localhost"
               {{- end }}
             - name: VITE_CLIENT_ID
