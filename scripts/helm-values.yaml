@@ -1,5 +1,0 @@
-apps:
-  openframe-config:
-    values:
-      config:
-        branch: feature/sas
