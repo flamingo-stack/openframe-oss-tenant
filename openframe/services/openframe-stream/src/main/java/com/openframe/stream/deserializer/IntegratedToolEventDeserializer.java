@@ -1,6 +1,7 @@
 package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.mapper.EventTypeMapper;
 import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.debezium.DebeziumMessage;
@@ -28,12 +29,17 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     private static final String UNKNOWN = "unknown";
     private static final String DEFAULT_TABLE_NAME = "events";
     
-    private static final int MAX_DEPTH = 10;
+    private static final int MAX_DEPTH = 64;
     private static final int MAX_ARRAY_SIZE = 1000;
     private static final int MAX_VALUE_LENGTH = 10000;
     
     private static final String COMPOSITE_KEY_PATTERN = "%s_%s_id_%s";
     private static final String HASH_KEY_PATTERN = "%s_%s_hash_%s";
+    protected final ObjectMapper mapper;
+
+    protected IntegratedToolEventDeserializer(ObjectMapper mapper) {
+        this.mapper = mapper;
+    }
 
     @Override
     public DeserializedDebeziumMessage deserialize(CommonDebeziumMessage debeziumMessage, MessageType messageType) {
@@ -170,27 +176,63 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
             return;
         }
 
+        // Leaf value (with support for JSON-encoded strings)
+        if (node.isValueNode()) {
+            if (node.isNull()) {
+                return;
+            }
+
+            String value = node.asText();
+
+            // If this value looks like embedded JSON, try to parse and flatten it
+            String trimmed = value != null ? value.trim() : null;
+            boolean looksLikeJson = trimmed != null && (trimmed.startsWith("{") || trimmed.startsWith("["));
+            if (node.isTextual() && looksLikeJson) {
+                try {
+                    JsonNode parsed = mapper.readTree(value);
+                    convertJsonNodeToMap(parsed, prefix, result, depth + 1);
+                    return;
+                } catch (Exception ignore) {
+                    // fall through to store raw text value
+                }
+            }
+
+            if (value != null) {
+                if (value.length() > MAX_VALUE_LENGTH) {
+                    value = value.substring(0, MAX_VALUE_LENGTH) + "...";
+                }
+                if (StringUtils.isNotBlank(prefix)) {
+                    result.put(prefix, value);
+                }
+            }
+            return;
+        }
+
+        // Object node
         if (node.isObject()) {
             Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
-                String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+                String key = appendPath(prefix, entry.getKey());
                 convertJsonNodeToMap(entry.getValue(), key, result, depth + 1);
             }
-        } else if (node.isArray()) {
+            return;
+        }
+
+        // Array node
+        if (node.isArray()) {
             int maxSize = Math.min(node.size(), MAX_ARRAY_SIZE);
             for (int i = 0; i < maxSize; i++) {
                 String key = prefix + "[" + i + "]";
                 convertJsonNodeToMap(node.get(i), key, result, depth + 1);
             }
-        } else {
-            if (!node.isNull()) {
-                String value = node.asText();
-                if (value.length() > MAX_VALUE_LENGTH) {
-                    value = value.substring(0, MAX_VALUE_LENGTH) + "...";
-                }
-                result.put(prefix, value);
-            }
         }
+    }
+
+    private String appendPath(String prefix, String field) {
+        if (StringUtils.isBlank(prefix)) {
+            return field;
+        }
+        return prefix + "." + field;
     }
 }

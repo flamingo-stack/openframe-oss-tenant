@@ -1,6 +1,7 @@
 package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,11 @@ public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
     private static final String FIELD_ID = "id";
     private static final String FIELD_DETAILS = "details";
     private static final String FIELD_CREATED_AT = "created_at";
-    
+
+    public FleetEventDeserializer(ObjectMapper mapper) {
+        super(mapper);
+    }
+
     @Override
     protected Optional<String> getAgentId(JsonNode after) {
         // Fleet events can contain either a direct agentId or a hostId that can later be resolved to an agentId.
