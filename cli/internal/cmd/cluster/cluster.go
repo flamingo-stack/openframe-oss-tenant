@@ -71,3 +71,8 @@ func ResetGlobalFlags() {
 func SetVerboseForTesting(v bool) {
 	verbose = v
 }
+
+// ResetTestState resets global state for clean tests
+func ResetTestState() {
+	ResetGlobalFlags()
+}
