@@ -18,8 +18,9 @@ DB_PORT="27017"
 apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
           
 echo "Waiting for MongoDB service to be ready..."
-until mongosh --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
-echo "Waiting for MongoDB to be accessible..."
+# use localhost while mongod is still starting
+until mongosh --host ${DB_HOST}:${DB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+echo "Waiting for MongoDB to be accessible (localhost)..."
 sleep 5
 done
 
@@ -34,7 +35,15 @@ if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
 
 # First try to reconfigure if already initialized but corrupted
-RECONFIG_RESULT=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval '
+# try without auth first; if fails, retry with root credentials
+RECONFIG_RESULT=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval 'db.runCommand({ping:1})' --quiet 2>/dev/null || true)
+if [[ -z "$RECONFIG_RESULT" ]]; then
+  AUTH_FLAGS=(--username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin)
+else
+  AUTH_FLAGS=()
+fi
+
+RECONFIG_RESULT=$(mongosh "${AUTH_FLAGS[@]}" --host "${DB_HOST}:${DB_PORT}" --eval '
     try {
     rs.reconfig({
         _id: "rs0",
