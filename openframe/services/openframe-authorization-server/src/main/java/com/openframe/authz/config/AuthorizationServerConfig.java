@@ -4,12 +4,13 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.openframe.authz.config.prop.GoogleSSOProperties;
 import com.openframe.authz.document.User;
 import com.openframe.authz.service.SSOConfigService;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -70,10 +71,10 @@ public class AuthorizationServerConfig {
     @Value("${openframe.auth.gateway.redirect-uri}")
     private String gatewayRedirectUri;
 
-    @Value("${openframe.security.jwt.access-token-expiration:900}")
+    @Value("${security.oauth2.token.access.expiration-seconds}")
     private long accessTokenExpirationSeconds;
 
-    @Value("${openframe.security.jwt.refresh-token-expiration:604800}")
+    @Value("${security.oauth2.token.refresh.expiration-seconds}")
     private long refreshTokenExpirationSeconds;
 
     @Bean

@@ -39,16 +39,9 @@ public class TenantForwardedPrefixFilter extends OncePerRequestFilter {
             path = requestUri;
         }
 
-        // Only add X-Forwarded-Prefix for SAS endpoints; skip login to keep /login unprefixed
-        boolean sasEndpoint = path != null && (
-                path.contains("/.well-known/") ||
-                        path.startsWith("/oauth2/") ||
-                        path.startsWith("/connect/") ||
-                        path.equals("/userinfo")
-        );
+        boolean sasEndpoint = path.contains("/.well-known/") || path.startsWith("/oauth2/") || path.startsWith("/connect/") || path.equals("/userinfo");
 
-        // Avoid double-prefixing when the path already includes the tenant segment
-        boolean pathAlreadyPrefixed = path != null && tenantId != null && path.startsWith("/" + tenantId + "/");
+        boolean pathAlreadyPrefixed = tenantId != null && path.startsWith("/" + tenantId + "/");
 
         if (!sasEndpoint || tenantId == null || tenantId.isBlank() || pathAlreadyPrefixed
                 || (existing != null && !existing.isBlank())) {

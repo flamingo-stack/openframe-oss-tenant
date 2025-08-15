@@ -1,4 +1,4 @@
-package com.openframe.authz.config;
+package com.openframe.authz.config.prop;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

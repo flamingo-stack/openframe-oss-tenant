@@ -14,6 +14,8 @@ let pendingRequests: Function[] = [];
 let lastRefreshAttempt = 0;
 const REFRESH_COOLDOWN = 5000; // 5 seconds cooldown between refresh attempts
 const config = ConfigService.getInstance();
+// One-shot refresh guard per URL (normalized without query)
+const retriedOnce = new Set<string>();
 
 // Log configuration for debugging
 console.log('🔧 [ApolloClient] Configuration:', {
@@ -168,6 +170,12 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
       if (err.extensions?.code === 'UNAUTHENTICATED' ||
           err.message.includes('Unauthorized') ||
           err.message.includes('unauthorized')) {
+        const ctx = operation.getContext() || {};
+        if (ctx.noRefresh) {
+          console.log('🚫 [GraphQL] noRefresh context set, skipping refresh to avoid loop');
+          return;
+        }
+        operation.setContext({ ...ctx, noRefresh: true });
         return handleGraphQLAuthError(operation, forward);
       }
     }
@@ -176,6 +184,12 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   if (networkError) {
     console.error('🔴 [Network] Error:', networkError);
     if (isAuthError(networkError)) {
+      const ctx = operation.getContext() || {};
+      if (ctx.noRefresh) {
+        console.log('🚫 [GraphQL] noRefresh context set (network), skipping refresh to avoid loop');
+        return;
+      }
+      operation.setContext({ ...ctx, noRefresh: true });
       return handleGraphQLAuthError(operation, forward);
     }
   }
@@ -301,6 +315,8 @@ export const restClient = {
       }
 
       console.log('✅ [REST] Request successful');
+      // Clear retry guard for this URL on success
+      try { retriedOnce.delete(url.split('?')[0]); } catch {}
       if (response.status === 204 || response.headers.get('content-length') === '0') {
         console.log('📦 [REST] Response data: (empty)');
         return undefined as T;
@@ -329,10 +345,25 @@ export const restClient = {
         throw error;
       }
 
-      // Handle auth errors with token refresh
-      if (isAuthError(error)) {
-        console.log('🔄 [REST] Auth error detected, attempting token refresh...');
-        return await handleRestAuthError(makeRequest);
+      // Prevent refresh loop: if this request already retried once with x-no-refresh, don't refresh again
+      const noRefresh = (options.headers as any)?.['x-no-refresh'] === '1';
+      const key = (() => { try { return url.split('?')[0]; } catch { return url; } })();
+
+      // Handle auth errors with single refresh attempt per request
+      if (isAuthError(error) && !noRefresh) {
+        if (retriedOnce.has(key)) {
+          console.log('🚫 [REST] Already retried once for', key, '— skipping refresh to avoid loop');
+          throw error;
+        }
+        retriedOnce.add(key);
+        console.log('🔄 [REST] Auth error detected, attempting token refresh for', key, '...');
+        return await handleRestAuthError(() => {
+          const retryOpts: RequestInit = {
+            ...options,
+            headers: { ...(options.headers || {}), 'x-no-refresh': '1' }
+          };
+          return restClient.request<T>(url, retryOpts);
+        });
       }
 
       throw error;

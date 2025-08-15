@@ -23,7 +23,6 @@ public class MongoConfig {
         ));
     }
 
-    // Convert ZonedDateTime to Date for MongoDB storage
     public static class ZonedDateTimeWriteConverter implements org.springframework.core.convert.converter.Converter<ZonedDateTime, Date> {
         @Override
         public Date convert(ZonedDateTime source) {
@@ -31,7 +30,6 @@ public class MongoConfig {
         }
     }
 
-    // Convert Date from MongoDB to ZonedDateTime
     public static class ZonedDateTimeReadConverter implements org.springframework.core.convert.converter.Converter<Date, ZonedDateTime> {
         @Override
         public ZonedDateTime convert(Date source) {

@@ -39,18 +39,27 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function refreshToken() {
-    if (!currentTenantId.value) {
+    const tenantId = currentTenantId.value
+      || authService.getCurrentTenantId()
+      || sessionStorage.getItem('auth:tenant_id');
+    if (!tenantId) {
       throw new Error('No tenant ID available for token refresh');
     }
 
-    console.log('🔄 [AuthStore] Refreshing token for tenant:', currentTenantId.value);
+    console.log('🔄 [AuthStore] Refreshing token for tenant:', tenantId);
     try {
-      await authService.refreshToken(currentTenantId.value);
+      await authService.refreshToken(tenantId);
       updateAuthStatus();
       console.log('✅ [AuthStore] Token refresh successful');
     } catch (error) {
       console.error('❌ [AuthStore] Token refresh failed:', error);
-      logout();
+      // Do not auto-logout here to avoid refresh/logout loops.
+      // Mark unauthenticated and redirect to login once; UI will handle further navigation.
+      isAuthenticated.value = false;
+      // Optional: navigate to auth page once
+      if (typeof window !== 'undefined' && window.location.pathname !== '/central-auth-demo') {
+        window.location.href = '/central-auth-demo?reauth=1';
+      }
     }
   }
 

@@ -34,7 +34,7 @@ public class User {
     private String tenantId;
     
     @Indexed
-    private String tenantDomain; // The domain where user will be redirected after login
+    private String tenantDomain;
     
     @Indexed
     private String email;
@@ -52,14 +52,12 @@ public class User {
     
     @Builder.Default
     private boolean emailVerified = false;
-    
-    // OAuth support (minimal)
+
     private String loginProvider; // LOCAL, GOOGLE, etc.
     private String externalUserId;
     
     private Instant lastLogin;
-    
-    // Audit fields
+
     @CreatedDate
     private LocalDateTime createdAt;
     

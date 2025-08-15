@@ -20,6 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class TenantKeyService {
+
     private final MongoTemplate mongoTemplate;
     private final EncryptionService encryptionService;
 

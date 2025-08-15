@@ -32,15 +32,13 @@ public class RegistrationService {
                 request.getPassword()
         );
 
-        tenant.setRegistrationOpen(false);
+        tenant.closeRegistration();
 
         if (tenant.getOwnerId() == null) {
             tenant.setOwnerId(user.getId());
         }
 
-        tenantService.save(tenant);
-
-        return tenant;
+        return tenantService.save(tenant);
     }
 
     /**

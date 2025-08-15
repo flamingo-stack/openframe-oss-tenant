@@ -1,13 +1,12 @@
 package com.openframe.authz.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 /**
  * User registration request DTO for multi-tenant registration
@@ -40,25 +39,7 @@ public class UserRegistrationRequest {
     private String tenantName;
     
     /**
-     * Tenant domain (optional, will be generated if not provided)
-     * For development: localhost
-     * For production: {tenantName}.openframe.io
+     * Tenant domain
      */
     private String tenantDomain;
-    
-    /**
-     * Get tenant domain, generating one if not provided
-     */
-    public String getTenantDomain() {
-        if (tenantDomain != null && !tenantDomain.trim().isEmpty()) {
-            return tenantDomain.trim();
-        }
-        
-        // Generate domain based on tenant name
-        if ("localhost".equalsIgnoreCase(tenantName)) {
-            return "localhost";
-        }
-        
-        return tenantName.toLowerCase() + ".openframe.io";
-    }
 }

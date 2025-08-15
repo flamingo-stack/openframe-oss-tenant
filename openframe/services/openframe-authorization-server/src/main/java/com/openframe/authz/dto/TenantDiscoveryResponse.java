@@ -44,7 +44,7 @@ public class TenantDiscoveryResponse {
         private String openFrameUrl;
         
         @JsonProperty("auth_providers")
-        private List<String> authProviders; // ["password", "google", "openframe_sso"]
+        private List<String> authProviders; // ["google", "openframe_sso"]
         
         @JsonProperty("user_exists")
         private boolean userExists;

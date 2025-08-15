@@ -1,7 +1,5 @@
 package com.openframe.security.cookie;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,23 +39,23 @@ public class CookieService {
 
 
     public ResponseCookie createAccessTokenCookie(String accessToken) {
-        return createCookie(ACCESS_TOKEN_COOKIE, accessToken, "/");
+        return createCookie(ACCESS_TOKEN_COOKIE, accessToken, "/", accessTokenExpirationSeconds);
     }
 
     /**
      * Створює ResponseCookie для refresh token з налаштуваннями з CookieService
      */
     public ResponseCookie createRefreshTokenCookie(String refreshToken) {
-        return createCookie(REFRESH_TOKEN_COOKIE, refreshToken,"/oauth/refresh");
+        return createCookie(REFRESH_TOKEN_COOKIE, refreshToken, "/oauth/refresh", refreshTokenExpirationSeconds);
     }
 
-    public ResponseCookie createCookie(String name, String value, String path) {
+    public ResponseCookie createCookie(String name, String value, String path, int age) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(cookieSecure)
                 .sameSite(cookieSameSite)
                 .path(path)
-                .maxAge(accessTokenExpirationSeconds)
+                .maxAge(age)
                 .domain(domain)
                 .build();
     }

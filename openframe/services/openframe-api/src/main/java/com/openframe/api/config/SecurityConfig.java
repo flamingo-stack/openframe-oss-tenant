@@ -1,5 +1,7 @@
 package com.openframe.api.config;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,14 +30,22 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public LoadingCache<String, JwtAuthenticationProvider> jwtProviderCache() {
+        return Caffeine.newBuilder()
+                .maximumSize(2000)
+                .expireAfterWrite(java.time.Duration.ofMinutes(30))
+                .refreshAfterWrite(java.time.Duration.ofMinutes(10))
+                .build(issuer -> {
+                    log.info("Creating JwtDecoder for issuer: {}", issuer);
+                    var decoder = JwtDecoders.fromIssuerLocation(issuer);
+                    return new JwtAuthenticationProvider(decoder);
+                });
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, LoadingCache<String, JwtAuthenticationProvider> jwtProviderCache) throws Exception {
         JwtIssuerAuthenticationManagerResolver issuerResolver = new JwtIssuerAuthenticationManagerResolver(
-            issuer -> {
-                log.info("Creating JwtDecoder for issuer: {}", issuer);
-                var decoder = JwtDecoders.fromIssuerLocation(issuer);
-                JwtAuthenticationProvider provider = new JwtAuthenticationProvider(decoder);
-                return provider::authenticate;
-            }
+                issuer -> jwtProviderCache.get(issuer)::authenticate
         );
         return http
                 .csrf(AbstractHttpConfigurer::disable)

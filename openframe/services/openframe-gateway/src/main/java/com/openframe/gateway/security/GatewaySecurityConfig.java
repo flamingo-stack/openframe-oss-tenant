@@ -16,12 +16,13 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import static com.openframe.gateway.security.SecurityConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -92,15 +93,20 @@ public class GatewaySecurityConfig {
                                 managementContextPath + "/**"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
 //                        // Agent tools
                                 .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
+                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
 //                        // Api tools
                                 .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers("/**").permitAll()
                 )
                 .build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

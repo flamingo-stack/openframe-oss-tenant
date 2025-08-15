@@ -1,6 +1,5 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.config.GoogleSSOProperties;
 import com.openframe.authz.document.SSOConfig;
 import com.openframe.authz.repository.SSOConfigRepository;
 import com.openframe.core.service.EncryptionService;

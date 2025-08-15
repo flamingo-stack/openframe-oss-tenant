@@ -1,5 +1,6 @@
 package com.openframe.authz.config;
 
+import com.openframe.authz.config.prop.GoogleSSOProperties;
 import com.openframe.authz.document.SSOConfig;
 import com.openframe.authz.service.SSOConfigService;
 import lombok.RequiredArgsConstructor;

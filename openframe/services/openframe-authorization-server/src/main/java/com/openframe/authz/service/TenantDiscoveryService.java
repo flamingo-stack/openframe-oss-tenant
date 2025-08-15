@@ -33,19 +33,15 @@ public class TenantDiscoveryService {
     public TenantDiscoveryResponse discoverTenantsForEmail(String email) {
         log.debug("Discovering tenants for email: {}", email);
         
-        // Find all users with this email across all tenants
         List<User> users = userRepository.findAllByEmail(email);
         
-        // Build tenant information
         List<TenantDiscoveryResponse.TenantInfo> tenants = users.stream()
                 .map(user -> {
-                    // Get tenant information
                     Tenant tenant = tenantService.findById(user.getTenantId()).orElse(null);
                     if (tenant == null || !tenant.isActive()) {
                         return null;
                     }
                     
-                    // Determine available auth providers for this tenant
                     List<String> authProviders = getAvailableAuthProviders(tenant, user);
                     
                     return TenantDiscoveryResponse.TenantInfo.builder()
