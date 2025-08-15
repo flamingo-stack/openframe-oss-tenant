@@ -45,15 +45,7 @@
           </div>
         </div>
 
-        <!-- SSO Registration Options -->
-        <div class="sso-options">
-          <div class="sso-option">
-            <button @click="handleGoogleSSORegister" class="btn-sso google" :disabled="registerLoading || !registerForm.tenantName">
-              <i class="pi pi-google"></i>
-              <span>Register with Google</span>
-            </button>
-          </div>
-        </div>
+        <!-- SSO Registration Options removed -->
 
         <!-- Manual Registration Form (alternative to SSO) -->
         <div class="manual-registration">
@@ -379,43 +371,7 @@ async function handleGoogleSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
   }
 }
 
-// Handle Google SSO for registration - using Gateway OAuth2 flow
-async function handleGoogleSSORegister() {
-  if (!registerForm.tenantName) {
-    toast.add({
-      severity: 'error',
-      summary: 'Organization Required',
-      detail: 'Please enter an organization name first',
-      life: 5000
-    })
-    return
-  }
-
-  registerLoading.value = true
-  try {
-    console.log('🔗 [CentralAuth] Starting Google SSO registration for tenant:', registerForm.tenantName)
-    
-    // For now, use localhost as the default tenant domain
-    // TODO: In production, use the actual tenant domain
-    const tempTenantId = 'temp-' + registerForm.tenantName.toLowerCase().replace(/[^a-z0-9]/g, '-')
-    sessionStorage.setItem('auth:tenant_domain', registerForm.tenantDomain || 'localhost')
-    
-    // Use Gateway's login endpoint for Google SSO
-    const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tempTenantId)}`;
-    window.location.href = loginUrl;
-    
-  } catch (error: any) {
-    console.error('❌ [CentralAuth] Google SSO registration failed:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Google SSO Registration Failed',
-      detail: error.message || 'Failed to start Google SSO registration',
-      life: 5000
-    })
-  } finally {
-    registerLoading.value = false
-  }
-}
+// Google SSO registration removed per request
 
 // Handle manual registration
 async function handleManualRegistration() {
