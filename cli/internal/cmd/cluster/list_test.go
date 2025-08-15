@@ -8,8 +8,13 @@ import (
 
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/stretchr/testify/assert"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 )
 
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 func TestListCommand_Flags(t *testing.T) {
 	cmd := getListCmd()
 	
@@ -28,7 +33,7 @@ func TestListCommand_Usage(t *testing.T) {
 	// Test basic command properties
 	assert.Equal(t, "list", cmd.Use)
 	assert.Equal(t, "List all Kubernetes clusters", cmd.Short)
-	assert.Contains(t, cmd.Long, "List - List all Kubernetes clusters managed by OpenFrame CLI")
+	assert.Contains(t, cmd.Long, "List all Kubernetes clusters managed by OpenFrame CLI")
 	
 	// List command should accept any number of arguments (gracefully ignored)
 	// Args can be nil for commands that don't validate arguments
@@ -176,7 +181,7 @@ func TestListCommand_Examples(t *testing.T) {
 	// Verify examples are documented
 	assert.Contains(t, cmd.Long, "openframe cluster list")
 	assert.Contains(t, cmd.Long, "--verbose")
-	assert.Contains(t, cmd.Long, "--silent")
+	assert.Contains(t, cmd.Long, "--quiet")
 }
 
 func TestListCommand_LongDescription(t *testing.T) {
@@ -184,10 +189,10 @@ func TestListCommand_LongDescription(t *testing.T) {
 	
 	// Verify comprehensive description
 	longDesc := cmd.Long
-	assert.Contains(t, longDesc, "comprehensive cluster information")
-	assert.Contains(t, longDesc, "cluster name, type, status")
+	assert.Contains(t, longDesc, "cluster information")
+	assert.Contains(t, longDesc, "name, type, status")
 	assert.Contains(t, longDesc, "formatted table")
-	assert.Contains(t, longDesc, "all registered providers")
+	assert.Contains(t, longDesc, "from all registered providers")
 }
 
 // Test formatAge function
@@ -281,10 +286,10 @@ func TestListCommand_DescriptionContent(t *testing.T) {
 	
 	// Verify that the description mentions key functionality
 	longDesc := cmd.Long
-	assert.Contains(t, longDesc, "cluster name, type, status")
+	assert.Contains(t, longDesc, "name, type, status")
 	assert.Contains(t, longDesc, "formatted table")
-	assert.Contains(t, longDesc, "all registered providers")
-	assert.Contains(t, longDesc, "quiet mode")
+	assert.Contains(t, longDesc, "from all registered providers")
+	assert.Contains(t, longDesc, "--quiet")
 }
 
 // Test command structure consistency

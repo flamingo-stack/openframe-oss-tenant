@@ -15,23 +15,15 @@ func getListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all Kubernetes clusters",
-		Long: `List - List all Kubernetes clusters managed by OpenFrame CLI
+		Long: `List all Kubernetes clusters managed by OpenFrame CLI.
 
-Displays comprehensive cluster information including cluster name, type, status,
-node count, and other relevant details for all managed clusters.
-
-The command will list clusters from all registered providers (k3d, GKE, EKS, etc.)
-and display them in a formatted table for easy viewing.
+Displays cluster information including name, type, status, and node count
+from all registered providers in a formatted table.
 
 Examples:
-  # List all clusters
   openframe cluster list
-
-  # List clusters with verbose output
   openframe cluster list --verbose
-
-  # List clusters in quiet mode (names only)
-  openframe cluster list --silent`,
+  openframe cluster list --quiet`,
 		RunE: runListClusters,
 	}
 

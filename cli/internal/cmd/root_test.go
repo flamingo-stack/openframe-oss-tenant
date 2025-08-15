@@ -6,8 +6,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/spf13/cobra"
 )
+
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 
 func TestRootCommand(t *testing.T) {
 	tests := []struct {

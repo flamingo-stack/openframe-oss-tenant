@@ -6,8 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 )
 
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 func TestStartCommand_Flags(t *testing.T) {
 	cmd := getStartCmd()
 	
@@ -24,7 +29,7 @@ func TestStartCommand_Usage(t *testing.T) {
 	// Test basic command properties
 	assert.Equal(t, "start [NAME]", cmd.Use)
 	assert.Equal(t, "Start a stopped Kubernetes cluster", cmd.Short)
-	assert.Contains(t, cmd.Long, "Start - Start a previously stopped Kubernetes cluster")
+	assert.Contains(t, cmd.Long, "Start a previously stopped Kubernetes cluster")
 	
 	// Test that the command accepts at most 1 argument
 	assert.NotNil(t, cmd.Args)
@@ -45,8 +50,8 @@ func TestStartCommand_HelpOutput(t *testing.T) {
 	
 	output := out.String()
 	assert.Contains(t, output, "Start a previously stopped Kubernetes cluster")
-	assert.Contains(t, output, "Interactive cluster selection")
-	assert.Contains(t, output, "Start a specific cluster")
+	assert.Contains(t, output, "interactive selection")
+	assert.Contains(t, output, "start my-cluster")
 	assert.Contains(t, output, "openframe cluster start my-cluster")
 }
 
@@ -193,8 +198,8 @@ func TestStartCommand_Examples(t *testing.T) {
 	
 	// Verify examples are documented
 	assert.Contains(t, cmd.Long, "openframe cluster start my-cluster")
-	assert.Contains(t, cmd.Long, "Interactive cluster selection")
-	assert.Contains(t, cmd.Long, "Start with verbose output")
+	assert.Contains(t, cmd.Long, "interactive selection")
+	assert.Contains(t, cmd.Long, "--verbose")
 }
 
 func TestStartCommand_LongDescription(t *testing.T) {
@@ -202,10 +207,10 @@ func TestStartCommand_LongDescription(t *testing.T) {
 	
 	// Verify comprehensive description
 	longDesc := cmd.Long
-	assert.Contains(t, longDesc, "Start the cluster infrastructure")
-	assert.Contains(t, longDesc, "Wait for cluster nodes to be ready")
-	assert.Contains(t, longDesc, "Verify cluster connectivity")
-	assert.Contains(t, longDesc, "Display cluster status")
+	assert.Contains(t, longDesc, "Restarts cluster nodes")
+	assert.Contains(t, longDesc, "restores cluster to running state")
+	assert.Contains(t, longDesc, "interactive selection")
+	assert.Contains(t, longDesc, "direct cluster specification")
 }
 
 // Test error conditions
@@ -296,9 +301,9 @@ func TestStartCommand_DescriptionContent(t *testing.T) {
 	// Verify that the description mentions key functionality
 	longDesc := cmd.Long
 	assert.Contains(t, longDesc, "previously stopped")
-	assert.Contains(t, longDesc, "interactive cluster selection")
+	assert.Contains(t, longDesc, "interactive selection")
 	assert.Contains(t, longDesc, "direct cluster specification")
-	assert.Contains(t, longDesc, "restore the cluster to a running state")
+	assert.Contains(t, longDesc, "restores cluster to running state")
 }
 
 // Test command structure consistency

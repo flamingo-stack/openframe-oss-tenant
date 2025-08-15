@@ -5,8 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 
 func TestGetClusterCmd(t *testing.T) {
 	cmd := GetClusterCmd()
@@ -60,7 +66,7 @@ func TestClusterCommand_HelpOutput(t *testing.T) {
 	output := out.String()
 	
 	// Check help content
-	assert.Contains(t, output, "Manage Kubernetes clusters")
+	assert.Contains(t, output, "Cluster Management")
 	assert.Contains(t, output, "Available Commands:")
 	assert.Contains(t, output, "create")
 	assert.Contains(t, output, "delete")
@@ -108,9 +114,7 @@ func TestClusterCommand_Examples(t *testing.T) {
 	assert.Contains(t, longDesc, "openframe cluster create")
 	assert.Contains(t, longDesc, "openframe cluster delete")
 	assert.Contains(t, longDesc, "openframe cluster start")
-	assert.Contains(t, longDesc, "./run.sh k")
-	assert.Contains(t, longDesc, "./run.sh d")
-	assert.Contains(t, longDesc, "./run.sh s")
+	// Shell script references were removed from optimized descriptions
 }
 
 func TestClusterCommand_SupportedTypes(t *testing.T) {
@@ -119,8 +123,7 @@ func TestClusterCommand_SupportedTypes(t *testing.T) {
 	// Verify supported cluster types are documented
 	longDesc := cmd.Long
 	assert.Contains(t, longDesc, "K3d")
-	assert.Contains(t, longDesc, "GKE")
-	assert.Contains(t, longDesc, "recommended for local development")
+	// GKE references were simplified in optimization
 }
 
 func TestClusterCommand_InvalidSubcommand(t *testing.T) {
@@ -148,7 +151,6 @@ func TestClusterCommand_Aliases(t *testing.T) {
 
 func TestResetGlobalFlags(t *testing.T) {
 	// Set some values
-	clusterName = "test"
 	clusterType = "k3d"
 	nodeCount = 5
 	k8sVersion = "v1.28.0"
@@ -161,7 +163,6 @@ func TestResetGlobalFlags(t *testing.T) {
 	ResetGlobalFlags()
 
 	// Verify all flags are reset
-	assert.Equal(t, "", clusterName)
 	assert.Equal(t, "", clusterType)
 	assert.Equal(t, 0, nodeCount)
 	assert.Equal(t, "", k8sVersion)
@@ -188,16 +189,15 @@ func TestSetVerboseForTesting(t *testing.T) {
 func TestClusterCommand_RunFunction(t *testing.T) {
 	cmd := GetClusterCmd()
 	
-	// Test that Run function exists
-	assert.NotNil(t, cmd.Run)
-	
-	// Test that it shows help when called
+	// Test that the command shows help by default (no explicit Run function needed)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
 	
-	// Call the run function directly
-	cmd.Run(cmd, []string{})
+	// Execute with no args should show help
+	cmd.SetArgs([]string{})
+	err := cmd.Execute()
+	assert.NoError(t, err)
 	
 	output := out.String()
 	// Should show help output (contains usage information)
@@ -210,18 +210,16 @@ func TestClusterCommand_LongDescription(t *testing.T) {
 	// Verify comprehensive description content
 	longDesc := cmd.Long
 	assert.Contains(t, longDesc, "lifecycle management")
-	assert.Contains(t, longDesc, "shell script cluster operations")
 	assert.Contains(t, longDesc, "interactive configuration")
 	assert.Contains(t, longDesc, "Remove unused images and resources")
-	assert.Contains(t, longDesc, "Lightweight Kubernetes in Docker")
+	// Some detailed descriptions were simplified in optimization
 }
 
 // Test command structure consistency
 func TestClusterCommand_StructureConsistency(t *testing.T) {
 	cmd := GetClusterCmd()
 	
-	// Should have Run function
-	assert.NotNil(t, cmd.Run)
+	// Command structure should be valid (Run function not required for parent commands)
 	
 	// Should have description
 	assert.NotEmpty(t, cmd.Short)

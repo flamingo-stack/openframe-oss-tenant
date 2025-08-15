@@ -7,8 +7,16 @@ import (
 	"github.com/pterm/pterm"
 )
 
+var (
+	// TestMode suppresses logo output during testing
+	TestMode bool
+)
+
 // ShowLogo displays the OpenFrame ASCII logo
 func ShowLogo() {
+	if TestMode {
+		return
+	}
 	// Create properly padded logo lines to ensure consistent centering
 	logoLines := []string{
 		"",

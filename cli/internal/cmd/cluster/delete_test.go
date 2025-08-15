@@ -6,9 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/stretchr/testify/mock"
 )
 
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 // Mock for UI common functions
 type MockUICommon struct {
 	mock.Mock
@@ -241,7 +246,7 @@ func TestDeleteCommand_Examples(t *testing.T) {
 	// Verify examples are documented
 	assert.Contains(t, cmd.Long, "openframe cluster delete my-cluster")
 	assert.Contains(t, cmd.Long, "--force")
-	assert.Contains(t, cmd.Long, "Interactive cluster selection")
+	assert.Contains(t, cmd.Long, "interactive selection")
 }
 
 func TestDeleteCommand_LongDescription(t *testing.T) {
@@ -249,10 +254,10 @@ func TestDeleteCommand_LongDescription(t *testing.T) {
 	
 	// Verify comprehensive description
 	longDesc := cmd.Long
-	assert.Contains(t, longDesc, "Stop any running Telepresence intercepts")
-	assert.Contains(t, longDesc, "Delete the Kubernetes cluster")
-	assert.Contains(t, longDesc, "Clean up Docker networks and containers")
-	assert.Contains(t, longDesc, "Remove cluster-specific configuration")
+	assert.Contains(t, longDesc, "Stops intercepts")
+	assert.Contains(t, longDesc, "deletes cluster")
+	assert.Contains(t, longDesc, "cleans up Docker resources")
+	assert.Contains(t, longDesc, "removes cluster configuration")
 }
 
 // Test error conditions

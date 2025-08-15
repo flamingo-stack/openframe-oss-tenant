@@ -6,8 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 )
 
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 func TestCleanupCommand_Flags(t *testing.T) {
 	cmd := getCleanupCmd()
 	
@@ -180,8 +185,7 @@ func TestCleanupCommand_Examples(t *testing.T) {
 	// Verify examples are documented
 	assert.Contains(t, cmd.Long, "openframe cluster cleanup")
 	assert.Contains(t, cmd.Long, "openframe cluster cleanup my-cluster")
-	assert.Contains(t, cmd.Long, "Cleanup default cluster")
-	assert.Contains(t, cmd.Long, "Cleanup specific cluster")
+	// These old comments have been simplified, so remove these assertions
 }
 
 func TestCleanupCommand_LongDescription(t *testing.T) {
@@ -190,9 +194,9 @@ func TestCleanupCommand_LongDescription(t *testing.T) {
 	// Verify comprehensive description
 	longDesc := cmd.Long
 	assert.Contains(t, longDesc, "Remove unused images and resources")
-	assert.Contains(t, longDesc, "freeing up disk space")
+	assert.Contains(t, longDesc, "freeing disk space")
 	assert.Contains(t, longDesc, "development clusters")
-	assert.Contains(t, longDesc, "build many images")
+	assert.Contains(t, longDesc, "with many builds")
 }
 
 func TestCleanupCommand_Aliases(t *testing.T) {

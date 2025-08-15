@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/flamingo/openframe-cli/internal/cluster"
 	"github.com/flamingo/openframe-cli/internal/ui/common"
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/pterm/pterm"
@@ -18,26 +17,15 @@ func getStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status [NAME]",
 		Short: "Show detailed cluster status and information",
-		Long: `Status - Show detailed status information for a Kubernetes cluster
+		Long: `Show detailed status information for a Kubernetes cluster.
 
-Displays comprehensive information about a cluster including:
-  • Cluster health and node status
-  • Installed Helm charts and applications
-  • Resource usage and capacity
-  • Connectivity and configuration information
-  • Service endpoints and access URLs
-
-The command supports both direct cluster specification and interactive selection.
+Displays cluster health, node status, installed applications,
+resource usage, and connectivity information.
 
 Examples:
-  # Show status for a specific cluster
   openframe cluster status my-cluster
-
-  # Interactive cluster selection
-  openframe cluster status
-
-  # Show status with verbose output
-  openframe cluster status my-cluster --verbose`,
+  openframe cluster status  # interactive selection
+  openframe cluster status my-cluster --detailed`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: runClusterStatus,
 	}
@@ -60,25 +48,13 @@ func runClusterStatus(cmd *cobra.Command, args []string) error {
 	detailed, _ := cmd.Flags().GetBool("detailed")
 	skipApps, _ := cmd.Flags().GetBool("no-apps")
 
-	var clusterName string
-	var err error
-
-	if len(args) == 0 {
-		// Interactive cluster selection
-		clusterName, err = selectRunningCluster(ctx, manager)
-		if err != nil {
-			return fmt.Errorf("failed to select cluster: %w", err)
-		}
-		if clusterName == "" {
-			pterm.Info.Println("No cluster selected. Operation cancelled.")
-			return nil
-		}
-	} else {
-		// Use provided cluster name
-		clusterName = strings.TrimSpace(args[0])
-		if clusterName == "" {
-			return fmt.Errorf("cluster name cannot be empty")
-		}
+	clusterName, err := uiCluster.HandleClusterSelection(ctx, manager, args, "Select a cluster to check status:")
+	if err != nil {
+		return fmt.Errorf("failed to select cluster: %w", err)
+	}
+	if clusterName == "" {
+		pterm.Info.Println("No cluster selected. Operation cancelled.")
+		return nil
 	}
 
 	// Determine cluster type
@@ -192,39 +168,6 @@ func runClusterStatus(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// selectRunningCluster allows user to select from available running clusters
-func selectRunningCluster(ctx context.Context, manager *cluster.Manager) (string, error) {
-	// Get all clusters
-	clusters, err := manager.ListAllClusters(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to list clusters: %w", err)
-	}
-
-	if len(clusters) == 0 {
-		pterm.Warning.Println("No clusters found")
-		return "", nil
-	}
-
-	// For now, we'll list all clusters since we don't have status info
-	// TODO: Filter for running clusters when status checking is available
-	clusterNames := make([]string, 0, len(clusters))
-	for _, cl := range clusters {
-		clusterNames = append(clusterNames, cl.Name)
-	}
-
-	if len(clusterNames) == 0 {
-		pterm.Warning.Println("No running clusters available")
-		return "", nil
-	}
-
-	// Use interactive selection
-	_, selected, err := common.SelectFromList("Select a cluster to check status:", clusterNames)
-	if err != nil {
-		return "", err
-	}
-
-	return selected, nil
-}
 
 // getStatusColor returns appropriate color function for status
 func getStatusColor(status string) func(string) string {

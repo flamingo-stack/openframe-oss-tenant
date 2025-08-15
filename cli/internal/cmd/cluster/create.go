@@ -18,23 +18,14 @@ func getCreateCmd() *cobra.Command {
 		Short: "Create a new Kubernetes cluster",
 		Long: `Create a new Kubernetes cluster with default OpenFrame configuration.
 
-This command creates a local Kubernetes cluster suitable for OpenFrame development.
-If a cluster with the same name already exists, it will be deleted and recreated.
-The cluster is created with sensible defaults and does not install OpenFrame components.
-Use the bootstrap command to create a cluster and install OpenFrame components.
+Creates a local cluster for OpenFrame development. Existing clusters
+with the same name will be recreated. Use bootstrap command to install
+OpenFrame components after creation.
 
 Examples:
-  # Create cluster with default name (openframe-dev)
   openframe cluster create
-
-  # Create cluster with custom name
   openframe cluster create my-cluster
-
-  # Create with specific options
-  openframe cluster create my-cluster --type k3d --nodes 3
-
-  # Create minimal cluster
-  openframe cluster create --nodes 1`,
+  openframe cluster create --nodes 3 --type k3d`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: runCreateCluster,
 	}

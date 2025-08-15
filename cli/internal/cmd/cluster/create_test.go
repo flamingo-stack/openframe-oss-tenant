@@ -9,9 +9,14 @@ import (
 	"github.com/flamingo/openframe-cli/internal/cluster"
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/stretchr/testify/assert"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/stretchr/testify/mock"
 )
 
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 // Mock cluster provider for testing
 type MockClusterProvider struct {
 	mock.Mock

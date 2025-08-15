@@ -7,8 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 )
 
+func init() {
+	// Suppress logo output during tests
+	common.TestMode = true
+}
 func TestStatusCommand_Flags(t *testing.T) {
 	cmd := getStatusCmd()
 	
@@ -32,7 +37,7 @@ func TestStatusCommand_Usage(t *testing.T) {
 	// Test basic command properties
 	assert.Equal(t, "status [NAME]", cmd.Use)
 	assert.Equal(t, "Show detailed cluster status and information", cmd.Short)
-	assert.Contains(t, cmd.Long, "Status - Show detailed status information for a Kubernetes cluster")
+	assert.Contains(t, cmd.Long, "Show detailed status information for a Kubernetes cluster")
 	
 	// Test that the command accepts at most 1 argument
 	assert.NotNil(t, cmd.Args)
@@ -264,8 +269,8 @@ func TestStatusCommand_Examples(t *testing.T) {
 	
 	// Verify examples are documented
 	assert.Contains(t, cmd.Long, "openframe cluster status my-cluster")
-	assert.Contains(t, cmd.Long, "Interactive cluster selection")
-	assert.Contains(t, cmd.Long, "Show status with verbose output")
+	assert.Contains(t, cmd.Long, "interactive selection")
+	assert.Contains(t, cmd.Long, "--detailed")
 }
 
 func TestStatusCommand_LongDescription(t *testing.T) {
@@ -273,10 +278,10 @@ func TestStatusCommand_LongDescription(t *testing.T) {
 	
 	// Verify comprehensive description
 	longDesc := cmd.Long
-	assert.Contains(t, longDesc, "Cluster health and node status")
-	assert.Contains(t, longDesc, "Installed Helm charts")
-	assert.Contains(t, longDesc, "Resource usage and capacity")
-	assert.Contains(t, longDesc, "Connectivity and configuration")
+	assert.Contains(t, longDesc, "cluster health")
+	assert.Contains(t, longDesc, "installed applications")
+	assert.Contains(t, longDesc, "resource usage")
+	assert.Contains(t, longDesc, "connectivity information")
 }
 
 // Test getStatusColor function
@@ -389,10 +394,10 @@ func TestStatusCommand_DescriptionContent(t *testing.T) {
 	
 	// Verify that the description mentions key functionality
 	longDesc := cmd.Long
-	assert.Contains(t, longDesc, "comprehensive information")
+	assert.Contains(t, longDesc, "cluster health")
 	assert.Contains(t, longDesc, "interactive selection")
-	assert.Contains(t, longDesc, "Resource usage and capacity")
-	assert.Contains(t, longDesc, "Service endpoints")
+	assert.Contains(t, longDesc, "resource usage")
+	assert.Contains(t, longDesc, "connectivity information")
 }
 
 // Test command structure consistency

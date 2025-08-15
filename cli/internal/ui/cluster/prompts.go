@@ -1,12 +1,15 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
 )
 
 // ClusterConfiguration holds the configuration choices made by the user
@@ -121,4 +124,47 @@ type ComponentChoice struct {
 	Name        string
 	Description string
 	Default     bool
+}
+
+// SelectClusterByName allows user to interactively select from available clusters by name
+func SelectClusterByName(ctx context.Context, manager *cluster.Manager, prompt string) (string, error) {
+	clusters, err := manager.ListAllClusters(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	if len(clusters) == 0 {
+		pterm.Warning.Println("No clusters found")
+		return "", nil
+	}
+
+	clusterNames := make([]string, 0, len(clusters))
+	for _, cl := range clusters {
+		clusterNames = append(clusterNames, cl.Name)
+	}
+
+	if len(clusterNames) == 0 {
+		pterm.Warning.Println("No clusters available")
+		return "", nil
+	}
+
+	_, selected, err := common.SelectFromList(prompt, clusterNames)
+	if err != nil {
+		return "", err
+	}
+
+	return selected, nil
+}
+
+// HandleClusterSelection handles the common pattern of getting cluster name from args or interactive selection
+func HandleClusterSelection(ctx context.Context, manager *cluster.Manager, args []string, prompt string) (string, error) {
+	if len(args) > 0 {
+		clusterName := args[0]
+		if clusterName == "" {
+			return "", fmt.Errorf("cluster name cannot be empty")
+		}
+		return clusterName, nil
+	}
+
+	return SelectClusterByName(ctx, manager, prompt)
 }

@@ -15,21 +15,13 @@ func getDeleteCmd() *cobra.Command {
 		Short: "Delete a Kubernetes cluster",
 		Long: `Delete a Kubernetes cluster and clean up all associated resources.
 
-This command will:
-  1. Stop any running Telepresence intercepts
-  2. Delete the Kubernetes cluster
-  3. Clean up Docker networks and containers
-  4. Remove cluster-specific configuration
+Stops intercepts, deletes cluster, cleans up Docker resources,
+and removes cluster configuration.
 
 Examples:
-  # Delete specific cluster
   openframe cluster delete my-cluster
-
-  # Delete without confirmation
   openframe cluster delete my-cluster --force
-
-  # Interactive cluster selection
-  openframe cluster delete`,
+  openframe cluster delete  # interactive selection`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: runDeleteCluster,
 	}

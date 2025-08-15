@@ -15,29 +15,17 @@ import (
 )
 
 func getCleanupCmd() *cobra.Command {
-	return getCleanupCmdImpl()
-}
-
-func GetCleanupCmdForTesting() *cobra.Command {
-	return getCleanupCmdImpl()
-}
-
-func getCleanupCmdImpl() *cobra.Command {
 	return &cobra.Command{
 		Use:     "cleanup [NAME]",
 		Aliases: []string{"c"},
 		Short:   "Clean up unused cluster resources",
 		Long: `Remove unused images and resources from cluster nodes.
 
-This command cleans up Docker images and other resources that are no
-longer needed, freeing up disk space. This is particularly useful for
-development clusters that build many images.
+Cleans up Docker images and resources, freeing disk space.
+Useful for development clusters with many builds.
 
 Examples:
-  # Cleanup default cluster
   openframe cluster cleanup
-
-  # Cleanup specific cluster
   openframe cluster cleanup my-cluster`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: runCleanupCluster,
