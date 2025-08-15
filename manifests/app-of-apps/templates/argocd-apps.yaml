@@ -1,4 +1,4 @@
-{{- include "chart.validateIngress" . -}}
+{{- include "chart.validate" . -}}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

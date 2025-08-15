@@ -12,23 +12,31 @@
 # It defines global settings, registry credentials, and deployment environment
 
 deployment:
-  # Ingress configuration - enable only ONE of the following
-  ingress:
-    localhost:
-      enabled: true   # Enable localhost ingress with nginx
-      # TLS configuration (optional)
-      # tls:
-      #   cert: |
-      #   key: |
-    ngrok:
-      enabled: false  # Enable ngrok ingress for external access
-      # URL is required when ngrok is enabled
-      url: https://reindeer-suitable-genuinely.ngrok-free.app
-      credentials:
-          apiKey: ""
-          authtoken: ""
-      allowedIPs:
-        - 0.0.0.0/0
+  selfHosted:
+    enabled: true
+    # Ingress configuration - enable only ONE of the following
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx
+        # TLS configuration (optional)
+        # tls:
+        #   cert: |
+        #   key: |
+      ngrok:
+        enabled: false  # Enable ngrok ingress for external access
+        # URL is required when ngrok is enabled
+        url: https://reindeer-suitable-genuinely.ngrok-free.app
+        credentials:
+            apiKey: ""
+            authtoken: ""
+        allowedIPs:
+          - 0.0.0.0/0
+  saas:
+    disabled: false
+    # Ingress configuration for SaaS deployment
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx for SaaS
 
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository

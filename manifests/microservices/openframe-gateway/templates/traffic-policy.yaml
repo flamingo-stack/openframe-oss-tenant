@@ -1,4 +1,4 @@
-{{- if .Values.deployment.ingress.ngrok.enabled }}
+{{- if .Values.deployment.selfHosted.ingress.ngrok.enabled }}
 apiVersion: ngrok.k8s.ngrok.com/v1alpha1
 kind: NgrokTrafficPolicy
 metadata:
@@ -12,7 +12,7 @@ spec:
               enforce: true
               allow:
               {{- if .Values.allowedIPs }}
-                {{- range .Values.deployment.ingress.ngrok.allowedIPs }}
+                {{- range .Values.deployment.selfHosted.ingress.ngrok.allowedIPs }}
                 - {{ . | quote }}
                 {{- end }}
               {{- else }}

@@ -1,0 +1,89 @@
+suite: application structure tests
+templates:
+  - templates/application.yaml
+tests:
+  - it: should generate valid ArgoCD applications
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Test basic application structure
+      - isKind:
+          of: Application
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - equal:
+          path: apiVersion
+          value: "argoproj.io/v1alpha1"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - equal:
+          path: spec.destination.namespace
+          value: "datasources"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - equal:
+          path: spec.project
+          value: "datasources"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+
+  - it: should set correct sync waves
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Test sync wave ordering
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "0"
+        documentSelector:
+          path: metadata.name
+          value: "namespace-platform"
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "1"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "2"
+        documentSelector:
+          path: metadata.name
+          value: "openframe-api"
+
+  - it: should include required spec fields for ArgoCD
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Test required ArgoCD Application spec fields
+      - isNotEmpty:
+          path: spec.source.repoURL
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - isNotEmpty:
+          path: spec.source.path
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - isNotEmpty:
+          path: spec.destination.server
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - equal:
+          path: spec.syncPolicy.automated.prune
+          value: true
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"

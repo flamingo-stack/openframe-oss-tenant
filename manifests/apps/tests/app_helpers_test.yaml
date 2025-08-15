@@ -1,0 +1,86 @@
+suite: app-helpers credential transfer tests
+templates:
+  - templates/application.yaml
+tests:
+  - it: should transfer custom ngrok credentials via app-helper
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.credentials.apiKey: "custom-api-key"
+      deployment.selfHosted.ingress.ngrok.credentials.authtoken: "custom-auth-token"
+      deployment.saas.enabled: false
+    asserts:
+      # Verify deployment values are propagated
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "deployment:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      # Verify app-helper processed credentials
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "ngrok-operator:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "credentials:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "apiKey: custom-api-key"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "authtoken: custom-auth-token"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      # Verify ngrok-operator is not skipped
+      - equal:
+          path: metadata.name
+          value: "ngrok-operator"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+
+  - it: should use default ngrok credentials when no custom ones provided
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Should use credentials from values.yaml
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "ngrok-operator:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "apiKey: 30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "authtoken: 30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      # Verify ngrok-operator is not skipped
+      - equal:
+          path: metadata.name
+          value: "ngrok-operator"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"

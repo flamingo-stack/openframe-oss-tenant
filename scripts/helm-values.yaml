@@ -1,0 +1,25 @@
+deployment:
+  selfHosted:
+    enabled: false    
+  saas:
+    enabled: true
+
+global:
+  repoBranch: feature/sas
+
+
+apps:
+  openframe-config:
+    values:
+      config:
+        branch: feature/sas
+  namespace-integrated-tools:
+    enabled: false
+  authentik: 
+    enabled: false
+  fleetmdm: 
+    enabled: false
+  meshcentral: 
+    enabled: false 
+  tactical-rmm: 
+    enabled: false

@@ -1,0 +1,75 @@
+suite: values propagation tests
+templates:
+  - templates/application.yaml
+tests:
+  - it: should propagate deployment values to all apps
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Test deployment values on regular app
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "deployment:"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "selfHosted:"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "enabled: true"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+
+  - it: should propagate app-specific values from values.yaml
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Test that openframe-config gets its specific values
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "config:"
+        documentSelector:
+          path: metadata.name
+          value: "openframe-config"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "branch: main"
+        documentSelector:
+          path: metadata.name
+          value: "openframe-config"
+
+  - it: should propagate SaaS deployment values correctly
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+    asserts:
+      # Test SaaS deployment values on regular app
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "deployment:"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "saas:"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "enabled: true"
+        documentSelector:
+          path: metadata.name
+          value: "mongodb"

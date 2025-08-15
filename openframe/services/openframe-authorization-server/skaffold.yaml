@@ -1,0 +1,29 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: openframe-authorization-server
+build:
+  artifacts:
+    - image: ghcr.io/flamingo-cx/openframe/openframe-authorization-server
+      context: .
+      sync: 
+        manual:
+          - src: "**/*"
+            dest: "/app"
+      docker:
+        dockerfile: Dockerfile
+      hooks:
+        before:
+          - command: [ "mvn", "clean", "package", "-DskipTests"]
+  local:
+    useDockerCLI: false
+    useBuildkit: true
+    push: false
+manifests:
+  helm:
+    releases:
+      - name: openframe-authorization-server
+        chartPath: ../../../manifests/microservices/openframe-authorization-server
+        valuesFiles:
+          - ../../../manifests/microservices/openframe-authorization-server/values.yaml
+        # setValues:
