@@ -85,24 +85,28 @@ else
 echo "Replica set is already initialized"
 fi
 
-echo "Checking admin user..."
-if ! mongosh --host "${DB_HOST}:${DB_PORT}" --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
-echo "Creating admin user..."
+echo "Ensuring admin user exists..."
 mongosh --host "${DB_HOST}:${DB_PORT}" --eval "
+  try {
     db.getSiblingDB('admin').createUser({
-    user: '$MONGO_INITDB_ROOT_USERNAME',
-    pwd: '$MONGO_INITDB_ROOT_PASSWORD',
-    roles: [
+      user: '$MONGO_INITDB_ROOT_USERNAME',
+      pwd: '$MONGO_INITDB_ROOT_PASSWORD',
+      roles: [
         { role: 'root', db: 'admin' },
         { role: 'userAdminAnyDatabase', db: 'admin' },
         { role: 'dbAdminAnyDatabase', db: 'admin' },
         { role: 'readWriteAnyDatabase', db: 'admin' }
-    ]
-    })
-"
-else
-echo "Admin user already exists"
-fi
+      ]
+    });
+    print('Admin user created');
+  } catch (e) {
+    if (e.codeName === 'DuplicateKey' || e.code === 11000) {
+      print('Admin user already exists');
+    } else {
+      print('Create admin user error: ' + tojson(e));
+    }
+  }
+" --quiet
 
 echo "Final replica set status:"
 mongosh --host "${DB_HOST}:${DB_PORT}" --eval "rs.status()" --quiet
