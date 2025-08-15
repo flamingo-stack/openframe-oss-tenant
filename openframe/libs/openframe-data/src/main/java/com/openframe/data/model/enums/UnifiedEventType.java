@@ -12,8 +12,8 @@ public enum UnifiedEventType {
     SESSION_EXPIRED(Severity.INFO, "User session expired"),
 
     // Device management events
-    DEVICE_ONLINE(Severity.INFO, "Device came online"),
-    DEVICE_OFFLINE(Severity.INFO, "Device went offline"),
+    DEVICE_ONLINE(Severity.INFO, "Device is online"),
+    DEVICE_OFFLINE(Severity.INFO, "Device is offline"),
     DEVICE_REGISTERED(Severity.INFO, "Device registered"),
     DEVICE_UPDATED(Severity.INFO, "Device details updated"),
     DEVICE_DELETED(Severity.INFO, "Device deleted"),
@@ -56,9 +56,9 @@ public enum UnifiedEventType {
     SYSTEM_STARTUP(Severity.INFO, "System startup"),
     SYSTEM_SHUTDOWN(Severity.WARNING, "System shutdown"),
     SYSTEM_START(Severity.INFO, "System started"),
-    SYSTEM_MONITORING(Severity.INFO, "System monitoring event"),
+    SYSTEM_MONITORING(Severity.INFO, "System monitoring"),
     SYSTEM_STATUS(Severity.INFO, "System status update"),
-    SYSTEM_ERROR(Severity.ERROR, "System error occurred"),
+    SYSTEM_ERROR(Severity.ERROR, "System error"),
 
     // Device events
     DEVICE_HEARTBEAT(Severity.INFO, "Device heartbeat received"),

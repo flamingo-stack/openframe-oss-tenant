@@ -186,8 +186,8 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
 
             // If this value looks like embedded JSON, try to parse and flatten it
             String trimmed = value != null ? value.trim() : null;
-            boolean looksLikeJson = trimmed != null && (trimmed.startsWith("{") || trimmed.startsWith("["));
-            if (node.isTextual() && looksLikeJson) {
+            boolean isJson = trimmed != null && (trimmed.startsWith("{") || trimmed.startsWith("["));
+            if (node.isTextual() && isJson) {
                 try {
                     JsonNode parsed = mapper.readTree(value);
                     convertJsonNodeToMap(parsed, prefix, result, depth + 1);
