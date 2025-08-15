@@ -5,50 +5,48 @@ import com.openframe.data.model.enums.MessageType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.openframe.stream.util.TimestampParser;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 
 @Component
 @Slf4j
 public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
+    // Field name constants
+    private static final String FIELD_AGENT_ID = "agentId";
+    private static final String FIELD_ACTIVITY_TYPE = "activity_type";
+    private static final String FIELD_ID = "id";
+    private static final String FIELD_DETAILS = "details";
+    private static final String FIELD_CREATED_AT = "created_at";
+    
     @Override
     protected Optional<String> getAgentId(JsonNode after) {
         // Fleet events can contain either a direct agentId or a hostId that can later be resolved to an agentId.
         // First, try to read the explicit agentId (preferred). If it is absent/blank, fall back to hostId.
-        return parseField(after, "agentId")
-                .filter(StringUtils::isNotBlank);
+        return parseStringField(after, FIELD_AGENT_ID);
     }
 
     @Override
     protected Optional<String> getSourceEventType(JsonNode after) {
         // Fleet MDM stores the event type in the "activity_type" column
-        return parseField(after, "activity_type");
+        return parseStringField(after, FIELD_ACTIVITY_TYPE);
     }
 
     @Override
     protected Optional<String> getEventToolId(JsonNode after) {
         // Unique identifier of the activity row
-        return parseField(after, "id");
+        return parseStringField(after, FIELD_ID);
     }
 
     @Override
     protected Optional<String> getMessage(JsonNode after) {
         // We consider the raw "details" JSON string as the message for now
-        return parseField(after, "details");
+        return parseStringField(after, FIELD_DETAILS);
     }
 
-    /**
-     * Utility method to safely read a String value from a JsonNode by field name.
-     * Mirrors the implementation used in {@link TrmmEventDeserializer}.
-     */
-    private Optional<String> parseField(JsonNode rawNode, String fieldName) {
-        return Optional.ofNullable(rawNode)
-                .flatMap(node -> {
-                    JsonNode fieldNode = node.get(fieldName);
-                    return fieldNode != null && !fieldNode.isNull() && StringUtils.isNotBlank(fieldNode.asText())
-                            ? Optional.of(fieldNode.asText())
-                            : Optional.empty();
-                });
+    @Override
+    protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
+        return parseStringField(afterField, FIELD_CREATED_AT)
+                .flatMap(TimestampParser::parseIso8601);
     }
 
     @Override

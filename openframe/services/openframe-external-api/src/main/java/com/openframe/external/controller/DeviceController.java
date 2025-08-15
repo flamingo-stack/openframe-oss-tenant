@@ -1,9 +1,5 @@
 package com.openframe.external.controller;
 
-import com.openframe.api.dto.DeviceFilterOptions;
-import com.openframe.api.dto.DeviceFilters;
-import com.openframe.api.dto.DeviceQueryResult;
-import com.openframe.api.dto.PaginationCriteria;
 import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
 import com.openframe.api.service.TagService;
@@ -12,9 +8,11 @@ import com.openframe.core.model.Machine;
 import com.openframe.core.model.Tag;
 import com.openframe.core.model.device.DeviceStatus;
 import com.openframe.core.model.device.DeviceType;
-import com.openframe.external.dto.DeviceFilterResponse;
-import com.openframe.external.dto.DeviceResponse;
-import com.openframe.external.dto.DevicesResponse;
+import com.openframe.external.dto.device.DeviceFilterResponse;
+import com.openframe.external.dto.device.DeviceResponse;
+import com.openframe.external.dto.device.DevicesResponse;
+import com.openframe.external.dto.device.DeviceFilterCriteria;
+import com.openframe.external.dto.shared.PaginationCriteria;
 import com.openframe.external.exception.DeviceNotFoundException;
 import com.openframe.external.mapper.DeviceMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -85,19 +83,19 @@ public class DeviceController {
             @Parameter(description = "Include tags for each device (default: false)")
             @RequestParam(defaultValue = "false") Boolean includeTags,
 
-            @Parameter(description = "Page number (1-based, default: 1)")
-            @RequestParam(defaultValue = "1") @Min(1) Integer page,
+            @Parameter(description = "Maximum number of items to return (default: 20, max: 100)")
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit,
 
-            @Parameter(description = "Number of items per page (default: 20, max: 100)")
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer pageSize,
+            @Parameter(description = "Cursor for pagination (optional)")
+            @RequestParam(required = false) String cursor,
 
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Parameter(hidden = true) @RequestHeader(value = "X-API-Key-Id", required = false) String apiKeyId) {
 
-        log.info("Getting devices - userId: {}, apiKeyId: {}, page: {}, pageSize: {}, search: {}, includeTags: {}",
-                userId, apiKeyId, page, pageSize, search, includeTags);
+        log.info("Getting devices - userId: {}, apiKeyId: {}, limit: {}, cursor: {}, search: {}, includeTags: {}",
+                userId, apiKeyId, limit, cursor, search, includeTags);
 
-        DeviceFilterOptions filterOptions = DeviceFilterOptions.builder()
+        DeviceFilterCriteria filterCriteria = DeviceFilterCriteria.builder()
                 .statuses(statuses)
                 .deviceTypes(deviceTypes)
                 .osTypes(osTypes)
@@ -105,12 +103,15 @@ public class DeviceController {
                 .tagNames(tagNames)
                 .build();
 
-        PaginationCriteria pagination = PaginationCriteria.builder()
-                .page(page)
-                .pageSize(pageSize)
+        PaginationCriteria paginationCriteria = PaginationCriteria.builder()
+                .limit(limit)
+                .cursor(cursor)
                 .build();
 
-        DeviceQueryResult result = deviceService.queryDevices(filterOptions, pagination, search);
+        var result = deviceService.queryDevices(
+                deviceMapper.toDeviceFilterOptions(filterCriteria), 
+                deviceMapper.toCursorPaginationCriteria(paginationCriteria), 
+                search);
 
         if (includeTags) {
             List<String> machineIds = result.getDevices().stream()
@@ -194,15 +195,15 @@ public class DeviceController {
 
         log.info("Getting device filters - userId: {}, apiKeyId: {}", userId, apiKeyId);
 
-        DeviceFilterOptions filterOptions = DeviceFilterOptions.builder()
+        DeviceFilterCriteria filterCriteria = DeviceFilterCriteria.builder()
                 .statuses(statuses)
                 .deviceTypes(deviceTypes)
                 .osTypes(osTypes)
                 .organizationIds(organizationIds)
                 .tagNames(tagNames)
                 .build();
-
-        DeviceFilters filters = deviceFilterService.getDeviceFilters(filterOptions).join();
+        var filters = deviceFilterService.getDeviceFilters(
+                deviceMapper.toDeviceFilterOptions(filterCriteria)).join();
         return deviceMapper.toDeviceFilterResponse(filters);
     }
 } 
