@@ -34,16 +34,11 @@ echo "Current replica set status: $INIT_STATUS"
 if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
 
-# First try to reconfigure if already initialized but corrupted
-# try without auth first; if fails, retry with root credentials
-RECONFIG_RESULT=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval 'db.runCommand({ping:1})' --quiet 2>/dev/null || true)
-if [[ -z "$RECONFIG_RESULT" ]]; then
-  AUTH_FLAGS=(--username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin)
-else
-  AUTH_FLAGS=()
-fi
+# Root auth flags (used after localhost exception disappears)
+AUTH_FLAGS="--username \"$MONGO_INITDB_ROOT_USERNAME\" --password \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
 
-RECONFIG_RESULT=$(mongosh "${AUTH_FLAGS[@]}" --host "${DB_HOST}:${DB_PORT}" --eval '
+# Attempt rs commands with auth flags; if localhost exception still active, the credentials are ignored
+RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${DB_PORT}" --eval '
     try {
     rs.reconfig({
         _id: "rs0",
