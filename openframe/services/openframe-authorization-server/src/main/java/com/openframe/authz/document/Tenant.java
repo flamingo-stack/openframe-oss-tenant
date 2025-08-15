@@ -11,7 +11,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+
+import static java.util.UUID.randomUUID;
 
 /**
  * Tenant document for multi-tenant architecture
@@ -56,22 +57,14 @@ public class Tenant {
      * Tenant status
      */
     @Builder.Default
-    private String status = "ACTIVE"; // ACTIVE, INACTIVE, SUSPENDED
-    
-    /**
-     * Whether registration is open for this tenant
-     * For single-user tenants, this should be false after first user
-     */
-    @Builder.Default
-    private boolean registrationOpen = true;
-    
+    private TenantStatus status = TenantStatus.ACTIVE;
+
     /**
      * Tenant plan (for future use)
      */
     @Builder.Default
-    private String plan = "FREE"; // FREE, BASIC, PREMIUM, ENTERPRISE
-    
-    // Audit fields
+    private TenantPlan plan = TenantPlan.FREE;
+
     @CreatedDate
     private LocalDateTime createdAt;
     
@@ -82,34 +75,13 @@ public class Tenant {
      * Generate a new tenant ID using UUID
      */
     public static String generateTenantId() {
-        return UUID.randomUUID().toString();
+        return randomUUID().toString();
     }
-    
-    /**
-     * Generate OpenFrame URL from tenant name
-     */
-    public static String generateOpenFrameUrl(String tenantName) {
-        return String.format("https://%s.openframe.io", tenantName.toLowerCase());
-    }
-    
+
     /**
      * Check if tenant is active
      */
     public boolean isActive() {
-        return "ACTIVE".equals(status);
-    }
-    
-    /**
-     * Check if registration is allowed
-     */
-    public boolean canRegister() {
-        return isActive() && registrationOpen;
-    }
-    
-    /**
-     * Close registration (typically after first user registers for single-tenant)
-     */
-    public void closeRegistration() {
-        this.registrationOpen = false;
+        return status == TenantStatus.ACTIVE;
     }
 }

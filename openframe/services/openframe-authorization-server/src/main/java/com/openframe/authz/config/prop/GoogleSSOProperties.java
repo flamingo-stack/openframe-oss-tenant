@@ -16,37 +16,37 @@ public class GoogleSSOProperties {
     /**
      * Google OAuth2 authorization URL
      */
-    private String authorizationUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+    private String authorizationUrl;
     
     /**
      * Google OAuth2 token URL
      */
-    private String tokenUrl = "https://oauth2.googleapis.com/token";
+    private String tokenUrl;
     
     /**
      * Google OAuth2 user info URL
      */
-    private String userinfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+    private String userinfoUrl;
     
     /**
      * Google OAuth2 scopes
      */
-    private String scopes = "openid,email,profile";
+    private String scopes;
     
     /**
      * Redirect URI for Google SSO callback
      */
-    private String redirectUri = "https://localhost/oauth2/callback/google";
+    private String redirectUri;
     
     /**
      * Display name for Google provider
      */
-    private String displayName = "Google";
+    private String displayName;
     
     /**
      * Whether Google SSO is globally enabled
      */
-    private boolean enabled = true;
+    private boolean enabled;
     
     /**
      * Get scopes as array

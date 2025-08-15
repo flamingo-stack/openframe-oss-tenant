@@ -38,6 +38,14 @@ public class GlobalExceptionHandler {
         log.warn("Validation error: {}", msg);
         return new ErrorResponse("VALIDATION_ERROR", msg);
     }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleException(Exception ex) {
+        String msg = String.format("Internal server error :%s", ex.getMessage());
+        log.error("Internal server error: {}", ex.getMessage(), ex);
+        return new ErrorResponse("INTERNAL_SERVER_ERROR", msg);
+    }
 }
 
 

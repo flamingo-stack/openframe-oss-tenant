@@ -38,7 +38,7 @@ public class User {
     
     @Indexed
     private String email;
-    
+
     private String firstName;
     private String lastName;
     private String passwordHash;
@@ -48,7 +48,7 @@ public class User {
     
     @Indexed
     @Builder.Default
-    private String status = "ACTIVE"; // ACTIVE, INACTIVE, LOCKED
+    private UserStatus status = UserStatus.ACTIVE;
     
     @Builder.Default
     private boolean emailVerified = false;
@@ -65,7 +65,7 @@ public class User {
     private LocalDateTime updatedAt;
 
     public boolean isActive() {
-        return "ACTIVE".equals(status);
+        return status == UserStatus.ACTIVE;
     }
 
     public String getFullName() {

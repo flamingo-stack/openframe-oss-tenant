@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -17,11 +15,14 @@ public class RegistrationService {
     private final UserService userService;
     private final TenantService tenantService;
 
-    public Tenant registerUser(UserRegistrationRequest request) {
-        Tenant tenant = getOrCreateTenant(request);
-        if (!tenant.canRegister()) {
+    public Tenant registerTenant(UserRegistrationRequest request) {
+        String tenantDomain = request.getTenantDomain();
+
+        if (tenantService.existByDomain(tenantDomain)) {
             throw new IllegalArgumentException("Registration is closed for this organization");
         }
+
+        Tenant tenant = tenantService.createTenant(request.getTenantName(), tenantDomain);
 
         User user = userService.registerUser(
                 tenant.getId(),
@@ -32,23 +33,10 @@ public class RegistrationService {
                 request.getPassword()
         );
 
-        tenant.closeRegistration();
-
         if (tenant.getOwnerId() == null) {
             tenant.setOwnerId(user.getId());
         }
 
         return tenantService.save(tenant);
     }
-
-    /**
-     * Get existing tenant or create new one based on request
-     */
-    private Tenant getOrCreateTenant(UserRegistrationRequest request) {
-        String tenantDomain = request.getTenantDomain();
-
-        Optional<Tenant> existingTenant = tenantService.findByDomain(tenantDomain);
-        return existingTenant.orElseGet(() -> tenantService.createTenant(request.getTenantName(), tenantDomain, null));
-    }
-
 }

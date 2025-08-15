@@ -71,13 +71,8 @@ public class TenantDiscoveryController {
             String suggestedUrl = null;
             
             if (isAvailable) {
-                if ("localhost".equalsIgnoreCase(name)) {
-                    message = "localhost is reserved for development";
-                    suggestedUrl = "http://localhost:3000";
-                } else {
                     message = "Organization name is available";
                     suggestedUrl = String.format("https://%s.openframe.io", name.toLowerCase());
-                }
             } else {
                 message = "Organization name is already taken";
             }

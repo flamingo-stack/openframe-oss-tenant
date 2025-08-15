@@ -1,6 +1,7 @@
 package com.openframe.authz.service;
 
 import com.openframe.authz.document.User;
+import com.openframe.authz.document.UserStatus;
 import com.openframe.authz.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,7 +47,7 @@ public class UserService {
             .firstName(firstName)
             .lastName(lastName)
             .passwordHash(passwordEncoder.encode(password))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .emailVerified(false)
             .loginProvider("LOCAL")
             .build();

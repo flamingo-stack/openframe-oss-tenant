@@ -4,9 +4,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.openframe.authz.config.prop.GoogleSSOProperties;
 import com.openframe.authz.document.User;
-import com.openframe.authz.service.SSOConfigService;
+import com.openframe.authz.keys.TenantKeyService;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +49,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.time.Duration;
-import java.util.UUID;
 
 import static com.openframe.authz.tenant.TenantContext.getTenantId;
+import static java.util.UUID.randomUUID;
 
 /**
  * OAuth2 Authorization Server Configuration
@@ -124,7 +123,7 @@ public class AuthorizationServerConfig {
 
     @Bean
     public RegisteredClient gatewayClient() {
-        return RegisteredClient.withId(UUID.randomUUID().toString())
+        return RegisteredClient.withId(randomUUID().toString())
             .clientId(gatewayClientId)
             .clientSecret(passwordEncoder().encode(gatewayClientSecret))
             .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
@@ -149,16 +148,12 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public RegisteredClientRepository registeredClientRepository(
-            SSOConfigService ssoConfigService,
-            GoogleSSOProperties googleSSOProperties,
-            RegisteredClient gatewayClient) {
-        
-        return new DatabaseRegisteredClientRepository(ssoConfigService, googleSSOProperties, gatewayClient);
+    public RegisteredClientRepository registeredClientRepository(RegisteredClient gatewayClient) {
+        return new org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository(gatewayClient);
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource(com.openframe.authz.keys.TenantKeyService tenantKeyService) {
+    public JWKSource<SecurityContext> jwkSource(TenantKeyService tenantKeyService) {
         return (jwkSelector, securityContext) -> {
             String tenantId = getTenantId();
             if (tenantId == null || tenantId.isBlank()) {
@@ -186,7 +181,7 @@ public class AuthorizationServerConfig {
      * JWT token customizer to add custom claims
      */
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(com.openframe.authz.service.UserService userService) {
+    public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(UserService userService) {
         return context -> {
             var authentication = context.getPrincipal();
             var authorities = authentication.getAuthorities();
@@ -197,18 +192,13 @@ public class AuthorizationServerConfig {
                     .toList();
 
             String tenantId = getTenantId();
-
             User user = userService.findByEmail(authentication.getName());
 
             if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
-                    if (tenantId != null && !tenantId.isBlank()) {
-                        claims.put("tenant_id", tenantId);
-                    }
-                    if (user != null) {
-                        claims.put("tenant_domain", user.getTenantDomain());
-                        claims.put("userId", user.getId());
-                    }
+                    claims.put("tenant_id", tenantId);
+                    claims.put("tenant_domain", user.getTenantDomain());
+                    claims.put("userId", user.getId());
                     claims.put("roles", roles);
                 });
             }
@@ -235,7 +225,7 @@ public class AuthorizationServerConfig {
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                     .toList())
                 .accountExpired(false)
-                .accountLocked(!"ACTIVE".equals(user.getStatus()))
+                    .accountLocked(user.getStatus() != com.openframe.authz.document.UserStatus.ACTIVE)
                 .credentialsExpired(false)
                 .disabled(!user.isActive())
                 .build();

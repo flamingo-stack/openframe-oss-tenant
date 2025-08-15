@@ -1,6 +1,8 @@
 package com.openframe.authz.service;
 
 import com.openframe.authz.document.Tenant;
+import com.openframe.authz.document.TenantPlan;
+import com.openframe.authz.document.TenantStatus;
 import com.openframe.authz.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,7 @@ public class TenantService {
     /**
      * Create a new tenant
      */
-    public Tenant createTenant(String tenantName, String domain, String ownerId) {
+    public Tenant createTenant(String tenantName, String domain) {
         log.debug("Creating tenant: {} with domain: {}", tenantName, domain);
 
         if (nonValidTenantName(tenantName)) {
@@ -53,10 +55,8 @@ public class TenantService {
                 .id(Tenant.generateTenantId())
                 .name(tenantName)
                 .domain(domain)
-                .ownerId(ownerId)
-                .status("ACTIVE")
-                .registrationOpen(true)
-                .plan("FREE")
+                .status(TenantStatus.ACTIVE)
+                .plan(TenantPlan.FREE)
                 .build();
         
         Tenant savedTenant = tenantRepository.save(tenant);
@@ -71,14 +71,22 @@ public class TenantService {
     public Optional<Tenant> findByDomain(String domain) {
         return tenantRepository.findByDomain(domain);
     }
-    
+
+
+    /**
+     * Find tenant by domain
+     */
+    public boolean existByDomain(String domain) {
+        return tenantRepository.existsByDomain(domain);
+    }
+
     /**
      * Find tenant by ID
      */
     public Optional<Tenant> findById(String tenantId) {
         return tenantRepository.findById(tenantId);
     }
-    
+
     /**
      * Check if tenant name is available (case-insensitive)
      */
