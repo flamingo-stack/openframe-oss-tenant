@@ -37,7 +37,7 @@ public class SecurityConfig {
                     "/favicon.ico",        // Favicon
                     "/tenant/**",          // Tenant discovery endpoints
                     "/sso/**",             // SSO providers
-                    "/actuator/health",    // Health check
+                    "/management/v1/**",   // Health check
                     "/.well-known/**",     // OpenID configuration
                     "/error"               // Error handling
                 ).permitAll()
