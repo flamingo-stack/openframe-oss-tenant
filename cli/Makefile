@@ -51,11 +51,11 @@ release: deps clean
 ## Run unit tests (cmd and pkg packages) with clean output
 test-unit:
 	@echo "Running unit tests..."
-	@if go test -short ./internal/... > /dev/null 2>&1; then \
+	@if go test ./internal/... > /dev/null 2>&1; then \
 		echo "Unit tests passed"; \
 	else \
 		echo "Unit tests failed"; \
-		echo "Run 'go test -v -short ./internal/...' for details"; \
+		echo "Run 'go test -v ./internal/...' for details"; \
 		exit 1; \
 	fi
 

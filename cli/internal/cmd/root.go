@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/flamingo/openframe-cli/internal/cmd/cluster"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
@@ -93,7 +94,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 
 // getClusterCmd returns the cluster command
 func getClusterCmd() *cobra.Command {
-	return GetClusterCmd()
+	return cluster.GetClusterCmd()
 }
 
 func initConfig() {

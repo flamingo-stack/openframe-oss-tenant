@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	"context"
@@ -7,11 +7,22 @@ import (
 	"strings"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
+	"github.com/flamingo/openframe-cli/internal/factory"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
+	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
 func getCleanupCmd() *cobra.Command {
+	return getCleanupCmdImpl()
+}
+
+func GetCleanupCmdForTesting() *cobra.Command {
+	return getCleanupCmdImpl()
+}
+
+func getCleanupCmdImpl() *cobra.Command {
 	return &cobra.Command{
 		Use:     "cleanup [NAME]",
 		Aliases: []string{"c"},
@@ -34,10 +45,11 @@ Examples:
 }
 
 func runCleanupCluster(cmd *cobra.Command, args []string) error {
+	common.ShowLogo()
 	ctx := context.Background()
-	manager := createDefaultManager()
+	manager := factory.CreateDefaultClusterManager()
 
-	clusterName := getClusterName(args)
+	clusterName := uiCluster.GetClusterNameOrDefault(args, "openframe-dev")
 
 	pterm.Info.Printf("Cleaning up cluster '%s' resources...\n", clusterName)
 

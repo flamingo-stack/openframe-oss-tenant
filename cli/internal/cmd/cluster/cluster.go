@@ -1,6 +1,7 @@
-package cmd
+package cluster
 
 import (
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +49,7 @@ Examples:
   openframe cluster start
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			showLogo()
+			common.ShowLogo()
 			cmd.Help()
 		},
 	}
@@ -62,19 +63,6 @@ Examples:
 		getStartCmd(),
 		getCleanupCmd(),
 	)
-
-	// Create command flags
-	createCmd := getCreateCmd()
-	createCmd.Flags().StringVarP(&clusterType, "type", "t", "", "Cluster type (k3d, gke, eks)")
-	createCmd.Flags().IntVarP(&nodeCount, "nodes", "n", 3, "Number of worker nodes (default 3)")
-	createCmd.Flags().StringVarP(&k8sVersion, "version", "v", "", "Kubernetes version")
-	createCmd.Flags().BoolVar(&skipWizard, "skip-wizard", false, "Skip interactive wizard")
-	createCmd.Flags().BoolVar(&verbose, "verbose", false, "Verbose output")
-	createCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Dry run mode")
-
-	// Delete command flags
-	deleteCmd := getDeleteCmd()
-	deleteCmd.Flags().BoolVarP(&force, "force", "f", false, "Skip confirmation prompt")
 
 	// Global flags
 	clusterCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "Verbose output")
@@ -93,4 +81,9 @@ func ResetGlobalFlags() {
 	verbose = false
 	dryRun = false
 	force = false
+}
+
+// Testing helper functions
+func SetVerboseForTesting(v bool) {
+	verbose = v
 }

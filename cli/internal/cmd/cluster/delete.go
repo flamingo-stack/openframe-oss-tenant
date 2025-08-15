@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 
 	uiCommon "github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/spf13/cobra"
+	"github.com/flamingo/openframe-cli/internal/factory"
 )
 
 func getDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "delete [NAME]",
 		Short: "Delete a Kubernetes cluster",
 		Long: `Delete a Kubernetes cluster and clean up all associated resources.
@@ -24,16 +25,25 @@ Examples:
   # Delete specific cluster
   openframe cluster delete my-cluster
 
+  # Delete without confirmation
+  openframe cluster delete my-cluster --force
+
   # Interactive cluster selection
   openframe cluster delete`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: runDeleteCluster,
 	}
+
+	// Add flags to the delete command
+	cmd.Flags().BoolVarP(&force, "force", "f", false, "Skip confirmation prompt")
+
+	return cmd
 }
 
 func runDeleteCluster(cmd *cobra.Command, args []string) error {
+	uiCommon.ShowLogo()
 	ctx := context.Background()
-	manager := createDefaultManager()
+	manager := factory.CreateDefaultClusterManager()
 
 	var clusterName string
 	if len(args) > 0 {
@@ -87,7 +97,7 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 
 	// Delete the cluster
 	fmt.Fprintf(cmd.OutOrStdout(), "Deleting cluster '%s'...\n", clusterName)
-	if err := provider.Delete(ctx, clusterName); err != nil {
+	if err := provider.Delete(ctx, clusterName, force); err != nil {
 		return fmt.Errorf("failed to delete cluster: %w", err)
 	}
 

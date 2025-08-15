@@ -1,0 +1,332 @@
+package cluster
+
+import (
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+
+	"github.com/flamingo/openframe-cli/internal/cluster"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
+	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
+	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
+	"github.com/flamingo/openframe-cli/internal/factory"
+)
+
+func getStatusCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "status [NAME]",
+		Short: "Show detailed cluster status and information",
+		Long: `Status - Show detailed status information for a Kubernetes cluster
+
+Displays comprehensive information about a cluster including:
+  • Cluster health and node status
+  • Installed Helm charts and applications
+  • Resource usage and capacity
+  • Connectivity and configuration information
+  • Service endpoints and access URLs
+
+The command supports both direct cluster specification and interactive selection.
+
+Examples:
+  # Show status for a specific cluster
+  openframe cluster status my-cluster
+
+  # Interactive cluster selection
+  openframe cluster status
+
+  # Show status with verbose output
+  openframe cluster status my-cluster --verbose`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: runClusterStatus,
+	}
+
+	// Add flags
+	cmd.Flags().BoolP("detailed", "d", false, "Show detailed resource information")
+	cmd.Flags().Bool("no-apps", false, "Skip application status checking")
+	
+	return cmd
+}
+
+func runClusterStatus(cmd *cobra.Command, args []string) error {
+	// Show OpenFrame logo
+	common.ShowLogo()
+
+	ctx := context.Background()
+	manager := factory.CreateDefaultClusterManager()
+
+	// Get flag values
+	detailed, _ := cmd.Flags().GetBool("detailed")
+	skipApps, _ := cmd.Flags().GetBool("no-apps")
+
+	var clusterName string
+	var err error
+
+	if len(args) == 0 {
+		// Interactive cluster selection
+		clusterName, err = selectRunningCluster(ctx, manager)
+		if err != nil {
+			return fmt.Errorf("failed to select cluster: %w", err)
+		}
+		if clusterName == "" {
+			pterm.Info.Println("No cluster selected. Operation cancelled.")
+			return nil
+		}
+	} else {
+		// Use provided cluster name
+		clusterName = strings.TrimSpace(args[0])
+		if clusterName == "" {
+			return fmt.Errorf("cluster name cannot be empty")
+		}
+	}
+
+	// Determine cluster type
+	clusterType, err := manager.DetectClusterType(ctx, clusterName)
+	if err != nil {
+		return fmt.Errorf("failed to detect cluster type for '%s': %w", clusterName, err)
+	}
+
+	// Get provider and status
+	provider, err := manager.GetProvider(clusterType)
+	if err != nil {
+		return fmt.Errorf("failed to get provider for cluster type '%s': %w", clusterType, err)
+	}
+
+	pterm.DefaultSection.Printf("Cluster Status: %s", clusterName)
+
+	spinner, _ := pterm.DefaultSpinner.Start("Gathering cluster information...")
+
+	status, err := provider.Status(ctx, clusterName)
+	if err != nil {
+		spinner.Fail("Failed to get cluster status")
+		return fmt.Errorf("failed to get cluster status: %w", err)
+	}
+
+	spinner.Success("Cluster information retrieved")
+
+	// Display cluster overview
+	pterm.DefaultSection.Println("Overview")
+	
+	// Create overview table
+	overviewData := pterm.TableData{
+		{"Property", "Value"},
+		{"Name", pterm.Blue(status.Name)},
+		{"Type", pterm.Cyan(string(status.Type))},
+		{"Status", getStatusColor(status.Status)(status.Status)},
+		{"Nodes", pterm.Gray(fmt.Sprintf("%d", len(status.Nodes)))},
+	}
+
+	if !status.CreatedAt.IsZero() {
+		age := uiCluster.FormatAge(status.CreatedAt)
+		overviewData = append(overviewData, []string{"Age", pterm.Gray(age)})
+	}
+
+	if err := pterm.DefaultTable.WithHasHeader().WithData(overviewData).Render(); err != nil {
+		// Fallback to simple output
+		fmt.Printf("Name: %s\nType: %s\nStatus: %s\nNodes: %d\n",
+			status.Name, status.Type, status.Status, len(status.Nodes))
+	}
+
+	// Show node details
+	if len(status.Nodes) > 0 {
+		pterm.Println()
+		pterm.DefaultSection.Println("Node Details")
+		
+		nodeData := pterm.TableData{
+			{"NAME", "ROLE", "STATUS", "AGE"},
+		}
+
+		for _, node := range status.Nodes {
+			nodeData = append(nodeData, []string{
+				pterm.Blue(node.Name),
+				pterm.Cyan(node.Role),
+				getStatusColor(node.Status)(node.Status),
+				pterm.Gray(node.Age),
+			})
+		}
+
+		if err := pterm.DefaultTable.WithHasHeader().WithData(nodeData).Render(); err != nil {
+			// Fallback to simple output
+			fmt.Printf("%-40s | %-13s | %-10s | %s\n", "NAME", "ROLE", "STATUS", "AGE")
+			fmt.Println(strings.Repeat("-", 80))
+			for _, node := range status.Nodes {
+				fmt.Printf("%-40s | %-13s | %-10s | %s\n",
+					node.Name, node.Role, node.Status, node.Age)
+			}
+		}
+	}
+
+	// Show applications if not skipped
+	if !skipApps {
+		pterm.Println()
+		pterm.DefaultSection.Println("Installed Applications")
+		
+		if err := showInstalledApps(ctx, clusterName, detailed); err != nil {
+			pterm.Warning.Printf("Failed to get installed applications: %v\n", err)
+		}
+	}
+
+	// Show detailed resource information if requested
+	if detailed {
+		pterm.Println()
+		pterm.DefaultSection.Println("Resource Information")
+		if err := showResourceInfo(ctx, clusterName); err != nil {
+			pterm.Warning.Printf("Failed to get resource information: %v\n", err)
+		}
+	}
+
+	// Show kubeconfig information
+	pterm.Println()
+	pterm.DefaultSection.Println("Access Information")
+	if kubeconfig, err := provider.GetKubeconfig(ctx, clusterName); err == nil && kubeconfig != "" {
+		pterm.Printf("• Kubeconfig available for cluster access\n")
+		pterm.Printf("• Context: %s\n", pterm.Green(fmt.Sprintf("k3d-%s", clusterName)))
+		if verbose {
+			pterm.Printf("• Switch context: %s\n", pterm.Gray(fmt.Sprintf("kubectl config use-context k3d-%s", clusterName)))
+		}
+	} else {
+		pterm.Warning.Println("• Kubeconfig not available")
+	}
+
+	return nil
+}
+
+// selectRunningCluster allows user to select from available running clusters
+func selectRunningCluster(ctx context.Context, manager *cluster.Manager) (string, error) {
+	// Get all clusters
+	clusters, err := manager.ListAllClusters(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	if len(clusters) == 0 {
+		pterm.Warning.Println("No clusters found")
+		return "", nil
+	}
+
+	// For now, we'll list all clusters since we don't have status info
+	// TODO: Filter for running clusters when status checking is available
+	clusterNames := make([]string, 0, len(clusters))
+	for _, cl := range clusters {
+		clusterNames = append(clusterNames, cl.Name)
+	}
+
+	if len(clusterNames) == 0 {
+		pterm.Warning.Println("No running clusters available")
+		return "", nil
+	}
+
+	// Use interactive selection
+	_, selected, err := common.SelectFromList("Select a cluster to check status:", clusterNames)
+	if err != nil {
+		return "", err
+	}
+
+	return selected, nil
+}
+
+// getStatusColor returns appropriate color function for status
+func getStatusColor(status string) func(string) string {
+	switch strings.ToLower(status) {
+	case "running", "ready":
+		return func(s string) string { return pterm.Green(s) }
+	case "stopped", "not ready", "pending":
+		return func(s string) string { return pterm.Yellow(s) }
+	case "error", "failed", "unhealthy":
+		return func(s string) string { return pterm.Red(s) }
+	default:
+		return func(s string) string { return pterm.Gray(s) }
+	}
+}
+
+func showInstalledApps(ctx context.Context, clusterName string, detailed bool) error {
+	// Check for Helm releases using the cluster context
+	contextName := fmt.Sprintf("k3d-%s", clusterName)
+	cmd := exec.CommandContext(ctx, "helm", "list", "--all-namespaces", "--kube-context", contextName)
+	output, err := cmd.Output()
+	if err != nil {
+		pterm.Warning.Printf("Failed to check Helm releases: %v\n", err)
+		return nil // Don't fail the entire status command
+	}
+
+	outputStr := strings.TrimSpace(string(output))
+	if outputStr == "" {
+		pterm.Info.Println("• No Helm releases found")
+	} else {
+		lines := strings.Split(outputStr, "\n")
+		if len(lines) > 1 { // Skip header
+			pterm.Printf("• Found %d Helm release(s):\n", len(lines)-1)
+			if detailed {
+				for _, line := range lines {
+					pterm.Printf("  %s\n", pterm.Gray(line))
+				}
+			} else {
+				// Just show count and names
+				for i, line := range lines[1:] { // Skip header
+					fields := strings.Fields(line)
+					if len(fields) > 0 {
+						pterm.Printf("  %d. %s\n", i+1, pterm.Blue(fields[0]))
+					}
+				}
+			}
+		} else {
+			pterm.Info.Println("• No Helm releases found")
+		}
+	}
+
+	// Check for common Kubernetes applications
+	checkCommonApps(ctx, contextName)
+
+	return nil
+}
+
+func checkCommonApps(ctx context.Context, contextName string) {
+	// Check for common system applications
+	apps := []struct {
+		name      string
+		namespace string
+		label     string
+	}{
+		{"ArgoCD", "argocd", "app.kubernetes.io/name=argocd-server"},
+		{"Istio", "istio-system", "app=istiod"},
+		{"Prometheus", "monitoring", "app.kubernetes.io/name=prometheus"},
+		{"Grafana", "monitoring", "app.kubernetes.io/name=grafana"},
+	}
+
+	foundApps := []string{}
+	for _, app := range apps {
+		cmd := exec.CommandContext(ctx, "kubectl", "--context", contextName, 
+			"get", "pods", "-n", app.namespace, "-l", app.label, "--no-headers")
+		if output, err := cmd.Output(); err == nil {
+			if strings.TrimSpace(string(output)) != "" {
+				foundApps = append(foundApps, app.name)
+			}
+		}
+	}
+
+	if len(foundApps) > 0 {
+		pterm.Printf("• System applications: %s\n", pterm.Blue(strings.Join(foundApps, ", ")))
+	}
+}
+
+func showResourceInfo(ctx context.Context, clusterName string) error {
+	contextName := fmt.Sprintf("k3d-%s", clusterName)
+	
+	// Get node resource information
+	cmd := exec.CommandContext(ctx, "kubectl", "--context", contextName, 
+		"top", "nodes", "--no-headers")
+	if output, err := cmd.Output(); err == nil {
+		if strings.TrimSpace(string(output)) != "" {
+			pterm.Println("Node Resource Usage:")
+			lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+			for _, line := range lines {
+				pterm.Printf("  %s\n", pterm.Gray(line))
+			}
+		}
+	} else {
+		pterm.Warning.Println("• Metrics server not available for resource information")
+	}
+
+	return nil
+}

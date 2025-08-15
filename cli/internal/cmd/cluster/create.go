@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	"context"
@@ -7,12 +7,13 @@ import (
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
-	uiCommon "github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/spf13/cobra"
+	"github.com/flamingo/openframe-cli/internal/factory"
 )
 
 func getCreateCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "create [NAME]",
 		Short: "Create a new Kubernetes cluster",
 		Long: `Create a new Kubernetes cluster with default OpenFrame configuration.
@@ -37,72 +38,60 @@ Examples:
 		Args: cobra.MaximumNArgs(1),
 		RunE: runCreateCluster,
 	}
+
+	// Add flags to the create command
+	cmd.Flags().StringVarP(&clusterType, "type", "t", "", "Cluster type (k3d, gke, eks)")
+	cmd.Flags().IntVarP(&nodeCount, "nodes", "n", 3, "Number of worker nodes (default 3)")
+	cmd.Flags().StringVarP(&k8sVersion, "version", "v", "", "Kubernetes version")
+	cmd.Flags().BoolVar(&skipWizard, "skip-wizard", false, "Skip interactive wizard")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Dry run mode")
+
+	return cmd
 }
 
 func runCreateCluster(cmd *cobra.Command, args []string) error {
+	common.ShowLogo()
 	ctx := context.Background()
 
-	var config *uiCluster.ClusterConfiguration
+	var config cluster.ClusterConfig
 	var err error
 
 	if skipWizard {
 		// Use provided flags to create configuration
-		config = &uiCluster.ClusterConfiguration{
-			Name:              getClusterName(args),
-			Type:              parseClusterType(clusterType),
-			KubernetesVersion: k8sVersion,
-			NodeCount:         getNodeCount(nodeCount),
+		config = cluster.ClusterConfig{
+			Name:       uiCluster.GetClusterNameOrDefault(args, "openframe-dev"),
+			Type:       parseClusterType(clusterType),
+			K8sVersion: k8sVersion,
+			NodeCount:  getNodeCount(nodeCount),
 		}
 	} else {
 		// Run interactive wizard
-		fmt.Println("Welcome to OpenFrame Cluster Creation Wizard")
-		fmt.Println("This wizard will guide you through creating a Kubernetes cluster.")
-		fmt.Println()
-
-		config, err = uiCluster.ClusterWizard()
+		wizard := uiCluster.NewConfigWizard()
+		config, err = wizard.Run()
 		if err != nil {
 			return fmt.Errorf("wizard failed: %w", err)
 		}
 	}
 
 	// Validate configuration
-	if err := validateConfig(config); err != nil {
+	if err := validateConfig(&config); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	// Show configuration summary
-	if err := showConfigSummary(config, dryRun, skipWizard, cmd.OutOrStdout()); err != nil {
+	if err := showConfigSummary(&config, dryRun, skipWizard, cmd.OutOrStdout()); err != nil {
 		return err
 	}
 
-	// Create cluster manager and get provider
-	manager := createDefaultManager()
-	provider, err := manager.GetProvider(config.Type)
-	if err != nil {
-		return err
-	}
-
-	// Check if provider is available (skip in dry-run mode)
-	if !dryRun {
-		if err := provider.IsAvailable(); err != nil {
-			return fmt.Errorf("cluster provider not available: %w", err)
-		}
-	}
-
-	// Create cluster configuration
-	clusterConfig := &cluster.ClusterConfig{
-		Name:              config.Name,
-		Type:              config.Type,
-		KubernetesVersion: config.KubernetesVersion,
-		NodeCount:         config.NodeCount,
-	}
+	// Create cluster manager
+	manager := factory.CreateDefaultClusterManager()
 
 	// Create the cluster
 	if !dryRun {
 		fmt.Fprintf(cmd.OutOrStdout(), "Creating %s cluster '%s'...\n", config.Type, config.Name)
-	}
-	if err := provider.Create(ctx, clusterConfig); err != nil {
-		return fmt.Errorf("failed to create cluster: %w", err)
+		if err := manager.CreateCluster(ctx, config); err != nil {
+			return fmt.Errorf("failed to create cluster: %w", err)
+		}
 	}
 
 	if !dryRun {
@@ -114,13 +103,6 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func getClusterName(args []string) string {
-	if len(args) > 0 {
-		return args[0]
-	}
-	return "openframe-dev"
 }
 
 func parseClusterType(typeStr string) cluster.ClusterType {
@@ -135,13 +117,13 @@ func parseClusterType(typeStr string) cluster.ClusterType {
 }
 
 func getNodeCount(nodeCount int) int {
-	if nodeCount == 0 {
+	if nodeCount <= 0 {
 		return 3 // Default to 3 nodes
 	}
 	return nodeCount
 }
 
-func validateConfig(config *uiCluster.ClusterConfiguration) error {
+func validateConfig(config *cluster.ClusterConfig) error {
 	if config.Name == "" {
 		return fmt.Errorf("cluster name cannot be empty")
 	}
@@ -151,11 +133,11 @@ func validateConfig(config *uiCluster.ClusterConfiguration) error {
 	return nil
 }
 
-func showConfigSummary(config *uiCluster.ClusterConfiguration, dryRun bool, skipWizard bool, out io.Writer) error {
+func showConfigSummary(config *cluster.ClusterConfig, dryRun bool, skipWizard bool, out io.Writer) error {
 	fmt.Fprintf(out, "\nConfiguration Summary:\n")
 	fmt.Fprintf(out, "  Cluster Name: %s\n", config.Name)
 	fmt.Fprintf(out, "  Cluster Type: %s\n", config.Type)
-	fmt.Fprintf(out, "  Kubernetes Version: %s\n", config.KubernetesVersion)
+	fmt.Fprintf(out, "  Kubernetes Version: %s\n", config.K8sVersion)
 	fmt.Fprintf(out, "  Node Count: %d\n", config.NodeCount)
 
 	// Skip confirmation in dry-run mode or when wizard is skipped
@@ -169,12 +151,5 @@ func showConfigSummary(config *uiCluster.ClusterConfiguration, dryRun bool, skip
 		return nil
 	}
 
-	confirmed, err := uiCommon.ConfirmAction("Proceed with cluster creation?")
-	if err != nil {
-		return err
-	}
-	if !confirmed {
-		return fmt.Errorf("cluster creation cancelled")
-	}
 	return nil
 }
