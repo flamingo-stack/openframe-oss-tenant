@@ -8,18 +8,18 @@ set +a
 # Ensure mandatory root credentials are set (host/port will be overridden to localhost)
 : "${MONGO_INITDB_ROOT_USERNAME:?Required}"
 : "${MONGO_INITDB_ROOT_PASSWORD:?Required}"
+: "${MONGODB_PORT:?Required}"
 
 # Always talk to the mongod instance via the loop-back interface so that the
 # "localhost exception" is active until authentication is configured.
 DB_HOST="127.0.0.1"
-DB_PORT="27017"
 
 
 apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
           
 echo "Waiting for MongoDB service to be ready..."
 # use localhost while mongod is still starting
-until mongosh --host ${DB_HOST}:${DB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+until mongosh --host ${DB_HOST}:${MONGODB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
 echo "Waiting for MongoDB to be accessible (localhost)..."
 sleep 5
 done
@@ -28,7 +28,7 @@ echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
 echo "Checking replica set status..."
-INIT_STATUS=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
+INIT_STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
 echo "Current replica set status: $INIT_STATUS"
 
 if [ "$INIT_STATUS" != "1" ]; then
@@ -38,7 +38,7 @@ echo "Replica set needs initialization or repair..."
 AUTH_FLAGS="--username \"$MONGO_INITDB_ROOT_USERNAME\" --password \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
 
 # Attempt rs commands with auth flags; if localhost exception still active, the credentials are ignored
-RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${DB_PORT}" --eval '
+RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval '
     try {
     rs.reconfig({
         _id: "rs0",
@@ -73,7 +73,7 @@ sleep 10
 
 echo "Checking replica set status after initialization..."
 for i in {1..30}; do
-    STATUS=$(mongosh --host "${DB_HOST}:${DB_PORT}" --eval "rs.status().ok" --quiet)
+    STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "rs.status().ok" --quiet)
     if [ "$STATUS" = "1" ]; then
     echo "Replica set is ready!"
     break
@@ -86,7 +86,7 @@ echo "Replica set is already initialized"
 fi
 
 echo "Ensuring admin user exists..."
-mongosh --host "${DB_HOST}:${DB_PORT}" --eval "
+mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
   try {
     db.getSiblingDB('admin').createUser({
       user: '$MONGO_INITDB_ROOT_USERNAME',
@@ -109,4 +109,4 @@ mongosh --host "${DB_HOST}:${DB_PORT}" --eval "
 " --quiet
 
 echo "Final replica set status:"
-mongosh --host "${DB_HOST}:${DB_PORT}" --eval "rs.status()" --quiet
+mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "rs.status()" --quiet
