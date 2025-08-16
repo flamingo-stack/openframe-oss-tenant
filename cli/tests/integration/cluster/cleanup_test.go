@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	cluster "github.com/flamingo/openframe-cli/internal/cmd/cluster"
+	cluster "github.com/flamingo/openframe-cli/cmd/cluster"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

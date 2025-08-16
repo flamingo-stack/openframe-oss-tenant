@@ -2,10 +2,8 @@ package cluster
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
 	"github.com/manifoldco/promptui"
@@ -233,21 +231,6 @@ func formatClusterOption(cluster cluster.ClusterInfo) string {
 		cluster.Status)
 }
 
-// FormatAge formats a time duration into a human-readable age string for display
-func FormatAge(createdAt time.Time) string {
-	now := time.Now()
-	duration := now.Sub(createdAt)
-	
-	if duration < time.Minute {
-		return fmt.Sprintf("%ds", int(duration.Seconds()))
-	} else if duration < time.Hour {
-		return fmt.Sprintf("%dm", int(duration.Minutes()))
-	} else if duration < 24*time.Hour {
-		return fmt.Sprintf("%dh", int(duration.Hours()))
-	} else {
-		return fmt.Sprintf("%dd", int(duration.Hours()/24))
-	}
-}
 
 // GetClusterNameOrDefault returns the cluster name from args or default - helper for commands
 func GetClusterNameOrDefault(args []string, defaultName string) string {
