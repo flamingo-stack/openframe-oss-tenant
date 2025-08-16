@@ -32,6 +32,7 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     private static final int MAX_DEPTH = 64;
     private static final int MAX_ARRAY_SIZE = 1000;
     private static final int MAX_VALUE_LENGTH = 10000;
+    private static final int MAX_LOG_VALUE_PREVIEW = 512;
     
     private static final String COMPOSITE_KEY_PATTERN = "%s_%s_id_%s";
     private static final String HASH_KEY_PATTERN = "%s_%s_hash_%s";
@@ -192,19 +193,19 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
                     JsonNode parsed = mapper.readTree(value);
                     convertJsonNodeToMap(parsed, prefix, result, depth + 1);
                     return;
-                } catch (Exception ignore) {
-                    // fall through to store raw text value
+                } catch (Exception e) {
+                    String preview = value;
+                    if (preview.length() > MAX_LOG_VALUE_PREVIEW) {
+                        preview = preview.substring(0, MAX_LOG_VALUE_PREVIEW) + "...";
+                    }
+                    log.warn("Failed to parse embedded JSON at path '{}', depth {}. Storing raw text value. Preview: {}. Error: {}",
+                        prefix, depth, preview, e.toString());
+                    putValue(value, prefix, result);
+                    return;
                 }
             }
 
-            if (value != null) {
-                if (value.length() > MAX_VALUE_LENGTH) {
-                    value = value.substring(0, MAX_VALUE_LENGTH) + "...";
-                }
-                if (StringUtils.isNotBlank(prefix)) {
-                    result.put(prefix, value);
-                }
-            }
+            putValue(value, prefix, result);
             return;
         }
 
@@ -225,6 +226,17 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
             for (int i = 0; i < maxSize; i++) {
                 String key = prefix + "[" + i + "]";
                 convertJsonNodeToMap(node.get(i), key, result, depth + 1);
+            }
+        }
+    }
+
+    private void putValue(String value, String prefix, Map<String, String> result) {
+        if (value != null) {
+            if (value.length() > MAX_VALUE_LENGTH) {
+                value = value.substring(0, MAX_VALUE_LENGTH) + "...";
+            }
+            if (StringUtils.isNotBlank(prefix)) {
+                result.put(prefix, value);
             }
         }
     }
