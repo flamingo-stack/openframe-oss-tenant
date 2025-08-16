@@ -8,7 +8,7 @@ spring:
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
 nats:
   spring:
-    server: nats://nats-0.nats.datasources.svc.cluster.local:4222
+    server: nats://localhost:4222
     connection-name: openframe-management
     connection-timeout: 5s
     max-reconnect: 10

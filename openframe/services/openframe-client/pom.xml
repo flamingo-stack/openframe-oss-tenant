@@ -51,10 +51,11 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-        <!-- Spring AOP for repository event interception -->
+        <!-- Spring Cloud Stream with NATS Binder -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <groupId>io.nats</groupId>
+            <artifactId>nats-spring-cloud-stream-binder</artifactId>
+            <version>0.6.2+3.5</version>
         </dependency>
 
     </dependencies>

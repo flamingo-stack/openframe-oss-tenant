@@ -3,6 +3,7 @@ package com.openframe.data.repository.nats;
 import com.openframe.core.exception.NatsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty("spring.cloud.stream.enabled")
 public class NatsMessagePublisher {
 
     private final StreamBridge streamBridge;

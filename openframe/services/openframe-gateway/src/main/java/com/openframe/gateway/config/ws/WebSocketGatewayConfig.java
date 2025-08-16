@@ -50,7 +50,7 @@ public class WebSocketGatewayConfig {
                 // TODO: config
                 .route("nats_websocket_route", r -> r
                         .path(NATS_WS_ENDPOINT_PREFIX)
-                        .uri("ws://nats-0.nats.datasources.svc.cluster.local:8080"))
+                        .uri("ws://localhost:8105"))
                 .build();
     }
 

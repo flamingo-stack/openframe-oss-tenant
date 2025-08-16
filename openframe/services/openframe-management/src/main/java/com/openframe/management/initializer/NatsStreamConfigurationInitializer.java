@@ -21,7 +21,7 @@ public class NatsStreamConfigurationInitializer {
             // tool installation stream
             StreamConfiguration.builder()
                     .name("TOOL_INSTALLATION")
-                    .subjects(List.of("machine.*.toolinstallation"))
+                    .subjects(List.of("machine.*.tool-installation"))
                     .storageType(StorageType.File)
                     .retentionPolicy(RetentionPolicy.Limits)
                     .build()

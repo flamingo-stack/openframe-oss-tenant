@@ -21,6 +21,7 @@ public class NatsStreamManagementService {
             JetStreamManagement jetStreamManagement = natsConnection.jetStreamManagement();
             String streamName = streamConfiguration.getName();
 
+            jetStreamManagement.deleteStream(streamName);
             if (existsByName(streamName)) {
                 log.info("Update existing stream {}", streamName);
                 jetStreamManagement.updateStream(streamConfiguration);
@@ -36,6 +37,7 @@ public class NatsStreamManagementService {
     private boolean existsByName(String streamName) {
         try {
             JetStreamManagement jetStreamManagement = natsConnection.jetStreamManagement();
+            jetStreamManagement.deleteStream(streamName);
             jetStreamManagement.getStreamInfo(streamName);
             log.info("Stream {} exists", streamName);
             return true;

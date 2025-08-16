@@ -10,6 +10,7 @@ spring:
     function:
       definition: machineConnectedConsumer;machineDisconnectionConsumer;toolConnectionConsumer
     stream:
+      enabled: true
       bindings:
         machineConnectedConsumer-in-0:
           destination: $SYS.ACCOUNT.DEVICES.CONNECT
