@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/factory"
 )
 
 func getCreateCmd() *cobra.Command {
@@ -43,7 +41,6 @@ Examples:
 
 func runCreateCluster(cmd *cobra.Command, args []string) error {
 	common.ShowLogo()
-	ctx := context.Background()
 
 	var config cluster.ClusterConfig
 	var err error
@@ -76,7 +73,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create cluster manager
-	manager := factory.CreateDefaultClusterManager()
+	ctx, manager := createManager()
 
 	// Create the cluster
 	if !dryRun {

@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"context"
 	"fmt"
 	"os/exec"
 
@@ -9,7 +8,6 @@ import (
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/factory"
 )
 
 func getStartCmd() *cobra.Command {
@@ -34,8 +32,7 @@ func runStartCluster(cmd *cobra.Command, args []string) error {
 	// Show OpenFrame logo
 	common.ShowLogo()
 
-	ctx := context.Background()
-	manager := factory.CreateDefaultClusterManager()
+	ctx, manager := createManager()
 
 	clusterName, err := uiCluster.HandleClusterSelection(ctx, manager, args, "Select a cluster to start:")
 	if err != nil {

@@ -1,14 +1,12 @@
 package cluster
 
 import (
-	"context"
 	"fmt"
 
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/factory"
 )
 
 func getListCmd() *cobra.Command {
@@ -37,8 +35,7 @@ func runListClusters(cmd *cobra.Command, args []string) error {
 	// Show OpenFrame logo
 	common.ShowLogo()
 
-	ctx := context.Background()
-	manager := factory.CreateDefaultClusterManager()
+	ctx, manager := createManager()
 
 	// Get flag values
 	quiet, _ := cmd.Flags().GetBool("quiet")

@@ -9,7 +9,7 @@ import (
 // This function belongs in the factory package to avoid import cycles while providing
 // a centralized place for dependency injection and provider registration.
 func CreateDefaultClusterManager() *cluster.Manager {
-	manager := cluster.CreateDefaultManager()
+	manager := cluster.NewManager()
 	
 	// Register K3d provider
 	k3dProvider := providers.NewK3dProvider(cluster.ProviderOptions{})

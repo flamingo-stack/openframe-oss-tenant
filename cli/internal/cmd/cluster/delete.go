@@ -1,12 +1,10 @@
 package cluster
 
 import (
-	"context"
 	"fmt"
 
-	uiCommon "github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/flamingo/openframe-cli/internal/ui/common"
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/factory"
 )
 
 func getDeleteCmd() *cobra.Command {
@@ -33,9 +31,8 @@ Examples:
 }
 
 func runDeleteCluster(cmd *cobra.Command, args []string) error {
-	uiCommon.ShowLogo()
-	ctx := context.Background()
-	manager := factory.CreateDefaultClusterManager()
+	common.ShowLogo()
+	ctx, manager := createManager()
 
 	var clusterName string
 	if len(args) > 0 {
@@ -57,7 +54,7 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 			clusterNames = append(clusterNames, cluster.Name)
 		}
 
-		_, selected, err := uiCommon.SelectFromList("Select cluster to delete", clusterNames)
+		_, selected, err := common.SelectFromList("Select cluster to delete", clusterNames)
 		if err != nil {
 			return fmt.Errorf("failed to select cluster: %w", err)
 		}
@@ -66,7 +63,7 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 
 	// Confirm deletion (unless forced)
 	if !force {
-		confirmed, err := uiCommon.ConfirmAction(fmt.Sprintf("Are you sure you want to delete cluster '%s'? This action cannot be undone", clusterName))
+		confirmed, err := common.ConfirmAction(fmt.Sprintf("Are you sure you want to delete cluster '%s'? This action cannot be undone", clusterName))
 		if err != nil {
 			return err
 		}

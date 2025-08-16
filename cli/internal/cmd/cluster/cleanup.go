@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
-	"github.com/flamingo/openframe-cli/internal/factory"
 	"github.com/flamingo/openframe-cli/internal/ui/common"
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
 	"github.com/pterm/pterm"
@@ -34,8 +33,7 @@ Examples:
 
 func runCleanupCluster(cmd *cobra.Command, args []string) error {
 	common.ShowLogo()
-	ctx := context.Background()
-	manager := factory.CreateDefaultClusterManager()
+	ctx, manager := createManager()
 
 	clusterName := uiCluster.GetClusterNameOrDefault(args, "openframe-dev")
 
@@ -60,7 +58,7 @@ func cleanupK3dCluster(ctx context.Context, clusterName string) error {
 	cmd := exec.CommandContext(ctx, "docker", "ps", "--format", "{{.Names}}", "--filter", fmt.Sprintf("name=k3d-%s", clusterName))
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("failed to list cluster containers: %w", err)
+		return fmt.Errorf("failed to detect cluster type: cluster containers not accessible: %w", err)
 	}
 
 	nodeNames := strings.Split(strings.TrimSpace(string(output)), "\n")

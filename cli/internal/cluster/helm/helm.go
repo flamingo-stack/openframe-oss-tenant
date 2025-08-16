@@ -1,4 +1,4 @@
-package bootstrap
+package helm
 
 // HelmManager handles Helm operations for bootstrapping
 type HelmManager struct {

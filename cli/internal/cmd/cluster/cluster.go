@@ -1,6 +1,10 @@
 package cluster
 
 import (
+	"context"
+
+	"github.com/flamingo/openframe-cli/internal/cluster"
+	"github.com/flamingo/openframe-cli/internal/factory"
 	"github.com/spf13/cobra"
 )
 
@@ -65,6 +69,13 @@ func ResetGlobalFlags() {
 	verbose = false
 	dryRun = false
 	force = false
+}
+
+// createManager creates a cluster manager with context - common pattern across all commands
+func createManager() (context.Context, *cluster.Manager) {
+	ctx := context.Background()
+	manager := factory.CreateDefaultClusterManager()
+	return ctx, manager
 }
 
 // SetVerboseForTesting sets verbose flag for testing

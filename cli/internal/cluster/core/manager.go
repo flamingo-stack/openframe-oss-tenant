@@ -1,52 +1,9 @@
-package cluster
+package core
 
 import (
 	"context"
 	"fmt"
-	"time"
 )
-
-// ClusterType represents different types of Kubernetes clusters
-type ClusterType string
-
-const (
-	ClusterTypeK3d ClusterType = "k3d"
-	ClusterTypeGKE ClusterType = "gke"
-	ClusterTypeEKS ClusterType = "eks"
-)
-
-// ClusterConfig represents configuration for creating a cluster
-type ClusterConfig struct {
-	Name       string
-	Type       ClusterType
-	NodeCount  int
-	K8sVersion string
-}
-
-// ClusterInfo represents information about an existing cluster
-type ClusterInfo struct {
-	Name       string
-	Type       ClusterType
-	Status     string
-	NodeCount  int
-	K8sVersion string
-	CreatedAt  time.Time
-	Nodes      []NodeInfo
-}
-
-// NodeInfo represents information about a cluster node
-type NodeInfo struct {
-	Name   string
-	Status string
-	Role   string
-	Age    time.Duration
-}
-
-// ProviderOptions contains options for cluster providers
-type ProviderOptions struct {
-	Verbose bool
-	DryRun  bool
-}
 
 // ClusterProvider is an interface for different cluster providers
 type ClusterProvider interface {
@@ -147,10 +104,26 @@ func (m *Manager) ListAllClusters(ctx context.Context) ([]ClusterInfo, error) {
 }
 
 // GetClusterStatus gets status for a specific cluster
-func (m *Manager) GetClusterStatus(ctx context.Context, name string, clusterType ClusterType) (ClusterInfo, error) {
+func (m *Manager) GetClusterStatus(ctx context.Context, name string) (ClusterInfo, error) {
+	// Try to detect cluster type first
+	clusterType, err := m.DetectClusterType(ctx, name)
+	if err != nil {
+		return ClusterInfo{}, fmt.Errorf("failed to detect cluster type: %w", err)
+	}
+	
 	provider, err := m.GetProvider(clusterType)
 	if err != nil {
 		return ClusterInfo{}, err
 	}
+	
 	return provider.Status(ctx, name)
+}
+
+// GetKubeconfig gets the kubeconfig for a specific cluster
+func (m *Manager) GetKubeconfig(ctx context.Context, name string, clusterType ClusterType) (string, error) {
+	provider, err := m.GetProvider(clusterType)
+	if err != nil {
+		return "", err
+	}
+	return provider.GetKubeconfig(ctx, name)
 }
