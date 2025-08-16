@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -59,9 +60,9 @@ func TestStatusCommand_Flags(t *testing.T) {
 
 func TestStatusCommand_CLI(t *testing.T) {
 	scenarios := []testutil.TestCLIScenario{
-		{"help flag", []string{"--help"}, false, []string{"Show detailed status information", "--detailed", "--no-apps"}},
-		{"invalid flag", []string{"--invalid-flag"}, true, []string{"unknown flag"}},
-		{"too many args", []string{"cluster1", "cluster2"}, true, []string{"accepts at most 1 arg"}},
+		{Name: "help flag", Args: []string{"--help"}, WantErr: false, Contains: []string{"Show detailed status information", "--detailed", "--no-apps"}},
+		{Name: "invalid flag", Args: []string{"--invalid-flag"}, WantErr: true, Contains: []string{"unknown flag"}},
+		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 	
 	testutil.TestCLIScenarios(t, getStatusCmd, scenarios)
@@ -203,6 +204,34 @@ func TestStatusUtilityFunctions(t *testing.T) {
 				assert.NotEmpty(t, result)
 			})
 		}
+	})
+
+	t.Run("ShowInstalledApps", func(t *testing.T) {
+		// Test graceful failure when helm/kubectl are not available
+		ctx := context.Background()
+		err := showInstalledApps(ctx, "non-existent-cluster", false)
+		// Should not return error even when commands fail
+		assert.NoError(t, err, "showInstalledApps should handle command failures gracefully")
+		
+		// Test detailed mode
+		err = showInstalledApps(ctx, "non-existent-cluster", true)
+		assert.NoError(t, err, "showInstalledApps detailed mode should handle command failures gracefully")
+	})
+
+	t.Run("CheckCommonApps", func(t *testing.T) {
+		// Test that checkCommonApps doesn't panic
+		ctx := context.Background()
+		assert.NotPanics(t, func() {
+			checkCommonApps(ctx, "non-existent-context")
+		}, "checkCommonApps should not panic on missing context")
+	})
+
+	t.Run("ShowResourceInfo", func(t *testing.T) {
+		// Test graceful failure when kubectl top is not available
+		ctx := context.Background()
+		err := showResourceInfo(ctx, "non-existent-cluster")
+		// Should not return error even when command fails
+		assert.NoError(t, err, "showResourceInfo should handle command failures gracefully")
 	})
 
 	t.Run("ErrorCases", func(t *testing.T) {

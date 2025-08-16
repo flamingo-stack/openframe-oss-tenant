@@ -34,9 +34,9 @@ func TestStartCommand_Structure(t *testing.T) {
 
 func TestStartCommand_CLI(t *testing.T) {
 	scenarios := []testutil.TestCLIScenario{
-		{"help flag", []string{"--help"}, false, []string{"Start a previously stopped Kubernetes cluster", "interactive selection"}},
-		{"invalid flag", []string{"--invalid-flag"}, true, []string{"unknown flag"}},
-		{"too many args", []string{"cluster1", "cluster2"}, true, []string{"accepts at most 1 arg"}},
+		{Name: "help flag", Args: []string{"--help"}, WantErr: false, Contains: []string{"Start a previously stopped Kubernetes cluster", "interactive selection"}},
+		{Name: "invalid flag", Args: []string{"--invalid-flag"}, WantErr: true, Contains: []string{"unknown flag"}},
+		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 	
 	testutil.TestCLIScenarios(t, getStartCmd, scenarios)

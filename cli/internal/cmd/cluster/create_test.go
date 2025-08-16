@@ -65,9 +65,9 @@ func TestCreateCommand_Flags(t *testing.T) {
 
 func TestCreateCommand_CLI(t *testing.T) {
 	scenarios := []testutil.TestCLIScenario{
-		{"help flag", []string{"--help"}, false, []string{"Create a new Kubernetes cluster", "--type", "--nodes"}},
-		{"invalid flag", []string{"--invalid-flag"}, true, []string{"unknown flag"}},
-		{"too many args", []string{"cluster1", "cluster2"}, true, []string{"accepts at most 1 arg"}},
+		{Name: "help flag", Args: []string{"--help"}, WantErr: false, Contains: []string{"Create a new Kubernetes cluster", "--type", "--nodes"}},
+		{Name: "invalid flag", Args: []string{"--invalid-flag"}, WantErr: true, Contains: []string{"unknown flag"}},
+		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 	
 	testutil.TestCLIScenarios(t, getCreateCmd, scenarios)
@@ -146,16 +146,18 @@ func TestCreateUtilityFunctions(t *testing.T) {
 	
 	t.Run("ParseClusterType", func(t *testing.T) {
 		tests := []struct {
+			name     string
 			input    string
 			expected cluster.ClusterType
 		}{
-			{"k3d", cluster.ClusterTypeK3d},
-			{"", cluster.ClusterTypeK3d},
-			{"unknown", cluster.ClusterTypeK3d},
+			{"k3d type", "k3d", cluster.ClusterTypeK3d},
+			{"empty defaults to k3d", "", cluster.ClusterTypeK3d},
+			{"unknown defaults to k3d", "unknown", cluster.ClusterTypeK3d},
+			{"case insensitive", "K3D", cluster.ClusterTypeK3d},
 		}
 		
 		for _, tt := range tests {
-			t.Run(tt.input+"_type", func(t *testing.T) {
+			t.Run(tt.name, func(t *testing.T) {
 				result := parseClusterType(tt.input)
 				assert.Equal(t, tt.expected, result)
 			})
@@ -164,16 +166,17 @@ func TestCreateUtilityFunctions(t *testing.T) {
 	
 	t.Run("GetNodeCount", func(t *testing.T) {
 		tests := []struct {
+			name     string
 			input    int
 			expected int
 		}{
-			{5, 5},
-			{0, 3},
-			{-1, 3},
+			{"valid count", 5, 5},
+			{"zero defaults to 3", 0, 3},
+			{"negative defaults to 3", -1, 3},
 		}
 		
 		for _, tt := range tests {
-			t.Run("nodecount", func(t *testing.T) {
+			t.Run(tt.name, func(t *testing.T) {
 				result := getNodeCount(tt.input)
 				assert.Equal(t, tt.expected, result)
 			})
@@ -188,7 +191,9 @@ func TestCreateUtilityFunctions(t *testing.T) {
 		}{
 			{"valid config", &cluster.ClusterConfig{Name: "test", Type: cluster.ClusterTypeK3d, NodeCount: 3}, false},
 			{"empty name", &cluster.ClusterConfig{Name: "", Type: cluster.ClusterTypeK3d, NodeCount: 3}, true},
+			{"whitespace only name", &cluster.ClusterConfig{Name: "   ", Type: cluster.ClusterTypeK3d, NodeCount: 3}, true},
 			{"zero nodes gets defaulted", &cluster.ClusterConfig{Name: "test", Type: cluster.ClusterTypeK3d, NodeCount: 0}, false},
+			{"large node count", &cluster.ClusterConfig{Name: "test", Type: cluster.ClusterTypeK3d, NodeCount: 10}, false},
 		}
 		
 		for _, tt := range tests {
@@ -222,6 +227,7 @@ func TestCreateUtilityFunctions(t *testing.T) {
 		}{
 			{"dry run", true, false, []string{"Configuration Summary:", "test-cluster", "DRY RUN MODE"}},
 			{"skip wizard", false, true, []string{"Configuration Summary:", "test-cluster", "Proceeding with cluster creation"}},
+			{"interactive mode", false, false, []string{"Configuration Summary:", "test-cluster"}},
 		}
 		
 		for _, tt := range tests {
@@ -236,6 +242,18 @@ func TestCreateUtilityFunctions(t *testing.T) {
 				}
 			})
 		}
+	})
+	
+	t.Run("ShowConfigSummary_EdgeCases", func(t *testing.T) {
+		// Test with minimal config
+		config := &cluster.ClusterConfig{
+			Name: "minimal",
+			Type: cluster.ClusterTypeK3d,
+		}
+		var out bytes.Buffer
+		err := showConfigSummary(config, false, true, &out)
+		assert.NoError(t, err)
+		assert.Contains(t, out.String(), "minimal")
 	})
 }
 

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/flamingo/openframe-cli/tests/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -16,7 +16,7 @@ func init() {
 
 func TestDeleteCommand_Structure(t *testing.T) {
 	cmd := getDeleteCmd()
-	
+
 	tcs := testutil.TestCommandStructure{
 		Name:    "delete",
 		Use:     "delete [NAME]",
@@ -30,13 +30,13 @@ func TestDeleteCommand_Structure(t *testing.T) {
 			"interactive selection",
 		},
 	}
-	
+
 	tcs.TestCommand(t, cmd)
 }
 
 func TestDeleteCommand_Flags(t *testing.T) {
 	cmd := getDeleteCmd()
-	
+
 	tests := []struct {
 		flag      string
 		shorthand string
@@ -45,7 +45,7 @@ func TestDeleteCommand_Flags(t *testing.T) {
 	}{
 		{"force", "f", "false", "Skip confirmation prompt"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.flag, func(t *testing.T) {
 			flag := cmd.Flags().Lookup(tt.flag)
@@ -60,20 +60,20 @@ func TestDeleteCommand_Flags(t *testing.T) {
 
 func TestDeleteCommand_CLI(t *testing.T) {
 	scenarios := []testutil.TestCLIScenario{
-		{"help flag", []string{"--help"}, false, []string{"Delete a Kubernetes cluster", "--force", "-f"}},
-		{"invalid flag", []string{"--invalid-flag"}, true, []string{"unknown flag"}},
-		{"too many args", []string{"cluster1", "cluster2"}, true, []string{"accepts at most 1 arg"}},
+		{Name: "help flag", Args: []string{"--help"}, WantErr: false, Contains: []string{"Delete a Kubernetes cluster", "--force", "-f"}},
+		{Name: "invalid flag", Args: []string{"--invalid-flag"}, WantErr: true, Contains: []string{"unknown flag"}},
+		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
-	
+
 	testutil.TestCLIScenarios(t, getDeleteCmd, scenarios)
 }
 
 func TestDeleteCommand_Execution(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
+		name       string
+		args       []string
 		setupFlags func()
-		wantErr  bool
+		wantErr    bool
 	}{
 		{
 			name: "with cluster name and force",
@@ -93,30 +93,30 @@ func TestDeleteCommand_Execution(t *testing.T) {
 			wantErr: false, // Should complete gracefully when no clusters found
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupFlags()
-			
+
 			cmd := getDeleteCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			cmd.SetErr(&out)
-			
+
 			err := runDeleteCluster(cmd, tt.args)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				// Should either succeed or return expected error
 				if err != nil {
 					// The delete command can fail in various ways when cluster doesn't exist
-					assert.True(t, 
+					assert.True(t,
 						strings.Contains(err.Error(), "cluster not found") ||
-						strings.Contains(err.Error(), "failed to detect cluster type") ||
-						strings.Contains(err.Error(), "provider not found") ||
-						strings.Contains(err.Error(), "^D") || // Interactive prompt interrupted
-						strings.Contains(err.Error(), "EOF"),
+							strings.Contains(err.Error(), "failed to detect cluster type") ||
+							strings.Contains(err.Error(), "provider not found") ||
+							strings.Contains(err.Error(), "^D") || // Interactive prompt interrupted
+							strings.Contains(err.Error(), "EOF"),
 						"Expected known error type, got: %v", err)
 				}
 			}
@@ -138,11 +138,11 @@ func TestDeleteCommand_FlagValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ResetGlobalFlags()
-			
+
 			cmd := getDeleteCmd()
 			cmd.SetArgs(tt.args)
 			cmd.ParseFlags(tt.args)
-			
+
 			assert.Equal(t, tt.wantForce, force)
 		})
 	}
@@ -150,7 +150,7 @@ func TestDeleteCommand_FlagValues(t *testing.T) {
 
 func TestDeleteCommand_ArgumentValidation(t *testing.T) {
 	cmd := getDeleteCmd()
-	
+
 	tests := []struct {
 		name    string
 		args    []string
@@ -160,7 +160,7 @@ func TestDeleteCommand_ArgumentValidation(t *testing.T) {
 		{"one arg", []string{"cluster-name"}, false},
 		{"too many args", []string{"cluster1", "cluster2"}, true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := cmd.Args(cmd, tt.args)

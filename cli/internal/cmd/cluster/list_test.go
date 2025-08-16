@@ -59,9 +59,9 @@ func TestListCommand_Flags(t *testing.T) {
 
 func TestListCommand_CLI(t *testing.T) {
 	scenarios := []testutil.TestCLIScenario{
-		{"help flag", []string{"--help"}, false, []string{"List all Kubernetes clusters", "--quiet", "-q"}},
-		{"invalid flag", []string{"--invalid-flag"}, true, []string{"unknown flag"}},
-		{"with args", []string{"extra-arg"}, false, []string{}}, // List accepts extra args gracefully
+		{Name: "help flag", Args: []string{"--help"}, WantErr: false, Contains: []string{"List all Kubernetes clusters", "--quiet", "-q"}},
+		{Name: "invalid flag", Args: []string{"--invalid-flag"}, WantErr: true, Contains: []string{"unknown flag"}},
+		{Name: "with args", Args: []string{"extra-arg"}, WantErr: false, Contains: []string{}}, // List accepts extra args gracefully
 	}
 	
 	testutil.TestCLIScenarios(t, getListCmd, scenarios)

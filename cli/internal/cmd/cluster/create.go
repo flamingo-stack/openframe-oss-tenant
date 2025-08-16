@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
 	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
@@ -117,6 +118,10 @@ func getNodeCount(nodeCount int) int {
 func validateConfig(config *cluster.ClusterConfig) error {
 	if config.Name == "" {
 		return fmt.Errorf("cluster name cannot be empty")
+	}
+	// Check for whitespace-only names
+	if len(strings.TrimSpace(config.Name)) == 0 {
+		return fmt.Errorf("cluster name cannot be empty or whitespace only")
 	}
 	if config.NodeCount < 1 {
 		config.NodeCount = 3 // Default to 3 nodes
