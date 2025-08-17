@@ -10,7 +10,7 @@ COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE=$(shell date -u +"%Y-%m-%d %H:%M:%S UTC")
 
 # Build flags
-LDFLAGS=-ldflags "-X 'github.com/flamingo/openframe-cli/internal/cmd.version=$(VERSION)' -X 'github.com/flamingo/openframe-cli/internal/cmd.commit=$(COMMIT)' -X 'github.com/flamingo/openframe-cli/internal/cmd.date=$(DATE)'"
+LDFLAGS=-ldflags "-X 'github.com/flamingo/openframe/internal/cmd.version=$(VERSION)' -X 'github.com/flamingo/openframe/internal/cmd.commit=$(COMMIT)' -X 'github.com/flamingo/openframe/internal/cmd.date=$(DATE)'"
 
 # Test output control
 TEST_OUTPUT_FORMAT=dots

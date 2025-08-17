@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/common/ui"
-	"github.com/flamingo/openframe-cli/tests/testutil"
+	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/tests/testutil"
 	"github.com/spf13/cobra"
 )
 

@@ -3,7 +3,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/domain"
 )
 
 

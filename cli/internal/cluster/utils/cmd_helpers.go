@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"github.com/flamingo/openframe-cli/internal/cluster"
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	"github.com/flamingo/openframe-cli/internal/cluster/services"
-	"github.com/flamingo/openframe-cli/internal/common/errors"
-	"github.com/flamingo/openframe-cli/internal/common/executor"
-	"github.com/flamingo/openframe-cli/internal/common/ui"
-	"github.com/flamingo/openframe-cli/tests/testutil"
+	"github.com/flamingo/openframe/internal/cluster"
+	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/services"
+	"github.com/flamingo/openframe/internal/common/errors"
+	"github.com/flamingo/openframe/internal/common/executor"
+	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/tests/testutil"
 	"github.com/spf13/cobra"
 )
 

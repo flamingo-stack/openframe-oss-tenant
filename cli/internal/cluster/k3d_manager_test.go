@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	execPkg "github.com/flamingo/openframe-cli/internal/common/executor"
+	"github.com/flamingo/openframe/internal/cluster/domain"
+	execPkg "github.com/flamingo/openframe/internal/common/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

@@ -2,7 +2,7 @@ package domain
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/common/flags"
+	"github.com/flamingo/openframe/internal/common/flags"
 )
 
 // Use CommonFlags from internal/common as the single source of truth

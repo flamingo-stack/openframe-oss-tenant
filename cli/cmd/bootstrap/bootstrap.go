@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/common/ui"
+	"github.com/flamingo/openframe/internal/common/ui"
 )
 
 // GetBootstrapCmd returns the bootstrap command

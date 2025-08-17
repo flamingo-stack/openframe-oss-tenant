@@ -3,8 +3,8 @@ package utils
 import (
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/cluster"
-	"github.com/flamingo/openframe-cli/tests/testutil"
+	"github.com/flamingo/openframe/internal/cluster"
+	"github.com/flamingo/openframe/tests/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )

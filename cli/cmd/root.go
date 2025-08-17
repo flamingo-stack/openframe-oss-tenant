@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flamingo/openframe-cli/cmd/cluster"
+	"github.com/flamingo/openframe/cmd/cluster"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )

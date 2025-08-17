@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flamingo/openframe-cli/internal/cluster"
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	uiCluster "github.com/flamingo/openframe-cli/internal/cluster/ui"
-	"github.com/flamingo/openframe-cli/internal/common/executor"
+	"github.com/flamingo/openframe/internal/cluster"
+	"github.com/flamingo/openframe/internal/cluster/domain"
+	uiCluster "github.com/flamingo/openframe/internal/cluster/ui"
+	"github.com/flamingo/openframe/internal/common/executor"
 	"github.com/pterm/pterm"
 )
 

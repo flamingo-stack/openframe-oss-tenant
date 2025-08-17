@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	"github.com/flamingo/openframe-cli/internal/common/executor"
+	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/common/executor"
 )
 
 // Removed domainProviderAdapter - no longer needed since K3dDirectProvider works with cluster types directly

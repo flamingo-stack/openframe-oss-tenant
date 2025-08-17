@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 var (
@@ -73,37 +72,13 @@ func RunCLI(args ...string) *CLIResult {
 	}
 	
 	cmd := exec.Command(cliBinary, args...)
-	
-	// Set a reasonable timeout
-	timeout := 2 * time.Minute
-	cmd.Env = os.Environ() // Inherit environment
+	cmd.Env = os.Environ()
 	
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	
-	// Start the command
-	if err := cmd.Start(); err != nil {
-		return &CLIResult{
-			Error: fmt.Errorf("failed to start command: %w", err),
-		}
-	}
-	
-	// Wait with timeout
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-	
-	var err error
-	select {
-	case err = <-done:
-		// Command completed
-	case <-time.After(timeout):
-		cmd.Process.Kill()
-		err = fmt.Errorf("command timed out after %v", timeout)
-	}
-	
+	err := cmd.Run()
 	exitCode := 0
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {

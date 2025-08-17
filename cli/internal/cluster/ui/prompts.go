@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )

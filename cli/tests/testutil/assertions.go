@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"strings"
 	"testing"
 	
 	"github.com/stretchr/testify/assert"
@@ -59,6 +60,19 @@ func (a *AssertCommandOutput) StdoutEmpty() *AssertCommandOutput {
 // StderrContains asserts stderr contains specific text
 func (a *AssertCommandOutput) StderrContains(text string) *AssertCommandOutput {
 	assert.Contains(a.t, a.stderr, text, "Stderr should contain: %s", text)
+	return a
+}
+
+// StderrContainsAny asserts stderr contains any of the specified texts
+func (a *AssertCommandOutput) StderrContainsAny(texts ...string) *AssertCommandOutput {
+	found := false
+	for _, text := range texts {
+		if strings.Contains(a.stderr, text) {
+			found = true
+			break
+		}
+	}
+	assert.True(a.t, found, "Stderr should contain any of: %v", texts)
 	return a
 }
 

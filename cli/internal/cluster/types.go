@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	"github.com/flamingo/openframe-cli/internal/common/executor"
+	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/common/executor"
 )
 
 // FlagContainer holds all flag structures needed by cluster commands

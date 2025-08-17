@@ -2,7 +2,7 @@ package domain
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/common/executor"
+	"github.com/flamingo/openframe/internal/common/executor"
 )
 
 // CommandFlags represents the minimum interface for command flags

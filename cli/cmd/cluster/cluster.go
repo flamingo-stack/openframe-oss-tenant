@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	"github.com/flamingo/openframe-cli/internal/cluster/utils"
+	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
 
