@@ -1,4 +1,4 @@
-package interfaces
+package executor
 
 import (
 	"context"
@@ -10,15 +10,15 @@ import (
 // MockCommandExecutor implements CommandExecutor for testing
 // It simulates command execution without actually running external commands
 type MockCommandExecutor struct {
-	commands       []string                            // Log of executed commands
+	commands       []string                  // Log of executed commands
 	responses      map[string]*CommandResult // Predefined responses for specific commands
-	defaultResult  *CommandResult           // Default response when no specific response is set
-	shouldFail     bool                                // Whether to simulate failures
-	failMessage    string                              // Error message for simulated failures
+	defaultResult  *CommandResult            // Default response when no specific response is set
+	shouldFail     bool                      // Whether to simulate failures
+	failMessage    string                    // Error message for simulated failures
 }
 
 // NewMockCommandExecutor creates a new mock command executor
-func NewMockCommandExecutor() CommandExecutor {
+func NewMockCommandExecutor() *MockCommandExecutor {
 	return &MockCommandExecutor{
 		commands:  make([]string, 0),
 		responses: make(map[string]*CommandResult),

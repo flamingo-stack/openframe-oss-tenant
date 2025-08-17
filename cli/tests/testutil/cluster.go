@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
+	"github.com/flamingo/openframe-cli/internal/cluster/domain"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -17,7 +18,7 @@ type MockClusterProvider struct {
 	mock.Mock
 }
 
-func (m *MockClusterProvider) Create(ctx context.Context, config cluster.ClusterConfig) error {
+func (m *MockClusterProvider) Create(ctx context.Context, config domain.ClusterConfig) error {
 	args := m.Called(ctx, config)
 	return args.Error(0)
 }
@@ -32,19 +33,19 @@ func (m *MockClusterProvider) Start(ctx context.Context, name string) error {
 	return args.Error(0)
 }
 
-func (m *MockClusterProvider) List(ctx context.Context) ([]cluster.ClusterInfo, error) {
+func (m *MockClusterProvider) List(ctx context.Context) ([]domain.ClusterInfo, error) {
 	args := m.Called(ctx)
-	return args.Get(0).([]cluster.ClusterInfo), args.Error(1)
+	return args.Get(0).([]domain.ClusterInfo), args.Error(1)
 }
 
-func (m *MockClusterProvider) Status(ctx context.Context, name string) (cluster.ClusterInfo, error) {
+func (m *MockClusterProvider) Status(ctx context.Context, name string) (domain.ClusterInfo, error) {
 	args := m.Called(ctx, name)
-	return args.Get(0).(cluster.ClusterInfo), args.Error(1)
+	return args.Get(0).(domain.ClusterInfo), args.Error(1)
 }
 
-func (m *MockClusterProvider) DetectType(ctx context.Context, name string) (cluster.ClusterType, error) {
+func (m *MockClusterProvider) DetectType(ctx context.Context, name string) (domain.ClusterType, error) {
 	args := m.Called(ctx, name)
-	return args.Get(0).(cluster.ClusterType), args.Error(1)
+	return args.Get(0).(domain.ClusterType), args.Error(1)
 }
 
 func (m *MockClusterProvider) GetKubeconfig(ctx context.Context, name string) (string, error) {
@@ -54,20 +55,20 @@ func (m *MockClusterProvider) GetKubeconfig(ctx context.Context, name string) (s
 
 // MockClusterManager provides a mock cluster manager for testing
 type MockClusterManager struct {
-	providers map[cluster.ClusterType]cluster.ClusterProvider
+	providers map[domain.ClusterType]domain.ClusterProvider
 }
 
 func NewMockClusterManager() *MockClusterManager {
 	return &MockClusterManager{
-		providers: make(map[cluster.ClusterType]cluster.ClusterProvider),
+		providers: make(map[domain.ClusterType]domain.ClusterProvider),
 	}
 }
 
-func (m *MockClusterManager) RegisterProvider(clusterType cluster.ClusterType, provider cluster.ClusterProvider) {
+func (m *MockClusterManager) RegisterProvider(clusterType domain.ClusterType, provider domain.ClusterProvider) {
 	m.providers[clusterType] = provider
 }
 
-func (m *MockClusterManager) GetProvider(clusterType cluster.ClusterType) (cluster.ClusterProvider, error) {
+func (m *MockClusterManager) GetProvider(clusterType domain.ClusterType) (domain.ClusterProvider, error) {
 	if provider, exists := m.providers[clusterType]; exists {
 		return provider, nil
 	}

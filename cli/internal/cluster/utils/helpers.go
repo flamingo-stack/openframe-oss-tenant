@@ -7,21 +7,11 @@ import (
 	"github.com/flamingo/openframe-cli/internal/cluster/domain"
 )
 
-// Re-export domain types for backward compatibility
-type ClusterType = domain.ClusterType
-type ClusterInfo = domain.ClusterInfo
-type NodeInfo = domain.NodeInfo
-
-const (
-	ClusterTypeK3d = domain.ClusterTypeK3d
-	ClusterTypeGKE = domain.ClusterTypeGKE
-	ClusterTypeEKS = domain.ClusterTypeEKS
-)
 
 // ClusterSelectionResult contains the result of cluster selection (deprecated - use UI types)
 type ClusterSelectionResult struct {
 	Name string
-	Type ClusterType
+	Type domain.ClusterType
 }
 
 // ExecResult moved to cmd/cluster/cluster.go for better locality
@@ -42,16 +32,14 @@ func ValidateClusterName(name string) error {
 }
 
 // ParseClusterType converts string to ClusterType
-func ParseClusterType(typeStr string) ClusterType {
+func ParseClusterType(typeStr string) domain.ClusterType {
 	switch strings.ToLower(typeStr) {
 	case "k3d":
-		return ClusterTypeK3d
+		return domain.ClusterTypeK3d
 	case "gke":
-		return ClusterTypeGKE
-	case "eks":
-		return ClusterTypeEKS
+		return domain.ClusterTypeGKE
 	default:
-		return ClusterTypeK3d // Default
+		return domain.ClusterTypeK3d // Default
 	}
 }
 
@@ -83,7 +71,7 @@ func GetNodeCount(nodeCount int) int {
 // FormatClusterSuccessMessage moved to ui package - use ui.FormatClusterSuccessMessage instead
 
 // CreateClusterError creates a new cluster error using the standardized error system
-func CreateClusterError(operation, clusterName string, clusterType ClusterType, err error) error {
+func CreateClusterError(operation, clusterName string, clusterType domain.ClusterType, err error) error {
 	return fmt.Errorf("cluster %s operation failed for %s (%s): %w", operation, clusterName, clusterType, err)
 }
 

@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/cluster"
-	"github.com/flamingo/openframe-cli/tests/testutil"
+	"github.com/flamingo/openframe-cli/internal/cluster/domain"
 	uiCluster "github.com/flamingo/openframe-cli/internal/cluster/ui"
 	clusterUtils "github.com/flamingo/openframe-cli/internal/cluster/utils"
+	"github.com/flamingo/openframe-cli/tests/testutil"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,9 +19,9 @@ func init() {
 func TestCreateCommand_Structure(t *testing.T) {
 	clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
 	defer clusterUtils.ResetGlobalFlags()
-	
+
 	cmd := getCreateCmd()
-	
+
 	tcs := testutil.TestCommandStructure{
 		Name:    "create",
 		Use:     "create [NAME]",
@@ -35,28 +35,28 @@ func TestCreateCommand_Structure(t *testing.T) {
 			"openframe cluster create",
 		},
 	}
-	
+
 	tcs.TestCommand(t, cmd)
 }
 
 func TestCreateCommand_Flags(t *testing.T) {
 	clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
 	defer clusterUtils.ResetGlobalFlags()
-	
+
 	cmd := getCreateCmd()
-	
+
 	tests := []struct {
 		flag      string
 		shorthand string
 		defValue  string
 		usage     string
 	}{
-		{"type", "t", "", "Cluster type (k3d, gke, eks)"},
+		{"type", "t", "", "Cluster type (k3d, gke)"},
 		{"nodes", "n", "3", "Number of worker nodes (default 3)"},
 		{"version", "", "", "Kubernetes version"},
 		{"skip-wizard", "", "false", "Skip interactive wizard"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.flag, func(t *testing.T) {
 			flag := cmd.Flags().Lookup(tt.flag)
@@ -75,7 +75,7 @@ func TestCreateCommand_CLI(t *testing.T) {
 		{Name: "invalid flag", Args: []string{"--invalid-flag"}, WantErr: true, Contains: []string{"unknown flag"}},
 		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
-	
+
 	testutil.TestCLIScenarios(t, func() *cobra.Command {
 		clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
 		defer clusterUtils.ResetGlobalFlags()
@@ -85,43 +85,43 @@ func TestCreateCommand_CLI(t *testing.T) {
 
 func TestCreateCommand_Execution(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
-		cmdArgs  []string
-		wantErr  bool
+		name        string
+		args        []string
+		cmdArgs     []string
+		wantErr     bool
 		errContains string
 	}{
 		{
-			name: "skip wizard with args",
-			args: []string{"test-cluster"},
+			name:    "skip wizard with args",
+			args:    []string{"test-cluster"},
 			cmdArgs: []string{"--skip-wizard", "--type", "k3d", "--nodes", "2", "test-cluster"},
 			wantErr: false, // Should succeed with mock manager
 		},
 		{
-			name: "skip wizard with default name",
-			args: []string{},
+			name:    "skip wizard with default name",
+			args:    []string{},
 			cmdArgs: []string{"--skip-wizard", "--type", "k3d"},
 			wantErr: false, // Should succeed with mock manager
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
 			defer clusterUtils.ResetGlobalFlags()
-			
-		cmd := getCreateCmd()
+
+			cmd := getCreateCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			cmd.SetErr(&out)
 			cmd.SetArgs(tt.cmdArgs)
-			
+
 			// Parse flags to set the global variables
 			err := cmd.ParseFlags(tt.cmdArgs)
 			assert.NoError(t, err, "Flag parsing should not fail")
-			
+
 			err = runCreateCluster(cmd, tt.args)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errContains != "" {
@@ -146,7 +146,7 @@ func TestCreateUtilityFunctions(t *testing.T) {
 			{"no args", []string{}, "openframe-dev"},
 			{"empty args", nil, "openframe-dev"},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := uiCluster.GetClusterNameOrDefault(tt.args, "openframe-dev")
@@ -154,19 +154,19 @@ func TestCreateUtilityFunctions(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("ParseClusterType", func(t *testing.T) {
 		tests := []struct {
 			name     string
 			input    string
-			expected clusterUtils.ClusterType
+			expected domain.ClusterType
 		}{
-			{"k3d type", "k3d", clusterUtils.ClusterTypeK3d},
-			{"empty defaults to k3d", "", clusterUtils.ClusterTypeK3d},
-			{"unknown defaults to k3d", "unknown", clusterUtils.ClusterTypeK3d},
-			{"case insensitive", "K3D", clusterUtils.ClusterTypeK3d},
+			{"k3d type", "k3d", domain.ClusterTypeK3d},
+			{"empty defaults to k3d", "", domain.ClusterTypeK3d},
+			{"unknown defaults to k3d", "unknown", domain.ClusterTypeK3d},
+			{"case insensitive", "K3D", domain.ClusterTypeK3d},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := clusterUtils.ParseClusterType(tt.input)
@@ -174,7 +174,7 @@ func TestCreateUtilityFunctions(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("GetNodeCount", func(t *testing.T) {
 		tests := []struct {
 			name     string
@@ -185,7 +185,7 @@ func TestCreateUtilityFunctions(t *testing.T) {
 			{"zero defaults to 3", 0, 3},
 			{"negative defaults to 3", -1, 3},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := clusterUtils.GetNodeCount(tt.input)
@@ -193,20 +193,20 @@ func TestCreateUtilityFunctions(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("ValidateConfig", func(t *testing.T) {
 		tests := []struct {
 			name    string
-			config  *cluster.ClusterConfig
+			config  *domain.ClusterConfig
 			wantErr bool
 		}{
-			{"valid config", &cluster.ClusterConfig{Name: "test", Type: cluster.ClusterTypeK3d, NodeCount: 3}, false},
-			{"empty name", &cluster.ClusterConfig{Name: "", Type: cluster.ClusterTypeK3d, NodeCount: 3}, true},
-			{"whitespace only name", &cluster.ClusterConfig{Name: "   ", Type: cluster.ClusterTypeK3d, NodeCount: 3}, true},
-			{"zero nodes gets defaulted", &cluster.ClusterConfig{Name: "test", Type: cluster.ClusterTypeK3d, NodeCount: 0}, false},
-			{"large node count", &cluster.ClusterConfig{Name: "test", Type: cluster.ClusterTypeK3d, NodeCount: 10}, false},
+			{"valid config", &domain.ClusterConfig{Name: "test", Type: domain.ClusterTypeK3d, NodeCount: 3}, false},
+			{"empty name", &domain.ClusterConfig{Name: "", Type: domain.ClusterTypeK3d, NodeCount: 3}, true},
+			{"whitespace only name", &domain.ClusterConfig{Name: "   ", Type: domain.ClusterTypeK3d, NodeCount: 3}, true},
+			{"zero nodes gets defaulted", &domain.ClusterConfig{Name: "test", Type: domain.ClusterTypeK3d, NodeCount: 0}, false},
+			{"large node count", &domain.ClusterConfig{Name: "test", Type: domain.ClusterTypeK3d, NodeCount: 10}, false},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				err := clusterUtils.ValidateClusterName(tt.config.Name)
@@ -226,16 +226,16 @@ func TestCreateUtilityFunctions(t *testing.T) {
 			})
 		}
 	})
-	
+
 	// Note: ShowConfigSummary tests removed - function moved to UI layer
 }
 
 func TestCreateCommand_ArgumentValidation(t *testing.T) {
 	clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
 	defer clusterUtils.ResetGlobalFlags()
-	
+
 	cmd := getCreateCmd()
-	
+
 	// Test argument validation
 	tests := []struct {
 		name    string
@@ -246,7 +246,7 @@ func TestCreateCommand_ArgumentValidation(t *testing.T) {
 		{"one arg", []string{"cluster-name"}, false},
 		{"too many args", []string{"cluster1", "cluster2"}, true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := cmd.Args(cmd, tt.args)

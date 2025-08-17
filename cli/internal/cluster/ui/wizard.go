@@ -92,7 +92,7 @@ func (w *ConfigWizard) promptClusterName() error {
 func (w *ConfigWizard) promptClusterType() error {
 	prompt := promptui.Select{
 		Label: "Cluster Type",
-		Items: []string{"k3d (Recommended for local development)", "gke (Google Kubernetes Engine - Coming Soon)", "eks (Amazon EKS - Coming Soon)"},
+		Items: []string{"k3d (Recommended for local development)", "gke (Google Kubernetes Engine - Coming Soon)"},
 	}
 
 	idx, _, err := prompt.Run()
@@ -105,8 +105,6 @@ func (w *ConfigWizard) promptClusterType() error {
 		w.config.Type = ClusterTypeK3d
 	case 1:
 		w.config.Type = ClusterTypeGKE
-	case 2:
-		w.config.Type = ClusterTypeEKS
 	}
 
 	return nil

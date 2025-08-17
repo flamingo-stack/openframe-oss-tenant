@@ -1,4 +1,4 @@
-package utils
+package executor
 
 import (
 	"context"
@@ -8,13 +8,8 @@ import (
 	"time"
 )
 
-// RealCommandExecutor implements CommandExecutor using actual system commands
-type RealCommandExecutor struct {
-	dryRun  bool
-	verbose bool
-}
-
-// CommandExecutor interface for executing system commands
+// CommandExecutor provides an abstraction layer for executing external commands
+// This interface allows for dependency injection and testing without running real commands
 type CommandExecutor interface {
 	Execute(ctx context.Context, name string, args ...string) (*CommandResult, error)
 	ExecuteWithOptions(ctx context.Context, options ExecuteOptions) (*CommandResult, error)
@@ -22,19 +17,33 @@ type CommandExecutor interface {
 
 // CommandResult represents the result of a command execution
 type CommandResult struct {
+	ExitCode int
 	Stdout   string
 	Stderr   string
-	ExitCode int
 	Duration time.Duration
 }
 
-// ExecuteOptions contains options for command execution
+// Output returns combined stdout and stderr for backward compatibility
+func (r *CommandResult) Output() string {
+	if r.Stderr != "" {
+		return r.Stdout + "\n" + r.Stderr
+	}
+	return r.Stdout
+}
+
+// ExecuteOptions provides fine-grained control over command execution
 type ExecuteOptions struct {
 	Command string
 	Args    []string
-	Dir     string
-	Env     map[string]string
-	Timeout time.Duration
+	Dir     string            // Working directory
+	Env     map[string]string // Environment variables
+	Timeout time.Duration     // Execution timeout
+}
+
+// RealCommandExecutor implements CommandExecutor using actual system commands
+type RealCommandExecutor struct {
+	dryRun  bool
+	verbose bool
 }
 
 // NewRealCommandExecutor creates a new real command executor
@@ -100,6 +109,14 @@ func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options Ex
 		ctx, cancel = context.WithTimeout(ctx, options.Timeout)
 		defer cancel()
 		cmd = exec.CommandContext(ctx, options.Command, options.Args...)
+		
+		// Reapply directory and env since we recreated the command
+		if options.Dir != "" {
+			cmd.Dir = options.Dir
+		}
+		if len(options.Env) > 0 {
+			cmd.Env = append(cmd.Env, e.buildEnvStrings(options.Env)...)
+		}
 	}
 	
 	// Log command execution in verbose mode

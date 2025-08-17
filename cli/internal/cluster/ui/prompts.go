@@ -18,7 +18,6 @@ type ClusterInfo = domain.ClusterInfo
 const (
 	ClusterTypeK3d = domain.ClusterTypeK3d
 	ClusterTypeGKE = domain.ClusterTypeGKE
-	ClusterTypeEKS = domain.ClusterTypeEKS
 )
 
 // UI should not depend on business logic interfaces

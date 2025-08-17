@@ -4,9 +4,9 @@ import (
 	"github.com/flamingo/openframe-cli/internal/cluster"
 	"github.com/flamingo/openframe-cli/internal/cluster/domain"
 	"github.com/flamingo/openframe-cli/internal/cluster/services"
-	"github.com/flamingo/openframe-cli/internal/common"
 	"github.com/flamingo/openframe-cli/internal/common/errors"
-	commonUtils "github.com/flamingo/openframe-cli/internal/common/utils"
+	"github.com/flamingo/openframe-cli/internal/common/executor"
+	"github.com/flamingo/openframe-cli/internal/common/ui"
 	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/spf13/cobra"
 )
@@ -31,15 +31,15 @@ func GetCommandService() *services.ClusterCommandService {
 	// Create real executor with current flags
 	dryRun := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.DryRun
 	verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
-	executor := commonUtils.NewRealCommandExecutor(dryRun, verbose)
-	return services.NewClusterCommandService(executor)
+	exec := executor.NewRealCommandExecutor(dryRun, verbose)
+	return services.NewClusterCommandService(exec)
 }
 
 // WrapCommandWithCommonSetup wraps a command function with common CLI setup and error handling
 func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		// Show logo consistently
-		common.ShowLogo()
+		ui.ShowLogo()
 		
 		// Execute the command
 		err := runFunc(cmd, args)
@@ -74,9 +74,9 @@ func GetGlobalFlags() *cluster.FlagContainer {
 	return globalFlags
 }
 
-func SetTestExecutor(executor commonUtils.CommandExecutor) {
+func SetTestExecutor(exec executor.CommandExecutor) {
 	InitGlobalFlags()
-	globalFlags.Executor = executor
+	globalFlags.Executor = exec
 }
 
 func ResetGlobalFlags() {

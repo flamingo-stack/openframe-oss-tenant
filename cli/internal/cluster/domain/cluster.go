@@ -8,7 +8,6 @@ type ClusterType string
 const (
 	ClusterTypeK3d ClusterType = "k3d"
 	ClusterTypeGKE ClusterType = "gke"
-	ClusterTypeEKS ClusterType = "eks"
 )
 
 // ClusterConfig holds cluster configuration
@@ -41,7 +40,6 @@ type NodeInfo struct {
 type ProviderOptions struct {
 	K3d     *K3dOptions `json:"k3d,omitempty"`
 	GKE     *GKEOptions `json:"gke,omitempty"`
-	EKS     *EKSOptions `json:"eks,omitempty"`
 	Verbose bool        `json:"verbose,omitempty"`
 }
 
@@ -56,7 +54,3 @@ type GKEOptions struct {
 	Project string `json:"project"`
 }
 
-// EKSOptions contains EKS-specific options
-type EKSOptions struct {
-	Region string `json:"region"`
-}

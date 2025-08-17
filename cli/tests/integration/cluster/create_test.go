@@ -3,7 +3,7 @@ package cluster_integration
 import (
 	"testing"
 
-	"github.com/flamingo/openframe-cli/tests/helpers/assertions"
+	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/flamingo/openframe-cli/tests/integration/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +12,7 @@ import (
 func TestClusterCreate_Help(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "--help")
 	
-	assertions.AssertSuccess(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandSuccess(t, result.Stdout, result.Stderr, result.Error).
 		StdoutContains("Create a new Kubernetes cluster").
 		StdoutContains("--type").
 		StdoutContains("--nodes").
@@ -24,7 +24,7 @@ func TestClusterCreate_DryRun(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "integration-test", 
 		"--skip-wizard", "--dry-run", "--type", "k3d", "--nodes", "1")
 	
-	assertions.AssertSuccess(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandSuccess(t, result.Stdout, result.Stderr, result.Error).
 		StdoutContains("Configuration Summary:").
 		StdoutContains("integration-test").
 		StdoutContains("k3d").
@@ -35,28 +35,28 @@ func TestClusterCreate_DryRun(t *testing.T) {
 func TestClusterCreate_InvalidFlags(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "--invalid-flag")
 	
-	assertions.AssertFailure(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandFailure(t, result.Stdout, result.Stderr, result.Error).
 		StderrContains("unknown flag")
 }
 
 func TestClusterCreate_TooManyArgs(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "cluster1", "cluster2", "--skip-wizard", "--dry-run")
 	
-	assertions.AssertFailure(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandFailure(t, result.Stdout, result.Stderr, result.Error).
 		OutputContains("accepts at most 1 arg")
 }
 
 func TestClusterCreate_EmptyName(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "", "--skip-wizard", "--dry-run")
 	
-	assertions.AssertFailure(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandFailure(t, result.Stdout, result.Stderr, result.Error).
 		OutputContains("cluster name cannot be empty")
 }
 
 func TestClusterCreate_DefaultValues(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "--skip-wizard", "--dry-run")
 	
-	assertions.AssertSuccess(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandSuccess(t, result.Stdout, result.Stderr, result.Error).
 		StdoutContains("openframe-dev").  // default name
 		StdoutContains("k3d").            // default type
 		StdoutContains("Node Count: 3")   // default node count
@@ -70,7 +70,7 @@ func TestClusterCreate_AllFlags(t *testing.T) {
 		"--skip-wizard",
 		"--dry-run")
 	
-	assertions.AssertSuccess(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandSuccess(t, result.Stdout, result.Stderr, result.Error).
 		StdoutContains("test-all-flags").
 		StdoutContains("k3d").
 		StdoutContains("Node Count: 2").
@@ -85,7 +85,7 @@ func TestClusterCreate_ShortFlags(t *testing.T) {
 		"--skip-wizard",
 		"--dry-run")
 	
-	assertions.AssertSuccess(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandSuccess(t, result.Stdout, result.Stderr, result.Error).
 		StdoutContains("test-short").
 		StdoutContains("k3d").
 		StdoutContains("Node Count: 1").
@@ -96,7 +96,7 @@ func TestClusterCreate_GlobalVerbose(t *testing.T) {
 	result := common.RunCLI("cluster", "create", "test-verbose",
 		"--verbose", "--skip-wizard", "--dry-run")
 	
-	assertions.AssertSuccess(t, result.Stdout, result.Stderr, result.Error).
+	testutil.AssertCommandSuccess(t, result.Stdout, result.Stderr, result.Error).
 		StdoutContains("test-verbose")
 }
 

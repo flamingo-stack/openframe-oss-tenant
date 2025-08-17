@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe-cli/internal/common"
+	"github.com/flamingo/openframe-cli/internal/common/ui"
 )
 
 // GetBootstrapCmd returns the bootstrap command
@@ -41,7 +41,7 @@ Examples:
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			// Show OpenFrame logo
-			common.ShowLogo()
+			ui.ShowLogo()
 			
 			// TODO: Implement bootstrap logic
 			// bootstrapCluster()

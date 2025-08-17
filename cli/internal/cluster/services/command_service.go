@@ -6,8 +6,9 @@ import (
 	"os"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
+	"github.com/flamingo/openframe-cli/internal/cluster/domain"
 	uiCluster "github.com/flamingo/openframe-cli/internal/cluster/ui"
-	commonUtils "github.com/flamingo/openframe-cli/internal/common/utils"
+	"github.com/flamingo/openframe-cli/internal/common/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -15,32 +16,32 @@ import (
 // This separates business operations from CLI concerns
 type ClusterCommandService struct {
 	manager  *cluster.K3dManager
-	executor commonUtils.CommandExecutor
+	executor executor.CommandExecutor
 }
 
 // NewClusterCommandService creates a new command service
-func NewClusterCommandService(executor commonUtils.CommandExecutor) *ClusterCommandService {
-	manager := cluster.CreateClusterManagerWithExecutor(executor)
+func NewClusterCommandService(exec executor.CommandExecutor) *ClusterCommandService {
+	manager := cluster.CreateClusterManagerWithExecutor(exec)
 	return &ClusterCommandService{
 		manager:  manager,
-		executor: executor,
+		executor: exec,
 	}
 }
 
 // CreateCluster handles cluster creation business logic
-func (s *ClusterCommandService) CreateCluster(config cluster.ClusterConfig) error {
+func (s *ClusterCommandService) CreateCluster(config domain.ClusterConfig) error {
 	ctx := context.Background()
 	return s.manager.CreateCluster(ctx, config)
 }
 
 // DeleteCluster handles cluster deletion business logic
-func (s *ClusterCommandService) DeleteCluster(name string, clusterType cluster.ClusterType, force bool) error {
+func (s *ClusterCommandService) DeleteCluster(name string, clusterType domain.ClusterType, force bool) error {
 	ctx := context.Background()
 	return s.manager.DeleteCluster(ctx, name, clusterType, force)
 }
 
 // StartCluster handles cluster start business logic with UI
-func (s *ClusterCommandService) StartCluster(name string, clusterType cluster.ClusterType) error {
+func (s *ClusterCommandService) StartCluster(name string, clusterType domain.ClusterType) error {
 	ctx := context.Background()
 	
 	// Display starting message
@@ -58,29 +59,29 @@ func (s *ClusterCommandService) StartCluster(name string, clusterType cluster.Cl
 }
 
 // ListClusters handles cluster listing business logic
-func (s *ClusterCommandService) ListClusters() ([]cluster.ClusterInfo, error) {
+func (s *ClusterCommandService) ListClusters() ([]domain.ClusterInfo, error) {
 	ctx := context.Background()
 	return s.manager.ListAllClusters(ctx)
 }
 
 // GetClusterStatus handles cluster status business logic
-func (s *ClusterCommandService) GetClusterStatus(name string) (cluster.ClusterInfo, error) {
+func (s *ClusterCommandService) GetClusterStatus(name string) (domain.ClusterInfo, error) {
 	ctx := context.Background()
 	return s.manager.GetClusterStatus(ctx, name)
 }
 
 // DetectClusterType handles cluster type detection business logic
-func (s *ClusterCommandService) DetectClusterType(name string) (cluster.ClusterType, error) {
+func (s *ClusterCommandService) DetectClusterType(name string) (domain.ClusterType, error) {
 	ctx := context.Background()
 	return s.manager.DetectClusterType(ctx, name)
 }
 
 // CleanupCluster handles cluster cleanup business logic
-func (s *ClusterCommandService) CleanupCluster(name string, clusterType cluster.ClusterType, verbose bool) error {
+func (s *ClusterCommandService) CleanupCluster(name string, clusterType domain.ClusterType, verbose bool) error {
 	fmt.Printf("Cleaning up cluster '%s' resources...\n", name)
 	
 	switch clusterType {
-	case cluster.ClusterTypeK3d:
+	case domain.ClusterTypeK3d:
 		return s.cleanupK3dCluster(name, verbose)
 	default:
 		return fmt.Errorf("cleanup not supported for cluster type: %s", clusterType)
@@ -132,7 +133,7 @@ func (s *ClusterCommandService) ShowClusterStatus(name string, detailed bool, sk
 }
 
 // DisplayClusterList handles cluster list display logic
-func (s *ClusterCommandService) DisplayClusterList(clusters []cluster.ClusterInfo, quiet bool, verbose bool) error {
+func (s *ClusterCommandService) DisplayClusterList(clusters []domain.ClusterInfo, quiet bool, verbose bool) error {
 	if len(clusters) == 0 {
 		if quiet {
 			// In quiet mode, just exit silently if no clusters

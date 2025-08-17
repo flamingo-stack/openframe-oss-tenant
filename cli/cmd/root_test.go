@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/common"
+	"github.com/flamingo/openframe-cli/internal/common/ui"
 	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	// Suppress logo output during tests
-	common.TestMode = true
+	ui.TestMode = true
 }
 
 // getTestClusterCmd returns a cluster command with mock dependencies for testing

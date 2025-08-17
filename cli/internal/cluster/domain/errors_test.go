@@ -153,8 +153,8 @@ func TestErrorFormatting(t *testing.T) {
 	})
 	
 	t.Run("provider not found error format", func(t *testing.T) {
-		err := NewProviderNotFoundError(ClusterTypeEKS)
-		assert.Contains(t, err.Error(), "eks")
+		err := NewProviderNotFoundError(ClusterTypeGKE)
+		assert.Contains(t, err.Error(), "gke")
 	})
 	
 	t.Run("invalid config error format", func(t *testing.T) {

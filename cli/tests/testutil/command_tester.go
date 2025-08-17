@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe-cli/internal/cluster"
-	"github.com/flamingo/openframe-cli/internal/common/utils"
+	"github.com/flamingo/openframe-cli/internal/common/executor"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +38,7 @@ func NewCommandTester(t *testing.T, cmd *cobra.Command) *CommandTester {
 	
 	// Create mock executor with proper responses
 	mockExecutor := NewTestMockExecutor()
-	mockExecutor.SetResponse("k3d cluster list", &utils.CommandResult{
+	mockExecutor.SetResponse("k3d cluster list", &executor.CommandResult{
 		ExitCode: 0,
 		Stdout:   "[]", // Empty JSON array for no clusters
 	})

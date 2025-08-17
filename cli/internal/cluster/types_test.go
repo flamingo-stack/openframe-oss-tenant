@@ -1,36 +1,14 @@
 package cluster
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	"github.com/flamingo/openframe-cli/internal/cluster/domain"
-	"github.com/flamingo/openframe-cli/internal/common/utils"
+	"github.com/flamingo/openframe-cli/internal/common/executor"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-// MockCommandExecutor for testing
-type MockCommandExecutor struct {
-	mock.Mock
-}
-
-func (m *MockCommandExecutor) Execute(ctx context.Context, name string, args ...string) (*utils.CommandResult, error) {
-	arguments := m.Called(ctx, name, args)
-	if arguments.Get(0) == nil {
-		return nil, arguments.Error(1)
-	}
-	return arguments.Get(0).(*utils.CommandResult), arguments.Error(1)
-}
-
-func (m *MockCommandExecutor) ExecuteWithOptions(ctx context.Context, options utils.ExecuteOptions) (*utils.CommandResult, error) {
-	arguments := m.Called(ctx, options)
-	if arguments.Get(0) == nil {
-		return nil, arguments.Error(1)
-	}
-	return arguments.Get(0).(*utils.CommandResult), arguments.Error(1)
-}
 
 func TestNewFlagContainer(t *testing.T) {
 	t.Run("creates container with default values", func(t *testing.T) {
@@ -124,7 +102,7 @@ func TestFlagContainer_Reset(t *testing.T) {
 func TestFlagContainer_Executor(t *testing.T) {
 	t.Run("can set and get executor", func(t *testing.T) {
 		container := NewFlagContainer()
-		mockExecutor := &MockCommandExecutor{}
+		mockExecutor := executor.NewMockCommandExecutor()
 		
 		container.Executor = mockExecutor
 		
@@ -135,7 +113,7 @@ func TestFlagContainer_Executor(t *testing.T) {
 func TestFlagContainer_TestManager(t *testing.T) {
 	t.Run("can set and get test manager", func(t *testing.T) {
 		container := NewFlagContainer()
-		mockExecutor := &MockCommandExecutor{}
+		mockExecutor := executor.NewMockCommandExecutor()
 		testManager := NewK3dManager(mockExecutor, false)
 		
 		container.TestManager = testManager
@@ -144,34 +122,34 @@ func TestFlagContainer_TestManager(t *testing.T) {
 	})
 }
 
-func TestTypeReExports(t *testing.T) {
-	t.Run("cluster types are properly re-exported", func(t *testing.T) {
-		// Test that re-exported types match domain types
-		var clusterType ClusterType = ClusterTypeK3d
+func TestDomainTypes(t *testing.T) {
+	t.Run("domain types work correctly", func(t *testing.T) {
+		// Test that domain types are accessible
+		var clusterType domain.ClusterType = domain.ClusterTypeK3d
 		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
 		
-		var domainType domain.ClusterType = ClusterTypeGKE
-		assert.Equal(t, ClusterTypeGKE, domainType)
+		var domainType domain.ClusterType = domain.ClusterTypeGKE
+		assert.Equal(t, domain.ClusterTypeGKE, domainType)
 	})
 	
-	t.Run("cluster constants are properly re-exported", func(t *testing.T) {
-		assert.Equal(t, domain.ClusterTypeK3d, ClusterTypeK3d)
-		assert.Equal(t, domain.ClusterTypeGKE, ClusterTypeGKE)
-		assert.Equal(t, domain.ClusterTypeEKS, ClusterTypeEKS)
+	t.Run("domain constants are correct", func(t *testing.T) {
+		// Test that domain constants have expected values
+		assert.Equal(t, "k3d", string(domain.ClusterTypeK3d))
+		assert.Equal(t, "gke", string(domain.ClusterTypeGKE))
 	})
 }
 
 func TestClusterConfig(t *testing.T) {
 	t.Run("can create and use cluster config", func(t *testing.T) {
-		config := ClusterConfig{
+		config := domain.ClusterConfig{
 			Name:       "test-cluster",
-			Type:       ClusterTypeK3d,
+			Type:       domain.ClusterTypeK3d,
 			NodeCount:  3,
 			K8sVersion: "v1.25.0-k3s1",
 		}
 		
 		assert.Equal(t, "test-cluster", config.Name)
-		assert.Equal(t, ClusterTypeK3d, config.Type)
+		assert.Equal(t, domain.ClusterTypeK3d, config.Type)
 		assert.Equal(t, 3, config.NodeCount)
 		assert.Equal(t, "v1.25.0-k3s1", config.K8sVersion)
 	})
@@ -179,16 +157,16 @@ func TestClusterConfig(t *testing.T) {
 
 func TestClusterInfo(t *testing.T) {
 	t.Run("can create and use cluster info", func(t *testing.T) {
-		info := ClusterInfo{
+		info := domain.ClusterInfo{
 			Name:      "test-cluster",
-			Type:      ClusterTypeK3d,
+			Type:      domain.ClusterTypeK3d,
 			Status:    "running",
 			NodeCount: 3,
-			Nodes:     []NodeInfo{},
+			Nodes:     []domain.NodeInfo{},
 		}
 		
 		assert.Equal(t, "test-cluster", info.Name)
-		assert.Equal(t, ClusterTypeK3d, info.Type)
+		assert.Equal(t, domain.ClusterTypeK3d, info.Type)
 		assert.Equal(t, "running", info.Status)
 		assert.Equal(t, 3, info.NodeCount)
 		assert.Empty(t, info.Nodes)
@@ -197,7 +175,7 @@ func TestClusterInfo(t *testing.T) {
 
 func TestNodeInfo(t *testing.T) {
 	t.Run("can create and use node info", func(t *testing.T) {
-		node := NodeInfo{
+		node := domain.NodeInfo{
 			Name:   "test-node",
 			Role:   "worker",
 			Status: "ready",
@@ -211,8 +189,8 @@ func TestNodeInfo(t *testing.T) {
 
 func TestProviderOptions(t *testing.T) {
 	t.Run("can create and use provider options", func(t *testing.T) {
-		options := ProviderOptions{
-			K3d: &K3dOptions{
+		options := domain.ProviderOptions{
+			K3d: &domain.K3dOptions{
 				PortMappings: []string{"8080:80@loadbalancer", "8443:443@loadbalancer"},
 			},
 			Verbose: true,
@@ -226,69 +204,69 @@ func TestProviderOptions(t *testing.T) {
 
 func TestErrorTypes(t *testing.T) {
 	t.Run("cluster not found error", func(t *testing.T) {
-		err := NewClusterNotFoundError("test-cluster")
+		err := domain.NewClusterNotFoundError("test-cluster")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "test-cluster")
 		assert.Contains(t, err.Error(), "not found")
 		
 		// Test type assertion (check if error contains expected type)
-		var clusterNotFoundErr ErrClusterNotFound
+		var clusterNotFoundErr domain.ErrClusterNotFound
 		assert.True(t, errors.As(err, &clusterNotFoundErr))
 	})
 	
 	t.Run("provider not found error", func(t *testing.T) {
-		err := NewProviderNotFoundError(ClusterTypeGKE)
+		err := domain.NewProviderNotFoundError(domain.ClusterTypeGKE)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "gke")
 		assert.Contains(t, err.Error(), "no provider available")
 		
 		// Test type assertion (check if error contains expected type)
-		var providerNotFoundErr ErrProviderNotFound
+		var providerNotFoundErr domain.ErrProviderNotFound
 		assert.True(t, errors.As(err, &providerNotFoundErr))
 	})
 	
 	t.Run("invalid config error", func(t *testing.T) {
-		err := NewInvalidConfigError("name", "", "cluster name cannot be empty")
+		err := domain.NewInvalidConfigError("name", "", "cluster name cannot be empty")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "name")
 		assert.Contains(t, err.Error(), "cluster name cannot be empty")
 		
 		// Test type assertion (check if error contains expected type)
-		var invalidConfigErr ErrInvalidClusterConfig
+		var invalidConfigErr domain.ErrInvalidClusterConfig
 		assert.True(t, errors.As(err, &invalidConfigErr))
 	})
 	
 	t.Run("cluster already exists error", func(t *testing.T) {
-		err := NewClusterAlreadyExistsError("test-cluster")
+		err := domain.NewClusterAlreadyExistsError("test-cluster")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "test-cluster")
 		assert.Contains(t, err.Error(), "already exists")
 		
 		// Test type assertion (check if error contains expected type)
-		var alreadyExistsErr ErrClusterAlreadyExists
+		var alreadyExistsErr domain.ErrClusterAlreadyExists
 		assert.True(t, errors.As(err, &alreadyExistsErr))
 	})
 	
 	t.Run("cluster operation error", func(t *testing.T) {
 		originalErr := assert.AnError
-		err := NewClusterOperationError("create", "test-cluster", originalErr)
+		err := domain.NewClusterOperationError("create", "test-cluster", originalErr)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "create")
 		assert.Contains(t, err.Error(), "test-cluster")
 		
 		// Test type assertion (check if error contains expected type)
-		var operationErr ErrClusterOperation
+		var operationErr domain.ErrClusterOperation
 		assert.True(t, errors.As(err, &operationErr))
 	})
 }
 
 func TestInterface_ClusterService(t *testing.T) {
 	t.Run("K3dManager implements ClusterService interface", func(t *testing.T) {
-		mockExecutor := &MockCommandExecutor{}
+		mockExecutor := executor.NewMockCommandExecutor()
 		manager := NewK3dManager(mockExecutor, false)
 		
 		// Test that K3dManager implements ClusterService
-		var _ ClusterService = manager
+		var _ domain.ClusterService = manager
 		
 		// Verify interface methods exist
 		assert.NotNil(t, manager.CreateCluster)
@@ -302,7 +280,7 @@ func TestInterface_ClusterService(t *testing.T) {
 
 func TestInterface_ClusterManager(t *testing.T) {
 	t.Run("K3dManager implements ClusterManager interface", func(t *testing.T) {
-		mockExecutor := &MockCommandExecutor{}
+		mockExecutor := executor.NewMockCommandExecutor()
 		manager := NewK3dManager(mockExecutor, false)
 		
 		// Test that K3dManager implements ClusterManager
@@ -317,7 +295,7 @@ func TestInterface_ClusterManager(t *testing.T) {
 
 func TestFlagTypes(t *testing.T) {
 	t.Run("global flags", func(t *testing.T) {
-		flags := &GlobalFlags{
+		flags := &domain.GlobalFlags{
 			Verbose: true,
 			DryRun:  true,
 			Force:   true,
@@ -329,7 +307,7 @@ func TestFlagTypes(t *testing.T) {
 	})
 	
 	t.Run("create flags", func(t *testing.T) {
-		flags := &CreateFlags{
+		flags := &domain.CreateFlags{
 			ClusterType: "k3d",
 			NodeCount:   5,
 			K8sVersion:  "v1.25.0-k3s1",
@@ -343,14 +321,14 @@ func TestFlagTypes(t *testing.T) {
 	})
 	
 	t.Run("delete flags", func(t *testing.T) {
-		flags := &DeleteFlags{}
+		flags := &domain.DeleteFlags{}
 		flags.GlobalFlags.Force = true
 		
 		assert.True(t, flags.GlobalFlags.Force)
 	})
 	
 	t.Run("list flags", func(t *testing.T) {
-		flags := &ListFlags{
+		flags := &domain.ListFlags{
 			Quiet: true,
 		}
 		

@@ -11,13 +11,11 @@ func TestClusterType(t *testing.T) {
 	t.Run("cluster type constants", func(t *testing.T) {
 		assert.Equal(t, ClusterType("k3d"), ClusterTypeK3d)
 		assert.Equal(t, ClusterType("gke"), ClusterTypeGKE)
-		assert.Equal(t, ClusterType("eks"), ClusterTypeEKS)
 	})
 	
 	t.Run("cluster type string conversion", func(t *testing.T) {
 		assert.Equal(t, "k3d", string(ClusterTypeK3d))
 		assert.Equal(t, "gke", string(ClusterTypeGKE))
-		assert.Equal(t, "eks", string(ClusterTypeEKS))
 	})
 }
 
@@ -186,7 +184,6 @@ func TestProviderOptions(t *testing.T) {
 		assert.Equal(t, []string{"8080:80@loadbalancer", "8443:443@loadbalancer"}, options.K3d.PortMappings)
 		assert.True(t, options.Verbose)
 		assert.Nil(t, options.GKE)
-		assert.Nil(t, options.EKS)
 	})
 	
 	t.Run("creates provider options with GKE options", func(t *testing.T) {
@@ -201,29 +198,15 @@ func TestProviderOptions(t *testing.T) {
 		assert.Equal(t, "us-central1-a", options.GKE.Zone)
 		assert.Equal(t, "my-project", options.GKE.Project)
 		assert.Nil(t, options.K3d)
-		assert.Nil(t, options.EKS)
 		assert.False(t, options.Verbose)
 	})
 	
-	t.Run("creates provider options with EKS options", func(t *testing.T) {
-		options := ProviderOptions{
-			EKS: &EKSOptions{
-				Region: "us-west-2",
-			},
-		}
-		
-		assert.NotNil(t, options.EKS)
-		assert.Equal(t, "us-west-2", options.EKS.Region)
-		assert.Nil(t, options.K3d)
-		assert.Nil(t, options.GKE)
-	})
 	
 	t.Run("creates empty provider options", func(t *testing.T) {
 		options := ProviderOptions{}
 		
 		assert.Nil(t, options.K3d)
 		assert.Nil(t, options.GKE)
-		assert.Nil(t, options.EKS)
 		assert.False(t, options.Verbose)
 	})
 }
@@ -270,21 +253,6 @@ func TestGKEOptions(t *testing.T) {
 	})
 }
 
-func TestEKSOptions(t *testing.T) {
-	t.Run("creates EKS options with region", func(t *testing.T) {
-		options := EKSOptions{
-			Region: "eu-west-1",
-		}
-		
-		assert.Equal(t, "eu-west-1", options.Region)
-	})
-	
-	t.Run("creates empty EKS options", func(t *testing.T) {
-		options := EKSOptions{}
-		
-		assert.Empty(t, options.Region)
-	})
-}
 
 func TestJSONSerialization(t *testing.T) {
 	t.Run("cluster config serialization", func(t *testing.T) {

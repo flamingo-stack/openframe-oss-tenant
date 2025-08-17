@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/flamingo/openframe-cli/internal/cluster"
 	"github.com/flamingo/openframe-cli/internal/cluster/domain"
 	"github.com/flamingo/openframe-cli/internal/cluster/utils"
 	"github.com/spf13/cobra"
@@ -67,16 +66,16 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	}
 	
 	globalFlags := utils.GetGlobalFlags()
-	config := cluster.ClusterConfig{
+	config := domain.ClusterConfig{
 		Name:       clusterName,
-		Type:       cluster.ClusterType(globalFlags.Create.ClusterType),
+		Type:       domain.ClusterType(globalFlags.Create.ClusterType),
 		K8sVersion: globalFlags.Create.K8sVersion,
 		NodeCount:  globalFlags.Create.NodeCount,
 	}
 	
 	// Set defaults if needed
 	if config.Type == "" {
-		config.Type = cluster.ClusterTypeK3d
+		config.Type = domain.ClusterTypeK3d
 	}
 	if config.NodeCount == 0 {
 		config.NodeCount = 3
@@ -99,7 +98,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 }
 
 // showConfigurationSummary displays the cluster configuration summary
-func showConfigurationSummary(config cluster.ClusterConfig, dryRun bool, skipWizard bool, out io.Writer) error {
+func showConfigurationSummary(config domain.ClusterConfig, dryRun bool, skipWizard bool, out io.Writer) error {
 	fmt.Fprintf(out, "Configuration Summary:\n")
 	fmt.Fprintf(out, "  Name: %s\n", config.Name)
 	fmt.Fprintf(out, "  Type: %s\n", config.Type)
