@@ -1,46 +1,59 @@
 package com.openframe.api.service;
 
+import com.openframe.api.dto.tool.ToolFilterOptions;
+import com.openframe.api.dto.tool.ToolFilters;
+import com.openframe.api.dto.tool.ToolList;
 import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.ToolFilter;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import com.openframe.core.model.tool.filter.ToolQueryFilter;
+import com.openframe.data.repository.mongo.IntegratedToolRepository;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ToolService {
     
-    private final MongoTemplate mongoTemplate;
+    private final IntegratedToolRepository integratedToolRepository;
 
-    public List<IntegratedTool> getIntegratedTools(ToolFilter filter) {
-        Query query = new Query();
+    public ToolList queryTools(ToolFilterOptions filterOptions, String search) {
+        log.debug("Querying tools with filter: {}, search: {}", filterOptions, search);
         
-        if (filter != null) {
-            if (filter.getEnabled() != null) {
-                query.addCriteria(Criteria.where("enabled").is(filter.getEnabled()));
-            }
-            
-            if (filter.getType() != null) {
-                query.addCriteria(Criteria.where("type").is(filter.getType()));
-            }
-            
-            if (filter.getCategory() != null) {
-                query.addCriteria(Criteria.where("category").is(filter.getCategory()));
-            }
+        ToolQueryFilter queryFilter = buildQueryFilter(filterOptions);
+        List<IntegratedTool> tools = integratedToolRepository.findToolsWithFilters(queryFilter, search);
+        
+        return ToolList.builder()
+                .tools(tools)
+                .build();
+    }
 
-            if (filter.getSearch() != null) {
-                Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("name").regex(filter.getSearch(), "i"),
-                    Criteria.where("description").regex(filter.getSearch(), "i")
-                );
-                query.addCriteria(searchCriteria);
-            }
+    public ToolFilters getToolFilters() {
+        log.debug("Getting available tool filters");
+        
+        List<String> types = integratedToolRepository.findDistinctTypes();
+        List<String> categories = integratedToolRepository.findDistinctCategories();
+        List<String> platformCategories = integratedToolRepository.findDistinctPlatformCategories();
+        
+        return ToolFilters.builder()
+                .types(types)
+                .categories(categories)
+                .platformCategories(platformCategories)
+                .build();
+    }
+    
+    private ToolQueryFilter buildQueryFilter(ToolFilterOptions filterOptions) {
+        if (filterOptions == null) {
+            return ToolQueryFilter.builder().build();
         }
         
-        return mongoTemplate.find(query, IntegratedTool.class);
+        return ToolQueryFilter.builder()
+                .enabled(filterOptions.getEnabled())
+                .type(filterOptions.getType())
+                .category(filterOptions.getCategory())
+                .platformCategory(filterOptions.getPlatformCategory())
+                .build();
     }
 } 

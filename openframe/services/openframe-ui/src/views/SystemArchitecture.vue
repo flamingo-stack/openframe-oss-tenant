@@ -167,7 +167,7 @@ const getNodePosition = (tool: IntegratedTool) => {
   }
 
   // Count total nodes in this layer to calculate vertical centering
-  const totalNodesInLayer = result.value?.integratedTools.filter(
+  const totalNodesInLayer = result.value?.integratedTools?.tools.filter(
     (t: IntegratedTool) => t.layer === tool.layer && t.enabled
   ).length || 1;
 
@@ -359,25 +359,27 @@ const onLogoError = (e: Event) => {
 
 // Reuse the same GraphQL query from Tools.vue
 const INTEGRATED_TOOLS_QUERY = gql`
-  query GetIntegratedTools($filter: ToolFilter) {
+  query GetIntegratedTools($filter: ToolFilterInput) {
     integratedTools(filter: $filter) {
-      id
-      name
-      description
-      icon
-      toolUrls {
-        url
-        port
+      tools {
+        id
+        name
+        description
+        icon
+        toolUrls {
+          url
+          port
+          type
+        }
         type
+        toolType
+        category
+        platformCategory
+        enabled
+        layer
+        layerOrder
+        layerColor
       }
-      type
-      toolType
-      category
-      platformCategory
-      enabled
-      layer
-      layerOrder
-      layerColor
     }
   }
 `
@@ -398,7 +400,7 @@ const router = useRouter()
 // Handle node click
 const onNodeClick = ({ event, node }: NodeMouseEvent) => {
   console.log('Node clicked:', node.id)
-  const tool = result.value?.integratedTools.find((t: IntegratedTool) => t.id === node.id)
+  const tool = result.value?.integratedTools?.tools.find((t: IntegratedTool) => t.id === node.id)
   if (tool) {
     console.log('Navigating to tool:', tool.name)
     router.push({
@@ -410,8 +412,8 @@ const onNodeClick = ({ event, node }: NodeMouseEvent) => {
 
 // Watch for tools data and update chart
 watch(result, (newResult) => {
-  if (newResult?.integratedTools) {
-    const tools = newResult.integratedTools.filter((tool: IntegratedTool) => tool.enabled);
+  if (newResult?.integratedTools?.tools) {
+    const tools = newResult.integratedTools.tools.filter((tool: IntegratedTool) => tool.enabled);
     console.log('Filtered tools:', tools);
     
     // Create nodes from tools

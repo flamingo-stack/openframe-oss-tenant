@@ -1,46 +1,48 @@
 import { gql } from '@apollo/client/core';
 
 export const GET_INTEGRATED_TOOLS = gql`
-  query GetIntegratedTools($filter: ToolFilter) {
-    integratedTools(filter: $filter) {
-      id
-      name
-      description
-      icon
-      toolUrls {
-        url
-        port
-        type
-      }
-      type
-      toolType
-      category
-      platformCategory
-      enabled
-      credentials {
-        username
-        password
-        apiKey {
-          key
+  query GetIntegratedTools($filter: ToolFilterInput, $search: String) {
+    integratedTools(filter: $filter, search: $search) {
+      tools {
+        id
+        name
+        description
+        icon
+        toolUrls {
+          url
+          port
           type
-          keyName
         }
+        type
+        toolType
+        category
+        platformCategory
+        enabled
+        credentials {
+          username
+          password
+          apiKey {
+            key
+            type
+            keyName
+          }
+        }
+        layer
+        layerOrder
+        layerColor
+        metricsPath
+        healthCheckEndpoint
+        healthCheckInterval
+        connectionTimeout
+        readTimeout
+        allowedEndpoints
       }
-      layer
-      layerOrder
-      layerColor
-      metricsPath
-      healthCheckEndpoint
-      healthCheckInterval
-      connectionTimeout
-      readTimeout
-      allowedEndpoints
     }
   }
 `;
 
 export const GET_DEVICES = gql`
-  query GetDevices($filter: DeviceFilterInput, $pagination: PaginationInput, $search: String) {
+  query GetDevices($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String) {
     devices(filter: $filter, pagination: $pagination, search: $search) {
       edges {
         node {
@@ -75,12 +77,13 @@ export const GET_DEVICES = gql`
             createdBy
           }
     }
+        cursor
   }
       pageInfo {
         hasNextPage
         hasPreviousPage
-        currentPage
-        totalPages
+        startCursor
+        endCursor
       }
       filteredCount
     }
@@ -150,6 +153,60 @@ export const GET_DEVICE_BY_ID = gql`
         createdAt
         createdBy
       }
+    }
+  }
+`;
+
+// Log-related GraphQL queries
+export const GET_LOGS = gql`
+  query GetLogs($filter: LogFilterInput, $pagination: CursorPaginationInput, $search: String) {
+    logs(filter: $filter, pagination: $pagination, search: $search) {
+      edges {
+        node {
+          toolEventId
+          eventType
+          ingestDay
+          toolType
+          severity
+          userId
+          deviceId
+          summary
+          timestamp
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+    }
+  }
+`;
+
+export const GET_LOG_FILTERS = gql`
+  query GetLogFilters($filter: LogFilterInput) {
+    logFilters(filter: $filter) {
+      toolTypes
+      eventTypes
+      severities
+    }
+  }
+`;
+
+export const GET_LOG_DETAILS = gql`
+  query GetLogDetails($ingestDay: String!, $toolType: String!, $eventType: String!, $timestamp: Instant!, $toolEventId: ID!) {
+    logDetails(ingestDay: $ingestDay, toolType: $toolType, eventType: $eventType, timestamp: $timestamp, toolEventId: $toolEventId) {
+      toolEventId
+      eventType
+      ingestDay
+      toolType
+      severity
+      userId
+      deviceId
+      message
+      timestamp
+      details
     }
   }
 `; 
