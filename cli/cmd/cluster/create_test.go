@@ -4,18 +4,22 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/flamingo/openframe-cli/internal/cluster"
 	"github.com/flamingo/openframe-cli/tests/testutil"
-	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
-	"github.com/flamingo/openframe-cli/internal/ui/common"
+	uiCluster "github.com/flamingo/openframe-cli/internal/cluster/ui"
+	clusterUtils "github.com/flamingo/openframe-cli/internal/cluster/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	common.TestMode = true
+	testutil.InitializeTestMode()
 }
 
 func TestCreateCommand_Structure(t *testing.T) {
+	clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer clusterUtils.ResetGlobalFlags()
+	
 	cmd := getCreateCmd()
 	
 	tcs := testutil.TestCommandStructure{
@@ -36,6 +40,9 @@ func TestCreateCommand_Structure(t *testing.T) {
 }
 
 func TestCreateCommand_Flags(t *testing.T) {
+	clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer clusterUtils.ResetGlobalFlags()
+	
 	cmd := getCreateCmd()
 	
 	tests := []struct {
@@ -48,7 +55,6 @@ func TestCreateCommand_Flags(t *testing.T) {
 		{"nodes", "n", "3", "Number of worker nodes (default 3)"},
 		{"version", "", "", "Kubernetes version"},
 		{"skip-wizard", "", "false", "Skip interactive wizard"},
-		{"dry-run", "", "false", "Dry run mode"},
 	}
 	
 	for _, tt := range tests {
@@ -70,7 +76,11 @@ func TestCreateCommand_CLI(t *testing.T) {
 		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 	
-	testutil.TestCLIScenarios(t, getCreateCmd, scenarios)
+	testutil.TestCLIScenarios(t, func() *cobra.Command {
+		clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer clusterUtils.ResetGlobalFlags()
+		return getCreateCmd()
+	}, scenarios)
 }
 
 func TestCreateCommand_Execution(t *testing.T) {
@@ -82,24 +92,25 @@ func TestCreateCommand_Execution(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "dry run with skip wizard",
+			name: "skip wizard with args",
 			args: []string{"test-cluster"},
-			cmdArgs: []string{"--skip-wizard", "--dry-run", "--type", "k3d", "--nodes", "2", "test-cluster"},
-			wantErr: false,
+			cmdArgs: []string{"--skip-wizard", "--type", "k3d", "--nodes", "2", "test-cluster"},
+			wantErr: false, // Should succeed with mock manager
 		},
 		{
-			name: "skip wizard with default name and dry run",
+			name: "skip wizard with default name",
 			args: []string{},
-			cmdArgs: []string{"--skip-wizard", "--dry-run", "--type", "k3d"},
-			wantErr: false,
+			cmdArgs: []string{"--skip-wizard", "--type", "k3d"},
+			wantErr: false, // Should succeed with mock manager
 		},
 	}
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ResetTestState()
+			clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
+			defer clusterUtils.ResetGlobalFlags()
 			
-			cmd := getCreateCmd()
+		cmd := getCreateCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			cmd.SetErr(&out)
@@ -148,17 +159,17 @@ func TestCreateUtilityFunctions(t *testing.T) {
 		tests := []struct {
 			name     string
 			input    string
-			expected cluster.ClusterType
+			expected clusterUtils.ClusterType
 		}{
-			{"k3d type", "k3d", cluster.ClusterTypeK3d},
-			{"empty defaults to k3d", "", cluster.ClusterTypeK3d},
-			{"unknown defaults to k3d", "unknown", cluster.ClusterTypeK3d},
-			{"case insensitive", "K3D", cluster.ClusterTypeK3d},
+			{"k3d type", "k3d", clusterUtils.ClusterTypeK3d},
+			{"empty defaults to k3d", "", clusterUtils.ClusterTypeK3d},
+			{"unknown defaults to k3d", "unknown", clusterUtils.ClusterTypeK3d},
+			{"case insensitive", "K3D", clusterUtils.ClusterTypeK3d},
 		}
 		
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				result := cluster.ParseClusterType(tt.input)
+				result := clusterUtils.ParseClusterType(tt.input)
 				assert.Equal(t, tt.expected, result)
 			})
 		}
@@ -177,7 +188,7 @@ func TestCreateUtilityFunctions(t *testing.T) {
 		
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				result := cluster.GetNodeCount(tt.input)
+				result := clusterUtils.GetNodeCount(tt.input)
 				assert.Equal(t, tt.expected, result)
 			})
 		}
@@ -198,7 +209,7 @@ func TestCreateUtilityFunctions(t *testing.T) {
 		
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				err := cluster.ValidateClusterName(tt.config.Name)
+				err := clusterUtils.ValidateClusterName(tt.config.Name)
 				if tt.wantErr {
 					assert.Error(t, err)
 				} else {
@@ -216,53 +227,13 @@ func TestCreateUtilityFunctions(t *testing.T) {
 		}
 	})
 	
-	t.Run("ShowConfigSummary", func(t *testing.T) {
-		config := &cluster.ClusterConfig{
-			Name:       "test-cluster",
-			Type:       cluster.ClusterTypeK3d,
-			K8sVersion: "v1.28.0",
-			NodeCount:  3,
-		}
-		
-		tests := []struct {
-			name       string
-			dryRun     bool
-			skipWizard bool
-			contains   []string
-		}{
-			{"dry run", true, false, []string{"Configuration Summary:", "test-cluster", "DRY RUN MODE"}},
-			{"skip wizard", false, true, []string{"Configuration Summary:", "test-cluster", "Proceeding with cluster creation"}},
-			{"interactive mode", false, false, []string{"Configuration Summary:", "test-cluster"}},
-		}
-		
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				var out bytes.Buffer
-				err := showConfigSummary(config, tt.dryRun, tt.skipWizard, &out)
-				assert.NoError(t, err)
-				
-				output := out.String()
-				for _, contains := range tt.contains {
-					assert.Contains(t, output, contains)
-				}
-			})
-		}
-	})
-	
-	t.Run("ShowConfigSummary_EdgeCases", func(t *testing.T) {
-		// Test with minimal config
-		config := &cluster.ClusterConfig{
-			Name: "minimal",
-			Type: cluster.ClusterTypeK3d,
-		}
-		var out bytes.Buffer
-		err := showConfigSummary(config, false, true, &out)
-		assert.NoError(t, err)
-		assert.Contains(t, out.String(), "minimal")
-	})
+	// Note: ShowConfigSummary tests removed - function moved to UI layer
 }
 
 func TestCreateCommand_ArgumentValidation(t *testing.T) {
+	clusterUtils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer clusterUtils.ResetGlobalFlags()
+	
 	cmd := getCreateCmd()
 	
 	// Test argument validation

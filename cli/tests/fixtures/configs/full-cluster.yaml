@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Config
+metadata:
+  name: full-test-cluster
+spec:
+  cluster:
+    name: full-test
+    type: k3d
+    nodeCount: 3
+    kubernetesVersion: v1.31.0-k3s1
+  features:
+    - name: monitoring
+      enabled: true
+      config:
+        prometheus: true
+        grafana: true
+    - name: ingress
+      enabled: true
+      config:
+        controller: nginx
+    - name: cert-manager
+      enabled: true
+  networking:
+    clusterDomain: cluster.local
+    serviceCidr: 10.43.0.0/16
+    podCidr: 10.42.0.0/16

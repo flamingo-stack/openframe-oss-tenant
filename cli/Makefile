@@ -29,7 +29,7 @@ deps:
 build: deps
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BUILD_DIR)
-	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/openframe > /dev/null 2>&1
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) . > /dev/null 2>&1
 	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
 
 ## Build for release (multiple platforms)
@@ -37,15 +37,15 @@ release: deps clean
 	@echo "Building release binaries..."
 	@mkdir -p $(BUILD_DIR)
 	@echo "  - Building darwin/amd64..."
-	@GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/openframe > /dev/null 2>&1
+	@GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 . > /dev/null 2>&1
 	@echo "  - Building darwin/arm64..."
-	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/openframe > /dev/null 2>&1
+	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 . > /dev/null 2>&1
 	@echo "  - Building linux/amd64..."
-	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/openframe > /dev/null 2>&1
+	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 . > /dev/null 2>&1
 	@echo "  - Building linux/arm64..."
-	@GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/openframe > /dev/null 2>&1
+	@GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 . > /dev/null 2>&1
 	@echo "  - Building windows/amd64..."
-	@GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/openframe > /dev/null 2>&1
+	@GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe . > /dev/null 2>&1
 	@echo "Release binaries built in $(BUILD_DIR)/"
 
 ## Run unit tests (cmd and pkg packages) with clean output

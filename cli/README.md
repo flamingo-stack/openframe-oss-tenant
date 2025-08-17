@@ -22,6 +22,9 @@ cd openframe/cli
 # Build the CLI
 make build
 
+# Alternative: Direct go build (specify output name)
+go build -o openframe .
+
 # Install to GOPATH/bin (optional)
 make install
 

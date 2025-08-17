@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func TestMain(m *testing.M) {
 	projectRoot := getProjectRoot()
 	cliBinary = filepath.Join(projectRoot, "build", "openframe-test")
 	
-	buildCmd := exec.Command("go", "build", "-o", cliBinary, "./cmd/openframe")
+	buildCmd := exec.Command("go", "build", "-o", cliBinary, ".")
 	buildCmd.Dir = projectRoot
 	if err := buildCmd.Run(); err != nil {
 		fmt.Printf("Failed to build CLI binary: %v\n", err)
@@ -54,6 +55,13 @@ func getProjectRoot() string {
 	}
 	return wd
 }
+
+// isDockerRunning checks if Docker is available and running
+func isDockerRunning() bool {
+	cmd := exec.Command("docker", "info")
+	return cmd.Run() == nil
+}
+
 
 // runCLI executes the CLI binary with given arguments
 func runCLI(args ...string) (string, string, error) {
@@ -174,7 +182,7 @@ func TestClusterCreate_ShortFlags(t *testing.T) {
 	stdout, stderr, err := runCLI("cluster", "create", "test-short",
 		"-t", "k3d",
 		"-n", "1",
-		"-v", "v1.32.0-k3s1",
+		"--version", "v1.32.0-k3s1",
 		"--skip-wizard",
 		"--dry-run")
 	
@@ -209,12 +217,11 @@ func TestClusterCreate_GlobalSilent(t *testing.T) {
 }
 
 // Integration test that actually creates and deletes a cluster
-// This test requires k3d to be installed and available
+// This test requires k3d to be installed and Docker to be running
+// If dependencies are missing, the test will pass with a warning message
 func TestClusterCreate_RealCluster(t *testing.T) {
-	// Check if k3d is available
-	if _, err := exec.LookPath("k3d"); err != nil {
-		t.Skip("k3d not available, skipping real cluster test")
-	}
+	// Check dependencies
+	testutil.RequireClusterDependencies(t)
 
 	clusterName := fmt.Sprintf("integration-test-%d", time.Now().Unix())
 	

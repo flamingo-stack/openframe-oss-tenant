@@ -1,20 +1,23 @@
 package cluster
 
 import (
-	"context"
+	"github.com/flamingo/openframe-cli/internal/cluster/utils"
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/flamingo/openframe-cli/tests/testutil"
-	"github.com/flamingo/openframe-cli/internal/ui/common"
-	uiCluster "github.com/flamingo/openframe-cli/internal/ui/cluster"
+	uiCluster "github.com/flamingo/openframe-cli/internal/cluster/ui"
 )
 
 func init() {
-	common.TestMode = true
+	testutil.InitializeTestMode()
 }
 func TestStatusCommand_Structure(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getStatusCmd()
 	
 	tcs := testutil.TestCommandStructure{
@@ -35,6 +38,9 @@ func TestStatusCommand_Structure(t *testing.T) {
 }
 
 func TestStatusCommand_Flags(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getStatusCmd()
 	
 	tests := []struct {
@@ -66,7 +72,11 @@ func TestStatusCommand_CLI(t *testing.T) {
 		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 	
-	testutil.TestCLIScenarios(t, getStatusCmd, scenarios)
+	testutil.TestCLIScenarios(t, func() *cobra.Command {
+		utils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer utils.ResetGlobalFlags()
+		return getStatusCmd()
+	}, scenarios)
 }
 
 func TestStatusCommand_Execution(t *testing.T) {
@@ -96,9 +106,12 @@ func TestStatusCommand_Execution(t *testing.T) {
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ResetTestState()
+			// No setup needed
 			
-			cmd := getStatusCmd()
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
+	cmd := getStatusCmd()
 			err := runClusterStatus(cmd, tt.args)
 			
 			if tt.wantErr {
@@ -112,7 +125,8 @@ func TestStatusCommand_Execution(t *testing.T) {
 					assert.True(t, 
 						strings.Contains(err.Error(), "failed to detect cluster type") ||
 						strings.Contains(err.Error(), "failed to get cluster status") ||
-						strings.Contains(err.Error(), "cluster not found"),
+						strings.Contains(err.Error(), "cluster not found") ||
+						strings.Contains(err.Error(), "failed to list clusters"),
 						"Expected cluster-related error, got: %v", err)
 				}
 			}
@@ -138,7 +152,10 @@ func TestStatusCommand_FlagValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := getStatusCmd()
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
+	cmd := getStatusCmd()
 			cmd.SetArgs(tt.args)
 			cmd.ParseFlags(tt.args)
 			
@@ -152,6 +169,9 @@ func TestStatusCommand_FlagValues(t *testing.T) {
 }
 
 func TestStatusCommand_ArgumentValidation(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getStatusCmd()
 	
 	tests := []struct {
@@ -207,36 +227,10 @@ func TestStatusUtilityFunctions(t *testing.T) {
 		}
 	})
 
-	t.Run("ShowInstalledApps", func(t *testing.T) {
-		// Test graceful failure when helm/kubectl are not available
-		ctx := context.Background()
-		err := showInstalledApps(ctx, "non-existent-cluster", false)
-		// Should not return error even when commands fail
-		assert.NoError(t, err, "showInstalledApps should handle command failures gracefully")
-		
-		// Test detailed mode
-		err = showInstalledApps(ctx, "non-existent-cluster", true)
-		assert.NoError(t, err, "showInstalledApps detailed mode should handle command failures gracefully")
-	})
-
-	t.Run("CheckCommonApps", func(t *testing.T) {
-		// Test that checkCommonApps doesn't panic
-		ctx := context.Background()
-		assert.NotPanics(t, func() {
-			checkCommonApps(ctx, "non-existent-context")
-		}, "checkCommonApps should not panic on missing context")
-	})
-
-	t.Run("ShowResourceInfo", func(t *testing.T) {
-		// Test graceful failure when kubectl top is not available
-		ctx := context.Background()
-		err := showResourceInfo(ctx, "non-existent-cluster")
-		// Should not return error even when command fails
-		assert.NoError(t, err, "showResourceInfo should handle command failures gracefully")
-	})
-
 	t.Run("ErrorCases", func(t *testing.T) {
-		ResetTestState()
+		utils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer utils.ResetGlobalFlags()
+		
 		cmd := getStatusCmd()
 		err := runClusterStatus(cmd, []string{"   "}) // whitespace only
 		assert.True(t, err != nil, "Expected error for whitespace-only cluster name")

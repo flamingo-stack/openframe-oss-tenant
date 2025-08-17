@@ -1,29 +1,16 @@
 package cluster
 
 import (
-	"context"
-
-	"github.com/flamingo/openframe-cli/internal/cluster"
-	clusterUtils "github.com/flamingo/openframe-cli/internal/cluster/utils"
-	"github.com/flamingo/openframe-cli/internal/factory"
+	"github.com/flamingo/openframe-cli/internal/cluster/domain"
+	"github.com/flamingo/openframe-cli/internal/cluster/utils"
 	"github.com/spf13/cobra"
-)
-
-var (
-	// Global flags for cluster commands
-	globalFlags clusterUtils.GlobalFlags
-	
-	// Command-specific flags
-	createFlags clusterUtils.CreateFlags
-	listFlags   clusterUtils.ListFlags
-	statusFlags clusterUtils.StatusFlags
-	deleteFlags clusterUtils.DeleteFlags
-	startFlags  clusterUtils.StartFlags
-	cleanupFlags clusterUtils.CleanupFlags
 )
 
 // GetClusterCmd returns the cluster command and its subcommands
 func GetClusterCmd() *cobra.Command {
+	// Initialize global flags
+	utils.InitGlobalFlags()
+	
 	clusterCmd := &cobra.Command{
 		Use:     "cluster",
 		Aliases: []string{"k"},
@@ -46,7 +33,7 @@ Examples:
   openframe cluster start`,
 	}
 
-	// Add subcommands
+	// Add subcommands - much simpler now
 	clusterCmd.AddCommand(
 		getCreateCmd(),
 		getDeleteCmd(),
@@ -56,38 +43,9 @@ Examples:
 		getCleanupCmd(),
 	)
 
-	// Add global flags using centralized management
-	flagManager := clusterUtils.NewFlagManager(&globalFlags)
-	flagManager.AddGlobalFlags(clusterCmd)
+	// Add global flags
+	domain.AddGlobalFlags(clusterCmd, utils.GetGlobalFlags().Global)
 
 	return clusterCmd
 }
 
-
-// ResetGlobalFlags resets global flag variables for testing
-func ResetGlobalFlags() {
-	globalFlags = clusterUtils.GlobalFlags{}
-	createFlags = clusterUtils.CreateFlags{}
-	listFlags = clusterUtils.ListFlags{}
-	statusFlags = clusterUtils.StatusFlags{}
-	deleteFlags = clusterUtils.DeleteFlags{}
-	startFlags = clusterUtils.StartFlags{}
-	cleanupFlags = clusterUtils.CleanupFlags{}
-}
-
-// createManager creates a cluster manager with context - common pattern across all commands
-func createManager() (context.Context, *cluster.Manager) {
-	ctx := context.Background()
-	manager := factory.CreateDefaultClusterManager()
-	return ctx, manager
-}
-
-// SetVerboseForTesting sets verbose flag for testing
-func SetVerboseForTesting(v bool) {
-	globalFlags.Verbose = v
-}
-
-// ResetTestState resets global state for clean tests
-func ResetTestState() {
-	ResetGlobalFlags()
-}

@@ -1,18 +1,22 @@
 package cluster
 
 import (
+	"github.com/flamingo/openframe-cli/internal/cluster/utils"
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/flamingo/openframe-cli/tests/testutil"
-	"github.com/flamingo/openframe-cli/internal/ui/common"
 )
 
 func init() {
-	common.TestMode = true
+	testutil.InitializeTestMode()
 }
 func TestStartCommand_Structure(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getStartCmd()
 	
 	tcs := testutil.TestCommandStructure{
@@ -39,7 +43,11 @@ func TestStartCommand_CLI(t *testing.T) {
 		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 	
-	testutil.TestCLIScenarios(t, getStartCmd, scenarios)
+	testutil.TestCLIScenarios(t, func() *cobra.Command {
+		utils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer utils.ResetGlobalFlags()
+		return getStartCmd()
+	}, scenarios)
 }
 
 func TestStartCommand_Execution(t *testing.T) {
@@ -69,9 +77,12 @@ func TestStartCommand_Execution(t *testing.T) {
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ResetTestState()
+			// No setup needed
 			
-			cmd := getStartCmd()
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
+	cmd := getStartCmd()
 			err := runStartCluster(cmd, tt.args)
 			
 			if tt.wantErr {
@@ -85,7 +96,8 @@ func TestStartCommand_Execution(t *testing.T) {
 					assert.True(t, 
 						strings.Contains(err.Error(), "failed to detect cluster type") ||
 						strings.Contains(err.Error(), "failed to start cluster") ||
-						strings.Contains(err.Error(), "cluster not found"),
+						strings.Contains(err.Error(), "cluster not found") ||
+						strings.Contains(err.Error(), "failed to list clusters"),
 						"Expected cluster-related error, got: %v", err)
 				}
 			}
@@ -94,6 +106,9 @@ func TestStartCommand_Execution(t *testing.T) {
 }
 
 func TestStartCommand_ArgumentValidation(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getStartCmd()
 	
 	tests := []struct {

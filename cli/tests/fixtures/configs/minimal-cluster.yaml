@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Config
+metadata:
+  name: minimal-test-cluster
+spec:
+  cluster:
+    name: minimal-test
+    type: k3d
+    nodeCount: 1
+    kubernetesVersion: v1.28.0
+  features:
+    - name: basic-monitoring
+      enabled: false
+    - name: ingress
+      enabled: true

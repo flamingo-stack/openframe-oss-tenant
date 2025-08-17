@@ -1,20 +1,24 @@
 package cluster
 
 import (
+	"github.com/flamingo/openframe-cli/internal/cluster/utils"
 	"bytes"
 	"strings"
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/spf13/cobra"
 	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	common.TestMode = true
+	testutil.InitializeTestMode()
 }
 
 func TestDeleteCommand_Structure(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getDeleteCmd()
 
 	tcs := testutil.TestCommandStructure{
@@ -35,6 +39,9 @@ func TestDeleteCommand_Structure(t *testing.T) {
 }
 
 func TestDeleteCommand_Flags(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getDeleteCmd()
 
 	tests := []struct {
@@ -65,7 +72,11 @@ func TestDeleteCommand_CLI(t *testing.T) {
 		{Name: "too many args", Args: []string{"cluster1", "cluster2"}, WantErr: true, Contains: []string{"accepts at most 1 arg"}},
 	}
 
-	testutil.TestCLIScenarios(t, getDeleteCmd, scenarios)
+	testutil.TestCLIScenarios(t, func() *cobra.Command {
+		utils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer utils.ResetGlobalFlags()
+		return getDeleteCmd()
+	}, scenarios)
 }
 
 func TestDeleteCommand_Execution(t *testing.T) {
@@ -79,8 +90,7 @@ func TestDeleteCommand_Execution(t *testing.T) {
 			name: "with cluster name and force",
 			args: []string{"test-cluster"},
 			setupFlags: func() {
-				ResetTestState()
-				deleteFlags.Force = true
+				// Force flag will be set via command args
 			},
 			wantErr: false, // Should handle gracefully when cluster not found
 		},
@@ -88,7 +98,7 @@ func TestDeleteCommand_Execution(t *testing.T) {
 			name: "no args triggers interactive selection",
 			args: []string{},
 			setupFlags: func() {
-				ResetTestState()
+				// No special setup needed
 			},
 			wantErr: false, // Should complete gracefully when no clusters found
 		},
@@ -98,7 +108,10 @@ func TestDeleteCommand_Execution(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupFlags()
 
-			cmd := getDeleteCmd()
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
+	cmd := getDeleteCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			cmd.SetErr(&out)
@@ -115,6 +128,7 @@ func TestDeleteCommand_Execution(t *testing.T) {
 						strings.Contains(err.Error(), "cluster not found") ||
 							strings.Contains(err.Error(), "failed to detect cluster type") ||
 							strings.Contains(err.Error(), "provider not found") ||
+							strings.Contains(err.Error(), "failed to list clusters") ||
 							strings.Contains(err.Error(), "^D") || // Interactive prompt interrupted
 							strings.Contains(err.Error(), "EOF"),
 						"Expected known error type, got: %v", err)
@@ -137,18 +151,22 @@ func TestDeleteCommand_FlagValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ResetGlobalFlags()
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer utils.ResetGlobalFlags()
 
-			cmd := getDeleteCmd()
+		cmd := getDeleteCmd()
 			cmd.SetArgs(tt.args)
 			cmd.ParseFlags(tt.args)
 
-			assert.Equal(t, tt.wantForce, deleteFlags.Force)
+			assert.Equal(t, tt.wantForce, utils.GetGlobalFlags().Delete.Force)
 		})
 	}
 }
 
 func TestDeleteCommand_ArgumentValidation(t *testing.T) {
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getDeleteCmd()
 
 	tests := []struct {

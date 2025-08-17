@@ -10,6 +10,8 @@ import (
 	"time"
 
 	cluster "github.com/flamingo/openframe-cli/cmd/cluster"
+	"github.com/flamingo/openframe-cli/internal/cluster/utils"
+	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,15 +20,8 @@ import (
 // These tests require k3d to be installed and Docker to be running
 
 func TestCleanupCommand_RealClusterIntegration(t *testing.T) {
-	// Skip if k3d is not available
-	if !isK3dAvailable() {
-		t.Skip("k3d not available, skipping integration test")
-	}
-
-	// Skip if Docker is not running
-	if !isDockerRunning() {
-		t.Skip("Docker not running, skipping integration test")
-	}
+	// Check dependencies
+	testutil.RequireClusterDependencies(t)
 
 	clusterName := fmt.Sprintf("test-cleanup-%d", time.Now().Unix())
 	
@@ -56,7 +51,7 @@ func TestCleanupCommand_RealClusterIntegration(t *testing.T) {
 		}
 
 		// Reset global flags
-		cluster.ResetGlobalFlags()
+		utils.ResetTestFlags()
 
 		// Test the cleanup command
 		cmd := cluster.GetCleanupCmdForTesting()
@@ -88,7 +83,7 @@ func TestCleanupCommand_NonExistentCluster(t *testing.T) {
 
 	t.Run("cleanup non-existent cluster", func(t *testing.T) {
 		// Reset global flags
-		cluster.ResetGlobalFlags()
+		utils.ResetTestFlags()
 
 		// Test cleanup with non-existent cluster
 		cmd := cluster.GetCleanupCmdForTesting()
@@ -108,15 +103,8 @@ func TestCleanupCommand_NonExistentCluster(t *testing.T) {
 }
 
 func TestCleanupCommand_StoppedCluster(t *testing.T) {
-	// Skip if k3d is not available
-	if !isK3dAvailable() {
-		t.Skip("k3d not available, skipping integration test")
-	}
-
-	// Skip if Docker is not running
-	if !isDockerRunning() {
-		t.Skip("Docker not running, skipping integration test")
-	}
+	// Check dependencies
+	testutil.RequireClusterDependencies(t)
 
 	clusterName := fmt.Sprintf("test-stopped-%d", time.Now().Unix())
 	
@@ -135,7 +123,7 @@ func TestCleanupCommand_StoppedCluster(t *testing.T) {
 		require.NoError(t, err, "Failed to stop test cluster")
 
 		// Reset global flags
-		cluster.ResetGlobalFlags()
+		utils.ResetTestFlags()
 
 		// Test cleanup on stopped cluster
 		cmd := cluster.GetCleanupCmdForTesting()
@@ -166,6 +154,7 @@ func isDockerRunning() bool {
 	cmd := exec.Command("docker", "info")
 	return cmd.Run() == nil
 }
+
 
 func createTestCluster(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -256,15 +245,8 @@ func generateTestImages(clusterName string) error {
 
 // Test with verbose output
 func TestCleanupCommand_VerboseOutput(t *testing.T) {
-	// Skip if k3d is not available
-	if !isK3dAvailable() {
-		t.Skip("k3d not available, skipping integration test")
-	}
-
-	// Skip if Docker is not running
-	if !isDockerRunning() {
-		t.Skip("Docker not running, skipping integration test")
-	}
+	// Check dependencies
+	testutil.RequireClusterDependencies(t)
 
 	clusterName := fmt.Sprintf("test-verbose-%d", time.Now().Unix())
 	
@@ -283,9 +265,9 @@ func TestCleanupCommand_VerboseOutput(t *testing.T) {
 		require.NoError(t, err, "Cluster should be ready")
 
 		// Reset global flags and set verbose
-		cluster.ResetGlobalFlags()
-		cluster.SetVerboseForTesting(true)
-		defer func() { cluster.SetVerboseForTesting(false) }()
+		utils.ResetTestFlags()
+		utils.SetVerboseForIntegrationTesting(true)
+		defer func() { utils.SetVerboseForIntegrationTesting(false) }()
 
 		// Test cleanup with verbose output
 		cmd := cluster.GetCleanupCmdForTesting()
@@ -325,7 +307,7 @@ func BenchmarkCleanupCommand_RealCluster(b *testing.B) {
 	b.ResetTimer()
 	
 	for i := 0; i < b.N; i++ {
-		cluster.ResetGlobalFlags()
+		utils.ResetTestFlags()
 		cmd := cluster.GetCleanupCmdForTesting()
 		var out bytes.Buffer
 		cmd.SetOut(&out)

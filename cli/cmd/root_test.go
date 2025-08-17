@@ -6,13 +6,53 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/flamingo/openframe-cli/internal/common"
+	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	// Suppress logo output during tests
 	common.TestMode = true
+}
+
+// getTestClusterCmd returns a cluster command with mock dependencies for testing
+func getTestClusterCmd() *cobra.Command {
+	// Initialize test mode for UI components
+	testutil.InitializeTestMode()
+	
+	// Create a basic cluster command that won't execute real k3d commands
+	clusterCmd := &cobra.Command{
+		Use:     "cluster",
+		Aliases: []string{"k"},
+		Short:   "Manage Kubernetes clusters",
+		Long:    "Cluster Management - Create, manage, and clean up Kubernetes clusters",
+	}
+	
+	// Add a mock list subcommand that uses mock executor
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all clusters",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create mock flags with test executor
+			flags := testutil.CreateStandardTestFlags()
+			manager := flags.TestManager
+			
+			// Use mock manager to list clusters (will return empty list)
+			clusters, err := manager.ListClusters(cmd.Context())
+			if err != nil {
+				return err
+			}
+			
+			if len(clusters) == 0 {
+				cmd.Printf("No clusters found.\n\nTo create a new cluster, run:\n  openframe cluster create\n")
+			}
+			return nil
+		},
+	}
+	
+	clusterCmd.AddCommand(listCmd)
+	return clusterCmd
 }
 
 func TestRootCommand(t *testing.T) {
@@ -58,7 +98,7 @@ func TestRootCommand(t *testing.T) {
 				Short: "OpenFrame CLI - Kubernetes cluster bootstrapping and development tools",
 				Long:  rootCmd.Long,
 			}
-			testRootCmd.AddCommand(getClusterCmd())
+			testRootCmd.AddCommand(getTestClusterCmd())
 			testRootCmd.SetArgs(tt.args)
 			testRootCmd.SetOut(&output)
 			testRootCmd.SetErr(&output)
@@ -127,7 +167,7 @@ func TestRootGlobalFlags(t *testing.T) {
 			}
 			testRootCmd.PersistentFlags().BoolVarP(&globalVerbose, "verbose", "v", false, "Enable verbose output")
 			testRootCmd.PersistentFlags().BoolVar(&globalSilent, "silent", false, "Suppress all output except errors")
-			testRootCmd.AddCommand(getClusterCmd())
+			testRootCmd.AddCommand(getTestClusterCmd())
 			testRootCmd.SetArgs(tt.args)
 			testRootCmd.SetOut(&output)
 			testRootCmd.SetErr(&output)

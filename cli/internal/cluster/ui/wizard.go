@@ -1,0 +1,248 @@
+package ui
+
+import (
+	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
+)
+
+// ClusterConfig holds cluster configuration for wizard
+type ClusterConfig struct {
+	Name       string
+	Type       ClusterType
+	NodeCount  int
+	K8sVersion string
+}
+
+// ConfigWizard provides interactive configuration for cluster creation
+type ConfigWizard struct {
+	config ClusterConfig
+}
+
+// NewConfigWizard creates a new configuration wizard
+func NewConfigWizard() *ConfigWizard {
+	return &ConfigWizard{
+		config: ClusterConfig{
+			Name:       "openframe-dev",
+			Type:       ClusterTypeK3d,
+			NodeCount:  3,
+			K8sVersion: "latest",
+		},
+	}
+}
+
+// Run starts the interactive configuration wizard
+func (w *ConfigWizard) Run() (ClusterConfig, error) {
+	pterm.Info.Println("🚀 Cluster Configuration Wizard")
+	pterm.Info.Println("Configure your new Kubernetes cluster step by step")
+	pterm.Println()
+
+	// Cluster name
+	if err := w.promptClusterName(); err != nil {
+		return ClusterConfig{}, err
+	}
+
+	// Cluster type
+	if err := w.promptClusterType(); err != nil {
+		return ClusterConfig{}, err
+	}
+
+	// Node count
+	if err := w.promptNodeCount(); err != nil {
+		return ClusterConfig{}, err
+	}
+
+	// Kubernetes version
+	if err := w.promptK8sVersion(); err != nil {
+		return ClusterConfig{}, err
+	}
+
+	// Confirmation
+	if err := w.confirmConfiguration(); err != nil {
+		return ClusterConfig{}, err
+	}
+
+	return w.config, nil
+}
+
+func (w *ConfigWizard) promptClusterName() error {
+	prompt := promptui.Prompt{
+		Label:   "Cluster Name",
+		Default: w.config.Name,
+		Validate: func(input string) error {
+			if strings.TrimSpace(input) == "" {
+				return errors.New("Cluster name cannot be empty")
+			}
+			return nil
+		},
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+
+	w.config.Name = strings.TrimSpace(result)
+	return nil
+}
+
+func (w *ConfigWizard) promptClusterType() error {
+	prompt := promptui.Select{
+		Label: "Cluster Type",
+		Items: []string{"k3d (Recommended for local development)", "gke (Google Kubernetes Engine - Coming Soon)", "eks (Amazon EKS - Coming Soon)"},
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+
+	switch idx {
+	case 0:
+		w.config.Type = ClusterTypeK3d
+	case 1:
+		w.config.Type = ClusterTypeGKE
+	case 2:
+		w.config.Type = ClusterTypeEKS
+	}
+
+	return nil
+}
+
+func (w *ConfigWizard) promptNodeCount() error {
+	prompt := promptui.Prompt{
+		Label:   "Number of Worker Nodes",
+		Default: strconv.Itoa(w.config.NodeCount),
+		Validate: func(input string) error {
+			val, err := strconv.Atoi(input)
+			if err != nil {
+				return errors.New("Please enter a valid number")
+			}
+			if val < 1 {
+				return errors.New("Node count must be at least 1")
+			}
+			if val > 10 {
+				return errors.New("Node count cannot exceed 10")
+			}
+			return nil
+		},
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+
+	w.config.NodeCount, _ = strconv.Atoi(result)
+	return nil
+}
+
+func (w *ConfigWizard) promptK8sVersion() error {
+	versions := []string{
+		"latest",
+		"v1.28.0-k3s1",
+		"v1.27.4-k3s1",
+		"v1.26.7-k3s1",
+		"v1.25.12-k3s1",
+	}
+
+	prompt := promptui.Select{
+		Label: "Kubernetes Version",
+		Items: versions,
+	}
+
+	_, result, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+
+	w.config.K8sVersion = result
+	return nil
+}
+
+func (w *ConfigWizard) confirmConfiguration() error {
+	pterm.Println()
+	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgBlue)).Println("Configuration Summary")
+
+	data := pterm.TableData{
+		{"Setting", "Value"},
+		{"Cluster Name", w.config.Name},
+		{"Cluster Type", string(w.config.Type)},
+		{"Node Count", strconv.Itoa(w.config.NodeCount)},
+		{"Kubernetes Version", w.config.K8sVersion},
+	}
+
+	if err := pterm.DefaultTable.WithHasHeader().WithData(data).Render(); err != nil {
+		return err
+	}
+
+	pterm.Println()
+
+	prompt := promptui.Select{
+		Label: "Create cluster with this configuration?",
+		Items: []string{"Yes, create the cluster", "No, go back and modify"},
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+
+	if idx != 0 {
+		// User wants to modify - restart wizard
+		_, err := w.Run()
+		return err
+	}
+
+	return nil
+}
+
+// SelectCluster provides interactive cluster selection
+func SelectCluster(clusters []ClusterInfo, message string) (ClusterInfo, error) {
+	if len(clusters) == 0 {
+		return ClusterInfo{}, errors.New("No clusters found")
+	}
+
+	items := make([]string, len(clusters))
+	for i, cluster := range clusters {
+		items[i] = formatClusterOption(cluster)
+	}
+
+	prompt := promptui.Select{
+		Label: message,
+		Items: items,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}:",
+			Active:   "▶ {{ . | cyan }}",
+			Inactive: "  {{ . }}",
+		},
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return ClusterInfo{}, err
+	}
+
+	return clusters[idx], nil
+}
+
+// formatClusterOption formats a cluster for display in selection lists
+func formatClusterOption(clusterInfo ClusterInfo) string {
+	return pterm.Sprintf("%s - %s",
+		clusterInfo.Name,
+		clusterInfo.Status)
+}
+
+// GetClusterNameOrDefault returns the cluster name from args or default - helper for commands
+func GetClusterNameOrDefault(args []string, defaultName string) string {
+	if len(args) > 0 && args[0] != "" {
+		return args[0]
+	}
+	if defaultName != "" {
+		return defaultName
+	}
+	return "openframe-dev"
+}

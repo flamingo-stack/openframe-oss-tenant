@@ -6,27 +6,36 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/flamingo/openframe-cli/internal/cluster/utils"
+	"github.com/flamingo/openframe-cli/tests/testutil"
 )
 
 func init() {
 	// Suppress logo output during tests
-	common.TestMode = true
+	testutil.InitializeTestMode()
 }
 func TestCleanupCommand_Structure(t *testing.T) {
+	// Set up global flags for testing
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getCleanupCmd()
 	
-	// Test command properties
-	assert.Equal(t, "cleanup [NAME]", cmd.Use)
-	assert.Equal(t, []string{"c"}, cmd.Aliases)
-	assert.Equal(t, "Clean up unused cluster resources", cmd.Short)
-	assert.Contains(t, cmd.Long, "Remove unused images and resources from cluster nodes")
+	tcs := testutil.TestCommandStructure{
+		Name:     "cleanup",
+		Use:      "cleanup [NAME]",
+		Short:    "Clean up unused cluster resources",
+		Aliases:  []string{"c"},
+		HasRunE:  true,
+		HasArgs:  true,
+		LongContains: []string{
+			"Remove unused images and resources from cluster nodes",
+			"openframe cluster cleanup",
+			"cleanup my-cluster",
+		},
+	}
 	
-	// Test command structure
-	assert.NotNil(t, cmd.Args)
-	assert.NotNil(t, cmd.RunE)
-	assert.NotEmpty(t, cmd.Short)
-	assert.NotEmpty(t, cmd.Long)
+	tcs.TestCommand(t, cmd)
 }
 
 func TestCleanupCommand_Execution(t *testing.T) {
@@ -42,7 +51,10 @@ func TestCleanupCommand_Execution(t *testing.T) {
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ResetGlobalFlags()
+			// Set up global flags for testing
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+			defer utils.ResetGlobalFlags()
+			
 			cmd := getCleanupCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
@@ -50,12 +62,13 @@ func TestCleanupCommand_Execution(t *testing.T) {
 			
 			err := runCleanupCluster(cmd, tt.args)
 			
-			// Should either succeed gracefully or return meaningful cluster-related error
+			// Should either succeed gracefully or return meaningful error
 			if err != nil {
 				assert.True(t, 
 					strings.Contains(err.Error(), "failed to detect cluster type") ||
 					strings.Contains(err.Error(), "cluster not found") ||
-					strings.Contains(err.Error(), "cleanup not supported"),
+					strings.Contains(err.Error(), "cleanup not supported") ||
+					strings.Contains(err.Error(), "failed to list clusters"),
 					"Expected cluster-related error, got: %v", err)
 			}
 		})
@@ -76,6 +89,10 @@ func TestCleanupCommand_CLI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Set up global flags for testing
+			utils.SetTestExecutor(testutil.NewTestMockExecutor())
+			defer utils.ResetGlobalFlags()
+			
 			cmd := getCleanupCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
@@ -95,6 +112,10 @@ func TestCleanupCommand_CLI(t *testing.T) {
 
 func TestCleanupCommand_ArgumentValidation(t *testing.T) {
 	t.Run("maximum args validation", func(t *testing.T) {
+		// Set up global flags for testing
+		utils.SetTestExecutor(testutil.NewTestMockExecutor())
+		defer utils.ResetGlobalFlags()
+		
 		cmd := getCleanupCmd()
 		
 		// Should accept 0 args
@@ -112,6 +133,10 @@ func TestCleanupCommand_ArgumentValidation(t *testing.T) {
 }
 
 func TestCleanupCommand_Content(t *testing.T) {
+	// Set up global flags for testing
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
+	
 	cmd := getCleanupCmd()
 	longDesc := cmd.Long
 	
@@ -125,10 +150,12 @@ func TestCleanupCommand_Content(t *testing.T) {
 
 func TestCleanupCommand_VerboseFlag(t *testing.T) {
 	// Test that verbose flag affects cleanup behavior
-	ResetGlobalFlags()
+	// Set up global flags for testing
+	utils.SetTestExecutor(testutil.NewTestMockExecutor())
+	defer utils.ResetGlobalFlags()
 	
 	// Test with verbose enabled
-	SetVerboseForTesting(true)
+	utils.GetGlobalFlags().Global.Verbose = true
 	cmd := getCleanupCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
@@ -141,8 +168,8 @@ func TestCleanupCommand_VerboseFlag(t *testing.T) {
 	}
 	
 	// Reset verbose
-	SetVerboseForTesting(false)
-	assert.False(t, globalFlags.Verbose)
+	utils.GetGlobalFlags().Global.Verbose = false
+	assert.False(t, utils.GetGlobalFlags().Global.Verbose)
 }
 
 

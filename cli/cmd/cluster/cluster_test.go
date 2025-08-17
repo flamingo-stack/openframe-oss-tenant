@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/flamingo/openframe-cli/internal/ui/common"
+	"github.com/flamingo/openframe-cli/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
 	// Suppress logo output during tests
-	common.TestMode = true
+	testutil.InitializeTestMode()
 }
 
 func TestClusterCommand_Structure(t *testing.T) {
@@ -104,41 +104,42 @@ func TestClusterCommand_Content(t *testing.T) {
 	assert.Contains(t, longDesc, "interactive configuration")
 }
 
-func TestResetGlobalFlags(t *testing.T) {
-	// Set some values
-	createFlags.ClusterType = "k3d"
-	createFlags.NodeCount = 5
-	createFlags.K8sVersion = "v1.28.0"
-	createFlags.SkipWizard = true
-	globalFlags.Verbose = true
-	globalFlags.DryRun = true
-	globalFlags.Force = true
+func TestFlagContainerReset(t *testing.T) {
+	// Create flag container and set some values
+	flags := testutil.CreateTestFlagContainer()
+	flags.Create.ClusterType = "k3d"
+	flags.Create.NodeCount = 5
+	flags.Create.K8sVersion = "v1.28.0"
+	flags.Create.SkipWizard = true
+	flags.Global.Verbose = true
+	flags.Global.DryRun = true
+	flags.Global.Force = true
 
 	// Reset flags
-	ResetGlobalFlags()
+	flags.Reset()
 
 	// Verify all flags are reset
-	assert.Equal(t, "", createFlags.ClusterType)
-	assert.Equal(t, 0, createFlags.NodeCount)
-	assert.Equal(t, "", createFlags.K8sVersion)
-	assert.False(t, createFlags.SkipWizard)
-	assert.False(t, globalFlags.Verbose)
-	assert.False(t, globalFlags.DryRun)
-	assert.False(t, globalFlags.Force)
+	assert.Equal(t, "", flags.Create.ClusterType)
+	assert.Equal(t, 0, flags.Create.NodeCount)
+	assert.Equal(t, "", flags.Create.K8sVersion)
+	assert.False(t, flags.Create.SkipWizard)
+	assert.False(t, flags.Global.Verbose)
+	assert.False(t, flags.Global.DryRun)
+	assert.False(t, flags.Global.Force)
 }
 
 func TestSetVerboseForTesting(t *testing.T) {
-	// Reset first
-	ResetGlobalFlags()
-	assert.False(t, globalFlags.Verbose)
+	// Create flag container
+	flags := testutil.CreateTestFlagContainer()
+	assert.False(t, flags.Global.Verbose)
 
 	// Set verbose to true
-	SetVerboseForTesting(true)
-	assert.True(t, globalFlags.Verbose)
+	testutil.SetVerboseMode(flags, true)
+	assert.True(t, flags.Global.Verbose)
 
 	// Set verbose to false
-	SetVerboseForTesting(false)
-	assert.False(t, globalFlags.Verbose)
+	testutil.SetVerboseMode(flags, false)
+	assert.False(t, flags.Global.Verbose)
 }
 
 
