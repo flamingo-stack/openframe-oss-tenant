@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )
@@ -12,7 +13,7 @@ import (
 // ClusterConfig holds cluster configuration for wizard
 type ClusterConfig struct {
 	Name       string
-	Type       ClusterType
+	Type       domain.ClusterType
 	NodeCount  int
 	K8sVersion string
 }
@@ -27,7 +28,7 @@ func NewConfigWizard() *ConfigWizard {
 	return &ConfigWizard{
 		config: ClusterConfig{
 			Name:       "openframe-dev",
-			Type:       ClusterTypeK3d,
+			Type:       domain.ClusterTypeK3d,
 			NodeCount:  3,
 			K8sVersion: "latest",
 		},
@@ -102,9 +103,9 @@ func (w *ConfigWizard) promptClusterType() error {
 
 	switch idx {
 	case 0:
-		w.config.Type = ClusterTypeK3d
+		w.config.Type = domain.ClusterTypeK3d
 	case 1:
-		w.config.Type = ClusterTypeGKE
+		w.config.Type = domain.ClusterTypeGKE
 	}
 
 	return nil
@@ -199,9 +200,9 @@ func (w *ConfigWizard) confirmConfiguration() error {
 }
 
 // SelectCluster provides interactive cluster selection
-func SelectCluster(clusters []ClusterInfo, message string) (ClusterInfo, error) {
+func SelectCluster(clusters []domain.ClusterInfo, message string) (domain.ClusterInfo, error) {
 	if len(clusters) == 0 {
-		return ClusterInfo{}, errors.New("No clusters found")
+		return domain.ClusterInfo{}, errors.New("No clusters found")
 	}
 
 	items := make([]string, len(clusters))
@@ -221,14 +222,14 @@ func SelectCluster(clusters []ClusterInfo, message string) (ClusterInfo, error) 
 
 	idx, _, err := prompt.Run()
 	if err != nil {
-		return ClusterInfo{}, err
+		return domain.ClusterInfo{}, err
 	}
 
 	return clusters[idx], nil
 }
 
 // formatClusterOption formats a cluster for display in selection lists
-func formatClusterOption(clusterInfo ClusterInfo) string {
+func formatClusterOption(clusterInfo domain.ClusterInfo) string {
 	return pterm.Sprintf("%s - %s",
 		clusterInfo.Name,
 		clusterInfo.Status)

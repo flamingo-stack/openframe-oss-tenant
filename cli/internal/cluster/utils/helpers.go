@@ -20,15 +20,9 @@ type ClusterSelectionResult struct {
 
 // Validation utilities
 
-// ValidateClusterName validates cluster name format
+// ValidateClusterName validates cluster name format using domain validation
 func ValidateClusterName(name string) error {
-	if name == "" {
-		return fmt.Errorf("cluster name cannot be empty")
-	}
-	if len(strings.TrimSpace(name)) == 0 {
-		return fmt.Errorf("cluster name cannot be empty or whitespace only")
-	}
-	return nil
+	return domain.ValidateClusterName(name)
 }
 
 // ParseClusterType converts string to ClusterType

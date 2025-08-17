@@ -1,6 +1,10 @@
 package domain
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
+	
 	"github.com/spf13/cobra"
 	"github.com/flamingo/openframe/internal/common/flags"
 )
@@ -87,6 +91,41 @@ func AddCleanupFlags(cmd *cobra.Command, flags *CleanupFlags) {
 	// Cleanup command has no specific flags
 }
 
+// ValidateClusterName validates cluster name according to Kubernetes naming conventions
+func ValidateClusterName(name string) error {
+	// Trim whitespace and check if empty after trimming
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return fmt.Errorf("cluster name cannot be empty or contain only whitespace")
+	}
+	
+	// Check length (DNS-1123 subdomain: max 253 characters, but k3d has stricter limits)
+	if len(trimmed) > 63 {
+		return fmt.Errorf("cluster name is too long: %d characters (max 63)", len(trimmed))
+	}
+	
+	// Check minimum length
+	if len(trimmed) < 1 {
+		return fmt.Errorf("cluster name must be at least 1 character")
+	}
+	
+	// Check for invalid characters (DNS-1123 subdomain rules, but allow uppercase)
+	// Must contain only alphanumeric characters or '-'
+	// Must start and end with an alphanumeric character
+	// Single character names are allowed if they are alphanumeric
+	if len(trimmed) == 1 {
+		if !regexp.MustCompile(`^[a-zA-Z0-9]$`).MatchString(trimmed) {
+			return fmt.Errorf("cluster name '%s' is invalid: must be an alphanumeric character", trimmed)
+		}
+	} else {
+		if !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$`).MatchString(trimmed) {
+			return fmt.Errorf("cluster name '%s' is invalid: must contain only letters, numbers, and hyphens, and must start and end with an alphanumeric character", trimmed)
+		}
+	}
+	
+	return nil
+}
+
 // Flag validation functions
 
 // ValidateGlobalFlags validates global flag combinations
@@ -100,8 +139,10 @@ func ValidateCreateFlags(flags *CreateFlags) error {
 		return err
 	}
 	
-	if flags.NodeCount < 1 {
-		flags.NodeCount = 3 // Default
+	// Validate node count - this validation is now handled at command level
+	// to distinguish between explicitly set values and defaults
+	if flags.NodeCount <= 0 {
+		return fmt.Errorf("node count must be at least 1: %d", flags.NodeCount)
 	}
 	
 	return nil

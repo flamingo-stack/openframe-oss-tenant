@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"sync"
+	
 	"github.com/flamingo/openframe/internal/cluster"
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/cluster/services"
+	"github.com/flamingo/openframe/internal/common/config"
 	"github.com/flamingo/openframe/internal/common/errors"
 	"github.com/flamingo/openframe/internal/common/executor"
 	"github.com/flamingo/openframe/internal/common/ui"
@@ -13,26 +15,30 @@ import (
 
 // Global flag container for all cluster commands
 var globalFlags *cluster.FlagContainer
+var globalFlagsMutex sync.Mutex
 
 // InitGlobalFlags initializes the global flag container if not already set
 func InitGlobalFlags() {
+	globalFlagsMutex.Lock()
+	defer globalFlagsMutex.Unlock()
+	
 	if globalFlags == nil {
 		globalFlags = cluster.NewFlagContainer()
 	}
 }
 
 // GetCommandService creates a command service for business logic operations
-func GetCommandService() *services.ClusterCommandService {
+func GetCommandService() *config.ClusterService {
 	// Use injected executor if available (for testing)
 	if globalFlags != nil && globalFlags.Executor != nil {
-		return services.NewClusterCommandService(globalFlags.Executor)
+		return config.NewClusterService(globalFlags.Executor)
 	}
 	
 	// Create real executor with current flags
 	dryRun := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.DryRun
 	verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
 	exec := executor.NewRealCommandExecutor(dryRun, verbose)
-	return services.NewClusterCommandService(exec)
+	return config.NewClusterService(exec)
 }
 
 // WrapCommandWithCommonSetup wraps a command function with common CLI setup and error handling
@@ -80,6 +86,8 @@ func SetTestExecutor(exec executor.CommandExecutor) {
 }
 
 func ResetGlobalFlags() {
+	globalFlagsMutex.Lock()
+	defer globalFlagsMutex.Unlock()
 	globalFlags = nil
 }
 

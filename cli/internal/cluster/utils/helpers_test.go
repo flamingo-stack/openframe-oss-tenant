@@ -18,9 +18,10 @@ func TestValidateClusterName(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	
-	t.Run("validates cluster name with underscores", func(t *testing.T) {
+	t.Run("rejects cluster name with underscores", func(t *testing.T) {
 		err := ValidateClusterName("test_cluster")
-		assert.NoError(t, err)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must contain only letters, numbers, and hyphens")
 	})
 	
 	t.Run("rejects empty cluster name", func(t *testing.T) {
@@ -32,19 +33,19 @@ func TestValidateClusterName(t *testing.T) {
 	t.Run("rejects whitespace-only cluster name", func(t *testing.T) {
 		err := ValidateClusterName("   ")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cluster name cannot be empty or whitespace only")
+		assert.Contains(t, err.Error(), "cluster name cannot be empty or contain only whitespace")
 	})
 	
 	t.Run("rejects cluster name with only tabs", func(t *testing.T) {
 		err := ValidateClusterName("\t\t")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cluster name cannot be empty or whitespace only")
+		assert.Contains(t, err.Error(), "cluster name cannot be empty or contain only whitespace")
 	})
 	
 	t.Run("rejects cluster name with mixed whitespace", func(t *testing.T) {
 		err := ValidateClusterName(" \t \n ")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cluster name cannot be empty or whitespace only")
+		assert.Contains(t, err.Error(), "cluster name cannot be empty or contain only whitespace")
 	})
 }
 
@@ -236,10 +237,10 @@ func TestEdgeCases(t *testing.T) {
 			{"normal name", "test-cluster", false, ""},
 			{"name with spaces around", "  test-cluster  ", false, ""},
 			{"empty string", "", true, "cluster name cannot be empty"},
-			{"only spaces", "   ", true, "cluster name cannot be empty or whitespace only"},
-			{"only tabs", "\t\t\t", true, "cluster name cannot be empty or whitespace only"},
-			{"only newlines", "\n\n", true, "cluster name cannot be empty or whitespace only"},
-			{"mixed whitespace", " \t\n ", true, "cluster name cannot be empty or whitespace only"},
+			{"only spaces", "   ", true, "cluster name cannot be empty or contain only whitespace"},
+			{"only tabs", "\t\t\t", true, "cluster name cannot be empty or contain only whitespace"},
+			{"only newlines", "\n\n", true, "cluster name cannot be empty or contain only whitespace"},
+			{"mixed whitespace", " \t\n ", true, "cluster name cannot be empty or contain only whitespace"},
 		}
 		
 		for _, tc := range testCases {

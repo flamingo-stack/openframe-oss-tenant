@@ -288,24 +288,24 @@ func TestFlagValidation(t *testing.T) {
 	t.Run("validates create flags with zero node count", func(t *testing.T) {
 		flags := &CreateFlags{
 			ClusterType: "k3d",
-			NodeCount:   0, // Should be defaulted to 3
+			NodeCount:   0, // Should be rejected
 			K8sVersion:  "v1.25.0-k3s1",
 		}
 		
 		err := ValidateCreateFlags(flags)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, flags.NodeCount) // Should be defaulted to 3
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "node count must be at least 1")
 	})
 	
 	t.Run("validates create flags with negative node count", func(t *testing.T) {
 		flags := &CreateFlags{
 			ClusterType: "k3d",
-			NodeCount:   -1, // Should be defaulted to 3
+			NodeCount:   -1, // Should be rejected
 		}
 		
 		err := ValidateCreateFlags(flags)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, flags.NodeCount) // Should be defaulted to 3
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "node count must be at least 1")
 	})
 	
 	t.Run("validates list flags", func(t *testing.T) {

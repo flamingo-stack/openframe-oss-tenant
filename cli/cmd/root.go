@@ -5,22 +5,35 @@ import (
 	"os"
 
 	"github.com/flamingo/openframe/cmd/cluster"
-	"github.com/pterm/pterm"
+	"github.com/flamingo/openframe/internal/common/config"
 	"github.com/spf13/cobra"
 )
 
-var (
-	version       = "dev"
-	commit        = "none"
-	date          = "unknown"
-	globalVerbose bool
-	globalSilent  bool
-)
+// VersionInfo holds version information for the CLI
+type VersionInfo struct {
+	Version string
+	Commit  string
+	Date    string
+}
 
-var rootCmd = &cobra.Command{
-	Use:   "openframe",
-	Short: "OpenFrame CLI - Kubernetes cluster bootstrapping and development tools",
-	Long: `OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
+// DefaultVersionInfo provides default version information
+var DefaultVersionInfo = VersionInfo{
+	Version: "dev",
+	Commit:  "none", 
+	Date:    "unknown",
+}
+
+// GetRootCmd returns the root command following cluster command pattern
+func GetRootCmd(versionInfo VersionInfo) *cobra.Command {
+	return buildRootCommand(versionInfo)
+}
+
+// buildRootCommand constructs the root command with given version info
+func buildRootCommand(versionInfo VersionInfo) *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "openframe",
+		Short: "OpenFrame CLI - Kubernetes cluster bootstrapping and development tools",
+		Long: `OpenFrame CLI - Interactive Kubernetes Platform Bootstrapper
 
 OpenFrame CLI replaces the shell scripts with a modern, interactive terminal UI
 for managing OpenFrame Kubernetes deployments. Built following best practices
@@ -35,29 +48,15 @@ Key Features:
 
 The CLI provides both interactive modes for new users and flag-based
 operation for automation and power users.`,
-	Version: fmt.Sprintf("%s (%s) built on %s", version, commit, date),
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Configure pterm based on global flags
-		if globalSilent {
-			pterm.DisableOutput()
-		}
-		if globalVerbose {
-			pterm.EnableDebugMessages()
-		}
-	},
-}
+		Version: fmt.Sprintf("%s (%s) built on %s", versionInfo.Version, versionInfo.Commit, versionInfo.Date),
+	}
 
-func Execute() error {
-	return rootCmd.Execute()
-}
-
-func init() {
-	// Add cluster command
+	// Add subcommands
 	rootCmd.AddCommand(getClusterCmd())
 
-	// Global flags
-	rootCmd.PersistentFlags().BoolVarP(&globalVerbose, "verbose", "v", false, "Enable verbose output")
-	rootCmd.PersistentFlags().BoolVar(&globalSilent, "silent", false, "Suppress all output except errors")
+	// Add global flags following cluster pattern
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+	rootCmd.PersistentFlags().Bool("silent", false, "Suppress all output except errors")
 
 	// Version template
 	rootCmd.SetVersionTemplate(`{{printf "%s\n" .Version}}`)
@@ -88,8 +87,25 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `)
 
-	// Show OpenFrame logo on help
-	cobra.OnInitialize(initConfig)
+	return rootCmd
+}
+
+// Execute runs the root command with default version info
+func Execute() error {
+	return ExecuteWithVersion(DefaultVersionInfo)
+}
+
+// ExecuteWithVersion runs the root command with specified version info
+func ExecuteWithVersion(versionInfo VersionInfo) error {
+	rootCmd := GetRootCmd(versionInfo)
+	
+	// Initialize configuration using service layer
+	service := config.NewSystemService()
+	if err := service.Initialize(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: initialization failed: %v\n", err)
+	}
+	
+	return rootCmd.Execute()
 }
 
 // getClusterCmd returns the cluster command
@@ -97,24 +113,4 @@ func getClusterCmd() *cobra.Command {
 	return cluster.GetClusterCmd()
 }
 
-func initConfig() {
-	// Set up logging directory
-	os.MkdirAll("/tmp/openframe-deployment-logs", 0755)
-}
 
-// ShowLogo displays the OpenFrame ASCII logo
-func ShowLogo() {
-	logo := pterm.DefaultCenter.Sprint(`
-   ██████╗ ██████╗ ███████╗███╗   ██╗███████╗██████╗  █████╗ ███╗   ███╗███████╗
-  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝
-  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║█████╗  ██████╔╝███████║██╔████╔██║█████╗  
-  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  
-  ╚██████╔╝██║     ███████╗██║ ╚████║██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗
-   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝
-  `)
-
-	pterm.DefaultBox.WithTitle("OpenFrame Platform Bootstrapper").
-		WithTitleTopCenter().
-		WithBoxStyle(pterm.NewStyle(pterm.FgCyan)).
-		Println(logo)
-}

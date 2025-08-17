@@ -10,7 +10,7 @@ import (
 
 func TestInitializeCLI(t *testing.T) {
 	err := InitializeCLI()
-	defer CleanupCLI()
+	// Note: Not calling CleanupCLI() here to avoid interfering with other test packages
 	
 	require.NoError(t, err)
 	assert.NotEmpty(t, cliBinary)
@@ -23,7 +23,7 @@ func TestInitializeCLI(t *testing.T) {
 func TestRunCLI_Help(t *testing.T) {
 	err := InitializeCLI()
 	require.NoError(t, err)
-	defer CleanupCLI()
+	// Note: Not calling CleanupCLI() here to avoid interfering with other test packages
 	
 	result := RunCLI("--help")
 	
@@ -34,7 +34,7 @@ func TestRunCLI_Help(t *testing.T) {
 func TestRunCLI_Error(t *testing.T) {
 	err := InitializeCLI()
 	require.NoError(t, err)
-	defer CleanupCLI()
+	// Note: Not calling CleanupCLI() here to avoid interfering with other test packages
 	
 	result := RunCLI("--invalid-flag")
 	

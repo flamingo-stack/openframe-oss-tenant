@@ -3,6 +3,7 @@ package cluster
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/flamingo/openframe/internal/cluster/utils"
@@ -56,29 +57,37 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	// Build cluster config from command parameters
 	clusterName := ""
 	if len(args) > 0 {
-		clusterName = args[0]
-		// Validate that the name is not empty string
-		if clusterName == "" {
-			return fmt.Errorf("cluster name cannot be empty")
+		clusterName = strings.TrimSpace(args[0])
+		// Validate the cluster name
+		if err := domain.ValidateClusterName(clusterName); err != nil {
+			return err
 		}
 	} else {
 		clusterName = "openframe-dev" // default name
 	}
 	
 	globalFlags := utils.GetGlobalFlags()
+	
+	// Handle node count validation - error if user explicitly set 0 or negative
+	nodeCount := globalFlags.Create.NodeCount
+	if cmd.Flags().Changed("nodes") && nodeCount <= 0 {
+		return fmt.Errorf("node count must be at least 1: %d", nodeCount)
+	}
+	// Auto-correct to default if not explicitly set and invalid
+	if nodeCount <= 0 {
+		nodeCount = 3
+	}
+	
 	config := domain.ClusterConfig{
 		Name:       clusterName,
 		Type:       domain.ClusterType(globalFlags.Create.ClusterType),
 		K8sVersion: globalFlags.Create.K8sVersion,
-		NodeCount:  globalFlags.Create.NodeCount,
+		NodeCount:  nodeCount,
 	}
 	
 	// Set defaults if needed
 	if config.Type == "" {
 		config.Type = domain.ClusterTypeK3d
-	}
-	if config.NodeCount == 0 {
-		config.NodeCount = 3
 	}
 	
 	// Show configuration summary for dry-run or skip-wizard modes
