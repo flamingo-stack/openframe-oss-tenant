@@ -47,7 +47,8 @@ public class PinotConfigInitializer {
     private long retryDelayMs;
 
     private static final List<PinotConfig> PINOT_CONFIGS = Arrays.asList(
-        new PinotConfig("devices", "schema-devices.json", "table-config-devices.json")
+            new PinotConfig("devices", "schema-devices.json", "table-config-devices.json"),
+            new PinotConfig("logs","schema-logs.json","table-config-logs.json")
     );
 
     public PinotConfigInitializer(ResourceLoader resourceLoader) {
@@ -64,7 +65,7 @@ public class PinotConfigInitializer {
         }
 
         log.info("Starting Pinot configuration deployment to {}", pinotControllerUrl);
-        
+
         for (PinotConfig config : PINOT_CONFIGS) {
             try {
                 deployPinotConfig(config);
@@ -72,22 +73,22 @@ public class PinotConfigInitializer {
                 log.error("Failed to deploy Pinot configuration for {}", config.getName(), e);
             }
         }
-        
+
         log.info("Pinot configuration deployment completed");
     }
 
     private void deployPinotConfig(PinotConfig config) {
         log.info("Deploying Pinot configuration for: {}", config.getName());
-        
+
         try {
             String schemaConfig = loadResource(config.getSchemaFile());
             String tableConfig = loadResource(config.getTableConfigFile());
 
             deployWithRetry(() -> deploySchema(schemaConfig), "schema for " + config.getName());
             deployWithRetry(() -> deployTableConfig(tableConfig, config.getName()), "table config for " + config.getName());
-            
+
             log.info("Successfully deployed Pinot configuration for: {}", config.getName());
-            
+
         } catch (Exception e) {
             log.error("Failed to load Pinot configuration files for {}", config.getName(), e);
             throw new RuntimeException("Failed to load Pinot configuration for " + config.getName(), e);
@@ -107,7 +108,7 @@ public class PinotConfigInitializer {
     private void deployWithRetry(Runnable deployment, String configType) {
         int retryCount = 0;
         Exception lastException = null;
-        
+
         while (retryCount < maxRetries) {
             try {
                 deployment.run();
@@ -115,15 +116,15 @@ public class PinotConfigInitializer {
             } catch (ResourceAccessException e) {
                 lastException = e;
                 retryCount++;
-                
+
                 if (retryCount >= maxRetries) {
                     log.error("Failed to deploy {} after {} retries", configType, maxRetries, e);
                     throw new RuntimeException("Failed to deploy " + configType + " after " + maxRetries + " retries", e);
                 }
-                
-                log.warn("Failed to deploy {}, retrying in {} ms (attempt {}/{})", 
+
+                log.warn("Failed to deploy {}, retrying in {} ms (attempt {}/{})",
                         configType, retryDelayMs, retryCount, maxRetries);
-                
+
                 try {
                     TimeUnit.MILLISECONDS.sleep(retryDelayMs);
                 } catch (InterruptedException ie) {
@@ -135,7 +136,7 @@ public class PinotConfigInitializer {
                 throw new RuntimeException("Failed to deploy " + configType, e);
             }
         }
-        
+
         if (lastException != null) {
             throw new RuntimeException("Failed to deploy " + configType + " after " + maxRetries + " retries", lastException);
         }
@@ -143,20 +144,20 @@ public class PinotConfigInitializer {
 
     private void deploySchema(String schemaConfig) {
         String url = String.format("http://%s/schemas", pinotControllerUrl);
-        
+
         try {
             objectMapper.readTree(schemaConfig);
             HttpHeaders headers = createHeaders();
             HttpEntity<String> request = new HttpEntity<>(schemaConfig, headers);
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
-            
+
             if (response.getStatusCode() == HttpStatus.OK) {
                 log.info("Successfully deployed schema configuration");
             } else {
                 log.error("Failed to deploy schema configuration. Status: {}", response.getStatusCode());
                 throw new RuntimeException("Failed to deploy schema configuration. Status: " + response.getStatusCode());
             }
-            
+
         } catch (Exception e) {
             log.error("Error deploying schema configuration", e);
             throw new RuntimeException("Failed to deploy schema configuration", e);
@@ -167,26 +168,26 @@ public class PinotConfigInitializer {
         try {
             JsonNode tableConfigJson = objectMapper.readTree(tableConfig);
             String tableName = tableConfigJson.get("tableName").asText() + "_REALTIME";
-            
+
             String updateUrl = String.format("http://%s/tables/%s", pinotControllerUrl, tableName);
             String createUrl = String.format("http://%s/tables", pinotControllerUrl);
-            
+
             HttpHeaders headers = createHeaders();
             HttpEntity<String> request = new HttpEntity<>(tableConfig, headers);
 
             try {
                 ResponseEntity<String> response = restTemplate.exchange(updateUrl, HttpMethod.PUT, request, String.class);
-                
+
                 if (response.getStatusCode() == HttpStatus.OK) {
                     log.info("Successfully updated table configuration for {} ({})", tableName, configName);
                 } else {
                     log.error("Failed to update table configuration for {}. Status: {}", tableName, response.getStatusCode());
                     throw new RuntimeException("Failed to update table configuration. Status: " + response.getStatusCode());
                 }
-                
+
             } catch (HttpClientErrorException.NotFound e) {
                 ResponseEntity<String> response = restTemplate.exchange(createUrl, HttpMethod.POST, request, String.class);
-                
+
                 if (response.getStatusCode() == HttpStatus.OK) {
                     log.info("Successfully created table configuration for {} ({})", tableName, configName);
                 } else {
@@ -194,7 +195,7 @@ public class PinotConfigInitializer {
                     throw new RuntimeException("Failed to create table configuration. Status: " + response.getStatusCode());
                 }
             }
-            
+
         } catch (Exception e) {
             log.error("Error deploying table configuration for {}", configName, e);
             throw new RuntimeException("Failed to deploy table configuration for " + configName, e);

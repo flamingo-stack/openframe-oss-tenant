@@ -53,6 +53,15 @@ public class DebeziumMessage<T> {
 
             @JsonProperty("sequence")
             private String sequence;
+            
+            @JsonProperty("schema")
+            private String schema;
+            
+            @JsonProperty("table")
+            private String table;
+            
+            @JsonProperty("collection")
+            private String collection;
         }
     }
 } 

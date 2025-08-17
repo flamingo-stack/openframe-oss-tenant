@@ -1,10 +1,9 @@
 package com.openframe.api.mapper;
 
-import com.openframe.api.dto.DeviceFilterOptions;
-import com.openframe.api.dto.DeviceQueryResult;
-import com.openframe.api.dto.PageInfo;
-import com.openframe.api.dto.PaginationCriteria;
+import com.openframe.api.dto.shared.CursorPaginationCriteria;
+import com.openframe.api.dto.device.DeviceQueryResult;
 import com.openframe.api.dto.device.*;
+import com.openframe.api.dto.shared.CursorPaginationInput;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,14 +26,14 @@ public class GraphQLDeviceMapper {
                 .build();
     }
 
-    public PaginationCriteria toPaginationCriteria(PaginationInput input) {
+    public CursorPaginationCriteria toCursorPaginationCriteria(CursorPaginationInput input) {
         if (input == null) {
-            return new PaginationCriteria();
+            return new CursorPaginationCriteria();
         }
 
-        return PaginationCriteria.builder()
-                .page(input.getPage())
-                .pageSize(input.getPageSize())
+        return CursorPaginationCriteria.builder()
+                .limit(input.getLimit())
+                .cursor(input.getCursor())
                 .build();
     }
 
@@ -42,19 +41,12 @@ public class GraphQLDeviceMapper {
         List<DeviceEdge> edges = result.getDevices().stream()
                 .map(machine -> DeviceEdge.builder()
                         .node(machine)
+                        .cursor(machine.getMachineId())
                         .build())
                 .collect(Collectors.toList());
-
-        PageInfo pageInfo = PageInfo.builder()
-                .hasNextPage(result.getPageInfo().isHasNextPage())
-                .hasPreviousPage(result.getPageInfo().isHasPreviousPage())
-                .currentPage(result.getPageInfo().getCurrentPage())
-                .totalPages(result.getPageInfo().getTotalPages())
-                .build();
-
         return DeviceConnection.builder()
                 .edges(edges)
-                .pageInfo(pageInfo)
+                .pageInfo(result.getPageInfo())
                 .filteredCount(result.getFilteredCount())
                 .build();
     }

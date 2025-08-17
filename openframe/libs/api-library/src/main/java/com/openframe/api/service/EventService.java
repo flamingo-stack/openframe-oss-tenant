@@ -1,8 +1,13 @@
 package com.openframe.api.service;
 
+import com.openframe.api.dto.event.EventFilterOptions;
+import com.openframe.api.dto.event.EventFilters;
+import com.openframe.api.dto.event.EventQueryResult;
+import com.openframe.api.dto.shared.CursorPageInfo;
+import com.openframe.api.dto.shared.CursorPaginationCriteria;
 import com.openframe.core.model.Event;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
+import com.openframe.core.model.event.filter.EventQueryFilter;
+import com.openframe.data.repository.mongo.EventRepository;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -19,33 +24,33 @@ import java.util.UUID;
 @Slf4j
 public class EventService {
     
-    private final MongoTemplate mongoTemplate;
+    private final EventRepository eventRepository;
     private final KafkaTemplate<String, Event> kafkaTemplate;
 
-    public List<Event> getEvents(String userId, Instant from, Instant to) {
-        log.debug("Getting events for user: {} from {} to {}", userId, from, to);
+    public EventQueryResult queryEvents(EventFilterOptions filterOptions,
+                                     CursorPaginationCriteria paginationCriteria,
+                                     String search) {
+        log.debug("Querying events with filter: {}, pagination: {}, search: {}",
+                filterOptions, paginationCriteria, search);
+
+        CursorPaginationCriteria normalizedPagination = paginationCriteria.normalize();
+        EventQueryFilter queryFilter = buildQueryFilter(filterOptions);
+        Query query = eventRepository.buildEventQuery(queryFilter, search);
         
-        Query query = new Query();
+        List<Event> pageItems = fetchPageItems(query, normalizedPagination);
+        boolean hasNextPage = pageItems.size() == normalizedPagination.getLimit();
         
-        if (userId != null) {
-            query.addCriteria(Criteria.where("userId").is(userId));
-        }
+        CursorPageInfo pageInfo = buildPageInfo(pageItems, hasNextPage, normalizedPagination.hasCursor());
         
-        if (from != null && to != null) {
-            query.addCriteria(Criteria.where("timestamp").gte(from).lte(to));
-        } else if (from != null) {
-            query.addCriteria(Criteria.where("timestamp").gte(from));
-        } else if (to != null) {
-            query.addCriteria(Criteria.where("timestamp").lte(to));
-        }
-        
-        return mongoTemplate.find(query, Event.class);
+        return EventQueryResult.builder()
+                .events(pageItems)
+                .pageInfo(pageInfo)
+                .build();
     }
 
-    public Optional<Event> getEventById(String id) {
-        log.debug("Getting event by ID: {}", id);
-        Event event = mongoTemplate.findById(id, Event.class);
-        return Optional.ofNullable(event);
+    public Optional<Event> findById(String id) {
+        log.debug("Finding event by ID: {}", id);
+        return eventRepository.findById(id);
     }
 
     public Event createEvent(Event event) {
@@ -54,7 +59,7 @@ public class EventService {
         event.setId(UUID.randomUUID().toString());
         event.setTimestamp(Instant.now());
 
-        Event savedEvent = mongoTemplate.save(event);
+        Event savedEvent = eventRepository.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
 
         kafkaTemplate.send("openframe.events", savedEvent);
@@ -66,15 +71,60 @@ public class EventService {
     public Event updateEvent(String id, Event event) {
         log.debug("Updating event with ID: {}", id);
         
-        Optional<Event> existingEvent = getEventById(id);
+        Optional<Event> existingEvent = findById(id);
         if (existingEvent.isEmpty()) {
             throw new RuntimeException("Event not found with id: " + id);
         }
         
         event.setId(id);
-        Event savedEvent = mongoTemplate.save(event);
+        Event savedEvent = eventRepository.save(event);
         log.info("Event updated: {}", savedEvent.getId());
         
         return savedEvent;
+    }
+
+    public EventFilters getEventFilters() {
+        log.debug("Getting event filters");
+        
+        List<String> userIds = eventRepository.findDistinctUserIds();
+        List<String> eventTypes = eventRepository.findDistinctEventTypes();
+        
+        return EventFilters.builder()
+                .userIds(userIds)
+                .eventTypes(eventTypes)
+                .build();
+    }
+    
+    private List<Event> fetchPageItems(Query query, CursorPaginationCriteria criteria) {
+        List<Event> events = eventRepository.findEventsWithCursor(
+                query, criteria.getCursor(), criteria.getLimit() + 1);
+        return events.size() > criteria.getLimit() 
+                ? events.subList(0, criteria.getLimit())
+                : events;
+    }
+    
+    private EventQueryFilter buildQueryFilter(EventFilterOptions filterOptions) {
+        if (filterOptions == null) {
+            return EventQueryFilter.builder().build();
+        }
+        
+        return EventQueryFilter.builder()
+                .userIds(filterOptions.getUserIds())
+                .eventTypes(filterOptions.getEventTypes())
+                .startDate(filterOptions.getStartDate())
+                .endDate(filterOptions.getEndDate())
+                .build();
+    }
+    
+    private CursorPageInfo buildPageInfo(List<Event> events, boolean hasNextPage, boolean hasPreviousPage) {
+        String startCursor = events.isEmpty() ? null : events.getFirst().getId();
+        String endCursor = events.isEmpty() ? null : events.getLast().getId();
+        
+        return CursorPageInfo.builder()
+                .hasNextPage(hasNextPage)
+                .hasPreviousPage(hasPreviousPage)
+                .startCursor(startCursor)
+                .endCursor(endCursor)
+                .build();
     }
 }
