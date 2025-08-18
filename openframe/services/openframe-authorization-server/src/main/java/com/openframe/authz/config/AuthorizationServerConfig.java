@@ -192,9 +192,11 @@ public class AuthorizationServerConfig {
                     .map(a -> a.substring(5))
                     .toList();
 
-            User user = userService.findActiveByEmail(authentication.getName()).orElseThrow(() -> new UsernameNotFoundException(
-                    "User not found: " + authentication.getName()));
-            String tenantId = user.getTenantId();
+
+            String tenantId = getTenantId();
+            User user = userService
+                    .findActiveByEmailAndTenant(authentication.getName(), tenantId)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + authentication.getName()));
 
             if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
@@ -213,8 +215,9 @@ public class AuthorizationServerConfig {
     @Bean
     public UserDetailsService userDetailsService(UserService userService) {
         return username -> {
-            User user = userService.findActiveByEmail(username).orElseThrow(() -> new UsernameNotFoundException(
-                    "User not found: " + username));
+            String tenantId = getTenantId();
+            User user = userService.findActiveByEmailAndTenant(username, tenantId)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
             return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
