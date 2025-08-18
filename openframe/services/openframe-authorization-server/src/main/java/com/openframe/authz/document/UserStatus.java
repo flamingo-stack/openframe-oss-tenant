@@ -5,6 +5,6 @@ package com.openframe.authz.document;
  */
 public enum UserStatus {
     ACTIVE,
-    INACTIVE,
-    LOCKED
+    DELETED,
+    REENBLED
 }

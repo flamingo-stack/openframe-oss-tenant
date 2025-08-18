@@ -163,15 +163,15 @@
           </div>
 
           <!-- Selected organization hint (when only one tenant found) -->
-          <div v-if="discoveredTenants.length === 1" class="org-summary">
+          <div v-if="discoveredTenants.length === 1 && ((discoveredTenants[0].tenantName ?? (discoveredTenants[0] as any).tenant_name))" class="org-summary">
             <i class="pi pi-building mr-2"></i>
             <span class="org-label">Organization:</span>
             <span class="org-name">{{ (discoveredTenants[0].tenantName ?? (discoveredTenants[0] as any).tenant_name) }}</span>
           </div>
 
           <div v-if="discoveredTenants.length > 0">
-            <div v-for="tenant in discoveredTenants" :key="tenant.tenantName" class="tenant-section">
-              <div class="tenant-info">
+            <div v-for="tenant in discoveredTenants" :key="(tenant.tenantId ?? (tenant as any).tenant_id) || 'single'" class="tenant-section">
+              <div class="tenant-info" v-if="tenant.tenantName || (tenant as any).tenant_name">
                 <h3>{{ tenant.tenantName }}</h3>
                 <p class="tenant-domain">{{ tenant.tenantDomain }}</p>
               </div>
@@ -286,10 +286,20 @@ async function handleEmailSubmit() {
     console.log('🔍 [CentralAuth] Discovering tenants for email:', email.value)
     
     const response = await authService.discoverTenants(email.value)
-    discoveredTenants.value = response.tenants || []
+    // New schema: single-tenant summary when user exists
+    if ((response as any).has_existing_accounts) {
+      discoveredTenants.value = [
+        {
+          tenantId: (response as any).tenant_id,
+          authProviders: (response as any).auth_providers
+        } as any
+      ]
+    } else {
+      discoveredTenants.value = []
+    }
     showProviders.value = true
     
-    console.log('✅ [CentralAuth] Found tenants:', response.tenants)
+    console.log('✅ [CentralAuth] Discovery:', response)
   } catch (error: any) {
     console.error('❌ [CentralAuth] Tenant discovery failed:', error)
     toast.add({

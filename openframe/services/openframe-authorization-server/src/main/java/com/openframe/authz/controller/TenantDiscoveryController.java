@@ -47,7 +47,6 @@ public class TenantDiscoveryController {
             TenantDiscoveryResponse emptyResponse = TenantDiscoveryResponse.builder()
                     .email(email)
                     .hasExistingAccounts(false)
-                    .tenants(java.util.Collections.emptyList())
                     .build();
             
             return ResponseEntity.ok(emptyResponse);

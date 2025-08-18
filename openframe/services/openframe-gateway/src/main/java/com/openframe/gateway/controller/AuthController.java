@@ -13,8 +13,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 import org.springframework.web.server.WebSession;
+import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -57,7 +57,7 @@ public class AuthController {
         session.getAttributes().put("oauth:tenant_id:" + state, tenantId);
 
         String authorizeUrl = buildAuthorizeUrl(tenantId, codeChallenge, state);
-        log.debug("Redirecting to authorize URL: {}", authorizeUrl);
+        log.debug("Redirecting to authorization endpoint for tenant: {}", tenantId);
 
         return Mono.just(ResponseEntity.status(302)
             .header(HttpHeaders.LOCATION, authorizeUrl)
@@ -68,11 +68,11 @@ public class AuthController {
     public Mono<ResponseEntity<Void>> callback(@RequestParam String code,
                                                @RequestParam String state,
                                                WebSession session) {
-        log.debug("Processing OAuth2 callback with state: {}", state);
+        log.debug("Processing OAuth2 callback");
         
         OAuthSessionData sessionData = validateAndExtractSessionData(session, state);
         if (sessionData == null) {
-            log.warn("Invalid OAuth2 state or missing session data for state: {}", state);
+            log.warn("Invalid OAuth2 state or missing session data");
             return Mono.just(ResponseEntity.badRequest().build());
         }
 
@@ -164,12 +164,10 @@ public class AuthController {
             .header(HttpHeaders.AUTHORIZATION, basicAuth(clientId, clientSecret))
             .body(BodyInserters.fromFormData(form))
             .retrieve()
-            .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> 
-                resp.bodyToMono(String.class)
-                    .flatMap(body -> {
-                        log.error("Token exchange failed: status={} body={}", resp.statusCode(), body);
-                        return Mono.error(new IllegalStateException("Token exchange failed"));
-                    }))
+                .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> {
+                    log.error("Token exchange failed: status={}", resp.statusCode());
+                    return resp.bodyToMono(String.class).then(Mono.error(new IllegalStateException("Token exchange failed")));
+                })
             .bodyToMono(TokenResponse.class);
     }
 
@@ -184,12 +182,10 @@ public class AuthController {
             .header(HttpHeaders.AUTHORIZATION, basicAuth(clientId, clientSecret))
             .body(BodyInserters.fromFormData(form))
             .retrieve()
-            .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> 
-                resp.bodyToMono(String.class)
-                    .flatMap(body -> {
-                        log.error("Token refresh failed: status={} body={}", resp.statusCode(), body);
-                        return Mono.error(new IllegalStateException("Token refresh failed"));
-                    }))
+                .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> {
+                    log.error("Token refresh failed: status={}", resp.statusCode());
+                    return resp.bodyToMono(String.class).then(Mono.error(new IllegalStateException("Token refresh failed")));
+                })
             .bodyToMono(TokenResponse.class);
     }
 

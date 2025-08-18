@@ -8,6 +8,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 import static java.util.UUID.randomUUID;
 
 /**
@@ -22,8 +24,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
+    public Optional<User> findActiveByEmail(String email) {
+        return userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE);
     }
 
     public boolean existsByEmailAndTenant(String email, String tenantId) {
@@ -37,7 +39,6 @@ public class UserService {
         if (existsByEmailAndTenant(email, tenantId)) {
             throw new IllegalArgumentException("User with this email already exists in this tenant");
         }
-
 
         User user = User.builder()
                 .id(randomUUID().toString())

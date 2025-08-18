@@ -22,31 +22,10 @@ public class TenantDiscoveryResponse {
     
     @JsonProperty("has_existing_accounts")
     private boolean hasExistingAccounts;
-    
-    private List<TenantInfo> tenants;
-    
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class TenantInfo {
-        
-        @JsonProperty("tenant_id")
-        private String tenantId;
-        
-        @JsonProperty("tenant_name")
-        private String tenantName;
-        
-        @JsonProperty("tenant_domain")
-        private String tenantDomain;
-        
-        @JsonProperty("openframe_url")
-        private String openFrameUrl;
-        
-        @JsonProperty("auth_providers")
-        private List<String> authProviders; // ["google", "openframe_sso"]
-        
-        @JsonProperty("user_exists")
-        private boolean userExists;
-    }
+
+    @JsonProperty("tenant_id")
+    private String tenantId;
+
+    @JsonProperty("auth_providers")
+    private List<String> authProviders;
 }

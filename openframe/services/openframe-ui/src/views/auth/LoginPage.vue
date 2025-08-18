@@ -193,8 +193,13 @@ async function handleEmailSubmit() {
   try {
     const response = await authService.discoverTenants(email.value)
     
-    if (response.has_existing_accounts) {
-      tenants.value = response.tenants
+    if ((response as any).has_existing_accounts) {
+      tenants.value = [
+        {
+          tenant_id: (response as any).tenant_id,
+          auth_providers: (response as any).auth_providers
+        } as any
+      ]
       step.value = 'auth'
       
       // Auto-focus password field if only password auth is available
@@ -226,14 +231,13 @@ async function handlePasswordLogin() {
   try {
     // For password login, we need to determine the tenant
     // For now, use the first tenant with password auth
-    const targetTenant = tenants.value.find(t => t.auth_providers.includes('password'))
+    const targetTenant = tenants.value.find(t => (t as any).auth_providers.includes('password'))
     if (targetTenant) {
       // Store tenant info and redirect to Gateway login
-      sessionStorage.setItem('auth:tenant_id', targetTenant.tenant_id)
-      sessionStorage.setItem('auth:tenant_domain', targetTenant.tenant_domain)
+      sessionStorage.setItem('auth:tenant_id', (targetTenant as any).tenant_id)
       
       // Use Gateway's login endpoint
-      const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(targetTenant.tenant_id)}`;
+      const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent((targetTenant as any).tenant_id)}`;
       window.location.href = loginUrl;
     } else {
       throw new Error('No password authentication available for this tenant')
@@ -253,13 +257,12 @@ async function handleOpenFrameLogin() {
 
   try {
     // Use the first tenant with OpenFrame SSO
-    const targetTenant = tenants.value.find(t => t.auth_providers.includes('openframe_sso'))
+    const targetTenant = tenants.value.find(t => (t as any).auth_providers.includes('openframe_sso'))
     if (targetTenant) {
-      await authService.openFrameSSO(targetTenant.tenant_name)
-      toastService.showSuccess('OpenFrame SSO successful!')
-      
-      // Redirect to the tenant's OpenFrame URL
-      window.location.href = targetTenant.openframe_url
+      // Store tenant and redirect to gateway OAuth login
+      sessionStorage.setItem('auth:tenant_id', (targetTenant as any).tenant_id)
+      const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent((targetTenant as any).tenant_id)}`;
+      window.location.href = loginUrl;
     }
   } catch (err: any) {
     error.value = err.message || 'OpenFrame SSO failed. Please try again.'
@@ -289,8 +292,8 @@ async function handleTenantAuth(tenant: TenantInfo, provider: string) {
         await handleGoogleLogin()
         break
       case 'openframe_sso':
-        await AuthService.openFrameSSO(tenant.tenant_name)
-        window.location.href = tenant.openframe_url
+        sessionStorage.setItem('auth:tenant_id', (tenant as any).tenant_id)
+        window.location.href = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent((tenant as any).tenant_id)}`
         break
     }
   } catch (err: any) {

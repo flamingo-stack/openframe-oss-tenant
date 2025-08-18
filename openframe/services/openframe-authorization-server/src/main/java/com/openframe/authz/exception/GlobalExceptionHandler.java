@@ -17,34 +17,28 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Bad request: {}", ex.getMessage());
-        return new ErrorResponse("BAD_REQUEST", ex.getMessage());
+        return new ErrorResponse("BAD_REQUEST", "Invalid request");
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMissingParam(MissingServletRequestParameterException ex) {
-        String msg = String.format("Missing request parameter '%s'", ex.getParameterName());
-        log.warn("Bad request: {}", msg);
-        return new ErrorResponse("BAD_REQUEST", msg);
+        log.warn("Bad request: missing parameter '{}'", ex.getParameterName());
+        return new ErrorResponse("BAD_REQUEST", "Missing required parameter");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(MethodArgumentNotValidException ex) {
-        String msg = ex.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .map(err -> String.format("%s: %s", err.getField(), err.getDefaultMessage()))
-                .orElse("Validation error");
-        log.warn("Validation error: {}", msg);
-        return new ErrorResponse("VALIDATION_ERROR", msg);
+        log.warn("Validation error: {}", ex.getMessage());
+        return new ErrorResponse("VALIDATION_ERROR", "Validation error");
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleException(Exception ex) {
-        String msg = String.format("Internal server error :%s", ex.getMessage());
         log.error("Internal server error: {}", ex.getMessage(), ex);
-        return new ErrorResponse("INTERNAL_SERVER_ERROR", msg);
+        return new ErrorResponse("INTERNAL_SERVER_ERROR", "Internal server error");
     }
 }
 

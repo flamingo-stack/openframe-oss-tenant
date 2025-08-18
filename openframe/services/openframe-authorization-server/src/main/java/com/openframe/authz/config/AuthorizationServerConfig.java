@@ -25,6 +25,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -191,8 +192,9 @@ public class AuthorizationServerConfig {
                     .map(a -> a.substring(5))
                     .toList();
 
-            String tenantId = getTenantId();
-            User user = userService.findByEmail(authentication.getName());
+            User user = userService.findActiveByEmail(authentication.getName()).orElseThrow(() -> new UsernameNotFoundException(
+                    "User not found: " + authentication.getName()));
+            String tenantId = user.getTenantId();
 
             if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
@@ -211,13 +213,9 @@ public class AuthorizationServerConfig {
     @Bean
     public UserDetailsService userDetailsService(UserService userService) {
         return username -> {
-            User user = userService.findByEmail(username);
-            if (user == null) {
-                throw new org.springframework.security.core.userdetails.UsernameNotFoundException(
-                    "User not found: " + username);
-            }
-            
-            // Convert User to UserDetails
+            User user = userService.findActiveByEmail(username).orElseThrow(() -> new UsernameNotFoundException(
+                    "User not found: " + username));
+
             return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
                 .password(user.getPasswordHash() != null ? user.getPasswordHash() : "{noop}")
@@ -225,9 +223,9 @@ public class AuthorizationServerConfig {
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                     .toList())
                 .accountExpired(false)
-                    .accountLocked(user.getStatus() != com.openframe.authz.document.UserStatus.ACTIVE)
+                .accountLocked(false)
                 .credentialsExpired(false)
-                .disabled(!user.isActive())
+                .disabled(false)
                 .build();
         };
     }

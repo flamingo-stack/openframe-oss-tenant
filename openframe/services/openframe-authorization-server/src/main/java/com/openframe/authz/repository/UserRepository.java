@@ -18,6 +18,17 @@ public interface UserRepository extends MongoRepository<User, String> {
      * Used for tenant discovery and SSO
      */
     List<User> findAllByEmail(String email);
+
+    /**
+     * Find all ACTIVE users by email across tenants
+     * Prefer this over findAllByEmail + in-memory filtering
+     */
+    List<User> findAllByEmailAndStatus(String email, com.openframe.authz.document.UserStatus status);
+
+    /**
+     * Find single ACTIVE user by email
+     */
+    Optional<User> findByEmailAndStatus(String email, com.openframe.authz.document.UserStatus status);
     
     Optional<User> findByEmailAndTenantId(String email, String tenantId);
     

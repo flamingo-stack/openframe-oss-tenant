@@ -4,7 +4,6 @@ import com.openframe.authz.document.SSOConfig;
 import com.openframe.authz.document.Tenant;
 import com.openframe.authz.document.User;
 import com.openframe.authz.dto.TenantDiscoveryResponse;
-import com.openframe.authz.dto.TenantDiscoveryResponse.TenantInfo;
 import com.openframe.authz.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -35,18 +33,28 @@ public class TenantDiscoveryService {
      */
     public TenantDiscoveryResponse discoverTenantsForEmail(String email) {
         log.debug("Discovering tenants for email: {}", email);
-        
-        List<User> users = userRepository.findAllByEmail(email);
 
-        List<TenantInfo> tenants = users.stream()
-                .map(this::mapUserToTenantInfo)
-                .flatMap(Optional::stream)
-                .collect(Collectors.toList());
-        
+        List<User> users = userRepository.findAllByEmailAndStatus(email, com.openframe.authz.document.UserStatus.ACTIVE);
+
+        for (User user : users) {
+            Tenant tenant = tenantService.findById(user.getTenantId()).orElse(null);
+            if (tenant == null || !tenant.isActive()) {
+                continue;
+            }
+
+            List<String> authProviders = getAvailableAuthProviders(tenant, user);
+
+            return TenantDiscoveryResponse.builder()
+                    .email(email)
+                    .hasExistingAccounts(true)
+                    .tenantId(tenant.getId())
+                    .authProviders(authProviders)
+                    .build();
+        }
+
         return TenantDiscoveryResponse.builder()
                 .email(email)
-                .tenants(tenants)
-                .hasExistingAccounts(!tenants.isEmpty())
+                .hasExistingAccounts(false)
                 .build();
     }
     
@@ -76,22 +84,5 @@ public class TenantDiscoveryService {
                 .collect(Collectors.toList());
     }
 
-    private Optional<TenantInfo> mapUserToTenantInfo(User user) {
-        Tenant tenant = tenantService.findById(user.getTenantId()).orElse(null);
-        if (tenant == null || !tenant.isActive()) {
-            return Optional.empty();
-        }
-
-        List<String> authProviders = getAvailableAuthProviders(tenant, user);
-
-        TenantInfo info = TenantInfo.builder()
-                .tenantId(tenant.getId())
-                .tenantName(tenant.getName())
-                .tenantDomain(tenant.getDomain())
-                .authProviders(authProviders)
-                .userExists(true)
-                .build();
-
-        return Optional.of(info);
-    }
+    // Removed mapUserToTenantInfo – response is now single-tenant summary
 }

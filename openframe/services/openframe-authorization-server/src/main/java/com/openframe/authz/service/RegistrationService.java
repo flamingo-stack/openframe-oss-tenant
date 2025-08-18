@@ -22,6 +22,13 @@ public class RegistrationService {
             throw new IllegalArgumentException("Registration is closed for this organization");
         }
 
+        boolean hasActiveUser = userService.findActiveByEmail(request.getEmail())
+                .isPresent();
+
+        if (hasActiveUser) {
+            throw new IllegalArgumentException("Registration is closed for this user");
+        }
+
         Tenant tenant = tenantService.createTenant(request.getTenantName(), tenantDomain);
 
         User user = userService.registerUser(
