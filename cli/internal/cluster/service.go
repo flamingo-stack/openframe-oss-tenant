@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/k3d"
 	uiCluster "github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
@@ -16,7 +17,7 @@ import (
 // ClusterService provides cluster configuration and management operations
 // This handles cluster lifecycle operations and configuration management
 type ClusterService struct {
-	manager  *K3dManager
+	manager  *k3d.K3dManager
 	executor executor.CommandExecutor
 }
 
@@ -31,7 +32,7 @@ func isTerminalEnvironment() bool {
 
 // NewClusterService creates a new cluster service with default configuration
 func NewClusterService(exec executor.CommandExecutor) *ClusterService {
-	manager := CreateClusterManagerWithExecutor(exec)
+	manager := k3d.CreateClusterManagerWithExecutor(exec)
 	return &ClusterService{
 		manager:  manager,
 		executor: exec,
@@ -39,7 +40,7 @@ func NewClusterService(exec executor.CommandExecutor) *ClusterService {
 }
 
 // NewClusterServiceWithOptions creates a cluster service with custom options
-func NewClusterServiceWithOptions(exec executor.CommandExecutor, manager *K3dManager) *ClusterService {
+func NewClusterServiceWithOptions(exec executor.CommandExecutor, manager *k3d.K3dManager) *ClusterService {
 	return &ClusterService{
 		manager:  manager,
 		executor: exec,

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/k3d"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 )
@@ -111,7 +112,7 @@ func TestFlagContainer_TestManager(t *testing.T) {
 	t.Run("can set and get test manager", func(t *testing.T) {
 		container := NewFlagContainer()
 		mockExecutor := executor.NewMockCommandExecutor()
-		testManager := NewK3dManager(mockExecutor, false)
+		testManager := k3d.NewK3dManager(mockExecutor, false)
 		
 		container.TestManager = testManager
 		
@@ -260,7 +261,7 @@ func TestErrorTypes(t *testing.T) {
 func TestInterface_ClusterService(t *testing.T) {
 	t.Run("K3dManager implements ClusterService interface", func(t *testing.T) {
 		mockExecutor := executor.NewMockCommandExecutor()
-		manager := NewK3dManager(mockExecutor, false)
+		manager := k3d.NewK3dManager(mockExecutor, false)
 		
 		// Test that K3dManager implements ClusterService
 		var _ domain.ClusterService = manager
@@ -278,10 +279,10 @@ func TestInterface_ClusterService(t *testing.T) {
 func TestInterface_ClusterManager(t *testing.T) {
 	t.Run("K3dManager implements ClusterManager interface", func(t *testing.T) {
 		mockExecutor := executor.NewMockCommandExecutor()
-		manager := NewK3dManager(mockExecutor, false)
+		manager := k3d.NewK3dManager(mockExecutor, false)
 		
 		// Test that K3dManager implements ClusterManager
-		var _ ClusterManager = manager
+		var _ k3d.ClusterManager = manager
 		
 		// Verify interface methods exist
 		assert.NotNil(t, manager.DetectClusterType)

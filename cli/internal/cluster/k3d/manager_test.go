@@ -1,4 +1,4 @@
-package cluster
+package k3d
 
 import (
 	"context"
@@ -607,12 +607,12 @@ func parseNodeCount(agents, servers string) int {
 	if err != nil {
 		agentCount = 0
 	}
-	
+
 	serverCount, err := strconv.Atoi(servers)
 	if err != nil {
 		serverCount = 0
 	}
-	
+
 	return agentCount + serverCount
 }
 

@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/k3d"
 	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
@@ -17,7 +18,7 @@ type FlagContainer struct {
 	
 	// Dependencies for testing and execution
 	Executor    executor.CommandExecutor `json:"-"` // Command executor for external commands
-	TestManager *K3dManager           `json:"-"` // Test K3D cluster manager for unit tests
+	TestManager *k3d.K3dManager           `json:"-"` // Test K3D cluster manager for unit tests
 }
 
 // GetGlobal implements domain.CommandFlags interface

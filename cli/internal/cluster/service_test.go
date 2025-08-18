@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/k3d"
 	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
@@ -41,7 +42,7 @@ func TestNewClusterService(t *testing.T) {
 
 func TestNewClusterServiceWithOptions(t *testing.T) {
 	exec := createTestExecutor()
-	customManager := CreateClusterManagerWithExecutor(exec)
+	customManager := k3d.CreateClusterManagerWithExecutor(exec)
 	
 	service := NewClusterServiceWithOptions(exec, customManager)
 	

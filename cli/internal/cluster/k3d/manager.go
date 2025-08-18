@@ -1,4 +1,4 @@
-package cluster
+package k3d
 
 import (
 	"context"
@@ -163,7 +163,7 @@ func (m *K3dManager) ListClusters(ctx context.Context) ([]domain.ClusterInfo, er
 				}
 			}
 		}
-		
+
 		clusters = append(clusters, domain.ClusterInfo{
 			Name:      k3dCluster.Name,
 			Type:      domain.ClusterTypeK3d,

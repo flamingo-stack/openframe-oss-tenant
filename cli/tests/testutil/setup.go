@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"github.com/flamingo/openframe/internal/cluster"
+	"github.com/flamingo/openframe/internal/cluster/k3d"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/flamingo/openframe/internal/shared/ui"
 )
@@ -40,7 +41,7 @@ func CreateStandardTestFlags() *cluster.FlagContainer {
 	flags.Executor = mockExecutor
 	
 	// Inject mock K3D cluster manager with test executor
-	mockManager := cluster.NewK3dManager(mockExecutor, false)
+	mockManager := k3d.NewK3dManager(mockExecutor, false)
 	flags.TestManager = mockManager
 	
 	return flags
