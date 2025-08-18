@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/prerequisites"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
@@ -30,6 +31,10 @@ Supports K3d clusters for local development.
 Examples:
   openframe cluster create
   openframe cluster delete`,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Check prerequisites before running any cluster command
+			return prerequisites.CheckPrerequisites()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo when no subcommand is provided
 			ui.ShowLogo()

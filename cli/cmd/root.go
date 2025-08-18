@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/flamingo/openframe/cmd/chart"
 	"github.com/flamingo/openframe/cmd/cluster"
 	"github.com/flamingo/openframe/internal/shared/config"
 	"github.com/flamingo/openframe/internal/shared/ui"
@@ -59,6 +60,7 @@ operation for automation and power users.`,
 
 	// Add subcommands
 	rootCmd.AddCommand(getClusterCmd())
+	rootCmd.AddCommand(getChartCmd())
 
 	// Add global flags following cluster pattern
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
@@ -117,6 +119,11 @@ func ExecuteWithVersion(versionInfo VersionInfo) error {
 // getClusterCmd returns the cluster command
 func getClusterCmd() *cobra.Command {
 	return cluster.GetClusterCmd()
+}
+
+// getChartCmd returns the chart command
+func getChartCmd() *cobra.Command {
+	return chart.GetChartCmd()
 }
 
 
