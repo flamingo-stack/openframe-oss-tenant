@@ -2,8 +2,6 @@ package ui
 
 import (
 	"errors"
-	"strconv"
-	"strings"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/manifoldco/promptui"
@@ -35,169 +33,64 @@ func NewConfigWizard() *ConfigWizard {
 	}
 }
 
+// SetDefaults sets the default values for the wizard
+func (w *ConfigWizard) SetDefaults(name string, clusterType domain.ClusterType, nodeCount int, k8sVersion string) {
+	w.config.Name = name
+	w.config.Type = clusterType
+	w.config.NodeCount = nodeCount
+	w.config.K8sVersion = k8sVersion
+}
+
 // Run starts the interactive configuration wizard
 func (w *ConfigWizard) Run() (ClusterConfig, error) {
-	pterm.Info.Println("🚀 Cluster Configuration Wizard")
+	pterm.Info.Println("Cluster Configuration Wizard")
 	pterm.Info.Println("Configure your new Kubernetes cluster step by step")
 	pterm.Println()
 
-	// Cluster name
-	if err := w.promptClusterName(); err != nil {
+	steps := NewWizardSteps()
+
+	// Step 1: Cluster name
+	name, err := steps.PromptClusterName(w.config.Name)
+	if err != nil {
+		return ClusterConfig{}, err
+	}
+	w.config.Name = name
+
+	// Step 2: Cluster type
+	clusterType, err := steps.PromptClusterType()
+	if err != nil {
+		return ClusterConfig{}, err
+	}
+	w.config.Type = clusterType
+
+	// Step 3: Node count
+	nodeCount, err := steps.PromptNodeCount(w.config.NodeCount)
+	if err != nil {
+		return ClusterConfig{}, err
+	}
+	w.config.NodeCount = nodeCount
+
+	// Step 4: Kubernetes version
+	k8sVersion, err := steps.PromptK8sVersion()
+	if err != nil {
+		return ClusterConfig{}, err
+	}
+	w.config.K8sVersion = k8sVersion
+
+	// Step 5: Confirmation
+	confirmed, err := steps.ConfirmConfiguration(w.config)
+	if err != nil {
 		return ClusterConfig{}, err
 	}
 
-	// Cluster type
-	if err := w.promptClusterType(); err != nil {
-		return ClusterConfig{}, err
-	}
-
-	// Node count
-	if err := w.promptNodeCount(); err != nil {
-		return ClusterConfig{}, err
-	}
-
-	// Kubernetes version
-	if err := w.promptK8sVersion(); err != nil {
-		return ClusterConfig{}, err
-	}
-
-	// Confirmation
-	if err := w.confirmConfiguration(); err != nil {
-		return ClusterConfig{}, err
+	if !confirmed {
+		// User wants to modify - restart wizard
+		return w.Run()
 	}
 
 	return w.config, nil
 }
 
-func (w *ConfigWizard) promptClusterName() error {
-	prompt := promptui.Prompt{
-		Label:   "Cluster Name",
-		Default: w.config.Name,
-		Validate: func(input string) error {
-			if strings.TrimSpace(input) == "" {
-				return errors.New("Cluster name cannot be empty")
-			}
-			return nil
-		},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		return err
-	}
-
-	w.config.Name = strings.TrimSpace(result)
-	return nil
-}
-
-func (w *ConfigWizard) promptClusterType() error {
-	prompt := promptui.Select{
-		Label: "Cluster Type",
-		Items: []string{"k3d (Recommended for local development)", "gke (Google Kubernetes Engine - Coming Soon)"},
-	}
-
-	idx, _, err := prompt.Run()
-	if err != nil {
-		return err
-	}
-
-	switch idx {
-	case 0:
-		w.config.Type = domain.ClusterTypeK3d
-	case 1:
-		w.config.Type = domain.ClusterTypeGKE
-	}
-
-	return nil
-}
-
-func (w *ConfigWizard) promptNodeCount() error {
-	prompt := promptui.Prompt{
-		Label:   "Number of Worker Nodes",
-		Default: strconv.Itoa(w.config.NodeCount),
-		Validate: func(input string) error {
-			val, err := strconv.Atoi(input)
-			if err != nil {
-				return errors.New("Please enter a valid number")
-			}
-			if val < 1 {
-				return errors.New("Node count must be at least 1")
-			}
-			if val > 10 {
-				return errors.New("Node count cannot exceed 10")
-			}
-			return nil
-		},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		return err
-	}
-
-	w.config.NodeCount, _ = strconv.Atoi(result)
-	return nil
-}
-
-func (w *ConfigWizard) promptK8sVersion() error {
-	versions := []string{
-		"latest",
-		"v1.28.0-k3s1",
-		"v1.27.4-k3s1",
-		"v1.26.7-k3s1",
-		"v1.25.12-k3s1",
-	}
-
-	prompt := promptui.Select{
-		Label: "Kubernetes Version",
-		Items: versions,
-	}
-
-	_, result, err := prompt.Run()
-	if err != nil {
-		return err
-	}
-
-	w.config.K8sVersion = result
-	return nil
-}
-
-func (w *ConfigWizard) confirmConfiguration() error {
-	pterm.Println()
-	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgBlue)).Println("Configuration Summary")
-
-	data := pterm.TableData{
-		{"Setting", "Value"},
-		{"Cluster Name", w.config.Name},
-		{"Cluster Type", string(w.config.Type)},
-		{"Node Count", strconv.Itoa(w.config.NodeCount)},
-		{"Kubernetes Version", w.config.K8sVersion},
-	}
-
-	if err := pterm.DefaultTable.WithHasHeader().WithData(data).Render(); err != nil {
-		return err
-	}
-
-	pterm.Println()
-
-	prompt := promptui.Select{
-		Label: "Create cluster with this configuration?",
-		Items: []string{"Yes, create the cluster", "No, go back and modify"},
-	}
-
-	idx, _, err := prompt.Run()
-	if err != nil {
-		return err
-	}
-
-	if idx != 0 {
-		// User wants to modify - restart wizard
-		_, err := w.Run()
-		return err
-	}
-
-	return nil
-}
 
 // SelectCluster provides interactive cluster selection
 func SelectCluster(clusters []domain.ClusterInfo, message string) (domain.ClusterInfo, error) {
@@ -215,7 +108,7 @@ func SelectCluster(clusters []domain.ClusterInfo, message string) (domain.Cluste
 		Items: items,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . }}:",
-			Active:   "▶ {{ . | cyan }}",
+			Active:   "→ {{ . | cyan }}",
 			Inactive: "  {{ . }}",
 		},
 	}
@@ -233,6 +126,97 @@ func formatClusterOption(clusterInfo domain.ClusterInfo) string {
 	return pterm.Sprintf("%s - %s",
 		clusterInfo.Name,
 		clusterInfo.Status)
+}
+
+// ConfigurationHandler handles cluster configuration flows
+type ConfigurationHandler struct{}
+
+// NewConfigurationHandler creates a new configuration handler
+func NewConfigurationHandler() *ConfigurationHandler {
+	return &ConfigurationHandler{}
+}
+
+// GetClusterConfig handles the complete cluster configuration flow
+func (h *ConfigurationHandler) GetClusterConfig(clusterName string) (domain.ClusterConfig, error) {
+	// Show creation mode selection
+	modeChoice, err := h.showCreationModeSelection()
+	if err != nil {
+		return domain.ClusterConfig{}, err
+	}
+	
+	if modeChoice == "quick" {
+		return h.getQuickConfig(clusterName), nil
+	}
+	
+	return h.getWizardConfig(clusterName)
+}
+
+// showCreationModeSelection shows the initial creation mode selection
+func (h *ConfigurationHandler) showCreationModeSelection() (string, error) {
+	pterm.Info.Println("Cluster Creation Mode")
+	pterm.Info.Println("Choose how you want to create your cluster")
+	pterm.Println()
+
+	prompt := promptui.Select{
+		Label: "Creation Mode",
+		Items: []string{
+			"Default configuration",
+			"Interactive configuration",
+		},
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}:",
+			Active:   "→ {{ . | cyan }}",
+			Inactive: "  {{ . }}",
+			Selected: "{{ . | green }}",
+		},
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+
+	if idx == 0 {
+		return "quick", nil
+	}
+	return "wizard", nil
+}
+
+// getQuickConfig creates a quick default configuration
+func (h *ConfigurationHandler) getQuickConfig(clusterName string) domain.ClusterConfig {
+	if clusterName == "" {
+		clusterName = "openframe-dev"
+	}
+	
+	return domain.ClusterConfig{
+		Name:       clusterName,
+		Type:       domain.ClusterTypeK3d,
+		K8sVersion: "latest",
+		NodeCount:  3,
+	}
+}
+
+// getWizardConfig runs the interactive configuration wizard
+func (h *ConfigurationHandler) getWizardConfig(clusterName string) (domain.ClusterConfig, error) {
+	wizard := NewConfigWizard()
+	
+	// Set defaults if cluster name provided
+	if clusterName != "" {
+		wizard.SetDefaults(clusterName, domain.ClusterTypeK3d, 3, "latest")
+	}
+	
+	wizardConfig, err := wizard.Run()
+	if err != nil {
+		return domain.ClusterConfig{}, err
+	}
+	
+	// Convert wizard config to domain config
+	return domain.ClusterConfig{
+		Name:       wizardConfig.Name,
+		Type:       wizardConfig.Type,
+		K8sVersion: wizardConfig.K8sVersion,
+		NodeCount:  wizardConfig.NodeCount,
+	}, nil
 }
 
 // GetClusterNameOrDefault returns the cluster name from args or default - helper for commands

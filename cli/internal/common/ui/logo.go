@@ -92,8 +92,8 @@ func showFancyLogo() {
 	
 	logo := strings.Join(paddedLines, "\n")
 	
-	// Create styled title with rocket emoji
-	styledTitle := titleStyle.Sprint(" 🚀 " + logoTitle + " ")
+	// Create styled title
+	styledTitle := titleStyle.Sprint(" " + logoTitle + " ")
 	
 	pterm.DefaultBox.WithTitle(styledTitle).
 		WithTitleTopCenter().

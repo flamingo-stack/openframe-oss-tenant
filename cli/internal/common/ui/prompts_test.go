@@ -430,3 +430,59 @@ func BenchmarkConfirmActionResultParsing(b *testing.B) {
 		_ = parseResult(input) // Explicitly discard result
 	}
 }
+
+func TestValidateNonEmpty(t *testing.T) {
+	validator := ValidateNonEmpty("test field")
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{"valid input", "test", false},
+		{"empty string", "", true},
+		{"whitespace only", "   ", true},
+		{"valid with spaces", "  test  ", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "test field cannot be empty")
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateIntRange(t *testing.T) {
+	validator := ValidateIntRange(1, 10, "node count")
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{"valid number", "5", false},
+		{"minimum valid", "1", false},
+		{"maximum valid", "10", false},
+		{"below minimum", "0", true},
+		{"above maximum", "11", true},
+		{"not a number", "abc", true},
+		{"empty string", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

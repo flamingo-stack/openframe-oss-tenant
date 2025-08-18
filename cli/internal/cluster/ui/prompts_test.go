@@ -8,42 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClusterConfiguration(t *testing.T) {
-	t.Run("creates cluster configuration with all fields", func(t *testing.T) {
-		config := ClusterConfiguration{
-			Name:              "test-cluster",
-			Type:              ClusterTypeK3d,
-			KubernetesVersion: "v1.25.0-k3s1",
-			NodeCount:         3,
-		}
-
-		assert.Equal(t, "test-cluster", config.Name)
-		assert.Equal(t, ClusterTypeK3d, config.Type)
-		assert.Equal(t, "v1.25.0-k3s1", config.KubernetesVersion)
-		assert.Equal(t, 3, config.NodeCount)
-	})
-
-	t.Run("supports different cluster types", func(t *testing.T) {
-		tests := []struct {
-			name        string
-			clusterType ClusterType
-		}{
-			{"k3d cluster", ClusterTypeK3d},
-			{"gke cluster", ClusterTypeGKE},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				config := ClusterConfiguration{
-					Name: "test-cluster",
-					Type: tt.clusterType,
-				}
-
-				assert.Equal(t, tt.clusterType, config.Type)
-			})
-		}
-	})
-}
 
 func TestSelectClusterByName(t *testing.T) {
 	t.Run("returns empty string when no clusters provided", func(t *testing.T) {
@@ -116,7 +80,7 @@ func TestHandleClusterSelection(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, "", result)
-		assert.Contains(t, err.Error(), "cluster name cannot be empty")
+		assert.Contains(t, err.Error(), "resource name cannot be empty")
 	})
 
 	t.Run("returns error when arg is whitespace only", func(t *testing.T) {
@@ -127,7 +91,7 @@ func TestHandleClusterSelection(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, "", result)
-		assert.Contains(t, err.Error(), "cluster name cannot be empty")
+		assert.Contains(t, err.Error(), "resource name cannot be empty")
 	})
 
 	t.Run("handles args with multiple elements", func(t *testing.T) {
@@ -145,11 +109,12 @@ func TestHandleClusterSelection(t *testing.T) {
 		args := []string{}
 
 		// This would normally call SelectClusterByName, which would show interactive prompt
-		// Since we have no clusters, it should return empty string
+		// Since we have no clusters, the common UI function returns an error
 		result, err := HandleClusterSelection(clusters, args, "Select cluster")
 
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, "", result)
+		assert.Contains(t, err.Error(), "no items available for selection")
 	})
 }
 
@@ -228,29 +193,6 @@ func TestFormatClusterSuccessMessage(t *testing.T) {
 	})
 }
 
-func TestComponentChoice(t *testing.T) {
-	t.Run("creates component choice with all fields", func(t *testing.T) {
-		choice := ComponentChoice{
-			Name:        "ingress-nginx",
-			Description: "NGINX Ingress Controller",
-			Default:     true,
-		}
-
-		assert.Equal(t, "ingress-nginx", choice.Name)
-		assert.Equal(t, "NGINX Ingress Controller", choice.Description)
-		assert.True(t, choice.Default)
-	})
-
-	t.Run("creates component choice with minimal fields", func(t *testing.T) {
-		choice := ComponentChoice{
-			Name: "prometheus",
-		}
-
-		assert.Equal(t, "prometheus", choice.Name)
-		assert.Equal(t, "", choice.Description)
-		assert.False(t, choice.Default)
-	})
-}
 
 // Test helper functions for validation logic that can be tested without UI interaction
 func TestValidationLogic(t *testing.T) {
@@ -270,7 +212,7 @@ func TestValidationLogic(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				// Simulate the validation logic from ClusterWizard
+				// Test validation logic for cluster names
 				validate := func(input string) error {
 					if len(strings.TrimSpace(input)) < 1 {
 						return errors.New("cluster name cannot be empty")

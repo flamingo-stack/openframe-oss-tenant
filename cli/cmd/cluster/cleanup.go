@@ -23,7 +23,8 @@ Useful for development clusters with many builds.
 
 Examples:
   openframe cluster cleanup
-  openframe cluster cleanup my-cluster`,
+  openframe cluster cleanup my-cluster
+  openframe cluster cleanup my-cluster --force`,
 		Args: cobra.MaximumNArgs(1),
 		Aliases: []string{"c"},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -52,13 +53,14 @@ func runCleanupCluster(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to list clusters: %w", err)
 	}
 	
-	// Handle cluster selection with friendly UI
-	clusterName, err := operationsUI.SelectClusterForOperation(clusters, args, "cleanup")
+	// Handle cluster selection with friendly UI (including confirmation)
+	globalFlags := utils.GetGlobalFlags()
+	clusterName, err := operationsUI.SelectClusterForCleanup(clusters, args, globalFlags.Cleanup.Force)
 	if err != nil {
 		return err
 	}
 	
-	// If no cluster selected (e.g., empty list), exit gracefully
+	// If no cluster selected (e.g., empty list or cancelled), exit gracefully
 	if clusterName == "" {
 		return nil
 	}

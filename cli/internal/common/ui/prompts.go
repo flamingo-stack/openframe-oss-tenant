@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/manifoldco/promptui"
@@ -50,6 +51,17 @@ func SelectFromList(label string, items []string) (int, string, error) {
 	return prompt.Run()
 }
 
+// SelectFromListWithCustomTemplates provides more control over selection styling
+func SelectFromListWithCustomTemplates(label string, items []string, templates *promptui.SelectTemplates) (int, string, error) {
+	prompt := promptui.Select{
+		Label:     label,
+		Items:     items,
+		Templates: templates,
+	}
+
+	return prompt.Run()
+}
+
 // GetInput prompts the user for text input
 func GetInput(label, defaultValue string, validate func(string) error) (string, error) {
 	prompt := promptui.Prompt{
@@ -79,6 +91,57 @@ func GetMultiChoice(label string, items []string, defaults []bool) ([]bool, erro
 	}
 
 	return results, nil
+}
+
+// HandleResourceSelection handles the common pattern of getting a resource name from args or interactive selection
+// If args provided, validates the first arg is not empty and returns it
+// If no args, uses SelectFromList to let user choose from available items
+func HandleResourceSelection(args []string, items []string, prompt string) (string, error) {
+	// If resource name provided as argument, use it directly
+	if len(args) > 0 {
+		resourceName := strings.TrimSpace(args[0])
+		if resourceName == "" {
+			return "", fmt.Errorf("resource name cannot be empty")
+		}
+		return resourceName, nil
+	}
+
+	// Check if items are available
+	if len(items) == 0 {
+		return "", fmt.Errorf("no items available for selection")
+	}
+
+	// Use interactive selection
+	_, selected, err := SelectFromList(prompt, items)
+	if err != nil {
+		return "", fmt.Errorf("selection failed: %w", err)
+	}
+
+	return selected, nil
+}
+
+// ValidateNonEmpty validates that input is not empty after trimming
+func ValidateNonEmpty(fieldName string) func(string) error {
+	return func(input string) error {
+		if strings.TrimSpace(input) == "" {
+			return fmt.Errorf("%s cannot be empty", fieldName)
+		}
+		return nil
+	}
+}
+
+// ValidateIntRange validates that input is an integer within specified range
+func ValidateIntRange(min, max int, fieldName string) func(string) error {
+	return func(input string) error {
+		val, err := strconv.Atoi(input)
+		if err != nil {
+			return fmt.Errorf("please enter a valid number for %s", fieldName)
+		}
+		if val < min || val > max {
+			return fmt.Errorf("%s must be between %d and %d", fieldName, min, max)
+		}
+		return nil
+	}
 }
 
 // boolToString converts boolean to y/N format (helper function)

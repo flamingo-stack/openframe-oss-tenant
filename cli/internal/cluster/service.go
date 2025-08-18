@@ -140,8 +140,7 @@ func (s *ClusterService) DeleteCluster(name string, clusterType domain.ClusterTy
 	
 	spinner.Success(fmt.Sprintf("Cluster '%s' deleted successfully", name))
 	
-	// Show deletion summary
-	s.displayClusterDeletionSummary(name, clusterType)
+	// Don't show summary here - let the UI layer handle it
 	
 	return nil
 }
@@ -208,50 +207,6 @@ func (s *ClusterService) displayClusterCreationSummary(info domain.ClusterInfo) 
 		Println(boxContent)
 }
 
-// displayClusterDeletionSummary displays a summary after cluster deletion
-func (s *ClusterService) displayClusterDeletionSummary(name string, clusterType domain.ClusterType) {
-	fmt.Println()
-	
-	// Create a styled box for the deletion summary
-	boxContent := fmt.Sprintf(
-		"NAME:         %s\n"+
-		"TYPE:         %s\n"+
-		"STATUS:       %s\n"+
-		"NETWORK:      %s\n"+
-		"RESOURCES:    %s",
-		pterm.Bold.Sprint(name),
-		string(clusterType),
-		pterm.Red("Deleted"),
-		pterm.Gray("Removed"),
-		pterm.Gray("Cleaned up"),
-	)
-	
-	pterm.DefaultBox.
-		WithTitle(" 🗑️  Cluster Deleted ").
-		WithTitleTopCenter().
-		Println(boxContent)
-	
-	// Show what was cleaned up
-	fmt.Println()
-	tableData := pterm.TableData{
-		{"🧹", "Resources Cleaned Up"},
-		{"•", pterm.Gray("Docker containers removed")},
-		{"•", pterm.Gray("Kubernetes network deleted")},
-		{"•", pterm.Gray("Volumes and configs removed")},
-		{"•", pterm.Gray("Kubeconfig entries cleaned")},
-	}
-	
-	// Try to render as table, fallback to simple output
-	if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
-		// Fallback to simple output
-		fmt.Println("Resources cleaned up:")
-		fmt.Printf("  • %s\n", pterm.Gray("Docker containers removed"))
-		fmt.Printf("  • %s\n", pterm.Gray("Kubernetes network deleted"))
-		fmt.Printf("  • %s\n", pterm.Gray("Volumes and configs removed"))
-		fmt.Printf("  • %s\n", pterm.Gray("Kubeconfig entries cleaned"))
-	}
-	fmt.Println()
-}
 
 // ShowClusterStatus handles cluster status display logic
 func (s *ClusterService) ShowClusterStatus(name string, detailed bool, skipApps bool, verbose bool) error {
@@ -436,8 +391,9 @@ func (s *ClusterService) DisplayClusterList(clusters []domain.ClusterInfo, quiet
 			// In quiet mode, just exit silently if no clusters
 			return nil
 		}
-		// Use the UI service for consistent messaging
-		uiCluster.ShowNoResourcesMessage("clusters", "openframe cluster create")
+		// Use the OperationsUI for consistent messaging
+		operationsUI := uiCluster.NewOperationsUI()
+		operationsUI.ShowNoResourcesMessage("clusters", "list")
 		return nil
 	}
 

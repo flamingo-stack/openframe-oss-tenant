@@ -258,14 +258,13 @@ servers: %d
 agents: %d
 image: %s`, config.Name, servers, agents, image)
 
-	isTestCluster := m.isTestCluster(config.Name)
-	if isTestCluster {
-		if ports, err := m.findAvailablePorts(3); err == nil && len(ports) >= 3 {
-			apiPort := strconv.Itoa(ports[0])
-			httpPort := strconv.Itoa(ports[1])
-			httpsPort := strconv.Itoa(ports[2])
+	// Always use dynamic ports to avoid conflicts, regardless of cluster name
+	if ports, err := m.findAvailablePorts(3); err == nil && len(ports) >= 3 {
+		apiPort := strconv.Itoa(ports[0])
+		httpPort := strconv.Itoa(ports[1])
+		httpsPort := strconv.Itoa(ports[2])
 
-			configContent += fmt.Sprintf(`
+		configContent += fmt.Sprintf(`
 kubeAPI:
   host: "127.0.0.1"
   hostIP: "127.0.0.1"
@@ -289,22 +288,8 @@ ports:
   - port: %s:443
     nodeFilters:
       - loadbalancer`, apiPort, httpPort, httpsPort)
-		} else {
-			configContent += `
-options:
-  k3s:
-    extraArgs:
-      - arg: --disable=traefik
-        nodeFilters:
-          - server:*
-      - arg: --kubelet-arg=eviction-hard=
-        nodeFilters:
-          - all
-      - arg: --kubelet-arg=eviction-soft=
-        nodeFilters:
-          - all`
-		}
 	} else {
+		// Fallback to default ports if dynamic allocation fails
 		configContent += fmt.Sprintf(`
 kubeAPI:
   host: "127.0.0.1"

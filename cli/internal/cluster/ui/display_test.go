@@ -296,21 +296,23 @@ func TestShowClusterCreationNextSteps(t *testing.T) {
 }
 
 func TestShowNoResourcesMessage(t *testing.T) {
+	ui := NewOperationsUI()
+	
 	t.Run("displays no resources message without panicking", func(t *testing.T) {
 		assert.NotPanics(t, func() {
-			ShowNoResourcesMessage("clusters", "openframe cluster create")
+			ui.ShowNoResourcesMessage("clusters", "create")
 		})
 	})
 	
 	t.Run("handles empty parameters", func(t *testing.T) {
 		assert.NotPanics(t, func() {
-			ShowNoResourcesMessage("", "")
+			ui.ShowNoResourcesMessage("", "")
 		})
 	})
 	
 	t.Run("handles plural resource type", func(t *testing.T) {
 		assert.NotPanics(t, func() {
-			ShowNoResourcesMessage("applications", "openframe app deploy")
+			ui.ShowNoResourcesMessage("applications", "deploy")
 		})
 	})
 }

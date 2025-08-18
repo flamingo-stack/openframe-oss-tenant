@@ -43,6 +43,7 @@ type DeleteFlags struct {
 // CleanupFlags contains flags specific to cleanup command
 type CleanupFlags struct {
 	GlobalFlags
+	Force bool  // Cleanup-specific force flag
 }
 
 // Flag setup functions
@@ -79,7 +80,7 @@ func AddDeleteFlags(cmd *cobra.Command, flags *DeleteFlags) {
 
 // AddCleanupFlags adds cleanup-specific flags to a command
 func AddCleanupFlags(cmd *cobra.Command, flags *CleanupFlags) {
-	// Cleanup command has no specific flags
+	cmd.Flags().BoolVarP(&flags.Force, "force", "f", false, "Skip confirmation prompts")
 }
 
 // ValidateClusterName validates cluster name according to Kubernetes naming conventions

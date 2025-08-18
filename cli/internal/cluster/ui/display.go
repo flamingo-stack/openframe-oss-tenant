@@ -2,105 +2,44 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
+	commonUI "github.com/flamingo/openframe/internal/common/ui"
 	"github.com/pterm/pterm"
 )
 
 // GetStatusColor returns appropriate color function for status
+// Deprecated: Use commonUI.GetStatusColor instead
 func GetStatusColor(status string) func(string) string {
-	switch strings.ToLower(status) {
-	case "running", "ready":
-		return func(s string) string { return pterm.Green(s) }
-	case "stopped", "not ready", "pending":
-		return func(s string) string { return pterm.Yellow(s) }
-	case "error", "failed", "unhealthy":
-		return func(s string) string { return pterm.Red(s) }
-	default:
-		return func(s string) string { return pterm.Gray(s) }
-	}
+	return commonUI.GetStatusColor(status)
 }
 
 // RenderTableWithFallback renders a table with fallback to simple output
+// Deprecated: Use commonUI.RenderTableWithFallback instead
 func RenderTableWithFallback(data pterm.TableData, hasHeader bool) error {
-	if err := pterm.DefaultTable.WithHasHeader(hasHeader).WithData(data).Render(); err != nil {
-		// Fallback to simple output for the specific 5-column layout used in cluster commands
-		for i, row := range data {
-			if i == 0 && hasHeader {
-				fmt.Printf("%-20s %-10s %-12s %-8s %-10s\n", row[0], row[1], row[2], row[3], row[4])
-				fmt.Println(strings.Repeat("─", 70))
-			} else if len(row) >= 5 {
-				fmt.Printf("%-20s %-10s %-12s %-8s %-10s\n", row[0], row[1], row[2], row[3], row[4])
-			}
-		}
-	}
-	return nil
+	return commonUI.RenderTableWithFallback(data, hasHeader)
 }
 
 // RenderOverviewTable renders cluster overview information
 func RenderOverviewTable(data pterm.TableData) error {
-	if err := pterm.DefaultTable.WithHasHeader().WithData(data).Render(); err != nil {
-		// Fallback to simple key-value output
-		for i, row := range data {
-			if i == 0 {
-				continue // Skip header
-			}
-			if len(row) >= 2 {
-				fmt.Printf("%s: %s\n", row[0], row[1])
-			}
-		}
-	}
-	return nil
+	return commonUI.RenderKeyValueTable(data)
 }
 
 // RenderNodeTable renders node information table
 func RenderNodeTable(data pterm.TableData) error {
-	if err := pterm.DefaultTable.WithHasHeader().WithData(data).Render(); err != nil {
-		// Fallback to simple output
-		fmt.Printf("%-40s | %-13s | %-10s | %s\n", "NAME", "ROLE", "STATUS", "AGE")
-		fmt.Println(strings.Repeat("-", 80))
-		for i, row := range data {
-			if i == 0 {
-				continue // Skip header
-			}
-			if len(row) >= 4 {
-				fmt.Printf("%-40s | %-13s | %-10s | %s\n", row[0], row[1], row[2], row[3])
-			}
-		}
-	}
-	return nil
+	return commonUI.RenderNodeTable(data)
 }
 
 // ShowSuccessBox displays a success message in a formatted box
+// Deprecated: Use commonUI.ShowSuccessBox instead
 func ShowSuccessBox(title, content string) {
-	pterm.DefaultBox.WithTitle(title).
-		WithTitleTopCenter().
-		Println(content)
+	commonUI.ShowSuccessBox(title, content)
 }
 
 // FormatAge formats a time duration into a human-readable age string
+// Deprecated: Use commonUI.FormatAge instead
 func FormatAge(createdAt time.Time) string {
-	if createdAt.IsZero() {
-		return "unknown"
-	}
-	
-	duration := time.Since(createdAt)
-	
-	days := int(duration.Hours() / 24)
-	hours := int(duration.Hours()) % 24
-	minutes := int(duration.Minutes()) % 60
-	seconds := int(duration.Seconds()) % 60
-	
-	if days > 0 {
-		return fmt.Sprintf("%dd", days)
-	} else if hours > 0 {
-		return fmt.Sprintf("%dh", hours)
-	} else if minutes > 0 {
-		return fmt.Sprintf("%dm", minutes)
-	} else {
-		return fmt.Sprintf("%ds", seconds)
-	}
+	return commonUI.FormatAge(createdAt)
 }
 
 // ShowClusterCreationNextSteps displays next steps after cluster creation
@@ -109,7 +48,7 @@ func ShowClusterCreationNextSteps(clusterName string) {
 	
 	// Create table data for next steps
 	tableData := pterm.TableData{
-		{"📌", "Next Steps"},
+		{"STEP", "Next Steps"},
 		{"1.", pterm.Gray("Bootstrap OpenFrame:  ") + pterm.Cyan("openframe bootstrap")},
 		{"2.", pterm.Gray("Check cluster status: ") + pterm.Cyan("openframe cluster status")},
 		{"3.", pterm.Gray("List all clusters:    ") + pterm.Cyan("openframe cluster list")},
@@ -128,17 +67,3 @@ func ShowClusterCreationNextSteps(clusterName string) {
 	fmt.Println()
 }
 
-// ShowNoResourcesMessage displays a message when no resources are found
-func ShowNoResourcesMessage(resourceType, command string) {
-	// Create styled box with consistent formatting
-	pterm.DefaultBox.WithTitle(" 📭 No Resources Found ").WithTitleTopCenter().Println(
-		fmt.Sprintf("No %s are currently available.\n\n" +
-			"To get started, create a new %s:\n" +
-			"  %s\n\n" +
-			"For more options, try:\n" +
-			"  openframe cluster --help",
-			pterm.Yellow(resourceType),
-			strings.TrimSuffix(resourceType, "s"),
-			pterm.Green(command)))
-	pterm.Println()
-}
