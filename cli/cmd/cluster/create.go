@@ -63,7 +63,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	var config domain.ClusterConfig
 
 	// Check if we should use interactive mode
-	if !globalFlags.Create.SkipWizard && !globalFlags.Create.DryRun {
+	if !globalFlags.Create.SkipWizard {
 		// Use UI layer to handle cluster configuration
 		configHandler := ui.NewConfigurationHandler()
 		

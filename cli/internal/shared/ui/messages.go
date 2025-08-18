@@ -60,9 +60,7 @@ func ShowOperationError(operation, resourceName string, err error, troubleshooti
 	
 	if len(troubleshootingTips) > 0 {
 		// Show helpful suggestions
-		tableData := pterm.TableData{
-			{"TIP", "Troubleshooting Tips"},
-		}
+		tableData := pterm.TableData{}
 		
 		for i, tip := range troubleshootingTips {
 			tableData = append(tableData, []string{
@@ -71,7 +69,8 @@ func ShowOperationError(operation, resourceName string, err error, troubleshooti
 			})
 		}
 		
-		if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
+		pterm.Info.Println("Troubleshooting Tips:")
+		if err := pterm.DefaultTable.WithData(tableData).Render(); err != nil {
 			pterm.Printf("Troubleshooting:\n")
 			for i, tip := range troubleshootingTips {
 				pterm.Printf("  %d. %s: %s\n", i+1, tip.Description, pterm.Cyan(tip.Command))

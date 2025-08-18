@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	commonUI "github.com/flamingo/openframe/internal/common/ui"
+	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -86,7 +86,7 @@ func (s *DisplayService) ShowClusterList(clusters []ClusterDisplayInfo, out io.W
 	}
 
 	for _, clusterInfo := range clusters {
-		statusColor := commonUI.GetStatusColor(clusterInfo.Status)
+		statusColor := sharedUI.GetStatusColor(clusterInfo.Status)
 		tableData = append(tableData, []string{
 			pterm.Bold.Sprint(clusterInfo.Name),
 			clusterInfo.Type,
@@ -123,7 +123,7 @@ func (s *DisplayService) ShowClusterStatus(status *ClusterDisplayInfo, out io.Wr
 	fmt.Fprintf(out, "  Name: %s\n", pterm.Bold.Sprint(status.Name))
 	fmt.Fprintf(out, "  Type: %s\n", status.Type)
 	
-	statusColor := commonUI.GetStatusColor(status.Status)
+	statusColor := sharedUI.GetStatusColor(status.Status)
 	fmt.Fprintf(out, "  Status: %s\n", statusColor(status.Status))
 	
 	fmt.Fprintf(out, "  Node Count: %d\n", status.NodeCount)
@@ -133,7 +133,7 @@ func (s *DisplayService) ShowClusterStatus(status *ClusterDisplayInfo, out io.Wr
 	if len(status.Nodes) > 0 {
 		fmt.Fprintf(out, "\nNodes:\n")
 		for _, node := range status.Nodes {
-			nodeStatusColor := commonUI.GetStatusColor(node.Status)
+			nodeStatusColor := sharedUI.GetStatusColor(node.Status)
 			fmt.Fprintf(out, "  - %s (%s): %s\n", 
 				node.Name, 
 				node.Role, 

@@ -3,7 +3,7 @@ package cluster
 import (
 	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/flamingo/openframe/internal/cluster/utils"
-	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 

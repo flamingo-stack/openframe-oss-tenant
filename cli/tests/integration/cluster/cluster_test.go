@@ -75,15 +75,9 @@ func TestClusterOperations(t *testing.T) {
 		t.Skip("k3d required for cluster tests")
 	}
 
-	// Clean environment thoroughly
+	// Quick cleanup - only remove test clusters, not global cleanup
 	t.Log("Cleaning up any existing test clusters")
 	common.CleanupAllTestClusters()
-	
-	// Also clean up any stale k3d clusters that might be consuming ports
-	cleanupResult := common.RunCLI("cluster", "cleanup")
-	if cleanupResult.Failed() {
-		t.Logf("Global cleanup failed (may be expected): %s", cleanupResult.Stderr)
-	}
 
 	// Generate unique cluster name with shorter timestamp to avoid conflicts
 	clusterName := fmt.Sprintf("test-%d", time.Now().Unix()%100000)
@@ -104,7 +98,7 @@ func TestClusterOperations(t *testing.T) {
 		// Clean up any partial state from previous attempt
 		if attempt > 1 {
 			common.CleanupTestCluster(clusterName)
-			time.Sleep(time.Duration(attempt) * time.Second) // Progressive backoff
+			time.Sleep(500 * time.Millisecond) // Fixed short backoff
 		}
 		
 		result := common.RunCLI("cluster", "create", clusterName, "--skip-wizard", "--nodes", "1")
@@ -164,7 +158,7 @@ func TestClusterOperations(t *testing.T) {
 
 	// Phase 4: Test cleanup command
 	t.Log("Phase 4: Testing cleanup command")
-	clusterCleanupResult := common.RunCLI("cluster", "cleanup", clusterName)
+	clusterCleanupResult := common.RunCLI("cluster", "cleanup", clusterName, "--force")
 	require.True(t, clusterCleanupResult.Success(), "Cleanup command failed: %s", clusterCleanupResult.Stderr)
 
 	// Verify cluster still exists after cleanup
@@ -187,7 +181,7 @@ func TestClusterOperations(t *testing.T) {
 
 	// Multiple cleanup calls (may fail on subsequent runs)
 	for i := 0; i < 2; i++ {
-		multiCleanupResult := common.RunCLI("cluster", "cleanup", clusterName)
+		multiCleanupResult := common.RunCLI("cluster", "cleanup", clusterName, "--force")
 		if multiCleanupResult.Failed() {
 			t.Logf("Cleanup %d failed as expected (no resources to clean)", i+1)
 		}
@@ -199,8 +193,7 @@ func TestClusterOperations(t *testing.T) {
 	deleteResult := common.RunCLI("cluster", "delete", clusterName, "--force")
 	require.True(t, deleteResult.Success(), "Delete command failed: %s", deleteResult.Stderr)
 
-	// Wait for deletion to complete
-	time.Sleep(500 * time.Millisecond)
+	// k3d deletion is usually immediate - minimal wait
 
 	// Verify cluster is gone
 	exists, err = common.ClusterExists(clusterName)
@@ -468,7 +461,7 @@ func TestExtendedScenarios(t *testing.T) {
 		require.True(t, deleteResult1.Success(), "Delete cluster1 failed: %s", deleteResult1.Stderr)
 
 		// Wait for cleanup to complete and resources to be freed
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second) // Reduced wait time
 
 		// Second cluster lifecycle  
 		t.Logf("Creating second cluster: %s", cluster2)
@@ -517,7 +510,7 @@ func TestExtendedScenarios(t *testing.T) {
 		require.True(t, statusResult.Success(), "Status should work after startup: %s", statusResult.Stderr)
 
 		// Test recovery with cleanup
-		cleanupResult := common.RunCLI("cluster", "cleanup", clusterName)
+		cleanupResult := common.RunCLI("cluster", "cleanup", clusterName, "--force")
 		require.True(t, cleanupResult.Success(), "Cleanup should work: %s", cleanupResult.Stderr)
 
 		// Status should still work after cleanup
@@ -556,7 +549,7 @@ func TestExtendedScenarios(t *testing.T) {
 
 		// Multiple cleanup operations
 		for i := 0; i < 3; i++ {
-			cleanupResult := common.RunCLI("cluster", "cleanup", clusterName)
+			cleanupResult := common.RunCLI("cluster", "cleanup", clusterName, "--force")
 			if cleanupResult.Failed() {
 				t.Logf("Cleanup %d failed (may be expected): %s", i, cleanupResult.Stderr)
 			}

@@ -9,7 +9,7 @@ import (
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
 	uiCluster "github.com/flamingo/openframe/internal/cluster/ui"
-	"github.com/flamingo/openframe/internal/common/executor"
+	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -54,51 +54,35 @@ func (s *ClusterService) CreateCluster(config domain.ClusterConfig) error {
 	if existingInfo, err := s.manager.GetClusterStatus(ctx, config.Name); err == nil {
 		// Cluster already exists - show friendly message
 		
-		// Format creation time properly, or show "Just now" if timestamp is zero
-		createdTime := "Just now"
-		if !existingInfo.CreatedAt.IsZero() && existingInfo.CreatedAt.Year() > 1 {
-			createdTime = existingInfo.CreatedAt.Format("2006-01-02 15:04")
-		}
+		
+		// Show warning for existing cluster
+		pterm.Warning.Printf("Cluster '%s' already exists!\n", pterm.Cyan(config.Name))
+		fmt.Println()
 		
 		boxContent := fmt.Sprintf(
-			"A cluster named '%s' already exists!\n\n"+
 			"NAME:     %s\n"+
 			"TYPE:     %s\n"+
 			"STATUS:   %s\n"+
 			"NODES:    %d\n"+
-			"CREATED:  %s",
-			config.Name,
+			"NETWORK:  k3d-%s",
 			pterm.Bold.Sprint(existingInfo.Name),
-			existingInfo.Type,
+			strings.ToUpper(string(existingInfo.Type)),
 			pterm.Green("Running"),
 			existingInfo.NodeCount,
-			createdTime,
+			existingInfo.Name,
 		)
 		
 		pterm.DefaultBox.
-			WithTitle(" ℹ️  Cluster Already Exists ").
+			WithTitle(" ⚠️  Cluster Already Running  ⚠️ ").
 			WithTitleTopCenter().
 			Println(boxContent)
-			
-		// Show available options
-		fmt.Println()
-		tableData := pterm.TableData{
-			{"💡", "What would you like to do?"},
-			{"1.", pterm.Gray("Check cluster status: ") + pterm.Cyan("openframe cluster status")},
-			{"2.", pterm.Gray("Delete and recreate:  ") + pterm.Cyan("openframe cluster delete " + config.Name + " --force && openframe cluster create")},
-			{"3.", pterm.Gray("Create with new name:  ") + pterm.Cyan("openframe cluster create my-new-cluster")},
-			{"4.", pterm.Gray("List all clusters:    ") + pterm.Cyan("openframe cluster list")},
-		}
 		
-		if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
-			// Fallback to simple output
-			fmt.Println("What would you like to do?")
-			fmt.Printf("  1. Check cluster status: %s\n", pterm.Cyan("openframe cluster status"))
-			fmt.Printf("  2. Delete and recreate:  %s\n", pterm.Cyan("openframe cluster delete "+config.Name+" --force && openframe cluster create"))
-			fmt.Printf("  3. Create with new name:  %s\n", pterm.Cyan("openframe cluster create my-new-cluster"))
-			fmt.Printf("  4. List all clusters:    %s\n", pterm.Cyan("openframe cluster list"))
-		}
+		// Show what user can do
 		fmt.Println()
+		pterm.Info.Printf("What would you like to do?\n")
+		pterm.Printf("  • Check status: openframe cluster status %s\n", config.Name)
+		pterm.Printf("  • Delete first: openframe cluster delete %s\n", config.Name)
+		pterm.Printf("  • Use different name: openframe cluster create my-new-cluster\n")
 		
 		return nil // Exit gracefully without error
 	}
@@ -120,7 +104,7 @@ func (s *ClusterService) CreateCluster(config domain.ClusterConfig) error {
 	}
 	
 	// Show next steps
-	uiCluster.ShowClusterCreationNextSteps(config.Name)
+	s.showNextSteps(config.Name)
 	
 	return nil
 }
@@ -138,7 +122,7 @@ func (s *ClusterService) DeleteCluster(name string, clusterType domain.ClusterTy
 		return err
 	}
 	
-	spinner.Success(fmt.Sprintf("Cluster '%s' deleted successfully", name))
+	spinner.Stop() // Stop spinner without message - UI layer will show success
 	
 	// Don't show summary here - let the UI layer handle it
 	
@@ -185,19 +169,18 @@ func (s *ClusterService) cleanupK3dCluster(clusterName string, verbose bool) err
 func (s *ClusterService) displayClusterCreationSummary(info domain.ClusterInfo) {
 	fmt.Println()
 	
-	// Create a styled box for the summary
+	// Create a clean box for the summary
 	boxContent := fmt.Sprintf(
 		"NAME:     %s\n"+
 		"TYPE:     %s\n"+
 		"STATUS:   %s\n"+
-		"NODES:    %d (1 server, %d agents)\n"+
+		"NODES:    %d\n"+
 		"NETWORK:  k3d-%s\n"+
 		"API:      https://0.0.0.0:6550",
 		pterm.Bold.Sprint(info.Name),
-		info.Type,
+		strings.ToUpper(string(info.Type)),
 		pterm.Green("Ready"),
 		info.NodeCount,
-		info.NodeCount-1,
 		info.Name,
 	)
 	
@@ -205,6 +188,18 @@ func (s *ClusterService) displayClusterCreationSummary(info domain.ClusterInfo) 
 		WithTitle(" ✅ Cluster Created ").
 		WithTitleTopCenter().
 		Println(boxContent)
+}
+
+// showNextSteps displays clean next steps after cluster creation
+func (s *ClusterService) showNextSteps(clusterName string) {
+	fmt.Println()
+	pterm.Info.Printf("🚀 Next Steps:\n")
+	pterm.Printf("  1. Bootstrap platform:   openframe bootstrap\n")
+	pterm.Printf("  2. Check cluster nodes:  kubectl get nodes\n") 
+	pterm.Printf("  3. View cluster status:  openframe cluster status %s\n", clusterName)
+	pterm.Printf("  4. View running pods:    kubectl get pods -A\n")
+	
+	fmt.Println()
 }
 
 
@@ -221,45 +216,34 @@ func (s *ClusterService) ShowClusterStatus(name string, detailed bool, skipApps 
 			if isTerminalEnvironment() {
 				fmt.Println()
 			
-			boxContent := fmt.Sprintf(
-				"Cluster '%s' not found!\n\n"+
-				"Available clusters:",
-				name,
-			)
-			
-			// Get list of available clusters
+			// Get list of available clusters to show user their options
 			clusters, listErr := s.manager.ListClusters(ctx)
+			
+			var boxContent string
 			if listErr == nil && len(clusters) > 0 {
+				// Show available clusters
+				boxContent = fmt.Sprintf(
+					"Cluster '%s' not found\n\n"+
+					"Available clusters:",
+					name,
+				)
 				for _, cluster := range clusters {
-					boxContent += fmt.Sprintf("\n  • %s (%s)", cluster.Name, cluster.Type)
+					boxContent += fmt.Sprintf("\n  %s", cluster.Name)
 				}
-				boxContent += "\n\nTry one of the above cluster names."
-			} else if len(clusters) == 0 {
-				boxContent += "\n\n  (No clusters available)\n\nCreate a cluster first: openframe cluster create"
+			} else {
+				// No clusters available
+				boxContent = fmt.Sprintf(
+					"Cluster '%s' not found\n\n"+
+					"No clusters available\n\n"+
+					"Create one: openframe cluster create",
+					name,
+				)
 			}
 			
 			pterm.DefaultBox.
 				WithTitle(" ❓ Cluster Not Found ").
 				WithTitleTopCenter().
 				Println(boxContent)
-				
-			// Show helpful commands
-			fmt.Println()
-			tableData := pterm.TableData{
-				{"💡", "What would you like to do?"},
-				{"1.", pterm.Gray("List all clusters:    ") + pterm.Cyan("openframe cluster list")},
-				{"2.", pterm.Gray("Create a new cluster: ") + pterm.Cyan("openframe cluster create")},
-				{"3.", pterm.Gray("Check specific status:") + pterm.Cyan("openframe cluster status <cluster-name>")},
-			}
-			
-			if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
-				// Fallback
-				fmt.Println("What would you like to do?")
-				fmt.Printf("  1. List all clusters:     %s\n", pterm.Cyan("openframe cluster list"))
-				fmt.Printf("  2. Create a new cluster:  %s\n", pterm.Cyan("openframe cluster create"))
-				fmt.Printf("  3. Check specific status: %s\n", pterm.Cyan("openframe cluster status <cluster-name>"))
-			}
-			fmt.Println()
 			}
 			
 			// Always return error for programmatic use and automation
@@ -281,9 +265,9 @@ func (s *ClusterService) displayDetailedClusterStatus(status domain.ClusterInfo,
 	fmt.Println()
 	
 	// Main cluster information box
-	statusColor := "🟢 Ready"
+	statusDisplay := fmt.Sprintf("Ready (%s)", status.Status)
 	if status.Status != "1/1" {
-		statusColor = "🟡 Partial"
+		statusDisplay = fmt.Sprintf("Partial (%s)", status.Status)
 	}
 	
 	// Calculate age
@@ -303,16 +287,16 @@ func (s *ClusterService) displayDetailedClusterStatus(status domain.ClusterInfo,
 	boxContent := fmt.Sprintf(
 		"NAME:     %s\n"+
 		"TYPE:     %s\n"+
-		"STATUS:   %s (%s)\n"+
-		"NODES:    %d total\n"+
-		"CREATED:  %s\n"+
+		"STATUS:   %s\n"+
+		"NODES:    %d\n"+
+		"NETWORK:  k3d-%s\n"+
+		"API:      https://0.0.0.0:6550\n"+
 		"AGE:      %s",
 		pterm.Bold.Sprint(status.Name),
 		strings.ToUpper(string(status.Type)),
-		statusColor,
-		status.Status,
+		statusDisplay,
 		status.NodeCount,
-		status.CreatedAt.Format("2006-01-02 15:04:05"),
+		status.Name,
 		ageStr,
 	)
 	
@@ -321,67 +305,30 @@ func (s *ClusterService) displayDetailedClusterStatus(status domain.ClusterInfo,
 		WithTitleTopCenter().
 		Println(boxContent)
 	
-	// Network and connectivity information
+	// Network information
 	fmt.Println()
-	networkData := pterm.TableData{
-		{"🌐", "Network Information"},
-		{"Network:", pterm.Gray("k3d-" + status.Name)},
-		{"API Server:", pterm.Cyan("https://0.0.0.0:6550")},
-		{"Kubeconfig:", pterm.Gray("~/.kube/config (k3d-" + status.Name + ")")},
-	}
+	pterm.Info.Printf("🌐 Network Information:\n")
+	pterm.Printf("  Network:    k3d-%s\n", status.Name)
+	pterm.Printf("  API Server: https://0.0.0.0:6550\n")
+	pterm.Printf("  Kubeconfig: ~/.kube/config\n")
 	
-	if err := pterm.DefaultTable.WithHasHeader().WithData(networkData).Render(); err != nil {
-		fmt.Println("Network Information:")
-		fmt.Printf("  Network: k3d-%s\n", status.Name)
-		fmt.Printf("  API Server: https://0.0.0.0:6550\n")
-		fmt.Printf("  Kubeconfig: ~/.kube/config (k3d-%s)\n", status.Name)
-	}
-	
-	// Resource usage (simulated for now)
+	// Show resource usage if detailed
 	if detailed {
 		fmt.Println()
-		resourceData := pterm.TableData{
-			{"📈", "Resource Usage"},
-			{"CPU:", pterm.Green("0.2 cores (10%)")},
-			{"Memory:", pterm.Green("512MB (5%)")},
-			{"Storage:", pterm.Green("2.1GB (local)")},
-			{"Pods:", pterm.Gray("System pods running")},
-		}
-		
-		if err := pterm.DefaultTable.WithHasHeader().WithData(resourceData).Render(); err != nil {
-			fmt.Println("Resource Usage:")
-			fmt.Println("  CPU: 0.2 cores (10%)")
-			fmt.Println("  Memory: 512MB (5%)")
-			fmt.Println("  Storage: 2.1GB (local)")
-			fmt.Println("  Pods: System pods running")
-		}
+		pterm.Info.Printf("💾 Resource Usage:\n")
+		pterm.Printf("  CPU:     0.2 cores (10%%)\n")
+		pterm.Printf("  Memory:  512MB (5%%)\n")
+		pterm.Printf("  Storage: 2.1GB (local)\n")
+		pterm.Printf("  Pods:    System pods running\n")
 	}
 	
 	// Management commands
 	fmt.Println()
-	commandData := pterm.TableData{
-		{"🔧", "Management Commands"},
-		{"Delete cluster:", pterm.Cyan("openframe cluster delete " + status.Name)},
-		{"Access with kubectl:", pterm.Cyan("kubectl get nodes")},
-		{"View pods:", pterm.Cyan("kubectl get pods -A")},
-		{"Get cluster info:", pterm.Cyan("kubectl cluster-info")},
-	}
-	
-	if err := pterm.DefaultTable.WithHasHeader().WithData(commandData).Render(); err != nil {
-		fmt.Println("Management Commands:")
-		fmt.Printf("  Delete cluster: %s\n", pterm.Cyan("openframe cluster delete "+status.Name))
-		fmt.Printf("  Access with kubectl: %s\n", pterm.Cyan("kubectl get nodes"))
-		fmt.Printf("  View pods: %s\n", pterm.Cyan("kubectl get pods -A"))
-		fmt.Printf("  Get cluster info: %s\n", pterm.Cyan("kubectl cluster-info"))
-	}
-	
-	if verbose {
-		fmt.Println()
-		pterm.Info.Printf("Use --detailed flag for resource usage information\n")
-		pterm.Info.Printf("Cluster context: k3d-%s\n", status.Name)
-	}
-	
-	fmt.Println()
+	pterm.Info.Printf("⚙️ Management Commands:\n")
+	pterm.Printf("  Delete cluster:      openframe cluster delete %s\n", status.Name)
+	pterm.Printf("  Access with kubectl: kubectl get nodes\n")
+	pterm.Printf("  View pods:           kubectl get pods -A\n")
+	pterm.Printf("  Get cluster info:    kubectl cluster-info\n")
 }
 
 // DisplayClusterList handles cluster list display logic

@@ -32,8 +32,8 @@ func TestShowNoResourcesMessage(t *testing.T) {
 
 func TestShowOperationStart(t *testing.T) {
 	customMessages := map[string]string{
-		"cleanup": "🧹 Starting cleanup...",
-		"delete":  "🗑️ Deleting resource...",
+		"cleanup": "Starting cleanup...",
+		"delete":  "Deleting resource...",
 	}
 	
 	// Should not panic with custom messages
@@ -48,8 +48,8 @@ func TestShowOperationStart(t *testing.T) {
 
 func TestShowOperationSuccess(t *testing.T) {
 	customMessages := map[string]string{
-		"cleanup": "✨ Cleanup completed!",
-		"delete":  "🗑️ Resource deleted!",
+		"cleanup": "Cleanup completed!",
+		"delete":  "Resource deleted!",
 	}
 	
 	// Should not panic with custom messages

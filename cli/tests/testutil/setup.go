@@ -2,8 +2,8 @@ package testutil
 
 import (
 	"github.com/flamingo/openframe/internal/cluster"
-	"github.com/flamingo/openframe/internal/common/executor"
-	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo/openframe/internal/shared/ui"
 )
 
 // InitializeTestMode sets up the test environment for UI components

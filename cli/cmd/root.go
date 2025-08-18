@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/flamingo/openframe/cmd/cluster"
-	"github.com/flamingo/openframe/internal/common/config"
-	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/internal/shared/config"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 

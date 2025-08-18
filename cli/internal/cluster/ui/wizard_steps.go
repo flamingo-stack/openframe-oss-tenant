@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	commonUI "github.com/flamingo/openframe/internal/common/ui"
+	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )
@@ -25,7 +25,7 @@ func (ws *WizardSteps) PromptClusterName(defaultName string) (string, error) {
 		Default: defaultName,
 		Validate: func(input string) error {
 			// First check if empty
-			if err := commonUI.ValidateNonEmpty("cluster name")(input); err != nil {
+			if err := sharedUI.ValidateNonEmpty("cluster name")(input); err != nil {
 				return err
 			}
 			// Then validate with domain rules
@@ -74,7 +74,7 @@ func (ws *WizardSteps) PromptNodeCount(defaultCount int) (int, error) {
 	prompt := promptui.Prompt{
 		Label:   "Number of Worker Nodes",
 		Default: strconv.Itoa(defaultCount),
-		Validate: commonUI.ValidateIntRange(1, 10, "node count"),
+		Validate: sharedUI.ValidateIntRange(1, 10, "node count"),
 	}
 
 	result, err := prompt.Run()
@@ -114,7 +114,7 @@ func (ws *WizardSteps) PromptK8sVersion() (string, error) {
 }
 
 // ConfirmConfiguration shows configuration summary and asks for confirmation
-func (ws *WizardSteps) ConfirmConfiguration(config ClusterConfig) (bool, error) {
+func (ws *WizardSteps) ConfirmConfiguration(config domain.ClusterConfig) (bool, error) {
 	// Display configuration summary using common UI
 	data := [][]string{
 		{"Setting", "Value"},
@@ -157,12 +157,15 @@ func (ws *WizardSteps) ConfirmConfiguration(config ClusterConfig) (bool, error) 
 // renderConfigurationTable renders the configuration table with fallback
 func renderConfigurationTable(data [][]string) error {
 	pterm.Println()
-	pterm.Info.Println("Configuration Summary")
+	pterm.Info.Printf("Configuration Summary\n")
 
 	// Convert to pterm.TableData
 	tableData := make(pterm.TableData, len(data))
 	for i, row := range data {
-		tableData[i] = row
+		// Make a copy to avoid potential slice sharing issues
+		rowCopy := make([]string, len(row))
+		copy(rowCopy, row)
+		tableData[i] = rowCopy
 	}
 
 	return pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	commonUI "github.com/flamingo/openframe/internal/common/ui"
+	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -59,13 +59,13 @@ func HandleClusterSelection(clusters []ClusterInfo, args []string, prompt string
 	}
 	
 	// Use common UI function
-	return commonUI.HandleResourceSelection(args, clusterNames, prompt)
+	return sharedUI.HandleResourceSelection(args, clusterNames, prompt)
 }
 
 // selectFromList shows a selection prompt for a list of items
 func selectFromList(prompt string, items []string) (int, string, error) {
 	// Use common UI function
-	return commonUI.SelectFromList(prompt, items)
+	return sharedUI.SelectFromList(prompt, items)
 }
 
 // ConfirmClusterDeletion asks for user confirmation before cluster deletion
@@ -96,5 +96,5 @@ func FormatClusterSuccessMessage(clusterName string, clusterType string, status 
 // confirmAction shows a confirmation prompt
 func confirmAction(message string) (bool, error) {
 	// Use common UI function
-	return commonUI.ConfirmAction(message)
+	return sharedUI.ConfirmAction(message)
 }

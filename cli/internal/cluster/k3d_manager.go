@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/common/executor"
+	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
 // Constants for configuration
@@ -39,13 +39,24 @@ type ClusterManager interface {
 type K3dManager struct {
 	executor executor.CommandExecutor
 	verbose  bool
+	timeout  string
 }
 
-// NewK3dManager creates a new K3D cluster manager
+// NewK3dManager creates a new K3D cluster manager with default timeout
 func NewK3dManager(exec executor.CommandExecutor, verbose bool) *K3dManager {
 	return &K3dManager{
 		executor: exec,
 		verbose:  verbose,
+		timeout:  defaultTimeout,
+	}
+}
+
+// NewK3dManagerWithTimeout creates a new K3D cluster manager with custom timeout
+func NewK3dManagerWithTimeout(exec executor.CommandExecutor, verbose bool, timeout string) *K3dManager {
+	return &K3dManager{
+		executor: exec,
+		verbose:  verbose,
+		timeout:  timeout,
 	}
 }
 
@@ -71,7 +82,7 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config domain.ClusterCon
 		}
 	}
 
-	args := []string{"cluster", "create", "--config", configFile, "--timeout", defaultTimeout}
+	args := []string{"cluster", "create", "--config", configFile, "--timeout", m.timeout}
 	if m.verbose {
 		args = append(args, "--verbose")
 	}

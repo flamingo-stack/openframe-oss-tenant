@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/common/executor"
+	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
 // createTestExecutor creates a mock executor for testing

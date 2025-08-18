@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	execPkg "github.com/flamingo/openframe/internal/common/executor"
+	execPkg "github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

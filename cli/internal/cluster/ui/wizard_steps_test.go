@@ -39,7 +39,7 @@ func TestWizardSteps_ConfirmConfiguration(t *testing.T) {
 	})
 
 	t.Run("should handle valid configuration", func(t *testing.T) {
-		config := ClusterConfig{
+		config := domain.ClusterConfig{
 			Name:       "test-cluster",
 			Type:       domain.ClusterTypeK3d,
 			NodeCount:  3,

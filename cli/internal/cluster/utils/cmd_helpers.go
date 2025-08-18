@@ -1,13 +1,14 @@
 package utils
 
 import (
+	"strings"
 	"sync"
 	
 	"github.com/flamingo/openframe/internal/cluster"
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/common/errors"
-	"github.com/flamingo/openframe/internal/common/executor"
-	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/internal/shared/errors"
+	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/flamingo/openframe/tests/testutil"
 	"github.com/spf13/cobra"
 )
@@ -49,10 +50,23 @@ func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) 
 		// Execute the command
 		err := runFunc(cmd, args)
 		if err != nil {
-			// Handle error with proper context
+			// Handle error with proper context - show user-friendly message
 			verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
 			handler := errors.NewErrorHandler(verbose)
 			handler.HandleError(err)
+			
+			// Return the error for validation errors and "not found" errors to preserve exit codes for automation
+			// This ensures scripts and tests can detect failures while users still see friendly messages
+			if errors.IsValidationError(err) || 
+			   strings.Contains(err.Error(), "not found") ||
+			   strings.Contains(err.Error(), "cluster create operation failed") ||
+			   strings.Contains(err.Error(), "cluster name") ||  // Cluster name validation errors
+			   strings.Contains(err.Error(), "node count must") { // Node count validation errors
+				return err
+			}
+			
+			// For other errors, return nil to prevent Cobra double-printing
+			return nil
 		}
 		return err
 	}

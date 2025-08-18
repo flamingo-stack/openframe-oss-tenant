@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe/internal/cluster"
-	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/stretchr/testify/assert"
 )
 

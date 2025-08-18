@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/common/config"
-	"github.com/flamingo/openframe/internal/common/ui"
+	"github.com/flamingo/openframe/internal/shared/config"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/flamingo/openframe/tests/testutil"
 )
 

@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pterm/pterm"
 )
@@ -62,7 +63,7 @@ func (eh *ErrorHandler) HandleError(err error) {
 }
 
 func (eh *ErrorHandler) handleValidationError(err *ValidationError) {
-	pterm.Error.Printf("Validation failed\n")
+	pterm.Error.Printf("⚠️ Validation failed\n")
 	pterm.Printf("  Field: %s\n", pterm.Yellow(err.Field))
 	if err.Value != "" {
 		pterm.Printf("  Value: %s\n", pterm.Red(err.Value))
@@ -71,7 +72,7 @@ func (eh *ErrorHandler) handleValidationError(err *ValidationError) {
 }
 
 func (eh *ErrorHandler) handleCommandError(err *CommandError) {
-	pterm.Error.Printf("Command execution failed\n")
+	pterm.Error.Printf("❌ Command execution failed\n")
 	pterm.Printf("  Command: %s\n", pterm.Yellow(err.Command))
 	if len(err.Args) > 0 {
 		pterm.Printf("  Arguments: %v\n", err.Args)
@@ -85,9 +86,35 @@ func (eh *ErrorHandler) handleCommandError(err *CommandError) {
 }
 
 func (eh *ErrorHandler) handleGenericError(err error) {
-	pterm.Error.Printf("Operation failed: %v\n", err)
-	if eh.verbose {
-		pterm.Printf("  Type: %T\n", err)
+	// Clean up common error patterns for better user experience
+	errorMsg := err.Error()
+	
+	// Extract meaningful error from complex error chains
+	if strings.Contains(errorMsg, "cluster create operation failed") {
+		pterm.Error.Printf("❌ Failed to create cluster\n")
+		
+		// Try to extract the actual k3d error and give helpful advice
+		if strings.Contains(errorMsg, "exit status 1") && strings.Contains(errorMsg, "k3d cluster create") {
+			pterm.Printf("  Issue: k3d cluster creation failed\n")
+			fmt.Println()
+			pterm.Info.Printf("🔧 Troubleshooting steps:\n")
+			pterm.Printf("  1. Check Docker is running: docker info\n")
+			pterm.Printf("  2. Check available ports: lsof -i :6550\n")
+			pterm.Printf("  3. Try with different name: openframe cluster create my-test\n")
+			pterm.Printf("  4. Check k3d directly: k3d version\n")
+		} else {
+			pterm.Printf("  Details: %s\n", errorMsg)
+		}
+	} else {
+		// Generic error handling
+		pterm.Error.Printf("❌ Operation failed\n")
+		if eh.verbose {
+			pterm.Printf("  Details: %v\n", err)
+			pterm.Printf("  Type: %T\n", err)
+		} else {
+			// Show only the essential error message
+			pterm.Printf("  Error: %s\n", errorMsg)
+		}
 	}
 }
 

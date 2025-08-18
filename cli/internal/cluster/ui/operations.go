@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	commonUI "github.com/flamingo/openframe/internal/common/ui"
+	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -210,11 +210,9 @@ func (ui *OperationsUI) confirmDeletion(clusterName string) (bool, error) {
 func (ui *OperationsUI) ShowOperationStart(operation, clusterName string) {
 	switch strings.ToLower(operation) {
 	case "cleanup":
-		pterm.Info.Printf("Starting cleanup for cluster '%s'...\n", pterm.Cyan(clusterName))
-		pterm.Printf("This will remove unused Docker images and free up disk space.\n\n")
+		pterm.Info.Printf("Cleaning up cluster '%s'...\n", pterm.Cyan(clusterName))
 	case "delete":
 		pterm.Info.Printf("Deleting cluster '%s'...\n", pterm.Cyan(clusterName))
-		pterm.Printf("This will remove the cluster and clean up all associated resources.\n\n")
 	default:
 		pterm.Info.Printf("Processing '%s' for cluster '%s'...\n", operation, pterm.Cyan(clusterName))
 	}
@@ -224,28 +222,20 @@ func (ui *OperationsUI) ShowOperationStart(operation, clusterName string) {
 func (ui *OperationsUI) ShowOperationSuccess(operation, clusterName string) {
 	switch strings.ToLower(operation) {
 	case "cleanup":
-		pterm.Success.Printf("Cleanup completed for cluster '%s'\n", pterm.Cyan(clusterName))
+		pterm.Success.Printf("Cluster '%s' cleanup completed\n", pterm.Cyan(clusterName))
 		
-		// Show what was cleaned up
+		// Show cleanup summary
 		fmt.Println()
-		tableData := pterm.TableData{
-			{"STATUS", "Cleanup Summary"},
-			{"•", pterm.Gray("Removed unused Docker images")},
-			{"•", pterm.Gray("Freed up disk space")},
-			{"•", pterm.Gray("Optimized cluster performance")},
-		}
-		
-		if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
-			pterm.Println("✓ Removed unused Docker images")
-			pterm.Println("✓ Freed up disk space") 
-			pterm.Println("✓ Optimized cluster performance")
-		}
+		pterm.Info.Printf("Cleanup Summary:\n")
+		pterm.Printf("  Removed unused Docker images\n")
+		pterm.Printf("  Freed up disk space\n")
+		pterm.Printf("  Optimized cluster performance\n")
 		
 	case "delete":
-		// The spinner already showed the success message, so we just show the details
-		fmt.Println()
+		pterm.Success.Printf("Cluster '%s' deleted successfully\n", pterm.Cyan(clusterName))
 		
-		// Create a styled box for the deletion summary
+		// Show detailed deletion box
+		fmt.Println()
 		boxContent := fmt.Sprintf(
 			"NAME:         %s\n"+
 			"TYPE:         %s\n"+
@@ -253,7 +243,7 @@ func (ui *OperationsUI) ShowOperationSuccess(operation, clusterName string) {
 			"NETWORK:      %s\n"+
 			"RESOURCES:    %s",
 			pterm.Bold.Sprint(clusterName),
-			"k3d", // We don't have cluster type here, default to k3d
+			"k3d",
 			pterm.Red("Deleted"),
 			pterm.Gray("Removed"),
 			pterm.Gray("Cleaned up"),
@@ -266,22 +256,12 @@ func (ui *OperationsUI) ShowOperationSuccess(operation, clusterName string) {
 		
 		// Show deletion summary
 		fmt.Println()
-		tableData := pterm.TableData{
-			{"STATUS", "Deletion Summary"},
-			{"•", pterm.Gray("Cluster and nodes removed")},
-			{"•", pterm.Gray("Docker containers cleaned up")},
-			{"•", pterm.Gray("Network configuration removed")},
-			{"•", pterm.Gray("Kubeconfig entries cleaned")},
-		}
+		pterm.Info.Printf("Deletion Summary:\n")
+		pterm.Printf("  Cluster and nodes removed\n")
+		pterm.Printf("  Docker containers cleaned up\n")
+		pterm.Printf("  Network configuration removed\n")
+		pterm.Printf("  Kubeconfig entries cleaned\n")
 		
-		if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
-			// Fallback to simple output
-			fmt.Println("Deletion Summary:")
-			fmt.Println("• Cluster and nodes removed")
-			fmt.Println("• Docker containers cleaned up")
-			fmt.Println("• Network configuration removed")
-			fmt.Println("• Kubeconfig entries cleaned")
-		}
 		
 	default:
 		pterm.Success.Printf("Operation '%s' completed for cluster '%s'\n", operation, pterm.Cyan(clusterName))
@@ -291,20 +271,20 @@ func (ui *OperationsUI) ShowOperationSuccess(operation, clusterName string) {
 
 // ShowOperationError displays a friendly error message
 func (ui *OperationsUI) ShowOperationError(operation, clusterName string, err error) {
-	troubleshootingTips := []commonUI.TroubleshootingTip{
+	troubleshootingTips := []sharedUI.TroubleshootingTip{
 		{Description: "Check cluster exists:", Command: "openframe cluster list"},
 		{Description: "Check cluster status:", Command: "openframe cluster status " + clusterName},
 		{Description: "Try with verbose output:", Command: "openframe cluster " + operation + " " + clusterName + " --verbose"},
 	}
 	
-	commonUI.ShowOperationError(operation, clusterName, err, troubleshootingTips)
+	sharedUI.ShowOperationError(operation, clusterName, err, troubleshootingTips)
 }
 
 
 
 // ShowConfigurationSummary displays the cluster configuration summary
 func (ui *OperationsUI) ShowConfigurationSummary(config domain.ClusterConfig, dryRun bool, skipWizard bool) {
-	pterm.Info.Println("Configuration Summary")
+	pterm.Info.Printf("Configuration Summary\n")
 	
 	// Clean, simple format without heavy table styling
 	fmt.Printf("   Name: %s\n", pterm.Cyan(config.Name))
@@ -326,7 +306,7 @@ func (ui *OperationsUI) ShowConfigurationSummary(config domain.ClusterConfig, dr
 
 // ShowNoResourcesMessage displays a friendly message when no clusters are available
 func (ui *OperationsUI) ShowNoResourcesMessage(resourceType, operation string) {
-	commonUI.ShowNoResourcesMessage(
+	sharedUI.ShowNoResourcesMessage(
 		resourceType,
 		operation,
 		"openframe cluster create",

@@ -6,7 +6,7 @@ import (
 	"strings"
 	
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe/internal/common/flags"
+	"github.com/flamingo/openframe/internal/shared/flags"
 )
 
 // Use CommonFlags from internal/common as the single source of truth

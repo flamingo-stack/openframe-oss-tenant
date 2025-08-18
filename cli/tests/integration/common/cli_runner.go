@@ -13,12 +13,20 @@ var (
 	projectRoot string
 )
 
-// InitializeCLI builds the CLI binary for testing
+// InitializeCLI builds the CLI binary for testing (with caching)
 func InitializeCLI() error {
-	// If already initialized and binary exists, just return
+	// If already initialized and binary exists, check if it's newer than source
 	if cliBinary != "" {
-		if _, err := os.Stat(cliBinary); err == nil {
-			return nil
+		if stat, err := os.Stat(cliBinary); err == nil {
+			// Check if binary is newer than main.go (simple check)
+			root := GetProjectRoot()
+			if mainStat, err := os.Stat(filepath.Join(root, "main.go")); err == nil {
+				if stat.ModTime().After(mainStat.ModTime()) {
+					return nil // Binary is newer than source, no rebuild needed
+				}
+			} else {
+				return nil // Can't check source, assume binary is good
+			}
 		}
 	}
 	

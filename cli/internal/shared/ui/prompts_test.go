@@ -191,18 +191,18 @@ func TestSelectFromList_TemplateConfiguration(t *testing.T) {
 		Label:    "{{ . }}?",
 		Active:   "\U00002192 {{ . | cyan }}",
 		Inactive: "  {{ . | white }}",
-		Selected: "\U00002713 {{ . | green }}",
+		Selected: "\U00002192 {{ . | green }}",
 	}
 
 	// Verify the templates are correctly defined
 	assert.Equal(t, "{{ . }}?", expectedTemplates.Label)
 	assert.Equal(t, "\U00002192 {{ . | cyan }}", expectedTemplates.Active)
 	assert.Equal(t, "  {{ . | white }}", expectedTemplates.Inactive)
-	assert.Equal(t, "\U00002713 {{ . | green }}", expectedTemplates.Selected)
+	assert.Equal(t, "\U00002192 {{ . | green }}", expectedTemplates.Selected)
 
 	// Verify the Unicode characters are correct
 	assert.Contains(t, expectedTemplates.Active, "→") // Right arrow
-	assert.Contains(t, expectedTemplates.Selected, "✓") // Check mark
+	assert.Contains(t, expectedTemplates.Selected, "→") // Right arrow
 
 	// Mock the function parameters to verify they would be used correctly
 	assert.Equal(t, "Select an option", label)

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/manifoldco/promptui"
@@ -78,7 +79,13 @@ func (w *ConfigWizard) Run() (ClusterConfig, error) {
 	w.config.K8sVersion = k8sVersion
 
 	// Step 5: Confirmation
-	confirmed, err := steps.ConfirmConfiguration(w.config)
+	domainConfig := domain.ClusterConfig{
+		Name:       w.config.Name,
+		Type:       w.config.Type,
+		NodeCount:  w.config.NodeCount,
+		K8sVersion: w.config.K8sVersion,
+	}
+	confirmed, err := steps.ConfirmConfiguration(domainConfig)
 	if err != nil {
 		return ClusterConfig{}, err
 	}
@@ -153,9 +160,8 @@ func (h *ConfigurationHandler) GetClusterConfig(clusterName string) (domain.Clus
 
 // showCreationModeSelection shows the initial creation mode selection
 func (h *ConfigurationHandler) showCreationModeSelection() (string, error) {
-	pterm.Info.Println("Cluster Creation Mode")
-	pterm.Info.Println("Choose how you want to create your cluster")
-	pterm.Println()
+	pterm.Info.Printf("How would you like to create your cluster?\n")
+	fmt.Println()
 
 	prompt := promptui.Select{
 		Label: "Creation Mode",
