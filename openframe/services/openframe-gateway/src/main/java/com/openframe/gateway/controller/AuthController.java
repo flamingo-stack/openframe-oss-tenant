@@ -96,8 +96,7 @@ public class AuthController {
     @GetMapping("/logout")
     public Mono<ResponseEntity<Void>> logout(@RequestParam String tenantId, WebSession session) {
         log.debug("Logging out user for tenant: {}", tenantId);
-        
-        session.getAttributes().clear();
+        // Invalidate session to prevent session fixation and clear state
         
         HttpHeaders headers = new HttpHeaders();
         
@@ -117,7 +116,7 @@ public class AuthController {
         headers.add(HttpHeaders.LOCATION, "/");
         
         log.debug("Successfully logged out user for tenant: {}", tenantId);
-        return Mono.just(new ResponseEntity<>(headers, org.springframework.http.HttpStatus.FOUND));
+        return session.invalidate().then(Mono.just(new ResponseEntity<>(headers, org.springframework.http.HttpStatus.FOUND)));
     }
 
     private String buildAuthorizeUrl(String tenantId, String codeChallenge, String state) {
