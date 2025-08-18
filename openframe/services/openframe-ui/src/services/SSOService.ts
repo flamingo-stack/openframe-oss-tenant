@@ -1,24 +1,9 @@
-import type { SSOConfigRequest, SSOConfigResponse, SSOConfigStatus, SSOProviderInfo } from '@/types/sso';
+import type { SSOConfigRequest, SSOConfigResponse, SSOProviderInfo } from '@/types/sso';
 import { restClient } from '../apollo/apolloClient';
 
 export class SSOService {
   private static readonly BASE_URL = '/sso';
-  private static readonly AUTH_SERVER_URL = import.meta.env.VITE_AUTH_URL;
-
-  /**
-   * Get enabled SSO providers for login buttons
-   * This comes from Authorization Server to show/hide login buttons
-   */
-  public async getEnabledProviders(): Promise<SSOConfigStatus[]> {
-    return await restClient.get<SSOConfigStatus[]>(`${SSOService.AUTH_SERVER_URL}${SSOService.BASE_URL}/providers`);
-  }
-
-  /**
-   * Get Google OAuth authorization URL (uses standard Spring Security OAuth2)
-   */
-  public getGoogleAuthUrl(): string {
-    return `${SSOService.AUTH_SERVER_URL}/oauth2/authorization/google`;
-  }
+  // Note: login button enablement and auth URLs are handled via Gateway now
 
   // ====== MANAGEMENT OPERATIONS (remain in openframe-api for admins) ======
 
