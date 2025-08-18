@@ -95,14 +95,24 @@ func (s *DisplayService) ShowClusterList(clusters []ClusterDisplayInfo, out io.W
 		})
 	}
 
-	// Always use simple fallback to ensure output goes to the provided writer
-	// This is important for testing and consistent output handling
-	for i, row := range tableData {
-		if i == 0 {
-			fmt.Fprintf(out, "%-20s %-10s %-15s %-8s %s\n", row[0], row[1], row[2], row[3], row[4])
-			continue
+	// Use pterm table for better formatting - but write to the provided writer
+	table := pterm.DefaultTable.WithHasHeader().WithData(tableData).WithWriter(out)
+	if err := table.Render(); err != nil {
+		// Fallback to simple formatting if pterm fails
+		for i, row := range tableData {
+			if i == 0 {
+				// Header row
+				fmt.Fprintf(out, "%-17s %-8s %-10s %-6s %s\n", row[0], row[1], row[2], row[3], row[4])
+				continue
+			}
+			// Data rows - need to account for styled text by using different spacing
+			fmt.Fprintf(out, "%-17s %-8s %-10s %-6s %s\n", 
+				pterm.RemoveColorFromString(row[0]), // Remove color codes for alignment
+				row[1], 
+				pterm.RemoveColorFromString(row[2]), // Remove color codes for alignment
+				row[3], 
+				row[4])
 		}
-		fmt.Fprintf(out, "%-20s %-10s %-15s %-8s %s\n", row[0], row[1], row[2], row[3], row[4])
 	}
 }
 

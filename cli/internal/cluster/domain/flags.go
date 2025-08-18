@@ -37,11 +37,7 @@ type StatusFlags struct {
 // DeleteFlags contains flags specific to delete command
 type DeleteFlags struct {
 	GlobalFlags
-}
-
-// StartFlags contains flags specific to start command
-type StartFlags struct {
-	GlobalFlags
+	Force bool  // Delete-specific force flag
 }
 
 // CleanupFlags contains flags specific to cleanup command
@@ -79,11 +75,6 @@ func AddStatusFlags(cmd *cobra.Command, flags *StatusFlags) {
 // AddDeleteFlags adds delete-specific flags to a command
 func AddDeleteFlags(cmd *cobra.Command, flags *DeleteFlags) {
 	cmd.Flags().BoolVarP(&flags.Force, "force", "f", false, "Skip confirmation prompt")
-}
-
-// AddStartFlags adds start-specific flags to a command
-func AddStartFlags(cmd *cobra.Command, flags *StartFlags) {
-	// Start command has no specific flags
 }
 
 // AddCleanupFlags adds cleanup-specific flags to a command
@@ -160,11 +151,6 @@ func ValidateStatusFlags(flags *StatusFlags) error {
 
 // ValidateDeleteFlags validates delete flag combinations
 func ValidateDeleteFlags(flags *DeleteFlags) error {
-	return ValidateGlobalFlags(&flags.GlobalFlags)
-}
-
-// ValidateStartFlags validates start flag combinations
-func ValidateStartFlags(flags *StartFlags) error {
 	return ValidateGlobalFlags(&flags.GlobalFlags)
 }
 

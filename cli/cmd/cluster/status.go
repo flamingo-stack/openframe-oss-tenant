@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
@@ -43,25 +44,22 @@ Examples:
 
 func runClusterStatus(cmd *cobra.Command, args []string) error {
 	service := utils.GetCommandService()
+	operationsUI := ui.NewOperationsUI()
 	
-	// Get cluster name from args or interactive selection
-	clusterName := ""
-	if len(args) > 0 {
-		clusterName = args[0]
-	} else {
-		// Use interactive selection
-		clusters, err := service.ListClusters()
-		if err != nil {
-			return fmt.Errorf("failed to list clusters: %w", err)
-		}
-		
-		if len(clusters) == 0 {
-			// No clusters found - this is not an error, just inform user
-			return nil
-		}
-		
-		// For testing, just return nil when no clusters are found
-		// In real usage, this would show interactive selection
+	// Get all available clusters
+	clusters, err := service.ListClusters()
+	if err != nil {
+		return fmt.Errorf("failed to list clusters: %w", err)
+	}
+	
+	// Handle cluster selection with friendly UI
+	clusterName, err := operationsUI.SelectClusterForOperation(clusters, args, "check status")
+	if err != nil {
+		return err
+	}
+	
+	// If no cluster selected (e.g., empty list), exit gracefully
+	if clusterName == "" {
 		return nil
 	}
 	

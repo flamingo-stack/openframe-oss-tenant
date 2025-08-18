@@ -13,7 +13,6 @@ type FlagContainer struct {
 	List    *domain.ListFlags    `json:"list"`
 	Status  *domain.StatusFlags  `json:"status"`
 	Delete  *domain.DeleteFlags  `json:"delete"`
-	Start   *domain.StartFlags   `json:"start"`
 	Cleanup *domain.CleanupFlags `json:"cleanup"`
 	
 	// Dependencies for testing and execution
@@ -39,7 +38,6 @@ func NewFlagContainer() *FlagContainer {
 		List:    &domain.ListFlags{},
 		Status:  &domain.StatusFlags{},
 		Delete:  &domain.DeleteFlags{},
-		Start:   &domain.StartFlags{},
 		Cleanup: &domain.CleanupFlags{},
 	}
 }
@@ -51,7 +49,6 @@ func (f *FlagContainer) SyncGlobalFlags() {
 		f.List.GlobalFlags = *f.Global
 		f.Status.GlobalFlags = *f.Global
 		f.Delete.GlobalFlags = *f.Global
-		f.Start.GlobalFlags = *f.Global
 		f.Cleanup.GlobalFlags = *f.Global
 	}
 }
@@ -63,7 +60,6 @@ func (f *FlagContainer) Reset() {
 	f.List = &domain.ListFlags{}
 	f.Status = &domain.StatusFlags{}
 	f.Delete = &domain.DeleteFlags{}
-	f.Start = &domain.StartFlags{}
 	f.Cleanup = &domain.CleanupFlags{}
 }
 

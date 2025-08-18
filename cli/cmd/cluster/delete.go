@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
@@ -50,34 +51,44 @@ Examples:
 
 func runDeleteCluster(cmd *cobra.Command, args []string) error {
 	service := utils.GetCommandService()
+	operationsUI := ui.NewOperationsUI()
 	
-	// Get cluster name from args or interactive selection
-	clusterName := ""
-	if len(args) > 0 {
-		clusterName = args[0]
-	} else {
-		// Use interactive selection
-		clusters, err := service.ListClusters()
-		if err != nil {
-			return fmt.Errorf("failed to list clusters: %w", err)
-		}
-		
-		if len(clusters) == 0 {
-			// No clusters found - this is not an error, just inform user
-			return nil
-		}
-		
-		// For testing, just return nil when no clusters are found
-		// In real usage, this would show interactive selection
+	// Get all available clusters
+	clusters, err := service.ListClusters()
+	if err != nil {
+		return fmt.Errorf("failed to list clusters: %w", err)
+	}
+	
+	// Handle cluster selection with friendly UI (including confirmation)
+	globalFlags := utils.GetGlobalFlags()
+	clusterName, err := operationsUI.SelectClusterForDelete(clusters, args, globalFlags.Delete.Force)
+	if err != nil {
+		return err
+	}
+	
+	// If no cluster selected (e.g., empty list or cancelled), exit gracefully
+	if clusterName == "" {
 		return nil
 	}
+	
+	// Show friendly start message
+	operationsUI.ShowOperationStart("delete", clusterName)
 	
 	// Detect cluster type
 	clusterType, err := service.DetectClusterType(clusterName)
 	if err != nil {
+		operationsUI.ShowOperationError("delete", clusterName, err)
 		return fmt.Errorf("failed to detect cluster type: %w", err)
 	}
 	
 	// Execute cluster deletion through service layer
-	return service.DeleteCluster(clusterName, clusterType, utils.GetGlobalFlags().Delete.Force)
+	err = service.DeleteCluster(clusterName, clusterType, globalFlags.Delete.Force)
+	if err != nil {
+		operationsUI.ShowOperationError("delete", clusterName, err)
+		return err
+	}
+	
+	// Show friendly success message
+	operationsUI.ShowOperationSuccess("delete", clusterName)
+	return nil
 }

@@ -11,9 +11,14 @@ import (
 const (
 	// Logo configuration constants
 	logoTitle        = "OpenFrame Platform Bootstrapper"
-	borderChar       = "="
-	borderLength     = 80
-	logoLeftPadding  = 3
+	borderChar       = "━"
+	topLeftCorner    = "┏"
+	topRightCorner   = "┖"
+	bottomLeftCorner = "┗"
+	bottomRightCorner = "┛"
+	verticalChar     = "┃"
+	borderLength     = 84
+	logoLeftPadding  = 2
 )
 
 var (
@@ -22,12 +27,12 @@ var (
 	
 	// logoArt contains the beautiful Unicode logo for OpenFrame
 	logoArt = []string{
-		"██████╗ ██████╗ ███████╗███╗   ██╗███████╗██████╗  █████╗ ███╗   ███╗███████╗",
+		" ██████╗ ██████╗ ███████╗███╗   ██╗███████╗██████╗  █████╗ ███╗   ███╗███████╗",
 		"██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝",
 		"██║   ██║██████╔╝█████╗  ██╔██╗ ██║█████╗  ██████╔╝███████║██╔████╔██║█████╗  ",
 		"██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  ",
 		"╚██████╔╝██║     ███████╗██║ ╚████║██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗",
-		"╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝",
+		" ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝",
 	}
 )
 
@@ -48,8 +53,8 @@ func ShowLogo() {
 	} else if os.Getenv("OPENFRAME_FANCY_LOGO") == "false" {
 		useFancy = false
 	} else {
-		// Auto-detect: use fancy only for truly interactive terminals
-		useFancy = isTerminalEnvironment() && pterm.PrintColor && os.Getenv("TERM") != ""
+		// Auto-detect: use fancy only for truly interactive terminals with color support
+		useFancy = isTerminalEnvironment() && pterm.PrintColor && os.Getenv("TERM") != "" && os.Getenv("NO_COLOR") == ""
 	}
 	
 	if useFancy {
@@ -70,45 +75,60 @@ func isTerminalEnvironment() bool {
 
 // showFancyLogo displays the logo using pterm for enhanced terminals
 func showFancyLogo() {
-	// Create padded logo lines for pterm box
-	paddedLines := make([]string, len(logoArt)+2) // Add empty lines for spacing
-	paddedLines[0] = ""
-	for i, line := range logoArt {
-		// Add consistent padding to each line
-		paddedLines[i+1] = strings.Repeat(" ", logoLeftPadding) + line
+	// Create custom box style with gradient colors
+	boxStyle := pterm.NewStyle(pterm.FgCyan, pterm.Bold)
+	titleStyle := pterm.NewStyle(pterm.FgLightCyan, pterm.Bold)
+	
+	// Use pterm default box with custom styling
+	pterm.DefaultBox.BoxStyle = boxStyle
+	
+	// Create padded logo lines
+	paddedLines := make([]string, 0, len(logoArt)+3)
+	paddedLines = append(paddedLines, "") // Top padding
+	for _, line := range logoArt {
+		paddedLines = append(paddedLines, " " + line + " ")
 	}
-	paddedLines[len(paddedLines)-1] = ""
+	paddedLines = append(paddedLines, "") // Bottom padding
 	
 	logo := strings.Join(paddedLines, "\n")
 	
-	pterm.DefaultBox.WithTitle(logoTitle).
+	// Create styled title with rocket emoji
+	styledTitle := titleStyle.Sprint(" 🚀 " + logoTitle + " ")
+	
+	pterm.DefaultBox.WithTitle(styledTitle).
 		WithTitleTopCenter().
-		WithBoxStyle(pterm.NewStyle(pterm.FgCyan)).
+		WithBoxStyle(boxStyle).
 		Println(logo)
+	
+	// Add a subtle separator after the logo
+	fmt.Println()
 }
 
 // showPlainLogo displays a simple plain text logo for non-terminal environments
 func showPlainLogo() {
-	// For Unicode characters, calculate visual width properly
-	// Each Unicode box-drawing character displays as 1 character width
-	logoVisualWidth := 80 // The actual visual width of the logo
+	// Create a more sophisticated box design
+	logoVisualWidth := 84
 	
-	border := strings.Repeat(borderChar, logoVisualWidth)
-	title := centerText(logoTitle, logoVisualWidth)
+	// Build top border with title
+	topBorder := topLeftCorner + strings.Repeat(borderChar, 25) + "┫ " + logoTitle + " ┣" + strings.Repeat(borderChar, 26) + topRightCorner
 	
-	fmt.Println(border)
-	fmt.Println(title)
-	fmt.Println(border)
-	fmt.Println()
+	// Build middle separator
+	middleSeparator := verticalChar + strings.Repeat("─", logoVisualWidth-2) + verticalChar
 	
-	// Display logo with proper centering based on visual width
+	// Build bottom border
+	bottomBorder := bottomLeftCorner + strings.Repeat(borderChar, logoVisualWidth-2) + bottomRightCorner
+	
+	// Print the logo with improved formatting
+	fmt.Println(topBorder)
+	fmt.Println(middleSeparator)
+	
+	// Display logo art with proper padding
 	for _, line := range logoArt {
-		// Add small padding on both sides for clean appearance
-		fmt.Printf("%s%s%s\n", strings.Repeat(" ", 2), line, strings.Repeat(" ", 2))
+		fmt.Printf("%s %s %s\n", verticalChar, line, verticalChar)
 	}
 	
-	fmt.Println()
-	fmt.Println(border)
+	fmt.Println(middleSeparator)
+	fmt.Println(bottomBorder)
 	fmt.Println()
 }
 

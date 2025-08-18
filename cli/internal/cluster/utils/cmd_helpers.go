@@ -5,7 +5,6 @@ import (
 	
 	"github.com/flamingo/openframe/internal/cluster"
 	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/common/config"
 	"github.com/flamingo/openframe/internal/common/errors"
 	"github.com/flamingo/openframe/internal/common/executor"
 	"github.com/flamingo/openframe/internal/common/ui"
@@ -28,17 +27,17 @@ func InitGlobalFlags() {
 }
 
 // GetCommandService creates a command service for business logic operations
-func GetCommandService() *config.ClusterService {
+func GetCommandService() *cluster.ClusterService {
 	// Use injected executor if available (for testing)
 	if globalFlags != nil && globalFlags.Executor != nil {
-		return config.NewClusterService(globalFlags.Executor)
+		return cluster.NewClusterService(globalFlags.Executor)
 	}
 	
 	// Create real executor with current flags
 	dryRun := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.DryRun
 	verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
 	exec := executor.NewRealCommandExecutor(dryRun, verbose)
-	return config.NewClusterService(exec)
+	return cluster.NewClusterService(exec)
 }
 
 // WrapCommandWithCommonSetup wraps a command function with common CLI setup and error handling

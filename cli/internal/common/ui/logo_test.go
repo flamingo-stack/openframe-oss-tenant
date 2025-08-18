@@ -45,7 +45,7 @@ func TestShowLogo_PlainMode(t *testing.T) {
 	// Should contain logo elements
 	assert.Contains(t, output, "OpenFrame Platform Bootstrapper")
 	assert.Contains(t, output, "██████╗")
-	assert.Contains(t, output, "================")
+	assert.Contains(t, output, "━━━━━━━━━━━━━━━━━━━━")
 }
 
 func TestShowLogo_FancyMode(t *testing.T) {
@@ -167,7 +167,7 @@ func TestShowPlainLogo(t *testing.T) {
 	// Verify logo components are present
 	assert.Contains(t, output, "OpenFrame Platform Bootstrapper")
 	assert.Contains(t, output, "████")
-	assert.Contains(t, output, "════")
+	assert.Contains(t, output, "─────")
 	
 	// Verify it contains multiple lines of the logo art
 	lines := strings.Split(output, "\n")
@@ -191,9 +191,9 @@ func TestShowFancyLogo(t *testing.T) {
 func TestLogoConstants(t *testing.T) {
 	// Verify constants are defined correctly
 	assert.Equal(t, "OpenFrame Platform Bootstrapper", logoTitle)
-	assert.Equal(t, "=", borderChar)
-	assert.Equal(t, 80, borderLength)
-	assert.Equal(t, 3, logoLeftPadding)
+	assert.Equal(t, "━", borderChar)
+	assert.Equal(t, 84, borderLength)
+	assert.Equal(t, 2, logoLeftPadding)
 	
 	// Verify logo art is not empty
 	assert.NotEmpty(t, logoArt)

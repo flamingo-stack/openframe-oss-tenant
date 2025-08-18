@@ -6,6 +6,7 @@ import (
 
 	"github.com/flamingo/openframe/cmd/cluster"
 	"github.com/flamingo/openframe/internal/common/config"
+	"github.com/flamingo/openframe/internal/common/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -49,6 +50,11 @@ Key Features:
 The CLI provides both interactive modes for new users and flag-based
 operation for automation and power users.`,
 		Version: fmt.Sprintf("%s (%s) built on %s", versionInfo.Version, versionInfo.Commit, versionInfo.Date),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Show logo when no subcommand is provided
+			ui.ShowLogo()
+			return cmd.Help()
+		},
 	}
 
 	// Add subcommands

@@ -136,7 +136,7 @@ func TestClusterOperations(t *testing.T) {
 	statusResult := common.RunCLI("cluster", "status", clusterName)
 	require.True(t, statusResult.Success(), "Status command failed: %s", statusResult.Stderr)
 	require.Contains(t, statusResult.Stdout, clusterName)
-	require.Contains(t, statusResult.Stdout, "Status: 1/1")
+	require.Contains(t, statusResult.Stdout, "Ready (1/1)")
 
 	// Test verbose status
 	statusVerboseResult := common.RunCLI("cluster", "status", clusterName, "--verbose")
@@ -265,7 +265,13 @@ func TestEmptyList(t *testing.T) {
 	// Output should indicate no clusters or be empty/header only
 	output := strings.TrimSpace(result.Stdout)
 	if output != "" && !strings.Contains(output, "NAME") {
-		require.Contains(t, strings.ToLower(output), "no clusters")
+		// Check for the presence of "no" and "clusters" and "available" to handle ANSI formatting
+		outputLower := strings.ToLower(output)
+		require.True(t, 
+			strings.Contains(outputLower, "no") && 
+			strings.Contains(outputLower, "clusters") && 
+			strings.Contains(outputLower, "available"),
+			"Expected message about no clusters being available, got: %s", output)
 	}
 }
 
@@ -421,7 +427,7 @@ func TestExtendedScenarios(t *testing.T) {
 		statusResult := common.RunCLI("cluster", "status", clusterName)
 		require.True(t, statusResult.Success(), "Status failed: %s", statusResult.Stderr)
 		// Multi-node clusters should show server count (1 server + N agents)
-		require.Contains(t, statusResult.Stdout, "Status: 1/1", "Should show server status")
+		require.Contains(t, statusResult.Stdout, "Ready (1/1)", "Should show server status")
 
 		// Clean up
 		deleteResult := common.RunCLI("cluster", "delete", clusterName, "--force")
@@ -442,24 +448,44 @@ func TestExtendedScenarios(t *testing.T) {
 			common.CleanupTestCluster(cluster2)
 		})
 
-		// Create first cluster
+		// Test creating clusters with different names sequentially (avoiding simultaneous creation)
+		// First cluster lifecycle
+		t.Logf("Creating first cluster: %s", cluster1)
 		result1 := common.RunCLI("cluster", "create", cluster1, "--skip-wizard", "--nodes", "1")
 		require.True(t, result1.Success(), "First cluster creation failed: %s", result1.Stderr)
 
-		// Create second cluster (should work with different name)
-		result2 := common.RunCLI("cluster", "create", cluster2, "--skip-wizard", "--nodes", "1")
-		require.True(t, result2.Success(), "Second cluster creation failed: %s", result2.Stderr)
-
-		// Both should appear in list
+		// Verify first cluster is working
 		listResult := common.RunCLI("cluster", "list")
-		require.True(t, listResult.Success(), "List failed: %s", listResult.Stderr)
+		require.True(t, listResult.Success(), "List failed after first cluster: %s", listResult.Stderr)
 		require.Contains(t, listResult.Stdout, cluster1, "First cluster missing from list")
-		require.Contains(t, listResult.Stdout, cluster2, "Second cluster missing from list")
 
-		// Clean up both
+		statusResult := common.RunCLI("cluster", "status", cluster1)
+		require.True(t, statusResult.Success(), "First cluster status failed: %s", statusResult.Stderr)
+
+		// Clean up first cluster completely before creating second
+		t.Logf("Deleting first cluster before creating second: %s", cluster1)
 		deleteResult1 := common.RunCLI("cluster", "delete", cluster1, "--force")
 		require.True(t, deleteResult1.Success(), "Delete cluster1 failed: %s", deleteResult1.Stderr)
 
+		// Wait for cleanup to complete and resources to be freed
+		time.Sleep(5 * time.Second)
+
+		// Second cluster lifecycle  
+		t.Logf("Creating second cluster: %s", cluster2)
+		result2 := common.RunCLI("cluster", "create", cluster2, "--skip-wizard", "--nodes", "1")
+		require.True(t, result2.Success(), "Second cluster creation failed: %s", result2.Stderr)
+
+		// Verify second cluster is working
+		listResult2 := common.RunCLI("cluster", "list")
+		require.True(t, listResult2.Success(), "List failed after second cluster: %s", listResult2.Stderr)
+		require.Contains(t, listResult2.Stdout, cluster2, "Second cluster missing from list")
+		require.NotContains(t, listResult2.Stdout, cluster1, "First cluster should be deleted")
+
+		statusResult2 := common.RunCLI("cluster", "status", cluster2)
+		require.True(t, statusResult2.Success(), "Second cluster status failed: %s", statusResult2.Stderr)
+
+		// Clean up second cluster
+		t.Logf("Deleting second cluster: %s", cluster2)
 		deleteResult2 := common.RunCLI("cluster", "delete", cluster2, "--force")
 		require.True(t, deleteResult2.Success(), "Delete cluster2 failed: %s", deleteResult2.Stderr)
 

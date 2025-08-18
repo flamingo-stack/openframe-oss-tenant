@@ -105,16 +105,40 @@ func FormatAge(createdAt time.Time) string {
 
 // ShowClusterCreationNextSteps displays next steps after cluster creation
 func ShowClusterCreationNextSteps(clusterName string) {
-	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  • Use 'openframe bootstrap' to install OpenFrame components\n")
-	fmt.Printf("  • Check cluster status: openframe cluster status\n")
-	fmt.Printf("  • Access cluster: kubectl get nodes\n")
+	fmt.Println()
+	
+	// Create table data for next steps
+	tableData := pterm.TableData{
+		{"📌", "Next Steps"},
+		{"1.", pterm.Gray("Bootstrap OpenFrame:  ") + pterm.Cyan("openframe bootstrap")},
+		{"2.", pterm.Gray("Check cluster status: ") + pterm.Cyan("openframe cluster status")},
+		{"3.", pterm.Gray("List all clusters:    ") + pterm.Cyan("openframe cluster list")},
+		{"4.", pterm.Gray("Access with kubectl:  ") + pterm.Cyan("kubectl get nodes")},
+	}
+	
+	// Try to render as table, fallback to simple output
+	if err := pterm.DefaultTable.WithHasHeader().WithData(tableData).Render(); err != nil {
+		// Fallback to simple output
+		fmt.Println("Next steps:")
+		fmt.Printf("  1. Bootstrap OpenFrame:  %s\n", pterm.Cyan("openframe bootstrap"))
+		fmt.Printf("  2. Check cluster status: %s\n", pterm.Cyan("openframe cluster status"))
+		fmt.Printf("  3. List all clusters:    %s\n", pterm.Cyan("openframe cluster list"))
+		fmt.Printf("  4. Access with kubectl:  %s\n", pterm.Cyan("kubectl get nodes"))
+	}
+	fmt.Println()
 }
 
 // ShowNoResourcesMessage displays a message when no resources are found
 func ShowNoResourcesMessage(resourceType, command string) {
-	pterm.Info.Printf("No %s found.\n", resourceType)
+	// Create styled box with consistent formatting
+	pterm.DefaultBox.WithTitle(" 📭 No Resources Found ").WithTitleTopCenter().Println(
+		fmt.Sprintf("No %s are currently available.\n\n" +
+			"To get started, create a new %s:\n" +
+			"  %s\n\n" +
+			"For more options, try:\n" +
+			"  openframe cluster --help",
+			pterm.Yellow(resourceType),
+			strings.TrimSuffix(resourceType, "s"),
+			pterm.Green(command)))
 	pterm.Println()
-	pterm.Printf("To create a new %s, run:\n", strings.TrimSuffix(resourceType, "s"))
-	pterm.Printf("  %s\n", pterm.Green(command))
 }

@@ -3,6 +3,7 @@ package cluster
 import (
 	"github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/flamingo/openframe/internal/cluster/utils"
+	"github.com/flamingo/openframe/internal/common/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,6 @@ func GetClusterCmd() *cobra.Command {
 This command group provides cluster lifecycle management functionality:
   • create - Create a new cluster with interactive configuration
   • delete - Remove a cluster and clean up resources  
-  • start - Start an existing stopped cluster
   • list - Show all managed clusters
   • status - Display detailed cluster information
   • cleanup - Remove unused images and resources
@@ -29,8 +29,12 @@ Supports K3d clusters for local development.
 
 Examples:
   openframe cluster create
-  openframe cluster delete  
-  openframe cluster start`,
+  openframe cluster delete`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Show logo when no subcommand is provided
+			ui.ShowLogo()
+			return cmd.Help()
+		},
 	}
 
 	// Add subcommands - much simpler now
@@ -39,7 +43,6 @@ Examples:
 		getDeleteCmd(),
 		getListCmd(),
 		getStatusCmd(),
-		getStartCmd(),
 		getCleanupCmd(),
 	)
 

@@ -122,14 +122,6 @@ func TestDeleteFlags(t *testing.T) {
 	})
 }
 
-func TestStartFlags(t *testing.T) {
-	t.Run("creates start flags with default values", func(t *testing.T) {
-		flags := &StartFlags{}
-		
-		assert.False(t, flags.GlobalFlags.Verbose)
-	})
-}
-
 func TestCleanupFlags(t *testing.T) {
 	t.Run("creates cleanup flags with default values", func(t *testing.T) {
 		flags := &CleanupFlags{}
@@ -236,18 +228,6 @@ func TestAddDeleteFlags(t *testing.T) {
 	})
 }
 
-func TestAddStartFlags(t *testing.T) {
-	t.Run("adds start flags to command", func(t *testing.T) {
-		cmd := &cobra.Command{}
-		flags := &StartFlags{}
-		
-		// Should not panic even though start has no specific flags
-		assert.NotPanics(t, func() {
-			AddStartFlags(cmd, flags)
-		})
-	})
-}
-
 func TestAddCleanupFlags(t *testing.T) {
 	t.Run("adds cleanup flags to command", func(t *testing.T) {
 		cmd := &cobra.Command{}
@@ -327,13 +307,6 @@ func TestFlagValidation(t *testing.T) {
 		flags.GlobalFlags.Force = true
 		
 		err := ValidateDeleteFlags(flags)
-		assert.NoError(t, err)
-	})
-	
-	t.Run("validates start flags", func(t *testing.T) {
-		flags := &StartFlags{}
-		
-		err := ValidateStartFlags(flags)
 		assert.NoError(t, err)
 	})
 	

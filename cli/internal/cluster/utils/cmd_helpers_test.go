@@ -25,7 +25,6 @@ func TestInitGlobalFlags(t *testing.T) {
 		assert.NotNil(t, globalFlags.Create)
 		assert.NotNil(t, globalFlags.Delete)
 		assert.NotNil(t, globalFlags.List)
-		assert.NotNil(t, globalFlags.Start)
 		assert.NotNil(t, globalFlags.Status)
 		assert.NotNil(t, globalFlags.Cleanup)
 	})

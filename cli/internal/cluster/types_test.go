@@ -20,7 +20,6 @@ func TestNewFlagContainer(t *testing.T) {
 		assert.NotNil(t, container.List)
 		assert.NotNil(t, container.Status)
 		assert.NotNil(t, container.Delete)
-		assert.NotNil(t, container.Start)
 		assert.NotNil(t, container.Cleanup)
 		
 		// Check default values for Create flags
@@ -54,8 +53,6 @@ func TestFlagContainer_SyncGlobalFlags(t *testing.T) {
 		assert.Equal(t, container.Global.Verbose, container.Delete.GlobalFlags.Verbose)
 		assert.Equal(t, container.Global.DryRun, container.Delete.GlobalFlags.DryRun)
 		
-		assert.Equal(t, container.Global.Verbose, container.Start.GlobalFlags.Verbose)
-		assert.Equal(t, container.Global.DryRun, container.Start.GlobalFlags.DryRun)
 		
 		assert.Equal(t, container.Global.Verbose, container.Cleanup.GlobalFlags.Verbose)
 		assert.Equal(t, container.Global.DryRun, container.Cleanup.GlobalFlags.DryRun)
