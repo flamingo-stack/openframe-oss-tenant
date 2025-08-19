@@ -21,6 +21,17 @@
           <InputText id="email" v-model="email" type="email" class="w-full" />
         </div>
         <div class="of-form-group">
+          <label for="tenantDomain" class="of-form-label">Company Domain</label>
+          <InputText 
+            id="tenantDomain" 
+            v-model="tenantDomain" 
+            placeholder="localhost" 
+            class="w-full" 
+            disabled
+          />
+          <small class="domain-help">Local development - domain is automatically set to localhost</small>
+        </div>
+        <div class="of-form-group">
           <label for="password" class="of-form-label">Password</label>
           <div class="password-wrapper">
             <input
@@ -94,6 +105,7 @@ const toastService = ToastService.getInstance()
 const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
+const tenantDomain = ref('localhost') // Hardcoded for local development
 const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
@@ -153,7 +165,7 @@ const passwordStrength = computed(() => {
 })
 
 const handleSubmit = async () => {
-  if (!email.value || !password.value || !firstName.value || !lastName.value) {
+  if (!email.value || !password.value || !firstName.value || !lastName.value || !tenantDomain.value) {
     toastService.showError('Please fill in all fields')
     return
   }
@@ -170,12 +182,25 @@ const handleSubmit = async () => {
 
   try {
     loading.value = true
-    await authStore.register(email.value, password.value, firstName.value, lastName.value)
-    toastService.showSuccess('Registration successful!')
-    router.push('/dashboard')
+    
+    // Register with tenant domain
+    await authStore.registerWithDomain(
+      email.value, 
+      password.value, 
+      firstName.value, 
+      lastName.value, 
+      tenantDomain.value
+    )
+    
+    toastService.showSuccess('Welcome to OpenFrame! Redirecting to dashboard...')
+    
+    // Redirect to dashboard for local development
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 1500)
   } catch (err: any) {
     const errorMessage = err.message || 'Registration failed. Please try again.'
-    toastService.showError(errorMessage, err.error)
+    toastService.showError(errorMessage)
   } finally {
     loading.value = false
   }
@@ -402,6 +427,13 @@ const handleSubmit = async () => {
 }
 
 .strength-text {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.domain-help {
   font-size: 0.75rem;
   color: var(--text-color-secondary);
   margin-top: 0.25rem;

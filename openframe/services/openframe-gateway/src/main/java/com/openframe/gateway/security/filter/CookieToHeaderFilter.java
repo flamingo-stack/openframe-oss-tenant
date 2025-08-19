@@ -11,9 +11,9 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-import static com.openframe.core.constants.HttpHeaders.X_REFRESH_TOKEN;
 import static com.openframe.gateway.security.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpMethod.GET;
 
 /**
  * WebFilter that adds Authorization header from cookie tokens or query parameters.
@@ -37,51 +37,66 @@ public class CookieToHeaderFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
-        String existingAuth = request.getHeaders().getFirst(AUTHORIZATION);
-        if (StringUtils.hasText(existingAuth)) {
+        if (isOAuthEndpoint(request)) {
+            return chain.filter(exchange);
+        }
+
+        if (!isProtectedGet(request)) {
+            return chain.filter(exchange);
+        }
+
+        if (hasAuthorizationHeader(request)) {
             log.debug("Authorization header already present, skipping cookie and query parameter check");
             return chain.filter(exchange);
         }
 
-        String accessToken = cookieService.getAccessTokenFromCookies(exchange);
-
-        if (accessToken == null) {
-            accessToken = request.getQueryParams().getFirst(AUTHORIZATION_QUERY_PARAM);
-            if (accessToken != null) {
-                log.debug("Found authorization token in query parameter");
-            }
-        } else {
-            log.debug("Found authorization token in cookies");
-        }
-
-        ServerHttpRequest.Builder requestBuilder = request.mutate();
-        boolean headersAdded = false;
+        String accessToken = resolveAccessToken(exchange, request);
 
         if (accessToken != null) {
-            requestBuilder.header(AUTHORIZATION, "Bearer " + accessToken);
-            headersAdded = true;
             log.debug("Added Authorization header from token");
-        }
-
-        String path = request.getPath().value();
-        if (path.equals("/api/oauth/token")) {
-            String refreshToken = cookieService.getRefreshTokenFromCookies(exchange);
-            if (refreshToken != null) {
-                requestBuilder.header(X_REFRESH_TOKEN, refreshToken);
-                headersAdded = true;
-                log.debug("Added {} header from refresh_token cookie", X_REFRESH_TOKEN);
-            }
-        }
-
-        if (headersAdded) {
-            ServerWebExchange modifiedExchange = exchange.mutate()
-                    .request(requestBuilder.build())
+            ServerHttpRequest mutated = request.mutate()
+                    .header(AUTHORIZATION, "Bearer " + accessToken)
                     .build();
-            return chain.filter(modifiedExchange);
+            return chain.filter(exchange.mutate().request(mutated).build());
         }
 
         log.debug("No JWT token found in cookies or query parameters, continuing without Authorization header");
         return chain.filter(exchange);
     }
 
+    private boolean isOAuthEndpoint(ServerHttpRequest request) {
+        String path = request.getPath().value();
+        return path.startsWith("/oauth/") || path.startsWith("/sas/");
+    }
+
+    private boolean isProtectedGet(ServerHttpRequest request) {
+        if (request.getMethod() != GET) {
+            return true;
+        }
+        String path = request.getPath().value();
+        return path.startsWith("/api/")
+                || "/graphql".equals(path)
+                || path.startsWith("/tools/")
+                || path.startsWith("/clients/")
+                || path.startsWith("/ws-tools/");
+    }
+
+    private boolean hasAuthorizationHeader(ServerHttpRequest request) {
+        String existingAuth = request.getHeaders().getFirst(AUTHORIZATION);
+        return StringUtils.hasText(existingAuth);
+    }
+
+    private String resolveAccessToken(ServerWebExchange exchange, ServerHttpRequest request) {
+        String accessToken = cookieService.getAccessTokenFromCookies(exchange);
+        if (accessToken != null) {
+            log.debug("Found authorization token in cookies");
+            return accessToken;
+        }
+        String fromQuery = request.getQueryParams().getFirst(AUTHORIZATION_QUERY_PARAM);
+        if (fromQuery != null) {
+            log.debug("Found authorization token in query parameter");
+            return fromQuery;
+        }
+        return null;
+    }
 } 

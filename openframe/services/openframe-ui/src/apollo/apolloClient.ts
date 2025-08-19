@@ -11,7 +11,17 @@ import { ConfigService } from '@/config/config.service';
 
 let isRefreshing = false;
 let pendingRequests: Function[] = [];
+let lastRefreshAttempt = 0;
+const REFRESH_COOLDOWN = 5000; // 5 seconds cooldown between refresh attempts
 const config = ConfigService.getInstance();
+// One-shot refresh guard per URL (normalized without query)
+const retriedOnce = new Set<string>();
+
+// Log configuration for debugging
+console.log('🔧 [ApolloClient] Configuration:', {
+  apiUrl: config.getConfig().apiUrl,
+  gatewayUrl: config.getConfig().gatewayUrl
+});
 
 const resolvePendingRequests = () => {
   pendingRequests.forEach((callback) => callback());
@@ -28,8 +38,9 @@ const isAuthError = (error: any): boolean => {
     error?.message?.includes('Unauthorized') ||
     error?.message?.includes('Not authenticated');
 
-  // Check error response
-  const isAuthErrorResponse = error?.response?.status === 401 ||
+  // Check error response (for both fetch and axios-style errors)
+  const isAuthErrorResponse = error?.status === 401 || // fetch API
+    error?.response?.status === 401 || // axios-style
     error?.response?.data?.error === 'invalid_request' ||
     error?.response?.data?.error === 'invalid_token' ||
     error?.response?.data?.error === 'invalid_grant' ||
@@ -50,13 +61,7 @@ const refreshAccessToken = async (): Promise<void> => {
     // Use auth store for cookie-based refresh
     const authStore = useAuthStore();
     console.log('📤 [Auth] Making refresh token request via cookies...');
-    const success = await authStore.tryRefreshToken();
-    
-    if (!success) {
-      console.error('❌ [Auth] Token refresh failed');
-      throw new Error('Token refresh failed');
-    }
-    
+    await authStore.refreshToken();
     console.log('✅ [Auth] Token refresh successful via HTTP-only cookies');
   } catch (error) {
     console.error('❌ [Auth] Token refresh failed:', error);
@@ -68,10 +73,19 @@ const refreshAccessToken = async (): Promise<void> => {
 
 // Handle auth errors for REST requests
 const handleRestAuthError = async <T>(retryCallback: () => Promise<T>): Promise<T> => {
+  const now = Date.now();
+  
+  // Check cooldown to prevent too frequent refresh attempts
+  if (now - lastRefreshAttempt < REFRESH_COOLDOWN) {
+    console.log('⏰ [Auth] Refresh cooldown active, skipping refresh attempt');
+    throw new Error('Token refresh cooldown active');
+  }
+  
   // Handle concurrent refresh requests
   if (!isRefreshing) {
     console.log('🔄 [Auth] Starting token refresh flow');
     isRefreshing = true;
+    lastRefreshAttempt = now;
 
     try {
       await refreshAccessToken();
@@ -156,6 +170,12 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
       if (err.extensions?.code === 'UNAUTHENTICATED' ||
           err.message.includes('Unauthorized') ||
           err.message.includes('unauthorized')) {
+        const ctx = operation.getContext() || {};
+        if (ctx.noRefresh) {
+          console.log('🚫 [GraphQL] noRefresh context set, skipping refresh to avoid loop');
+          return;
+        }
+        operation.setContext({ ...ctx, noRefresh: true });
         return handleGraphQLAuthError(operation, forward);
       }
     }
@@ -164,6 +184,12 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   if (networkError) {
     console.error('🔴 [Network] Error:', networkError);
     if (isAuthError(networkError)) {
+      const ctx = operation.getContext() || {};
+      if (ctx.noRefresh) {
+        console.log('🚫 [GraphQL] noRefresh context set (network), skipping refresh to avoid loop');
+        return;
+      }
+      operation.setContext({ ...ctx, noRefresh: true });
       return handleGraphQLAuthError(operation, forward);
     }
   }
@@ -208,6 +234,44 @@ export default apolloClient;
 export const restClient = {
   async request<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const makeRequest = async () => {
+             // Determine the base URL based on the endpoint
+             let baseUrl: string;
+             if (url.startsWith('/oauth/')) {
+               // OAuth endpoints go to Gateway (BFF)
+               baseUrl = config.getConfig().gatewayUrl;
+             } else if (
+               url.startsWith('/register') ||
+               url.startsWith('/oauth2/') ||
+               url.startsWith('/tenant/') ||
+               url.startsWith('/oauth/') ||
+               url.startsWith('/sas/')
+             ) {
+               // All Authorization Server endpoints now go through Gateway with /sas prefix
+               baseUrl = config.getConfig().gatewayUrl;
+               // Ensure /sas prefix is present for Auth Server calls
+               if (url.startsWith('/tenant/') || url.startsWith('/oauth2/') || url.startsWith('/register')) {
+                 url = `/sas${url}`;
+               }
+             } else {
+               // Default to API URL
+               baseUrl = config.getConfig().apiUrl;
+             }
+
+      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+      
+      console.log('🌐 [REST] Request:', {
+        originalUrl: url,
+        baseUrl,
+        fullUrl,
+        endpoint: url.startsWith('/oauth/') ? 'Gateway' : 
+                  url.startsWith('/sas/') ? 'Auth Server via Gateway' : 'API',
+        method: options.method || 'GET',
+        config: {
+          apiUrl: config.getConfig().apiUrl,
+          gatewayUrl: config.getConfig().gatewayUrl
+        }
+      });
+      
       const defaultHeaders = {
         'Accept': '*/*'
         // No longer adding Authorization header - authentication via cookies
@@ -218,7 +282,7 @@ export const restClient = {
         ...(options.headers || {})
       };
 
-      const response = await fetch(url, {
+      const response = await fetch(fullUrl, {
         ...options,
         headers,
         credentials: 'include' // Always include cookies for authentication
@@ -234,7 +298,7 @@ export const restClient = {
         });
 
         const error = new Error() as any;
-        error.status = response.status;
+        error.status = response.status; // This is what isAuthError checks for
         error.name = 'ApiError';
         error.response = { 
           status: response.status, 
@@ -242,10 +306,17 @@ export const restClient = {
         };
         error.message = errorText || response.statusText;
         
+        // Log if this is an auth error for debugging
+        if (response.status === 401) {
+          console.log('🔐 [REST] 401 Unauthorized detected, will trigger token refresh');
+        }
+        
         throw error;
       }
 
       console.log('✅ [REST] Request successful');
+      // Clear retry guard for this URL on success
+      try { retriedOnce.delete(url.split('?')[0]); } catch {}
       if (response.status === 204 || response.headers.get('content-length') === '0') {
         console.log('📦 [REST] Response data: (empty)');
         return undefined as T;
@@ -254,9 +325,11 @@ export const restClient = {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
+        console.log('📦 [REST] Response data (JSON):', data);
         return data as T;
       } else {
         const text = await response.text();
+        console.log('📦 [REST] Response data (text):', text);
         return text as T;
       }
     };
@@ -266,9 +339,31 @@ export const restClient = {
     } catch (error: any) {
       console.error('❌ [REST] Request error:', error);
 
-      // Handle auth errors with token refresh
-      if (isAuthError(error)) {
-        return await handleRestAuthError(makeRequest);
+      // Don't attempt refresh for oauth endpoints to prevent infinite loops
+      if (url.includes('/oauth/refresh') || url.includes('/oauth/login') || url.includes('/oauth/logout')) {
+        console.log('🚫 [REST] OAuth endpoint detected, skipping token refresh to prevent loops');
+        throw error;
+      }
+
+      // Prevent refresh loop: if this request already retried once with x-no-refresh, don't refresh again
+      const noRefresh = (options.headers as any)?.['x-no-refresh'] === '1';
+      const key = (() => { try { return url.split('?')[0]; } catch { return url; } })();
+
+      // Handle auth errors with single refresh attempt per request
+      if (isAuthError(error) && !noRefresh) {
+        if (retriedOnce.has(key)) {
+          console.log('🚫 [REST] Already retried once for', key, '— skipping refresh to avoid loop');
+          throw error;
+        }
+        retriedOnce.add(key);
+        console.log('🔄 [REST] Auth error detected, attempting token refresh for', key, '...');
+        return await handleRestAuthError(() => {
+          const retryOpts: RequestInit = {
+            ...options,
+            headers: { ...(options.headers || {}), 'x-no-refresh': '1' }
+          };
+          return restClient.request<T>(url, retryOpts);
+        });
       }
 
       throw error;
