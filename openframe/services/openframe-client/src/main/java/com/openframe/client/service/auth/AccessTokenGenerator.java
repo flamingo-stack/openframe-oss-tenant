@@ -39,7 +39,6 @@ public class AccessTokenGenerator {
                 .subject(client.getClientId())
                 .claim("machine_id", client.getMachineId())
                 .claim("grant_type", grantType)
-                .claim("scopes", client.getScopes())
                 .claim("roles", client.getRoles())
                 .build();
     }

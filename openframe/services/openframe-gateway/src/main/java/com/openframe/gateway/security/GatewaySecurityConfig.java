@@ -90,7 +90,8 @@ public class GatewaySecurityConfig {
                                 DASHBOARD_PREFIX + "/oauth2/**",
                                 DASHBOARD_PREFIX + "/sso/providers",
                                  managementContextPath + "/**",
-                                DASHBOARD_PREFIX + "/.well-known/openid-configuration"
+                                DASHBOARD_PREFIX + "/.well-known/openid-configuration",
+                                CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")

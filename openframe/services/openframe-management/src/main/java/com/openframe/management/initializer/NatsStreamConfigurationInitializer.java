@@ -33,7 +33,6 @@ public class NatsStreamConfigurationInitializer {
     public void run() {
         CONFIGURATIONS
                 .forEach(this::save);
-        log.info("Successfully processed all stream configurations");
     }
 
     private void save(StreamConfiguration configuration) {

@@ -51,6 +51,8 @@ impl ToolInstallationMessageListener {
         // TODO: create generic subscriber
         let mut messages = consumer.messages().await?;
         while let Some(message) = messages.next().await {
+            info!("Received tool installation message: {:?}", message);
+
             let message = message?;
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
@@ -86,7 +88,7 @@ impl ToolInstallationMessageListener {
             deliver_subject,
             durable_name: Some(durable_name),
             inactive_threshold: Duration::from_secs(60),
-            deliver_policy: DeliverPolicy::All,
+            // deliver_policy: DeliverPolicy::All,
             ..Default::default()
         }
     }

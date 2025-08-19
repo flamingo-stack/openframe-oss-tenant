@@ -12,7 +12,7 @@ import static java.lang.String.format;
 @RequiredArgsConstructor
 public class ToolInstallationNatsPublisher {
 
-    private final static String TOPIC_NAME_TEMPLATE = "/machine/%s/toolinstallataion";
+    private final static String TOPIC_NAME_TEMPLATE = "machine.%s.tool-installation";
 
     private final NatsMessagePublisher natsMessagePublisher;
 

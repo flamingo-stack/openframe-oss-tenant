@@ -28,6 +28,7 @@ public class AgentRegistrationToolService {
             log.info("Published {} agent installation message for machine {}", toolId, machineId);
         } catch (Exception e) {
             log.error("Failed to publish {} agent installation message for machine {}", toolId, machineId);
+            throw e;
         }
     }
 

@@ -28,7 +28,7 @@ impl ToolInstallationService {
         let machine_id = tool_installation_message.tool_id.clone();
         info!("Installing tool {} with version {}", tool_installation_message.tool_id, tool_installation_message.version);
 
-        let tool_agent_file_bytes = self.tool_agent_file_client.get_tool_agent_id(tool_installation_message.tool_id.clone()).await?;
+        let tool_agent_file_bytes = self.tool_agent_file_client.get_tool_agent_file(tool_installation_message.tool_id.clone()).await?;
         let tool_installation_result = self.tool_installer.install(tool_installation_message.tool_id.clone(), tool_agent_file_bytes).await?;
 
         let tool_agent_id = tool_installation_result.tool_agent_id;

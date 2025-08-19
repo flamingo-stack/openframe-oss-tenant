@@ -1,5 +1,5 @@
 use reqwest::Client;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use bytes::Bytes;
 
 pub struct ToolAgentFileClient {
@@ -12,9 +12,19 @@ impl ToolAgentFileClient {
         Self { http_client, base_url }
     }
 
-    pub async fn get_tool_agent_id(&self, tool_id: String) -> Result<bytes::Bytes> {
+    pub async fn get_tool_agent_file(&self, tool_id: String) -> Result<bytes::Bytes> {
         let url = format!("{}/clients/tool-agent/{}", self.base_url, tool_id);
-        let response = self.http_client.get(url).send().await?;
+        let response = self.http_client.get(url).send()
+            .await
+            .context("Failed to get tool agent file")?;
+
+        let status = response.status();
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.context("Failed to read response text")?;
+            return Err(anyhow::anyhow!("Failed to get tool agent file with status {} and body {}", status, error_text));
+        }
+
         let body = response.bytes().await?; 
         Ok(body)
     }

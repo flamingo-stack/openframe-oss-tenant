@@ -17,6 +17,6 @@ public class MachineNatsRegistrationService {
             .filterSubject("machine.>" + machineId)
             .build();
 
-        natsManagementService.create("machine", consumerConfiguration);
+        natsManagementService.create("TOOL_INSTALLATION", consumerConfiguration);
     }
 }

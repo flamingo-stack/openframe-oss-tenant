@@ -29,12 +29,12 @@ spring:
           type: nats
           environment:
             nats:
-              servers: nats://nats-0.nats.datasources.svc.cluster.local
+              servers: nats://localhost:4222
       default-binder: nats
 
 nats:
   spring:
-    server: nats://nats-0.nats.datasources.svc.cluster.local
+    server: nats://localhost:4222
     username: service
     password: service_pass
   connection:
