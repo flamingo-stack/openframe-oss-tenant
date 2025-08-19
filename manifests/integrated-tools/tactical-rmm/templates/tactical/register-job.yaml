@@ -119,7 +119,9 @@ spec:
               -d '{
                 "toolAgent": {
                   "id": "tactical-rmm-agent",
-                  "version": "1.0"
+                  "version": "1.0",
+                  "installationCommand": "./tactical-rmm_agent -m install -api \"https://localhost\" -auth \"{registrationSecret}\" -client-id \"1\" -site-id \"1\" -agent-type \"workstation\" -log \"DEBUG\" -logto \"stdout\" --openframe-mode -nomesh -openframe-secret \"12345678901234567890123456789012\",
+                  "runCommand": "./tactical-rmm_agent -m svc -log \"DEBUG\" -logto \"stdout\" -openframe-secret \"12345678901234567890123456789012\"
                 }
               }' \
               --retry-delay 2 \

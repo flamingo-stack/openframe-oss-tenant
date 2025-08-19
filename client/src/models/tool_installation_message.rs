@@ -5,4 +5,6 @@ use serde::{Serialize, Deserialize};
 pub struct ToolInstallationMessage {
     pub tool_id: String,
     pub version: String,
+    pub installationCommand,
+    pub runCommand
 }
