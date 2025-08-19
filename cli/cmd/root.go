@@ -51,6 +51,9 @@ Key Features:
 The CLI provides both interactive modes for new users and flag-based
 operation for automation and power users.`,
 		Version: fmt.Sprintf("%s (%s) built on %s", versionInfo.Version, versionInfo.Commit, versionInfo.Date),
+		// Silence errors and usage globally - we handle our own error display
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo when no subcommand is provided
 			ui.ShowLogo()

@@ -14,7 +14,8 @@ func HandleConfirmationError(err error) bool {
 		return false
 	}
 	
-	if err.Error() == "interrupted" {
+	// Handle both old style "interrupted" and pterm style interruptions
+	if err.Error() == "interrupted" || err.Error() == "interrupt" {
 		fmt.Println()
 		pterm.Info.Println("Operation cancelled by user.")
 		os.Exit(1)

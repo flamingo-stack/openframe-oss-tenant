@@ -161,7 +161,7 @@ func (i *Installer) CheckAndInstall() error {
 	if len(missingTools) > 0 {
 		pterm.Warning.Printf("Missing Prerequisites: %s\n", strings.Join(missingTools, ", "))
 
-		confirmed, err := ui.ConfirmAction("Would you like me to install them automatically?")
+		confirmed, err := ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
 		if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (i *Installer) CheckAndInstall() error {
 	// PHASE 3: Now check if Docker needs to be started (after all tools are installed)
 	if dockerNotRunning {
 		pterm.Warning.Println("Docker is not running.")
-		confirmed, err := ui.ConfirmAction("Would you like me to start Docker for you?")
+		confirmed, err := ui.ConfirmActionInteractive("Would you like me to start Docker for you?", true)
 		if errors.HandleConfirmationError(err) {
 			return nil // Won't be reached due to os.Exit in handler
 		}

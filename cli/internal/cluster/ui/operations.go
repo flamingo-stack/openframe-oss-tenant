@@ -201,10 +201,7 @@ func (ui *OperationsUI) confirmCleanup(clusterName string) (bool, error) {
 
 // confirmDeletion asks for user confirmation before deleting a cluster
 func (ui *OperationsUI) confirmDeletion(clusterName string) (bool, error) {
-	return pterm.DefaultInteractiveConfirm.
-		WithDefaultText(fmt.Sprintf("Are you sure you want to delete cluster '%s'?", pterm.Cyan(clusterName))).
-		WithDefaultValue(false).
-		Show()
+	return sharedUI.ConfirmDeletion("cluster", clusterName)
 }
 
 // ShowOperationStart displays a friendly message when starting an operation

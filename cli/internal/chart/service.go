@@ -48,10 +48,7 @@ func NewChartServiceWithClusterService(exec executor.CommandExecutor, clusterSer
 func (s *ChartService) InstallCharts(config models.ChartInstallConfig) error {
 	ctx := context.Background()
 	
-	// Step 1: Validate cluster exists
-	if err := s.validateClusterExists(config.ClusterName); err != nil {
-		return err
-	}
+	// Step 1: Set cluster context (cluster selection handled by command layer)
 	
 	// Step 2: Install ArgoCD
 	if err := s.installArgoCD(ctx, config); err != nil {

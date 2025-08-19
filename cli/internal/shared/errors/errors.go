@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -28,12 +29,25 @@ type CommandError struct {
 	Err     error
 }
 
+// AlreadyHandledError wraps errors that have already been displayed to the user
+type AlreadyHandledError struct {
+	OriginalError error
+}
+
 func (e *CommandError) Error() string {
 	return fmt.Sprintf("command '%s %v' failed: %v", e.Command, e.Args, e.Err)
 }
 
 func (e *CommandError) Unwrap() error {
 	return e.Err
+}
+
+func (e *AlreadyHandledError) Error() string {
+	return e.OriginalError.Error()
+}
+
+func (e *AlreadyHandledError) Unwrap() error {
+	return e.OriginalError
 }
 
 // ErrorHandler provides standardized error handling
@@ -89,6 +103,14 @@ func (eh *ErrorHandler) handleGenericError(err error) {
 	// Clean up common error patterns for better user experience
 	errorMsg := err.Error()
 	
+	// Handle user interruptions (Ctrl+C)
+	if eh.isUserInterruption(errorMsg) {
+		fmt.Println()
+		pterm.Info.Println("Operation cancelled by user.")
+		os.Exit(1)
+		return
+	}
+	
 	// Extract meaningful error from complex error chains
 	if strings.Contains(errorMsg, "cluster create operation failed") {
 		pterm.Error.Printf("❌ Failed to create cluster\n")
@@ -116,6 +138,30 @@ func (eh *ErrorHandler) handleGenericError(err error) {
 			pterm.Printf("  Error: %s\n", errorMsg)
 		}
 	}
+}
+
+// isUserInterruption checks if the error represents a user interruption (Ctrl+C)
+func (eh *ErrorHandler) isUserInterruption(errorMsg string) bool {
+	// Common interruption patterns
+	interruptions := []string{
+		"interrupted",
+		"interrupt",
+		"^C",
+		"cluster selection failed: ^C",
+		"selection failed: ^C",
+		"confirmation failed: ^C",
+		"operation cancelled",
+		"user cancelled",
+	}
+	
+	errorLower := strings.ToLower(errorMsg)
+	for _, pattern := range interruptions {
+		if strings.Contains(errorLower, strings.ToLower(pattern)) {
+			return true
+		}
+	}
+	
+	return false
 }
 
 // CreateValidationError creates a new validation error
@@ -146,4 +192,29 @@ func IsValidationError(err error) bool {
 func IsCommandError(err error) bool {
 	_, ok := err.(*CommandError)
 	return ok
+}
+
+// HandleGlobalError provides a global error handling entry point
+// This should be used by all command RunE functions to ensure consistent error handling
+func HandleGlobalError(err error, verbose bool) error {
+	if err == nil {
+		return nil
+	}
+
+	handler := NewErrorHandler(verbose)
+	
+	// Check if this is a user interruption - these should exit cleanly
+	if handler.isUserInterruption(err.Error()) {
+		fmt.Println()
+		pterm.Info.Println("Operation cancelled by user.")
+		os.Exit(1)
+		return nil // Won't be reached
+	}
+	
+	// For non-interruption errors, display the error but still return it
+	// so that tests and scripts can detect failures via exit codes
+	handler.HandleError(err)
+	
+	// Create a wrapped error that signals we've already handled the display
+	return &AlreadyHandledError{OriginalError: err}
 }

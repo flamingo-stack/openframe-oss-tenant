@@ -1,12 +1,13 @@
 package chart
 
 import (
-	"errors"
-	
 	"github.com/flamingo/openframe/internal/chart"
 	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/chart/prerequisites"
+	chartUI "github.com/flamingo/openframe/internal/chart/ui"
 	"github.com/flamingo/openframe/internal/chart/utils"
+	"github.com/flamingo/openframe/internal/cluster"
+	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/spf13/cobra"
 )
@@ -53,10 +54,45 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
-	// Determine cluster name
-	clusterName := ""
-	if len(args) > 0 {
-		clusterName = args[0]
+	// Create cluster service to get available clusters
+	exec := executor.NewRealCommandExecutor(dryRun, globalFlags.Global.Verbose)
+	clusterService := cluster.NewClusterService(exec)
+
+	// Create chart operations UI
+	operationsUI := chartUI.NewOperationsUI()
+
+	// Get all available clusters
+	clusters, err := clusterService.ListClusters()
+	if err != nil {
+		operationsUI.ShowNoClusterMessage()
+		return nil
+	}
+
+	if len(clusters) == 0 {
+		operationsUI.ShowNoClusterMessage()
+		return nil
+	}
+
+	// Handle cluster selection with chart UI
+	clusterName, err := operationsUI.SelectClusterForInstall(clusters, args)
+	if err != nil {
+		return sharedErrors.HandleGlobalError(err, globalFlags.Global.Verbose)
+	}
+
+	// If no cluster selected (e.g., user cancelled), exit gracefully
+	if clusterName == "" {
+		return nil
+	}
+
+	// Ask for installation confirmation
+	confirmed, err := operationsUI.ConfirmInstallation(clusterName)
+	if err != nil {
+		return sharedErrors.HandleGlobalError(err, globalFlags.Global.Verbose)
+	}
+
+	if !confirmed {
+		operationsUI.ShowOperationCancelled("chart installation")
+		return nil
 	}
 
 	// Create config
@@ -68,19 +104,15 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 		Silent:      false, // CommonFlags doesn't have Silent field
 	}
 
-	// Create service
-	exec := executor.NewRealCommandExecutor(config.DryRun, config.Verbose)
+	// Create chart service
 	service := chart.NewChartService(exec)
 
 	// Execute install
-	err := service.InstallCharts(config)
+	err = service.InstallCharts(config)
 	if err != nil {
-		// Error already displayed by service layer, just exit without printing again
-		if errors.Is(err, models.ErrClusterNotFound) {
-			return nil
-		}
-		// For other errors, return them to be displayed
-		return err
+		// Use global error handler for consistent error handling
+		return sharedErrors.HandleGlobalError(err, globalFlags.Global.Verbose)
 	}
 	return nil
 }
+

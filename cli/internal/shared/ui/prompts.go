@@ -12,6 +12,24 @@ import (
 	"golang.org/x/term"
 )
 
+// ConfirmActionInteractive prompts the user with a polished interactive confirmation
+// Uses pterm's interactive confirm with colored styling and clear y/N format
+func ConfirmActionInteractive(message string, defaultValue bool) (bool, error) {
+	return pterm.DefaultInteractiveConfirm.
+		WithDefaultText(message).
+		WithDefaultValue(defaultValue).
+		Show()
+}
+
+// ConfirmDeletion prompts for deletion confirmation with consistent styling
+func ConfirmDeletion(resourceType, resourceName string) (bool, error) {
+	message := fmt.Sprintf("Are you sure you want to delete %s '%s'?", resourceType, pterm.Cyan(resourceName))
+	return pterm.DefaultInteractiveConfirm.
+		WithDefaultText(message).
+		WithDefaultValue(false).
+		Show()
+}
+
 // ConfirmAction prompts the user to confirm an action with friendly UX:
 // - Enter = yes (default)
 // - y = yes (immediate, no Enter needed)  

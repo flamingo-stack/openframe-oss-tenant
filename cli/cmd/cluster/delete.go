@@ -6,6 +6,7 @@ import (
 	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
+	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,7 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 	globalFlags := utils.GetGlobalFlags()
 	clusterName, err := operationsUI.SelectClusterForDelete(clusters, args, globalFlags.Delete.Force)
 	if err != nil {
-		return err
+		return sharedErrors.HandleGlobalError(err, globalFlags.Global.Verbose)
 	}
 	
 	// If no cluster selected (e.g., empty list or cancelled), exit gracefully
@@ -85,7 +86,7 @@ func runDeleteCluster(cmd *cobra.Command, args []string) error {
 	err = service.DeleteCluster(clusterName, clusterType, globalFlags.Delete.Force)
 	if err != nil {
 		operationsUI.ShowOperationError("delete", clusterName, err)
-		return err
+		return sharedErrors.HandleGlobalError(err, globalFlags.Global.Verbose)
 	}
 	
 	// Show friendly success message

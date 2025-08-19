@@ -141,7 +141,7 @@ func (i *Installer) CheckAndInstall() error {
 		fmt.Println()
 
 		// Single confirmation using shared UI
-		confirmed, err := ui.ConfirmAction("Would you like me to install them automatically?")
+		confirmed, err := ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
 		if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
 			return err
 		}

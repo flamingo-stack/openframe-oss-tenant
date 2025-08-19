@@ -50,19 +50,25 @@ func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) 
 		// Execute the command
 		err := runFunc(cmd, args)
 		if err != nil {
+			// Check if error has already been handled by global error handler
+			if alreadyHandledErr, isAlreadyHandled := err.(*errors.AlreadyHandledError); isAlreadyHandled {
+				// Error has already been displayed by HandleGlobalError
+				// Return the original error so test framework can detect failure
+				return alreadyHandledErr.OriginalError
+			}
+			
 			// Handle error with proper context - show user-friendly message
 			verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
 			handler := errors.NewErrorHandler(verbose)
 			handler.HandleError(err)
 			
-			// Return the error for validation errors and "not found" errors to preserve exit codes for automation
-			// This ensures scripts and tests can detect failures while users still see friendly messages
+			// For validation errors and critical failures, return error for proper exit code
 			if errors.IsValidationError(err) || 
 			   strings.Contains(err.Error(), "not found") ||
 			   strings.Contains(err.Error(), "cluster create operation failed") ||
 			   strings.Contains(err.Error(), "cluster name") ||  // Cluster name validation errors
 			   strings.Contains(err.Error(), "node count must") { // Node count validation errors
-				return err
+				return err // Return error for proper exit code
 			}
 			
 			// For other errors, return nil to prevent Cobra double-printing
