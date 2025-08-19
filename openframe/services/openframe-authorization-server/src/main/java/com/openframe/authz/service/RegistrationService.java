@@ -40,9 +40,7 @@ public class RegistrationService {
                 request.getPassword()
         );
 
-        if (tenant.getOwnerId() == null) {
-            tenant.setOwnerId(user.getId());
-        }
+        tenant.setOwnerId(user.getId());
 
         return tenantService.save(tenant);
     }
