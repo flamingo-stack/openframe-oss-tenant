@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"time"
 )
 
 type DockerInstaller struct{}
@@ -15,12 +16,23 @@ func commandExists(cmd string) bool {
 }
 
 func isDockerInstalled() bool {
+	// Just check if docker command exists, don't try to connect to daemon
+	return commandExists("docker")
+}
+
+func IsDockerRunning() bool {
 	if !commandExists("docker") {
 		return false
 	}
-	cmd := exec.Command("docker", "version")
+	// Check if Docker daemon is accessible by running docker ps
+	cmd := exec.Command("docker", "ps")
 	err := cmd.Run()
 	return err == nil
+}
+
+func IsDockerInstalledButNotRunning() bool {
+	// Docker command exists but daemon is not accessible
+	return isDockerInstalled() && !IsDockerRunning()
 }
 
 func dockerInstallHelp() string {
@@ -250,4 +262,83 @@ func (d *DockerInstaller) runShellCommand(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	// Completely silence output during installation
 	return cmd.Run()
+}
+
+// StartDocker attempts to start Docker based on the operating system
+func StartDocker() error {
+	switch runtime.GOOS {
+	case "darwin":
+		return startDockerMacOS()
+	case "linux":
+		return startDockerLinux()
+	case "windows":
+		return startDockerWindows()
+	default:
+		return fmt.Errorf("starting Docker is not supported on %s", runtime.GOOS)
+	}
+}
+
+func startDockerMacOS() error {
+	// Try to start Docker Desktop on macOS
+	cmd := exec.Command("open", "-a", "Docker")
+	if err := cmd.Run(); err != nil {
+		// Try alternative command
+		cmd = exec.Command("open", "/Applications/Docker.app")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to start Docker Desktop: %w", err)
+		}
+	}
+	return nil
+}
+
+func startDockerLinux() error {
+	// Try to start Docker daemon on Linux
+	// First check if systemctl exists (systemd)
+	if commandExists("systemctl") {
+		cmd := exec.Command("sudo", "systemctl", "start", "docker")
+		if err := cmd.Run(); err != nil {
+			// Try without sudo in case user has permissions
+			cmd = exec.Command("systemctl", "start", "docker")
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("failed to start Docker daemon with systemctl: %w", err)
+			}
+		}
+		return nil
+	}
+	
+	// Try service command (older systems)
+	if commandExists("service") {
+		cmd := exec.Command("sudo", "service", "docker", "start")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to start Docker daemon with service: %w", err)
+		}
+		return nil
+	}
+	
+	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
+}
+
+func startDockerWindows() error {
+	// Try to start Docker Desktop on Windows
+	cmd := exec.Command("cmd", "/c", "start", "", "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe")
+	if err := cmd.Run(); err != nil {
+		// Try alternative path
+		cmd = exec.Command("powershell", "-Command", "Start-Process", "'Docker Desktop'")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to start Docker Desktop: %w", err)
+		}
+	}
+	return nil
+}
+
+// WaitForDocker waits for Docker daemon to become available
+func WaitForDocker() error {
+	maxAttempts := 30 // 30 seconds timeout
+	for i := 0; i < maxAttempts; i++ {
+		if IsDockerRunning() {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return fmt.Errorf("timeout waiting for Docker to start")
 }

@@ -12,9 +12,8 @@ all: build
 ## Build the CLI binary
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@mkdir -p $(BUILD_DIR)
-	@go build -o $(BUILD_DIR)/$(BINARY_NAME) .
-	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
+	@go build -o $(BINARY_NAME) .
+	@echo "Built ./$(BINARY_NAME)"
 
 ## Run unit tests
 test-unit:
@@ -36,6 +35,8 @@ test: test-all
 ## Clean build artifacts
 clean:
 	@rm -rf $(BUILD_DIR)
+	@rm -f $(BINARY_NAME)
+	@echo "Cleaned build artifacts"
 
 ## Show help
 help:

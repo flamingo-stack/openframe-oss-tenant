@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/flamingo/openframe/internal/cluster/models"
+	"github.com/flamingo/openframe/internal/shared/errors"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
@@ -80,7 +81,7 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, ar
 		// Ask for confirmation unless forced
 		if !force {
 			confirmed, err := ui.confirmDeletion(clusterName)
-			if err != nil {
+			if err := errors.WrapConfirmationError(err, "failed to get deletion confirmation"); err != nil {
 				return "", err
 			}
 			if !confirmed {
@@ -111,7 +112,7 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, ar
 	// Ask for confirmation unless forced
 	if !force {
 		confirmed, err := ui.confirmDeletion(clusterName)
-		if err != nil {
+		if err := errors.WrapConfirmationError(err, "failed to get deletion confirmation"); err != nil {
 			return "", err
 		}
 		if !confirmed {

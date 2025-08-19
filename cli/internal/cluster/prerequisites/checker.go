@@ -25,8 +25,13 @@ func NewPrerequisiteChecker() *PrerequisiteChecker {
 			{
 				Name:        "Docker",
 				Command:     "docker",
-				IsInstalled: func() bool { return docker.NewDockerInstaller().IsInstalled() },
-				InstallHelp: func() string { return docker.NewDockerInstaller().GetInstallHelp() },
+				IsInstalled: func() bool { return docker.IsDockerRunning() },
+				InstallHelp: func() string { 
+					if !docker.NewDockerInstaller().IsInstalled() {
+						return docker.NewDockerInstaller().GetInstallHelp()
+					}
+					return "Docker is installed but not running. Please start Docker Desktop or the Docker daemon."
+				},
 			},
 			{
 				Name:        "kubectl",

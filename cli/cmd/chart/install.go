@@ -1,6 +1,8 @@
 package chart
 
 import (
+	"errors"
+	
 	"github.com/flamingo/openframe/internal/chart"
 	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/chart/prerequisites"
@@ -71,5 +73,14 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 	service := chart.NewChartService(exec)
 
 	// Execute install
-	return service.InstallCharts(config)
+	err := service.InstallCharts(config)
+	if err != nil {
+		// Error already displayed by service layer, just exit without printing again
+		if errors.Is(err, models.ErrClusterNotFound) {
+			return nil
+		}
+		// For other errors, return them to be displayed
+		return err
+	}
+	return nil
 }

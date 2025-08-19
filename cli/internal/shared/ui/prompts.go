@@ -1,38 +1,76 @@
 package ui
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
+	"golang.org/x/term"
 )
 
-// ConfirmAction prompts the user to confirm an action
+// ConfirmAction prompts the user to confirm an action with friendly UX:
+// - Enter = yes (default)
+// - y = yes (immediate, no Enter needed)  
+// - n = no (immediate, no Enter needed)
 func ConfirmAction(message string) (bool, error) {
-	prompt := promptui.Prompt{
-		Label:     message + " (Y/n)",
-		IsConfirm: false,
-		Default:   "Y",
-		Validate: func(input string) error {
-			input = strings.ToLower(strings.TrimSpace(input))
-			if input == "" || input == "y" || input == "yes" || input == "n" || input == "no" {
-				return nil
-			}
-			return fmt.Errorf("please enter Y/y/yes or N/n/no")
-		},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		if err == promptui.ErrAbort {
-			return false, nil
+	fmt.Printf("%s (Y/n): ", pterm.Bold.Sprint(message))
+	
+	// Get the file descriptor for stdin
+	fd := int(os.Stdin.Fd())
+	
+	// Check if stdin is a terminal
+	if !term.IsTerminal(fd) {
+		// Fallback for non-terminal input (like pipes/tests)
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return false, err
 		}
+		input = strings.ToLower(strings.TrimSpace(input))
+		return input == "" || input == "y" || input == "yes", nil
+	}
+	
+	// Save the current terminal state
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
 		return false, err
 	}
-
-	result = strings.ToLower(strings.TrimSpace(result))
-	return result == "" || result == "y" || result == "yes", nil
+	
+	// Read single character
+	buf := make([]byte, 1)
+	for {
+		_, err := os.Stdin.Read(buf)
+		if err != nil {
+			term.Restore(fd, oldState)
+			return false, err
+		}
+		
+		char := buf[0]
+		
+		switch char {
+		case '\r', '\n': // Enter key
+			term.Restore(fd, oldState)
+			fmt.Println()
+			return true, nil // Default to yes
+		case 'y', 'Y':
+			term.Restore(fd, oldState)
+			fmt.Println("y")
+			return true, nil
+		case 'n', 'N':
+			term.Restore(fd, oldState)
+			fmt.Println("n")
+			return false, nil
+		case 3: // Ctrl+C
+			term.Restore(fd, oldState)
+			fmt.Println()
+			return false, fmt.Errorf("interrupted")
+		// Ignore other characters and continue reading
+		}
+	}
 }
 
 // SelectFromList prompts the user to select from a list of options

@@ -10,6 +10,7 @@ import (
 	"github.com/flamingo/openframe/internal/chart/prerequisites/git"
 	"github.com/flamingo/openframe/internal/chart/prerequisites/helm"
 	"github.com/flamingo/openframe/internal/chart/prerequisites/memory"
+	"github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
@@ -141,8 +142,8 @@ func (i *Installer) CheckAndInstall() error {
 
 		// Single confirmation using shared UI
 		confirmed, err := ui.ConfirmAction("Would you like me to install them automatically?")
-		if err != nil {
-			return fmt.Errorf("failed to get user confirmation: %w", err)
+		if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
+			return err
 		}
 
 		if confirmed {
@@ -153,7 +154,6 @@ func (i *Installer) CheckAndInstall() error {
 			// Show manual installation instructions and exit
 			fmt.Println()
 			pterm.Info.Println("Installation skipped. Here are manual installation instructions:")
-			fmt.Println()
 
 			// Get instructions for all prerequisites
 			allInstructions := []string{

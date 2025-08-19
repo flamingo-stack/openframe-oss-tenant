@@ -80,7 +80,10 @@ func (s *ChartService) InstallCharts(config models.ChartInstallConfig) error {
 func (s *ChartService) validateClusterExists(clusterName string) error {
 	clusters, err := s.clusterService.ListClusters()
 	if err != nil {
-		return fmt.Errorf("failed to list clusters: %w", err)
+		// When we can't list clusters (Docker not running, k3d not installed, etc),
+		// just show the "no clusters found" message to guide the user
+		pterm.Error.Println("No clusters found. Create a cluster first with: openframe cluster create")
+		return models.ErrClusterNotFound
 	}
 	
 	if len(clusters) == 0 {
