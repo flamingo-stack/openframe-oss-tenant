@@ -1,6 +1,6 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_installation_service::ToolInstallationService;
-use async_nats::jetstream::consumer::{DeliverPolicy, PushConsumer};
+use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
 use tokio::time::Duration;
 use anyhow::Result;
@@ -8,6 +8,7 @@ use async_nats::jetstream;
 use futures::StreamExt;
 use tracing::{error, info};
 use crate::services::AgentConfigurationService;
+use crate::models::tool_installation_message::ToolInstallationMessage;
 
 pub struct ToolInstallationMessageListener {
     pub nats_connection_manager: NatsConnectionManager,
@@ -55,22 +56,20 @@ impl ToolInstallationMessageListener {
             let message = message?;
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
+            let tool_id = tool_installation_message.tool_id.clone();
 
             match self.tool_installation_service.install(tool_installation_message).await {
                 Ok(_) => {
                     // ack
-                    info!("Acknowledging installation message for tool: {}", tool_installation_message.tool_id);
+                    info!("Acknowledging installation message for tool: {}", tool_id);
                     message.ack().await
                         .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                    info!("Installation message acknowledged for tool: {}", tool_installation_message.tool_id);
+                    info!("Installation message acknowledged for tool: {}", tool_id);
                 }
                 Err(e) => {
-                    // nack
-                    error!(error = ?e, "Failed to process tool installation message for tool: {}", tool_installation_message.tool_id);
-                    info!("Nacking installation message for tool: {}", tool_installation_message.tool_id);
-                    message.ack().await
-                        .map_err(|e| anyhow::anyhow!("Failed to nack message: {}", e))?;
-                    info!("Installation message nacked for tool: {}", tool_installation_message.tool_id);
+                    // do not ack: let message be redelivered per consumer ack policy
+                    error!(error = ?e, "Failed to process tool installation message for tool: {}", tool_id);
+                    info!("Leaving message unacked for potential redelivery: tool {}", tool_id);
                 }
             }
         }
