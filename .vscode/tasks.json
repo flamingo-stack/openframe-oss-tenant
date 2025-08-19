@@ -106,7 +106,7 @@
                     "VITE_GATEWAY_URL": "http://openframe-gateway.microservices:8100",
                     "VITE_CLIENT_ID": "openframe_web_dashboard",
                     "VITE_CLIENT_SECRET": "prod_secret",
-                    "VITE_GRAFANA_URL": "http://localhost:3000"
+                    "VITE_GRAFANA_URL": "https://localhost:3000"
                 }
             },
             "isBackground": true,

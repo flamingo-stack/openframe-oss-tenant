@@ -82,10 +82,9 @@ export interface IntegratedTool {
     allowedEndpoints?: string[];
 }
 
-export interface ToolFilter {
+export interface ToolFilterInput {
     enabled?: boolean;
     type?: string;
-    search?: string;
     category?: string;
     platformCategory?: string;
 }
@@ -104,7 +103,7 @@ export interface PaginationInput {
     pageSize: number;
 }
 
-export interface FilterOption {
+export interface DeviceFilterOption {
     value: string;
     count: number;
 }
@@ -116,10 +115,10 @@ export interface TagFilterOption {
 }
 
 export interface DeviceFilters {
-    statuses: FilterOption[];
-    deviceTypes: FilterOption[];
-    osTypes: FilterOption[];
-    organizationIds: FilterOption[];
+    statuses: DeviceFilterOption[];
+    deviceTypes: DeviceFilterOption[];
+    osTypes: DeviceFilterOption[];
+    organizationIds: DeviceFilterOption[];
     tags: TagFilterOption[];
     filteredCount: number;
 }
@@ -161,6 +160,14 @@ export interface Machine {
 
 export interface DeviceEdge {
     node: Machine;
+    cursor: string;
+}
+
+export interface CursorPageInfo {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
 }
 
 export interface PageInfo {
@@ -172,6 +179,65 @@ export interface PageInfo {
 
 export interface DeviceConnection {
     edges: DeviceEdge[];
-    pageInfo: PageInfo;
+    pageInfo: CursorPageInfo;
     filteredCount: number;
+}
+
+// Log-related GraphQL types
+export interface LogFilterInput {
+    startDate?: string;
+    endDate?: string;
+    eventType?: string;
+    toolType?: string;
+    severity?: string;
+    userId?: string;
+    deviceId?: string;
+}
+
+export interface LogEvent {
+    toolEventId: string;
+    eventType: string;
+    ingestDay: string;
+    toolType: string;
+    severity: string;
+    userId?: string;
+    deviceId?: string;
+    summary?: string;
+    timestamp: string;
+}
+
+export interface LogEdge {
+    node: LogEvent;
+    cursor: string;
+}
+
+export interface LogPageInfo {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
+}
+
+export interface LogConnection {
+    edges: LogEdge[];
+    pageInfo: LogPageInfo;
+}
+
+export interface LogFilters {
+    toolTypes: string[];
+    eventTypes: string[];
+    severities: string[];
+}
+
+export interface LogDetails {
+    toolEventId: string;
+    eventType: string;
+    ingestDay: string;
+    toolType: string;
+    severity: string;
+    userId?: string;
+    deviceId?: string;
+    message?: string;
+    timestamp: string;
+    details?: string;
 } 

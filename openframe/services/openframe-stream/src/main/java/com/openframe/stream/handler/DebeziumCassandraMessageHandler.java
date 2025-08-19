@@ -5,19 +5,27 @@ import com.openframe.data.model.cassandra.UnifiedLogEvent;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.Destination;
+import com.openframe.data.model.enums.EventHandlerType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.repository.CassandraRepository;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
 @Slf4j
-public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<UnifiedLogEvent, DeserializedDebeziumMessage> {
+@Component
+public class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<UnifiedLogEvent, DeserializedDebeziumMessage> {
 
     private final CassandraRepository repository;
 
     protected DebeziumCassandraMessageHandler(CassandraRepository repository, ObjectMapper objectMapper) {
         super(objectMapper);
         this.repository = repository;
+    }
+
+    @Override
+    public EventHandlerType getType() {
+        return EventHandlerType.COMMON_TYPE;
     }
 
     @Override
@@ -46,7 +54,7 @@ public abstract class DebeziumCassandraMessageHandler extends DebeziumMessageHan
 
     protected UnifiedLogEvent.UnifiedLogEventKey createKey(DeserializedDebeziumMessage debeziumMessage) {
         UnifiedLogEvent.UnifiedLogEventKey key = new UnifiedLogEvent.UnifiedLogEventKey();
-        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getPayload().getTimestamp());
+        Instant timestamp = Instant.ofEpochMilli(debeziumMessage.getEventTimestamp());
 
         key.setIngestDay(debeziumMessage.getIngestDay());
         key.setToolType(debeziumMessage.getIntegratedToolType().name());

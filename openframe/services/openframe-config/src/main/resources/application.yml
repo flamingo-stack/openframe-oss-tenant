@@ -18,7 +18,7 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/Flamingo-CX/openframe-config
+          uri: https://github.com/Flamingo-CX/${CONFIG_GIT_REPO:openframe-config}
           clone-on-start: true
           default-label: ${CONFIG_GIT_BRANCH:main}
 
