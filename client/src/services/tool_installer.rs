@@ -19,7 +19,8 @@ impl ToolInstaller {
     pub async fn install(&self, tool_id: String, file_bytes: Bytes) -> anyhow::Result<ToolInstallationResult> {
         let tool_folder_path = self.directory_manager.app_support_dir();
         let file_path = tool_folder_path.join(tool_id.clone() + "_agent");
-        File::create(file_path).await?
+        let result = File::create(file_path).await;
+        result?
             .write_all(&file_bytes).await?;
 
         // Run command to install tool if needed

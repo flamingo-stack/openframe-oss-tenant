@@ -6,8 +6,7 @@ use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
-use tracing::info;
-use crate::models::ToolInstallationMessage;
+use tracing::{error, info};
 use crate::services::AgentConfigurationService;
 
 pub struct ToolInstallationMessageListener {
@@ -57,11 +56,23 @@ impl ToolInstallationMessageListener {
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
 
-            // TODO: add error handling
-            self.tool_installation_service.install(tool_installation_message).await?;
-
-            message.ack().await
-                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+            match self.tool_installation_service.install(tool_installation_message).await {
+                Ok(_) => {
+                    // ack
+                    info!("Acknowledging installation message for tool: {}", tool_installation_message.tool_id);
+                    message.ack().await
+                        .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+                    info!("Installation message acknowledged for tool: {}", tool_installation_message.tool_id);
+                }
+                Err(e) => {
+                    // nack
+                    error!(error = ?e, "Failed to process tool installation message for tool: {}", tool_installation_message.tool_id);
+                    info!("Nacking installation message for tool: {}", tool_installation_message.tool_id);
+                    message.ack().await
+                        .map_err(|e| anyhow::anyhow!("Failed to nack message: {}", e))?;
+                    info!("Installation message nacked for tool: {}", tool_installation_message.tool_id);
+                }
+            }
         }
         Ok(())
     }
