@@ -3,19 +3,19 @@ package ui
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
 // Use domain types for consistency - no duplicate definitions needed
-type ClusterType = domain.ClusterType
-type ClusterInfo = domain.ClusterInfo
+type ClusterType = models.ClusterType
+type ClusterInfo = models.ClusterInfo
 
 // Re-export domain constants for UI convenience
 const (
-	ClusterTypeK3d = domain.ClusterTypeK3d
-	ClusterTypeGKE = domain.ClusterTypeGKE
+	ClusterTypeK3d = models.ClusterTypeK3d
+	ClusterTypeGKE = models.ClusterTypeGKE
 )
 
 // UI should not depend on business logic interfaces

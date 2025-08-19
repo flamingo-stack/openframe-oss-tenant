@@ -1,7 +1,7 @@
 package chart
 
 import (
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/chart/utils"
 	"github.com/flamingo/openframe/internal/shared/ui"
@@ -47,7 +47,7 @@ Examples:
 	)
 
 	// Add global flags
-	domain.AddGlobalFlags(chartCmd, utils.GetGlobalFlags().Global)
+	models.AddGlobalFlags(chartCmd, utils.GetGlobalFlags().Global)
 
 	return chartCmd
 }

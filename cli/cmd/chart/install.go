@@ -2,7 +2,7 @@ package chart
 
 import (
 	"github.com/flamingo/openframe/internal/chart"
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/chart/utils"
 	"github.com/flamingo/openframe/internal/shared/executor"
@@ -58,7 +58,7 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create config
-	config := domain.ChartInstallConfig{
+	config := models.ChartInstallConfig{
 		ClusterName: clusterName,
 		Force:       force,
 		DryRun:      dryRun,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/chart/providers/argocd"
 	"github.com/flamingo/openframe/internal/chart/providers/helm"
 	chartUI "github.com/flamingo/openframe/internal/chart/ui"
@@ -45,7 +45,7 @@ func NewChartServiceWithClusterService(exec executor.CommandExecutor, clusterSer
 }
 
 // InstallCharts handles the chart installation process
-func (s *ChartService) InstallCharts(config domain.ChartInstallConfig) error {
+func (s *ChartService) InstallCharts(config models.ChartInstallConfig) error {
 	ctx := context.Background()
 	
 	// Step 1: Validate cluster exists
@@ -85,7 +85,7 @@ func (s *ChartService) validateClusterExists(clusterName string) error {
 	
 	if len(clusters) == 0 {
 		pterm.Error.Println("No clusters found. Create a cluster first with: openframe cluster create")
-		return domain.ErrClusterNotFound
+		return models.ErrClusterNotFound
 	}
 	
 	// If no specific cluster name provided, use the first available
@@ -116,8 +116,8 @@ func (s *ChartService) validateClusterExists(clusterName string) error {
 
 
 // installArgoCD handles ArgoCD installation
-func (s *ChartService) installArgoCD(ctx context.Context, config domain.ChartInstallConfig) error {
-	s.displayService.ShowInstallProgress(domain.ChartTypeArgoCD, "Installing ArgoCD...")
+func (s *ChartService) installArgoCD(ctx context.Context, config models.ChartInstallConfig) error {
+	s.displayService.ShowInstallProgress(models.ChartTypeArgoCD, "Installing ArgoCD...")
 	
 	if config.DryRun {
 		pterm.Info.Println("DRY RUN: Would install ArgoCD")
@@ -126,20 +126,20 @@ func (s *ChartService) installArgoCD(ctx context.Context, config domain.ChartIns
 	
 	err := s.helmManager.InstallArgoCD(ctx, config)
 	if err != nil {
-		s.displayService.ShowInstallError(domain.ChartTypeArgoCD, err)
+		s.displayService.ShowInstallError(models.ChartTypeArgoCD, err)
 		return err
 	}
 	
 	// Get and show status
 	info, _ := s.helmManager.GetChartStatus(ctx, "argo-cd", "argocd")
-	s.displayService.ShowInstallSuccess(domain.ChartTypeArgoCD, info)
+	s.displayService.ShowInstallSuccess(models.ChartTypeArgoCD, info)
 	
 	return nil
 }
 
 // installAppOfApps handles app-of-apps installation
-func (s *ChartService) installAppOfApps(ctx context.Context, config domain.ChartInstallConfig) error {
-	s.displayService.ShowInstallProgress(domain.ChartTypeAppOfApps, "Installing app-of-apps...")
+func (s *ChartService) installAppOfApps(ctx context.Context, config models.ChartInstallConfig) error {
+	s.displayService.ShowInstallProgress(models.ChartTypeAppOfApps, "Installing app-of-apps...")
 	
 	if config.DryRun {
 		pterm.Info.Println("DRY RUN: Would install app-of-apps")
@@ -148,13 +148,13 @@ func (s *ChartService) installAppOfApps(ctx context.Context, config domain.Chart
 	
 	err := s.helmManager.InstallAppOfApps(ctx, config)
 	if err != nil {
-		s.displayService.ShowInstallError(domain.ChartTypeAppOfApps, err)
+		s.displayService.ShowInstallError(models.ChartTypeAppOfApps, err)
 		return err
 	}
 	
 	// Get and show status
 	info, _ := s.helmManager.GetChartStatus(ctx, "app-of-apps", "argocd")
-	s.displayService.ShowInstallSuccess(domain.ChartTypeAppOfApps, info)
+	s.displayService.ShowInstallSuccess(models.ChartTypeAppOfApps, info)
 	
 	return nil
 }

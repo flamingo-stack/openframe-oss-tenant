@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
-	clusterDomain "github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
+	clusterDomain "github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 )
@@ -167,7 +167,7 @@ func TestChartService_InstallCharts_DryRun(t *testing.T) {
 
 	service := NewChartServiceWithClusterService(mockExec, mockClusterService)
 
-	config := domain.ChartInstallConfig{
+	config := models.ChartInstallConfig{
 		ClusterName: "test-cluster",
 		DryRun:      true,
 	}
@@ -195,7 +195,7 @@ func TestChartService_InstallCharts_OpenFrameChart(t *testing.T) {
 
 	service := NewChartServiceWithClusterService(mockExec, mockClusterService)
 
-	config := domain.ChartInstallConfig{
+	config := models.ChartInstallConfig{
 		ClusterName: "test-cluster",
 		DryRun:      true,
 	}
@@ -222,7 +222,7 @@ func TestChartService_InstallCharts_HelmNotFound(t *testing.T) {
 
 	service := NewChartServiceWithClusterService(mockExec, mockClusterService)
 
-	config := domain.ChartInstallConfig{
+	config := models.ChartInstallConfig{
 		ClusterName: "test-cluster",
 	}
 

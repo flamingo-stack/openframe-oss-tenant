@@ -5,7 +5,7 @@ import (
 	"sync"
 	
 	"github.com/flamingo/openframe/internal/cluster"
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/flamingo/openframe/internal/shared/ui"
@@ -82,7 +82,7 @@ func SyncGlobalFlags() {
 // ValidateGlobalFlags validates global flags
 func ValidateGlobalFlags() error {
 	if globalFlags != nil && globalFlags.Global != nil {
-		return domain.ValidateGlobalFlags(globalFlags.Global)
+		return models.ValidateGlobalFlags(globalFlags.Global)
 	}
 	return nil
 }

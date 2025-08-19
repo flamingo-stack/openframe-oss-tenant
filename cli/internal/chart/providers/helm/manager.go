@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
@@ -25,7 +25,7 @@ func NewHelmManager(exec executor.CommandExecutor) *HelmManager {
 func (h *HelmManager) IsHelmInstalled(ctx context.Context) error {
 	_, err := h.executor.Execute(ctx, "helm", "version", "--short")
 	if err != nil {
-		return domain.ErrHelmNotFound
+		return models.ErrHelmNotFound
 	}
 	return nil
 }
@@ -54,7 +54,7 @@ func (h *HelmManager) IsChartInstalled(ctx context.Context, releaseName, namespa
 
 
 // InstallArgoCD installs ArgoCD using Helm with exact commands specified
-func (h *HelmManager) InstallArgoCD(ctx context.Context, config domain.ChartInstallConfig) error {
+func (h *HelmManager) InstallArgoCD(ctx context.Context, config models.ChartInstallConfig) error {
 	// Add ArgoCD Helm repository
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
@@ -91,7 +91,7 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config domain.ChartInst
 }
 
 // InstallAppOfApps installs the app-of-apps chart
-func (h *HelmManager) InstallAppOfApps(ctx context.Context, config domain.ChartInstallConfig) error {
+func (h *HelmManager) InstallAppOfApps(ctx context.Context, config models.ChartInstallConfig) error {
 	// Install app-of-apps chart
 	args := []string{
 		"upgrade", "--install", "app-of-apps", "./manifests/app-of-apps",
@@ -114,17 +114,17 @@ func (h *HelmManager) InstallAppOfApps(ctx context.Context, config domain.ChartI
 }
 
 // GetChartStatus returns the status of a chart
-func (h *HelmManager) GetChartStatus(ctx context.Context, releaseName, namespace string) (domain.ChartInfo, error) {
+func (h *HelmManager) GetChartStatus(ctx context.Context, releaseName, namespace string) (models.ChartInfo, error) {
 	args := []string{"status", releaseName, "-n", namespace, "--output", "json"}
 	
 	_, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
-		return domain.ChartInfo{}, fmt.Errorf("failed to get chart status: %w", err)
+		return models.ChartInfo{}, fmt.Errorf("failed to get chart status: %w", err)
 	}
 	
 	// Parse JSON output and return chart info
 	// For now, return basic info
-	return domain.ChartInfo{
+	return models.ChartInfo{
 		Name:      releaseName,
 		Namespace: namespace,
 		Status:    "deployed", // Parse from JSON

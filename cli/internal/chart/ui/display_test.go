@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,18 +20,18 @@ func TestDisplayService_ShowInstallProgress(t *testing.T) {
 	
 	// Should not panic
 	assert.NotPanics(t, func() {
-		service.ShowInstallProgress(domain.ChartTypeArgoCD, "Installing ArgoCD...")
+		service.ShowInstallProgress(models.ChartTypeArgoCD, "Installing ArgoCD...")
 	})
 	
 	assert.NotPanics(t, func() {
-		service.ShowInstallProgress(domain.ChartTypeAppOfApps, "Installing app-of-apps...")
+		service.ShowInstallProgress(models.ChartTypeAppOfApps, "Installing app-of-apps...")
 	})
 }
 
 func TestDisplayService_ShowInstallSuccess(t *testing.T) {
 	service := NewDisplayService()
 	
-	chartInfo := domain.ChartInfo{
+	chartInfo := models.ChartInfo{
 		Name:       "test-chart",
 		Namespace:  "test-namespace",
 		Status:     "deployed",
@@ -41,11 +41,11 @@ func TestDisplayService_ShowInstallSuccess(t *testing.T) {
 	
 	// Should not panic
 	assert.NotPanics(t, func() {
-		service.ShowInstallSuccess(domain.ChartTypeArgoCD, chartInfo)
+		service.ShowInstallSuccess(models.ChartTypeArgoCD, chartInfo)
 	})
 	
 	assert.NotPanics(t, func() {
-		service.ShowInstallSuccess(domain.ChartTypeAppOfApps, chartInfo)
+		service.ShowInstallSuccess(models.ChartTypeAppOfApps, chartInfo)
 	})
 }
 
@@ -56,11 +56,11 @@ func TestDisplayService_ShowInstallError(t *testing.T) {
 	
 	// Should not panic
 	assert.NotPanics(t, func() {
-		service.ShowInstallError(domain.ChartTypeArgoCD, testErr)
+		service.ShowInstallError(models.ChartTypeArgoCD, testErr)
 	})
 	
 	assert.NotPanics(t, func() {
-		service.ShowInstallError(domain.ChartTypeAppOfApps, testErr)
+		service.ShowInstallError(models.ChartTypeAppOfApps, testErr)
 	})
 }
 
@@ -137,6 +137,6 @@ func TestDisplayService_ShowDryRunResults_SingleResult(t *testing.T) {
 
 func TestChartTypeStrings(t *testing.T) {
 	// Test that chart types can be converted to strings properly
-	assert.Equal(t, "argocd", string(domain.ChartTypeArgoCD))
-	assert.Equal(t, "app-of-apps", string(domain.ChartTypeAppOfApps))
+	assert.Equal(t, "argocd", string(models.ChartTypeArgoCD))
+	assert.Equal(t, "app-of-apps", string(models.ChartTypeAppOfApps))
 }

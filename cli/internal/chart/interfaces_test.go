@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	clusterDomain "github.com/flamingo/openframe/internal/cluster/domain"
+	clusterDomain "github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 

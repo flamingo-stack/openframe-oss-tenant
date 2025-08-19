@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/cluster/k3d"
+	"github.com/flamingo/openframe/internal/cluster/models"
+	"github.com/flamingo/openframe/internal/cluster/providers/k3d"
 	uiCluster "github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
@@ -48,7 +48,7 @@ func NewClusterServiceWithOptions(exec executor.CommandExecutor, manager *k3d.K3
 }
 
 // CreateCluster handles cluster creation operations
-func (s *ClusterService) CreateCluster(config domain.ClusterConfig) error {
+func (s *ClusterService) CreateCluster(config models.ClusterConfig) error {
 	ctx := context.Background()
 	
 	// Check if cluster already exists
@@ -111,7 +111,7 @@ func (s *ClusterService) CreateCluster(config domain.ClusterConfig) error {
 }
 
 // DeleteCluster handles cluster deletion business logic
-func (s *ClusterService) DeleteCluster(name string, clusterType domain.ClusterType, force bool) error {
+func (s *ClusterService) DeleteCluster(name string, clusterType models.ClusterType, force bool) error {
 	ctx := context.Background()
 	
 	// Show deletion progress
@@ -132,27 +132,27 @@ func (s *ClusterService) DeleteCluster(name string, clusterType domain.ClusterTy
 
 
 // ListClusters handles cluster listing business logic
-func (s *ClusterService) ListClusters() ([]domain.ClusterInfo, error) {
+func (s *ClusterService) ListClusters() ([]models.ClusterInfo, error) {
 	ctx := context.Background()
 	return s.manager.ListAllClusters(ctx)
 }
 
 // GetClusterStatus handles cluster status business logic
-func (s *ClusterService) GetClusterStatus(name string) (domain.ClusterInfo, error) {
+func (s *ClusterService) GetClusterStatus(name string) (models.ClusterInfo, error) {
 	ctx := context.Background()
 	return s.manager.GetClusterStatus(ctx, name)
 }
 
 // DetectClusterType handles cluster type detection business logic
-func (s *ClusterService) DetectClusterType(name string) (domain.ClusterType, error) {
+func (s *ClusterService) DetectClusterType(name string) (models.ClusterType, error) {
 	ctx := context.Background()
 	return s.manager.DetectClusterType(ctx, name)
 }
 
 // CleanupCluster handles cluster cleanup business logic
-func (s *ClusterService) CleanupCluster(name string, clusterType domain.ClusterType, verbose bool) error {
+func (s *ClusterService) CleanupCluster(name string, clusterType models.ClusterType, verbose bool) error {
 	switch clusterType {
-	case domain.ClusterTypeK3d:
+	case models.ClusterTypeK3d:
 		return s.cleanupK3dCluster(name, verbose)
 	default:
 		return fmt.Errorf("cleanup not supported for cluster type: %s", clusterType)
@@ -167,7 +167,7 @@ func (s *ClusterService) cleanupK3dCluster(clusterName string, verbose bool) err
 }
 
 // displayClusterCreationSummary displays a summary after cluster creation
-func (s *ClusterService) displayClusterCreationSummary(info domain.ClusterInfo) {
+func (s *ClusterService) displayClusterCreationSummary(info models.ClusterInfo) {
 	fmt.Println()
 	
 	// Create a clean box for the summary
@@ -262,7 +262,7 @@ func (s *ClusterService) ShowClusterStatus(name string, detailed bool, skipApps 
 }
 
 // displayDetailedClusterStatus shows comprehensive cluster information
-func (s *ClusterService) displayDetailedClusterStatus(status domain.ClusterInfo, detailed bool, verbose bool) {
+func (s *ClusterService) displayDetailedClusterStatus(status models.ClusterInfo, detailed bool, verbose bool) {
 	fmt.Println()
 	
 	// Main cluster information box
@@ -333,7 +333,7 @@ func (s *ClusterService) displayDetailedClusterStatus(status domain.ClusterInfo,
 }
 
 // DisplayClusterList handles cluster list display logic
-func (s *ClusterService) DisplayClusterList(clusters []domain.ClusterInfo, quiet bool, verbose bool) error {
+func (s *ClusterService) DisplayClusterList(clusters []models.ClusterInfo, quiet bool, verbose bool) error {
 	if len(clusters) == 0 {
 		if quiet {
 			// In quiet mode, just exit silently if no clusters

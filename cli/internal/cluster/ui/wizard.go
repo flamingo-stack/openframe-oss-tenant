@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )
@@ -12,7 +12,7 @@ import (
 // ClusterConfig holds cluster configuration for wizard
 type ClusterConfig struct {
 	Name       string
-	Type       domain.ClusterType
+	Type       models.ClusterType
 	NodeCount  int
 	K8sVersion string
 }
@@ -27,7 +27,7 @@ func NewConfigWizard() *ConfigWizard {
 	return &ConfigWizard{
 		config: ClusterConfig{
 			Name:       "openframe-dev",
-			Type:       domain.ClusterTypeK3d,
+			Type:       models.ClusterTypeK3d,
 			NodeCount:  3,
 			K8sVersion: "latest",
 		},
@@ -35,7 +35,7 @@ func NewConfigWizard() *ConfigWizard {
 }
 
 // SetDefaults sets the default values for the wizard
-func (w *ConfigWizard) SetDefaults(name string, clusterType domain.ClusterType, nodeCount int, k8sVersion string) {
+func (w *ConfigWizard) SetDefaults(name string, clusterType models.ClusterType, nodeCount int, k8sVersion string) {
 	w.config.Name = name
 	w.config.Type = clusterType
 	w.config.NodeCount = nodeCount
@@ -79,7 +79,7 @@ func (w *ConfigWizard) Run() (ClusterConfig, error) {
 	w.config.K8sVersion = k8sVersion
 
 	// Step 5: Confirmation
-	domainConfig := domain.ClusterConfig{
+	domainConfig := models.ClusterConfig{
 		Name:       w.config.Name,
 		Type:       w.config.Type,
 		NodeCount:  w.config.NodeCount,
@@ -100,9 +100,9 @@ func (w *ConfigWizard) Run() (ClusterConfig, error) {
 
 
 // SelectCluster provides interactive cluster selection
-func SelectCluster(clusters []domain.ClusterInfo, message string) (domain.ClusterInfo, error) {
+func SelectCluster(clusters []models.ClusterInfo, message string) (models.ClusterInfo, error) {
 	if len(clusters) == 0 {
-		return domain.ClusterInfo{}, errors.New("No clusters found")
+		return models.ClusterInfo{}, errors.New("No clusters found")
 	}
 
 	items := make([]string, len(clusters))
@@ -122,14 +122,14 @@ func SelectCluster(clusters []domain.ClusterInfo, message string) (domain.Cluste
 
 	idx, _, err := prompt.Run()
 	if err != nil {
-		return domain.ClusterInfo{}, err
+		return models.ClusterInfo{}, err
 	}
 
 	return clusters[idx], nil
 }
 
 // formatClusterOption formats a cluster for display in selection lists
-func formatClusterOption(clusterInfo domain.ClusterInfo) string {
+func formatClusterOption(clusterInfo models.ClusterInfo) string {
 	return pterm.Sprintf("%s - %s",
 		clusterInfo.Name,
 		clusterInfo.Status)
@@ -144,11 +144,11 @@ func NewConfigurationHandler() *ConfigurationHandler {
 }
 
 // GetClusterConfig handles the complete cluster configuration flow
-func (h *ConfigurationHandler) GetClusterConfig(clusterName string) (domain.ClusterConfig, error) {
+func (h *ConfigurationHandler) GetClusterConfig(clusterName string) (models.ClusterConfig, error) {
 	// Show creation mode selection
 	modeChoice, err := h.showCreationModeSelection()
 	if err != nil {
-		return domain.ClusterConfig{}, err
+		return models.ClusterConfig{}, err
 	}
 	
 	if modeChoice == "quick" {
@@ -189,35 +189,35 @@ func (h *ConfigurationHandler) showCreationModeSelection() (string, error) {
 }
 
 // getQuickConfig creates a quick default configuration
-func (h *ConfigurationHandler) getQuickConfig(clusterName string) domain.ClusterConfig {
+func (h *ConfigurationHandler) getQuickConfig(clusterName string) models.ClusterConfig {
 	if clusterName == "" {
 		clusterName = "openframe-dev"
 	}
 	
-	return domain.ClusterConfig{
+	return models.ClusterConfig{
 		Name:       clusterName,
-		Type:       domain.ClusterTypeK3d,
+		Type:       models.ClusterTypeK3d,
 		K8sVersion: "latest",
 		NodeCount:  3,
 	}
 }
 
 // getWizardConfig runs the interactive configuration wizard
-func (h *ConfigurationHandler) getWizardConfig(clusterName string) (domain.ClusterConfig, error) {
+func (h *ConfigurationHandler) getWizardConfig(clusterName string) (models.ClusterConfig, error) {
 	wizard := NewConfigWizard()
 	
 	// Set defaults if cluster name provided
 	if clusterName != "" {
-		wizard.SetDefaults(clusterName, domain.ClusterTypeK3d, 3, "latest")
+		wizard.SetDefaults(clusterName, models.ClusterTypeK3d, 3, "latest")
 	}
 	
 	wizardConfig, err := wizard.Run()
 	if err != nil {
-		return domain.ClusterConfig{}, err
+		return models.ClusterConfig{}, err
 	}
 	
 	// Convert wizard config to domain config
-	return domain.ClusterConfig{
+	return models.ClusterConfig{
 		Name:       wizardConfig.Name,
 		Type:       wizardConfig.Type,
 		K8sVersion: wizardConfig.K8sVersion,

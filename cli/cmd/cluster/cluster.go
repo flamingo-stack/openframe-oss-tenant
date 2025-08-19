@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/prerequisites"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/flamingo/openframe/internal/shared/ui"
@@ -52,7 +52,7 @@ Examples:
 	)
 
 	// Add global flags
-	domain.AddGlobalFlags(clusterCmd, utils.GetGlobalFlags().Global)
+	models.AddGlobalFlags(clusterCmd, utils.GetGlobalFlags().Global)
 
 	return clusterCmd
 }

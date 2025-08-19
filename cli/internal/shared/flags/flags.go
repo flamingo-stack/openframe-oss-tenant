@@ -5,7 +5,7 @@ import (
 )
 
 // CommonFlags contains common flags for non-cluster commands
-// For cluster-specific flags, use internal/cluster/domain.GlobalFlags
+// For cluster-specific flags, use internal/cluster/models.GlobalFlags
 type CommonFlags struct {
 	Verbose bool
 	DryRun  bool

@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +31,7 @@ Examples:
 			}
 			globalFlags := utils.GetGlobalFlags()
 			if globalFlags != nil && globalFlags.List != nil {
-				return domain.ValidateListFlags(globalFlags.List)
+				return models.ValidateListFlags(globalFlags.List)
 			}
 			return nil
 		},
@@ -41,7 +41,7 @@ Examples:
 	// Add list-specific flags
 	globalFlags := utils.GetGlobalFlags()
 	if globalFlags != nil && globalFlags.List != nil {
-		domain.AddListFlags(listCmd, globalFlags.List)
+		models.AddListFlags(listCmd, globalFlags.List)
 	}
 	
 	return listCmd

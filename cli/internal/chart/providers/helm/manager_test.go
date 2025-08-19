@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -101,7 +101,7 @@ func TestHelmManager_IsHelmInstalled(t *testing.T) {
 			
 			if tt.expectError {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, domain.ErrHelmNotFound)
+				assert.ErrorIs(t, err, models.ErrHelmNotFound)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -177,13 +177,13 @@ func TestHelmManager_IsChartInstalled(t *testing.T) {
 func TestHelmManager_InstallArgoCD(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      domain.ChartInstallConfig
+		config      models.ChartInstallConfig
 		setupMock   func(*MockExecutor)
 		expectError bool
 	}{
 		{
 			name: "successful installation",
-			config: domain.ChartInstallConfig{
+			config: models.ChartInstallConfig{
 				DryRun: false,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -193,7 +193,7 @@ func TestHelmManager_InstallArgoCD(t *testing.T) {
 		},
 		{
 			name: "dry run installation",
-			config: domain.ChartInstallConfig{
+			config: models.ChartInstallConfig{
 				DryRun: true,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -203,7 +203,7 @@ func TestHelmManager_InstallArgoCD(t *testing.T) {
 		},
 		{
 			name: "repo add fails",
-			config: domain.ChartInstallConfig{
+			config: models.ChartInstallConfig{
 				DryRun: false,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -257,13 +257,13 @@ func TestHelmManager_InstallArgoCD(t *testing.T) {
 func TestHelmManager_InstallAppOfApps(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      domain.ChartInstallConfig
+		config      models.ChartInstallConfig
 		setupMock   func(*MockExecutor)
 		expectError bool
 	}{
 		{
 			name: "successful installation",
-			config: domain.ChartInstallConfig{
+			config: models.ChartInstallConfig{
 				DryRun: false,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -273,7 +273,7 @@ func TestHelmManager_InstallAppOfApps(t *testing.T) {
 		},
 		{
 			name: "dry run installation",
-			config: domain.ChartInstallConfig{
+			config: models.ChartInstallConfig{
 				DryRun: true,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -283,7 +283,7 @@ func TestHelmManager_InstallAppOfApps(t *testing.T) {
 		},
 		{
 			name: "helm install fails",
-			config: domain.ChartInstallConfig{
+			config: models.ChartInstallConfig{
 				DryRun: false,
 			},
 			setupMock: func(m *MockExecutor) {

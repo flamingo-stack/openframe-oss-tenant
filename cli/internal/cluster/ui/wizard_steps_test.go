@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,9 +39,9 @@ func TestWizardSteps_ConfirmConfiguration(t *testing.T) {
 	})
 
 	t.Run("should handle valid configuration", func(t *testing.T) {
-		config := domain.ClusterConfig{
+		config := models.ClusterConfig{
 			Name:       "test-cluster",
-			Type:       domain.ClusterTypeK3d,
+			Type:       models.ClusterTypeK3d,
 			NodeCount:  3,
 			K8sVersion: "latest",
 		}

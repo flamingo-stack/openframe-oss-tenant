@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
@@ -29,7 +29,7 @@ func (ws *WizardSteps) PromptClusterName(defaultName string) (string, error) {
 				return err
 			}
 			// Then validate with domain rules
-			return domain.ValidateClusterName(strings.TrimSpace(input))
+			return models.ValidateClusterName(strings.TrimSpace(input))
 		},
 	}
 
@@ -42,7 +42,7 @@ func (ws *WizardSteps) PromptClusterName(defaultName string) (string, error) {
 }
 
 // PromptClusterType prompts for cluster type selection
-func (ws *WizardSteps) PromptClusterType() (domain.ClusterType, error) {
+func (ws *WizardSteps) PromptClusterType() (models.ClusterType, error) {
 	prompt := promptui.Select{
 		Label: "Cluster Type",
 		Items: []string{"k3d (Recommended for local development)", "gke (Google Kubernetes Engine - Coming Soon)"},
@@ -61,11 +61,11 @@ func (ws *WizardSteps) PromptClusterType() (domain.ClusterType, error) {
 
 	switch idx {
 	case 0:
-		return domain.ClusterTypeK3d, nil
+		return models.ClusterTypeK3d, nil
 	case 1:
-		return domain.ClusterTypeGKE, nil
+		return models.ClusterTypeGKE, nil
 	default:
-		return domain.ClusterTypeK3d, nil
+		return models.ClusterTypeK3d, nil
 	}
 }
 
@@ -114,7 +114,7 @@ func (ws *WizardSteps) PromptK8sVersion() (string, error) {
 }
 
 // ConfirmConfiguration shows configuration summary and asks for confirmation
-func (ws *WizardSteps) ConfirmConfiguration(config domain.ClusterConfig) (bool, error) {
+func (ws *WizardSteps) ConfirmConfiguration(config models.ClusterConfig) (bool, error) {
 	// Display configuration summary using common UI
 	data := [][]string{
 		{"Setting", "Value"},

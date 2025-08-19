@@ -3,7 +3,7 @@ package testutil
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestTestClusterConfig(t *testing.T) {
 	
 	assert.NotNil(t, config)
 	assert.Equal(t, "test-cluster", config.Name)
-	assert.Equal(t, domain.ClusterTypeK3d, config.Type)
+	assert.Equal(t, models.ClusterTypeK3d, config.Type)
 	assert.Equal(t, 3, config.NodeCount)
 	assert.Equal(t, "v1.28.0", config.K8sVersion)
 }
@@ -22,7 +22,7 @@ func TestTestClusterConfig_EmptyName(t *testing.T) {
 	
 	assert.NotNil(t, config)
 	assert.Equal(t, "", config.Name)
-	assert.Equal(t, domain.ClusterTypeK3d, config.Type)
+	assert.Equal(t, models.ClusterTypeK3d, config.Type)
 }
 
 func TestTestClusterConfig_DifferentInstances(t *testing.T) {

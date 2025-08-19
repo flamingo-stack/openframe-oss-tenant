@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
@@ -31,13 +31,13 @@ Examples:
 			if err := utils.ValidateGlobalFlags(); err != nil {
 				return err
 			}
-			return domain.ValidateStatusFlags(utils.GetGlobalFlags().Status)
+			return models.ValidateStatusFlags(utils.GetGlobalFlags().Status)
 		},
 		RunE: utils.WrapCommandWithCommonSetup(runClusterStatus),
 	}
 
 	// Add status-specific flags
-	domain.AddStatusFlags(statusCmd, utils.GetGlobalFlags().Status)
+	models.AddStatusFlags(statusCmd, utils.GetGlobalFlags().Status)
 	
 	return statusCmd
 }

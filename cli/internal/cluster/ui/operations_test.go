@@ -4,15 +4,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 )
 
 func TestOperationsUI_SelectClusterForOperation(t *testing.T) {
 	ui := NewOperationsUI()
 
 	t.Run("returns cluster name from args when provided", func(t *testing.T) {
-		clusters := []domain.ClusterInfo{
-			{Name: "test-cluster", Type: domain.ClusterTypeK3d},
+		clusters := []models.ClusterInfo{
+			{Name: "test-cluster", Type: models.ClusterTypeK3d},
 		}
 		args := []string{"test-cluster"}
 
@@ -28,8 +28,8 @@ func TestOperationsUI_SelectClusterForOperation(t *testing.T) {
 	})
 
 	t.Run("returns error when cluster name is empty", func(t *testing.T) {
-		clusters := []domain.ClusterInfo{
-			{Name: "test-cluster", Type: domain.ClusterTypeK3d},
+		clusters := []models.ClusterInfo{
+			{Name: "test-cluster", Type: models.ClusterTypeK3d},
 		}
 		args := []string{""}
 
@@ -41,7 +41,7 @@ func TestOperationsUI_SelectClusterForOperation(t *testing.T) {
 	})
 
 	t.Run("returns empty string when no clusters available", func(t *testing.T) {
-		clusters := []domain.ClusterInfo{}
+		clusters := []models.ClusterInfo{}
 		args := []string{}
 
 		result, err := ui.SelectClusterForOperation(clusters, args, "cleanup")
@@ -56,8 +56,8 @@ func TestOperationsUI_SelectClusterForOperation(t *testing.T) {
 	})
 
 	t.Run("handles whitespace-only cluster name", func(t *testing.T) {
-		clusters := []domain.ClusterInfo{
-			{Name: "test-cluster", Type: domain.ClusterTypeK3d},
+		clusters := []models.ClusterInfo{
+			{Name: "test-cluster", Type: models.ClusterTypeK3d},
 		}
 		args := []string{"   "}
 

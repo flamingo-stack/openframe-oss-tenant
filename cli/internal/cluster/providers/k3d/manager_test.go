@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	execPkg "github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -80,16 +80,16 @@ func TestCreateDefaultClusterManager(t *testing.T) {
 func TestK3dManager_CreateCluster(t *testing.T) {
 	tests := []struct {
 		name          string
-		config        domain.ClusterConfig
+		config        models.ClusterConfig
 		setupMock     func(*MockExecutor)
 		expectedError string
 		expectedArgs  []string
 	}{
 		{
 			name: "successful cluster creation",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 3,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -98,9 +98,9 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 		},
 		{
 			name: "cluster creation with k8s version",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:       "test-cluster",
-				Type:       domain.ClusterTypeK3d,
+				Type:       models.ClusterTypeK3d,
 				NodeCount:  2,
 				K8sVersion: "v1.25.0-k3s1",
 			},
@@ -110,36 +110,36 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 		},
 		{
 			name: "empty cluster name",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 3,
 			},
 			expectedError: "cluster name cannot be empty",
 		},
 		{
 			name: "invalid cluster type",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeGKE,
+				Type:      models.ClusterTypeGKE,
 				NodeCount: 3,
 			},
 			expectedError: "no provider available for cluster type 'gke'",
 		},
 		{
 			name: "zero node count",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 0,
 			},
 			expectedError: "node count must be at least 1",
 		},
 		{
 			name: "k3d command fails",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 3,
 			},
 			setupMock: func(m *MockExecutor) {
@@ -176,9 +176,9 @@ func TestK3dManager_CreateCluster_VerboseMode(t *testing.T) {
 	executor.On("Execute", mock.Anything, "k3d", mock.Anything).Return(&execPkg.CommandResult{Stdout: "success"}, nil)
 
 	manager := NewK3dManager(executor, true) // verbose mode
-	config := domain.ClusterConfig{
+	config := models.ClusterConfig{
 		Name:      "test-cluster",
-		Type:      domain.ClusterTypeK3d,
+		Type:      models.ClusterTypeK3d,
 		NodeCount: 3,
 	}
 
@@ -191,7 +191,7 @@ func TestK3dManager_DeleteCluster(t *testing.T) {
 	tests := []struct {
 		name          string
 		clusterName   string
-		clusterType   domain.ClusterType
+		clusterType   models.ClusterType
 		force         bool
 		setupMock     func(*MockExecutor)
 		expectedError string
@@ -199,7 +199,7 @@ func TestK3dManager_DeleteCluster(t *testing.T) {
 		{
 			name:        "successful cluster deletion",
 			clusterName: "test-cluster",
-			clusterType: domain.ClusterTypeK3d,
+			clusterType: models.ClusterTypeK3d,
 			force:       false,
 			setupMock: func(m *MockExecutor) {
 				m.On("Execute", mock.Anything, "k3d", []string{"cluster", "delete", "test-cluster"}).Return(&execPkg.CommandResult{Stdout: "success"}, nil)
@@ -208,19 +208,19 @@ func TestK3dManager_DeleteCluster(t *testing.T) {
 		{
 			name:          "empty cluster name",
 			clusterName:   "",
-			clusterType:   domain.ClusterTypeK3d,
+			clusterType:   models.ClusterTypeK3d,
 			expectedError: "cluster name cannot be empty",
 		},
 		{
 			name:          "invalid cluster type",
 			clusterName:   "test-cluster",
-			clusterType:   domain.ClusterTypeGKE,
+			clusterType:   models.ClusterTypeGKE,
 			expectedError: "no provider available for cluster type 'gke'",
 		},
 		{
 			name:        "k3d command fails",
 			clusterName: "test-cluster",
-			clusterType: domain.ClusterTypeK3d,
+			clusterType: models.ClusterTypeK3d,
 			setupMock: func(m *MockExecutor) {
 				m.On("Execute", mock.Anything, "k3d", mock.Anything).Return(nil, errors.New("k3d error"))
 			},
@@ -254,14 +254,14 @@ func TestK3dManager_StartCluster(t *testing.T) {
 	tests := []struct {
 		name          string
 		clusterName   string
-		clusterType   domain.ClusterType
+		clusterType   models.ClusterType
 		setupMock     func(*MockExecutor)
 		expectedError string
 	}{
 		{
 			name:        "successful cluster start",
 			clusterName: "test-cluster",
-			clusterType: domain.ClusterTypeK3d,
+			clusterType: models.ClusterTypeK3d,
 			setupMock: func(m *MockExecutor) {
 				m.On("Execute", mock.Anything, "k3d", []string{"cluster", "start", "test-cluster"}).Return(&execPkg.CommandResult{Stdout: "success"}, nil)
 			},
@@ -269,19 +269,19 @@ func TestK3dManager_StartCluster(t *testing.T) {
 		{
 			name:          "empty cluster name",
 			clusterName:   "",
-			clusterType:   domain.ClusterTypeK3d,
+			clusterType:   models.ClusterTypeK3d,
 			expectedError: "cluster name cannot be empty",
 		},
 		{
 			name:          "invalid cluster type",
 			clusterName:   "test-cluster",
-			clusterType:   domain.ClusterTypeGKE,
+			clusterType:   models.ClusterTypeGKE,
 			expectedError: "no provider available for cluster type 'gke'",
 		},
 		{
 			name:        "k3d command fails",
 			clusterName: "test-cluster",
-			clusterType: domain.ClusterTypeK3d,
+			clusterType: models.ClusterTypeK3d,
 			setupMock: func(m *MockExecutor) {
 				m.On("Execute", mock.Anything, "k3d", mock.Anything).Return(nil, errors.New("k3d error"))
 			},
@@ -342,12 +342,12 @@ func TestK3dManager_ListClusters(t *testing.T) {
 		assert.Len(t, clusters, 2)
 
 		assert.Equal(t, "cluster1", clusters[0].Name)
-		assert.Equal(t, domain.ClusterTypeK3d, clusters[0].Type)
+		assert.Equal(t, models.ClusterTypeK3d, clusters[0].Type)
 		assert.Equal(t, "1/1", clusters[0].Status)
 		assert.Equal(t, 3, clusters[0].NodeCount) // 1 server + 2 agents
 
 		assert.Equal(t, "cluster2", clusters[1].Name)
-		assert.Equal(t, domain.ClusterTypeK3d, clusters[1].Type)
+		assert.Equal(t, models.ClusterTypeK3d, clusters[1].Type)
 		assert.Equal(t, "0/1", clusters[1].Status)
 		assert.Equal(t, 2, clusters[1].NodeCount) // 1 server + 1 agent
 
@@ -419,7 +419,7 @@ func TestK3dManager_GetClusterStatus(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, "test-cluster", clusterInfo.Name)
-		assert.Equal(t, domain.ClusterTypeK3d, clusterInfo.Type)
+		assert.Equal(t, models.ClusterTypeK3d, clusterInfo.Type)
 		assert.Equal(t, "1/1", clusterInfo.Status)
 
 		executor.AssertExpectations(t)
@@ -433,7 +433,7 @@ func TestK3dManager_GetClusterStatus(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cluster name cannot be empty")
-		assert.Equal(t, domain.ClusterInfo{}, clusterInfo)
+		assert.Equal(t, models.ClusterInfo{}, clusterInfo)
 	})
 
 	t.Run("cluster not found", func(t *testing.T) {
@@ -445,7 +445,7 @@ func TestK3dManager_GetClusterStatus(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cluster non-existent not found")
-		assert.Equal(t, domain.ClusterInfo{}, clusterInfo)
+		assert.Equal(t, models.ClusterInfo{}, clusterInfo)
 
 		executor.AssertExpectations(t)
 	})
@@ -460,7 +460,7 @@ func TestK3dManager_DetectClusterType(t *testing.T) {
 		clusterType, err := manager.DetectClusterType(context.Background(), "test-cluster")
 
 		assert.NoError(t, err)
-		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
+		assert.Equal(t, models.ClusterTypeK3d, clusterType)
 
 		executor.AssertExpectations(t)
 	})
@@ -473,7 +473,7 @@ func TestK3dManager_DetectClusterType(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cluster name cannot be empty")
-		assert.Equal(t, domain.ClusterType(""), clusterType)
+		assert.Equal(t, models.ClusterType(""), clusterType)
 	})
 
 	t.Run("cluster not found", func(t *testing.T) {
@@ -485,7 +485,7 @@ func TestK3dManager_DetectClusterType(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cluster 'non-existent' not found")
-		assert.Equal(t, domain.ClusterType(""), clusterType)
+		assert.Equal(t, models.ClusterType(""), clusterType)
 
 		executor.AssertExpectations(t)
 	})
@@ -498,7 +498,7 @@ func TestK3dManager_GetKubeconfig(t *testing.T) {
 		executor.On("Execute", mock.Anything, "k3d", []string{"kubeconfig", "get", "test-cluster"}).Return(&execPkg.CommandResult{Stdout: kubeconfigContent}, nil)
 
 		manager := NewK3dManager(executor, false)
-		kubeconfig, err := manager.GetKubeconfig(context.Background(), "test-cluster", domain.ClusterTypeK3d)
+		kubeconfig, err := manager.GetKubeconfig(context.Background(), "test-cluster", models.ClusterTypeK3d)
 
 		assert.NoError(t, err)
 		assert.Equal(t, kubeconfigContent, kubeconfig)
@@ -510,7 +510,7 @@ func TestK3dManager_GetKubeconfig(t *testing.T) {
 		executor := &MockExecutor{}
 		manager := NewK3dManager(executor, false)
 
-		kubeconfig, err := manager.GetKubeconfig(context.Background(), "test-cluster", domain.ClusterTypeGKE)
+		kubeconfig, err := manager.GetKubeconfig(context.Background(), "test-cluster", models.ClusterTypeGKE)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no provider available for cluster type 'gke'")
@@ -522,7 +522,7 @@ func TestK3dManager_GetKubeconfig(t *testing.T) {
 		executor.On("Execute", mock.Anything, "k3d", mock.Anything).Return(nil, errors.New("k3d error"))
 
 		manager := NewK3dManager(executor, false)
-		kubeconfig, err := manager.GetKubeconfig(context.Background(), "test-cluster", domain.ClusterTypeK3d)
+		kubeconfig, err := manager.GetKubeconfig(context.Background(), "test-cluster", models.ClusterTypeK3d)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to get kubeconfig for cluster test-cluster")
@@ -537,29 +537,29 @@ func TestK3dManager_validateClusterConfig(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		config        domain.ClusterConfig
+		config        models.ClusterConfig
 		expectedError string
 	}{
 		{
 			name: "valid config",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 3,
 			},
 		},
 		{
 			name: "empty name",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 3,
 			},
 			expectedError: "cluster name cannot be empty",
 		},
 		{
 			name: "empty type",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
 				Type:      "",
 				NodeCount: 3,
@@ -568,18 +568,18 @@ func TestK3dManager_validateClusterConfig(t *testing.T) {
 		},
 		{
 			name: "zero node count",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: 0,
 			},
 			expectedError: "node count must be at least 1",
 		},
 		{
 			name: "negative node count",
-			config: domain.ClusterConfig{
+			config: models.ClusterConfig{
 				Name:      "test-cluster",
-				Type:      domain.ClusterTypeK3d,
+				Type:      models.ClusterTypeK3d,
 				NodeCount: -1,
 			},
 			expectedError: "node count must be at least 1",

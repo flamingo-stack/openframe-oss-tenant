@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
@@ -18,7 +18,7 @@ func NewOperationsUI() *OperationsUI {
 }
 
 // SelectClusterForOperation provides a friendly interface for selecting a cluster for a specific operation
-func (ui *OperationsUI) SelectClusterForOperation(clusters []domain.ClusterInfo, args []string, operation string) (string, error) {
+func (ui *OperationsUI) SelectClusterForOperation(clusters []models.ClusterInfo, args []string, operation string) (string, error) {
 	// If cluster name provided as argument, use it directly
 	if len(args) > 0 {
 		clusterName := strings.TrimSpace(args[0])
@@ -57,7 +57,7 @@ func (ui *OperationsUI) SelectClusterForOperation(clusters []domain.ClusterInfo,
 }
 
 // SelectClusterForDelete provides a friendly interface for selecting a cluster to delete with confirmation
-func (ui *OperationsUI) SelectClusterForDelete(clusters []domain.ClusterInfo, args []string, force bool) (string, error) {
+func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, args []string, force bool) (string, error) {
 	// If cluster name provided as argument, use it directly
 	if len(args) > 0 {
 		clusterName := strings.TrimSpace(args[0])
@@ -124,7 +124,7 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []domain.ClusterInfo, ar
 }
 
 // SelectClusterForCleanup provides a friendly interface for selecting a cluster for cleanup with confirmation
-func (ui *OperationsUI) SelectClusterForCleanup(clusters []domain.ClusterInfo, args []string, force bool) (string, error) {
+func (ui *OperationsUI) SelectClusterForCleanup(clusters []models.ClusterInfo, args []string, force bool) (string, error) {
 	// If cluster name provided as argument, use it directly
 	if len(args) > 0 {
 		clusterName := strings.TrimSpace(args[0])
@@ -283,7 +283,7 @@ func (ui *OperationsUI) ShowOperationError(operation, clusterName string, err er
 
 
 // ShowConfigurationSummary displays the cluster configuration summary
-func (ui *OperationsUI) ShowConfigurationSummary(config domain.ClusterConfig, dryRun bool, skipWizard bool) {
+func (ui *OperationsUI) ShowConfigurationSummary(config models.ClusterConfig, dryRun bool, skipWizard bool) {
 	pterm.Info.Printf("Configuration Summary\n")
 	
 	// Clean, simple format without heavy table styling

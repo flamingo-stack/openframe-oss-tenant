@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
@@ -24,7 +24,7 @@ func NewManager(exec executor.CommandExecutor) *Manager {
 }
 
 // WaitForApplications waits for all ArgoCD applications to be Healthy and Synced
-func (m *Manager) WaitForApplications(ctx context.Context, config domain.ChartInstallConfig) error {
+func (m *Manager) WaitForApplications(ctx context.Context, config models.ChartInstallConfig) error {
 	pterm.Info.Println("⏳ Waiting 30 seconds for ArgoCD apps to bootstrap...")
 	time.Sleep(30 * time.Second)
 	

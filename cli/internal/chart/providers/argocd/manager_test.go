@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 )
@@ -160,7 +160,7 @@ func TestManager_WaitForApplications_KubectlError(t *testing.T) {
 	mockExec.SetError("kubectl -n argocd get applications.argoproj.io -o json", assert.AnError)
 	
 	manager := NewManager(mockExec)
-	config := domain.ChartInstallConfig{DryRun: false}
+	config := models.ChartInstallConfig{DryRun: false}
 	
 	// This would hang in the loop, so we'll use a timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)

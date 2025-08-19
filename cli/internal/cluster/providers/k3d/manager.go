@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
@@ -30,9 +30,9 @@ const (
 
 // ClusterManager interface for managing clusters
 type ClusterManager interface {
-	DetectClusterType(ctx context.Context, name string) (domain.ClusterType, error)
-	ListClusters(ctx context.Context) ([]domain.ClusterInfo, error)
-	ListAllClusters(ctx context.Context) ([]domain.ClusterInfo, error)
+	DetectClusterType(ctx context.Context, name string) (models.ClusterType, error)
+	ListClusters(ctx context.Context) ([]models.ClusterInfo, error)
+	ListAllClusters(ctx context.Context) ([]models.ClusterInfo, error)
 }
 
 // K3dManager manages K3D cluster operations
@@ -61,18 +61,18 @@ func NewK3dManagerWithTimeout(exec executor.CommandExecutor, verbose bool, timeo
 }
 
 // CreateCluster creates a new K3D cluster using config file approach
-func (m *K3dManager) CreateCluster(ctx context.Context, config domain.ClusterConfig) error {
+func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterConfig) error {
 	if err := m.validateClusterConfig(config); err != nil {
 		return err
 	}
 
-	if config.Type != domain.ClusterTypeK3d {
-		return domain.NewProviderNotFoundError(config.Type)
+	if config.Type != models.ClusterTypeK3d {
+		return models.NewProviderNotFoundError(config.Type)
 	}
 
 	configFile, err := m.createK3dConfigFile(config)
 	if err != nil {
-		return domain.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to create config file: %w", err))
+		return models.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to create config file: %w", err))
 	}
 	defer os.Remove(configFile)
 
@@ -88,20 +88,20 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config domain.ClusterCon
 	}
 
 	if _, err := m.executor.Execute(ctx, "k3d", args...); err != nil {
-		return domain.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to create cluster %s: %w", config.Name, err))
+		return models.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to create cluster %s: %w", config.Name, err))
 	}
 
 	return nil
 }
 
 // DeleteCluster removes a K3D cluster
-func (m *K3dManager) DeleteCluster(ctx context.Context, name string, clusterType domain.ClusterType, force bool) error {
+func (m *K3dManager) DeleteCluster(ctx context.Context, name string, clusterType models.ClusterType, force bool) error {
 	if name == "" {
-		return domain.NewInvalidConfigError("name", name, "cluster name cannot be empty")
+		return models.NewInvalidConfigError("name", name, "cluster name cannot be empty")
 	}
 
-	if clusterType != domain.ClusterTypeK3d {
-		return domain.NewProviderNotFoundError(clusterType)
+	if clusterType != models.ClusterTypeK3d {
+		return models.NewProviderNotFoundError(clusterType)
 	}
 
 	args := []string{"cluster", "delete", name}
@@ -110,20 +110,20 @@ func (m *K3dManager) DeleteCluster(ctx context.Context, name string, clusterType
 	}
 
 	if _, err := m.executor.Execute(ctx, "k3d", args...); err != nil {
-		return domain.NewClusterOperationError("delete", name, fmt.Errorf("failed to delete cluster %s: %w", name, err))
+		return models.NewClusterOperationError("delete", name, fmt.Errorf("failed to delete cluster %s: %w", name, err))
 	}
 
 	return nil
 }
 
 // StartCluster starts a K3D cluster
-func (m *K3dManager) StartCluster(ctx context.Context, name string, clusterType domain.ClusterType) error {
+func (m *K3dManager) StartCluster(ctx context.Context, name string, clusterType models.ClusterType) error {
 	if name == "" {
-		return domain.NewInvalidConfigError("name", name, "cluster name cannot be empty")
+		return models.NewInvalidConfigError("name", name, "cluster name cannot be empty")
 	}
 
-	if clusterType != domain.ClusterTypeK3d {
-		return domain.NewProviderNotFoundError(clusterType)
+	if clusterType != models.ClusterTypeK3d {
+		return models.NewProviderNotFoundError(clusterType)
 	}
 
 	args := []string{"cluster", "start", name}
@@ -132,14 +132,14 @@ func (m *K3dManager) StartCluster(ctx context.Context, name string, clusterType 
 	}
 
 	if _, err := m.executor.Execute(ctx, "k3d", args...); err != nil {
-		return domain.NewClusterOperationError("start", name, fmt.Errorf("failed to start cluster %s: %w", name, err))
+		return models.NewClusterOperationError("start", name, fmt.Errorf("failed to start cluster %s: %w", name, err))
 	}
 
 	return nil
 }
 
 // ListClusters returns all K3D clusters
-func (m *K3dManager) ListClusters(ctx context.Context) ([]domain.ClusterInfo, error) {
+func (m *K3dManager) ListClusters(ctx context.Context) ([]models.ClusterInfo, error) {
 	args := []string{"cluster", "list", "--output", "json"}
 
 	result, err := m.executor.Execute(ctx, "k3d", args...)
@@ -152,7 +152,7 @@ func (m *K3dManager) ListClusters(ctx context.Context) ([]domain.ClusterInfo, er
 		return nil, fmt.Errorf("failed to parse cluster list JSON: %w", err)
 	}
 
-	var clusters []domain.ClusterInfo
+	var clusters []models.ClusterInfo
 	for _, k3dCluster := range k3dClusters {
 		// Find the earliest server node creation time as cluster creation time
 		var createdAt time.Time
@@ -164,13 +164,13 @@ func (m *K3dManager) ListClusters(ctx context.Context) ([]domain.ClusterInfo, er
 			}
 		}
 
-		clusters = append(clusters, domain.ClusterInfo{
+		clusters = append(clusters, models.ClusterInfo{
 			Name:      k3dCluster.Name,
-			Type:      domain.ClusterTypeK3d,
+			Type:      models.ClusterTypeK3d,
 			Status:    fmt.Sprintf("%d/%d", k3dCluster.ServersRunning, k3dCluster.ServersCount),
 			NodeCount: k3dCluster.AgentsCount + k3dCluster.ServersCount,
 			CreatedAt: createdAt,
-			Nodes:     []domain.NodeInfo{},
+			Nodes:     []models.NodeInfo{},
 		})
 	}
 
@@ -178,19 +178,19 @@ func (m *K3dManager) ListClusters(ctx context.Context) ([]domain.ClusterInfo, er
 }
 
 // ListAllClusters is an alias for ListClusters for backward compatibility
-func (m *K3dManager) ListAllClusters(ctx context.Context) ([]domain.ClusterInfo, error) {
+func (m *K3dManager) ListAllClusters(ctx context.Context) ([]models.ClusterInfo, error) {
 	return m.ListClusters(ctx)
 }
 
 // GetClusterStatus returns detailed status for a specific K3D cluster
-func (m *K3dManager) GetClusterStatus(ctx context.Context, name string) (domain.ClusterInfo, error) {
+func (m *K3dManager) GetClusterStatus(ctx context.Context, name string) (models.ClusterInfo, error) {
 	if name == "" {
-		return domain.ClusterInfo{}, domain.NewInvalidConfigError("name", name, "cluster name cannot be empty")
+		return models.ClusterInfo{}, models.NewInvalidConfigError("name", name, "cluster name cannot be empty")
 	}
 
 	clusters, err := m.ListClusters(ctx)
 	if err != nil {
-		return domain.ClusterInfo{}, domain.NewClusterOperationError("status", name, err)
+		return models.ClusterInfo{}, models.NewClusterOperationError("status", name, err)
 	}
 
 	for _, clusterInfo := range clusters {
@@ -199,27 +199,27 @@ func (m *K3dManager) GetClusterStatus(ctx context.Context, name string) (domain.
 		}
 	}
 
-	return domain.ClusterInfo{}, domain.NewClusterOperationError("status", name, fmt.Errorf("cluster %s not found", name))
+	return models.ClusterInfo{}, models.NewClusterOperationError("status", name, fmt.Errorf("cluster %s not found", name))
 }
 
 // DetectClusterType determines if a cluster is K3D
-func (m *K3dManager) DetectClusterType(ctx context.Context, name string) (domain.ClusterType, error) {
+func (m *K3dManager) DetectClusterType(ctx context.Context, name string) (models.ClusterType, error) {
 	if name == "" {
-		return "", domain.NewInvalidConfigError("name", name, "cluster name cannot be empty")
+		return "", models.NewInvalidConfigError("name", name, "cluster name cannot be empty")
 	}
 
 	args := []string{"cluster", "get", name}
 	if _, err := m.executor.Execute(ctx, "k3d", args...); err != nil {
-		return "", domain.NewClusterNotFoundError(name)
+		return "", models.NewClusterNotFoundError(name)
 	}
 
-	return domain.ClusterTypeK3d, nil
+	return models.ClusterTypeK3d, nil
 }
 
 // GetKubeconfig gets the kubeconfig for a specific K3D cluster
-func (m *K3dManager) GetKubeconfig(ctx context.Context, name string, clusterType domain.ClusterType) (string, error) {
-	if clusterType != domain.ClusterTypeK3d {
-		return "", domain.NewProviderNotFoundError(clusterType)
+func (m *K3dManager) GetKubeconfig(ctx context.Context, name string, clusterType models.ClusterType) (string, error) {
+	if clusterType != models.ClusterTypeK3d {
+		return "", models.NewProviderNotFoundError(clusterType)
 	}
 
 	args := []string{"kubeconfig", "get", name}
@@ -232,21 +232,21 @@ func (m *K3dManager) GetKubeconfig(ctx context.Context, name string, clusterType
 }
 
 // validateClusterConfig validates the cluster configuration
-func (m *K3dManager) validateClusterConfig(config domain.ClusterConfig) error {
+func (m *K3dManager) validateClusterConfig(config models.ClusterConfig) error {
 	if config.Name == "" {
-		return domain.NewInvalidConfigError("name", config.Name, "cluster name cannot be empty")
+		return models.NewInvalidConfigError("name", config.Name, "cluster name cannot be empty")
 	}
 	if config.Type == "" {
-		return domain.NewInvalidConfigError("type", config.Type, "cluster type cannot be empty")
+		return models.NewInvalidConfigError("type", config.Type, "cluster type cannot be empty")
 	}
 	if config.NodeCount < 1 {
-		return domain.NewInvalidConfigError("nodeCount", config.NodeCount, "node count must be at least 1")
+		return models.NewInvalidConfigError("nodeCount", config.NodeCount, "node count must be at least 1")
 	}
 	return nil
 }
 
 // createK3dConfigFile creates a k3d config file
-func (m *K3dManager) createK3dConfigFile(config domain.ClusterConfig) (string, error) {
+func (m *K3dManager) createK3dConfigFile(config models.ClusterConfig) (string, error) {
 	image := defaultK3sImage
 	if runtime.GOARCH == "arm64" {
 		image = defaultK3sImage

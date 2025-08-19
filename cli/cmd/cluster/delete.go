@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
@@ -33,7 +33,7 @@ Examples:
 			}
 			globalFlags := utils.GetGlobalFlags()
 			if globalFlags != nil && globalFlags.Delete != nil {
-				return domain.ValidateDeleteFlags(globalFlags.Delete)
+				return models.ValidateDeleteFlags(globalFlags.Delete)
 			}
 			return nil
 		},
@@ -43,7 +43,7 @@ Examples:
 	// Add delete-specific flags
 	globalFlags := utils.GetGlobalFlags()
 	if globalFlags != nil && globalFlags.Delete != nil {
-		domain.AddDeleteFlags(deleteCmd, globalFlags.Delete)
+		models.AddDeleteFlags(deleteCmd, globalFlags.Delete)
 	}
 	
 	return deleteCmd

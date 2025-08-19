@@ -3,8 +3,8 @@ package cluster
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
-	"github.com/flamingo/openframe/internal/cluster/k3d"
+	"github.com/flamingo/openframe/internal/cluster/models"
+	"github.com/flamingo/openframe/internal/cluster/providers/k3d"
 	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
@@ -63,9 +63,9 @@ func TestClusterService_CreateCluster(t *testing.T) {
 	exec := createTestExecutor()
 	service := NewClusterService(exec)
 	
-	config := domain.ClusterConfig{
+	config := models.ClusterConfig{
 		Name:       "test-cluster",
-		Type:       domain.ClusterTypeK3d,
+		Type:       models.ClusterTypeK3d,
 		NodeCount:  1,
 		K8sVersion: "v1.25.0",
 	}
@@ -81,7 +81,7 @@ func TestClusterService_DeleteCluster(t *testing.T) {
 	exec := createTestExecutor()
 	service := NewClusterService(exec)
 	
-	err := service.DeleteCluster("test-cluster", domain.ClusterTypeK3d, false)
+	err := service.DeleteCluster("test-cluster", models.ClusterTypeK3d, false)
 	// With mock executor, this should not fail
 	if err != nil {
 		t.Errorf("DeleteCluster should not error with mock executor: %v", err)
@@ -125,7 +125,7 @@ func TestClusterService_CleanupCluster(t *testing.T) {
 	exec := createTestExecutor()
 	service := NewClusterService(exec)
 	
-	err := service.CleanupCluster("test-cluster", domain.ClusterTypeK3d, false)
+	err := service.CleanupCluster("test-cluster", models.ClusterTypeK3d, false)
 	if err != nil {
 		t.Errorf("CleanupCluster should not error: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestClusterService_DisplayClusterList(t *testing.T) {
 	service := NewClusterService(exec)
 	
 	// Test with empty cluster list
-	clusters := []domain.ClusterInfo{}
+	clusters := []models.ClusterInfo{}
 	err := service.DisplayClusterList(clusters, false, false)
 	if err != nil {
 		t.Errorf("DisplayClusterList should not error with empty list: %v", err)
@@ -169,9 +169,9 @@ func TestClusterService_WithRealExecutor(t *testing.T) {
 	}
 	
 	// Test that service can be created with real executor
-	config := domain.ClusterConfig{
+	config := models.ClusterConfig{
 		Name:       "test-dry-run",
-		Type:       domain.ClusterTypeK3d,
+		Type:       models.ClusterTypeK3d,
 		NodeCount:  1,
 	}
 	

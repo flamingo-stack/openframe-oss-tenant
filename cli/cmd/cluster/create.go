@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
@@ -40,7 +40,7 @@ Examples:
 			}
 			globalFlags := utils.GetGlobalFlags()
 			if globalFlags != nil && globalFlags.Create != nil {
-				return domain.ValidateCreateFlags(globalFlags.Create)
+				return models.ValidateCreateFlags(globalFlags.Create)
 			}
 			return nil
 		},
@@ -50,7 +50,7 @@ Examples:
 	// Add create-specific flags
 	globalFlags := utils.GetGlobalFlags()
 	if globalFlags != nil && globalFlags.Create != nil {
-		domain.AddCreateFlags(createCmd, globalFlags.Create)
+		models.AddCreateFlags(createCmd, globalFlags.Create)
 	}
 
 	return createCmd
@@ -60,7 +60,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	service := utils.GetCommandService()
 	globalFlags := utils.GetGlobalFlags()
 
-	var config domain.ClusterConfig
+	var config models.ClusterConfig
 
 	// Check if we should use interactive mode
 	if !globalFlags.Create.SkipWizard {
@@ -71,7 +71,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 		var clusterName string
 		if len(args) > 0 {
 			clusterName = strings.TrimSpace(args[0])
-			if err := domain.ValidateClusterName(clusterName); err != nil {
+			if err := models.ValidateClusterName(clusterName); err != nil {
 				return err
 			}
 		}
@@ -88,7 +88,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			clusterName = strings.TrimSpace(args[0])
 			// Validate the cluster name
-			if err := domain.ValidateClusterName(clusterName); err != nil {
+			if err := models.ValidateClusterName(clusterName); err != nil {
 				return err
 			}
 		} else {
@@ -105,16 +105,16 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 			nodeCount = 3
 		}
 
-		config = domain.ClusterConfig{
+		config = models.ClusterConfig{
 			Name:       clusterName,
-			Type:       domain.ClusterType(globalFlags.Create.ClusterType),
+			Type:       models.ClusterType(globalFlags.Create.ClusterType),
 			K8sVersion: globalFlags.Create.K8sVersion,
 			NodeCount:  nodeCount,
 		}
 
 		// Set defaults if needed
 		if config.Type == "" {
-			config.Type = domain.ClusterTypeK3d
+			config.Type = models.ClusterTypeK3d
 		}
 	}
 

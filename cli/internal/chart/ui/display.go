@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/pterm/pterm"
 )
 
@@ -17,12 +17,12 @@ func NewDisplayService() *DisplayService {
 }
 
 // ShowInstallProgress displays installation progress
-func (d *DisplayService) ShowInstallProgress(chartType domain.ChartType, message string) {
+func (d *DisplayService) ShowInstallProgress(chartType models.ChartType, message string) {
 	pterm.Info.Printf("📦 %s: %s\n", string(chartType), message)
 }
 
 // ShowInstallSuccess displays successful installation
-func (d *DisplayService) ShowInstallSuccess(chartType domain.ChartType, info domain.ChartInfo) {
+func (d *DisplayService) ShowInstallSuccess(chartType models.ChartType, info models.ChartInfo) {
 	fmt.Println()
 	
 	boxContent := fmt.Sprintf(
@@ -44,7 +44,7 @@ func (d *DisplayService) ShowInstallSuccess(chartType domain.ChartType, info dom
 }
 
 // ShowInstallError displays installation error
-func (d *DisplayService) ShowInstallError(chartType domain.ChartType, err error) {
+func (d *DisplayService) ShowInstallError(chartType models.ChartType, err error) {
 	pterm.Error.Printf("Failed to install %s: %v\n", string(chartType), err)
 }
 

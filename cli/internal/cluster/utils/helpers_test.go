@@ -3,7 +3,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,38 +52,38 @@ func TestValidateClusterName(t *testing.T) {
 func TestParseClusterType(t *testing.T) {
 	t.Run("parses k3d cluster type", func(t *testing.T) {
 		clusterType := ParseClusterType("k3d")
-		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
+		assert.Equal(t, models.ClusterTypeK3d, clusterType)
 	})
 	
 	t.Run("parses K3D cluster type case insensitive", func(t *testing.T) {
 		clusterType := ParseClusterType("K3D")
-		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
+		assert.Equal(t, models.ClusterTypeK3d, clusterType)
 	})
 	
 	t.Run("parses gke cluster type", func(t *testing.T) {
 		clusterType := ParseClusterType("gke")
-		assert.Equal(t, domain.ClusterTypeGKE, clusterType)
+		assert.Equal(t, models.ClusterTypeGKE, clusterType)
 	})
 	
 	t.Run("parses GKE cluster type case insensitive", func(t *testing.T) {
 		clusterType := ParseClusterType("GKE")
-		assert.Equal(t, domain.ClusterTypeGKE, clusterType)
+		assert.Equal(t, models.ClusterTypeGKE, clusterType)
 	})
 	
 	
 	t.Run("defaults to k3d for unknown cluster type", func(t *testing.T) {
 		clusterType := ParseClusterType("unknown")
-		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
+		assert.Equal(t, models.ClusterTypeK3d, clusterType)
 	})
 	
 	t.Run("defaults to k3d for empty cluster type", func(t *testing.T) {
 		clusterType := ParseClusterType("")
-		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
+		assert.Equal(t, models.ClusterTypeK3d, clusterType)
 	})
 	
 	t.Run("handles mixed case unknown cluster type", func(t *testing.T) {
 		clusterType := ParseClusterType("AKS") // Not supported, should default
-		assert.Equal(t, domain.ClusterTypeK3d, clusterType)
+		assert.Equal(t, models.ClusterTypeK3d, clusterType)
 	})
 }
 
@@ -123,20 +123,20 @@ func TestClusterSelectionResult(t *testing.T) {
 	t.Run("creates cluster selection result", func(t *testing.T) {
 		result := ClusterSelectionResult{
 			Name: "test-cluster",
-			Type: domain.ClusterTypeK3d,
+			Type: models.ClusterTypeK3d,
 		}
 		
 		assert.Equal(t, "test-cluster", result.Name)
-		assert.Equal(t, domain.ClusterTypeK3d, result.Type)
+		assert.Equal(t, models.ClusterTypeK3d, result.Type)
 	})
 	
 	t.Run("creates cluster selection result with different types", func(t *testing.T) {
 		tests := []struct {
 			name        string
-			clusterType domain.ClusterType
+			clusterType models.ClusterType
 		}{
-			{"k3d-cluster", domain.ClusterTypeK3d},
-			{"gke-cluster", domain.ClusterTypeGKE},
+			{"k3d-cluster", models.ClusterTypeK3d},
+			{"gke-cluster", models.ClusterTypeGKE},
 		}
 		
 		for _, tt := range tests {
@@ -156,7 +156,7 @@ func TestClusterSelectionResult(t *testing.T) {
 func TestCreateClusterError(t *testing.T) {
 	t.Run("creates cluster error with all parameters", func(t *testing.T) {
 		originalErr := assert.AnError
-		err := CreateClusterError("create", "test-cluster", domain.ClusterTypeK3d, originalErr)
+		err := CreateClusterError("create", "test-cluster", models.ClusterTypeK3d, originalErr)
 		
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cluster create operation failed")
@@ -167,7 +167,7 @@ func TestCreateClusterError(t *testing.T) {
 	
 	t.Run("creates cluster error for delete operation", func(t *testing.T) {
 		originalErr := assert.AnError
-		err := CreateClusterError("delete", "my-cluster", domain.ClusterTypeGKE, originalErr)
+		err := CreateClusterError("delete", "my-cluster", models.ClusterTypeGKE, originalErr)
 		
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cluster delete operation failed")
@@ -178,7 +178,7 @@ func TestCreateClusterError(t *testing.T) {
 	
 	t.Run("wraps original error correctly", func(t *testing.T) {
 		originalErr := assert.AnError
-		err := CreateClusterError("test", "cluster", domain.ClusterTypeK3d, originalErr)
+		err := CreateClusterError("test", "cluster", models.ClusterTypeK3d, originalErr)
 		
 		// The error should wrap the original error
 		assert.ErrorIs(t, err, originalErr)
@@ -188,25 +188,25 @@ func TestCreateClusterError(t *testing.T) {
 func TestTypeAliases(t *testing.T) {
 	t.Run("cluster type aliases work correctly", func(t *testing.T) {
 		// Test that the type aliases are correctly set up
-		var ct domain.ClusterType = domain.ClusterTypeK3d
+		var ct models.ClusterType = models.ClusterTypeK3d
 		assert.Equal(t, "k3d", string(ct))
 		
-		ct = domain.ClusterTypeGKE
+		ct = models.ClusterTypeGKE
 		assert.Equal(t, "gke", string(ct))
 	})
 	
 	t.Run("cluster info alias works correctly", func(t *testing.T) {
-		info := domain.ClusterInfo{
+		info := models.ClusterInfo{
 			Name: "test-cluster",
-			Type: domain.ClusterTypeK3d,
+			Type: models.ClusterTypeK3d,
 		}
 		
 		assert.Equal(t, "test-cluster", info.Name)
-		assert.Equal(t, domain.ClusterTypeK3d, info.Type)
+		assert.Equal(t, models.ClusterTypeK3d, info.Type)
 	})
 	
 	t.Run("node info alias works correctly", func(t *testing.T) {
-		node := domain.NodeInfo{
+		node := models.NodeInfo{
 			Name:   "test-node",
 			Status: "ready",
 			Role:   "worker",
@@ -221,8 +221,8 @@ func TestTypeAliases(t *testing.T) {
 func TestConstants(t *testing.T) {
 	t.Run("cluster type constants are correctly re-exported", func(t *testing.T) {
 		// Verify that the constants match the expected string values
-		assert.Equal(t, "k3d", string(domain.ClusterTypeK3d))
-		assert.Equal(t, "gke", string(domain.ClusterTypeGKE))
+		assert.Equal(t, "k3d", string(models.ClusterTypeK3d))
+		assert.Equal(t, "gke", string(models.ClusterTypeGKE))
 	})
 }
 
@@ -284,17 +284,17 @@ func TestEdgeCases(t *testing.T) {
 		testCases := []struct {
 			name     string
 			input    string
-			expected domain.ClusterType
+			expected models.ClusterType
 		}{
-			{"lowercase k3d", "k3d", domain.ClusterTypeK3d},
-			{"uppercase k3d", "K3D", domain.ClusterTypeK3d},
-			{"mixed case k3d", "K3d", domain.ClusterTypeK3d},
-			{"lowercase gke", "gke", domain.ClusterTypeGKE},
-			{"uppercase gke", "GKE", domain.ClusterTypeGKE},
-			{"mixed case gke", "Gke", domain.ClusterTypeGKE},
-			{"unknown type", "docker", domain.ClusterTypeK3d},
-			{"empty string", "", domain.ClusterTypeK3d},
-			{"whitespace", "  ", domain.ClusterTypeK3d},
+			{"lowercase k3d", "k3d", models.ClusterTypeK3d},
+			{"uppercase k3d", "K3D", models.ClusterTypeK3d},
+			{"mixed case k3d", "K3d", models.ClusterTypeK3d},
+			{"lowercase gke", "gke", models.ClusterTypeGKE},
+			{"uppercase gke", "GKE", models.ClusterTypeGKE},
+			{"mixed case gke", "Gke", models.ClusterTypeGKE},
+			{"unknown type", "docker", models.ClusterTypeK3d},
+			{"empty string", "", models.ClusterTypeK3d},
+			{"whitespace", "  ", models.ClusterTypeK3d},
 		}
 		
 		for _, tc := range testCases {

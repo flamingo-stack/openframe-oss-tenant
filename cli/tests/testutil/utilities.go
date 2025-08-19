@@ -1,14 +1,14 @@
 package testutil
 
 import (
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 )
 
 // TestClusterConfig creates a test cluster configuration
-func TestClusterConfig(name string) *domain.ClusterConfig {
-	return &domain.ClusterConfig{
+func TestClusterConfig(name string) *models.ClusterConfig {
+	return &models.ClusterConfig{
 		Name:       name,
-		Type:       domain.ClusterTypeK3d,
+		Type:       models.ClusterTypeK3d,
 		NodeCount:  3,
 		K8sVersion: "v1.28.0",
 	}

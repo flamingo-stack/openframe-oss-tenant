@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/domain"
+	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/cluster/ui"
 	"github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
@@ -32,13 +32,13 @@ Examples:
 			if err := utils.ValidateGlobalFlags(); err != nil {
 				return err
 			}
-			return domain.ValidateCleanupFlags(utils.GetGlobalFlags().Cleanup)
+			return models.ValidateCleanupFlags(utils.GetGlobalFlags().Cleanup)
 		},
 		RunE: utils.WrapCommandWithCommonSetup(runCleanupCluster),
 	}
 
 	// Add cleanup-specific flags
-	domain.AddCleanupFlags(cleanupCmd, utils.GetGlobalFlags().Cleanup)
+	models.AddCleanupFlags(cleanupCmd, utils.GetGlobalFlags().Cleanup)
 	
 	return cleanupCmd
 }

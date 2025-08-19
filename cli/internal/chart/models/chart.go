@@ -1,4 +1,4 @@
-package domain
+package models
 
 // ChartInstallConfig holds configuration for chart installation
 type ChartInstallConfig struct {
