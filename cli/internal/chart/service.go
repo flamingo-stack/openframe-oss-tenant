@@ -53,30 +53,24 @@ func (s *ChartService) InstallCharts(config domain.ChartInstallConfig) error {
 		return err
 	}
 	
-	// Step 2: Check Helm is installed
-	s.displayService.ShowPreInstallCheck("Checking Helm installation...")
-	if err := s.helmManager.IsHelmInstalled(ctx); err != nil {
-		return fmt.Errorf("Helm is required but not found: %w", err)
-	}
-	
-	// Step 3: Install ArgoCD
+	// Step 2: Install ArgoCD
 	if err := s.installArgoCD(ctx, config); err != nil {
 		return err
 	}
 	
-	// Step 4: Install app-of-apps
+	// Step 3: Install app-of-apps
 	if err := s.installAppOfApps(ctx, config); err != nil {
 		return err
 	}
 	
-	// Step 5: Wait for ArgoCD apps to be healthy and synced
+	// Step 4: Wait for ArgoCD apps to be healthy and synced
 	if !config.DryRun {
 		if err := s.argoCDManager.WaitForApplications(ctx, config); err != nil {
 			return err
 		}
 	}
 	
-	// Step 6: Show completion
+	// Step 5: Show completion
 	s.showInstallationComplete()
 	
 	return nil

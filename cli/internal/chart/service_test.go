@@ -8,7 +8,6 @@ import (
 	clusterDomain "github.com/flamingo/openframe/internal/cluster/domain"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // MockClusterService implements cluster service interface for testing
@@ -176,12 +175,10 @@ func TestChartService_InstallCharts_DryRun(t *testing.T) {
 	err := service.InstallCharts(config)
 	assert.NoError(t, err)
 
-	// In dry run mode, actual helm install commands should not be executed
+	// In dry run mode, no helm commands should be executed (prerequisites handle helm check)
 	commands := mockExec.commands
-	require.GreaterOrEqual(t, len(commands), 1)
-
-	// Should have checked helm version
-	assert.Equal(t, []string{"helm", "version", "--short"}, commands[0])
+	// Only expect commands that actually run in dry run mode
+	assert.Equal(t, 0, len(commands))
 }
 
 func TestChartService_InstallCharts_OpenFrameChart(t *testing.T) {
@@ -206,10 +203,9 @@ func TestChartService_InstallCharts_OpenFrameChart(t *testing.T) {
 	err := service.InstallCharts(config)
 	assert.NoError(t, err)
 
-	// Should have helm version check
+	// Should not execute helm commands in dry run mode (prerequisites handle helm check)
 	commands := mockExec.commands
-	require.GreaterOrEqual(t, len(commands), 1)
-	assert.Equal(t, []string{"helm", "version", "--short"}, commands[0])
+	assert.Equal(t, 0, len(commands))
 }
 
 func TestChartService_InstallCharts_HelmNotFound(t *testing.T) {
@@ -221,8 +217,8 @@ func TestChartService_InstallCharts_HelmNotFound(t *testing.T) {
 		},
 	}
 
-	// Mock helm not found
-	mockExec.SetError("helm version --short", assert.AnError)
+	// Mock helm commands to fail (simulating helm not available during actual install)
+	mockExec.SetError("helm repo add argo https://argoproj.github.io/argo-helm", assert.AnError)
 
 	service := NewChartServiceWithClusterService(mockExec, mockClusterService)
 
@@ -232,5 +228,5 @@ func TestChartService_InstallCharts_HelmNotFound(t *testing.T) {
 
 	err := service.InstallCharts(config)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Helm is required but not found")
+	assert.Contains(t, err.Error(), "failed to add ArgoCD repository")
 }

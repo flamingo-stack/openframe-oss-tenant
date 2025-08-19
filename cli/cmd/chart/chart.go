@@ -2,6 +2,7 @@ package chart
 
 import (
 	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/chart/utils"
 	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
@@ -28,6 +29,11 @@ Requires an existing cluster created with 'openframe cluster create'.
 Examples:
   openframe chart install
   openframe chart status`,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Check prerequisites before running any chart command
+			installer := prerequisites.NewInstaller()
+			return installer.CheckAndInstall()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo when no subcommand is provided
 			ui.ShowLogo()

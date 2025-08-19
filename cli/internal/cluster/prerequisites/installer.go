@@ -45,7 +45,6 @@ func (i *Installer) InstallMissingPrerequisites() error {
 	}
 
 	// Verify all tools are now installed
-	pterm.Info.Println("Verifying installation...")
 	allPresent, stillMissing := i.checker.CheckAll()
 	if !allPresent {
 		pterm.Warning.Printf("Some tools are still missing: %s\n", strings.Join(stillMissing, ", "))

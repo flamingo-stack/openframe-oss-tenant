@@ -3,6 +3,7 @@ package chart
 import (
 	"github.com/flamingo/openframe/internal/chart"
 	"github.com/flamingo/openframe/internal/chart/domain"
+	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/chart/utils"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/spf13/cobra"
@@ -24,6 +25,11 @@ The cluster must exist before running this command.
 Examples:
   openframe chart install                    # Install on default cluster
   openframe chart install my-cluster        # Install on specific cluster`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Regenerate certificates for install command
+			installer := prerequisites.NewInstaller()
+			return installer.RegenerateCertificatesOnly()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runInstallCommand(cmd, args)
 		},
