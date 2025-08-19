@@ -35,7 +35,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Slf4j
 public class GatewaySecurityConfig {
 
-    private final ManagementServerProperties managementProperties;
     private final CookieToHeaderFilter cookieToHeaderFilter;
 
     @Bean

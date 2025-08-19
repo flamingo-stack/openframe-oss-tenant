@@ -21,13 +21,13 @@ import java.time.Duration;
 @Configuration
 public class JwtAuthConfig {
 
-    @Value("${openframe.security.jwt.cache.expire-after:PT30M}")
+    @Value("${openframe.security.jwt.cache.expire-after}")
     private Duration expireAfter;
 
-    @Value("${openframe.security.jwt.cache.refresh-after:PT10M}")
+    @Value("${openframe.security.jwt.cache.refresh-after}")
     private Duration refreshAfter;
 
-    @Value("${openframe.security.jwt.cache.maximum-size:2000}")
+    @Value("${openframe.security.jwt.cache.maximum-size}")
     private long maximumSize;
 
     @Bean
