@@ -13,8 +13,10 @@ spec:
       labels:
         app: fleetmdm-mysql
     spec:
+      {{- if .Values.global.registry.docker.password }}
       imagePullSecrets:
         - name: docker-pat-secret
+      {{- end }}
 
       containers:
       - name: mysql

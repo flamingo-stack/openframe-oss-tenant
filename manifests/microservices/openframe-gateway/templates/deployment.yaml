@@ -12,8 +12,10 @@ spec:
       labels:
         app: openframe-gateway
     spec:
+      {{- if .Values.registry.ghcr.password }}
       imagePullSecrets:
         - name: github-pat-secret
+      {{- end }}
 
       initContainers:
         - name: wait-for-config-server
