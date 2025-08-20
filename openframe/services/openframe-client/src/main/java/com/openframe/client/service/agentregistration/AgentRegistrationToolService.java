@@ -15,6 +15,7 @@ public class AgentRegistrationToolService {
 
     private final IntegratedToolAgentService integratedToolAgentService;
     private final ToolInstallationNatsPublisher toolInstallationNatsPublisher;
+    private final ToolCommandParamsProcessor toolCommandParamsProcessor;
 
     public void publishInstallationMessages(String machineId) {
         List<IntegratedToolAgent> toolAgents = integratedToolAgentService.getAll();
@@ -24,6 +25,14 @@ public class AgentRegistrationToolService {
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
         String toolId = toolAgent.getId();
         try {
+            // process params for installation command
+            String installationCommand = toolAgent.getInstallationCommand();
+            toolAgent.setInstallationCommand(toolCommandParamsProcessor.process(toolId, installationCommand));
+
+            // process params for run command
+            String runCommand = toolAgent.getRunCommand();
+            toolAgent.setRunCommand(toolCommandParamsProcessor.process(toolId, runCommand));
+
             toolInstallationNatsPublisher.publish(machineId, toolAgent);
             log.info("Published {} agent installation message for machine {}", toolId, machineId);
         } catch (Exception e) {

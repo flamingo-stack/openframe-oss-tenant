@@ -16,7 +16,7 @@ public class ToolAgentFileController {
     //  Currently we return hardcoded content for testing purposes only
     @GetMapping
     public byte[] getToolAgentFile(@PathVariable String toolId) {
-        try (InputStream stream = ToolAgentFileController.class.getResourceAsStream("/tool_agent_binary")) {
+        try (InputStream stream = ToolAgentFileController.class.getResourceAsStream("/" + toolId)) {
             if (stream == null) {
                 throw new RuntimeException("No content");
             }

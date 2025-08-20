@@ -16,8 +16,8 @@ public class ToolInstallationTestNatsPublisher {
     @PostMapping
     public void publish(@RequestParam String machineId) {
         IntegratedToolAgent integratedToolAgent = new IntegratedToolAgent();
-        integratedToolAgent.setId("test-tactical");
-        integratedToolAgent.setVersion("1.0-test");
+        integratedToolAgent.setId("tactical-rmm");
+        integratedToolAgent.setVersion("1.0");
         toolInstallationNatsPublisher.publish(machineId, integratedToolAgent);
     }
 

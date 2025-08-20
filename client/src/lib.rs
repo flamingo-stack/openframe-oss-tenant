@@ -47,6 +47,7 @@ use crate::services::initial_authentication_processor::InitialAuthenticationProc
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
+use crate::services::ToolInstallationCommandRunner;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -206,8 +207,11 @@ impl Client {
             Self::GATEWAY_HTTP_URL.to_string()
         );
 
+        // Initialize tool installation command runner
+        let command_runner = ToolInstallationCommandRunner::new();
+
         // Initialize tool installer
-        let tool_installer = ToolInstaller::new(directory_manager.clone());
+        let tool_installer = ToolInstaller::new(directory_manager.clone(), command_runner);
 
         // Initialize NATS message publisher
         let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());

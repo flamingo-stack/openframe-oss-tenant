@@ -45,7 +45,7 @@ public class TacticalRmmClient {
                                     "installMethod": "manual",
                                     "client": 1,
                                     "site": 1,
-                                    "expires": 24,
+                                    "expires": 2400,
                                     "agenttype": "server",
                                     "power": 0,
                                     "rdp": 0,
