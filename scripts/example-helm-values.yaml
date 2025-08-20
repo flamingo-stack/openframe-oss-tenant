@@ -55,7 +55,7 @@ registry:
   ghcr:
     server: ghcr.io                       # GitHub Container Registry endpoint
     username: CI                          # GitHub username for CI/CD
-    password: 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  # GitHub Personal Access Token
+    password: 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  # GitHub Personal Access Token
     email: CI@flamingo.cx                 # GitHub email for CI/CD
 
 registerJob:
@@ -229,7 +229,7 @@ apps:
       ghcrRegistry:
         server: ghcr.io
         username: CI
-        password: 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
+        password: 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
         email: CI@flamingo.cx
     
   openframe-config:
