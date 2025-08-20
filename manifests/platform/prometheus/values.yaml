@@ -4,8 +4,8 @@ registerJob:
 
 kube-prometheus-stack:
   global:
-    imagePullSecrets:
-      - name: docker-pat-secret
+    # imagePullSecrets are now conditionally added via app-helpers/_app-name.tpl
+    # based on whether registry.docker.password is set
 
   grafana:
     enabled: false
