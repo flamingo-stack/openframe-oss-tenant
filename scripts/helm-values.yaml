@@ -1,9 +1,0 @@
-registry:
-  docker:
-    server: https://index.docker.io/v1/  
-    username: dmtkov
-    password: dckr_pat_F8RaMkC4mda5BSmT4yUlf8BwxiA
-    email: dmtkov@flamingo.cx
-  
-global:
-  repoBranch: feature/to-public-repo
