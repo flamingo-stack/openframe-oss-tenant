@@ -31,9 +31,6 @@ export -f flamingo
 source "${SCRIPT_DIR}/functions/show-help.sh"
 export -f show_help
 
-source "${SCRIPT_DIR}/functions/wait.sh"
-export -f wait_for_app
-
 source "${SCRIPT_DIR}/functions/develop.sh"
 export -f intercept_app
 

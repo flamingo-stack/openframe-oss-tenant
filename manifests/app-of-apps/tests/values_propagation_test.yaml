@@ -1,0 +1,211 @@
+suite: values propagation tests
+templates:
+  - templates/argocd-apps.yaml
+tests:
+  # ========================================
+  # DEPLOYMENT VALUES PROPAGATION
+  # ========================================
+
+  - it: should propagate self-hosted localhost values
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "deployment:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "selfHosted:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "localhost:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "enabled: true"
+
+  - it: should propagate self-hosted ngrok values
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "deployment:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "ngrok:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "enabled: true"
+
+  - it: should propagate SaaS deployment values
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "deployment:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "saas:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "localhost:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "enabled: true"
+
+  # ========================================
+  # GLOBAL VALUES PROPAGATION
+  # ========================================
+
+  - it: should propagate custom global repository values
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      global.repoURL: "https://custom-repo.com/openframe.git"
+      global.repoBranch: "development"
+      global.repoDir: "custom-manifests"
+      global.appsDir: "custom-apps"
+    asserts:
+      - equal:
+          path: spec.source.repoURL
+          value: "https://custom-repo.com/openframe.git"
+      - equal:
+          path: spec.source.targetRevision
+          value: "development"
+      - equal:
+          path: spec.source.path
+          value: "custom-manifests/custom-apps"
+
+  - it: should propagate global autoSync setting to helm values
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      global.autoSync: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "autoSync: false"
+
+  # ========================================
+  # REGISTRY VALUES PROPAGATION
+  # ========================================
+
+  - it: should propagate docker registry configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      registry.docker.username: "testuser"
+      registry.docker.password: "testpass"
+      registry.docker.email: "test@example.com"
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "registry:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "username: testuser"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "password: testpass"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "email: test@example.com"
+
+  - it: should propagate GHCR registry configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      registry.ghcr.username: "ghcruser"
+      registry.ghcr.password: "ghcrtoken"
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "ghcr:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "username: ghcruser"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "password: ghcrtoken"
+
+  # ========================================
+  # APP-SPECIFIC VALUES PROPAGATION
+  # ========================================
+
+  - it: should propagate app-specific configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      apps.openframe-config.values.config.branch: "feature-branch"
+      apps.openframe-config.values.config.environment: "staging"
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "openframe-config:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "branch: feature-branch"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "environment: staging"
+
+  # ========================================
+  # NGROK CREDENTIALS PROPAGATION
+  # ========================================
+
+  - it: should propagate ngrok credentials
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.credentials.apiKey: "test-api-key"
+      deployment.selfHosted.ingress.ngrok.credentials.authtoken: "test-auth-token"
+      deployment.saas.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "credentials:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "apiKey: test-api-key"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "authtoken: test-auth-token"
+
+  # ========================================
+  # REGISTER JOB CONFIGURATION
+  # ========================================
+
+  - it: should propagate registerJob configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      registerJob.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "registerJob:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "enabled: false"

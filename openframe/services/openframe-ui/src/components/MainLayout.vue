@@ -236,15 +236,9 @@ const toggleMenu = () => {
   menuVisible.value = !menuVisible.value;
 };
 
-const handleLogout = async () => {
-  try {
-    await authStore.logout();
-    router.push('/login');
-  } catch (error) {
-    console.error('Logout error:', error);
-    // Even if logout fails, redirect to login
-    router.push('/login');
-  }
+const handleLogout = () => {
+  // Logout performs a full redirect to Gateway /oauth/logout; don't push SPA route after
+  authStore.logout();
 };
 </script>
 

@@ -62,6 +62,7 @@
         <module>openframe/services/openframe-management</module>
         <module>openframe/services/openframe-gateway</module>
         <module>openframe/services/openframe-external-api</module>
+        <module>openframe/services/openframe-authorization-server</module>
     </modules>
 
     <dependencies>
