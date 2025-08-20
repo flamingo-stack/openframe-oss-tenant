@@ -12,23 +12,31 @@
 # It defines global settings, registry credentials, and deployment environment
 
 deployment:
-  # Ingress configuration - enable only ONE of the following
-  ingress:
-    localhost:
-      enabled: true   # Enable localhost ingress with nginx
-      # TLS configuration (optional)
-      # tls:
-      #   cert: |
-      #   key: |
-    ngrok:
-      enabled: false  # Enable ngrok ingress for external access
-      # URL is required when ngrok is enabled
-      url: https://reindeer-suitable-genuinely.ngrok-free.app
-      credentials:
-          apiKey: ""
-          authtoken: ""
-      allowedIPs:
-        - 0.0.0.0/0
+  selfHosted:
+    enabled: true
+    # Ingress configuration - enable only ONE of the following
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx
+        # TLS configuration (optional)
+        # tls:
+        #   cert: |
+        #   key: |
+      ngrok:
+        enabled: false  # Enable ngrok ingress for external access
+        # URL is required when ngrok is enabled
+        url: https://reindeer-suitable-genuinely.ngrok-free.app
+        credentials:
+            apiKey: ""
+            authtoken: ""
+        allowedIPs:
+          - 0.0.0.0/0
+  saas:
+    disabled: false
+    # Ingress configuration for SaaS deployment
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx for SaaS
 
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository
@@ -47,7 +55,7 @@ registry:
   ghcr:
     server: ghcr.io                       # GitHub Container Registry endpoint
     username: CI                          # GitHub username for CI/CD
-    password: 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  # GitHub Personal Access Token
+    password: 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  # GitHub Personal Access Token
     email: CI@flamingo.cx                 # GitHub email for CI/CD
 
 registerJob:
@@ -227,7 +235,7 @@ apps:
       ghcrRegistry:
         server: ghcr.io
         username: CI
-        password: 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
+        password: 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
         email: CI@flamingo.cx
     
   openframe-config:

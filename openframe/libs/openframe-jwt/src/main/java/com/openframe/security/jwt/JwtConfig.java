@@ -1,18 +1,21 @@
 package com.openframe.security.jwt;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.stereotype.Service;
+
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.stereotype.Service;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
+@Setter
+@Getter
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -39,39 +42,6 @@ public class JwtConfig {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
         return (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
-    }
-
-    // Getters and setters
-    public String getIssuer() {
-        return issuer;
-    }
-
-    public void setIssuer(String issuer) {
-        this.issuer = issuer;
-    }
-
-    public String getAudience() {
-        return audience;
-    }
-
-    public void setAudience(String audience) {
-        this.audience = audience;
-    }
-
-    public KeyConfig getPublicKey() {
-        return publicKey;
-    }
-
-    public void setPublicKey(KeyConfig publicKey) {
-        this.publicKey = publicKey;
-    }
-
-    public KeyConfig getPrivateKey() {
-        return privateKey;
-    }
-
-    public void setPrivateKey(KeyConfig privateKey) {
-        this.privateKey = privateKey;
     }
 
 }

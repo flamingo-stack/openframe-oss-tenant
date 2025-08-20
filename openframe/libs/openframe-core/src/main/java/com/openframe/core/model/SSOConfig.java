@@ -13,4 +13,4 @@ public class SSOConfig {
     private String clientId;
     private String clientSecret;
     private boolean enabled;
-} 
+}
