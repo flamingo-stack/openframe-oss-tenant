@@ -5,11 +5,11 @@
 {{/* Start with existing app values */}}
 {{- $result := $app.values | default dict -}}
 
-{{/* Only create mongodb-exporter config if docker password exists and is not empty */}}
+{{/* Only create prometheus-mongodb-exporter config if docker password exists and is not empty */}}
 {{- if ne ($vals.registry.docker.password | default "") "" -}}
-  {{- $mongodbexporter := index $result "mongodb-exporter" | default dict -}}
+  {{- $mongodbexporter := index $result "prometheus-mongodb-exporter" | default dict -}}
   {{- $_ := set $mongodbexporter "imagePullSecrets" (list (dict "name" "docker-pat-secret")) -}}
-  {{- $_ := set $result "mongodb-exporter" $mongodbexporter -}}
+  {{- $_ := set $result "prometheus-mongodb-exporter" $mongodbexporter -}}
 {{- end -}}
 
 {{- if ne (len $result) 0 -}}
