@@ -280,19 +280,16 @@ function generateCodeVerifier(): string {
   return base64UrlEncode(array.buffer)
 }
 
-// ===== Password validation (client-side, mirrors backend) =====
 function isPasswordStrong(pw: string): boolean {
   if (!pw) return false
-  // Must contain at least one lowercase, one uppercase, one digit, and one special character
-  const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-={}\[\]|:;"'<>,.?/]).+$/
-  return re.test(pw) && pw.length >= 8
+  return pw.length >= 5
 }
 
 const passwordValidationMessage = computed(() => {
   if (!registerForm.password) return ''
   return isPasswordStrong(registerForm.password)
     ? ''
-    : 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
+    : 'Password must be at least 5 characters'
 })
 
 // Email submission handler for login
