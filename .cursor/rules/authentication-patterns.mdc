@@ -248,3 +248,4 @@ updateAuthStatus(); // Called after auth state changes
 - **Core Cookie Service**: [CookieService.java](mdc:openframe/libs/openframe-jwt/src/main/java/com/openframe/security/cookie/CookieService.java)
 - **Gateway Security Config**: [GatewaySecurityConfig.java](mdc:openframe/services/openframe-gateway/src/main/java/com/openframe/gateway/security/GatewaySecurityConfig.java)
 - **API Security Config**: [SecurityConfig.java](mdc:openframe/services/openframe-api/src/main/java/com/openframe/api/config/SecurityConfig.java)
+

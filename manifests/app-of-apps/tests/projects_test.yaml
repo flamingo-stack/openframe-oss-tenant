@@ -1,0 +1,160 @@
+suite: argocd projects generation tests
+templates:
+  - templates/projects.yaml
+tests:
+  # ========================================
+  # PROJECTS GENERATION TESTS
+  # ========================================
+
+  - it: should generate all required ArgoCD projects
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 5
+      # Validate all projects are generated with correct names
+      - equal:
+          path: metadata.name
+          value: platform
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: datasources
+        documentIndex: 1
+      - equal:
+          path: metadata.name
+          value: microservices
+        documentIndex: 2
+      - equal:
+          path: metadata.name
+          value: integrated-tools
+        documentIndex: 3
+      - equal:
+          path: metadata.name
+          value: client-tools
+        documentIndex: 4
+      # Validate all are AppProject kind
+      - isKind:
+          of: AppProject
+        documentIndex: 0
+      - isKind:
+          of: AppProject
+        documentIndex: 4
+
+  # ========================================
+  # PROJECT CONFIGURATION TESTS
+  # ========================================
+
+  - it: should have correct project metadata and permissions
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      # Metadata validation
+      - equal:
+          path: apiVersion
+          value: argoproj.io/v1alpha1
+        documentIndex: 0
+      - contains:
+          path: metadata.finalizers
+          content: resources-finalizer.argocd.argoproj.io
+        documentIndex: 0
+      # Permissions validation
+      - contains:
+          path: spec.sourceRepos
+          content: "*"
+        documentIndex: 0
+      - equal:
+          path: spec.destinations[0].namespace
+          value: "*"
+        documentIndex: 0
+      - equal:
+          path: spec.destinations[0].server
+          value: "*"
+        documentIndex: 0
+
+  - it: should have correct cluster resource whitelist
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.clusterResourceWhitelist[0].group
+          value: "*"
+        documentIndex: 0
+      - equal:
+          path: spec.clusterResourceWhitelist[0].kind
+          value: "*"
+        documentIndex: 0
+
+  # ========================================
+  # DEPLOYMENT TYPE CONSISTENCY
+  # ========================================
+
+  - it: should generate same projects for SaaS deployment
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 5
+      - equal:
+          path: metadata.name
+          value: platform
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: datasources
+        documentIndex: 1
+      - equal:
+          path: metadata.name
+          value: microservices
+        documentIndex: 2
+      - equal:
+          path: metadata.name
+          value: integrated-tools
+        documentIndex: 3
+      - equal:
+          path: metadata.name
+          value: client-tools
+        documentIndex: 4
+
+  # ========================================
+  # PROJECT DESCRIPTIONS VALIDATION
+  # ========================================
+
+  - it: should have correct project descriptions
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.description
+          value: "Project for k8s platform apps."
+        documentIndex: 0
+      - equal:
+          path: spec.description
+          value: "Project for k8s datasources apps."
+        documentIndex: 1
+      - equal:
+          path: spec.description
+          value: "Project for k8s microservices apps."
+        documentIndex: 2
+      - equal:
+          path: spec.description
+          value: "Project for k8s integrated-tools apps."
+        documentIndex: 3
+      - equal:
+          path: spec.description
+          value: "Project for k8s client-tools apps."
+        documentIndex: 4

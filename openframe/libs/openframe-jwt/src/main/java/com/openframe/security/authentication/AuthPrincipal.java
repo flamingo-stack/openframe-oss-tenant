@@ -6,6 +6,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 /**
  * Wrapper for authenticated principal information extracted from JWT token.
  * Provides clean access to user claims without working with raw JWT.
@@ -45,35 +47,68 @@ public class AuthPrincipal {
     private final List<String> scopes;
 
     /**
+     * Tenant ID from 'tenant_id' claim
+     */
+    private final String tenantId;
+
+    /**
+     * Tenant domain from 'tenant_domain' claim
+     */
+    private final String tenantDomain;
+
+    /**
      * Creates AuthPrincipal from JWT token
      */
     public static AuthPrincipal fromJwt(Jwt jwt) {
+        // Prefer userId; fallback to sub
+        String userIdClaim = jwt.getClaimAsString("userId");
+        String sub = jwt.getSubject();
+        String id = (userIdClaim != null && !userIdClaim.isBlank()) ? userIdClaim : sub;
+
+        // Roles list (optional)
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        roles = (roles != null) ? roles : emptyList();
+
+        // Scope: support list or space-delimited string
+        List<String> scopes = jwt.getClaimAsStringList("scope");
+        if (scopes == null) {
+            String scopeStr = jwt.getClaimAsString("scope");
+            if (scopeStr != null && !scopeStr.isBlank()) {
+                scopes = java.util.Arrays.stream(scopeStr.split(" "))
+                        .filter(s -> !s.isBlank())
+                        .toList();
+            } else {
+                scopes = emptyList();
+            }
+        }
+
+        String tenantId = jwt.getClaimAsString("tenant_id");
+        String tenantDomain = jwt.getClaimAsString("tenant_domain");
+
+        // Email: prefer explicit claim; fallback to sub if it looks like email
+        String email = jwt.getClaimAsString("email");
+        if ((email == null || email.isBlank()) && sub != null && sub.contains("@")) {
+            email = sub;
+        }
+
         return AuthPrincipal.builder()
-                .id(jwt.getSubject())
-                .email(jwt.getClaimAsString("email"))
+                .id(id)
+                .email(email)
                 .firstName(getFirstNameFromJwt(jwt))
                 .lastName(getLastNameFromJwt(jwt))
-                .roles(jwt.getClaimAsStringList("roles"))
-                .scopes(jwt.getClaimAsStringList("scope"))
+                .roles(roles)
+                .scopes(scopes)
+                .tenantId(tenantId)
+                .tenantDomain(tenantDomain)
                 .build();
     }
 
     private static String getFirstNameFromJwt(Jwt jwt) {
-        // Try 'given_name' first (standard OAuth2 claim), then 'firstName'
-        String firstName = jwt.getClaimAsString("given_name");
-        if (firstName == null) {
-            firstName = jwt.getClaimAsString("firstName");
-        }
-        return firstName;
+        return jwt.getClaimAsString("firstName");
     }
 
     private static String getLastNameFromJwt(Jwt jwt) {
-        // Try 'family_name' first (standard OAuth2 claim), then 'lastName'
-        String lastName = jwt.getClaimAsString("family_name");
-        if (lastName == null) {
-            lastName = jwt.getClaimAsString("lastName");
-        }
-        return lastName;
+        return jwt.getClaimAsString("lastName");
     }
 
     /**

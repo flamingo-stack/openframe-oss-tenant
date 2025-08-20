@@ -1,0 +1,52 @@
+suite: test validation logic
+templates:
+  - templates/ingress.yaml
+tests:
+  # Deployment validation
+  - it: should fail when no deployment type enabled
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently selfHosted=false, saas=false"
+
+  - it: should fail when both deployment types enabled
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.saas.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently selfHosted=true, saas=true"
+
+  # Ingress validation for selfHosted
+  - it: should fail when selfHosted has no ingress
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Exactly one ingress must be enabled for selfHosted deployment. Currently localhost=false, ngrok=false"
+
+  - it: should fail when selfHosted has multiple ingresses
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.saas.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Exactly one ingress must be enabled for selfHosted deployment. Currently localhost=true, ngrok=true"
+
+  # Ingress validation for saas
+  - it: should fail when saas has no localhost ingress
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: localhost ingress must be enabled for SaaS deployment"

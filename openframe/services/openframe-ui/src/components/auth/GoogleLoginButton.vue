@@ -18,9 +18,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { GoogleOAuthService } from '../../services/GoogleOAuthService';
 import { ssoService } from '@/services/SSOService';
-import type { SSOConfigStatus } from '@/types/sso';
 
 const isLoading = ref(true);
 const isGoogleEnabled = ref(false);
@@ -57,8 +55,12 @@ const handleGoogleLogin = async () => {
       return;
     }
     
-    console.log('🚀 [GoogleLoginButton] Initiating Google OAuth flow');
-    await GoogleOAuthService.initiateLogin();
+    // Use standard Spring Security OAuth2 flow
+    const authUrl = ssoService.getGoogleAuthUrl();
+    console.log('🚀 [GoogleLoginButton] Redirecting to Authorization Server:', authUrl);
+    
+    // Redirect to Authorization Server
+    window.location.href = authUrl;
     
   } catch (error) {
     console.error('❌ [GoogleLoginButton] Error initiating Google login:', error);

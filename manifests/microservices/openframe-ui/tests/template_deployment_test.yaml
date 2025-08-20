@@ -1,0 +1,131 @@
+suite: test deployment template
+templates:
+  - templates/deployment.yaml
+tests:
+  # Basic deployment rendering
+  - it: should render deployment for selfHosted localhost
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: openframe-ui
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.selector.matchLabels.app
+          value: openframe-ui
+
+  - it: should render deployment for selfHosted ngrok
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: openframe-ui
+
+  - it: should render deployment for saas localhost
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: openframe-ui
+
+  # Container configuration
+  - it: should configure container correctly
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+      image.repo: "test-repo"
+      image.tag: "test-tag"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: openframe-ui
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "test-repo:test-tag"
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 3000
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].name
+          value: http
+
+  # Image pull secrets
+  - it: should include image pull secrets
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: github-pat-secret
+
+  # Health checks
+  - it: should configure health checks
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: http
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: http
+
+  # Static environment variables
+  - it: should configure static environment variables
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_ID
+            value: "openframe_web_dashboard"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_CLIENT_SECRET
+            value: "prod_secret"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: VITE_GRAFANA_URL
+            value: "https://localhost:3000"

@@ -15,6 +15,8 @@ on:
         value: ${{ jobs.changes.outputs.sdk-fleetmdm }}
       openframe-api: 
         value: ${{ jobs.changes.outputs.openframe-api }}
+      openframe-authorization-server: 
+        value: ${{ jobs.changes.outputs.openframe-authorization-server }}
       openframe-external-api: 
         value: ${{ jobs.changes.outputs.openframe-external-api }}
       openframe-client: 
@@ -29,10 +31,6 @@ on:
         value: ${{ jobs.changes.outputs.openframe-stream }}
       openframe-ui: 
         value: ${{ jobs.changes.outputs.openframe-ui }}
-      mongodb: 
-        value: ${{ jobs.changes.outputs.mongodb }}
-      cassandra: 
-        value: ${{ jobs.changes.outputs.cassandra }}
       authentik-postgresql: 
         value: ${{ jobs.changes.outputs.authentik-postgresql }}
       fleetmdm: 
@@ -63,6 +61,7 @@ jobs:
       api-library: ${{ steps.filter.outputs.api-library }}
       sdk-fleetmdm: ${{ steps.filter.outputs.sdk-fleetmdm }}
       openframe-api: ${{ steps.filter.outputs.openframe-api }}
+      openframe-authorization-server: ${{ steps.filter.outputs.openframe-authorization-server }}
       openframe-external-api: ${{ steps.filter.outputs.openframe-external-api }}
       openframe-client: ${{ steps.filter.outputs.openframe-client }}
       openframe-config: ${{ steps.filter.outputs.openframe-config }}
@@ -70,8 +69,6 @@ jobs:
       openframe-management: ${{ steps.filter.outputs.openframe-management }}
       openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
       openframe-ui: ${{ steps.filter.outputs.openframe-ui }}
-      mongodb: ${{ steps.filter.outputs.mongodb }}
-      cassandra: ${{ steps.filter.outputs.cassandra }}
       authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
       fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
       meshcentral: ${{ steps.filter.outputs.meshcentral }}
@@ -115,6 +112,10 @@ jobs:
               - './openframe/services/openframe-api/**'
               - './openframe/libs/api-library/**'
               - './openframe/libs/openframe-data/**'
+              - './openframe/libs/openframe-jwt/**'
+              - './openframe/libs/openframe-core/**'
+            openframe-authorization-server:
+              - './openframe/services/openframe-authorization-server/**'
               - './openframe/libs/openframe-jwt/**'
               - './openframe/libs/openframe-core/**'
             openframe-external-api:

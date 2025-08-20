@@ -41,4 +41,8 @@ public final class HttpHeaders {
     
     // Media type constants
     public static final String APPLICATION_JSON = "application/json";
+
+    public static final String X_FORWARDED_PROTO= "X-Forwarded-Proto";
+    public static final String X_FORWARDED_HOST = "X-Forwarded-Host";
+    public static final String X_FORWARDED_PORT = "X-Forwarded-Port";
 } 

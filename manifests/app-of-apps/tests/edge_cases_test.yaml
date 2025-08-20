@@ -1,0 +1,147 @@
+suite: edge cases and configuration tests
+templates:
+  - templates/argocd-apps.yaml
+  - templates/docker-secret.yaml
+  - templates/repo-secret.yaml
+  - templates/projects.yaml
+tests:
+  # ========================================
+  # SAAS CONFIGURATION EDGE CASES
+  # ========================================
+
+  - it: should handle SaaS with ignored ngrok configuration
+    template: templates/argocd-apps.yaml
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+      deployment.saas.ingress.ngrok.enabled: false  # Should be ignored for SaaS
+      deployment.saas.ingress.ngrok.credentials.apiKey: "ignored-key"
+      deployment.saas.ingress.ngrok.credentials.authtoken: "ignored-token"
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Application
+      - equal:
+          path: metadata.name
+          value: argocd-apps
+      # Should still propagate SaaS localhost configuration
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "saas:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "localhost:"
+
+  # ========================================
+  # MISSING CONFIGURATION HANDLING
+  # ========================================
+
+  - it: should handle missing optional configuration gracefully
+    template: templates/argocd-apps.yaml
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      apps: {}  # Empty apps configuration
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Application
+      - equal:
+          path: metadata.name
+          value: argocd-apps
+
+  - it: should generate all templates with minimal configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/argocd-apps.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/docker-secret.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/repo-secret.yaml
+      - hasDocuments:
+          count: 5
+        template: templates/projects.yaml
+
+  # ========================================
+  # CUSTOM CONFIGURATION HANDLING
+  # ========================================
+
+  - it: should handle custom repository configuration
+    template: templates/argocd-apps.yaml
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      global.repoURL: "https://example.com/custom-repo.git"
+      global.repoBranch: "custom-branch"
+      global.repoDir: "custom-dir"
+      global.appsDir: "custom-apps-dir"
+    asserts:
+      - equal:
+          path: spec.source.repoURL
+          value: "https://example.com/custom-repo.git"
+      - equal:
+          path: spec.source.targetRevision
+          value: "custom-branch"
+      - equal:
+          path: spec.source.path
+          value: "custom-dir/custom-apps-dir"
+
+  # ========================================
+  # SPECIAL CHARACTER HANDLING
+  # ========================================
+
+  - it: should handle special characters in configuration
+    template: templates/argocd-apps.yaml
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      registry.docker.username: "user@domain.com"
+      registry.docker.password: "pass/word-with@special#chars!"
+      apps.test-app.values.custom.value: "special-chars:!@#$%^&*()"
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "username: user@domain.com"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "pass/word-with@special#chars!"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "special-chars:!@#\\$%\\^&\\*\\(\\)"
+
+  # ========================================
+  # CONFIGURATION BOUNDARY VALIDATION
+  # ========================================
+
+  - it: should handle disabled registerJob configuration
+    template: templates/argocd-apps.yaml
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      registerJob.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "registerJob:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "enabled: false"
