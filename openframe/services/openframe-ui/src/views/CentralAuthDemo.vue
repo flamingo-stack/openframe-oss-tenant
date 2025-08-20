@@ -102,6 +102,9 @@
                 required
                 :disabled="registerLoading"
               />
+              <small v-if="passwordValidationMessage" class="form-hint" style="color: var(--red-500);">
+                {{ passwordValidationMessage }}
+              </small>
             </div>
 
             <div class="form-group">
@@ -116,7 +119,7 @@
               />
             </div>
 
-            <button type="submit" class="btn-primary" :disabled="registerLoading || !isPasswordMatch || !registerForm.tenantName">
+            <button type="submit" class="btn-primary" :disabled="registerLoading || !isPasswordMatch || !registerForm.tenantName || !!passwordValidationMessage">
               <i v-if="registerLoading" class="pi pi-spin pi-spinner"></i>
               <span v-else>Create Organization</span>
             </button>
@@ -277,6 +280,18 @@ function generateCodeVerifier(): string {
   return base64UrlEncode(array.buffer)
 }
 
+function isPasswordStrong(pw: string): boolean {
+  if (!pw) return false
+  return pw.length >= 5
+}
+
+const passwordValidationMessage = computed(() => {
+  if (!registerForm.password) return ''
+  return isPasswordStrong(registerForm.password)
+    ? ''
+    : 'Password must be at least 5 characters'
+})
+
 // Email submission handler for login
 async function handleEmailSubmit() {
   if (!email.value) return
@@ -391,6 +406,16 @@ async function handleManualRegistration() {
       summary: 'Password Mismatch',
       detail: 'Passwords do not match',
       life: 5000
+    })
+    return
+  }
+
+  if (!isPasswordStrong(registerForm.password)) {
+    toast.add({
+      severity: 'error',
+      summary: 'Weak Password',
+      detail: 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+      life: 6000
     })
     return
   }
