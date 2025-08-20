@@ -36,7 +36,7 @@ spec:
         app: pinot
         component: controller
     spec:
-      {{- if .Values.global.registry.docker.password }}
+      {{- if ne .Values.global.registry.docker.password "" }}
       imagePullSecrets:
         - name: docker-pat-secret
       {{- end }}

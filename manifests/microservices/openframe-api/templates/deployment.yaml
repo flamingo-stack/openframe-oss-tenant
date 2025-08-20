@@ -12,7 +12,7 @@ spec:
       labels:
         app: openframe-api
     spec:
-      {{- if .Values.registry.ghcr.password }}
+      {{- if ne .Values.registry.ghcr.password "" }}
       imagePullSecrets:
         - name: github-pat-secret
       {{- end }}

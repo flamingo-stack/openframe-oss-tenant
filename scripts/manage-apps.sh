@@ -45,8 +45,8 @@ argocd_apps)
       --wait \
       --timeout 60m \
       -f "${SCRIPT_DIR}/helm-values.yaml" \
-      --set-file deployment.ingress.localhost.tls.cert=${CERT_DIR}/localhost.pem \
-      --set-file deployment.ingress.localhost.tls.key=${CERT_DIR}/localhost-key.pem \
+      --set-file deployment.selfHosted.ingress.localhost.tls.cert=${CERT_DIR}/localhost.pem \
+      --set-file deployment.selfHosted.ingress.localhost.tls.key=${CERT_DIR}/localhost-key.pem \
       > "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log" 2> >(grep -v 'metadata\.finalizers' >&2)
     wait_for_argocd_apps >> "${DEPLOY_LOG_DIR}/deploy-app-of-apps.log"
 
