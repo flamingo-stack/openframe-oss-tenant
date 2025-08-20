@@ -14,5 +14,7 @@
   {{- $_ := set $result "kube-prometheus-stack" $prometheus -}}
 {{- end -}}
 
+{{- if ne (len $result) 0 -}}
 {{- toYaml $result -}}
+{{- end -}}
 {{- end }}

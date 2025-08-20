@@ -12,5 +12,7 @@
   {{- $_ := set $result "kafka-ui" $kafkaui -}}
 {{- end -}}
 
+{{- if ne (len $result) 0 -}}
 {{- toYaml $result -}}
+{{- end -}}
 {{- end }}

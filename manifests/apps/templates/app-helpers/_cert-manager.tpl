@@ -14,5 +14,7 @@
   {{- $_ := set $result "cert-manager" $certmanager -}}
 {{- end -}}
 
+{{- if ne (len $result) 0 -}}
 {{- toYaml $result -}}
+{{- end -}}
 {{- end }}

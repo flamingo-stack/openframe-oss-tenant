@@ -14,5 +14,7 @@
   {{- $_ := set $result "promtail" $promtail -}}
 {{- end -}}
 
+{{- if ne (len $result) 0 -}}
 {{- toYaml $result -}}
+{{- end -}}
 {{- end }}

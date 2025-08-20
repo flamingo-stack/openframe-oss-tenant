@@ -12,5 +12,7 @@
   {{- $_ := set $result "mongodb-exporter" $mongodbexporter -}}
 {{- end -}}
 
+{{- if ne (len $result) 0 -}}
 {{- toYaml $result -}}
+{{- end -}}
 {{- end }}
