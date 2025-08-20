@@ -13,8 +13,10 @@ spec:
       labels:
         app: openframe-ui
     spec:
+      {{- if ne .Values.registry.ghcr.password "" }}
       imagePullSecrets:
         - name: github-pat-secret
+      {{- end }}
 
       containers:
         - name: openframe-ui

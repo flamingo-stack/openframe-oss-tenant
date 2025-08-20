@@ -51,29 +51,17 @@ tests:
           path: metadata.name
           value: "ngrok-operator"
 
-  - it: should use default ngrok credentials when no custom ones provided
+  - it: should not add ngrok credentials when they are empty by default
     set:
       deployment.selfHosted.enabled: true
       deployment.selfHosted.ingress.localhost.enabled: false
       deployment.selfHosted.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
-      # Should use credentials from values.yaml
-      - matchRegex:
+      # Should NOT add ngrok-operator config when credentials are empty
+      - notMatchRegex:
           path: spec.sources[0].helm.values
           pattern: "ngrok-operator:"
-        documentSelector:
-          path: metadata.name
-          value: "ngrok-operator"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "apiKey: 30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
-        documentSelector:
-          path: metadata.name
-          value: "ngrok-operator"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "authtoken: 30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
         documentSelector:
           path: metadata.name
           value: "ngrok-operator"
