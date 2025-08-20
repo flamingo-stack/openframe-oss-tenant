@@ -38,11 +38,12 @@ impl ToolInstaller {
             .await
             .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
 
+        let token_path = tool_folder_path.join("shared_token.enc").to_string_lossy().to_string();
         let args = [
             // &file_path_str,
             "-m", "install",
             "-api", "https://localhost",
-            "-auth", "123",
+            "-auth", "69f13676d6ce8f3dc393164f30f2341d1fc7c77efd196821d51a7668daeb0504",
             "-client-id", "1",
             "-site-id", "1",
             "-agent-type", "workstation",
@@ -51,7 +52,9 @@ impl ToolInstaller {
             "--openframe-mode",
             "-nomesh",
             "-openframe-secret", "12345678901234567890123456789012",
-            "--insecure"
+            "--insecure",
+            // tool folder + shared_token.enc
+            "--openframe-token-path", &token_path
         ];
 
         info!("Running command: sudo {}", args.join(" "));
@@ -66,13 +69,13 @@ impl ToolInstaller {
             Err(e) => error!("Failed to execute elevated command: {}", e),
         }
 
-        let output = self.command_runner
-            .run_command(
-                // "sudo",
-                &file_path_str,
-                &args
-            )
-            .await?;
+        // let output = self.command_runner
+        //     .run_command(
+        //         // "sudo",
+        //         &file_path_str,
+        //         &args
+        //     )
+        //     .await?;
 
         let tool_agent_id = format!("{}_agent_id", tool_id);
         Ok(ToolInstallationResult { tool_agent_id })

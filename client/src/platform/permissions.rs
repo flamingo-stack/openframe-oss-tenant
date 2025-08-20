@@ -351,11 +351,6 @@ impl PermissionUtils {
 
     /// Try to run a command with elevated privileges
     pub fn run_as_admin(command: &str, args: &[&str]) -> Result<(), PermissionError> {
-        // If we've already ensured admin privileges, we can just run the command directly
-        if ADMIN_PRIVILEGES_GRANTED.load(Ordering::Relaxed) {
-            return Self::run_command(command, args);
-        }
-
         // If already admin, no need to elevate
         if Self::is_admin() {
             return Self::run_command(command, args);
@@ -369,29 +364,173 @@ impl PermissionUtils {
 
         #[cfg(target_os = "windows")]
         {
-            // First ensure we have admin privileges
-            Self::ensure_admin()?;
+            // On Windows, use ShellExecuteW with "runas" verb to run the command with UAC elevation
+            use std::ffi::OsStr;
+            use std::iter::once;
+            use std::os::windows::ffi::OsStrExt;
 
-            // Now we can just run the command directly
-            Self::run_command(command, args)
-        }
+            // Convert command to wide string
+            let wide_cmd: Vec<u16> = OsStr::new(command).encode_wide().chain(once(0)).collect();
 
-        #[cfg(target_os = "linux")]
-        {
-            // First ensure we have admin privileges
-            Self::ensure_admin()?;
+            // Join args into a single string and convert to wide string
+            let args_string = args.join(" ");
+            let wide_args: Vec<u16> = OsStr::new(&args_string).encode_wide().chain(once(0)).collect();
 
-            // Now we can just run the command directly
-            Self::run_command(command, args)
+            // Create the runas verb as a wide string
+            let runas: Vec<u16> = OsStr::new("runas").encode_wide().chain(once(0)).collect();
+
+            let result = unsafe {
+                ShellExecuteW(
+                    std::ptr::null_mut(), // hwnd
+                    runas.as_ptr(),       // lpOperation - "runas" verb for UAC elevation
+                    wide_cmd.as_ptr(),    // lpFile - the command
+                    wide_args.as_ptr(),   // lpParameters
+                    std::ptr::null(),     // lpDirectory
+                    SW_NORMAL,            // nShowCmd
+                )
+            };
+
+            // ShellExecute returns a value greater than 32 if successful
+            if result as usize <= 32 {
+                error!("Failed to run command with admin privileges, error code: {}", result);
+                return Err(PermissionError::CommandFailed(result as i32));
+            }
+
+            info!("Successfully executed command with admin privileges on Windows");
+            Ok(())
         }
 
         #[cfg(target_os = "macos")]
         {
-            // First ensure we have admin privileges
-            Self::ensure_admin()?;
+            // On macOS, use osascript with "do shell script ... with administrator privileges"
+            info!("Running command with admin privileges on macOS using osascript");
 
-            // Now we can just run the command directly
-            Self::run_command(command, args)
+            // Escape the command and arguments for shell script execution
+            let mut shell_command = format!("'{}'", command.replace("'", "'\"'\"'"));
+            for arg in args {
+                shell_command.push(' ');
+                shell_command.push_str(&format!("'{}'", arg.replace("'", "'\"'\"'")));
+            }
+
+            // Create AppleScript that runs the command with administrator privileges
+            let apple_script = format!(
+                "do shell script \"{}\" with administrator privileges with prompt \"OpenFrame requires administrator privileges to execute: {}\"",
+                shell_command,
+                format!("{} {}", command, args.join(" "))
+            );
+
+            // Execute the AppleScript
+            let result = Command::new("osascript")
+                .arg("-e")
+                .arg(&apple_script)
+                .output();
+
+            match result {
+                Ok(output) => {
+                    // Log the stdout and stderr
+                    if !output.stdout.is_empty() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        info!("Command stdout: {}", stdout);
+                    }
+                    if !output.stderr.is_empty() {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        error!("Command stderr: {}", stderr);
+                    }
+
+                    if output.status.success() {
+                        info!("Successfully executed command with admin privileges on macOS");
+                        Ok(())
+                    } else {
+                        error!(
+                            "Failed to execute command with admin privileges, exit code: {}",
+                            output.status.code().unwrap_or(-1)
+                        );
+                        Err(PermissionError::CommandFailed(output.status.code().unwrap_or(-1)))
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to execute osascript: {}", e);
+                    Err(PermissionError::Io(e))
+                }
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            // On Linux, try pkexec first (better UI experience), then fallback to sudo
+            info!("Running command with admin privileges on Linux");
+
+            // Try pkexec first
+            let mut pkexec_cmd = Command::new("pkexec");
+            pkexec_cmd.arg(command);
+            pkexec_cmd.args(args);
+
+            info!("Attempting to run command with pkexec");
+            let pkexec_result = pkexec_cmd.output();
+
+            match pkexec_result {
+                Ok(output) if output.status.success() => {
+                    // Log the stdout and stderr
+                    if !output.stdout.is_empty() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        info!("Command stdout: {}", stdout);
+                    }
+                    if !output.stderr.is_empty() {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        error!("Command stderr: {}", stderr);
+                    }
+
+                    info!("Successfully executed command with admin privileges using pkexec");
+                    return Ok(());
+                }
+                Ok(output) => {
+                    warn!("pkexec failed with exit code: {}, trying sudo", output.status.code().unwrap_or(-1));
+                    if !output.stderr.is_empty() {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        warn!("pkexec stderr: {}", stderr);
+                    }
+                }
+                Err(e) => {
+                    warn!("pkexec not available or failed: {}, trying sudo", e);
+                }
+            }
+
+            // Fallback to sudo
+            info!("Attempting to run command with sudo");
+            let mut sudo_cmd = Command::new("sudo");
+            sudo_cmd.arg(command);
+            sudo_cmd.args(args);
+
+            let sudo_result = sudo_cmd.output();
+
+            match sudo_result {
+                Ok(output) => {
+                    // Log the stdout and stderr
+                    if !output.stdout.is_empty() {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        info!("Command stdout: {}", stdout);
+                    }
+                    if !output.stderr.is_empty() {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        error!("Command stderr: {}", stderr);
+                    }
+
+                    if output.status.success() {
+                        info!("Successfully executed command with admin privileges using sudo");
+                        Ok(())
+                    } else {
+                        error!(
+                            "Failed to execute command with sudo, exit code: {}",
+                            output.status.code().unwrap_or(-1)
+                        );
+                        Err(PermissionError::CommandFailed(output.status.code().unwrap_or(-1)))
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to execute sudo: {}", e);
+                    Err(PermissionError::Io(e))
+                }
+            }
         }
 
         #[cfg(all(
