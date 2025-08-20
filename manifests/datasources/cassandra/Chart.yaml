@@ -8,4 +8,4 @@ appVersion: "1.0"
 dependencies:
   - name: cassandra
     version: ">=12.2.1"
-    repository: oci://registry-1.docker.io/bitnamicharts
+    repository: https://charts.bitnami.com/bitnami
