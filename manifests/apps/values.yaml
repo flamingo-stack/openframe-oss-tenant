@@ -8,8 +8,8 @@ deployment:
       ngrok:
         enabled: false  # Enable ngrok ingress for external access
         credentials:
-          apiKey: "30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
-          authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+          apiKey: ""
+          authtoken: ""
   saas:
     enabled: false
     # Ingress configuration for SaaS deployment
