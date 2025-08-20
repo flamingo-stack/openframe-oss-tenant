@@ -12,7 +12,7 @@ spec:
       labels:
         app: zookeeper
     spec:
-      {{- if ne .Values.global.registry.docker.password "" }}
+      {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
         - name: docker-pat-secret
       {{- end }}
