@@ -27,7 +27,8 @@ impl ToolInstaller {
             .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")
             .unwrap();
-        
+
+        // TODO: move to lib.rs
         let command_params_processor = ToolInstallationCommandParamsProcessor::new(directory_manager.clone());
         
         Self { 

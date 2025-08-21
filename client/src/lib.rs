@@ -33,7 +33,7 @@ pub mod updater;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService};
+use crate::services::{AgentAuthService, AgentRegistrationService, ToolInstallationCommandParamsProcessor, ToolRunManager};
 use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient};
@@ -116,6 +116,7 @@ pub struct Client {
     auth_processor: InitialAuthenticationProcessor,
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
+    tool_run_manager: ToolRunManager,
 }
 
 impl Client {
@@ -235,6 +236,9 @@ impl Client {
         // Initialize tool installation message listener
         let tool_installation_message_listener = ToolInstallationMessageListener::new(nats_connection_manager.clone(), tool_installation_service, config_service.clone());
 
+        // Initialize tool run manager
+        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), ToolInstallationCommandParamsProcessor::new(directory_manager.clone()));
+
         Ok(Self {
             config,
             directory_manager,
@@ -242,6 +246,7 @@ impl Client {
             auth_processor,
             nats_connection_manager,
             tool_installation_message_listener,
+            tool_run_manager,
         })
     }
 
@@ -259,6 +264,9 @@ impl Client {
 
         // Start tool installation message listener
         self.tool_installation_message_listener.listen().await?;
+
+        // Start tool run manager
+        self.tool_run_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

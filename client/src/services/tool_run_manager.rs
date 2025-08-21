@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, error};
 
-use crate::models::{InstalledTool, ToolStatus};
+use crate::models::installed_tool::ToolStatus;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_installation_command_params_processor::ToolInstallationCommandParamsProcessor;
 use crate::platform::permissions::PermissionUtils;
@@ -12,8 +12,14 @@ pub struct ToolRunManager {
 }
 
 impl ToolRunManager {
-    pub fn new(installed_tools_service: InstalledToolsService, params_processor: ToolInstallationCommandParamsProcessor) -> Self {
-        Self { installed_tools_service, params_processor }
+    pub fn new(
+        installed_tools_service: InstalledToolsService,
+        params_processor: ToolInstallationCommandParamsProcessor
+    ) -> Self {
+        Self {
+            installed_tools_service,
+            params_processor
+        }
     }
 
     pub async fn run(&self) -> Result<()> {

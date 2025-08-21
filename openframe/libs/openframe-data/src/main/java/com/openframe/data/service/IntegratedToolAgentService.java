@@ -1,6 +1,7 @@
 package com.openframe.data.service;
 
 import com.openframe.core.model.IntegratedToolAgent;
+import com.openframe.core.model.ToolAgentStatus;
 import com.openframe.data.repository.mongo.IntegratedToolAgentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

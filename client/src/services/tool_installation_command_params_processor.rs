@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-use std::path::Path;
 use anyhow::Result;
-use tracing::{debug, info};
 use crate::platform::DirectoryManager;
 
+#[derive(Clone)]
 pub struct ToolInstallationCommandParamsProcessor {
     directory_manager: DirectoryManager,
 }
 
+// TODO: rename to generic one 
 impl ToolInstallationCommandParamsProcessor {
 
     const SERVER_URL_PLACEHOLDER: &'static str = "${serverUrl}";

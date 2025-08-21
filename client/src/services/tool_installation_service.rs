@@ -2,7 +2,7 @@ use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installer::ToolInstaller;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use tracing::info;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::services::InstalledToolsService;
 use crate::models::installed_tool::ToolStatus;
@@ -36,6 +36,7 @@ impl ToolInstallationService {
 
         // TODO: process different version race conditions
         // TODO: mark as installing before installation
+        // TODO: idenpotency of each operation
 
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
@@ -67,5 +68,8 @@ impl ToolInstallationService {
         };
 
         self.installed_tools_service.save(installed_tool).await
+            .context("Failed to save installed tool")?;
+
+        Ok(())
     }
 }
