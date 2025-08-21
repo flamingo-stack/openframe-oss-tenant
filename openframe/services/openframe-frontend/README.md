@@ -1,10 +1,15 @@
 # OpenFrame Frontend
 
-A pure React client-side application serving as the web interface for the OpenFrame platform.
+A pure React client-side application with multi-platform architecture serving as the web interface for the OpenFrame platform.
 
 ## Overview
 
-OpenFrame Frontend is a modern single-page application (SPA) built with React 18, TypeScript, and Vite. It provides a responsive, user-friendly interface for managing devices, monitoring systems, and configuring the OpenFrame platform.
+OpenFrame Frontend is a modern Next.js application built with React 18, TypeScript, and a multi-platform architecture inspired by multi-platform-hub. It provides two distinct apps within a single codebase:
+
+- **OpenFrame-Auth**: Authentication and organization setup (`/auth/*`)
+- **OpenFrame-Dashboard**: Main application interface (`/dashboard`, `/devices`, `/settings`)
+
+This pure client-side application provides a responsive, user-friendly interface for managing devices, monitoring systems, and configuring the OpenFrame platform.
 
 ## Key Features
 
@@ -70,35 +75,49 @@ npm run preview
 
 ### Technology Stack
 
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite (lightning-fast HMR)
-- **Routing**: React Router v6
+- **Framework**: Next.js 15 with React 18 and TypeScript
+- **Build Tool**: Next.js (pure client-side export)
+- **Routing**: Next.js App Router (file-based routing)
 - **State Management**: Zustand
 - **API Client**: Apollo Client (GraphQL)
 - **UI Components**: @flamingo/ui-kit
 - **Styling**: Tailwind CSS + UI-Kit design tokens
 - **Authentication**: JWT with HTTP-only cookies
 
-### Project Structure
+### Multi-Platform Project Structure
+
+Following the exact pattern from multi-platform-hub:
 
 ```
 openframe-frontend/
-├── src/
-│   ├── components/     # Business logic components
-│   │   └── openframe/  # OpenFrame-specific components
-│   │       └── auth/   # Authentication flow sections
-│   ├── pages/         # Route components
-│   ├── hooks/         # Custom React hooks
-│   ├── stores/        # State management
-│   ├── services/      # API services
-│   ├── lib/           # Utilities and configurations
-│   │   ├── navigation.ts  # Navigation utilities
-│   │   └── router.tsx     # React Router configuration
-│   └── types/         # TypeScript definitions
-├── ui-kit/            # UI component library
-├── multi-platform-hub/   # Reference patterns (read-only)
-├── public/            # Static assets
-└── vite.config.ts     # Vite configuration
+├── app/                                    # Next.js app directory
+│   ├── _components/                        # Component directories (multi-platform-hub pattern)
+│   │   ├── openframe-auth/                 # Auth app components
+│   │   │   ├── auth-page.tsx              # Main orchestrator
+│   │   │   ├── auth-benefits-section.tsx   # Shared benefits panel
+│   │   │   ├── auth-choice-section.tsx     # Create org + sign in
+│   │   │   ├── auth-signup-section.tsx     # Registration form
+│   │   │   └── auth-login-section.tsx      # SSO login
+│   │   └── openframe-dashboard/            # Dashboard app components
+│   │       ├── dashboard-page.tsx          # Main dashboard
+│   │       ├── devices-page.tsx            # Device management
+│   │       └── settings-page.tsx           # Settings
+│   ├── auth/                               # Auth routes
+│   │   ├── page.tsx                        # /auth
+│   │   ├── signup/page.tsx                 # /auth/signup
+│   │   └── login/page.tsx                  # /auth/login
+│   ├── dashboard/page.tsx                  # /dashboard
+│   ├── devices/page.tsx                    # /devices
+│   ├── settings/page.tsx                   # /settings
+│   ├── layout.tsx                          # Root layout
+│   ├── globals.css                         # Global styles
+│   └── page.tsx                            # Root redirect
+├── hooks/                                  # Custom hooks
+│   └── use-auth.ts                         # Authentication hook
+├── ui-kit/                                 # UI-Kit design system (existing)
+├── multi-platform-hub/                    # Reference only (existing)
+├── public/                                 # Static assets
+└── next.config.mjs                        # Next.js configuration
 ```
 
 ## Development

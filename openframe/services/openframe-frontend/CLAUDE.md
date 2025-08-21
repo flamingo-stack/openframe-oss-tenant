@@ -4,10 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-OpenFrame Frontend is a **pure React client-side application** that serves as the web interface for the OpenFrame platform. This is a client-side only application with no server-side rendering.
+OpenFrame Frontend is a **pure Next.js client-side application** with multi-platform architecture serving as the web interface for the OpenFrame platform. Following the exact pattern from multi-platform-hub, it provides two distinct apps within a single codebase:
+
+- **OpenFrame-Auth**: Authentication and organization setup (`/auth/*`)
+- **OpenFrame-Dashboard**: Main application interface (`/dashboard`, `/devices`, `/settings`)
+
+This pure client-side application provides a responsive, user-friendly interface for managing devices, monitoring systems, and configuring the OpenFrame platform.
 
 ### Key Principles
-- **Pure Client-Side**: No server-side rendering, pure React SPA
+- **Pure Client-Side Architecture**: No server-side rendering, optimized for performance
+- **Multi-Platform Structure**: Follows exact multi-platform-hub pattern with app/_components
 - **100% UI-Kit Design System**: All UI components must come from @flamingo/ui-kit
 - **Multi-Platform-Hub as Reference**: Use only for learning patterns, NOT for component sharing
 - **OpenFrame Platform Focus**: Tailored specifically for OpenFrame branding and theming
@@ -29,10 +35,12 @@ npm run type-check                          # TypeScript type checking
 When running against the Kubernetes cluster, ensure the API URL is correctly set:
 ```bash
 # Set via environment variable
-VITE_API_URL=http://localhost/api npm run dev
+NEXT_PUBLIC_API_URL=http://localhost/api npm run dev
 
 # Or use .env.local file (preferred)
-echo "VITE_API_URL=http://localhost/api" >> .env.local
+echo "NEXT_PUBLIC_API_URL=http://localhost/api" >> .env.local
+echo "NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard" >> .env.local
+echo "NEXT_PUBLIC_CLIENT_SECRET=prod_secret" >> .env.local
 ```
 
 ### UI-Kit Integration
@@ -52,28 +60,49 @@ npm run dev                                 # Explore multi-platform-hub for pat
 ## Architecture Overview
 
 ### Technology Stack
-- **Framework**: React 18+ with TypeScript
-- **Build Tool**: Vite (client-side only)
-- **Routing**: React Router (client-side routing)
-- **State Management**: Zustand or Redux Toolkit (client-side state)
-- **API Communication**: Apollo Client for GraphQL
-- **Styling**: 100% UI-Kit design system + Tailwind CSS
-- **Authentication**: Client-side JWT handling
+- **Framework**: Next.js 15 with React 18 and TypeScript
+- **Build Tool**: Next.js (pure client-side export)
+- **Routing**: Next.js App Router (file-based routing)
+- **State Management**: Zustand
+- **API Client**: Apollo Client (GraphQL)
+- **UI Components**: @flamingo/ui-kit
+- **Styling**: Tailwind CSS + UI-Kit design tokens
+- **Authentication**: JWT with HTTP-only cookies
 
-### Project Structure
+### Multi-Platform Project Structure
+
+Following the exact pattern from multi-platform-hub:
+
 ```
 openframe-frontend/
-├── src/                                    # Application source code
-│   ├── components/                         # Business logic components only
-│   ├── pages/                             # Route components
-│   ├── hooks/                             # Custom React hooks
-│   ├── stores/                            # State management
-│   ├── services/                          # API services
-│   ├── types/                             # TypeScript type definitions
-│   └── lib/                               # Utilities and configurations
-├── ui-kit/                                # UI-Kit design system (checked out)
-├── multi-platform-hub/                    # Reference only (DO NOT copy)
-└── CLAUDE.md                              # This file
+├── app/                                    # Next.js app directory
+│   ├── _components/                        # Component directories (multi-platform-hub pattern)
+│   │   ├── openframe-auth/                 # Auth app components
+│   │   │   ├── auth-page.tsx              # Main orchestrator
+│   │   │   ├── auth-benefits-section.tsx   # Shared benefits panel
+│   │   │   ├── auth-choice-section.tsx     # Create org + sign in
+│   │   │   ├── auth-signup-section.tsx     # Registration form
+│   │   │   └── auth-login-section.tsx      # SSO login
+│   │   └── openframe-dashboard/            # Dashboard app components
+│   │       ├── dashboard-page.tsx          # Main dashboard
+│   │       ├── devices-page.tsx            # Device management
+│   │       └── settings-page.tsx           # Settings
+│   ├── auth/                               # Auth routes
+│   │   ├── page.tsx                        # /auth
+│   │   ├── signup/page.tsx                 # /auth/signup
+│   │   └── login/page.tsx                  # /auth/login
+│   ├── dashboard/page.tsx                  # /dashboard
+│   ├── devices/page.tsx                    # /devices
+│   ├── settings/page.tsx                   # /settings
+│   ├── layout.tsx                          # Root layout
+│   ├── globals.css                         # Global styles
+│   └── page.tsx                            # Root redirect
+├── hooks/                                  # Custom hooks
+│   └── use-auth.ts                         # Authentication hook
+├── ui-kit/                                 # UI-Kit design system (existing)
+├── multi-platform-hub/                    # Reference only (existing)
+├── public/                                 # Static assets
+└── next.config.mjs                        # Next.js configuration
 ```
 
 ## UI-Kit Integration (PRIMARY FOCUS)
@@ -177,44 +206,59 @@ function LoginPage() {
 }
 ```
 
-## Component Architecture (Updated 2025-08-21)
+## Multi-Platform Architecture (Updated 2025-08-21)
 
-### Multi-Platform-Hub Pattern Implementation
-Following the exact structure from multi-platform-hub, components are organized into reusable sections:
+### App Structure
+Following the exact multi-platform-hub pattern, the application provides two distinct apps:
 
-```
-src/components/openframe/
-├── auth/                          # Authentication flow components
-│   ├── auth-page.tsx             # Main orchestrator (like about-page.tsx)
-│   ├── auth-benefits-section.tsx # Shared right-side benefits
-│   ├── auth-choice-section.tsx   # Create org + sign in forms
-│   ├── auth-signup-section.tsx   # Registration form
-│   ├── auth-login-section.tsx    # Login with SSO
-│   └── index.ts                  # Clean exports
-└── index.ts                      # Top-level exports
-```
+#### OpenFrame-Auth App (`/auth/*`)
+- **Route**: `/auth`, `/auth/signup`, `/auth/login`  
+- **Components**: `app/_components/openframe-auth/`
+- **Purpose**: Authentication and organization setup
 
-### Navigation Utilities
-Custom navigation utilities wrap React Router for consistent usage:
+#### OpenFrame-Dashboard App (`/dashboard`, `/devices`, `/settings`)
+- **Routes**: `/dashboard`, `/devices`, `/settings`
+- **Components**: `app/_components/openframe-dashboard/`
+- **Purpose**: Main application interface
+
+### Component Organization
+Components are organized into the `app/_components/` directory following multi-platform-hub:
 
 ```typescript
-import { useNavigation, authRoutes } from '@/lib/navigation'
+// app/_components/openframe-auth/auth-page.tsx
+'use client'
+import { useRouter, usePathname } from 'next/navigation'
+
+export function OpenFrameAuthPage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  
+  // Authentication logic with URL synchronization
+}
+```
+
+### Navigation Pattern
+Next.js App Router with file-based routing:
+
+```typescript
+import { useRouter } from 'next/navigation'
 
 function MyComponent() {
-  const { navigateTo, goBack, replace } = useNavigation()
+  const router = useRouter()
   
   const handleSubmit = () => {
-    // Navigate with proper URL updates
-    navigateTo(authRoutes.signup)
+    router.push('/auth/signup')  // Navigate to signup
   }
 }
 ```
 
 **Available Routes**:
-- `authRoutes.choice` → `/auth`
-- `authRoutes.signup` → `/auth/signup`  
-- `authRoutes.login` → `/auth/login`
-- `authRoutes.dashboard` → `/dashboard`
+- `/auth` → Auth choice screen
+- `/auth/signup` → Registration form  
+- `/auth/login` → SSO provider selection
+- `/dashboard` → Main dashboard
+- `/devices` → Device management
+- `/settings` → Application settings
 
 ### Authentication Component Structure
 All auth screens share the exact same layout with modular sections:
@@ -379,11 +423,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 ## Code Standards
 
-### React/TypeScript
-- Use React 18+ with TypeScript strict mode
-- Functional components with hooks only
+### Next.js/React/TypeScript
+- Use Next.js 15 with React 18 and TypeScript strict mode
+- Functional components with hooks only ('use client' where needed)
 - Use TypeScript for all new code
-- Follow React best practices for client-side applications
+- Follow Next.js App Router patterns for pure client-side applications
 - **NO FORMS**: Use dynamic loading states and event handlers only
 - **State-Driven UI**: All interactions through state updates, not form submissions
 
@@ -396,10 +440,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 - **OpenFrame Theming**: Let UI-Kit handle platform-specific theming
 
 ### Project Organization
-- **Components**: Business logic only, wrapping UI-Kit components
-- **Pages**: Route components using UI-Kit for UI elements
-- **Hooks**: Custom React hooks for business logic
-- **Services**: API integration and external service communication
+- **app/_components/**: Business logic components organized by app (openframe-auth, openframe-dashboard)
+- **app/*/page.tsx**: Route components that import from _components
+- **hooks/**: Custom React hooks for business logic
+- **lib/**: Utilities, configurations, and API services
 
 ## Testing Strategy
 
@@ -411,9 +455,9 @@ npm run test:coverage                       # Coverage report
 ```
 
 - Unit tests for business logic components
-- Integration tests for API services
+- Integration tests for API services  
 - UI component testing using UI-Kit components
-- Client-side routing tests
+- Next.js App Router navigation tests
 
 ## Important Development Rules
 
@@ -430,21 +474,30 @@ npm run test:coverage                       # Coverage report
 1. **Reference ONLY** - never copy components
 2. **Learn patterns** - study architecture and patterns
 3. **No imports** - never import from multi-platform-hub
-4. **Client-side focus** - ignore server-side Next.js patterns
+4. **App structure** - follow the exact _components pattern
+5. **Pure client-side** - use 'use client' directive, no server components
 
 ### Development Workflow
 1. **Use UI-Kit components** for all UI elements  
 2. **Reference multi-platform-hub** for learning patterns only
 3. **Build business logic** around UI-Kit components
-4. **Dynamic loading states** - no form validation, use Button loading prop
-5. **State-driven interactions** - all user actions through event handlers
-6. **Test with OpenFrame theming** enabled  
-7. **Pure client-side** - no server-side rendering
-8. **Always use ODS theming** - Use semantic color variables (bg-ods-card, text-ods-text-primary) instead of hardcoded values
+4. **Follow app/_components structure** for multi-platform organization
+5. **Dynamic loading states** - no form validation, use Button loading prop
+6. **State-driven interactions** - all user actions through event handlers
+7. **Test with OpenFrame theming** enabled  
+8. **Pure client-side** - use 'use client' directive, static export only
+9. **Always use ODS theming** - Use semantic color variables (bg-ods-card, text-ods-text-primary) instead of hardcoded values
 
 ## Access URLs
 
+### Application Routes
 - **Development**: http://localhost:4000 (configured port)
+- **Auth App**: http://localhost:4000/auth (OpenFrame-Auth)
+- **Dashboard App**: http://localhost:4000/dashboard (OpenFrame-Dashboard)
+- **Device Management**: http://localhost:4000/devices
+- **Settings**: http://localhost:4000/settings
+
+### API Endpoints
 - **OpenFrame API (K8s)**: http://localhost/api
 - **OpenFrame GraphQL (K8s)**: http://localhost/api/graphql
 - **OpenFrame API (Local)**: http://localhost:8100/api (when running gateway in debug mode)
@@ -547,9 +600,9 @@ cd openframe/services/openframe-frontend
 npm install
 
 # IMPORTANT: Set correct API URL for K8s cluster
-export VITE_API_URL=http://localhost/api
-export VITE_CLIENT_ID=openframe_web_dashboard
-export VITE_CLIENT_SECRET=prod_secret
+export NEXT_PUBLIC_API_URL=http://localhost/api
+export NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard
+export NEXT_PUBLIC_CLIENT_SECRET=prod_secret
 
 # Start development server in background (use nohup to prevent hanging)
 nohup npm run dev > dev.log 2>&1 &
@@ -597,9 +650,9 @@ lsof -ti:4000 | xargs kill -9 2>/dev/null || true
 
 # Step 2: Set environment variables for K8s cluster
 echo "2️⃣ Setting environment variables..."
-export VITE_API_URL=http://localhost/api
-export VITE_CLIENT_ID=openframe_web_dashboard
-export VITE_CLIENT_SECRET=prod_secret
+export NEXT_PUBLIC_API_URL=http://localhost/api
+export NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard
+export NEXT_PUBLIC_CLIENT_SECRET=prod_secret
 
 # Step 3: Start frontend
 echo "3️⃣ Starting frontend development server..."
@@ -615,7 +668,7 @@ sleep 5
 if curl -s http://localhost:4000 > /dev/null; then
     echo "✅ Frontend running at http://localhost:4000"
     echo "📋 Frontend PID: $FRONTEND_PID"
-    echo "🔗 API URL: $VITE_API_URL"
+    echo "🔗 API URL: $NEXT_PUBLIC_API_URL"
 else
     echo "❌ Frontend failed to start"
     tail -n 50 dev.log
