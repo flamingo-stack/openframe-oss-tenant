@@ -25,13 +25,13 @@ public class AgentRegistrationToolService {
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
         String toolId = toolAgent.getId();
         try {
-            // process params for installation command
-            String installationCommand = toolAgent.getInstallationCommand();
-            toolAgent.setInstallationCommand(toolCommandParamsProcessor.process(toolId, installationCommand));
+            // process params for installation command args
+            List<String> installationCommandArgs = toolAgent.getInstallationCommandArgs();
+            toolAgent.setInstallationCommandArgs(toolCommandParamsProcessor.process(toolId, installationCommandArgs));
 
-            // process params for run command
-            String runCommand = toolAgent.getRunCommand();
-            toolAgent.setRunCommand(toolCommandParamsProcessor.process(toolId, runCommand));
+            // process params for run command args
+            List<String> runCommandArgs = toolAgent.getRunCommandArgs();
+            toolAgent.setRunCommandArgs(toolCommandParamsProcessor.process(toolId, runCommandArgs));
 
             toolInstallationNatsPublisher.publish(machineId, toolAgent);
             log.info("Published {} agent installation message for machine {}", toolId, machineId);

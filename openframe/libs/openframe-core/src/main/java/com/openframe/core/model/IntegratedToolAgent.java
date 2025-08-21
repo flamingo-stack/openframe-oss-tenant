@@ -5,12 +5,14 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 @Data
 @Document(collection = "integrated_tool_agents")
 public class IntegratedToolAgent {
     @Id
     private String id;
     private String version;
-    private String installationCommand;
-    private String runCommand;
+    private List<String> installationCommandArgs;
+    private List<String> runCommandArgs;
 } 

@@ -9,7 +9,7 @@ public class ToolInstallationMessage {
 
     private String toolId;
     private String version;
-    private String installationCommand;
-    private String runCommand;
+    private List<String> installationCommandArgs;
+    private List<String> runCommandArgs;
 
 }

@@ -15,18 +15,29 @@ public class ToolCommandParamsProcessor {
 
     private final List<ToolAgentRegistrationSecretRetriever> toolAgentRegistrationSecretRetrievers;
 
-    public String process(String toolId, String command) {
-        if (command == null) {
+    public List<String> process(String toolId, List<String> commandArgs) {
+        if (commandArgs == null) {
+            return null;
+        }
+
+        // Process each argument and replace placeholders where found
+        return commandArgs.stream()
+                .map(arg -> processArgument(toolId, arg))
+                .toList();
+    }
+
+    private String processArgument(String toolId, String argument) {
+        if (argument == null) {
             return null;
         }
 
         // Retrieve and inject the registration secret only when the placeholder is present.
-        if (StringUtils.contains(command, REGISTRATION_SECRET_PLACEHOLDER)) {
-            return command.replace(REGISTRATION_SECRET_PLACEHOLDER, getRegistrationSecret(toolId));
+        if (StringUtils.contains(argument, REGISTRATION_SECRET_PLACEHOLDER)) {
+            return argument.replace(REGISTRATION_SECRET_PLACEHOLDER, getRegistrationSecret(toolId));
         }
 
-        // If no placeholder is found, return the command unchanged.
-        return command;
+        // If no placeholder is found, return the argument unchanged.
+        return argument;
     }
 
     private String getRegistrationSecret(String toolId) {

@@ -15,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/tool")
+// TODO: remove
 public class ToolRegistrationSecretController {
 
     @Value("${openframe.integration.tactical-rmm.url:http://tactical-nginx.integrated-tools.svc.cluster.local:8000}")
