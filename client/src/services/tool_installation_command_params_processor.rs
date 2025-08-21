@@ -24,7 +24,7 @@ impl ToolInstallationCommandParamsProcessor {
         for arg in command_args {
             let processed_arg = arg.replace(Self::SERVER_URL_PLACEHOLDER, "https://localhost");
             let processed_arg = processed_arg.replace(Self::OPENFRAME_SECRET_PLACEHOLDER, "12345678901234567890123456789012");
-            let processed_arg = processed_arg.replace(Self::OPENFRAME_TOKEN_PATH_PLACEHOLDER, "/");
+            let processed_arg = processed_arg.replace(Self::OPENFRAME_TOKEN_PATH_PLACEHOLDER, "/Users/kirillgontar/Library/Logs/OpenFrame/shared_token.enc");
             processed_args.push(processed_arg);
         }
         Ok(processed_args)

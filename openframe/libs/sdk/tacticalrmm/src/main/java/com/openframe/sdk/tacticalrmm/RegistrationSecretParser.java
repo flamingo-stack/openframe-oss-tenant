@@ -16,7 +16,7 @@ public class RegistrationSecretParser {
      */
     public static String parse(String command) {
         if (command == null || command.isBlank()) {
-            return null;
+            return "";
         }
 
         // Case-insensitive search for --auth followed by a value (optionally quoted)
@@ -41,7 +41,7 @@ public class RegistrationSecretParser {
             return value;
         }
 
-        return null;
+        return "";
     }
 
 }

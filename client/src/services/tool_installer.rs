@@ -63,10 +63,16 @@ impl ToolInstaller {
                 .collect();
 
             let file_path_str = file_path.to_string_lossy();
-            PermissionUtils::run_as_admin(&file_path_str, &installation_command_arg_refs[..])
-                .context("Failed to execute installation command for tool")?;
-            
-            info!("Successfully executed installation command for tool: {}", tool_id);
+            match PermissionUtils::run_as_admin(&file_path_str, &installation_command_arg_refs[..])
+                .context("Failed to execute installation command for tool") {
+                    Ok(_) => {
+                        info!("Successfully executed installation command for tool: {}", tool_id);
+                    }
+                    Err(e) => {
+                        error!("Failed to execute installation command for tool: {}", tool_id);
+                        error!("Error: {}", e);
+                    }
+                }
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_id);
         }
