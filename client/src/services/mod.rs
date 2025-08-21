@@ -13,6 +13,7 @@ pub mod device_data_fetcher;
 pub mod initial_authentication_processor;
 pub mod registration_processor;
 pub mod tool_installation_command_runner;
+pub mod installed_tools_service;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
@@ -26,3 +27,4 @@ pub use tool_connection_message_publisher::ToolConnectionMessagePublisher;
 pub use nats_connection_manager::NatsConnectionManager;
 pub use nats_message_publisher::NatsMessagePublisher;
 pub use tool_installation_command_runner::ToolInstallationCommandRunner; 
+pub use installed_tools_service::InstalledToolsService; 

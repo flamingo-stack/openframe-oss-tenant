@@ -7,6 +7,5 @@ pub struct ToolInstallationMessage {
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub run_command_args: Option<Vec<String>>,
+    pub run_command_args: Vec<String>,
 }

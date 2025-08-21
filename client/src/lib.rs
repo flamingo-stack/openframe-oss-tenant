@@ -34,6 +34,7 @@ pub mod updater;
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::{AgentAuthService, AgentRegistrationService};
+use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
@@ -210,6 +211,10 @@ impl Client {
         // Initialize tool installation command runner
         let command_runner = ToolInstallationCommandRunner::new();
 
+        // Initialize installed tools service
+        let installed_tools_service = InstalledToolsService::new(directory_manager.clone())
+            .context("Failed to initialize installed tools service")?;
+
         // Initialize tool installer
         let tool_installer = ToolInstaller::new(directory_manager.clone(), command_runner);
 
@@ -223,7 +228,8 @@ impl Client {
         let tool_installation_service = ToolInstallationService::new(
             tool_agent_file_client,
             tool_installer,
-            tool_connection_message_publisher
+            tool_connection_message_publisher,
+            installed_tools_service.clone(),
         );
 
         // Initialize tool installation message listener

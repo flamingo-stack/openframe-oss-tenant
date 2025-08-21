@@ -109,4 +109,24 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "MeshCentral Server Registration complete."
+
+            echo "Registering Meshcentral Agent..."
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/meshcentral-server" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "toolAgent": {
+                  "id": "meshcentral-server",
+                  "version": "1.0",
+                  "runCommandArgs": [
+                    "connect",
+                    "--openframe-mode",
+                    "--openframe-secret", "${openframeSecret}",
+                    "--openframe-token-path", "${openframeTokenPath}"
+                  ]
+                }
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors
+            echo "TacticalRMM Agent Registration complete."
 {{- end }}
