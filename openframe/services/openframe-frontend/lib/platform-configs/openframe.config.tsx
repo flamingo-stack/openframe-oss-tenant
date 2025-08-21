@@ -2,27 +2,29 @@ import React from 'react'
 import { AppConfig } from '../app-config'
 import { OpenFrameLogo, UserIcon, HamburgerIcon, IconsXIcon as XIcon } from '@flamingo/ui-kit/components/icons'
 import { Button } from '@flamingo/ui-kit/components/ui'
+import { getBaseUrl } from '../utils'
 
 export const openframeConfig: AppConfig = {
   name: 'OpenFrame',
   legalName: 'Flamingo AI, Inc.',
   description: 'Open-source application framework and development platform. Build scalable applications with modern tools and patterns.',
-  url: 'https://openframe.dev',
-  logo: '/logo.png',
+  get url() { return getBaseUrl() },
+  get logo() { return `${getBaseUrl()}/assets/openframe/apple-touch-icon.png` },
   slogan: 'Open Source Application Framework',
   platform: 'openframe',
   brandColors: {
-    primary: 'var(--ods-accent)',      // OpenFrame cyan from ODS tokens
-    accent: 'var(--ods-text-primary)', // Primary text color from ODS
-    background: 'var(--ods-system-greys-black)',       // Background from ODS tokens
-    text: 'var(--ods-text-primary)'    // Text from ODS tokens
+    primary: '#5efaf0',  // Cyan - for metadata only (actual UI uses ODS CSS)
+    accent: '#FFFFFF',   // White - for metadata only (actual UI uses ODS CSS)
+    background: '#0A0A0A', // Dark - for metadata only (actual UI uses ODS CSS)
+    text: '#FFFFFF'      // White - for metadata only (actual UI uses ODS CSS)
   },
   seo: {
     title: 'OpenFrame - Open Source Framework',
     titleTemplate: '%s | OpenFrame',
     description: 'Modern open-source application framework for building scalable web applications. Developer-friendly tools and patterns.',
     keywords: ['open source', 'framework', 'web development', 'application development', 'developer tools'],
-    ogImage: '/assets/openframe/og-image.png'
+    get ogImage() { return `${getBaseUrl()}/assets/openframe/og-image.png` },
+    get twitterImage() { return `${getBaseUrl()}/assets/openframe/twitter-image.png` }
   },
   layout: {
     showHeader: true,
