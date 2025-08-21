@@ -179,9 +179,9 @@
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "NODE_ENV": "development",
-                "VITE_API_URL": "http://localhost/api",
-                "VITE_GRAPHQL_ENDPOINT": "http://localhost/api/graphql",
-                "VITE_WS_ENDPOINT": "ws://localhost/api/ws",
+                "VITE_API_URL": "https://localhost/api",
+                "VITE_GRAPHQL_ENDPOINT": "https://localhost/api/graphql",
+                "VITE_WS_ENDPOINT": "wss://localhost/api/ws",
                 "VITE_APP_TYPE": "openframe"
             },
             "console": "integratedTerminal",

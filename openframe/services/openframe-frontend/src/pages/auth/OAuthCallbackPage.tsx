@@ -17,13 +17,13 @@ export const OAuthCallbackPage = () => {
 
       if (error) {
         console.error('❌ [OAuth] OAuth error:', error);
-        navigate('/login?error=oauth_failed');
+        navigate('/auth?error=oauth_failed');
         return;
       }
 
       if (!code) {
         console.error('❌ [OAuth] No authorization code received');
-        navigate('/login?error=no_code');
+        navigate('/auth?error=no_code');
         return;
       }
 
@@ -38,11 +38,11 @@ export const OAuthCallbackPage = () => {
           navigate('/dashboard', { replace: true });
         } else {
           console.error('❌ [OAuth] Authentication failed after OAuth callback');
-          navigate('/login?error=auth_failed');
+          navigate('/auth?error=auth_failed');
         }
       } catch (error) {
         console.error('❌ [OAuth] Error processing OAuth callback:', error);
-        navigate('/login?error=callback_failed');
+        navigate('/auth?error=callback_failed');
       }
     };
 

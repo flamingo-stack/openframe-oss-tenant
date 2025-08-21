@@ -3,8 +3,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
 
 // Auth pages
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { RegisterPage } from '@/pages/auth/RegisterPage';
+import AuthPage from '@/pages/auth';
 import { OAuthCallbackPage } from '@/pages/auth/OAuthCallbackPage';
 
 // Main pages
@@ -61,12 +60,24 @@ const ProtectedLayout = () => (
 export const router = createBrowserRouter([
   // Auth routes (no layout)
   {
+    path: '/auth',
+    element: <AuthPage />
+  },
+  {
+    path: '/auth/signup',
+    element: <AuthPage />
+  },
+  {
+    path: '/auth/login',
+    element: <AuthPage />
+  },
+  {
     path: '/login',
-    element: <LoginPage />
+    element: <Navigate to="/auth" replace />
   },
   {
     path: '/register',
-    element: <RegisterPage />
+    element: <Navigate to="/auth" replace />
   },
   {
     path: '/oauth2/callback/google',
