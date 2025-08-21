@@ -1,4 +1,6 @@
-import { Button, Input } from '@flamingo/ui-kit/components/ui'
+'use client'
+
+import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
 import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
@@ -53,11 +55,11 @@ export function AuthLoginSection({
   }))
 
   return (
-    <div className="w-full lg:w-1/2 p-6 lg:p-20">
+    <div className="w-full">
       <div className="w-full space-y-6 lg:space-y-10">
         
         {/* Login Section */}
-        <div className="bg-ods-card border border-ods-border rounded-lg p-6 lg:p-10">
+        <div className="bg-ods-card border border-ods-border rounded-sm p-10">
           {/* Back button */}
           <div className="mb-6">
             <button
@@ -71,8 +73,8 @@ export function AuthLoginSection({
           </div>
 
           <div className="mb-6">
-            <h1 className="text-2xl lg:text-4xl font-semibold text-ods-text-primary mb-2 tracking-tight">Sign In to Your Account</h1>
-            <p className="text-ods-text-secondary text-body-md lg:text-body-lg">Access your OpenFrame organization.</p>
+            <h1 className="font-heading text-[32px] font-semibold text-ods-text-primary leading-10 tracking-[-0.64px] mb-2">Sign In to Your Account</h1>
+            <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">Access your OpenFrame organization.</p>
           </div>
 
           {/* Organization info */}
@@ -90,29 +92,25 @@ export function AuthLoginSection({
               <>
                 {/* Email and Password */}
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-body-lg font-medium text-ods-text-primary mb-1">
-                      Email
-                    </label>
+                  <div className="flex flex-col gap-1">
+                    <Label>Email</Label>
                     <Input
                       type="email"
                       value={email}
                       disabled
-                      className="bg-ods-bg border-ods-border text-ods-text-secondary"
+                      className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-body-lg font-medium text-ods-text-primary mb-1">
-                      Password
-                    </label>
+                  <div className="flex flex-col gap-1">
+                    <Label>Password</Label>
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your Password"
                       disabled={isLoading}
-                      className="bg-ods-bg border-ods-border text-ods-text-secondary"
+                      className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                     />
                   </div>
                 </div>

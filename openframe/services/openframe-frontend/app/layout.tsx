@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import '@flamingo/ui-kit/styles'
-
-const inter = Inter({ subsets: ['latin'] })
+import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
 
 export const metadata: Metadata = {
   title: 'OpenFrame',
@@ -16,8 +14,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" suppressHydrationWarning className={`dark ${azeretMono.variable} ${dmSans.variable}`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </head>
+      <body 
+        suppressHydrationWarning 
+        className="min-h-screen antialiased font-body"
+        data-app-type="openframe"
+      >
+        <div className="relative flex min-h-screen flex-col">
+          {children}
+        </div>
+      </body>
     </html>
   )
 }

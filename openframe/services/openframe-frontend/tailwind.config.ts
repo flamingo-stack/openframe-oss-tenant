@@ -11,6 +11,10 @@ const config: Config = {
   theme: {
     extend: {
       // Extend with ui-kit design tokens
+      fontFamily: {
+        'body': ['var(--font-dm-sans)', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        'mono': ['var(--font-azeret-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+      },
     },
   },
   plugins: [],

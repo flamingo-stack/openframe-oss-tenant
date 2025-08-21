@@ -16,10 +16,7 @@ interface RegisterRequest {
   password: string
 }
 
-type AuthStep = 'choice' | 'signup' | 'login-email' | 'login-providers'
-
 export function useAuth() {
-  const [step, setStep] = useState<AuthStep>('choice')
   const [email, setEmail] = useState('')
   const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null)
   const [hasDiscoveredTenants, setHasDiscoveredTenants] = useState(false)
@@ -41,7 +38,6 @@ export function useAuth() {
         tenantDomain: 'demo'
       })
       setHasDiscoveredTenants(true)
-      setStep('login-providers')
     } catch (error) {
       console.error('Tenant discovery failed:', error)
       setHasDiscoveredTenants(false)
@@ -83,7 +79,6 @@ export function useAuth() {
   }
 
   const reset = () => {
-    setStep('choice')
     setEmail('')
     setTenantInfo(null)
     setHasDiscoveredTenants(false)
@@ -91,13 +86,11 @@ export function useAuth() {
   }
 
   return {
-    step,
     email,
     tenantInfo,
     hasDiscoveredTenants,
     availableProviders,
     isLoading,
-    setStep,
     discoverTenants,
     registerOrganization,
     loginWithSSO,
