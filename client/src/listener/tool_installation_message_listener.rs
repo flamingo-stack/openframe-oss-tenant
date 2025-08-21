@@ -68,6 +68,7 @@ impl ToolInstallationMessageListener {
                 }
                 Err(e) => {
                     // do not ack: let message be redelivered per consumer ack policy
+                    // TODO: don't share full stack trace
                     error!(error = ?e, "Failed to process tool installation message for tool: {}", tool_id);
                     info!("Leaving message unacked for potential redelivery: tool {}", tool_id);
                 }

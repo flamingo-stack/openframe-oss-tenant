@@ -114,11 +114,11 @@ spec:
             
             echo "Registering Tactical RMM Agent..."
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/tactical-rmm-agent" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/tactical-rmm" \
               -H "Content-Type: application/json" \
               -d '{
                 "toolAgent": {
-                  "id": "tactical-rmm-agent",
+                  "id": "tactical-rmm",
                   "version": "1.0",
                   "installationCommandArgs": [
                     "-m", "install",
