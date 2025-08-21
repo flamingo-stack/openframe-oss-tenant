@@ -36,11 +36,11 @@ impl NatsConnectionManager {
         let client = async_nats::ConnectOptions::new()
             .name(machine_id)
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
-            .max_reconnects(Some(10))
+            .max_reconnects(10000)
             .retry_on_initial_connect()
             .reconnect_delay_callback(|attempt| {
                 println!("\n\nFallback: reconnecting to NATS server, attempt: {}\n\n", attempt);
-                std::time::Duration::from_secs(5)
+                std::time::Duration::from_secs(2)
             })
             .connect(&connection_url)
 

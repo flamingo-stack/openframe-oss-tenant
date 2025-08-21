@@ -79,9 +79,8 @@ impl ToolInstallationMessageListener {
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> Result<PushConsumer> {
         let consumer_configuration = Self::build_consumer_configuration(machine_id);
-        info!("Creating consumer for stream {}", Self::STREAM_NAME);
+        info!("Creating consumer for stream {}  ", Self::STREAM_NAME);
         // TODO: server side
-        // let stream = js.create_stream(Self::STREAM_NAME).await?;
         let consumer = js.create_consumer_on_stream(consumer_configuration, Self::STREAM_NAME).await?;
         info!("Consumer created for stream: {}", Self::STREAM_NAME);
         Ok(consumer)
