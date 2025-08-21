@@ -18,7 +18,7 @@ public class AgentRegistrationToolService {
     private final ToolCommandParamsProcessor toolCommandParamsProcessor;
 
     public void publishInstallationMessages(String machineId) {
-        List<IntegratedToolAgent> toolAgents = integratedToolAgentService.getAll();
+        List<IntegratedToolAgent> toolAgents = integratedToolAgentService.getAllEnabled();
         toolAgents.forEach(toolAgent -> publish(machineId, toolAgent));
     }
 

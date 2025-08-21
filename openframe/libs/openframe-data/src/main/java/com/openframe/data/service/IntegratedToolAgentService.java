@@ -23,4 +23,7 @@ public class IntegratedToolAgentService {
         return agentRepository.findAll();
     }
 
+    public List<IntegratedToolAgent> getAllEnabled() {
+        return agentRepository.findByStatus(ToolAgentStatus.ENABLED);
+    }
 } 

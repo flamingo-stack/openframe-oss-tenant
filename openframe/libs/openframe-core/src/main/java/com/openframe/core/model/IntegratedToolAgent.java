@@ -10,9 +10,12 @@ import java.util.List;
 @Data
 @Document(collection = "integrated_tool_agents")
 public class IntegratedToolAgent {
+
     @Id
     private String id;
     private String version;
     private List<String> installationCommandArgs;
     private List<String> runCommandArgs;
+    private ToolAgentStatus status;
+    
 } 
