@@ -85,13 +85,18 @@ npm run preview
 openframe-frontend/
 ├── src/
 │   ├── components/     # Business logic components
+│   │   └── openframe/  # OpenFrame-specific components
+│   │       └── auth/   # Authentication flow sections
 │   ├── pages/         # Route components
 │   ├── hooks/         # Custom React hooks
 │   ├── stores/        # State management
 │   ├── services/      # API services
-│   ├── lib/           # Utilities
+│   ├── lib/           # Utilities and configurations
+│   │   ├── navigation.ts  # Navigation utilities
+│   │   └── router.tsx     # React Router configuration
 │   └── types/         # TypeScript definitions
 ├── ui-kit/            # UI component library
+├── multi-platform-hub/   # Reference patterns (read-only)
 ├── public/            # Static assets
 └── vite.config.ts     # Vite configuration
 ```
@@ -205,6 +210,32 @@ OpenFrame uses JWT tokens stored in HTTP-only cookies for security:
 - Session management through secure cookies
 - Automatic token refresh
 - Protected routes with authentication guards
+
+### Authentication Component Architecture
+
+The authentication flow uses a modular, sections-based architecture following the multi-platform-hub pattern:
+
+```typescript
+// Main authentication page with URL routing
+/auth          → AuthChoiceSection (organization setup)
+/auth/signup   → AuthSignupSection (user registration)
+/auth/login    → AuthLoginSection (SSO provider selection)
+```
+
+**Component Structure:**
+- `OpenFrameAuthPage` - Main orchestrator managing state and routing
+- `AuthChoiceSection` - Organization creation and sign-in entry point
+- `AuthSignupSection` - User registration with organization details
+- `AuthLoginSection` - SSO provider selection and authentication
+- `AuthBenefitsSection` - Shared benefits panel across all screens
+
+**Navigation Integration:**
+```typescript
+import { useNavigation, authRoutes } from '@/lib/navigation'
+
+const { navigateTo, replace } = useNavigation()
+navigateTo(authRoutes.signup) // Proper URL updates with browser history
+```
 
 ## Testing
 

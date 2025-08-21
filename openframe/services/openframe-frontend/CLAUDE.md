@@ -177,6 +177,62 @@ function LoginPage() {
 }
 ```
 
+## Component Architecture (Updated 2025-08-21)
+
+### Multi-Platform-Hub Pattern Implementation
+Following the exact structure from multi-platform-hub, components are organized into reusable sections:
+
+```
+src/components/openframe/
+├── auth/                          # Authentication flow components
+│   ├── auth-page.tsx             # Main orchestrator (like about-page.tsx)
+│   ├── auth-benefits-section.tsx # Shared right-side benefits
+│   ├── auth-choice-section.tsx   # Create org + sign in forms
+│   ├── auth-signup-section.tsx   # Registration form
+│   ├── auth-login-section.tsx    # Login with SSO
+│   └── index.ts                  # Clean exports
+└── index.ts                      # Top-level exports
+```
+
+### Navigation Utilities
+Custom navigation utilities wrap React Router for consistent usage:
+
+```typescript
+import { useNavigation, authRoutes } from '@/lib/navigation'
+
+function MyComponent() {
+  const { navigateTo, goBack, replace } = useNavigation()
+  
+  const handleSubmit = () => {
+    // Navigate with proper URL updates
+    navigateTo(authRoutes.signup)
+  }
+}
+```
+
+**Available Routes**:
+- `authRoutes.choice` → `/auth`
+- `authRoutes.signup` → `/auth/signup`  
+- `authRoutes.login` → `/auth/login`
+- `authRoutes.dashboard` → `/dashboard`
+
+### Authentication Component Structure
+All auth screens share the exact same layout with modular sections:
+
+```typescript
+// Main auth page following multi-platform-hub pattern
+<div className="min-h-screen bg-ods-bg flex flex-col lg:flex-row">
+  <AuthChoiceSection />      {/* Left side - forms */}
+  <AuthBenefitsSection />    {/* Right side - identical across screens */}
+</div>
+```
+
+**Benefits of New Structure**:
+- ✅ **100% Shared Benefits Panel**: Identical right side across all auth screens
+- ✅ **URL Synchronization**: Back button properly updates URLs
+- ✅ **Reusable Sections**: Each auth step is an independent component
+- ✅ **Multi-Platform Pattern**: Follows established architecture from multi-platform-hub
+
 ## Development Patterns
 
 ### Toast System for Error Reporting

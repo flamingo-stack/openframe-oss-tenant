@@ -105,64 +105,72 @@ Create a new React application at `openframe/services/openframe-frontend/` to re
 
 ### 3.1 Authentication Pages ✅ **COMPLETED**
 **High Priority - Critical Path:**
-- ✅ `LoginPage.tsx` ← `Login.vue` - **Refactored with UI-Kit components**
-- ✅ `RegisterPage.tsx` ← `Register.vue` - **Refactored with UI-Kit components**  
-- ✅ `OAuthCallbackPage.tsx` ← `OAuthCallback.vue` - **Working with OAuth flow**
+- ✅ `OpenFrameAuthPage` ← Complete authentication flow replacement
+- ✅ **Multi-Platform-Hub Pattern**: Sections-based component architecture following about-page.tsx structure
+- ✅ **URL Routing Integration**: Distinct URLs for each auth step (/auth, /auth/signup, /auth/login)
+- ✅ **Navigation Utilities**: Custom useNavigation hook for consistent router usage
+
+**✅ Implemented Architecture:**
+- ✅ **Modular Component Structure**: Split into reusable sections following multi-platform-hub pattern
+  - `AuthChoiceSection` - Organization creation and sign-in entry point
+  - `AuthSignupSection` - Organization registration with user details
+  - `AuthLoginSection` - SSO provider selection and authentication
+  - `AuthBenefitsSection` - Shared benefits panel across all screens
+- ✅ **Main Orchestrator**: `OpenFrameAuthPage` manages routing, state, and section composition
+- ✅ **Navigation Integration**: Custom navigation utilities with proper URL synchronization
+- ✅ **100% UI-Kit Integration**: All UI components use @flamingo/ui-kit design system
 
 **✅ Implemented Features:**
-- ✅ **Shared Component Architecture**: AuthFormContainer, FormField, PasswordField
-- ✅ **100% UI-Kit Integration**: All components use @flamingo/ui-kit
-- ✅ **No Forms Pattern**: Dynamic loading states instead of form submissions
-- ✅ **OAuth2 Integration**: Google SSO with AuthProvidersList component
-- ✅ **Password Strength**: Real-time password strength indicator
-- ✅ **Error Handling**: Dynamic error states with UI-Kit styling
-- ✅ **Redirect Logic**: Maintained existing authentication flow
+- ✅ **URL Routing**: Browser history support with /auth, /auth/signup, /auth/login routes
+- ✅ **State-URL Sync**: Navigation actions update both application state and browser URL
+- ✅ **Shared Layout**: AuthBenefitsSection identical across all authentication screens
+- ✅ **Dynamic Loading**: Button loading states with state-driven UI updates
+- ✅ **OAuth2 Integration**: SSO provider authentication with AuthProvidersList component
+- ✅ **Error Handling**: Toast-based error reporting using UI-Kit toast system
+- ✅ **Back Navigation**: Proper back button functionality with URL updates
 
 **🔧 Architecture Improvements:**
-- **Shared Components**: Reusable auth components across login/register pages
-- **State-Driven UI**: No `<form>` elements, only Button onClick handlers
-- **Dynamic Loading**: Button loading states replace traditional form validation
-- **UI-Kit Compliance**: 100% design system consistency
+- **Multi-Platform-Hub Pattern**: Follows exact section-based structure from about-page.tsx
+- **Navigation Utilities**: Centralized router functions in lib/navigation.ts
+- **Component Reusability**: Each section is self-contained and reusable
+- **State-Driven UI**: No `<form>` elements, only Button onClick handlers with dynamic loading
+- **UI-Kit Compliance**: 100% design system consistency with OpenFrame theming
 
-**📦 Shared Component Library:**
+**📦 Component Structure:**
 ```typescript
-// AuthFormContainer - Consistent layout and error handling
-<AuthFormContainer
-  title="Welcome back"
-  subtitle="Sign in to access your account"
-  error={error}
-  maxWidth="md"
-/>
+// Main orchestrator following multi-platform-hub pattern
+src/components/openframe/auth/
+├── auth-page.tsx              # Main orchestrator (like about-page.tsx)
+├── auth-choice-section.tsx    # Organization creation and sign-in
+├── auth-signup-section.tsx    # User registration form
+├── auth-login-section.tsx     # SSO provider selection
+└── auth-benefits-section.tsx  # Shared benefits panel
 
-// FormField - UI-Kit Input with consistent labeling
-<FormField
-  id="email"
-  label="Email"
-  type="email"
-  value={email}
-  onChange={handleChange}
-  required
-/>
+// Navigation utilities
+src/lib/navigation.ts          # Custom useNavigation hook and route constants
 
-// PasswordField - Password input with strength indicator
-<PasswordField
-  id="password"
-  label="Password"
-  value={password}
-  onChange={handleChange}
-  showStrength={true}
-  required
-/>
+// Router integration
+src/lib/router.tsx             # Added /auth/signup and /auth/login routes
+```
 
-// UI-Kit Button with dynamic loading
-<Button
-  variant="primary"
-  size="lg"
-  loading={isLoading}
-  onClick={handleLogin}
->
-  {isLoading ? 'Signing in...' : 'Sign In'}
-</Button>
+**📊 Navigation Flow:**
+```typescript
+// Navigation utilities with proper URL updates
+const { navigateTo, replace } = useNavigation()
+
+// Route definitions
+export const authRoutes = {
+  choice: '/auth',
+  signup: '/auth/signup', 
+  login: '/auth/login',
+  dashboard: '/dashboard'
+}
+
+// State + URL synchronization
+const handleBack = () => {
+  setStep('choice')
+  navigateTo(authRoutes.choice)  // Updates both state and URL
+}
 ```
 
 ### 3.2 Core Dashboard (Week 2)
