@@ -192,7 +192,6 @@ public class AuthorizationServerConfig {
                     .map(a -> a.substring(5))
                     .toList();
 
-
             String tenantId = getTenantId();
             User user = userService
                     .findActiveByEmailAndTenant(authentication.getName(), tenantId)

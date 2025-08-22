@@ -96,8 +96,7 @@ public class AuthController {
     @GetMapping("/logout")
     public Mono<ResponseEntity<Void>> logout(@RequestParam String tenantId, WebSession session) {
         log.debug("Logging out user for tenant: {}", tenantId);
-        // Invalidate session to prevent session fixation and clear state
-        
+
         HttpHeaders headers = new HttpHeaders();
         
         ResponseCookie clearedAccess = ResponseCookie.from("access_token", "")
@@ -213,6 +212,18 @@ public class AuthController {
         
         log.debug("Successfully refreshed tokens");
         return new ResponseEntity<>(headers, org.springframework.http.HttpStatus.NO_CONTENT);
+    }
+
+    /**
+     * Registration via Google SSO (global, no tenant yet)
+     * Redirects to SAS oauth2Login endpoint under /sas/register/**
+     */
+    @GetMapping("/register/google")
+    public Mono<ResponseEntity<Void>> registerWithGoogle() {
+        String sasAuthorize = authUrl + "/register/oauth2/authorization/google";
+        return Mono.just(ResponseEntity.status(302)
+            .header(HttpHeaders.LOCATION, sasAuthorize)
+            .build());
     }
 
 

@@ -75,10 +75,7 @@ public class CookieToHeaderFilter implements WebFilter {
         }
         String path = request.getPath().value();
         return path.startsWith("/api/")
-                || "/graphql".equals(path)
-                || path.startsWith("/tools/")
-                || path.startsWith("/clients/")
-                || path.startsWith("/ws-tools/");
+                || path.startsWith("/tools/");
     }
 
     private boolean hasAuthorizationHeader(ServerHttpRequest request) {

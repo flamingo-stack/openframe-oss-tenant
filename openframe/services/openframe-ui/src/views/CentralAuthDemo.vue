@@ -53,6 +53,13 @@
             <span>or register manually</span>
           </div>
 
+          <div class="sso-option" style="margin-bottom: 1rem;">
+            <button @click="handleGoogleRegistration" class="btn-alt google" :disabled="registerLoading">
+              <i class="pi pi-google"></i>
+              <span>Continue with Google</span>
+            </button>
+          </div>
+
           <form @submit.prevent="handleManualRegistration" class="auth-form">
             <div class="form-row">
               <div class="form-group">
@@ -226,6 +233,14 @@ const authStore = useAuthStore()
 onMounted(() => {
   const error = route.query.error
   const message = route.query.message
+  const emailPrefill = route.query.email as string | undefined
+  const firstPrefill = route.query.firstName as string | undefined
+  const lastPrefill = route.query.lastName as string | undefined
+  if (route.query.google === '1') {
+    if (emailPrefill) registerForm.email = emailPrefill
+    if (firstPrefill) registerForm.firstName = firstPrefill
+    if (lastPrefill) registerForm.lastName = lastPrefill
+  }
   
   if (error === 'oauth_failed' && message) {
     toast.add({
@@ -464,6 +479,12 @@ async function handleManualRegistration() {
   } finally {
     registerLoading.value = false
   }
+}
+
+// Google registration via Gateway
+function handleGoogleRegistration() {
+  const url = `${import.meta.env.VITE_GATEWAY_URL}/oauth/register/google`
+  window.location.href = url
 }
 </script>
 
