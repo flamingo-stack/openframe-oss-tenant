@@ -16,9 +16,9 @@ export default function AuthPage() {
     router.push('/auth/signup/')
   }
 
-  const handleSignIn = (email: string) => {
-    discoverTenants(email)
-    router.push('/auth/login/')
+  const handleSignIn = async (email: string) => {
+    await discoverTenants(email)
+    router.push('/auth/login')
   }
 
   return (

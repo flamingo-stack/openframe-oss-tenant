@@ -173,41 +173,17 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "OpenFrame Frontend (K8s Cluster)",
+            "name": "OpenFrame Frontend with Local K8s Cluster",
             "preLaunchTask": "frontend-with-port-cleanup",
             "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
             "runtimeExecutable": "npm",
             "runtimeArgs": ["run", "dev"],
             "env": {
                 "NODE_ENV": "development",
-                "NEXT_PUBLIC_API_URL": "http://localhost/api",
-                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "http://localhost/api/graphql",
-                "NEXT_PUBLIC_WS_ENDPOINT": "ws://localhost/api/ws",
-                "NEXT_PUBLIC_APP_TYPE": "openframe",
-                "NEXT_PUBLIC_CLIENT_ID": "openframe_web_dashboard",
-                "NEXT_PUBLIC_CLIENT_SECRET": "prod_secret"
-            },
-            "console": "integratedTerminal",
-            "sourceMaps": true,
-            "smartStep": true,
-            "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**"
-            ]
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "OpenFrame Frontend (Gateway Debug)",
-            "preLaunchTask": "frontend-with-port-cleanup",
-            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": ["run", "dev"],
-            "env": {
-                "NODE_ENV": "development",
-                "NEXT_PUBLIC_API_URL": "http://localhost:8100/api",
-                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "http://localhost:8100/api/graphql",
-                "NEXT_PUBLIC_WS_ENDPOINT": "ws://localhost:8100/api/ws",
+                "PORT": "4000",
+                "NEXT_PUBLIC_API_URL": "https://localhost/api",
+                "NEXT_PUBLIC_GRAPHQL_ENDPOINT": "https://localhost/api/graphql",
+                "NEXT_PUBLIC_WS_ENDPOINT": "wss://localhost/api/ws",
                 "NEXT_PUBLIC_APP_TYPE": "openframe",
                 "NEXT_PUBLIC_CLIENT_ID": "openframe_web_dashboard",
                 "NEXT_PUBLIC_CLIENT_SECRET": "prod_secret"

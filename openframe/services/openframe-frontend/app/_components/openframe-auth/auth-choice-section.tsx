@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 interface AuthChoiceSectionProps {
   onCreateOrganization: (orgName: string, domain: string) => void
-  onSignIn: (email: string) => void
+  onSignIn: (email: string) => Promise<void>
   isLoading: boolean
 }
 
@@ -17,6 +17,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const [orgName, setOrgName] = useState('')
   const [domain, setDomain] = useState('localhost')
   const [email, setEmail] = useState('')
+  const [isSigningIn, setIsSigningIn] = useState(false)
 
   const handleCreateOrganization = () => {
     if (orgName.trim()) {
@@ -24,9 +25,14 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
     }
   }
 
-  const handleSignIn = () => {
-    if (email.trim()) {
-      onSignIn(email.trim())
+  const handleSignIn = async () => {
+    if (email.trim() && !isSigningIn) {
+      setIsSigningIn(true)
+      try {
+        await onSignIn(email.trim())
+      } finally {
+        setIsSigningIn(false)
+      }
     }
   }
 
@@ -123,8 +129,8 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <div className="flex-1">
               <Button
                 onClick={handleSignIn}
-                disabled={!email.trim() || isLoading}
-                loading={isLoading}
+                disabled={!email.trim() || isSigningIn || isLoading}
+                loading={isSigningIn || isLoading}
                 variant="primary"
                 className="w-full font-body text-[18px] font-bold leading-6 tracking-[-0.36px] py-3"
               >

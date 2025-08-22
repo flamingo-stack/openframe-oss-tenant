@@ -203,6 +203,65 @@ function MyComponent() {
 }
 ```
 
+## MANDATORY Development Patterns
+
+### API Calls Pattern: use... Hooks + useToast
+ALL API operations MUST follow this pattern:
+
+```typescript
+import { useToast } from '@flamingo/ui-kit/hooks'
+
+// MANDATORY: All API calls must be in use... hooks
+export function useDevices() {
+  const { toast } = useToast() // ← REQUIRED in every API hook
+  
+  const fetchDevices = async () => {
+    try {
+      const response = await fetch('/api/devices')
+      const data = await response.json()
+      return data
+    } catch (error) {
+      toast({
+        title: "Fetch Failed",
+        description: "Unable to load devices",
+        variant: "destructive"
+      })
+      throw error
+    }
+  }
+  
+  const createDevice = async (deviceData) => {
+    try {
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        body: JSON.stringify(deviceData)
+      })
+      toast({
+        title: "Success!",
+        description: "Device created successfully",
+        variant: "success"
+      })
+      return await response.json()
+    } catch (error) {
+      toast({
+        title: "Creation Failed",
+        description: "Unable to create device",
+        variant: "destructive"
+      })
+      throw error
+    }
+  }
+  
+  return { fetchDevices, createDevice }
+}
+```
+
+### Rules:
+1. **ALL API calls** must be in custom hooks with `use...` naming
+2. **EVERY API hook** must include `const { toast } = useToast()`
+3. **ERROR handling** must use toast notifications (never custom error divs)
+4. **SUCCESS operations** should show success toasts
+
 ## API Integration
 
 The frontend communicates with the OpenFrame backend through GraphQL:
@@ -283,8 +342,9 @@ OpenFrame Frontend supports browser automation through Browser MCP for testing a
 1. Follow the UI-Kit design system strictly
 2. Write TypeScript for all new code
 3. Use functional components with hooks
-4. Test your changes thoroughly
-5. Follow the established patterns
+4. **MANDATORY**: ALL API calls must be in `use...` hooks with `useToast`
+5. Test your changes thoroughly
+6. Follow the established patterns
 
 ## Deployment
 

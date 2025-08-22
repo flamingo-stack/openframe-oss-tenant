@@ -13,7 +13,6 @@ import {
  * Displays OpenFrame logo and three benefit cards
  */
 export function AuthBenefitsSection() {
-  console.log('AuthBenefitsSection rendering with ml-20')
   return (
     <div className="bg-ods-card border-l border-ods-border w-full h-full min-h-screen flex items-center justify-center p-6 lg:p-20">
       <div className="flex flex-col items-center justify-center gap-10 w-full max-w-lg">

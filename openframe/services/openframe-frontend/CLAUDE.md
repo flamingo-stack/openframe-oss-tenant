@@ -60,9 +60,10 @@ npm run dev                                 # Explore multi-platform-hub for pat
 ## Architecture Overview
 
 ### Technology Stack
-- **Framework**: Next.js 15 with React 18 and TypeScript
-- **Build Tool**: Next.js (pure client-side export)
-- **Routing**: Next.js App Router (file-based routing)
+- **Framework**: Next.js 15 with React 18 and TypeScript (PURE CLIENT-SIDE ONLY)
+- **Build Tool**: Next.js (pure client-side export - NO SERVER-SIDE FEATURES)
+- **Routing**: Next.js App Router (file-based routing - CLIENT-SIDE ONLY)
+- **CRITICAL**: NO API ROUTES - Pure static export only
 - **State Management**: Zustand
 - **API Client**: Apollo Client (GraphQL)
 - **UI Components**: @flamingo/ui-kit
@@ -279,8 +280,8 @@ All auth screens share the exact same layout with modular sections:
 
 ## Development Patterns
 
-### Toast System for Error Reporting
-ALWAYS use the unified Sonner-based toast system for error reporting, never custom error divs:
+### Toast System for Error Reporting (MANDATORY PATTERN)
+ALWAYS use the unified toast system for error reporting. This is a MANDATORY pattern for all custom hooks and components.
 
 **Setup**: Add `<Toaster />` from 'sonner' to your App.tsx:
 ```typescript
@@ -296,30 +297,93 @@ export const App = () => {
 };
 ```
 
-**Usage**: Use the `useToast` hook from UI-Kit:
+**MANDATORY Usage Pattern**: ALL API calls MUST use `use...` hook pattern with `useToast`:
 ```typescript
 import { useToast } from '@flamingo/ui-kit/hooks';
 
+// MANDATORY: All API operations must be in custom hooks with use... pattern
+export function useAuth() {
+  const { toast } = useToast() // ← REQUIRED for all API hooks
+  
+  const discoverTenants = async (email: string) => {
+    try {
+      const response = await fetch(`/api/sas/tenant/discover?email=${email}`)
+      // Handle response...
+    } catch (error) {
+      toast({
+        title: "Discovery Failed",
+        description: error.message || "Unable to check for existing accounts",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  const registerOrganization = async (data: RegisterRequest) => {
+    try {
+      const response = await fetch('/api/sas/oauth/register', { 
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+      toast({
+        title: "Success!",
+        description: "Organization created successfully",
+        variant: "success"
+      })
+    } catch (error) {
+      toast({
+        title: "Registration Failed", 
+        description: error.message || "Unable to create organization",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  return { discoverTenants, registerOrganization, ... }
+}
+
+// EXAMPLE: Device management hook
+export function useDevices() {
+  const { toast } = useToast() // ← REQUIRED
+  
+  const fetchDevices = async () => {
+    try {
+      const response = await fetch('/api/devices')
+      return await response.json()
+    } catch (error) {
+      toast({
+        title: "Fetch Failed",
+        description: "Unable to load devices",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  return { fetchDevices, ... }
+}
+
+// MANDATORY: Components using hooks with error handling must also use useToast
 function AuthComponent() {
-  const { toast } = useToast();
+  const { toast } = useToast() // ← REQUIRED for components with error handling
+  const { discoverTenants } = useAuth()
   
-  const handleError = (error: Error) => {
-    toast({
-      title: "Operation Failed",
-      description: error.message || "Something went wrong",
-      variant: "destructive"
-    });
-  };
-  
-  const handleSuccess = () => {
-    toast({
-      title: "Success!",
-      description: "Operation completed successfully",
-      variant: "success"
-    });
-  };
+  const handleSubmit = async () => {
+    try {
+      await discoverTenants(email)
+    } catch (error) {
+      toast({
+        title: "Discovery Failed",
+        description: "Unable to check for existing accounts",
+        variant: "destructive"
+      })
+    }
+  }
 }
 ```
+
+**Toast Variants**:
+- `variant: "destructive"` - For errors and failures
+- `variant: "success"` - For successful operations
+- `variant: "default"` - For informational messages
 
 ### Authentication Integration
 Use UI-Kit authentication components for OpenFrame SSO with dynamic loading states:
@@ -469,6 +533,8 @@ npm run test:coverage                       # Coverage report
 5. **NO FORMS** - never use `<form>` elements or form submissions
 6. **NEVER REPLACE SHARED COMPONENTS WITH MANUAL DESIGN** - If UI-Kit components don't work as expected, fix the underlying issue or use proper ODS theming variables, never replace with hardcoded values
 7. **ALWAYS USE TOAST FOR ERROR REPORTING** - Use `useToast` hook from UI-Kit for all error/success messages, never create custom error divs
+8. **MANDATORY use... HOOK PATTERN** - ALL API calls must be wrapped in custom hooks with `use...` naming pattern
+9. **MANDATORY useToast IN ALL API HOOKS** - Every `use...` hook with API calls MUST include `const { toast } = useToast()` for error handling
 
 ### Multi-Platform-Hub Rules
 1. **Reference ONLY** - never copy components
@@ -487,6 +553,9 @@ npm run test:coverage                       # Coverage report
 7. **Test with OpenFrame theming** enabled  
 8. **Pure client-side** - use 'use client' directive, static export only
 9. **Always use ODS theming** - Use semantic color variables (bg-ods-card, text-ods-text-primary) instead of hardcoded values
+10. **MANDATORY use... HOOK PATTERN** - ALL new/existing API calls must be in custom hooks with `use...` naming
+11. **MANDATORY useToast IN ALL API HOOKS** - Every API hook must implement `const { toast } = useToast()` for error handling
+12. **NO SERVER-SIDE FEATURES** - No API routes, no server components, no SSR - PURE STATIC CLIENT-SIDE ONLY
 
 ## Access URLs
 

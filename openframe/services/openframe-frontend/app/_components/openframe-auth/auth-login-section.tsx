@@ -1,9 +1,8 @@
 'use client'
 
-import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
+import { Button } from '@flamingo/ui-kit/components/ui'
 import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
 import { ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
 
 interface TenantInfo {
   tenantName: string
@@ -27,7 +26,7 @@ interface AuthLoginSectionProps {
 }
 
 /**
- * Login section with SSO providers and password login
+ * Login section with SSO providers
  */
 export function AuthLoginSection({ 
   email, 
@@ -38,19 +37,18 @@ export function AuthLoginSection({
   onBack, 
   isLoading 
 }: AuthLoginSectionProps) {
-  const [password, setPassword] = useState('')
 
-  const handlePasswordLogin = () => {
-    // For now, we'll focus on SSO. Password login can be added later if needed
-    console.log('Password login for:', email, password)
-  }
-
-  const enabledProviders: SSOProvider[] = availableProviders.map(provider => ({
-    provider: provider === 'openframe-sso' ? 'google' : provider, // Map providers to UI kit format
+  // Separate OpenFrame SSO from standard providers
+  const hasOpenFrameSSO = availableProviders.includes('openframe-sso')
+  const standardProviders = availableProviders.filter(provider => provider !== 'openframe-sso')
+  
+  const enabledProviders: SSOProvider[] = standardProviders.map(provider => ({
+    provider: provider, // Use actual provider name
     enabled: true,
-    displayName: provider === 'openframe-sso' ? 'OpenFrame SSO' : 
-                 provider === 'google' ? 'Google' : 
+    displayName: provider === 'google' ? 'Google' : 
                  provider === 'microsoft' ? 'Microsoft' : 
+                 provider === 'slack' ? 'Slack' :
+                 provider === 'github' ? 'GitHub' :
                  provider.charAt(0).toUpperCase() + provider.slice(1)
   }))
 
@@ -77,82 +75,48 @@ export function AuthLoginSection({
             <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">Access your OpenFrame organization.</p>
           </div>
 
-          {/* Organization info */}
-          {tenantInfo && (
-            <div className="mb-6 p-3 bg-ods-bg-secondary rounded-lg border border-ods-border">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-ods-text-secondary">Organization:</span>
-                <span className="font-medium text-ods-text-primary">{tenantInfo.tenantName}</span>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-6">
             {hasDiscoveredTenants ? (
               <>
-                {/* Email and Password */}
+                {/* SSO Login Options */}
                 <div className="space-y-6">
-                  <div className="flex flex-col gap-1">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      value={email}
-                      disabled
-                      className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <Label>Password</Label>
-                    <Input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your Password"
+                  {/* OpenFrame SSO Button */}
+                  {hasOpenFrameSSO && (
+                    <Button
+                      onClick={() => onSSO('openframe-sso')}
                       disabled={isLoading}
-                      className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+                      loading={isLoading}
+                      variant="primary"
+                      className="w-full"
+                    >
+                      Sign in with OpenFrame SSO
+                    </Button>
+                  )}
+
+                  {/* Standard SSO Providers */}
+                  {enabledProviders.length > 0 && (
+                    <AuthProvidersList
+                      enabledProviders={enabledProviders.map(p => ({ provider: p.provider, enabled: p.enabled }))}
+                      onProviderClick={onSSO}
+                      loading={isLoading}
+                      orientation="vertical"
+                      showDivider={false}
                     />
+                  )}
+
+                  {/* Back Button */}
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      onClick={onBack}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Back
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center">
-                  <Button
-                    onClick={onBack}
-                    disabled={isLoading}
-                    variant="outline"
-                    className="w-full sm:flex-1"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handlePasswordLogin}
-                    disabled={!password || isLoading}
-                    loading={isLoading}
-                    variant="primary"
-                    className="w-full sm:flex-1"
-                  >
-                    Sign In
-                  </Button>
-                </div>
-
-                {/* Divider */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-ods-border"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-ods-card text-ods-text-secondary">or sign in with SSO</span>
-                  </div>
-                </div>
-
-                {/* SSO Providers */}
-                <AuthProvidersList
-                  enabledProviders={enabledProviders.map(p => ({ provider: p.provider, enabled: p.enabled }))}
-                  onProviderClick={onSSO}
-                  loading={isLoading}
-                  orientation="vertical"
-                  showDivider={false}
-                />
               </>
             ) : (
               <div className="text-center py-8">

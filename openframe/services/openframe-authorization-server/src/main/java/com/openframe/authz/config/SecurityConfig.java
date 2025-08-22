@@ -1,6 +1,5 @@
 package com.openframe.authz.config;
 
-import com.openframe.authz.config.prop.CorsProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -9,9 +8,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Security Configuration for Default Requests
@@ -23,13 +19,12 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
-                                                          CorsConfigurationSource corsConfigurationSource) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                     "/oauth/**",           // OAuth endpoints
                     "/oauth2/**",          // Social OAuth endpoints
@@ -45,19 +40,5 @@ public class SecurityConfig {
             )
             .formLogin(form -> form.loginPage("/login").permitAll())
             .build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource(CorsProperties props) {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(props.allowedOrigins());
-        configuration.setAllowedMethods(props.allowedMethods());
-        configuration.setAllowedHeaders(props.allowedHeaders());
-        configuration.setAllowCredentials(props.allowCredentials());
-        configuration.setMaxAge(props.maxAge());
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }
