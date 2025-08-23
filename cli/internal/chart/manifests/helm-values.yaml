@@ -1,8 +1,42 @@
-global:
-  repoBranch: develop
+deployment:
+  selfHosted:
+    enabled: true    
+    ingress:
+      localhost:
+        enabled: true
+        # tls:
+          # cert: |
+          # key: |
+      ngrok:
+        enabled: false
+        # URL is required when ngrok is enabled
+        url: rhino-comic-openly.ngrok-free.app
+        credentials:
+          apiKey: "30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
+          authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+        allowedIPs:
+        - 213.111.64.191/32
+  saas:
+    enabled: false
+    ingress:
+      localhost:
+        enabled: true   # Enable localhost ingress with nginx for SaaS
 
 registry:
   docker:
     username: dmtkov
     password: dckr_pat_F8RaMkC4mda5BSmT4yUlf8BwxiA
-    email: dmtkov@flamingo.cx
+    email: dmtkov@flamingo.cx  
+
+
+# apps:
+#   namespace-integrated-tools:
+#     enabled: false
+#   authentik: 
+#     enabled: false
+#   fleetmdm: 
+#     enabled: false
+#   meshcentral: 
+#     enabled: false 
+#   tactical-rmm: 
+#     enabled: false

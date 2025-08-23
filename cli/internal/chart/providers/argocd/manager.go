@@ -25,6 +25,11 @@ func NewManager(exec executor.CommandExecutor) *Manager {
 
 // WaitForApplications waits for all ArgoCD applications to be Healthy and Synced
 func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartInstallConfig) error {
+	// Skip waiting in dry-run mode for testing
+	if config.DryRun {
+		return nil
+	}
+	
 	// Wait for bootstrap only - no message unless verbose
 	if config.Verbose {
 		pterm.Info.Println("⏳ Waiting 30 seconds for ArgoCD apps to bootstrap...")
@@ -50,15 +55,8 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			spinner.Fail(fmt.Sprintf("Timeout waiting for ArgoCD applications after %v", timeout))
 			return fmt.Errorf("timeout waiting for ArgoCD applications after %v", timeout)
 		}
-		// Get all applications and their status
-		result, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "-o", "json")
-		if err != nil {
-			spinner.Fail("Failed to get ArgoCD applications")
-			return fmt.Errorf("failed to get ArgoCD applications: %w", err)
-		}
-
-		// Parse the JSON response to extract applications
-		apps, err := m.parseApplications(ctx, result.Stdout, config.Verbose)
+		// Parse ArgoCD applications directly
+		apps, err := m.parseApplications(ctx, config.Verbose)
 		if err != nil {
 			// Don't fail immediately on parsing errors, just retry silently
 			// Applications may still be initializing and jq parsing can fail
@@ -76,7 +74,7 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		
 		// Update spinner with current status
 		if totalApps == 0 {
-			spinner.UpdateText("Waiting for ArgoCD applications to appear...")
+			spinner.UpdateText("Installing ArgoCD applications...")
 			allHealthyAndSynced = false
 		} else {
 			readyCount := 0
@@ -124,16 +122,17 @@ type Application struct {
 	Sync   string
 }
 
-// parseApplications parses the kubectl JSON output to extract application status
-func (m *Manager) parseApplications(ctx context.Context, jsonOutput string, verbose bool) ([]Application, error) {
-	// Execute jq command with robust null and error handling
-	jqCommand := `echo '%s' | jq -r '.items[]? | select(.metadata?.name?) | [.metadata.name, (.status?.health?.status // "Unknown"), (.status?.sync?.status // "Unknown")] | @tsv' 2>/dev/null || true`
-	result, err := m.executor.Execute(ctx, "sh", "-c", fmt.Sprintf(jqCommand, jsonOutput))
+// parseApplications gets ArgoCD applications and their status directly via kubectl
+func (m *Manager) parseApplications(ctx context.Context, verbose bool) ([]Application, error) {
+	// Use direct kubectl command instead of parsing JSON string to avoid control character issues
+	// Use conditional jsonpath to handle missing status fields
+	result, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io", 
+		"-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\t\"}{.status.health.status}{\"\\t\"}{.status.sync.status}{\"\\n\"}{end}")
 
 	if err != nil {
-		// If jq fails completely, try a simpler approach or return empty list
+		// If kubectl fails, try fallback approach
 		if verbose {
-			pterm.Warning.Printf("jq parsing failed: %v\n", err)
+			pterm.Warning.Printf("kubectl jsonpath failed: %v\n", err)
 		}
 		// Return empty apps list instead of failing - applications may still be initializing
 		return []Application{}, nil
@@ -150,10 +149,21 @@ func (m *Manager) parseApplications(ctx context.Context, jsonOutput string, verb
 
 		parts := strings.Split(line, "\t")
 		if len(parts) >= 3 {
+			health := strings.TrimSpace(parts[1])
+			sync := strings.TrimSpace(parts[2])
+			
+			// Default empty values to "Unknown"
+			if health == "" {
+				health = "Unknown"
+			}
+			if sync == "" {
+				sync = "Unknown"
+			}
+			
 			app := Application{
-				Name:   parts[0],
-				Health: parts[1],
-				Sync:   parts[2],
+				Name:   strings.TrimSpace(parts[0]),
+				Health: health,
+				Sync:   sync,
 			}
 			
 			// Skip applications with "Unknown" status as they're still initializing

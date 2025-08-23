@@ -39,7 +39,7 @@ func (a *ArgoCD) Install(ctx context.Context, config config.ChartInstallConfig) 
 		return errors.WrapAsChartError("installation", "ArgoCD", err).WithCluster(config.ClusterName)
 	}
 	
-	pterm.Success.Println("✅ SUCCESS ArgoCD")
+	pterm.Success.Println("ArgoCD installed")
 	return nil
 }
 

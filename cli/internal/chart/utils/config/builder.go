@@ -75,7 +75,6 @@ func (b *Builder) BuildInstallConfig(
 
 		// Use shared credentials prompter if not both provided via flags
 		if b.credentialsPrompter.IsCredentialsRequired(githubUsername, githubToken) {
-			pterm.Info.Println("🔐 Private repository detected - credentials required")
 			credentials, err := b.credentialsPrompter.PromptForGitHubCredentials(githubRepo)
 			if err != nil {
 				return ChartInstallConfig{}, err

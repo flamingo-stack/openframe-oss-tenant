@@ -25,7 +25,6 @@ type GitHubCredentials struct {
 // PromptForGitHubCredentials prompts for GitHub username and token
 func (cp *CredentialsPrompter) PromptForGitHubCredentials(repoURL string) (*GitHubCredentials, error) {
 	pterm.Info.Printf("🔐 Private repository access required for: %s\n", repoURL)
-	pterm.Info.Println("Please provide your GitHub credentials:")
 
 	// Prompt for username
 	username, err := sharedUI.GetInput("GitHub Username", "read-contents-pat", cp.validateNonEmpty("Username"))

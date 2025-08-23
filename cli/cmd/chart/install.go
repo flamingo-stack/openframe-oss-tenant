@@ -1,7 +1,6 @@
 package chart
 
 import (
-	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/chart/services"
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
@@ -28,9 +27,6 @@ Examples:
   openframe chart install --github-branch develop          # Use develop branch
   openframe chart install --cert-dir /path/to/certs        # Custom cert directory
   openframe chart install --github-username myuser --github-token github_pat_xyz123  # Skip credential prompts`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return prerequisites.NewInstaller().RegenerateCertificatesOnly()
-		},
 		RunE: runInstallCommand,
 		SilenceErrors: true,  // Errors are handled by our custom error handler
 		SilenceUsage: true,   // Don't show usage on errors
