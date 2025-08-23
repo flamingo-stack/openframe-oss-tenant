@@ -6,11 +6,10 @@
       </div>
       <p class="of-text-secondary">Sign in to access your account</p>
       
-      <!-- Regular login form -->
       <form @submit.prevent="handleSubmit" class="of-form">
         <div class="of-form-group">
           <label for="email" class="of-form-label">Email</label>
-          <InputText id="email" v-model="email" type="email" class="w-full" />
+          <InputText id="email" v-model="email" type="email" class="w-full" required />
         </div>
         <div class="of-form-group">
           <label for="password" class="of-form-label">Password</label>
@@ -21,14 +20,17 @@
         </div>
       </form>
       
-      <!-- Google OAuth form - only show if configured -->
-      <div class="of-divider">
+      <!-- SSO Options - prepared for future centralized SSO -->
+      <div v-if="ssoEnabled" class="of-divider">
         <span class="of-divider-text">or</span>
       </div>
       
-      <div class="of-form">
+      <div v-if="ssoEnabled" class="of-form">
         <div class="of-form-group">
-          <GoogleLoginButton @error="handleOAuthError" />
+          <OFButton @click="handleSSOLogin" class="of-button w-full sso-button" variant="outline">
+            <i class="pi pi-sign-in mr-2"></i>
+            Continue with OpenFrame SSO
+          </OFButton>
         </div>
       </div>
       
@@ -44,14 +46,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { ToastService } from '../services/ToastService'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import { OFButton } from '../components/ui'
-import GoogleLoginButton from '../components/auth/GoogleLoginButton.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -61,81 +62,42 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 
-onMounted(() => {
-  // Check for OAuth debug info on component load
-  checkOAuthDebugInfo();
+// SSO configuration - can be controlled via environment variables or settings
+const ssoEnabled = computed(() => {
+  return import.meta.env.VITE_SSO_ENABLED === 'true'
 })
-
-// Check for OAuth debug info
-const checkOAuthDebugInfo = () => {
-  const debugInfo = localStorage.getItem('oauth_debug');
-  const configDebug = localStorage.getItem('oauth_config_debug');
-  const errorDebug = localStorage.getItem('oauth_error_debug');
-  const redirectDebug = localStorage.getItem('oauth_redirect_debug');
-  const initiateErrorDebug = localStorage.getItem('oauth_initiate_error_debug');
-  
-  if (debugInfo) {
-    console.log('🔍 [Login] OAuth Debug Info:', JSON.parse(debugInfo));
-  }
-  if (configDebug) {
-    console.log('🔍 [Login] OAuth Config Debug:', JSON.parse(configDebug));
-  }
-  if (errorDebug) {
-    console.log('🔍 [Login] OAuth Error Debug:', JSON.parse(errorDebug));
-  }
-  if (redirectDebug) {
-    console.log('🔍 [Login] OAuth Redirect Debug:', JSON.parse(redirectDebug));
-  }
-  if (initiateErrorDebug) {
-    console.log('🔍 [Login] OAuth Initiate Error Debug:', JSON.parse(initiateErrorDebug));
-  }
-  
-  // Clear debug info after reading
-  localStorage.removeItem('oauth_debug');
-  localStorage.removeItem('oauth_config_debug');
-  localStorage.removeItem('oauth_error_debug');
-  localStorage.removeItem('oauth_redirect_debug');
-  localStorage.removeItem('oauth_initiate_error_debug');
-};
-
-const copyToClipboard = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text)
-    toastService.showSuccess('Text copied to clipboard')
-  } catch (err) {
-    console.error('Failed to copy text: ', err)
-  }
-}
 
 const handleSubmit = async () => {
   if (!email.value || !password.value) {
-    toastService.showError('Please enter both email and password');
-    return;
+    toastService.showError('Please enter both email and password')
+    return
   }
 
   try {
-    loading.value = true;
-    console.log('🔑 [Login] Starting login process');
-    const response = await authStore.login(email.value, password.value);
-    console.log('✅ [Login] Login successful, response:', response);
-    toastService.showSuccess('Login successful!');
+    loading.value = true
+    const tokenResponse = await authStore.login(email.value, password.value)
+    toastService.showSuccess('Welcome back!')
     
-    // Wait a moment to ensure tokens are stored
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    console.log('🚀 [Login] Navigating to dashboard');
-    router.push('/dashboard');
+    // For local development, always redirect to dashboard
+    toastService.showSuccess('Login successful! Redirecting to dashboard...')
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 1500)
   } catch (error: any) {
-    console.error('❌ [Login] Login failed:', error);
-    toastService.showError(error.message || 'Login failed. Please try again.');
+    toastService.showError(error.message || 'Login failed. Please try again.')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-const handleOAuthError = (error: any) => {
-  console.log('🔥 [Login] OAuth error received:', error);
-  toastService.showError(error.message || 'Authentication failed')
+const handleSSOLogin = async () => {
+  try {
+    // Redirect to centralized SSO login
+    const ssoUrl = import.meta.env.VITE_SSO_LOGIN_URL || '/oauth2/authorization/openframe-sso'
+    window.location.href = ssoUrl
+  } catch (error: any) {
+    toastService.showError('SSO login not available')
+  }
 }
 </script>
 
@@ -268,6 +230,16 @@ const handleOAuthError = (error: any) => {
   font-size: 0.875rem;
   color: var(--text-color-secondary);
   background: var(--surface-card);
+}
+
+.sso-button {
+  border-color: var(--of-accent);
+  color: var(--of-accent);
+}
+
+.sso-button:hover {
+  background: var(--of-accent);
+  color: white;
 }
 
 @media screen and (max-width: 640px) {

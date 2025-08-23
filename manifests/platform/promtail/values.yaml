@@ -5,12 +5,6 @@ servicemonitor:
 
 
 promtail:
-  global:
-    imagePullSecrets: 
-      - name: docker-pat-secret
-  imagePullSecrets: 
-      - name: docker-pat-secret
-      
   revisionHistoryLimit: 1
 
   podsecurityContext:

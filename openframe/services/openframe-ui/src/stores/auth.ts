@@ -1,297 +1,115 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { OAuthError } from '@/errors/OAuthError'
-import { ConfigService } from '@/config/config.service'
-
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-  scope: string;
-}
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { authService } from '@/services/AuthService';
 
 export const useAuthStore = defineStore('auth', () => {
-  // Cache for server-verified status
-  const authStatusCache = ref<boolean | null>(null)
-  
-  // Reactive function to check authentication status based on cookie presence  
-  const isAuthenticated = ref(false)
-  
-  // Function to update authentication status based on cookie presence
-  function updateAuthStatus() {
-    // First check if we have the access_token cookie (this indicates active session)
-    const hasAccessTokenCookie = document.cookie
-      .split(';')
-      .some(cookie => cookie.trim().startsWith('access_token='))
-    
-    // If no cookie, definitely not authenticated
-    if (!hasAccessTokenCookie) {
-      isAuthenticated.value = false
-      return
-    }
-    
-    // If we have cookie and cached status, use cached
-    if (authStatusCache.value !== null) {
-      isAuthenticated.value = authStatusCache.value
-      return
-    }
-    
-    // If we have cookie but no cached status, assume authenticated
-    // (checkAuthStatus will verify this with server)
-    isAuthenticated.value = true
-  }
-  
-  // Initialize auth status on store creation
-  updateAuthStatus()
-  
-  const config = ConfigService.getInstance()
+  const authStatusCache = ref<boolean | null>(null);
+  const isAuthenticated = ref(false);
+  const currentTenantId = ref<string | null>(null);
 
-  async function login(email: string, password: string): Promise<TokenResponse> {
-    try {
-      // Clear any stale refresh flags
-      localStorage.removeItem('is_refreshing');
-
-      const formData = new URLSearchParams();
-      formData.append('grant_type', 'password');
-      formData.append('username', email);
-      formData.append('password', password);
-      formData.append('client_id', config.getConfig().clientId);
-      formData.append('client_secret', config.getConfig().clientSecret);
-      formData.append('scope', 'openid profile email');
-
-      const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: formData
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error_description || 'Login failed');
-      }
-
-      // Tokens are now set as HTTP-only cookies by the server
-      // Update cached status and refresh authentication status
-      console.log('🔑 [AuthStore] Login successful, tokens set via HTTP-only cookies');
-      authStatusCache.value = true;
-      updateAuthStatus();
-      
-      return data;
-    } catch (error) {
-      // Also clear refresh flag on error
-      localStorage.removeItem('is_refreshing');
-      authStatusCache.value = false;
-      updateAuthStatus();
-      throw error;
-    }
+  // Initialize from session storage
+  const storedTenantId = authService.getCurrentTenantId();
+  if (storedTenantId) {
+    currentTenantId.value = storedTenantId;
+    console.log('🔧 [AuthStore] Restored tenant ID from session storage:', storedTenantId);
   }
 
-  async function tryRefreshToken(): Promise<boolean> {
+  async function updateAuthStatus(): Promise<boolean> {
     try {
-      console.log('🔄 [AuthStore] Attempting token refresh via HttpOnly cookies...');
-      
-      // SECURITY: Both tokens are now HttpOnly cookies with strict paths
-      // Access token cookie: Path=/ (included automatically)  
-      // Refresh token cookie: Path=/api/oauth/token (included automatically ONLY on this endpoint)
-      const response = await fetch(`${config.getConfig().apiUrl}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        credentials: 'include', // Include HttpOnly cookies
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          client_id: config.getConfig().clientId,
-          client_secret: config.getConfig().clientSecret
-          // No refresh_token parameter - it's automatically sent via HttpOnly cookie
-        })
-      });
-
-      if (response.ok) {
-        console.log('✅ [AuthStore] Token refresh successful - new tokens set as HttpOnly cookies');
-        authStatusCache.value = true;
-        updateAuthStatus();
-        return true;
-      } else {
-        console.log('❌ [AuthStore] Token refresh failed:', response.status);
-        authStatusCache.value = false;
-        updateAuthStatus();
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ [AuthStore] Token refresh error:', error);
+      // Rely on backend truth: /me (base URL already includes /api)
+      const me = await (await import('@/apollo/apolloClient')).restClient.get('/me');
+      const ok = !!me;
+      isAuthenticated.value = ok;
+      authStatusCache.value = ok;
+      console.log('✅ [AuthStore] Auth verified via /api/me:', ok);
+      return ok;
+    } catch (e: any) {
+      isAuthenticated.value = false;
       authStatusCache.value = false;
-      updateAuthStatus();
+      console.log('❌ [AuthStore] /api/me indicates not authenticated');
       return false;
     }
   }
 
-  async function logout() {
-    try {
-      // Call logout endpoint to clear HttpOnly cookies (both access and refresh tokens)
-      const response = await fetch(`${config.getConfig().apiUrl}/oauth/logout`, {
-        method: 'POST',
-        credentials: 'include' // Include cookies for clearing
-      });
-      
-      if (!response.ok) {
-        console.warn('⚠️ [AuthStore] Logout endpoint failed, continuing with local logout');
-      }
-    } catch (error) {
-      console.warn('⚠️ [AuthStore] Logout request failed:', error);
+  function login(tenantId: string) {
+    console.log('🔑 [AuthStore] Login initiated for tenant:', tenantId);
+    currentTenantId.value = tenantId;
+    authService.setCurrentTenantId(tenantId);
+    authService.login(tenantId);
+  }
+
+  async function refreshToken() {
+    const tenantId = currentTenantId.value
+      || authService.getCurrentTenantId()
+      || sessionStorage.getItem('auth:tenant_id');
+    if (!tenantId) {
+      throw new Error('No tenant ID available for token refresh');
     }
-    
-    // Clear any localStorage remnants and update cached status
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    authStatusCache.value = false;
+
+    console.log('🔄 [AuthStore] Refreshing token for tenant:', tenantId);
+    try {
+      await authService.refreshToken(tenantId);
+      updateAuthStatus();
+      console.log('✅ [AuthStore] Token refresh successful');
+    } catch (error) {
+      console.error('❌ [AuthStore] Token refresh failed:', error);
+      // Do not auto-logout here to avoid refresh/logout loops.
+      // Mark unauthenticated and redirect to login once; UI will handle further navigation.
+      isAuthenticated.value = false;
+      // Optional: navigate to auth page once
+      if (typeof window !== 'undefined' && window.location.pathname !== '/central-auth-demo') {
+        window.location.href = '/central-auth-demo?reauth=1';
+      }
+    }
+  }
+
+  function logout() {
+    console.log('🚪 [AuthStore] Logout initiated');
+    // Resolve tenantId with fallbacks
+    const stored = currentTenantId.value
+      || authService.getCurrentTenantId()
+      || sessionStorage.getItem('auth:tenant_id');
+
+    if (stored && stored.length > 0) {
+      authService.logout(stored);
+    } else {
+      console.warn('⚠️ [AuthStore] Missing tenantId for logout; attempting redirect without it');
+      // As a last resort, navigate to homepage; backend cannot logout without tenant
+      window.location.href = '/';
+    }
+
+    // Clear local state immediately
+    isAuthenticated.value = false;
+    currentTenantId.value = null;
+    authService.setCurrentTenantId('');
+    sessionStorage.removeItem('currentTenantId');
+    console.log('🧹 [AuthStore] Local state cleared');
+  }
+
+  // Update auth status when cookies change
+  if (typeof window !== 'undefined') {
+      // Listen for storage events (when cookies change)
+  window.addEventListener('storage', () => {
+    console.log('📦 [AuthStore] Storage event detected, updating auth status');
     updateAuthStatus();
-    console.log('🔑 [AuthStore] Logged out and cleared HttpOnly cookies');
-  }
-
-  async function checkAuthStatus() {
-    // Since tokens are in HTTP-only cookies, we can't access them directly
-    // Check authentication by making a request to a protected endpoint
-    const apiUrl = config.getConfig().apiUrl;
-    const fullUrl = `${apiUrl}/oauth/me`;
+  });
     
-    console.log('🔑 [AuthStore] Checking auth status...');
-    console.log('🔑 [AuthStore] API URL:', apiUrl);
-    console.log('🔑 [AuthStore] Full URL:', fullUrl);
-    console.log('🔑 [AuthStore] Current domain:', window.location.hostname);
+    // Initial check (await ignored intentionally)
+    updateAuthStatus();
     
-    try {
-      console.log('🔑 [AuthStore] Making fetch request...');
-      const response = await fetch(fullUrl, {
-        method: 'GET',
-        credentials: 'include' // Include cookies
-      });
-      
-      console.log('🔑 [AuthStore] Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
-      const authenticated = response.ok;
-      authStatusCache.value = authenticated; // Update cache and refresh status
-      updateAuthStatus();
-      console.log('🔑 [AuthStore] Auth status checked via server:', authenticated);
-      return authenticated;
-    } catch (error) {
-      console.error('🔑 [AuthStore] Auth check failed with error:', error);
-      console.error('🔑 [AuthStore] Error type:', typeof error);
-      if (error instanceof Error) {
-        console.error('🔑 [AuthStore] Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-      }
-      authStatusCache.value = false;
-      updateAuthStatus();
-      return false;
-    }
-  }
-
-  async function handleAuthError(error: unknown): Promise<boolean> {
-    // This should be called by apollo client / rest client when they receive 401
-    console.log('🔑 [AuthStore] Handling auth error:', error);
-    
-    // Try to refresh token ONLY if it's an authentication error (401)
-    if (error instanceof Error && (
-        error.message.includes('401') || 
-        error.message.includes('token expired') || 
-        error.message.includes('Unauthorized')
-    )) {
-      console.log('🔑 [AuthStore] Attempting token refresh due to 401/expired token');
-      try {
-        const success = await tryRefreshToken();
-        if (success) {
-          console.log('🔑 [AuthStore] Token refresh successful');
-          return true;
-        } else {
-          console.log('🔑 [AuthStore] Token refresh failed, logging out');
-          await logout();
-          return false;
-        }
-      } catch (refreshError) {
-        console.error('🔑 [AuthStore] Token refresh error:', refreshError);
-        await logout();
-        return false;
-      }
-    }
-    
-    // For non-auth errors, just log them
-    console.log('🔑 [AuthStore] Non-auth error, not attempting refresh');
-    return false;
-  }
-
-  async function register(email: string, password: string, firstName: string, lastName: string): Promise<TokenResponse> {
-    try {
-      const config = ConfigService.getInstance().getConfig();
-      const credentials = btoa(`${config.clientId}:${config.clientSecret}`);
-      const apiUrl = `${config.apiUrl}/oauth/register`;
-      console.log('Attempting to register with URL:', apiUrl);
-      console.log('Environment variables:', {
-        apiUrl: config.apiUrl, 
-        clientId: config.clientId,
-        clientSecret: config.clientSecret
-      });
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          email,
-          password,
-          first_name: firstName,
-          last_name: lastName
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        if (data.error_description) {
-          throw new OAuthError(data.error || 'invalid_request', data.error_description);
-        } else if (data.message) {
-          throw new OAuthError('invalid_request', data.message);
-        } else if (data.error) {
-          throw new OAuthError(data.error, 'Registration failed');
-        } else {
-          throw new OAuthError('server_error', 'Registration failed. Please try again.');
-        }
-      }
-
-      // Tokens are now set as HTTP-only cookies by the server
-      console.log('🔑 [AuthStore] Registration successful, tokens set via HTTP-only cookies');
-      authStatusCache.value = true;
-      updateAuthStatus();
-      return data;
-    } catch (error) {
-      console.error('Registration error:', error);
-      authStatusCache.value = false;
-      updateAuthStatus();
-      throw error;
-    }
+    // Log initial state
+    console.log('🚀 [AuthStore] Initialized with:', {
+      isAuthenticated: isAuthenticated.value,
+      currentTenantId: currentTenantId.value
+    });
   }
 
   return {
     isAuthenticated,
+    currentTenantId,
     login,
-    register,
-    tryRefreshToken,
     logout,
-    checkAuthStatus,
-    handleAuthError
-  }
-})
+    refreshToken,
+    updateAuthStatus
+  };
+});

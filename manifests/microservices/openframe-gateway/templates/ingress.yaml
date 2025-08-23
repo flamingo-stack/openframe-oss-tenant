@@ -1,26 +1,5 @@
-{{- include "chart.validateIngress" . -}}
-{{- if .Values.deployment.ingress.ngrok.enabled }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: openframe-gateway
-  annotations:
-    k8s.ngrok.com/traffic-policy: openframe-gateway
-spec:
-  ingressClassName: ngrok
-  rules:
-    - host: {{ required "deployment.ingress.ngrok.url is required for ngrok ingress" .Values.deployment.ingress.ngrok.url | quote }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: openframe-gateway
-                port:
-                  number: 8100
-{{- end }}
-{{- if .Values.deployment.ingress.localhost.enabled }}
+{{- include "chart.validate" . -}}
+{{- if or (and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -46,4 +25,26 @@ spec:
     {{- if include "chart.localhost.hasTLS" . }}
     secretName: localhost-tls
     {{- end }}
+{{- end }}
+
+{{- if and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.ngrok.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openframe-gateway
+  annotations:
+    k8s.ngrok.com/traffic-policy: openframe-gateway
+spec:
+  ingressClassName: ngrok
+  rules:
+    - host: {{ required "deployment.selfHosted.ingress.ngrok.url is required for ngrok ingress" .Values.deployment.selfHosted.ingress.ngrok.url | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openframe-gateway
+                port:
+                  number: 8100
 {{- end }}

@@ -212,6 +212,15 @@ jobs:
           # Override branch name
           yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
           echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+
+      - name: Override registry
+        run: |
+          # Override branch name
+          yq eval ".registry.docker.server = \"https://index.docker.io/v1/\"" -i "${{ env.HELM_VALUES_FILE }}"
+          yq eval ".registry.docker.username = \"${{ secrets.DOCKER_USERNAME }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+          yq eval ".registry.docker.password = \"${{ secrets.DOCKER_PASSWORD }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+          yq eval ".registry.docker.email = \"dmtkov@flamingo.cx\"" -i "${{ env.HELM_VALUES_FILE }}"
+          echo "Updated registry.docker to: ${{ github.head_ref }}"
           cat "${{ env.HELM_VALUES_FILE }}"
 
       - name: Run environment test script

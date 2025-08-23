@@ -22,6 +22,8 @@ spec:
         values: |
           deployment:
 {{ toYaml $.Values.deployment | indent 12 }}
+          registry:
+{{ toYaml $.Values.registry | indent 12 }}
 {{- $appValues := include "app.values" (list $name $app $.Values) | trim }}
 {{- if ne $appValues "" }}
 {{ $appValues | indent 10 }}

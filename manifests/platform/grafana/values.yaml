@@ -3,10 +3,6 @@ registerJob:
 
 
 grafana:
-  global:
-    imagePullSecrets:
-      - name: docker-pat-secret
-
   ingress:
     enabled: false
 
