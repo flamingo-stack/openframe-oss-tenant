@@ -101,6 +101,11 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 
 	result, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
+		// Check if the error is due to context cancellation (CTRL-C)
+		if ctx.Err() == context.Canceled {
+			return ctx.Err() // Return context cancellation directly without extra messaging
+		}
+		
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
 			return fmt.Errorf("failed to install ArgoCD: %w\nHelm output: %s", err, result.Stderr)
@@ -113,16 +118,18 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 
 // InstallArgoCDWithProgress installs ArgoCD using Helm with progress indicators
 func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config config.ChartInstallConfig) error {
-	// Show single progress message
+	// Show progress for each step
 	pterm.Info.Println("Installing ArgoCD...")
 	
-	// Add ArgoCD repository silently
+	// Add ArgoCD repository with progress
+	pterm.Info.Println("  Adding ArgoCD repository...")
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
 		return fmt.Errorf("failed to add ArgoCD repository: %w", err)
 	}
 	
-	// Update repositories silently
+	// Update repositories with progress
+	pterm.Info.Println("  Updating Helm repositories...")
 	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
 	if err != nil {
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
@@ -164,6 +171,11 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	
 	result, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
+		// Check if the error is due to context cancellation (CTRL-C)
+		if ctx.Err() == context.Canceled {
+			return ctx.Err() // Return context cancellation directly without extra messaging
+		}
+		
 		pterm.Error.Println("❌ ArgoCD installation failed")
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
@@ -208,6 +220,11 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 	result, err := h.executor.Execute(ctx, "helm", args...)
 
 	if err != nil {
+		// Check if the error is due to context cancellation (CTRL-C)
+		if ctx.Err() == context.Canceled {
+			return ctx.Err() // Return context cancellation directly without extra messaging
+		}
+		
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
 			return fmt.Errorf("failed to install app-of-apps: %w\nHelm output: %s", err, result.Stderr)

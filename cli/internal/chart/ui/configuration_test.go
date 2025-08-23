@@ -16,12 +16,12 @@ func TestConfigurationWizard_New(t *testing.T) {
 	assert.NotNil(t, wizard.modifier)
 }
 
-func TestConfigurationWizard_LoadExistingValues(t *testing.T) {
+func TestConfigurationWizard_LoadBaseValues(t *testing.T) {
 	wizard := NewConfigurationWizard()
 	
-	// Create a temporary test file
+	// Create a temporary manifests directory
 	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test-values.yaml")
+	helmValuesFile := filepath.Join(tmpDir, "helm-values.yaml")
 	
 	testYAML := `global:
   repoBranch: main
@@ -34,19 +34,19 @@ registry:
     email: test@example.com
 
 deployment:
-  ingress:
-    localhost:
-      enabled: true
+  selfHosted:
+    enabled: true
 `
 	
-	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	err := os.WriteFile(helmValuesFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 	
-	// Test loading existing values
-	config, err := wizard.loadExistingValues(testFile)
+	// Test loading base values
+	config, err := wizard.loadBaseValues(tmpDir)
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
-	assert.Equal(t, testFile, config.HelmValuesPath)
+	assert.Equal(t, helmValuesFile, config.BaseHelmValuesPath)
+	assert.Empty(t, config.TempHelmValuesPath) // Should be empty until temp file is created
 	assert.NotNil(t, config.ExistingValues)
 	assert.Empty(t, config.ModifiedSections)
 	
@@ -62,21 +62,113 @@ deployment:
 	assert.Equal(t, "testuser", docker["username"])
 }
 
-func TestConfigurationWizard_LoadExistingValues_FileNotFound(t *testing.T) {
+func TestConfigurationWizard_LoadBaseValues_NoFile(t *testing.T) {
 	wizard := NewConfigurationWizard()
 	
-	// Test with non-existent file
-	_, err := wizard.loadExistingValues("/nonexistent/path/values.yaml")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "helm values file not found")
+	// Test with empty directory (no helm-values.yaml file)
+	tmpDir := t.TempDir()
+	
+	config, err := wizard.loadBaseValues(tmpDir)
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	
+	// Should create default values
+	assert.NotNil(t, config.ExistingValues)
+	global, ok := config.ExistingValues["global"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, "main", global["repoBranch"])
+	assert.Equal(t, "https://github.com/Flamingo-CX/openframe.git", global["repoURL"])
+}
+
+func TestConfigurationWizard_CreateTemporaryValuesFile(t *testing.T) {
+	wizard := NewConfigurationWizard()
+	tmpDir := t.TempDir()
+	
+	// Create a base configuration
+	config := &types.ChartConfiguration{
+		BaseHelmValuesPath: filepath.Join(tmpDir, "helm-values.yaml"),
+		TempHelmValuesPath: "",
+		ExistingValues: map[string]interface{}{
+			"global": map[string]interface{}{
+				"repoBranch": "main",
+			},
+		},
+		ModifiedSections: []string{"branch"},
+		Branch:          stringPtr("develop"),
+	}
+	
+	// Create temporary values file
+	err := wizard.createTemporaryValuesFile(config, tmpDir)
+	assert.NoError(t, err)
+	
+	// Verify temporary file path is set
+	assert.NotEmpty(t, config.TempHelmValuesPath)
+	assert.Contains(t, config.TempHelmValuesPath, "tmp-helm-values.yaml")
+	
+	// Verify file exists and has correct content
+	assert.FileExists(t, config.TempHelmValuesPath)
+	
+	// Verify content was applied
+	global := config.ExistingValues["global"].(map[string]interface{})
+	assert.Equal(t, "develop", global["repoBranch"])
+}
+
+// Helper function for tests
+func stringPtr(s string) *string {
+	return &s
+}
+
+func TestConfigurationWizard_ConfigureWithDefaults(t *testing.T) {
+	wizard := NewConfigurationWizard()
+	tmpDir := t.TempDir()
+	
+	// Create a base helm values file
+	helmValuesFile := filepath.Join(tmpDir, "helm-values.yaml")
+	testYAML := `global:
+  repoBranch: main
+  repoURL: https://github.com/test/repo.git
+
+registry:
+  docker:
+    username: testuser
+    password: testpass
+    email: test@example.com
+
+deployment:
+  selfHosted:
+    enabled: true
+`
+	
+	err := os.WriteFile(helmValuesFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+	
+	// Test default configuration
+	config, err := wizard.configureWithDefaults(tmpDir)
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	
+	// Should have temporary file created
+	assert.NotEmpty(t, config.TempHelmValuesPath)
+	assert.Contains(t, config.TempHelmValuesPath, "tmp-helm-values.yaml")
+	assert.FileExists(t, config.TempHelmValuesPath)
+	
+	// Should have no modifications (using defaults)
+	assert.Empty(t, config.ModifiedSections)
+	assert.Nil(t, config.Branch)
+	assert.Nil(t, config.DockerRegistry)
+	
+	// Values should remain unchanged
+	global := config.ExistingValues["global"].(map[string]interface{})
+	assert.Equal(t, "main", global["repoBranch"])
 }
 
 func TestConfigurationWizard_ShowConfigurationSummary_NoChanges(t *testing.T) {
 	wizard := NewConfigurationWizard()
 	config := &types.ChartConfiguration{
-		HelmValuesPath:   "/test/path/values.yaml",
-		ExistingValues:   make(map[string]interface{}),
-		ModifiedSections: make([]string, 0), // No modifications
+		BaseHelmValuesPath: "/test/path/values.yaml",
+		TempHelmValuesPath: "",
+		ExistingValues:     make(map[string]interface{}),
+		ModifiedSections:   make([]string, 0), // No modifications
 	}
 
 	// Should not panic and should not output anything for no changes
@@ -89,10 +181,11 @@ func TestConfigurationWizard_ShowConfigurationSummary_WithBranchChanges(t *testi
 	wizard := NewConfigurationWizard()
 	branch := "develop"
 	config := &types.ChartConfiguration{
-		HelmValuesPath:   "/test/path/values.yaml",
-		ExistingValues:   make(map[string]interface{}),
-		ModifiedSections: []string{"branch"},
-		Branch:           &branch,
+		BaseHelmValuesPath: "/test/path/values.yaml",
+		TempHelmValuesPath: "",
+		ExistingValues:     make(map[string]interface{}),
+		ModifiedSections:   []string{"branch"},
+		Branch:             &branch,
 	}
 
 	// Should not panic
@@ -104,9 +197,10 @@ func TestConfigurationWizard_ShowConfigurationSummary_WithBranchChanges(t *testi
 func TestConfigurationWizard_ShowConfigurationSummary_WithDockerChanges(t *testing.T) {
 	wizard := NewConfigurationWizard()
 	config := &types.ChartConfiguration{
-		HelmValuesPath:   "/test/path/values.yaml",
-		ExistingValues:   make(map[string]interface{}),
-		ModifiedSections: []string{"docker"},
+		BaseHelmValuesPath: "/test/path/values.yaml",
+		TempHelmValuesPath: "",
+		ExistingValues:     make(map[string]interface{}),
+		ModifiedSections:   []string{"docker"},
 		DockerRegistry: &types.DockerRegistryConfig{
 			Username: "testuser",
 			Password: "testpass",
@@ -124,10 +218,11 @@ func TestConfigurationWizard_ShowConfigurationSummary_WithAllChanges(t *testing.
 	wizard := NewConfigurationWizard()
 	branch := "develop"
 	config := &types.ChartConfiguration{
-		HelmValuesPath:   "/test/path/values.yaml",
-		ExistingValues:   make(map[string]interface{}),
-		ModifiedSections: []string{"branch", "docker"},
-		Branch:           &branch,
+		BaseHelmValuesPath: "/test/path/values.yaml",
+		TempHelmValuesPath: "",
+		ExistingValues:     make(map[string]interface{}),
+		ModifiedSections:   []string{"branch", "docker"},
+		Branch:             &branch,
 		DockerRegistry: &types.DockerRegistryConfig{
 			Username: "testuser",
 			Password: "testpass",
@@ -144,9 +239,10 @@ func TestConfigurationWizard_ShowConfigurationSummary_WithAllChanges(t *testing.
 func TestConfigurationWizard_ShowConfigurationSummary_UnknownSection(t *testing.T) {
 	wizard := NewConfigurationWizard()
 	config := &types.ChartConfiguration{
-		HelmValuesPath:   "/test/path/values.yaml",
-		ExistingValues:   make(map[string]interface{}),
-		ModifiedSections: []string{"unknown_section"}, // Unknown section should be handled gracefully
+		BaseHelmValuesPath: "/test/path/values.yaml",
+		TempHelmValuesPath: "",
+		ExistingValues:     make(map[string]interface{}),
+		ModifiedSections:   []string{"unknown_section"}, // Unknown section should be handled gracefully
 	}
 
 	// Should not panic even with unknown sections
@@ -201,11 +297,11 @@ func TestConfigurationWizard_GetCurrentDockerSettings(t *testing.T) {
 	assert.Equal(t, "default@example.com", defaultDocker.Email)
 }
 
-// Integration test for configuration workflow (without UI prompts)
-func TestConfigurationWizard_ConfigurationWorkflow_Integration(t *testing.T) {
-	// Create a temporary test file
+// Integration test for complete temporary file workflow
+func TestConfigurationWizard_TemporaryFileWorkflow_Integration(t *testing.T) {
+	// Create a temporary manifests directory
 	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test-values.yaml")
+	helmValuesFile := filepath.Join(tmpDir, "helm-values.yaml")
 	
 	initialYAML := `global:
   repoBranch: main
@@ -219,9 +315,8 @@ registry:
     email: old@example.com
 
 deployment:
-  ingress:
-    localhost:
-      enabled: true
+  selfHosted:
+    enabled: true
 
 apps:
   openframe-config:
@@ -230,16 +325,17 @@ apps:
         branch: main
 `
 	
-	err := os.WriteFile(testFile, []byte(initialYAML), 0644)
+	err := os.WriteFile(helmValuesFile, []byte(initialYAML), 0644)
 	require.NoError(t, err)
 	
 	wizard := NewConfigurationWizard()
 	
-	// Step 1: Load existing values
-	config, err := wizard.loadExistingValues(testFile)
+	// Step 1: Load base values from manifests directory
+	config, err := wizard.loadBaseValues(tmpDir)
 	require.NoError(t, err)
+	assert.Equal(t, helmValuesFile, config.BaseHelmValuesPath)
 	
-	// Step 2: Simulate changes (what would happen after user prompts)
+	// Step 2: Simulate user changes 
 	newBranch := "develop"
 	config.Branch = &newBranch
 	config.DockerRegistry = &types.DockerRegistryConfig{
@@ -249,39 +345,32 @@ apps:
 	}
 	config.ModifiedSections = []string{"branch", "docker"}
 	
-	// Step 3: Apply configuration changes
-	err = wizard.modifier.ApplyConfiguration(config.ExistingValues, config)
+	// Step 3: Create temporary file with changes
+	err = wizard.createTemporaryValuesFile(config, tmpDir)
 	assert.NoError(t, err)
 	
-	// Step 4: Verify changes in memory
-	global := config.ExistingValues["global"].(map[string]interface{})
-	assert.Equal(t, "develop", global["repoBranch"])
-	// Other values should be preserved
-	assert.Equal(t, "https://github.com/test/repo.git", global["repoURL"])
-	assert.Equal(t, true, global["autoSync"])
+	// Verify temporary file was created
+	assert.NotEmpty(t, config.TempHelmValuesPath)
+	assert.Contains(t, config.TempHelmValuesPath, "tmp-helm-values.yaml")
+	assert.FileExists(t, config.TempHelmValuesPath)
 	
-	registry := config.ExistingValues["registry"].(map[string]interface{})
-	docker := registry["docker"].(map[string]interface{})
-	assert.Equal(t, "newuser", docker["username"])
-	assert.Equal(t, "newpass", docker["password"])
-	assert.Equal(t, "new@example.com", docker["email"])
+	// Step 4: Verify original file is unchanged
+	originalData, err := os.ReadFile(helmValuesFile)
+	assert.NoError(t, err)
+	assert.Contains(t, string(originalData), "username: olduser")
+	assert.Contains(t, string(originalData), "repoBranch: main")
 	
-	// Apps section should also be updated
-	apps := config.ExistingValues["apps"].(map[string]interface{})
-	openframeConfig := apps["openframe-config"].(map[string]interface{})
-	appValues := openframeConfig["values"].(map[string]interface{})
-	appConfig := appValues["config"].(map[string]interface{})
-	assert.Equal(t, "develop", appConfig["branch"])
+	// Step 5: Verify temporary file has changes
+	tempData, err := os.ReadFile(config.TempHelmValuesPath)
+	assert.NoError(t, err)
+	assert.Contains(t, string(tempData), "username: newuser")
+	assert.Contains(t, string(tempData), "repoBranch: develop")
 	
-	// Step 5: Write values to file
-	err = wizard.modifier.WriteValues(config.ExistingValues, testFile)
+	// Step 6: Verify temporary file can be loaded and parsed correctly
+	reloadedValues, err := wizard.modifier.LoadExistingValues(config.TempHelmValuesPath)
 	assert.NoError(t, err)
 	
-	// Step 6: Verify file can be read back correctly
-	reloadedValues, err := wizard.modifier.LoadExistingValues(testFile)
-	assert.NoError(t, err)
-	
-	// Verify reloaded values match our changes
+	// Verify changes are in temporary file
 	reloadedGlobal := reloadedValues["global"].(map[string]interface{})
 	assert.Equal(t, "develop", reloadedGlobal["repoBranch"])
 	assert.Equal(t, "https://github.com/test/repo.git", reloadedGlobal["repoURL"])
@@ -291,4 +380,11 @@ apps:
 	assert.Equal(t, "newuser", reloadedDocker["username"])
 	assert.Equal(t, "newpass", reloadedDocker["password"])
 	assert.Equal(t, "new@example.com", reloadedDocker["email"])
+	
+	// Apps section should also be updated in temp file
+	apps := reloadedValues["apps"].(map[string]interface{})
+	openframeConfig := apps["openframe-config"].(map[string]interface{})
+	appValues := openframeConfig["values"].(map[string]interface{})
+	appConfig := appValues["config"].(map[string]interface{})
+	assert.Equal(t, "develop", appConfig["branch"])
 }

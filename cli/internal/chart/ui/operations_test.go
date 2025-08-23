@@ -205,6 +205,7 @@ func TestOperationsUI_MethodsExist(t *testing.T) {
 	assert.NotNil(t, ui.ShowOperationCancelled)
 	assert.NotNil(t, ui.ShowNoClusterMessage)
 	assert.NotNil(t, ui.ConfirmInstallation)
+	assert.NotNil(t, ui.ConfirmInstallationOnCluster)
 	assert.NotNil(t, ui.ShowInstallationStart)
 	assert.NotNil(t, ui.ShowInstallationComplete)
 	assert.NotNil(t, ui.ShowInstallationError)

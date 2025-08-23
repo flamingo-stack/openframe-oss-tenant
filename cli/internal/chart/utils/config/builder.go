@@ -35,8 +35,15 @@ type HelmValues struct {
 
 // getBranchFromHelmValues reads the Helm values file and extracts global.repoBranch
 func (b *Builder) getBranchFromHelmValues() string {
-	pathResolver := NewPathResolver()
-	helmValuesPath := pathResolver.GetHelmValuesFile()
+	return b.getBranchFromHelmValuesPath("")
+}
+
+// getBranchFromHelmValuesPath reads a specific Helm values file and extracts global.repoBranch
+func (b *Builder) getBranchFromHelmValuesPath(helmValuesPath string) string {
+	if helmValuesPath == "" {
+		pathResolver := NewPathResolver()
+		helmValuesPath = pathResolver.GetHelmValuesFile()
+	}
 	
 	// Read the YAML file
 	data, err := os.ReadFile(helmValuesPath)
@@ -88,6 +95,56 @@ func (b *Builder) BuildInstallConfig(
 
 		// After credentials are provided, check for branch override from Helm values
 		helmBranch := b.getBranchFromHelmValues()
+		if helmBranch != "" {
+			if verbose {
+				pterm.Info.Printf("📥 Using branch '%s' from Helm values (global.repoBranch)\n", helmBranch)
+			}
+			appOfAppsConfig.GitHubBranch = helmBranch
+		} else if verbose {
+			pterm.Info.Printf("📥 Using default branch '%s'\n", appOfAppsConfig.GitHubBranch)
+		}
+	}
+
+	return b.configService.BuildInstallConfig(
+		force, dryRun, verbose,
+		clusterName,
+		appOfAppsConfig,
+	), nil
+}
+
+// BuildInstallConfigWithCustomHelmPath constructs the installation configuration using a custom helm values file
+func (b *Builder) BuildInstallConfigWithCustomHelmPath(
+	force, dryRun, verbose bool,
+	clusterName, githubRepo, githubBranch, githubUsername, githubToken, certDir, helmValuesPath string,
+) (ChartInstallConfig, error) {
+	// Use config service for certificate directory
+	if certDir == "" {
+		certDir = b.configService.GetCertificateDirectory()
+	}
+
+	// Create app-of-apps configuration if GitHub repo is provided
+	var appOfAppsConfig *models.AppOfAppsConfig
+	if githubRepo != "" {
+		appOfAppsConfig = models.NewAppOfAppsConfig()
+		appOfAppsConfig.GitHubRepo = githubRepo
+		appOfAppsConfig.GitHubBranch = githubBranch
+		appOfAppsConfig.CertDir = certDir
+
+		// Use shared credentials prompter if not both provided via flags
+		if b.credentialsPrompter.IsCredentialsRequired(githubUsername, githubToken) {
+			credentials, err := b.credentialsPrompter.PromptForGitHubCredentials(githubRepo)
+			if err != nil {
+				return ChartInstallConfig{}, err
+			}
+			appOfAppsConfig.GitHubUsername = credentials.Username
+			appOfAppsConfig.GitHubToken = credentials.Token
+		} else {
+			appOfAppsConfig.GitHubUsername = githubUsername
+			appOfAppsConfig.GitHubToken = githubToken
+		}
+
+		// After credentials are provided, check for branch override from custom Helm values path
+		helmBranch := b.getBranchFromHelmValuesPath(helmValuesPath)
 		if helmBranch != "" {
 			if verbose {
 				pterm.Info.Printf("📥 Using branch '%s' from Helm values (global.repoBranch)\n", helmBranch)

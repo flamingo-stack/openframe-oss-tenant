@@ -45,14 +45,8 @@ func (a *AppOfApps) Install(ctx context.Context, config config.ChartInstallConfi
 		appConfig.GitHubBranch = "main" // Default to main branch
 	}
 
-	// Always show which branch is being used for cloning
-	pterm.Info.Printf("Using branch '%s'\n", appConfig.GitHubBranch)
-	
-	// Silent installation - show details only in verbose mode
-	if config.Verbose {
-		pterm.Info.Println("Installing app-of-apps...")
-		pterm.Info.Printf("   Repository: %s\n", appConfig.GitHubRepo)
-	}
+	// Always show which branch is being used for cloning with dots to indicate work is happening
+	pterm.Info.Printf("Using branch '%s'...\n", appConfig.GitHubBranch)
 	
 	// Clone the repository to a temporary directory
 	cloneResult, err := a.gitRepo.CloneChartRepository(ctx, appConfig)
@@ -91,7 +85,6 @@ func (a *AppOfApps) Install(ctx context.Context, config config.ChartInstallConfi
 	
 	// Use helm manager to install app-of-apps
 	err = a.helmManager.InstallAppOfAppsFromLocal(ctx, localConfig, certFile, keyFile)
-	// Success message removed - only show if verbose or if there are errors
 	if err != nil {
 		return errors.WrapAsChartError("installation", "app-of-apps", err).WithCluster(config.ClusterName)
 	}

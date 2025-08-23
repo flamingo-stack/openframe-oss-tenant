@@ -83,6 +83,7 @@ type OperationsUI interface {
 	ShowOperationCancelled(operation string)
 	ShowNoClusterMessage()
 	ConfirmInstallation(clusterName string) (bool, error)
+	ConfirmInstallationOnCluster(clusterName string) (bool, error)
 	ShowInstallationStart(clusterName string)
 	ShowInstallationComplete()
 	ShowInstallationError(err error)

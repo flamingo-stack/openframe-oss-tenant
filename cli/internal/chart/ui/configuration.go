@@ -2,11 +2,13 @@ package ui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/flamingo/openframe/internal/chart/types"
 	"github.com/flamingo/openframe/internal/chart/ui/templates"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )
 
@@ -23,13 +25,76 @@ func NewConfigurationWizard() *ConfigurationWizard {
 }
 
 // ConfigureHelmValues reads existing Helm values and prompts user for configuration changes
-func (w *ConfigurationWizard) ConfigureHelmValues(helmValuesPath string) (*types.ChartConfiguration, error) {
+func (w *ConfigurationWizard) ConfigureHelmValues(manifestsDir string) (*types.ChartConfiguration, error) {
+	// Show configuration mode selection
+	modeChoice, err := w.showConfigurationModeSelection()
+	if err != nil {
+		return nil, err
+	}
+	
+	if modeChoice == "default" {
+		return w.configureWithDefaults(manifestsDir)
+	}
+	
+	return w.configureInteractive(manifestsDir)
+}
+
+// showConfigurationModeSelection shows the initial configuration mode selection
+func (w *ConfigurationWizard) showConfigurationModeSelection() (string, error) {
+	pterm.Info.Printf("How would you like to configure your chart installation?\n")
+	fmt.Println()
+
+	prompt := promptui.Select{
+		Label: "Configuration Mode",
+		Items: []string{
+			"Default configuration",
+			"Interactive configuration",
+		},
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}:",
+			Active:   "→ {{ . | cyan }}",
+			Inactive: "  {{ . }}",
+			Selected: "{{ . | green }}",
+		},
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+
+	if idx == 0 {
+		return "default", nil
+	}
+	return "interactive", nil
+}
+
+// configureWithDefaults creates a default configuration without user interaction
+func (w *ConfigurationWizard) configureWithDefaults(manifestsDir string) (*types.ChartConfiguration, error) {
+	pterm.Info.Println("Using default configuration for chart installation")
+
+	// Load base values from manifests directory or create default
+	config, err := w.loadBaseValues(manifestsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load base values: %w", err)
+	}
+
+	// Create temporary file with default configuration (no modifications)
+	if err := w.createTemporaryValuesFile(config, manifestsDir); err != nil {
+		return nil, fmt.Errorf("failed to create temporary values file: %w", err)
+	}
+
+	return config, nil
+}
+
+// configureInteractive runs the interactive configuration wizard
+func (w *ConfigurationWizard) configureInteractive(manifestsDir string) (*types.ChartConfiguration, error) {
 	pterm.Info.Println("Configuring Helm values for chart installation")
 
-	// Read existing Helm values file
-	config, err := w.loadExistingValues(helmValuesPath)
+	// Load base values from manifests directory or create default
+	config, err := w.loadBaseValues(manifestsDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load existing values: %w", err)
+		return nil, fmt.Errorf("failed to load base values: %w", err)
 	}
 
 	// Configure each section
@@ -41,21 +106,47 @@ func (w *ConfigurationWizard) ConfigureHelmValues(helmValuesPath string) (*types
 		return nil, fmt.Errorf("docker registry configuration failed: %w", err)
 	}
 
+	// Create temporary file with final configuration
+	if err := w.createTemporaryValuesFile(config, manifestsDir); err != nil {
+		return nil, fmt.Errorf("failed to create temporary values file: %w", err)
+	}
+
 	return config, nil
 }
 
-// loadExistingValues loads the existing Helm values file
-func (w *ConfigurationWizard) loadExistingValues(helmValuesPath string) (*types.ChartConfiguration, error) {
-	values, err := w.modifier.LoadExistingValues(helmValuesPath)
+// loadBaseValues loads base values from manifests directory or creates default
+func (w *ConfigurationWizard) loadBaseValues(manifestsDir string) (*types.ChartConfiguration, error) {
+	values, err := w.modifier.LoadOrCreateBaseValues(manifestsDir)
 	if err != nil {
 		return nil, err
 	}
 
+	baseFilePath := filepath.Join(manifestsDir, "helm-values.yaml")
+	
 	return &types.ChartConfiguration{
-		HelmValuesPath:   helmValuesPath,
-		ExistingValues:   values,
-		ModifiedSections: make([]string, 0),
+		BaseHelmValuesPath: baseFilePath,
+		TempHelmValuesPath: "", // Will be set when temporary file is created
+		ExistingValues:     values,
+		ModifiedSections:   make([]string, 0),
 	}, nil
+}
+
+// createTemporaryValuesFile creates the temporary values file for installation
+func (w *ConfigurationWizard) createTemporaryValuesFile(config *types.ChartConfiguration, manifestsDir string) error {
+	// Apply configuration changes to values
+	if err := w.modifier.ApplyConfiguration(config.ExistingValues, config); err != nil {
+		return fmt.Errorf("failed to apply configuration changes: %w", err)
+	}
+	
+	// Create temporary file
+	tempFilePath, err := w.modifier.CreateTemporaryValuesFile(config.ExistingValues, manifestsDir)
+	if err != nil {
+		return err
+	}
+	
+	// Update config with temporary file path
+	config.TempHelmValuesPath = tempFilePath
+	return nil
 }
 
 // configureBranch asks user about Git branch configuration

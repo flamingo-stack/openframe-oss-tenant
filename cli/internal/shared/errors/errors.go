@@ -158,6 +158,7 @@ func (eh *ErrorHandler) isUserInterruption(errorMsg string) bool {
 		"confirmation failed: ^C",
 		"operation cancelled",
 		"user cancelled",
+		"context canceled",
 	}
 	
 	errorLower := strings.ToLower(errorMsg)

@@ -38,10 +38,12 @@ func (r *Repository) CloneChartRepository(ctx context.Context, config *models.Ap
 		cloneURL = strings.Replace(config.GitHubRepo, "https://", fmt.Sprintf("https://%s:%s@", username, token), 1)
 	}
 
-	// Clone with depth 1 for the specific branch
+	// Clone with depth 1 and optimizations for speed
 	cloneArgs := []string{
 		"clone",
 		"--depth", "1",
+		"--single-branch",
+		"--no-tags",
 		"--branch", config.GitHubBranch,
 		cloneURL,
 		tempDir,

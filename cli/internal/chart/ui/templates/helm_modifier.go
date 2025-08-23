@@ -3,6 +3,7 @@ package templates
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/flamingo/openframe/internal/chart/types"
 	"gopkg.in/yaml.v3"
@@ -36,6 +37,53 @@ func (h *HelmValuesModifier) LoadExistingValues(helmValuesPath string) (map[stri
 	}
 
 	return values, nil
+}
+
+// LoadOrCreateBaseValues loads helm values from manifests or creates default if missing
+func (h *HelmValuesModifier) LoadOrCreateBaseValues(manifestsDir string) (map[string]interface{}, error) {
+	baseHelmValuesPath := filepath.Join(manifestsDir, "helm-values.yaml")
+	
+	// Try to load existing file
+	if _, err := os.Stat(baseHelmValuesPath); err == nil {
+		return h.LoadExistingValues(baseHelmValuesPath)
+	}
+	
+	// File doesn't exist, create default empty values
+	defaultValues := map[string]interface{}{
+		"global": map[string]interface{}{
+			"repoBranch": "main",
+			"repoURL":    "https://github.com/Flamingo-CX/openframe.git",
+			"autoSync":   true,
+		},
+		"deployment": map[string]interface{}{
+			"selfHosted": map[string]interface{}{
+				"enabled": true,
+			},
+		},
+		"registry": map[string]interface{}{
+			"docker": map[string]interface{}{
+				"username": "default",
+				"password": "****",
+				"email":    "default@example.com",
+			},
+		},
+	}
+	
+	return defaultValues, nil
+}
+
+// CreateTemporaryValuesFile creates a temporary helm values file for installation
+func (h *HelmValuesModifier) CreateTemporaryValuesFile(values map[string]interface{}, manifestsDir string) (string, error) {
+	// Create temporary file in manifests directory
+	tempFile := filepath.Join(manifestsDir, "tmp-helm-values.yaml")
+	
+	// Write values to temporary file
+	err := h.WriteValues(values, tempFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary values file: %w", err)
+	}
+	
+	return tempFile, nil
 }
 
 // ApplyConfiguration applies configuration changes to Helm values

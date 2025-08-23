@@ -44,6 +44,14 @@ func (ui *OperationsUI) ShowNoClusterMessage() {
 
 // ConfirmInstallation asks for user confirmation before starting chart installation
 func (ui *OperationsUI) ConfirmInstallation(clusterName string) (bool, error) {
+	fmt.Println() // Add blank line for better spacing
+	message := fmt.Sprintf("Are you sure you want to install OpenFrame chart on '%s'? It could take up to 30 minutes", clusterName)
+	return sharedUI.ConfirmActionInteractive(message, false)
+}
+
+// ConfirmInstallationOnCluster asks for user confirmation with emphasis on specific cluster
+func (ui *OperationsUI) ConfirmInstallationOnCluster(clusterName string) (bool, error) {
+	fmt.Println() // Add blank line for better spacing
 	message := fmt.Sprintf("Are you sure you want to install OpenFrame chart on '%s'? It could take up to 30 minutes", clusterName)
 	return sharedUI.ConfirmActionInteractive(message, false)
 }

@@ -9,9 +9,10 @@ type DockerRegistryConfig struct {
 
 // ChartConfiguration holds all configurable options for chart installation
 type ChartConfiguration struct {
-	HelmValuesPath   string                 // Path to the Helm values file
-	ExistingValues   map[string]interface{} // Current values from the file
-	ModifiedSections []string               // Track which sections were modified
-	Branch           *string                // nil means use existing, otherwise use this value
-	DockerRegistry   *DockerRegistryConfig  // nil means use existing, otherwise use this value
+	BaseHelmValuesPath string                 // Path to the original helm-values.yaml (read-only)
+	TempHelmValuesPath string                 // Path to the temporary helm values file for installation
+	ExistingValues     map[string]interface{} // Current values from the file
+	ModifiedSections   []string               // Track which sections were modified
+	Branch             *string                // nil means use existing, otherwise use this value
+	DockerRegistry     *DockerRegistryConfig  // nil means use existing, otherwise use this value
 }

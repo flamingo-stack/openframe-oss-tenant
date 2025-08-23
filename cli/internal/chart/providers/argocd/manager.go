@@ -42,21 +42,41 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	}
 
 	spinner, _ := pterm.DefaultSpinner.Start("Checking ArgoCD application status...")
-
-	printed := make(map[string]bool) // Track which apps we've already printed as ready
 	
 	// Set timeout for the entire operation (1 hour)
 	startTime := time.Now()
 	timeout := 60 * time.Minute
 
+	// Get initial count of all applications once
+	var totalAppsExpected int
+	allAppsDiscovered := false
+	
 	for {
+		// Check for context cancellation (CTRL-C)
+		select {
+		case <-ctx.Done():
+			spinner.Stop()
+			return ctx.Err()
+		default:
+		}
+		
 		// Check if we've exceeded the timeout
 		if time.Since(startTime) > timeout {
 			spinner.Fail(fmt.Sprintf("Timeout waiting for ArgoCD applications after %v", timeout))
 			return fmt.Errorf("timeout waiting for ArgoCD applications after %v", timeout)
 		}
+		
 		// Parse ArgoCD applications directly
 		apps, err := m.parseApplications(ctx, config.Verbose)
+		
+		// Check for context cancellation after parsing
+		select {
+		case <-ctx.Done():
+			spinner.Stop()
+			return ctx.Err()
+		default:
+		}
+		
 		if err != nil {
 			// Don't fail immediately on parsing errors, just retry silently
 			// Applications may still be initializing and jq parsing can fail
@@ -65,11 +85,28 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			if config.Verbose {
 				pterm.Warning.Printf("Application parsing issue (retrying): %v\n", err)
 			}
-			time.Sleep(10 * time.Second)
-			continue
+			
+			// Check for context cancellation during sleep
+			select {
+			case <-ctx.Done():
+				spinner.Stop()
+				return ctx.Err()
+			case <-time.After(2 * time.Second):
+				continue
+			}
 		}
 
 		totalApps := len(apps)
+		
+		// Set expected count once we discover all applications
+		if totalApps > totalAppsExpected && !allAppsDiscovered {
+			totalAppsExpected = totalApps
+			// Only mark as discovered if we have a reasonable number
+			if totalApps >= 5 {
+				allAppsDiscovered = true
+			}
+		}
+		
 		var allHealthyAndSynced bool
 		
 		// Update spinner with current status
@@ -81,35 +118,44 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			for _, app := range apps {
 				if app.Health == "Healthy" && app.Sync == "Synced" {
 					readyCount++
-					if !printed[app.Name] {
-						printed[app.Name] = true
-						pterm.Success.Printf("✅ %s is Healthy and Synced\n", app.Name)
-					}
-				} else {
-					// Show status of apps that aren't ready yet (but don't spam)
-					statusKey := app.Name + "_status"
-					if !printed[statusKey] {
-						pterm.Info.Printf("⏳ %s: Health=%s, Sync=%s\n", app.Name, app.Health, app.Sync)
-						printed[statusKey] = true
-					}
 				}
 			}
 			
-				// Update spinner with progress and elapsed time
+			// Show expected count if we know it, otherwise current count
+			displayTotal := totalAppsExpected
+			if displayTotal == 0 {
+				displayTotal = totalApps
+			}
+			
+			// Update spinner with progress and elapsed time
 			elapsed := time.Since(startTime).Round(time.Second)
-			spinner.UpdateText(fmt.Sprintf("ArgoCD applications ready: %d/%d (elapsed: %v)", readyCount, totalApps, elapsed))
+			spinner.UpdateText(fmt.Sprintf("ArgoCD applications ready: %d/%d (elapsed: %v)", readyCount, displayTotal, elapsed))
+			
+			// Check for context cancellation after spinner update
+			select {
+			case <-ctx.Done():
+				spinner.Stop()
+				return ctx.Err()
+			default:
+			}
 
 			// Check if all apps are ready
-			allHealthyAndSynced = readyCount == totalApps
+			allHealthyAndSynced = readyCount == totalApps && totalApps > 0
 		}
 
-		if allHealthyAndSynced && totalApps > 0 {
-			spinner.Success("All ArgoCD apps are Healthy and Synced")
+		if allHealthyAndSynced {
+			spinner.Success("All ArgoCD applications are ready")
 			break
 		}
 
-		// Wait 5 seconds before checking again
-		time.Sleep(5 * time.Second)
+		// Check for context cancellation before sleep - use shorter interval for better responsiveness
+		select {
+		case <-ctx.Done():
+			spinner.Stop()
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+			continue
+		}
 	}
 
 	return nil
