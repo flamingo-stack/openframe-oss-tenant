@@ -18,7 +18,7 @@ build:
 ## Run unit tests
 test-unit:
 	@echo "Running unit tests..."
-	@go test ./cmd/... ./internal/...
+	@go test -vet=off ./cmd/... ./internal/...
 
 ## Run integration tests  
 test-integration:

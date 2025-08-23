@@ -66,7 +66,7 @@ func (h *HelmInstaller) installMacOS() error {
 	}
 
 	cmd := exec.Command("brew", "install", "helm")
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install Helm: %w", err)
 	}
@@ -138,7 +138,7 @@ func (h *HelmInstaller) installArch() error {
 func (h *HelmInstaller) installScript() error {
 	// Use the official Helm install script
 	installCmd := "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
-	
+
 	if err := h.runShellCommand(installCmd); err != nil {
 		return fmt.Errorf("failed to install Helm via script: %w", err)
 	}

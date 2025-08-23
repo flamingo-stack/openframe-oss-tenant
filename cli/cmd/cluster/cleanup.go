@@ -76,7 +76,7 @@ func runCleanupCluster(cmd *cobra.Command, args []string) error {
 	}
 	
 	// Execute cluster cleanup through service layer
-	err = service.CleanupCluster(clusterName, clusterType, utils.GetGlobalFlags().Global.Verbose)
+	err = service.CleanupCluster(clusterName, clusterType, utils.GetGlobalFlags().Global.Verbose, utils.GetGlobalFlags().Cleanup.Force)
 	if err != nil {
 		operationsUI.ShowOperationError("cleanup", clusterName, err)
 		return err

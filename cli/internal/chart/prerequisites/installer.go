@@ -83,8 +83,11 @@ func (i *Installer) installMissingTools(tools []string) error {
 func (i *Installer) installTool(tool string) error {
 	switch strings.ToLower(tool) {
 	case "git":
-		installer := git.NewGitInstaller()
-		return installer.Install()
+		checker := git.NewGitChecker()
+		if checker.IsInstalled() {
+			return nil // Already installed
+		}
+		return fmt.Errorf("git is not installed. %s", checker.GetInstallInstructions())
 	case "helm":
 		installer := helm.NewHelmInstaller()
 		return installer.Install()
@@ -157,7 +160,7 @@ func (i *Installer) CheckAndInstall() error {
 
 			// Get instructions for all prerequisites
 			allInstructions := []string{
-				git.NewGitInstaller().GetInstallHelp(),
+				git.NewGitChecker().GetInstallInstructions(),
 				helm.NewHelmInstaller().GetInstallHelp(),
 				memory.NewMemoryChecker().GetInstallHelp(),
 				certificates.NewCertificateInstaller().GetInstallHelp(),

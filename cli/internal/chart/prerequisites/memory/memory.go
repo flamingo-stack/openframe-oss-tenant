@@ -2,10 +2,10 @@ package memory
 
 import (
 	"fmt"
+	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
-	"os/exec"
 )
 
 type MemoryChecker struct{}

@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -100,7 +101,8 @@ func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options Ex
 	
 	// Set environment variables if specified
 	if len(options.Env) > 0 {
-		cmd.Env = append(cmd.Env, e.buildEnvStrings(options.Env)...)
+		// Start with current environment and add custom variables
+		cmd.Env = append(os.Environ(), e.buildEnvStrings(options.Env)...)
 	}
 	
 	// Apply timeout if specified
@@ -115,7 +117,8 @@ func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options Ex
 			cmd.Dir = options.Dir
 		}
 		if len(options.Env) > 0 {
-			cmd.Env = append(cmd.Env, e.buildEnvStrings(options.Env)...)
+			// Start with current environment and add custom variables
+			cmd.Env = append(os.Environ(), e.buildEnvStrings(options.Env)...)
 		}
 	}
 	

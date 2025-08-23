@@ -1,20 +1,11 @@
 package models
 
-// ChartInstallConfig holds configuration for chart installation
-type ChartInstallConfig struct {
-	ClusterName string
-	Force       bool
-	DryRun      bool
-	Verbose     bool
-	Silent      bool
-}
-
 // ChartInfo represents information about an installed chart
 type ChartInfo struct {
-	Name      string
-	Namespace string
-	Status    string
-	Version   string
+	Name       string
+	Namespace  string
+	Status     string
+	Version    string
 	AppVersion string
 }
 

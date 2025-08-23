@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/models"
+	"github.com/flamingo/openframe/internal/chart/utils/config"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,20 +28,20 @@ func NewMockExecutor() *MockExecutor {
 func (m *MockExecutor) Execute(ctx context.Context, name string, args ...string) (*executor.CommandResult, error) {
 	command := append([]string{name}, args...)
 	m.commands = append(m.commands, command)
-	
+
 	commandStr := name
 	for _, arg := range args {
 		commandStr += " " + arg
 	}
-	
+
 	if err, exists := m.errors[commandStr]; exists {
 		return nil, err
 	}
-	
+
 	if result, exists := m.results[commandStr]; exists {
 		return result, nil
 	}
-	
+
 	// Default success result
 	return &executor.CommandResult{
 		ExitCode: 0,
@@ -68,16 +68,16 @@ func (m *MockExecutor) GetCommands() [][]string {
 
 func TestManager_parseApplications(t *testing.T) {
 	tests := []struct {
-		name           string
-		mockSetup      func(*MockExecutor)
-		jsonInput      string
-		expectedApps   []Application
-		expectError    bool
+		name         string
+		mockSetup    func(*MockExecutor)
+		jsonInput    string
+		expectedApps []Application
+		expectError  bool
 	}{
 		{
 			name: "single healthy app",
 			mockSetup: func(m *MockExecutor) {
-				m.SetResult("sh -c echo '{}' | jq -r '.items[] | [.metadata.name, .status.health.status, .status.sync.status] | @tsv'", &executor.CommandResult{
+				m.SetResult("sh -c echo '{}' | jq -r '.items[]? | select(.metadata?.name?) | [.metadata.name, (.status?.health?.status // \"Unknown\"), (.status?.sync?.status // \"Unknown\")] | @tsv' 2>/dev/null || true", &executor.CommandResult{
 					ExitCode: 0,
 					Stdout:   "app1\tHealthy\tSynced\n",
 				})
@@ -91,7 +91,7 @@ func TestManager_parseApplications(t *testing.T) {
 		{
 			name: "multiple apps with different statuses",
 			mockSetup: func(m *MockExecutor) {
-				m.SetResult("sh -c echo '{}' | jq -r '.items[] | [.metadata.name, .status.health.status, .status.sync.status] | @tsv'", &executor.CommandResult{
+				m.SetResult("sh -c echo '{}' | jq -r '.items[]? | select(.metadata?.name?) | [.metadata.name, (.status?.health?.status // \"Unknown\"), (.status?.sync?.status // \"Unknown\")] | @tsv' 2>/dev/null || true", &executor.CommandResult{
 					ExitCode: 0,
 					Stdout:   "app1\tHealthy\tSynced\napp2\tProgressing\tOutOfSync\napp3\tHealthy\tSynced\n",
 				})
@@ -107,23 +107,23 @@ func TestManager_parseApplications(t *testing.T) {
 		{
 			name: "no apps",
 			mockSetup: func(m *MockExecutor) {
-				m.SetResult("sh -c echo '{}' | jq -r '.items[] | [.metadata.name, .status.health.status, .status.sync.status] | @tsv'", &executor.CommandResult{
+				m.SetResult("sh -c echo '{}' | jq -r '.items[]? | select(.metadata?.name?) | [.metadata.name, (.status?.health?.status // \"Unknown\"), (.status?.sync?.status // \"Unknown\")] | @tsv' 2>/dev/null || true", &executor.CommandResult{
 					ExitCode: 0,
 					Stdout:   "",
 				})
 			},
-			jsonInput: "{}",
+			jsonInput:    "{}",
 			expectedApps: []Application{},
-			expectError: false,
+			expectError:  false,
 		},
 		{
 			name: "jq command fails",
 			mockSetup: func(m *MockExecutor) {
-				m.SetError("sh -c echo '{}' | jq -r '.items[] | [.metadata.name, .status.health.status, .status.sync.status] | @tsv'", assert.AnError)
+				m.SetError("sh -c echo '{}' | jq -r '.items[]? | select(.metadata?.name?) | [.metadata.name, (.status?.health?.status // \"Unknown\"), (.status?.sync?.status // \"Unknown\")] | @tsv' 2>/dev/null || true", assert.AnError)
 			},
-			jsonInput: "{}",
-			expectedApps: nil,
-			expectError: true,
+			jsonInput:    "{}",
+			expectedApps: []Application{}, // Now returns empty array instead of error
+			expectError:  false, // Changed to false since we handle errors gracefully
 		},
 	}
 
@@ -131,10 +131,10 @@ func TestManager_parseApplications(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExec := NewMockExecutor()
 			tt.mockSetup(mockExec)
-			
+
 			manager := NewManager(mockExec)
-			apps, err := manager.parseApplications(context.Background(), tt.jsonInput)
-			
+			apps, err := manager.parseApplications(context.Background(), tt.jsonInput, false)
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -148,8 +148,8 @@ func TestManager_parseApplications(t *testing.T) {
 func TestManager_WaitForApplications_DryRun(t *testing.T) {
 	mockExec := NewMockExecutor()
 	manager := NewManager(mockExec)
-	
-	// This test doesn't actually run WaitForApplications since it's only called 
+
+	// This test doesn't actually run WaitForApplications since it's only called
 	// when DryRun is false, but we can test the manager creation
 	assert.NotNil(t, manager)
 	assert.NotNil(t, manager.executor)
@@ -158,14 +158,14 @@ func TestManager_WaitForApplications_DryRun(t *testing.T) {
 func TestManager_WaitForApplications_KubectlError(t *testing.T) {
 	mockExec := NewMockExecutor()
 	mockExec.SetError("kubectl -n argocd get applications.argoproj.io -o json", assert.AnError)
-	
+
 	manager := NewManager(mockExec)
-	config := models.ChartInstallConfig{DryRun: false}
-	
+	config := config.ChartInstallConfig{DryRun: false}
+
 	// This would hang in the loop, so we'll use a timeout context
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
-	
+
 	err := manager.WaitForApplications(ctx, config)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get ArgoCD applications")
@@ -174,7 +174,7 @@ func TestManager_WaitForApplications_KubectlError(t *testing.T) {
 func TestNewManager(t *testing.T) {
 	mockExec := NewMockExecutor()
 	manager := NewManager(mockExec)
-	
+
 	assert.NotNil(t, manager)
 	assert.Equal(t, mockExec, manager.executor)
 }

@@ -150,20 +150,310 @@ func (s *ClusterService) DetectClusterType(name string) (models.ClusterType, err
 }
 
 // CleanupCluster handles cluster cleanup business logic
-func (s *ClusterService) CleanupCluster(name string, clusterType models.ClusterType, verbose bool) error {
+func (s *ClusterService) CleanupCluster(name string, clusterType models.ClusterType, verbose bool, force bool) error {
 	switch clusterType {
 	case models.ClusterTypeK3d:
-		return s.cleanupK3dCluster(name, verbose)
+		return s.cleanupK3dCluster(name, verbose, force)
 	default:
 		return fmt.Errorf("cleanup not supported for cluster type: %s", clusterType)
 	}
 }
 
 // cleanupK3dCluster handles K3d-specific cleanup
-func (s *ClusterService) cleanupK3dCluster(clusterName string, verbose bool) error {
-	// For now, just return success - actual cleanup logic would use executor
-	// This maintains the same interface while simplifying the implementation
+func (s *ClusterService) cleanupK3dCluster(clusterName string, verbose bool, force bool) error {
+	ctx := context.Background()
+	
+	if verbose {
+		pterm.Info.Printf("Starting cleanup of cluster: %s\n", clusterName)
+	}
+	
+	// 1. Clean up Helm releases (including ArgoCD)
+	if err := s.cleanupHelmReleases(ctx, verbose, force); err != nil {
+		if verbose {
+			pterm.Warning.Printf("Failed to cleanup Helm releases: %v\n", err)
+		}
+		// Don't fail completely if Helm cleanup fails
+	}
+	
+	// 2. Clean up Kubernetes resources in common namespaces
+	if err := s.cleanupKubernetesResources(ctx, verbose, force); err != nil {
+		if verbose {
+			pterm.Warning.Printf("Failed to cleanup Kubernetes resources: %v\n", err)
+		}
+		// Don't fail completely if K8s cleanup fails
+	}
+	
+	// 3. Clean up Docker images and containers in the cluster
+	if err := s.cleanupDockerResources(ctx, clusterName, verbose, force); err != nil {
+		if verbose {
+			pterm.Warning.Printf("Failed to cleanup Docker resources: %v\n", err)
+		}
+		// Don't fail completely if Docker cleanup fails
+	}
+	
+	if verbose {
+		pterm.Success.Printf("Cleanup completed for cluster: %s\n", clusterName)
+	}
+	
 	return nil
+}
+
+// cleanupHelmReleases removes all Helm releases
+func (s *ClusterService) cleanupHelmReleases(ctx context.Context, verbose bool, force bool) error {
+	// List all helm releases
+	result, err := s.executor.Execute(ctx, "helm", "list", "--all-namespaces", "--short")
+	if err != nil {
+		return fmt.Errorf("failed to list Helm releases: %w", err)
+	}
+	
+	if result.Stdout == "" {
+		if verbose {
+			pterm.Info.Println("No Helm releases found to cleanup")
+		}
+		return nil
+	}
+	
+	// Parse release names and uninstall each one
+	releases := strings.Split(strings.TrimSpace(result.Stdout), "\n")
+	for _, release := range releases {
+		release = strings.TrimSpace(release)
+		if release == "" {
+			continue
+		}
+		
+		if verbose {
+			pterm.Info.Printf("Uninstalling Helm release: %s\n", release)
+		}
+		
+		// Get release info to determine namespace
+		releaseInfo, err := s.executor.Execute(ctx, "helm", "list", "--filter", release, "--all-namespaces", "--output", "json")
+		if err != nil {
+			if verbose {
+				pterm.Warning.Printf("Failed to get info for release %s: %v\n", release, err)
+			}
+			continue
+		}
+		
+		// Simple JSON parsing to extract namespace - this is basic but functional
+		if strings.Contains(releaseInfo.Stdout, `"namespace"`) {
+			lines := strings.Split(releaseInfo.Stdout, "\n")
+			var namespace string
+			for _, line := range lines {
+				if strings.Contains(line, `"namespace"`) && strings.Contains(line, ":") {
+					parts := strings.Split(line, ":")
+					if len(parts) >= 2 {
+						namespace = strings.Trim(strings.TrimSpace(parts[1]), `",`)
+						break
+					}
+				}
+			}
+			
+			if namespace != "" {
+				// Always use aggressive uninstall for cleanup
+				args := []string{"uninstall", release, "--namespace", namespace, "--no-hooks", "--wait"}
+				if force {
+					// Add even more aggressive flags when force is enabled
+					args = append(args, "--ignore-not-found")
+				}
+				_, err := s.executor.Execute(ctx, "helm", args...)
+				if err != nil {
+					if verbose {
+						pterm.Warning.Printf("Failed to uninstall release %s: %v\n", release, err)
+					}
+				} else if verbose {
+					pterm.Success.Printf("Uninstalled Helm release: %s\n", release)
+				}
+			}
+		}
+	}
+	
+	return nil
+}
+
+// cleanupKubernetesResources removes resources from common namespaces
+func (s *ClusterService) cleanupKubernetesResources(ctx context.Context, verbose bool, force bool) error {
+	// List of namespaces commonly used by installed components
+	namespaces := []string{"argocd", "openframe", "kube-system"}
+	
+	for _, namespace := range namespaces {
+		// Skip kube-system for safety unless force is enabled
+		if namespace == "kube-system" && !force {
+			continue
+		}
+		
+		// Check if namespace exists
+		_, err := s.executor.Execute(ctx, "kubectl", "get", "namespace", namespace)
+		if err != nil {
+			// Namespace doesn't exist, skip
+			continue
+		}
+		
+		if verbose {
+			pterm.Info.Printf("Cleaning up namespace: %s\n", namespace)
+		}
+		
+		// Delete the entire namespace (this will clean up all resources in it)
+		_, err = s.executor.Execute(ctx, "kubectl", "delete", "namespace", namespace, "--ignore-not-found=true")
+		if err != nil {
+			if verbose {
+				pterm.Warning.Printf("Failed to delete namespace %s: %v\n", namespace, err)
+			}
+		} else if verbose {
+			pterm.Success.Printf("Deleted namespace: %s\n", namespace)
+		}
+	}
+	
+	return nil
+}
+
+// cleanupDockerResources cleans up Docker images and containers in the k3d cluster
+func (s *ClusterService) cleanupDockerResources(ctx context.Context, clusterName string, verbose bool, force bool) error {
+	if verbose {
+		pterm.Info.Printf("Cleaning up Docker resources for cluster: %s\n", clusterName)
+	}
+	
+	// Dynamically discover all k3d nodes for this cluster
+	nodeNames, err := s.getK3dClusterNodes(ctx, clusterName)
+	if err != nil {
+		if verbose {
+			pterm.Warning.Printf("Failed to discover cluster nodes: %v\n", err)
+		}
+		return nil // Don't fail cleanup if we can't discover nodes
+	}
+	
+	if len(nodeNames) == 0 {
+		if verbose {
+			pterm.Info.Printf("No k3d nodes found for cluster: %s\n", clusterName)
+		}
+		return nil
+	}
+	
+	if verbose {
+		pterm.Info.Printf("Found %d k3d nodes for cluster %s\n", len(nodeNames), clusterName)
+	}
+	
+	for _, nodeName := range nodeNames {
+		if verbose {
+			pterm.Info.Printf("Cleaning up Docker images in node: %s\n", nodeName)
+		}
+		
+		// Always use aggressive image cleanup
+		imageArgs := []string{"exec", nodeName, "docker", "image", "prune", "-f", "--all"}
+		_, err = s.executor.Execute(ctx, "docker", imageArgs...)
+		if err != nil {
+			if verbose {
+				pterm.Warning.Printf("Failed to prune images in node %s: %v\n", nodeName, err)
+			}
+		}
+		
+		// Clean up stopped containers
+		_, err = s.executor.Execute(ctx, "docker", "exec", nodeName, "docker", "container", "prune", "-f")
+		if err != nil {
+			if verbose {
+				pterm.Warning.Printf("Failed to prune containers in node %s: %v\n", nodeName, err)
+			}
+		}
+		
+		// Always perform comprehensive cleanup
+		// Clean volumes
+		_, err = s.executor.Execute(ctx, "docker", "exec", nodeName, "docker", "volume", "prune", "-f")
+		if err != nil && verbose {
+			pterm.Warning.Printf("Failed to prune volumes in node %s: %v\n", nodeName, err)
+		}
+		
+		// Clean networks
+		_, err = s.executor.Execute(ctx, "docker", "exec", nodeName, "docker", "network", "prune", "-f")
+		if err != nil && verbose {
+			pterm.Warning.Printf("Failed to prune networks in node %s: %v\n", nodeName, err)
+		}
+		
+		// System prune for comprehensive cleanup
+		_, err = s.executor.Execute(ctx, "docker", "exec", nodeName, "docker", "system", "prune", "-f")
+		if err != nil && verbose {
+			pterm.Warning.Printf("Failed to system prune in node %s: %v\n", nodeName, err)
+		}
+		
+		// Force cleanup: even more aggressive cleanup when force is enabled
+		if force {
+			// Remove build cache and dangling images with time filter
+			_, err = s.executor.Execute(ctx, "docker", "exec", nodeName, "docker", "builder", "prune", "-f", "--all")
+			if err != nil && verbose {
+				pterm.Warning.Printf("Failed to prune build cache in node %s: %v\n", nodeName, err)
+			}
+		}
+	}
+	
+	if verbose {
+		pterm.Success.Printf("Docker cleanup completed for cluster: %s\n", clusterName)
+	}
+	
+	return nil
+}
+
+// getK3dClusterNodes discovers all Docker containers that are part of a k3d cluster
+// It returns only server and agent nodes (excludes load balancer and tools containers)
+func (s *ClusterService) getK3dClusterNodes(ctx context.Context, clusterName string) ([]string, error) {
+	if clusterName == "" {
+		return nil, fmt.Errorf("cluster name cannot be empty")
+	}
+	
+	// Use docker ps to find all containers with the k3d cluster label
+	// Only include running containers for cleanup operations
+	result, err := s.executor.Execute(ctx, "docker", "ps", 
+		"--filter", fmt.Sprintf("label=k3d.cluster=%s", clusterName),
+		"--filter", "status=running",
+		"--format", "{{.Names}}")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list k3d cluster nodes for cluster %s: %w", clusterName, err)
+	}
+	
+	if result.Stdout == "" {
+		return []string{}, nil
+	}
+	
+	return s.filterK3dNodes(result.Stdout, clusterName), nil
+}
+
+// filterK3dNodes filters and validates k3d node names, excluding non-node containers
+func (s *ClusterService) filterK3dNodes(output, clusterName string) []string {
+	// Always return an empty slice instead of nil for consistent behavior
+	validNodes := make([]string, 0)
+	
+	if strings.TrimSpace(output) == "" {
+		return validNodes
+	}
+	
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	
+	for _, line := range lines {
+		nodeName := strings.TrimSpace(line)
+		if nodeName == "" {
+			continue
+		}
+		
+		// Only include server and agent nodes, exclude load balancer and tools containers
+		// k3d nodes follow the pattern: k3d-{cluster}-{server|agent}-{number}
+		if s.isK3dWorkerNode(nodeName, clusterName) {
+			validNodes = append(validNodes, nodeName)
+		}
+	}
+	
+	return validNodes
+}
+
+// isK3dWorkerNode checks if a container name represents a k3d worker node (server or agent)
+func (s *ClusterService) isK3dWorkerNode(nodeName, clusterName string) bool {
+	prefix := fmt.Sprintf("k3d-%s-", clusterName)
+	
+	// Must start with the correct cluster prefix
+	if !strings.HasPrefix(nodeName, prefix) {
+		return false
+	}
+	
+	suffix := strings.TrimPrefix(nodeName, prefix)
+	
+	// Check if it's a server or agent node (exclude serverlb, tools, etc.)
+	return strings.HasPrefix(suffix, "server-") || strings.HasPrefix(suffix, "agent-")
 }
 
 // displayClusterCreationSummary displays a summary after cluster creation

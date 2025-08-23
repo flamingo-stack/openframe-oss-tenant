@@ -2,9 +2,11 @@ package helm
 
 import (
 	"context"
+	"strings"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/models"
+	"github.com/flamingo/openframe/internal/chart/utils/config"
+	"github.com/flamingo/openframe/internal/chart/utils/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,20 +30,23 @@ func NewMockExecutor() *MockExecutor {
 func (m *MockExecutor) Execute(ctx context.Context, name string, args ...string) (*executor.CommandResult, error) {
 	command := append([]string{name}, args...)
 	m.commands = append(m.commands, command)
-	
+
 	commandStr := name
 	for _, arg := range args {
 		commandStr += " " + arg
 	}
-	
-	if err, exists := m.errors[commandStr]; exists {
-		return nil, err
+
+	// Check for partial match for error handling (for complex commands)
+	for errKey, err := range m.errors {
+		if strings.Contains(commandStr, errKey) {
+			return nil, err
+		}
 	}
-	
+
 	if result, exists := m.results[commandStr]; exists {
 		return result, nil
 	}
-	
+
 	// Default success result
 	return &executor.CommandResult{
 		ExitCode: 0,
@@ -95,13 +100,13 @@ func TestHelmManager_IsHelmInstalled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExec := NewMockExecutor()
 			tt.setupMock(mockExec)
-			
+
 			manager := NewHelmManager(mockExec)
 			err := manager.IsHelmInstalled(context.Background())
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, models.ErrHelmNotFound)
+				assert.ErrorIs(t, err, errors.ErrHelmNotAvailable)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -160,10 +165,10 @@ func TestHelmManager_IsChartInstalled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExec := NewMockExecutor()
 			tt.setupMock(mockExec)
-			
+
 			manager := NewHelmManager(mockExec)
 			result, err := manager.IsChartInstalled(context.Background(), tt.releaseName, tt.namespace)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -176,120 +181,91 @@ func TestHelmManager_IsChartInstalled(t *testing.T) {
 
 func TestHelmManager_InstallArgoCD(t *testing.T) {
 	tests := []struct {
-		name        string
-		config      models.ChartInstallConfig
-		setupMock   func(*MockExecutor)
-		expectError bool
+		name          string
+		config        config.ChartInstallConfig
+		setupMock     func(*MockExecutor)
+		expectError   bool
+		checkCommands func(t *testing.T, commands [][]string)
 	}{
 		{
 			name: "successful installation",
-			config: models.ChartInstallConfig{
+			config: config.ChartInstallConfig{
 				DryRun: false,
 			},
 			setupMock: func(m *MockExecutor) {
 				// All commands should succeed
 			},
 			expectError: false,
-		},
-		{
-			name: "dry run installation",
-			config: models.ChartInstallConfig{
-				DryRun: true,
-			},
-			setupMock: func(m *MockExecutor) {
-				// All commands should succeed
-			},
-			expectError: false,
-		},
-		{
-			name: "repo add fails",
-			config: models.ChartInstallConfig{
-				DryRun: false,
-			},
-			setupMock: func(m *MockExecutor) {
-				m.SetError("helm repo add argo https://argoproj.github.io/argo-helm", assert.AnError)
-			},
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockExec := NewMockExecutor()
-			tt.setupMock(mockExec)
-			
-			manager := NewHelmManager(mockExec)
-			err := manager.InstallArgoCD(context.Background(), tt.config)
-			
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				
+			checkCommands: func(t *testing.T, commands [][]string) {
 				// Verify expected commands were called
-				commands := mockExec.GetCommands()
-				require.GreaterOrEqual(t, len(commands), 2)
-				
+				require.GreaterOrEqual(t, len(commands), 3)
+
 				// Should have added repo and updated
 				assert.Equal(t, []string{"helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm"}, commands[0])
 				assert.Equal(t, []string{"helm", "repo", "update"}, commands[1])
-				
+
 				// Should have upgrade/install command
-				require.GreaterOrEqual(t, len(commands), 3)
 				installCmd := commands[2]
 				assert.Equal(t, "helm", installCmd[0])
 				assert.Equal(t, "upgrade", installCmd[1])
 				assert.Equal(t, "--install", installCmd[2])
 				assert.Equal(t, "argo-cd", installCmd[3])
+				assert.Equal(t, "argo/argo-cd", installCmd[4])
 				assert.Contains(t, installCmd, "--version=8.1.4")
 				assert.Contains(t, installCmd, "--namespace")
 				assert.Contains(t, installCmd, "argocd")
 				assert.Contains(t, installCmd, "--create-namespace")
-				
-				if tt.config.DryRun {
-					assert.Contains(t, installCmd, "--dry-run")
+				assert.Contains(t, installCmd, "--wait")
+				assert.Contains(t, installCmd, "--timeout")
+				assert.Contains(t, installCmd, "5m")
+				// Check that values file path contains argocd-values.yaml
+				hasValuesFile := false
+				for i, arg := range installCmd {
+					if arg == "-f" && i+1 < len(installCmd) {
+						hasValuesFile = true
+						assert.Contains(t, installCmd[i+1], "argocd-values.yaml")
+						break
+					}
 				}
-			}
-		})
-	}
-}
-
-func TestHelmManager_InstallAppOfApps(t *testing.T) {
-	tests := []struct {
-		name        string
-		config      models.ChartInstallConfig
-		setupMock   func(*MockExecutor)
-		expectError bool
-	}{
-		{
-			name: "successful installation",
-			config: models.ChartInstallConfig{
-				DryRun: false,
+				assert.True(t, hasValuesFile, "Should have -f flag with values file")
 			},
-			setupMock: func(m *MockExecutor) {
-				// All commands should succeed
-			},
-			expectError: false,
 		},
 		{
 			name: "dry run installation",
-			config: models.ChartInstallConfig{
+			config: config.ChartInstallConfig{
 				DryRun: true,
 			},
 			setupMock: func(m *MockExecutor) {
 				// All commands should succeed
 			},
 			expectError: false,
+			checkCommands: func(t *testing.T, commands [][]string) {
+				require.GreaterOrEqual(t, len(commands), 3)
+				installCmd := commands[2]
+				assert.Contains(t, installCmd, "--dry-run")
+			},
 		},
 		{
-			name: "helm install fails",
-			config: models.ChartInstallConfig{
+			name: "repo add fails",
+			config: config.ChartInstallConfig{
 				DryRun: false,
 			},
 			setupMock: func(m *MockExecutor) {
-				m.SetError("helm upgrade --install app-of-apps ./manifests/app-of-apps --namespace argocd --wait --timeout 60m -f ./helm-values.yaml", assert.AnError)
+				m.SetError("helm repo add argo https://argoproj.github.io/argo-helm", assert.AnError)
 			},
-			expectError: true,
+			expectError:   true,
+			checkCommands: func(t *testing.T, commands [][]string) {},
+		},
+		{
+			name: "repo update fails",
+			config: config.ChartInstallConfig{
+				DryRun: false,
+			},
+			setupMock: func(m *MockExecutor) {
+				m.SetError("helm repo update", assert.AnError)
+			},
+			expectError:   true,
+			checkCommands: func(t *testing.T, commands [][]string) {},
 		},
 	}
 
@@ -297,34 +273,15 @@ func TestHelmManager_InstallAppOfApps(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExec := NewMockExecutor()
 			tt.setupMock(mockExec)
-			
+
 			manager := NewHelmManager(mockExec)
-			err := manager.InstallAppOfApps(context.Background(), tt.config)
-			
+			err := manager.InstallArgoCD(context.Background(), tt.config)
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				
-				// Verify expected commands were called
-				commands := mockExec.GetCommands()
-				require.GreaterOrEqual(t, len(commands), 1)
-				
-				// Should have upgrade/install command
-				installCmd := commands[0]
-				assert.Equal(t, "helm", installCmd[0])
-				assert.Equal(t, "upgrade", installCmd[1])
-				assert.Equal(t, "--install", installCmd[2])
-				assert.Equal(t, "app-of-apps", installCmd[3])
-				assert.Contains(t, installCmd, "--namespace")
-				assert.Contains(t, installCmd, "argocd")
-				assert.Contains(t, installCmd, "--wait")
-				assert.Contains(t, installCmd, "--timeout")
-				assert.Contains(t, installCmd, "60m")
-				
-				if tt.config.DryRun {
-					assert.Contains(t, installCmd, "--dry-run")
-				}
+				tt.checkCommands(t, mockExec.GetCommands())
 			}
 		})
 	}
@@ -365,10 +322,10 @@ func TestHelmManager_GetChartStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExec := NewMockExecutor()
 			tt.setupMock(mockExec)
-			
+
 			manager := NewHelmManager(mockExec)
 			info, err := manager.GetChartStatus(context.Background(), tt.releaseName, tt.namespace)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -380,3 +337,205 @@ func TestHelmManager_GetChartStatus(t *testing.T) {
 		})
 	}
 }
+
+// Removed: ensureHelmGitPlugin functionality moved to git provider
+// Removed: ensureHelmGitPlugin functionality moved to git provider
+// Removed: InstallAppOfApps functionality moved to services layer with git provider
+/*
+func TestHelmManager_InstallAppOfApps(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      config.ChartInstallConfig
+		expectError bool
+		errorMsg    string
+		setupMock   func(*MockExecutor)
+	}{
+		{
+			name: "successful installation",
+			config: config.ChartInstallConfig{
+				DryRun: false,
+				AppOfApps: &models.AppOfAppsConfig{
+					GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+					GitHubBranch: "main",
+					ChartPath:    "manifests/app-of-apps",
+					CertDir:      "/path/to/certs",
+					Namespace:    "argocd",
+					Timeout:      "60m",
+				},
+			},
+			expectError: false,
+			setupMock: func(mockExec *MockExecutor) {
+				// Mock plugin check (already installed)
+				mockExec.SetResult("helm plugin list", &executor.CommandResult{
+					Stdout: "helm-git\tv0.15.1\tInstall Helm Charts from Git repositories",
+				})
+			},
+		},
+		{
+			name: "dry run mode",
+			config: config.ChartInstallConfig{
+				DryRun: true,
+				AppOfApps: &models.AppOfAppsConfig{
+					GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+					GitHubBranch: "develop",
+					ChartPath:    "manifests/app-of-apps",
+					CertDir:      "/path/to/certs",
+					Namespace:    "argocd",
+					Timeout:      "60m",
+				},
+			},
+			expectError: false,
+			setupMock: func(mockExec *MockExecutor) {
+				// Mock plugin check
+				mockExec.SetResult("helm plugin list", &executor.CommandResult{
+					Stdout: "helm-git\tv0.15.1\tInstall Helm Charts from Git repositories",
+				})
+			},
+		},
+		{
+			name: "missing app-of-apps config",
+			config: config.ChartInstallConfig{
+				AppOfApps: nil,
+			},
+			expectError: true,
+			errorMsg:    "app-of-apps configuration is required",
+			setupMock:   func(mockExec *MockExecutor) {},
+		},
+		{
+			name: "missing github repo",
+			config: config.ChartInstallConfig{
+				AppOfApps: &models.AppOfAppsConfig{
+					GitHubRepo:   "",
+					GitHubBranch: "main",
+					CertDir:      "/path/to/certs",
+				},
+			},
+			expectError: true,
+			errorMsg:    "GitHub repository URL is required",
+			setupMock:   func(mockExec *MockExecutor) {},
+		},
+		{
+			name: "missing cert dir",
+			config: config.ChartInstallConfig{
+				AppOfApps: &models.AppOfAppsConfig{
+					GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+					GitHubBranch: "main",
+					CertDir:      "",
+				},
+			},
+			expectError: true,
+			errorMsg:    "certificate directory is required",
+			setupMock:   func(mockExec *MockExecutor) {},
+		},
+		{
+			name: "default branch when empty",
+			config: config.ChartInstallConfig{
+				AppOfApps: &models.AppOfAppsConfig{
+					GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+					GitHubBranch: "",
+					ChartPath:    "manifests/app-of-apps",
+					CertDir:      "/path/to/certs",
+					Namespace:    "argocd",
+					Timeout:      "60m",
+				},
+			},
+			expectError: false,
+			setupMock: func(mockExec *MockExecutor) {
+				// Mock plugin check
+				mockExec.SetResult("helm plugin list", &executor.CommandResult{
+					Stdout: "helm-git\tv0.15.1\tInstall Helm Charts from Git repositories",
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockExec := NewMockExecutor()
+			tt.setupMock(mockExec)
+
+			manager := NewHelmManager(mockExec)
+
+			err := manager.InstallAppOfApps(context.Background(), tt.config)
+
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+
+				// For successful cases, verify commands were executed
+				if tt.config.AppOfApps != nil && tt.config.AppOfApps.GitHubRepo != "" && tt.config.AppOfApps.CertDir != "" {
+					commands := mockExec.GetCommands()
+					hasPluginList := false
+					hasHelmUpgrade := false
+
+					for _, cmd := range commands {
+						cmdStr := strings.Join(cmd, " ")
+						if strings.Contains(cmdStr, "helm plugin list") {
+							hasPluginList = true
+						}
+						if strings.Contains(cmdStr, "helm upgrade --install app-of-apps") {
+							hasHelmUpgrade = true
+						}
+					}
+
+					assert.True(t, hasPluginList, "Should check helm plugins")
+					assert.True(t, hasHelmUpgrade, "Should call helm upgrade for app-of-apps")
+				}
+			}
+		})
+	}
+}
+
+func TestHelmManager_InstallAppOfApps_GitURL_Format(t *testing.T) {
+	mockExec := NewMockExecutor()
+
+	// Mock plugin check
+	mockExec.SetResult("helm plugin list", &executor.CommandResult{
+		Stdout: "helm-git\tv0.15.1\tInstall Helm Charts from Git repositories",
+	})
+
+	manager := NewHelmManager(mockExec)
+
+	config := config.ChartInstallConfig{
+		AppOfApps: &models.AppOfAppsConfig{
+			GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+			GitHubBranch: "feature-branch",
+			ChartPath:    "manifests/app-of-apps",
+			CertDir:      "/path/to/certs",
+			Namespace:    "argocd",
+			Timeout:      "60m",
+		},
+	}
+
+	err := manager.InstallAppOfApps(context.Background(), config)
+	require.NoError(t, err)
+
+	// Verify the git URL format is correct
+	commands := mockExec.GetCommands()
+	var helmUpgradeCommand string
+	for _, cmd := range commands {
+		cmdStr := strings.Join(cmd, " ")
+		if strings.Contains(cmdStr, "helm upgrade --install app-of-apps") {
+			helmUpgradeCommand = cmdStr
+			break
+		}
+	}
+
+	require.NotEmpty(t, helmUpgradeCommand, "helm upgrade command should have been executed")
+
+	// Verify the git URL contains the expected format
+	expectedGitURL := "git+https://github.com/Flamingo-CX/openframe@manifests/app-of-apps?ref=feature-branch"
+	assert.Contains(t, helmUpgradeCommand, expectedGitURL, "Git URL should be properly formatted")
+
+	// Verify certificate file paths
+	assert.Contains(t, helmUpgradeCommand, "--set-file deployment.ingress.localhost.tls.cert=/path/to/certs/localhost.pem")
+	assert.Contains(t, helmUpgradeCommand, "--set-file deployment.ingress.localhost.tls.key=/path/to/certs/localhost-key.pem")
+
+	// Verify other expected flags
+	assert.Contains(t, helmUpgradeCommand, "--namespace argocd")
+	assert.Contains(t, helmUpgradeCommand, "--wait")
+	assert.Contains(t, helmUpgradeCommand, "--timeout 60m")
+}
+*/

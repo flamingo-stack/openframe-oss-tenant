@@ -2,7 +2,7 @@ package prerequisites
 
 import (
 	"strings"
-	
+
 	"github.com/flamingo/openframe/internal/chart/prerequisites/certificates"
 	"github.com/flamingo/openframe/internal/chart/prerequisites/git"
 	"github.com/flamingo/openframe/internal/chart/prerequisites/helm"
@@ -26,8 +26,8 @@ func NewPrerequisiteChecker() *PrerequisiteChecker {
 			{
 				Name:        "Git",
 				Command:     "git",
-				IsInstalled: func() bool { return git.NewGitInstaller().IsInstalled() },
-				InstallHelp: func() string { return git.NewGitInstaller().GetInstallHelp() },
+				IsInstalled: func() bool { return git.NewGitChecker().IsInstalled() },
+				InstallHelp: func() string { return git.NewGitChecker().GetInstallInstructions() },
 			},
 			{
 				Name:        "Helm",

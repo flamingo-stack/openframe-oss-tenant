@@ -71,6 +71,8 @@ func (eh *ErrorHandler) HandleError(err error) {
 		eh.handleValidationError(e)
 	case *CommandError:
 		eh.handleCommandError(e)
+	case *BranchNotFoundError:
+		eh.handleBranchNotFoundError(e)
 	default:
 		eh.handleGenericError(err)
 	}
@@ -97,6 +99,10 @@ func (eh *ErrorHandler) handleCommandError(err *CommandError) {
 	} else {
 		pterm.Printf("  Error: %v\n", err.Err)
 	}
+}
+
+func (eh *ErrorHandler) handleBranchNotFoundError(err *BranchNotFoundError) {
+	pterm.Error.Println("Please check if the branch name is correct or use 'main' branch")
 }
 
 func (eh *ErrorHandler) handleGenericError(err error) {
@@ -173,6 +179,20 @@ func CreateValidationError(field, value, message string) *ValidationError {
 	}
 }
 
+// BranchNotFoundError represents a branch not found error
+type BranchNotFoundError struct {
+	Branch string
+}
+
+func (e *BranchNotFoundError) Error() string {
+	return fmt.Sprintf("branch '%s' does not exist in repository. Please check if the branch name is correct or use 'main' branch", e.Branch)
+}
+
+// NewBranchNotFoundError creates a new branch not found error
+func NewBranchNotFoundError(branch string) *BranchNotFoundError {
+	return &BranchNotFoundError{Branch: branch}
+}
+
 // CreateCommandError creates a new command error
 func CreateCommandError(command string, args []string, err error) *CommandError {
 	return &CommandError{
@@ -211,10 +231,11 @@ func HandleGlobalError(err error, verbose bool) error {
 		return nil // Won't be reached
 	}
 	
-	// For non-interruption errors, display the error but still return it
-	// so that tests and scripts can detect failures via exit codes
+	// Display the error
 	handler.HandleError(err)
 	
-	// Create a wrapped error that signals we've already handled the display
-	return &AlreadyHandledError{OriginalError: err}
+	// Don't return the error to prevent double display
+	// Exit with code 1 to indicate failure
+	os.Exit(1)
+	return nil // Won't be reached
 }

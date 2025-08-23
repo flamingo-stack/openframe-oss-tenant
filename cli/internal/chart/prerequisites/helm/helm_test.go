@@ -7,7 +7,7 @@ import (
 
 func TestNewHelmInstaller(t *testing.T) {
 	installer := NewHelmInstaller()
-	
+
 	if installer == nil {
 		t.Error("Expected Helm installer to be created")
 	}
@@ -16,11 +16,11 @@ func TestNewHelmInstaller(t *testing.T) {
 func TestHelmInstaller_GetInstallHelp(t *testing.T) {
 	installer := NewHelmInstaller()
 	help := installer.GetInstallHelp()
-	
+
 	if help == "" {
 		t.Error("Install help should not be empty")
 	}
-	
+
 	switch runtime.GOOS {
 	case "darwin":
 		if !containsSubstring(help, "brew") && !containsSubstring(help, "https://") {
@@ -39,18 +39,18 @@ func TestHelmInstaller_GetInstallHelp(t *testing.T) {
 
 func TestHelmInstaller_Install(t *testing.T) {
 	installer := NewHelmInstaller()
-	
+
 	// Only test basic structure without actual installation
 	if installer == nil {
 		t.Fatal("Expected installer to be created")
 	}
-	
+
 	// Test installation help is available
 	help := installer.GetInstallHelp()
 	if help == "" {
 		t.Error("Install help should not be empty")
 	}
-	
+
 	// Note: We skip actual installation testing as it's slow and environment-dependent
 }
 
@@ -59,12 +59,12 @@ func TestInstallScript(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("Linux-specific test, skipping on", runtime.GOOS)
 	}
-	
+
 	installer := NewHelmInstaller()
-	
+
 	// This will likely fail in test environment due to network/permissions
 	err := installer.installScript()
-	
+
 	if err != nil {
 		// Should be a reasonable error message
 		validErrors := []string{
@@ -74,7 +74,7 @@ func TestInstallScript(t *testing.T) {
 			"permission denied",
 			"no such host",
 		}
-		
+
 		hasValidError := false
 		for _, validError := range validErrors {
 			if containsSubstring(err.Error(), validError) {
@@ -82,7 +82,7 @@ func TestInstallScript(t *testing.T) {
 				break
 			}
 		}
-		
+
 		if !hasValidError {
 			t.Errorf("Unexpected error type: %v", err)
 		}
@@ -91,13 +91,13 @@ func TestInstallScript(t *testing.T) {
 
 // Helper function to check if a string contains a substring
 func containsSubstring(str, substr string) bool {
-	return len(str) >= len(substr) && 
-		   func() bool {
-			   for i := 0; i <= len(str)-len(substr); i++ {
-				   if str[i:i+len(substr)] == substr {
-					   return true
-				   }
-			   }
-			   return false
-		   }()
+	return len(str) >= len(substr) &&
+		func() bool {
+			for i := 0; i <= len(str)-len(substr); i++ {
+				if str[i:i+len(substr)] == substr {
+					return true
+				}
+			}
+			return false
+		}()
 }

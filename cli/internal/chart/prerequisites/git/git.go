@@ -3,129 +3,73 @@ package git
 import (
 	"fmt"
 	"os/exec"
-	"runtime"
+	"strings"
 )
 
-type GitInstaller struct{}
+// GitChecker validates git prerequisites
+type GitChecker struct{}
 
-func commandExists(cmd string) bool {
-	_, err := exec.LookPath(cmd)
+// NewGitChecker creates a new git prerequisite checker
+func NewGitChecker() *GitChecker {
+	return &GitChecker{}
+}
+
+// IsInstalled checks if git is installed and available
+func (g *GitChecker) IsInstalled() bool {
+	_, err := exec.LookPath("git")
 	return err == nil
 }
 
-func isGitInstalled() bool {
-	if !commandExists("git") {
-		return false
-	}
-	cmd := exec.Command("git", "version")
-	err := cmd.Run()
-	return err == nil
-}
-
-func gitInstallHelp() string {
-	switch runtime.GOOS {
-	case "darwin":
-		return "Git: Run 'brew install git' or download from https://git-scm.com/downloads"
-	case "linux":
-		return "Git: Install using your package manager (apt install git, yum install git, etc.) or from https://git-scm.com/downloads"
-	case "windows":
-		return "Git: Download from https://git-scm.com/downloads or install via chocolatey 'choco install git'"
-	default:
-		return "Git: Please install Git from https://git-scm.com/downloads"
-	}
-}
-
-func NewGitInstaller() *GitInstaller {
-	return &GitInstaller{}
-}
-
-func (g *GitInstaller) IsInstalled() bool {
-	return isGitInstalled()
-}
-
-func (g *GitInstaller) GetInstallHelp() string {
-	return gitInstallHelp()
-}
-
-func (g *GitInstaller) Install() error {
-	switch runtime.GOOS {
-	case "darwin":
-		return g.installMacOS()
-	case "linux":
-		return g.installLinux()
-	case "windows":
-		return fmt.Errorf("automatic Git installation on Windows not supported. Please install from https://git-scm.com/downloads")
-	default:
-		return fmt.Errorf("automatic Git installation not supported on %s", runtime.GOOS)
-	}
-}
-
-func (g *GitInstaller) installMacOS() error {
-	if !commandExists("brew") {
-		return fmt.Errorf("Homebrew is required for automatic Git installation on macOS. Please install brew first: https://brew.sh")
+// GetVersion returns the installed git version
+func (g *GitChecker) GetVersion() (string, error) {
+	if !g.IsInstalled() {
+		return "", fmt.Errorf("git is not installed")
 	}
 
-	cmd := exec.Command("brew", "install", "git")
-	
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Git: %w", err)
+	cmd := exec.Command("git", "--version")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get git version: %w", err)
 	}
 
-	return nil
+	version := strings.TrimSpace(string(output))
+	return version, nil
 }
 
-func (g *GitInstaller) installLinux() error {
-	if commandExists("apt") {
-		return g.installUbuntu()
-	} else if commandExists("yum") {
-		return g.installRedHat()
-	} else if commandExists("dnf") {
-		return g.installFedora()
-	} else if commandExists("pacman") {
-		return g.installArch()
-	} else {
-		return fmt.Errorf("no supported package manager found. Please install Git manually from https://git-scm.com/downloads")
-	}
+// GetInstallInstructions returns platform-specific installation instructions
+func (g *GitChecker) GetInstallInstructions() string {
+	return `Git is required for cloning chart repositories.
+
+Installation instructions:
+  macOS:    brew install git
+  Ubuntu:   sudo apt-get install git
+  CentOS:   sudo yum install git
+  Windows:  Download from https://git-scm.com/download/win
+
+After installation, verify with: git --version`
 }
 
-func (g *GitInstaller) installUbuntu() error {
-	commands := [][]string{
-		{"sudo", "apt", "update"},
-		{"sudo", "apt", "install", "-y", "git"},
+// Validate performs comprehensive git validation
+func (g *GitChecker) Validate() error {
+	if !g.IsInstalled() {
+		return fmt.Errorf("git is not installed or not in PATH")
 	}
 
-	for _, cmdArgs := range commands {
-		if err := g.runCommand(cmdArgs[0], cmdArgs[1:]...); err != nil {
-			return fmt.Errorf("failed to run %s: %w", cmdArgs[0], err)
+	version, err := g.GetVersion()
+	if err != nil {
+		return fmt.Errorf("git is installed but not working properly: %w", err)
+	}
+
+	// Check for minimum version (git 2.0+)
+	if strings.Contains(version, "git version ") {
+		versionParts := strings.Split(version, " ")
+		if len(versionParts) >= 3 {
+			gitVersion := versionParts[2]
+			if strings.HasPrefix(gitVersion, "1.") {
+				return fmt.Errorf("git version %s is too old, please upgrade to git 2.0 or newer", gitVersion)
+			}
 		}
 	}
 
 	return nil
-}
-
-func (g *GitInstaller) installRedHat() error {
-	if err := g.runCommand("sudo", "yum", "install", "-y", "git"); err != nil {
-		return fmt.Errorf("failed to install Git: %w", err)
-	}
-	return nil
-}
-
-func (g *GitInstaller) installFedora() error {
-	if err := g.runCommand("sudo", "dnf", "install", "-y", "git"); err != nil {
-		return fmt.Errorf("failed to install Git: %w", err)
-	}
-	return nil
-}
-
-func (g *GitInstaller) installArch() error {
-	if err := g.runCommand("sudo", "pacman", "-S", "--noconfirm", "git"); err != nil {
-		return fmt.Errorf("failed to install Git: %w", err)
-	}
-	return nil
-}
-
-func (g *GitInstaller) runCommand(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	// Completely silence output during installation
-	return cmd.Run()
 }

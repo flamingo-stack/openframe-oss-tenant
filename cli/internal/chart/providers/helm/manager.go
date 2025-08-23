@@ -3,10 +3,15 @@ package helm
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/flamingo/openframe/internal/chart/models"
+	"github.com/flamingo/openframe/internal/chart/utils/config"
+	"github.com/flamingo/openframe/internal/chart/utils/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/pterm/pterm"
 )
 
 // HelmManager handles Helm operations
@@ -25,7 +30,7 @@ func NewHelmManager(exec executor.CommandExecutor) *HelmManager {
 func (h *HelmManager) IsHelmInstalled(ctx context.Context) error {
 	_, err := h.executor.Execute(ctx, "helm", "version", "--short")
 	if err != nil {
-		return models.ErrHelmNotFound
+		return errors.ErrHelmNotAvailable
 	}
 	return nil
 }
@@ -36,35 +41,102 @@ func (h *HelmManager) IsChartInstalled(ctx context.Context, releaseName, namespa
 	if releaseName != "" {
 		args = append(args, "-f", releaseName)
 	}
-	
+
 	result, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
 		return false, err
 	}
-	
+
 	releases := strings.Split(strings.TrimSpace(result.Stdout), "\n")
 	for _, release := range releases {
 		if strings.TrimSpace(release) == releaseName {
 			return true, nil
 		}
 	}
-	
+
 	return false, nil
 }
 
+// getManifestsPath returns the path to the manifests directory
+func (h *HelmManager) getManifestsPath() string {
+	// Get the path relative to the source file location
+	_, filename, _, _ := runtime.Caller(0)
+	// Navigate from internal/chart/providers/helm to internal/chart/manifests
+	baseDir := filepath.Dir(filename)
+	return filepath.Join(baseDir, "..", "..", "manifests")
+}
 
 // InstallArgoCD installs ArgoCD using Helm with exact commands specified
-func (h *HelmManager) InstallArgoCD(ctx context.Context, config models.ChartInstallConfig) error {
+func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInstallConfig) error {
 	// Add ArgoCD Helm repository
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
 		return fmt.Errorf("failed to add ArgoCD repository: %w", err)
 	}
-	
+
 	// Update repositories
 	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
 	if err != nil {
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
+	}
+
+	// Get the manifests path
+	manifestsPath := h.getManifestsPath()
+	valuesFile := filepath.Join(manifestsPath, "argocd-values.yaml")
+
+	// Install ArgoCD with upgrade --install
+	args := []string{
+		"upgrade", "--install", "argo-cd", "argo/argo-cd",
+		"--version=8.1.4",
+		"--namespace", "argocd",
+		"--create-namespace",
+		"--wait",
+		"--timeout", "5m",
+		"-f", valuesFile,
+	}
+
+	if config.DryRun {
+		args = append(args, "--dry-run")
+	}
+
+	result, err := h.executor.Execute(ctx, "helm", args...)
+	if err != nil {
+		// Include stderr output for better debugging
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("failed to install ArgoCD: %w\nHelm output: %s", err, result.Stderr)
+		}
+		return fmt.Errorf("failed to install ArgoCD: %w", err)
+	}
+
+	return nil
+}
+
+// InstallArgoCDWithProgress installs ArgoCD using Helm with progress indicators
+func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config config.ChartInstallConfig) error {
+	// Show single progress message
+	pterm.Info.Println("Installing ArgoCD...")
+	
+	// Add ArgoCD repository silently
+	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
+	if err != nil {
+		return fmt.Errorf("failed to add ArgoCD repository: %w", err)
+	}
+	
+	// Update repositories silently
+	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
+	if err != nil {
+		return fmt.Errorf("failed to update Helm repositories: %w", err)
+	}
+	
+	// Get the manifests path
+	manifestsPath := h.getManifestsPath()
+	valuesFile := filepath.Join(manifestsPath, "argocd-values.yaml")
+	
+	// Installation details are now silent - just show in verbose mode
+	if config.Verbose {
+		pterm.Info.Printf("   Version: 8.1.4\n")
+		pterm.Info.Printf("   Namespace: argocd\n")
+		pterm.Info.Printf("   Values file: %s\n", valuesFile)
 	}
 	
 	// Install ArgoCD with upgrade --install
@@ -75,53 +147,86 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config models.ChartInst
 		"--create-namespace",
 		"--wait",
 		"--timeout", "5m",
-		"-f", "./manifests/argocd-values.yaml",
+		"-f", valuesFile,
 	}
 	
 	if config.DryRun {
 		args = append(args, "--dry-run")
+		if config.Verbose {
+			pterm.Info.Println("🔍 Running in dry-run mode...")
+		}
 	}
 	
-	_, err = h.executor.Execute(ctx, "helm", args...)
+	// Show command being executed
+	if config.Verbose {
+		pterm.Debug.Printf("Executing: helm %s\n", strings.Join(args, " "))
+	}
+	
+	result, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
+		pterm.Error.Println("❌ ArgoCD installation failed")
+		// Include stderr output for better debugging
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("failed to install ArgoCD: %w\nHelm output: %s", err, result.Stderr)
+		}
 		return fmt.Errorf("failed to install ArgoCD: %w", err)
 	}
+	
+	// Success message is handled by the calling service
 	
 	return nil
 }
 
-// InstallAppOfApps installs the app-of-apps chart
-func (h *HelmManager) InstallAppOfApps(ctx context.Context, config models.ChartInstallConfig) error {
-	// Install app-of-apps chart
-	args := []string{
-		"upgrade", "--install", "app-of-apps", "./manifests/app-of-apps",
-		"--namespace", "argocd", 
-		"--wait",
-		"--timeout", "60m",
-		"-f", "./helm-values.yaml",
+// InstallAppOfAppsFromLocal installs the app-of-apps chart from a local path
+func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config config.ChartInstallConfig, certFile, keyFile string) error {
+	// Validate configuration
+	if config.AppOfApps == nil {
+		return fmt.Errorf("app-of-apps configuration is required")
 	}
-	
+
+	appConfig := config.AppOfApps
+	if appConfig.ChartPath == "" {
+		return fmt.Errorf("chart path is required for app-of-apps installation")
+	}
+
+	// Install app-of-apps using the local chart path
+	args := []string{
+		"upgrade", "--install", "app-of-apps", appConfig.ChartPath,
+		"--namespace", appConfig.Namespace,
+		"--wait",
+		"--timeout", appConfig.Timeout,
+		"-f", appConfig.ValuesFile,
+		"--set-file", fmt.Sprintf("deployment.ingress.localhost.tls.cert=%s", certFile),
+		"--set-file", fmt.Sprintf("deployment.ingress.localhost.tls.key=%s", keyFile),
+	}
+
 	if config.DryRun {
 		args = append(args, "--dry-run")
 	}
-	
-	_, err := h.executor.Execute(ctx, "helm", args...)
+
+	// Execute helm command with local chart path
+	result, err := h.executor.Execute(ctx, "helm", args...)
+
 	if err != nil {
+		// Include stderr output for better debugging
+		if result != nil && result.Stderr != "" {
+			return fmt.Errorf("failed to install app-of-apps: %w\nHelm output: %s", err, result.Stderr)
+		}
 		return fmt.Errorf("failed to install app-of-apps: %w", err)
 	}
-	
+
 	return nil
 }
 
 // GetChartStatus returns the status of a chart
 func (h *HelmManager) GetChartStatus(ctx context.Context, releaseName, namespace string) (models.ChartInfo, error) {
 	args := []string{"status", releaseName, "-n", namespace, "--output", "json"}
-	
+
 	_, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
 		return models.ChartInfo{}, fmt.Errorf("failed to get chart status: %w", err)
 	}
-	
+
 	// Parse JSON output and return chart info
 	// For now, return basic info
 	return models.ChartInfo{
