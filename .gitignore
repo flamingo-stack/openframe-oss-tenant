@@ -57,3 +57,6 @@ node_modules/
 /rmmagent
 client/Cargo.lock
 *.json
+/.vscode/chrome-debug-profile
+/openframe/services/openframe-frontend/dist
+/openframe/services/openframe-frontend/dist

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.WebSession;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -34,17 +35,19 @@ public class AuthController {
     @Value("${openframe.auth.server.authorize-url}")
     private String authUrl;
 
-    @Value("${openframe.gateway.oauth.client-id}")
+    @Value("${openframe.auth.gateway.client.id}")
     private String clientId;
 
-    @Value("${openframe.gateway.oauth.client-secret}")
+    @Value("${openframe.auth.gateway.client.secret}")
     private String clientSecret;
 
-    @Value("${openframe.gateway.oauth.redirect-uri}")
+    @Value("${openframe.auth.gateway.redirect-uri}")
     private String redirectUri;
 
     @GetMapping("/login")
-    public Mono<ResponseEntity<Void>> login(@RequestParam String tenantId, WebSession session) {
+    public Mono<ResponseEntity<Void>> login(@RequestParam String tenantId, 
+                                           ServerHttpRequest request,
+                                           WebSession session) {
         log.info("🔑 [AuthController] /auth/login called with tenantId: {}", tenantId);
         log.debug("Starting OAuth2 login flow for tenant: {}", tenantId);
         
@@ -52,12 +55,18 @@ public class AuthController {
         String codeChallenge = PKCEUtils.generateCodeChallenge(codeVerifier);
         String state = PKCEUtils.generateState();
 
+        // Store the originating frontend host for redirect after authentication
+        String origin = request.getHeaders().getFirst("Origin");
+        String referer = request.getHeaders().getFirst("Referer");
+        String frontendOrigin = determineFrontendOrigin(origin, referer);
+        
         session.getAttributes().put("oauth:state", state);
         session.getAttributes().put("oauth:code_verifier:" + state, codeVerifier);
         session.getAttributes().put("oauth:tenant_id:" + state, tenantId);
+        session.getAttributes().put("oauth:frontend_origin:" + state, frontendOrigin);
 
         String authorizeUrl = buildAuthorizeUrl(tenantId, codeChallenge, state);
-        log.debug("Redirecting to authorization endpoint for tenant: {}", tenantId);
+        log.debug("Redirecting to authorization endpoint for tenant: {}, frontend origin: {}", tenantId, frontendOrigin);
 
         return Mono.just(ResponseEntity.status(302)
             .header(HttpHeaders.LOCATION, authorizeUrl)
@@ -77,7 +86,7 @@ public class AuthController {
         }
 
         return exchangeCodeForTokens(sessionData, code)
-            .map(tokens -> createSuccessResponse(tokens, sessionData.tenantId()));
+            .map(tokens -> createSuccessResponse(tokens, sessionData));
     }
 
     @PostMapping("/refresh")
@@ -138,6 +147,7 @@ public class AuthController {
 
         String codeVerifier = (String) session.getAttributes().get("oauth:code_verifier:" + state);
         String tenantId = (String) session.getAttributes().get("oauth:tenant_id:" + state);
+        String frontendOrigin = (String) session.getAttributes().get("oauth:frontend_origin:" + state);
         
         if (codeVerifier == null || tenantId == null) {
             return null;
@@ -146,8 +156,9 @@ public class AuthController {
         session.getAttributes().remove("oauth:state");
         session.getAttributes().remove("oauth:code_verifier:" + state);
         session.getAttributes().remove("oauth:tenant_id:" + state);
+        session.getAttributes().remove("oauth:frontend_origin:" + state);
 
-        return new OAuthSessionData(codeVerifier, tenantId);
+        return new OAuthSessionData(codeVerifier, tenantId, frontendOrigin);
     }
 
     private Mono<TokenResponse> exchangeCodeForTokens(OAuthSessionData sessionData, String code) {
@@ -188,9 +199,12 @@ public class AuthController {
             .bodyToMono(TokenResponse.class);
     }
 
-    private ResponseEntity<Void> createSuccessResponse(TokenResponse tokens, String tenantId) {
+    private ResponseEntity<Void> createSuccessResponse(TokenResponse tokens, OAuthSessionData sessionData) {
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.LOCATION, "/");
+        
+        // Dynamically determine callback URL based on frontend origin
+        String callbackUrl = determineCallbackUrl(sessionData.frontendOrigin());
+        headers.add(HttpHeaders.LOCATION, callbackUrl);
 
         ResponseCookie access = cookieService.createAccessTokenCookie(tokens.access_token());
         ResponseCookie refresh = cookieService.createRefreshTokenCookie(tokens.refresh_token());
@@ -198,7 +212,7 @@ public class AuthController {
         headers.add(HttpHeaders.SET_COOKIE, access.toString());
         headers.add(HttpHeaders.SET_COOKIE, refresh.toString());
 
-        log.debug("Successfully set tokens for tenant: {}", tenantId);
+        log.debug("Successfully set tokens for tenant: {}, redirecting to {}", sessionData.tenantId(), callbackUrl);
         return new ResponseEntity<>(headers, org.springframework.http.HttpStatus.FOUND);
     }
 
@@ -221,7 +235,51 @@ public class AuthController {
         return "Basic " + Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
     }
 
-    private record OAuthSessionData(String codeVerifier, String tenantId) {}
+    /**
+     * Determine the frontend origin from request headers
+     */
+    private String determineFrontendOrigin(String origin, String referer) {
+        // First try Origin header (most reliable for CORS requests)
+        if (origin != null && !origin.isEmpty()) {
+            log.debug("Using Origin header for frontend detection: {}", origin);
+            return origin;
+        }
+        
+        // Fall back to Referer header
+        if (referer != null && !referer.isEmpty()) {
+            try {
+                String refererOrigin = referer.substring(0, referer.indexOf('/', 8)); // Extract origin from URL
+                log.debug("Using Referer header for frontend detection: {}", refererOrigin);
+                return refererOrigin;
+            } catch (Exception e) {
+                log.warn("Failed to parse referer header: {}", referer);
+            }
+        }
+        
+        // Default fallback to localhost (production gateway)
+        String defaultOrigin = "http://localhost";
+        log.debug("Using default origin for frontend detection: {}", defaultOrigin);
+        return defaultOrigin;
+    }
+
+    /**
+     * Determine the appropriate callback URL based on frontend origin
+     */
+    private String determineCallbackUrl(String frontendOrigin) {
+        if (frontendOrigin == null || frontendOrigin.isEmpty()) {
+            return "/auth/callback"; // Relative URL fallback
+        }
+        
+        // For development frontend (port 4000), redirect to that port
+        if (frontendOrigin.contains(":4000")) {
+            return frontendOrigin + "/auth/callback";
+        }
+        
+        // For production or other cases, use relative URL
+        return "/auth/callback";
+    }
+
+    private record OAuthSessionData(String codeVerifier, String tenantId, String frontendOrigin) {}
 }
 
 

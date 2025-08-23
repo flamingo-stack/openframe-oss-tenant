@@ -26,6 +26,11 @@
             <artifactId>openframe-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.openframe</groupId>
+            <artifactId>openframe-data</artifactId>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
