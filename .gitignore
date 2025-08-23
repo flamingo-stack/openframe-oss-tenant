@@ -14,7 +14,7 @@ buildNumber.properties
 
 # Helm
 **/charts/**
-scripts/my-values.yaml
+**/my-values.yaml
 # scripts/helm-values.yaml
 
 # DS_Store
