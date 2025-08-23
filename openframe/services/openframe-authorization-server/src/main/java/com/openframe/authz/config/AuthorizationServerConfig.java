@@ -40,7 +40,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import static com.openframe.authz.tenant.TenantContext.getTenantId;
@@ -71,8 +70,7 @@ public class AuthorizationServerConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
-            HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            HttpSecurity http) throws Exception {
 
         var as = new OAuth2AuthorizationServerConfigurer();
         AuthorizationServerSettings settings = AuthorizationServerSettings
@@ -86,17 +84,16 @@ public class AuthorizationServerConfig {
         });
         var endpoints = as.getEndpointsMatcher();
 
-        http
+        return http
                 .securityMatcher(endpoints)
                 .authorizeHttpRequests(a -> a.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpoints))
-                .cors(c -> c.configurationSource(corsConfigurationSource))
+                .cors(cors -> cors.disable())
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"),
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
-                .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()));
-
-        return http.build();
+                .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()))
+                .build();
     }
 
     @Bean
