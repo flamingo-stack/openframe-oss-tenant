@@ -91,6 +91,12 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 		return models.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to create cluster %s: %w", config.Name, err))
 	}
 
+	// Set kubectl context to the newly created cluster
+	contextName := fmt.Sprintf("k3d-%s", config.Name)
+	if _, err := m.executor.Execute(ctx, "kubectl", "config", "use-context", contextName); err != nil {
+		return models.NewClusterOperationError("context-switch", config.Name, fmt.Errorf("failed to switch kubectl context to %s: %w", contextName, err))
+	}
+
 	return nil
 }
 
@@ -270,12 +276,16 @@ agents: %d
 image: %s`, config.Name, servers, agents, image)
 
 	// Always use dynamic ports to avoid conflicts, regardless of cluster name
-	if ports, err := m.findAvailablePorts(3); err == nil && len(ports) >= 3 {
-		apiPort := strconv.Itoa(ports[0])
-		httpPort := strconv.Itoa(ports[1])
-		httpsPort := strconv.Itoa(ports[2])
+	ports, err := m.findAvailablePorts(3)
+	if err != nil || len(ports) < 3 {
+		return "", fmt.Errorf("failed to allocate available ports: %w", err)
+	}
+	
+	apiPort := strconv.Itoa(ports[0])
+	httpPort := strconv.Itoa(ports[1])
+	httpsPort := strconv.Itoa(ports[2])
 
-		configContent += fmt.Sprintf(`
+	configContent += fmt.Sprintf(`
 kubeAPI:
   host: "127.0.0.1"
   hostIP: "127.0.0.1"
@@ -299,33 +309,6 @@ ports:
   - port: %s:443
     nodeFilters:
       - loadbalancer`, apiPort, httpPort, httpsPort)
-	} else {
-		// Fallback to default ports if dynamic allocation fails
-		configContent += fmt.Sprintf(`
-kubeAPI:
-  host: "127.0.0.1"
-  hostIP: "127.0.0.1"
-  hostPort: "%s"
-options:
-  k3s:
-    extraArgs:
-      - arg: --disable=traefik
-        nodeFilters:
-          - server:*
-      - arg: --kubelet-arg=eviction-hard=
-        nodeFilters:
-          - all
-      - arg: --kubelet-arg=eviction-soft=
-        nodeFilters:
-          - all
-ports:
-  - port: %s:80
-    nodeFilters:
-      - loadbalancer
-  - port: %s:443
-    nodeFilters:
-      - loadbalancer`, defaultAPIPort, defaultHTTPPort, defaultHTTPSPort)
-	}
 
 	tmpFile, err := os.CreateTemp("", "k3d-config-*.yaml")
 	if err != nil {
@@ -359,25 +342,92 @@ func (m *K3dManager) isTestCluster(name string) bool {
 		strings.ContainsAny(name[len(name)-timestampSuffixLen:], "0123456789")
 }
 
-// findAvailablePorts finds the specified number of available TCP ports
+// findAvailablePorts finds the specified number of available TCP ports using intelligent approach
 func (m *K3dManager) findAvailablePorts(count int) ([]int, error) {
+	// Get ports used by existing k3d clusters
+	usedPorts := m.getUsedPortsByExistingClusters()
+	
+	// Start with default ports and increment if busy (matching script behavior)
+	defaultPorts := []int{6550, 80, 443} // API, HTTP, HTTPS
+	alternatePorts := []int{6551, 8080, 8443}
+	
 	var ports []int
-	startPort := dynamicPortStart + (int(time.Now().UnixNano()) % 10000)
-
-	for i := 0; i < count; i++ {
-		for port := startPort + i*portSearchStep; port < dynamicPortEnd; port++ {
-			if m.isPortAvailable(port) {
-				ports = append(ports, port)
-				break
+	
+	for i := 0; i < count && i < len(defaultPorts); i++ {
+		// Check if default port is available and not used by existing clusters
+		if m.isPortAvailable(defaultPorts[i]) && !m.isPortInUse(defaultPorts[i], usedPorts) {
+			ports = append(ports, defaultPorts[i])
+		} else if m.isPortAvailable(alternatePorts[i]) && !m.isPortInUse(alternatePorts[i], usedPorts) {
+			ports = append(ports, alternatePorts[i])
+		} else {
+			// Find next available port that's not used by k3d clusters
+			found := false
+			for port := alternatePorts[i] + 1; port < alternatePorts[i] + 1000; port++ {
+				if m.isPortAvailable(port) && !m.isPortInUse(port, usedPorts) {
+					ports = append(ports, port)
+					found = true
+					break
+				}
 			}
-		}
-
-		if len(ports) <= i {
-			return nil, fmt.Errorf("could not find %d available ports", count)
+			if !found {
+				return nil, fmt.Errorf("could not find available port for index %d", i)
+			}
 		}
 	}
 
+	if len(ports) < count {
+		return nil, fmt.Errorf("could not find %d available ports", count)
+	}
+
 	return ports, nil
+}
+
+// getUsedPortsByExistingClusters returns a map of ports used by existing k3d clusters
+func (m *K3dManager) getUsedPortsByExistingClusters() map[int]bool {
+	usedPorts := make(map[int]bool)
+	
+	ctx := context.Background()
+	result, err := m.executor.Execute(ctx, "k3d", "cluster", "list", "--output", "json")
+	if err != nil {
+		return usedPorts // Return empty map on error, will rely on port availability check
+	}
+	
+	var k3dClusters []k3dClusterInfo
+	if err := json.Unmarshal([]byte(result.Stdout), &k3dClusters); err != nil {
+		return usedPorts // Return empty map on error
+	}
+	
+	// Extract ports from all existing clusters
+	for _, cluster := range k3dClusters {
+		for _, node := range cluster.Nodes {
+			if node.Role == "server" || node.Role == "loadbalancer" {
+				// Parse runtime labels to get port bindings
+				if apiPort, exists := node.RuntimeLabels["k3d.server.api.port"]; exists {
+					if port, err := strconv.Atoi(apiPort); err == nil {
+						usedPorts[port] = true
+					}
+				}
+				
+				// Parse port mappings from the load balancer
+				for _, mappings := range node.PortMappings {
+					for _, mapping := range mappings {
+						if mapping.HostPort != "" {
+							if port, err := strconv.Atoi(mapping.HostPort); err == nil {
+								usedPorts[port] = true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	return usedPorts
+}
+
+// isPortInUse checks if a port is in the used ports map
+func (m *K3dManager) isPortInUse(port int, usedPorts map[int]bool) bool {
+	return usedPorts[port]
 }
 
 // isPortAvailable checks if a TCP port is available
@@ -404,9 +454,17 @@ type k3dClusterInfo struct {
 
 // k3dNode represents a node in the k3d cluster
 type k3dNode struct {
-	Name    string    `json:"name"`
-	Role    string    `json:"role"`
-	Created time.Time `json:"created"`
+	Name           string                    `json:"name"`
+	Role           string                    `json:"role"`
+	Created        time.Time                 `json:"created"`
+	RuntimeLabels  map[string]string         `json:"runtimeLabels,omitempty"`
+	PortMappings   map[string][]PortMapping  `json:"portMappings,omitempty"`
+}
+
+// PortMapping represents a port mapping for k3d nodes
+type PortMapping struct {
+	HostIP   string `json:"HostIp"`
+	HostPort string `json:"HostPort"`
 }
 
 // Factory functions for backward compatibility

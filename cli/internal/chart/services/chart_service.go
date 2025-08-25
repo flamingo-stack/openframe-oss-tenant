@@ -339,3 +339,40 @@ func (w *InstallationWorkflow) performInstallationWithRetry(parentCtx context.Co
 		return w.performInstallation(config)
 	})
 }
+
+// InstallChartsWithPrerequisites installs charts after checking prerequisites
+// This is a wrapper function for bootstrap and other automated flows
+func InstallChartsWithPrerequisites(clusterName string, verbose bool) error {
+	return InstallChartsWithDefaults([]string{clusterName}, false, false, verbose)
+}
+
+// InstallChartsWithDefaults installs charts with default GitHub configuration
+// This is the common logic used by both chart install command and bootstrap
+func InstallChartsWithDefaults(args []string, force, dryRun, verbose bool) error {
+	return InstallChartsWithConfig(utilTypes.InstallationRequest{
+		Args:           args,
+		Force:          force,
+		DryRun:         dryRun,
+		Verbose:        verbose,
+		GitHubRepo:     "https://github.com/Flamingo-CX/openframe", // Default repository
+		GitHubBranch:   "main",                                     // Default branch
+		GitHubUsername: "",                                         // Will be prompted if needed
+		GitHubToken:    "",                                         // Will be prompted if needed
+		CertDir:        "",                                         // Auto-detected
+	})
+}
+
+// InstallChartsWithConfig installs charts with the given configuration
+// This is the common installation logic used by all flows
+func InstallChartsWithConfig(req utilTypes.InstallationRequest) error {
+	// Check prerequisites first
+	installer := prerequisites.NewInstaller()
+	if err := installer.CheckAndInstall(); err != nil {
+		return err
+	}
+	
+	// Create a chart service and perform the installation
+	chartService := NewChartService(req.DryRun, req.Verbose)
+	
+	return chartService.Install(req)
+}

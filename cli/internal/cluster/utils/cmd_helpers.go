@@ -3,12 +3,11 @@ package utils
 import (
 	"strings"
 	"sync"
-	
+
 	"github.com/flamingo/openframe/internal/cluster"
 	"github.com/flamingo/openframe/internal/cluster/models"
 	"github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/flamingo/openframe/tests/testutil"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +20,7 @@ var globalFlagsMutex sync.Mutex
 func InitGlobalFlags() {
 	globalFlagsMutex.Lock()
 	defer globalFlagsMutex.Unlock()
-	
+
 	if globalFlags == nil {
 		globalFlags = cluster.NewFlagContainer()
 	}
@@ -33,7 +32,7 @@ func GetCommandService() *cluster.ClusterService {
 	if globalFlags != nil && globalFlags.Executor != nil {
 		return cluster.NewClusterService(globalFlags.Executor)
 	}
-	
+
 	// Create real executor with current flags
 	dryRun := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.DryRun
 	verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
@@ -47,7 +46,7 @@ func GetSuppressedCommandService() *cluster.ClusterService {
 	if globalFlags != nil && globalFlags.Executor != nil {
 		return cluster.NewClusterServiceSuppressed(globalFlags.Executor)
 	}
-	
+
 	// Create real executor with current flags
 	dryRun := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.DryRun
 	verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
@@ -58,8 +57,7 @@ func GetSuppressedCommandService() *cluster.ClusterService {
 // WrapCommandWithCommonSetup wraps a command function with common CLI setup and error handling
 func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		// Show logo consistently
-		ui.ShowLogo()
+		// Logo is now shown in PersistentPreRunE, not here
 		
 		// Execute the command
 		err := runFunc(cmd, args)
@@ -70,21 +68,21 @@ func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) 
 				// Return the original error so test framework can detect failure
 				return alreadyHandledErr.OriginalError
 			}
-			
+
 			// Handle error with proper context - show user-friendly message
 			verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
 			handler := errors.NewErrorHandler(verbose)
 			handler.HandleError(err)
-			
+
 			// For validation errors and critical failures, return error for proper exit code
-			if errors.IsValidationError(err) || 
-			   strings.Contains(err.Error(), "not found") ||
-			   strings.Contains(err.Error(), "cluster create operation failed") ||
-			   strings.Contains(err.Error(), "cluster name") ||  // Cluster name validation errors
-			   strings.Contains(err.Error(), "node count must") { // Node count validation errors
+			if errors.IsValidationError(err) ||
+				strings.Contains(err.Error(), "not found") ||
+				strings.Contains(err.Error(), "cluster create operation failed") ||
+				strings.Contains(err.Error(), "cluster name") || // Cluster name validation errors
+				strings.Contains(err.Error(), "node count must") { // Node count validation errors
 				return err // Return error for proper exit code
 			}
-			
+
 			// For other errors, return nil to prevent Cobra double-printing
 			return nil
 		}

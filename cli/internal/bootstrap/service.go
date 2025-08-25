@@ -1,14 +1,13 @@
 package bootstrap
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
-	chartCmd "github.com/flamingo/openframe/cmd/chart"
+	chartServices "github.com/flamingo/openframe/internal/chart/services"
+	"github.com/flamingo/openframe/internal/cluster"
 	"github.com/flamingo/openframe/internal/cluster/models"
-	clusterUtils "github.com/flamingo/openframe/internal/cluster/utils"
-	"github.com/flamingo/openframe/internal/shared/ui"
+	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,12 @@ func (s *Service) Execute(cmd *cobra.Command, args []string) error {
 		clusterName = strings.TrimSpace(args[0])
 	}
 
-	return s.bootstrap(clusterName, verbose)
+	err = s.bootstrap(clusterName, verbose)
+	if err != nil {
+		// Use shared error handler for consistent error display (same as chart install)
+		return sharedErrors.HandleGlobalError(err, verbose)
+	}
+	return nil
 }
 
 // bootstrap executes cluster create followed by chart install
@@ -63,17 +67,8 @@ func (s *Service) bootstrap(clusterName string, verbose bool) error {
 
 // createClusterSuppressed creates a cluster with suppressed UI elements
 func (s *Service) createClusterSuppressed(clusterName string, verbose bool) error {
-	// Initialize cluster utils
-	clusterUtils.InitGlobalFlags()
-	
-	// Get suppressed service
-	service := clusterUtils.GetSuppressedCommandService()
-	
-	// Build configuration
-	config := s.buildClusterConfig(clusterName)
-	
-	// Execute cluster creation with suppressed UI
-	return service.CreateCluster(config)
+	// Use the wrapper function that includes prerequisite checks
+	return cluster.CreateClusterWithPrerequisites(clusterName, verbose)
 }
 
 // buildClusterConfig builds a cluster configuration from the cluster name
@@ -90,67 +85,8 @@ func (s *Service) buildClusterConfig(clusterName string) models.ClusterConfig {
 	}
 }
 
-// installChart installs charts using the chart install command
-func (s *Service) installChart(clusterName string, verbose bool) error {
-	// Create the chart install command
-	chartInstallCmd := chartCmd.GetChartCmd()
-	
-	// Find the install subcommand
-	var installCmd *cobra.Command
-	for _, cmd := range chartInstallCmd.Commands() {
-		if cmd.Use == "install [cluster-name]" {
-			installCmd = cmd
-			break
-		}
-	}
-	
-	if installCmd == nil {
-		return fmt.Errorf("chart install command not found")
-	}
-
-	// Set verbose flag if needed
-	if verbose {
-		chartInstallCmd.PersistentFlags().Set("verbose", "true")
-	}
-
-	// Always pass the cluster name
-	args := []string{clusterName}
-
-	// Execute the chart install command
-	return installCmd.RunE(installCmd, args)
-}
-
 // installChartSuppressed installs charts with suppressed UI elements
 func (s *Service) installChartSuppressed(clusterName string, verbose bool) error {
-	// Create the chart install command
-	chartInstallCmd := chartCmd.GetChartCmd()
-	
-	// Find the install subcommand
-	var installCmd *cobra.Command
-	for _, cmd := range chartInstallCmd.Commands() {
-		if cmd.Use == "install [cluster-name]" {
-			installCmd = cmd
-			break
-		}
-	}
-	
-	if installCmd == nil {
-		return fmt.Errorf("chart install command not found")
-	}
-
-	// Create context with logo suppression
-	ctx := ui.WithSuppressedLogo(context.Background())
-	installCmd.SetContext(ctx)
-	chartInstallCmd.SetContext(ctx)
-	
-	// Set verbose flag if needed
-	if verbose {
-		chartInstallCmd.PersistentFlags().Set("verbose", "true")
-	}
-
-	// Always pass the cluster name (it should never be empty at this point)
-	args := []string{clusterName}
-
-	// Execute the chart install command with suppressed context
-	return installCmd.RunE(installCmd, args)
+	// Use the common chart installation function with defaults
+	return chartServices.InstallChartsWithDefaults([]string{clusterName}, false, false, verbose)
 }

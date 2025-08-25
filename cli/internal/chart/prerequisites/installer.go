@@ -141,7 +141,6 @@ func (i *Installer) CheckAndInstall() error {
 	if len(installableMissing) > 0 {
 		// Show missing prerequisites with nice formatting
 		pterm.Warning.Printf("Missing Prerequisites: %s\n", strings.Join(installableMissing, ", "))
-		fmt.Println()
 
 		// Single confirmation using shared UI
 		confirmed, err := ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)

@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"github.com/flamingo/openframe/internal/bootstrap"
-	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +24,7 @@ Examples:
   openframe bootstrap my-cluster        # Bootstrap with custom cluster name`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ui.ShowLogo()
+			// Logo will be shown by cluster wrapper before prerequisites
 			return bootstrap.NewService().Execute(cmd, args)
 		},
 	}

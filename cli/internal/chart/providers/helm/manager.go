@@ -119,13 +119,14 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 // InstallArgoCDWithProgress installs ArgoCD using Helm with progress indicators
 func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config config.ChartInstallConfig) error {
 	// Show progress for each step
-	pterm.Info.Println("Installing ArgoCD...")
+	spinner, _ := pterm.DefaultSpinner.Start("Installing ArgoCD...")
 	
 	// Add ArgoCD repository silently
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
 		// Ignore if already exists
 		if !strings.Contains(err.Error(), "already exists") {
+			spinner.Stop()
 			return fmt.Errorf("failed to add ArgoCD repository: %w", err)
 		}
 	}
@@ -133,6 +134,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	// Update repositories silently
 	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
 	if err != nil {
+		spinner.Stop()
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
 	}
 	
@@ -174,10 +176,11 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	if err != nil {
 		// Check if the error is due to context cancellation (CTRL-C)
 		if ctx.Err() == context.Canceled {
+			spinner.Stop()
 			return ctx.Err() // Return context cancellation directly without extra messaging
 		}
 		
-		pterm.Error.Println("❌ ArgoCD installation failed")
+		spinner.Stop()
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
 			return fmt.Errorf("failed to install ArgoCD: %w\nHelm output: %s", err, result.Stderr)
@@ -185,7 +188,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		return fmt.Errorf("failed to install ArgoCD: %w", err)
 	}
 	
-	// Success message is handled by the calling service
+	spinner.Stop()
 	
 	return nil
 }

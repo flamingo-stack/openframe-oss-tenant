@@ -32,7 +32,8 @@ Examples:
   openframe cluster create
   openframe cluster delete`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Check prerequisites before running any cluster command
+			// Show logo first, then check prerequisites
+			ui.ShowLogoWithContext(cmd.Context())
 			return prerequisites.CheckPrerequisites()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -4,7 +4,6 @@ import (
 	"github.com/flamingo/openframe/internal/chart/services"
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
-	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -41,8 +40,7 @@ Examples:
 
 // runInstallCommand handles the install command execution
 func runInstallCommand(cmd *cobra.Command, args []string) error {
-	// Show logo with context awareness
-	ui.ShowLogoWithContext(cmd.Context())
+	// Logo is already shown in PersistentPreRunE
 	
 	// Extract flags directly
 	flags, err := extractInstallFlags(cmd)
@@ -53,9 +51,7 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 	// Get verbose flag (with fallback)
 	verbose := getVerboseFlag(cmd)
 
-	// Create service and execute
-	chartService := services.NewChartService(flags.DryRun, verbose)
-	
+	// Use common installation function
 	req := types.InstallationRequest{
 		Args:           args,
 		Force:          flags.Force,
@@ -68,7 +64,7 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 		CertDir:        flags.CertDir,
 	}
 
-	err = chartService.Install(req)
+	err = services.InstallChartsWithConfig(req)
 	if err != nil {
 		// Use shared error handler for consistent error display
 		return sharedErrors.HandleGlobalError(err, verbose)
