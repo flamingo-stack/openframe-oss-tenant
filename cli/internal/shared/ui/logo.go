@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -38,7 +39,12 @@ var (
 
 // ShowLogo displays the OpenFrame ASCII logo
 func ShowLogo() {
-	if TestMode {
+	ShowLogoConditional(false)
+}
+
+// ShowLogoConditional displays the OpenFrame ASCII logo with optional suppression
+func ShowLogoConditional(suppress bool) {
+	if TestMode || suppress {
 		return
 	}
 	
@@ -62,6 +68,30 @@ func ShowLogo() {
 	} else {
 		showPlainLogo()
 	}
+}
+
+// contextKey is used for context values
+type contextKey string
+
+const suppressLogoKey contextKey = "suppressLogo"
+
+// ShowLogoWithContext displays the logo unless suppressed via context
+func ShowLogoWithContext(ctx context.Context) {
+	if TestMode {
+		return
+	}
+	
+	// Check if logo should be suppressed via context
+	if suppress, ok := ctx.Value(suppressLogoKey).(bool); ok && suppress {
+		return
+	}
+	
+	ShowLogoConditional(false)
+}
+
+// WithSuppressedLogo returns a context with logo suppression enabled
+func WithSuppressedLogo(ctx context.Context) context.Context {
+	return context.WithValue(ctx, suppressLogoKey, true)
 }
 
 // isTerminalEnvironment checks if we're running in a proper terminal

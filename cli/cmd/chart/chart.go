@@ -1,6 +1,8 @@
 package chart
 
 import (
+	"fmt"
+	
 	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
@@ -23,10 +25,12 @@ Examples:
   openframe chart install
   openframe chart install my-cluster`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Add spacing before chart operations
+			fmt.Println()
 			return prerequisites.NewInstaller().CheckAndInstall()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ui.ShowLogo()
+			ui.ShowLogoWithContext(cmd.Context())
 			return cmd.Help()
 		},
 	}

@@ -17,8 +17,9 @@ import (
 // ClusterService provides cluster configuration and management operations
 // This handles cluster lifecycle operations and configuration management
 type ClusterService struct {
-	manager  *k3d.K3dManager
-	executor executor.CommandExecutor
+	manager      *k3d.K3dManager
+	executor     executor.CommandExecutor
+	suppressUI   bool // Suppress interactive UI elements for automation
 }
 
 // isTerminalEnvironment checks if we're running in a proper terminal
@@ -34,8 +35,19 @@ func isTerminalEnvironment() bool {
 func NewClusterService(exec executor.CommandExecutor) *ClusterService {
 	manager := k3d.CreateClusterManagerWithExecutor(exec)
 	return &ClusterService{
-		manager:  manager,
-		executor: exec,
+		manager:    manager,
+		executor:   exec,
+		suppressUI: false,
+	}
+}
+
+// NewClusterServiceSuppressed creates a cluster service with UI suppression
+func NewClusterServiceSuppressed(exec executor.CommandExecutor) *ClusterService {
+	manager := k3d.CreateClusterManagerWithExecutor(exec)
+	return &ClusterService{
+		manager:    manager,
+		executor:   exec,
+		suppressUI: true,
 	}
 }
 
@@ -78,12 +90,14 @@ func (s *ClusterService) CreateCluster(config models.ClusterConfig) error {
 			WithTitleTopCenter().
 			Println(boxContent)
 		
-		// Show what user can do
-		fmt.Println()
-		pterm.Info.Printf("What would you like to do?\n")
-		pterm.Printf("  • Check status: openframe cluster status %s\n", config.Name)
-		pterm.Printf("  • Delete first: openframe cluster delete %s\n", config.Name)
-		pterm.Printf("  • Use different name: openframe cluster create my-new-cluster\n")
+		// Show what user can do (suppress for automation)
+		if !s.suppressUI {
+			fmt.Println()
+			pterm.Info.Printf("What would you like to do?\n")
+			pterm.Printf("  • Check status: openframe cluster status %s\n", config.Name)
+			pterm.Printf("  • Delete first: openframe cluster delete %s\n", config.Name)
+			pterm.Printf("  • Use different name: openframe cluster create my-new-cluster\n")
+		}
 		
 		return nil // Exit gracefully without error
 	}

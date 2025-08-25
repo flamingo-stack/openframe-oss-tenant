@@ -48,8 +48,12 @@ func (p *PathResolver) GetManifestsDirectory() string {
 
 // GetHelmValuesFile returns the path to the helm values file
 func (p *PathResolver) GetHelmValuesFile() string {
-	manifestsPath := p.GetManifestsDirectory()
-	return filepath.Join(manifestsPath, "helm-values.yaml")
+	// Get the current working directory (root of CLI project)
+	if wd, err := os.Getwd(); err == nil {
+		return filepath.Join(wd, "helm-values.yaml")
+	}
+	// Fallback to relative path if working directory can't be determined
+	return "helm-values.yaml"
 }
 
 // GetArgocdValuesFile returns the path to the ArgoCD values file

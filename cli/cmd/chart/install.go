@@ -4,6 +4,7 @@ import (
 	"github.com/flamingo/openframe/internal/chart/services"
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +41,9 @@ Examples:
 
 // runInstallCommand handles the install command execution
 func runInstallCommand(cmd *cobra.Command, args []string) error {
+	// Show logo with context awareness
+	ui.ShowLogoWithContext(cmd.Context())
+	
 	// Extract flags directly
 	flags, err := extractInstallFlags(cmd)
 	if err != nil {

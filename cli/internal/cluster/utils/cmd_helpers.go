@@ -41,6 +41,20 @@ func GetCommandService() *cluster.ClusterService {
 	return cluster.NewClusterService(exec)
 }
 
+// GetSuppressedCommandService creates a command service with UI suppression for automation
+func GetSuppressedCommandService() *cluster.ClusterService {
+	// Use injected executor if available (for testing)
+	if globalFlags != nil && globalFlags.Executor != nil {
+		return cluster.NewClusterServiceSuppressed(globalFlags.Executor)
+	}
+	
+	// Create real executor with current flags
+	dryRun := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.DryRun
+	verbose := globalFlags != nil && globalFlags.Global != nil && globalFlags.Global.Verbose
+	exec := executor.NewRealCommandExecutor(dryRun, verbose)
+	return cluster.NewClusterServiceSuppressed(exec)
+}
+
 // WrapCommandWithCommonSetup wraps a command function with common CLI setup and error handling
 func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {

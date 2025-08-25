@@ -3,12 +3,10 @@ package configuration
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	"github.com/flamingo/openframe/internal/chart/ui/templates"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
-	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )
 
@@ -54,7 +52,7 @@ func (i *IngressConfigurator) Configure(config *types.ChartConfiguration) error 
 		ingressConfig.Type = types.IngressTypeNgrok
 		
 		// Configure Ngrok settings
-		ngrokConfig, err := i.configureNgrok()
+		ngrokConfig, err := i.configureNgrok(config.ExistingValues)
 		if err != nil {
 			return fmt.Errorf("ngrok configuration failed: %w", err)
 		}
@@ -73,22 +71,20 @@ func (i *IngressConfigurator) Configure(config *types.ChartConfiguration) error 
 }
 
 // configureNgrok handles the complete Ngrok setup flow
-func (i *IngressConfigurator) configureNgrok() (*types.NgrokConfig, error) {
-	pterm.Info.Println("Ngrok Configuration Setup")
-	fmt.Println()
+func (i *IngressConfigurator) configureNgrok(existingValues map[string]interface{}) (*types.NgrokConfig, error) {
+	// Show registration info
+	pterm.Warning.Printf("You need to register for an Ngrok account, please visit: %s\n", types.NgrokRegistrationURLs.SignUp)
 	
-	// Step 1: Registration flow with 5-minute timeout
-	if err := i.handleNgrokRegistration(); err != nil {
-		return nil, err
-	}
+	// Get current Ngrok settings
+	currentNgrok := i.getCurrentNgrokSettings(existingValues)
 	
-	// Step 2: Collect Ngrok credentials
-	ngrokConfig, err := i.collectNgrokCredentials()
+	// Collect Ngrok credentials
+	ngrokConfig, err := i.collectNgrokCredentials(currentNgrok)
 	if err != nil {
 		return nil, err
 	}
 	
-	// Step 3: Configure IP allowlist
+	// Configure IP allowlist
 	if err := i.configureNgrokIPAllowlist(ngrokConfig); err != nil {
 		return nil, err
 	}
@@ -96,103 +92,72 @@ func (i *IngressConfigurator) configureNgrok() (*types.NgrokConfig, error) {
 	return ngrokConfig, nil
 }
 
-// handleNgrokRegistration manages the 5-minute registration timeout flow
-func (i *IngressConfigurator) handleNgrokRegistration() error {
-	pterm.Info.Println("First, you need to register for an Ngrok account.")
-	fmt.Println()
+// getCurrentNgrokSettings extracts current Ngrok settings from existing values
+func (i *IngressConfigurator) getCurrentNgrokSettings(values map[string]interface{}) *types.NgrokConfig {
+	current := &types.NgrokConfig{}
 	
-	// Display registration URL
-	pterm.Info.Printf("Please visit: %s\n", types.NgrokRegistrationURLs.SignUp)
-	fmt.Println()
-	pterm.Warning.Println("IMPORTANT: You have 5 minutes to complete registration.")
-	pterm.Warning.Println("After registration, you'll need to:")
-	fmt.Println("  1. Create a domain")
-	fmt.Println("  2. Create an API key") 
-	fmt.Println("  3. Get your auth token")
-	fmt.Println()
-	
-	// Start 5-minute timer
-	startTime := time.Now()
-	timeout := 5 * time.Minute
-	
-	// Ask user to continue when ready
-	prompt := promptui.Select{
-		Label: "Have you completed Ngrok registration?",
-		Items: []string{
-			"Yes, I'm ready to continue",
-			"Cancel setup",
-		},
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . }}:",
-			Active:   "→ {{ . | cyan }}",
-			Inactive: "  {{ . }}",
-			Selected: "{{ . | green }}",
-		},
+	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
+		if selfHosted, ok := deployment["selfHosted"].(map[string]interface{}); ok {
+			if ingress, ok := selfHosted["ingress"].(map[string]interface{}); ok {
+				if ngrok, ok := ingress["ngrok"].(map[string]interface{}); ok {
+					// Extract URL/Domain
+					if url, ok := ngrok["url"].(string); ok {
+						current.Domain = url
+					}
+					
+					// Extract credentials
+					if credentials, ok := ngrok["credentials"].(map[string]interface{}); ok {
+						if apiKey, ok := credentials["apiKey"].(string); ok {
+							current.APIKey = apiKey
+						}
+						// Check both possible field names for auth token
+						if authToken, ok := credentials["authToken"].(string); ok {
+							current.AuthToken = authToken
+						} else if authToken, ok := credentials["authtoken"].(string); ok {
+							current.AuthToken = authToken
+						}
+					}
+				}
+			}
+		}
 	}
 	
-	// Check for timeout
-	if time.Since(startTime) > timeout {
-		pterm.Error.Println("⏰ Time is up! Registration timeout exceeded (5 minutes).")
-		pterm.Error.Println("Operation cancelled. Please try again.")
-		return fmt.Errorf("registration timeout exceeded")
-	}
-	
-	idx, _, err := prompt.Run()
-	if err != nil {
-		return fmt.Errorf("registration prompt failed: %w", err)
-	}
-	
-	if idx == 1 { // Cancel
-		return fmt.Errorf("ngrok setup cancelled by user")
-	}
-	
-	// Check timeout again after user response
-	if time.Since(startTime) > timeout {
-		pterm.Error.Println("⏰ Time is up! Registration timeout exceeded (5 minutes).")
-		pterm.Error.Println("Operation cancelled. Please try again.")
-		return fmt.Errorf("registration timeout exceeded")
-	}
-	
-	pterm.Success.Println("✓ Registration completed within time limit")
-	return nil
+	return current
 }
 
 // collectNgrokCredentials collects all required Ngrok credentials
-func (i *IngressConfigurator) collectNgrokCredentials() (*types.NgrokConfig, error) {
-	pterm.Info.Println("Now let's collect your Ngrok credentials.")
-	fmt.Println()
+func (i *IngressConfigurator) collectNgrokCredentials(current *types.NgrokConfig) (*types.NgrokConfig, error) {
 	
 	config := &types.NgrokConfig{}
 	
 	// Collect domain
-	pterm.Info.Printf("Create a domain at: %s\n", types.NgrokRegistrationURLs.DomainDocs)
-	domain, err := pterm.DefaultInteractiveTextInput.
-		WithMultiLine(false).
-		Show("Enter your Ngrok domain:")
+	domainInput := pterm.DefaultInteractiveTextInput.WithMultiLine(false)
+	if current.Domain != "" {
+		domainInput = domainInput.WithDefaultValue(current.Domain)
+	}
+	domain, err := domainInput.Show("Create a New Domain at https://dashboard.ngrok.com/domains")
 	if err != nil {
 		return nil, fmt.Errorf("domain input failed: %w", err)
 	}
 	config.Domain = strings.TrimSpace(domain)
 	
 	// Collect API key
-	fmt.Println()
-	pterm.Info.Printf("Create an API key at: %s\n", types.NgrokRegistrationURLs.APIKeyDocs)
-	apiKey, err := pterm.DefaultInteractiveTextInput.
-		WithMask("*").
-		WithMultiLine(false).
-		Show("Enter your Ngrok API key:")
+	apiKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*").WithMultiLine(false)
+	if current.APIKey != "" {
+		apiKeyInput = apiKeyInput.WithDefaultValue(current.APIKey)
+	}
+	apiKey, err := apiKeyInput.Show("Generate a New API key at https://dashboard.ngrok.com/api-keys")
 	if err != nil {
 		return nil, fmt.Errorf("API key input failed: %w", err)
 	}
 	config.APIKey = strings.TrimSpace(apiKey)
 	
 	// Collect auth token
-	fmt.Println()
-	pterm.Info.Printf("Get your auth token at: %s\n", types.NgrokRegistrationURLs.AuthTokenDocs)
-	authToken, err := pterm.DefaultInteractiveTextInput.
-		WithMask("*").
-		WithMultiLine(false).
-		Show("Enter your Ngrok auth token:")
+	authTokenInput := pterm.DefaultInteractiveTextInput.WithMask("*").WithMultiLine(false)
+	if current.AuthToken != "" {
+		authTokenInput = authTokenInput.WithDefaultValue(current.AuthToken)
+	}
+	authToken, err := authTokenInput.Show("Add Tunnel Authtoken at https://dashboard.ngrok.com/authtokens")
 	if err != nil {
 		return nil, fmt.Errorf("auth token input failed: %w", err)
 	}
@@ -203,15 +168,12 @@ func (i *IngressConfigurator) collectNgrokCredentials() (*types.NgrokConfig, err
 
 // configureNgrokIPAllowlist configures IP allowlist settings
 func (i *IngressConfigurator) configureNgrokIPAllowlist(config *types.NgrokConfig) error {
-	fmt.Println()
-	pterm.Info.Println("IP Allowlist Configuration")
-	
 	options := []string{
-		"Allow all IPs (no restrictions)",
-		"Set up allowed IPs list",
+		"Allow all IPs",
+		"Restrict IPs (recommended)",
 	}
 	
-	_, choice, err := sharedUI.SelectFromList("IP allowlist configuration", options)
+	_, choice, err := sharedUI.SelectFromList("Configure IP allowlist", options)
 	if err != nil {
 		return fmt.Errorf("IP allowlist choice failed: %w", err)
 	}
@@ -225,14 +187,13 @@ func (i *IngressConfigurator) configureNgrokIPAllowlist(config *types.NgrokConfi
 	// Configure specific IPs
 	config.UseAllowedIPs = true
 	
-	pterm.Info.Println("Enter allowed IP addresses (one per line, empty line to finish):")
-	fmt.Println()
+	pterm.Info.Println("Enter allowed CIDR IP addresses (one per line):")
 	
 	var allowedIPs []string
 	for i := 1; ; i++ {
 		ip, err := pterm.DefaultInteractiveTextInput.
 			WithMultiLine(false).
-			Show(fmt.Sprintf("IP #%d (or press Enter to finish):", i))
+			Show(fmt.Sprintf("IP in CIDR #%d", i))
 		if err != nil {
 			return fmt.Errorf("IP input failed: %w", err)
 		}
@@ -312,10 +273,12 @@ func (i *IngressConfigurator) applyNgrokConfig(values map[string]interface{}, ng
 
 	// Configure ngrok ingress
 	ngrokSection := map[string]interface{}{
-		"enabled":   true,
-		"authToken": ngrokConfig.AuthToken,
-		"apiKey":    ngrokConfig.APIKey,
-		"url":       "https://" + ngrokConfig.Domain,
+		"enabled": true,
+		"url":     ngrokConfig.Domain,
+		"credentials": map[string]interface{}{
+			"apiKey":    ngrokConfig.APIKey,
+			"authToken": ngrokConfig.AuthToken,
+		},
 	}
 
 	// Add IP allowlist configuration if specified

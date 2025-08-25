@@ -37,7 +37,7 @@ Examples:
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo when no subcommand is provided
-			ui.ShowLogo()
+			ui.ShowLogoWithContext(cmd.Context())
 			return cmd.Help()
 		},
 	}

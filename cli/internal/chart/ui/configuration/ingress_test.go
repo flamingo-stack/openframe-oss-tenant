@@ -2,7 +2,6 @@ package configuration
 
 import (
 	"testing"
-	"time"
 
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	"github.com/flamingo/openframe/internal/chart/ui/templates"
@@ -47,7 +46,7 @@ func TestIngressConfigurator_Configure_NgrokIngress(t *testing.T) {
 	ngrokConfig := &types.NgrokConfig{
 		AuthToken:     "auth_token_123",
 		APIKey:        "api_key_456",
-		Domain:        "example.ngrok.io",
+		Domain:        "example.ngrok-free.app",
 		UseAllowedIPs: false,
 	}
 	
@@ -61,9 +60,11 @@ func TestIngressConfigurator_Configure_NgrokIngress(t *testing.T) {
 	ingress := selfHosted["ingress"].(map[string]interface{})
 	ngrok := ingress["ngrok"].(map[string]interface{})
 	assert.True(t, ngrok["enabled"].(bool))
-	assert.Equal(t, "auth_token_123", ngrok["authToken"])
-	assert.Equal(t, "api_key_456", ngrok["apiKey"])
-	assert.Equal(t, "https://example.ngrok.io", ngrok["url"])
+	assert.Equal(t, "example.ngrok-free.app", ngrok["url"])
+	
+	credentials := ngrok["credentials"].(map[string]interface{})
+	assert.Equal(t, "auth_token_123", credentials["authToken"])
+	assert.Equal(t, "api_key_456", credentials["apiKey"])
 }
 
 func TestIngressConfigurator_Configure_NgrokWithAllowedIPs(t *testing.T) {
@@ -77,7 +78,7 @@ func TestIngressConfigurator_Configure_NgrokWithAllowedIPs(t *testing.T) {
 	ngrokConfig := &types.NgrokConfig{
 		AuthToken:     "auth_token_123",
 		APIKey:        "api_key_456",
-		Domain:        "example.ngrok.io",
+		Domain:        "example.ngrok-free.app",
 		UseAllowedIPs: true,
 		AllowedIPs:    []string{"192.168.1.1", "10.0.0.1", "172.16.0.1"},
 	}
@@ -92,9 +93,11 @@ func TestIngressConfigurator_Configure_NgrokWithAllowedIPs(t *testing.T) {
 	ingress := selfHosted["ingress"].(map[string]interface{})
 	ngrok := ingress["ngrok"].(map[string]interface{})
 	assert.True(t, ngrok["enabled"].(bool))
-	assert.Equal(t, "auth_token_123", ngrok["authToken"])
-	assert.Equal(t, "api_key_456", ngrok["apiKey"])
-	assert.Equal(t, "https://example.ngrok.io", ngrok["url"])
+	assert.Equal(t, "example.ngrok-free.app", ngrok["url"])
+	
+	credentials := ngrok["credentials"].(map[string]interface{})
+	assert.Equal(t, "auth_token_123", credentials["authToken"])
+	assert.Equal(t, "api_key_456", credentials["apiKey"])
 	
 	allowedIPs := ngrok["allowedIPs"].([]string)
 	assert.Len(t, allowedIPs, 3)
@@ -198,7 +201,7 @@ func TestIngressConfigurator_configureNgrok_CredentialsValidation(t *testing.T) 
 			config: &types.NgrokConfig{
 				AuthToken:     "auth_token_123",
 				APIKey:        "api_key_456",
-				Domain:        "example.ngrok.io",
+				Domain:        "example.ngrok-free.app",
 				UseAllowedIPs: false,
 			},
 			isValid: true,
@@ -208,7 +211,7 @@ func TestIngressConfigurator_configureNgrok_CredentialsValidation(t *testing.T) 
 			config: &types.NgrokConfig{
 				AuthToken:     "auth_token_123",
 				APIKey:        "api_key_456",
-				Domain:        "example.ngrok.io",
+				Domain:        "example.ngrok-free.app",
 				UseAllowedIPs: true,
 				AllowedIPs:    []string{"192.168.1.1", "10.0.0.1"},
 			},
@@ -219,7 +222,7 @@ func TestIngressConfigurator_configureNgrok_CredentialsValidation(t *testing.T) 
 			config: &types.NgrokConfig{
 				AuthToken:     "",
 				APIKey:        "api_key_456",
-				Domain:        "example.ngrok.io",
+				Domain:        "example.ngrok-free.app",
 				UseAllowedIPs: false,
 			},
 			isValid: false,
@@ -229,7 +232,7 @@ func TestIngressConfigurator_configureNgrok_CredentialsValidation(t *testing.T) 
 			config: &types.NgrokConfig{
 				AuthToken:     "auth_token_123",
 				APIKey:        "",
-				Domain:        "example.ngrok.io",
+				Domain:        "example.ngrok-free.app",
 				UseAllowedIPs: false,
 			},
 			isValid: false,
@@ -259,51 +262,6 @@ func TestIngressConfigurator_configureNgrok_CredentialsValidation(t *testing.T) 
 	}
 }
 
-func TestIngressConfigurator_handleNgrokRegistration_TimeoutLogic(t *testing.T) {
-	// Test timeout logic simulation
-	testCases := []struct {
-		name          string
-		timeElapsed   time.Duration
-		timeout       time.Duration
-		shouldTimeout bool
-	}{
-		{
-			name:          "within timeout",
-			timeElapsed:   2 * time.Minute,
-			timeout:       5 * time.Minute,
-			shouldTimeout: false,
-		},
-		{
-			name:          "exactly at timeout",
-			timeElapsed:   5 * time.Minute,
-			timeout:       5 * time.Minute,
-			shouldTimeout: true,
-		},
-		{
-			name:          "exceeded timeout",
-			timeElapsed:   6 * time.Minute,
-			timeout:       5 * time.Minute,
-			shouldTimeout: true,
-		},
-		{
-			name:          "just under timeout",
-			timeElapsed:   4*time.Minute + 59*time.Second,
-			timeout:       5 * time.Minute,
-			shouldTimeout: false,
-		},
-	}
-	
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			startTime := time.Now().Add(-tc.timeElapsed)
-			currentTime := time.Now()
-			elapsed := currentTime.Sub(startTime)
-			
-			timedOut := elapsed > tc.timeout
-			assert.Equal(t, tc.shouldTimeout, timedOut)
-		})
-	}
-}
 
 func TestIngressConfigurator_Configure_SwitchIngressTypes(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
@@ -326,7 +284,7 @@ func TestIngressConfigurator_Configure_SwitchIngressTypes(t *testing.T) {
 	ngrokConfig := &types.NgrokConfig{
 		AuthToken:     "auth_token_123",
 		APIKey:        "api_key_456",
-		Domain:        "example.ngrok.io",
+		Domain:        "example.ngrok-free.app",
 		UseAllowedIPs: false,
 	}
 	
@@ -406,7 +364,7 @@ func TestIngressConfigurator_Configure_IPAllowlistScenarios(t *testing.T) {
 			ngrokConfig := &types.NgrokConfig{
 				AuthToken:     "auth_token_123",
 				APIKey:        "api_key_456",
-				Domain:        "example.ngrok.io",
+				Domain:        "example.ngrok-free.app",
 				UseAllowedIPs: tc.useAllowedIPs,
 				AllowedIPs:    tc.allowedIPs,
 			}
