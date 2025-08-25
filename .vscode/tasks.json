@@ -121,6 +121,34 @@
                     "endsPattern": "ready in"
                 }
             }
+        },
+        {
+            "label": "kill-port-4000",
+            "type": "shell",
+            "command": "lsof -ti:4000 | xargs kill -9 2>/dev/null || true",
+            "windows": {
+                "command": "FOR /F \"tokens=5\" %P IN ('netstat -a -n -o ^| findstr :4000') DO @IF NOT \"%P\"==\"\" (taskkill /PID %P /F) ELSE (echo No process found on port 4000)"
+            },
+            "linux": {
+                "command": "fuser -k 4000/tcp 2>/dev/null || true"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "close": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "frontend-with-port-cleanup",
+            "dependsOn": ["kill-port-4000"],
+            "dependsOrder": "sequence",
+            "type": "shell",
+            "command": "echo 'Port 4000 cleaned, ready to start frontend'",
+            "presentation": {
+                "reveal": "silent",
+                "close": true
+            },
+            "problemMatcher": []
         }
     ]
 } 
