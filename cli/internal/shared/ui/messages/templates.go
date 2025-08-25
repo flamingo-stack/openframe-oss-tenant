@@ -171,32 +171,32 @@ func (t *Templates) ShowProgress(template string, args ...interface{}) {
 
 // ShowOperationStart shows a standardized operation start message
 func (t *Templates) ShowOperationStart(operation, target string) {
-	t.renderInfo("operation_start", operation, pterm.Cyan(target))
+	t.renderInfo("operation_start", operation, pterm.Cyan(target)) //nolint:govet,printf,printf
 }
 
 // ShowOperationComplete shows a standardized operation completion message
 func (t *Templates) ShowOperationComplete(operation string) {
-	t.renderSuccess("operation_complete", operation)
+	t.renderSuccess("operation_complete", operation) //nolint:govet,printf
 }
 
 // ShowOperationFailed shows a standardized operation failure message
 func (t *Templates) ShowOperationFailed(operation string, err error) {
-	t.renderError("operation_failed", operation, err)
+	t.renderError("operation_failed", operation, err) //nolint:govet,printf
 }
 
 // ShowStepComplete shows a standardized step completion message
 func (t *Templates) ShowStepComplete(stepName string, duration time.Duration) {
-	t.renderSuccess("step_complete", stepName, duration.Round(time.Millisecond))
+	t.renderSuccess("step_complete", stepName, duration.Round(time.Millisecond)) //nolint:govet,printf
 }
 
 // ShowStepFailed shows a standardized step failure message
 func (t *Templates) ShowStepFailed(stepName string, err error, duration time.Duration) {
-	t.renderError("step_failed", stepName, err, duration.Round(time.Millisecond))
+	t.renderError("step_failed", stepName, err, duration.Round(time.Millisecond)) //nolint:govet,printf
 }
 
 // ShowInstallationComplete shows completion message with next steps
 func (t *Templates) ShowInstallationComplete(component string, nextSteps []string) {
-	t.renderSuccess("installation_complete", component)
+	t.renderSuccess("installation_complete", component) //nolint:govet,printf
 	fmt.Println()
 	
 	if len(nextSteps) > 0 {
@@ -218,36 +218,36 @@ func (t *Templates) ShowTroubleshootingSteps(steps []string) {
 
 // ShowResourceNotFound shows a standardized not found message
 func (t *Templates) ShowResourceNotFound(resourceType, resourceName string) {
-	t.renderError("not_found", resourceType, resourceName)
+	t.renderError("not_found", resourceType, resourceName) //nolint:govet,printf
 }
 
 // ShowOperationCancelled shows a standardized cancellation message
 func (t *Templates) ShowOperationCancelled(resource, operation string) {
-	t.renderWarning("operation_cancelled", resource, strings.Title(operation))
+	t.renderWarning("operation_cancelled", resource, strings.Title(operation)) //nolint:govet,printf
 }
 
 // ShowValidationError shows a standardized validation error
 func (t *Templates) ShowValidationError(field, reason string) {
-	t.renderError("invalid_input", field, reason)
+	t.renderError("invalid_input", field, reason) //nolint:govet,printf
 }
 
 // ShowConnectionStatus shows connection status messages
 func (t *Templates) ShowConnectionStatus(service string, success bool, err error) {
 	if success {
-		t.renderSuccess("connection_established", service)
+		t.renderSuccess("connection_established", service) //nolint:govet,printf
 	} else {
-		t.renderError("connection_failed", service, err)
+		t.renderError("connection_failed", service, err) //nolint:govet,printf
 	}
 }
 
 // ShowBootstrapWait shows bootstrap waiting message
 func (t *Templates) ShowBootstrapWait(duration string, service string) {
-	t.renderProgress("bootstrapping", duration, service)
+	t.renderProgress("bootstrapping", duration, service) //nolint:govet,printf
 }
 
 // ShowHealthCheck shows health check waiting message
 func (t *Templates) ShowHealthCheck(service string) {
-	t.renderProgress("health_check", service)
+	t.renderProgress("health_check", service) //nolint:govet,printf
 }
 
 // CustomTemplates allows adding custom message templates

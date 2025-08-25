@@ -94,6 +94,7 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 			},
 			setupMock: func(m *MockExecutor) {
 				m.On("Execute", mock.Anything, "k3d", mock.Anything).Return(&execPkg.CommandResult{Stdout: "success"}, nil)
+				m.On("Execute", mock.Anything, "kubectl", mock.Anything).Return(&execPkg.CommandResult{Stdout: "Switched to context \"k3d-test-cluster\"."}, nil)
 			},
 		},
 		{
@@ -106,6 +107,7 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 			},
 			setupMock: func(m *MockExecutor) {
 				m.On("Execute", mock.Anything, "k3d", mock.Anything).Return(&execPkg.CommandResult{Stdout: "success"}, nil)
+				m.On("Execute", mock.Anything, "kubectl", mock.Anything).Return(&execPkg.CommandResult{Stdout: "Switched to context \"k3d-test-cluster\"."}, nil)
 			},
 		},
 		{
@@ -174,6 +176,7 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 func TestK3dManager_CreateCluster_VerboseMode(t *testing.T) {
 	executor := &MockExecutor{}
 	executor.On("Execute", mock.Anything, "k3d", mock.Anything).Return(&execPkg.CommandResult{Stdout: "success"}, nil)
+	executor.On("Execute", mock.Anything, "kubectl", mock.Anything).Return(&execPkg.CommandResult{Stdout: "Switched to context \"k3d-test-cluster\"."}, nil)
 
 	manager := NewK3dManager(executor, true) // verbose mode
 	config := models.ClusterConfig{
