@@ -121,15 +121,16 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	// Show progress for each step
 	pterm.Info.Println("Installing ArgoCD...")
 	
-	// Add ArgoCD repository with progress
-	pterm.Info.Println("  Adding ArgoCD repository...")
+	// Add ArgoCD repository silently
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
-		return fmt.Errorf("failed to add ArgoCD repository: %w", err)
+		// Ignore if already exists
+		if !strings.Contains(err.Error(), "already exists") {
+			return fmt.Errorf("failed to add ArgoCD repository: %w", err)
+		}
 	}
 	
-	// Update repositories with progress
-	pterm.Info.Println("  Updating Helm repositories...")
+	// Update repositories silently
 	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
 	if err != nil {
 		return fmt.Errorf("failed to update Helm repositories: %w", err)

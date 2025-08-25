@@ -5,24 +5,24 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
-	"github.com/flamingo/openframe/internal/shared/files"
-	"github.com/flamingo/openframe/internal/chart/types"
-	"github.com/flamingo/openframe/internal/chart/ui/templates"
 	"github.com/flamingo/openframe/internal/chart/prerequisites"
 	"github.com/flamingo/openframe/internal/chart/providers/git"
 	"github.com/flamingo/openframe/internal/chart/providers/helm"
+	chartUI "github.com/flamingo/openframe/internal/chart/ui"
+	"github.com/flamingo/openframe/internal/chart/ui/configuration"
+	"github.com/flamingo/openframe/internal/chart/ui/templates"
 	"github.com/flamingo/openframe/internal/chart/utils/config"
 	"github.com/flamingo/openframe/internal/chart/utils/errors"
+	"github.com/flamingo/openframe/internal/chart/utils/types"
 	utilTypes "github.com/flamingo/openframe/internal/chart/utils/types"
-	chartUI "github.com/flamingo/openframe/internal/chart/ui"
 	"github.com/flamingo/openframe/internal/cluster"
 	sharedConfig "github.com/flamingo/openframe/internal/shared/config"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo/openframe/internal/shared/files"
 	"github.com/pterm/pterm"
 )
 
@@ -63,13 +63,13 @@ func (cs *ChartService) Install(req utilTypes.InstallationRequest) error {
 	// Create installation workflow with direct dependencies
 	fileCleanup := files.NewFileCleanup()
 	fileCleanup.SetCleanupOnSuccessOnly(true) // Only clean temporary files after successful ArgoCD sync
-	
+
 	workflow := &InstallationWorkflow{
 		chartService:   cs,
 		clusterService: cs.clusterService,
 		fileCleanup:    fileCleanup,
 	}
-	
+
 	// Execute workflow
 	return workflow.Execute(req)
 }
@@ -86,33 +86,37 @@ func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error 
 	// Set up signal handling for graceful cleanup on interruption
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	
+	defer signal.Stop(sigChan) // Clean up signal handler
+
 	// Create a context that can be cancelled on signal
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	
+
+	// Track if we've been interrupted
+	interrupted := false
+
 	// Start signal handler goroutine
 	go func() {
 		<-sigChan
+		interrupted = true
+		// Signal received - clean cancellation handled by error handler
 		cancel()
+		// No delay - immediate cancellation
 	}()
-	
+
 	// Step 1: Run configuration wizard first (skip in dry-run mode for tests)
 	var chartConfig *types.ChartConfiguration
 	if req.DryRun {
-		// Create minimal configuration for dry-run mode using base values
-		pathResolver := w.chartService.configService.GetPathResolver()
-		manifestsDir := pathResolver.GetManifestsDirectory()
-		
+		// Create minimal configuration for dry-run mode using base values from current directory
 		modifier := templates.NewHelmValuesModifier()
-		baseValues, err := modifier.LoadOrCreateBaseValues(manifestsDir)
+		baseValues, err := modifier.LoadOrCreateBaseValues()
 		if err != nil {
 			return fmt.Errorf("failed to load base values for dry-run: %w", err)
 		}
-		
+
 		chartConfig = &types.ChartConfiguration{
-			BaseHelmValuesPath: filepath.Join(manifestsDir, "helm-values.yaml"),
-			TempHelmValuesPath: pathResolver.GetHelmValuesFile(), // Use existing path for dry-run
+			BaseHelmValuesPath: "helm-values.yaml",
+			TempHelmValuesPath: "helm-values-tmp.yaml", // Use tmp file in current directory for dry-run
 			ExistingValues:     baseValues,
 			ModifiedSections:   make([]string, 0),
 		}
@@ -164,7 +168,7 @@ func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error 
 
 	// Step 7: Execute installation with retry support
 	err = w.performInstallationWithRetry(ctx, config)
-	
+
 	// Step 8: Clean up generated files based on installation result
 	if err != nil {
 		// Installation failed - clean up temporary files immediately
@@ -173,33 +177,22 @@ func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error 
 		}
 		return err
 	}
-	
+
 	// Check if cancelled by signal (CTRL-C)
-	select {
-	case <-ctx.Done():
+	if interrupted || ctx.Err() != nil {
 		// User interrupted - clean up temporary files silently
 		w.fileCleanup.RestoreFiles(false) // Always clean up silently on interruption
 		return fmt.Errorf("installation cancelled by user")
-	default:
-		// Continue with normal flow
 	}
-	
-	// Step 9: Wait for ArgoCD applications to sync (if not dry-run)
-	if !req.DryRun {
-		if err := w.waitForArgoCDSync(ctx, config); err != nil {
-			// ArgoCD sync failed - clean up temporary files
-			if cleanupErr := w.fileCleanup.RestoreFiles(req.Verbose); cleanupErr != nil {
-				pterm.Warning.Printf("Failed to clean up files after ArgoCD sync error: %v\n", cleanupErr)
-			}
-			return err
-		}
-	}
-	
-	// Step 10: Installation and ArgoCD sync successful - clean up temporary files
+
+	// Step 9: ArgoCD sync is already handled by installer.InstallCharts
+	// The installer waits for all ArgoCD applications after installing app-of-apps
+
+	// Step 10: Installation successful - clean up temporary files
 	if cleanupErr := w.fileCleanup.RestoreFilesOnSuccess(req.Verbose); cleanupErr != nil {
 		pterm.Warning.Printf("Failed to clean up files after successful installation: %v\n", cleanupErr)
 	}
-	
+
 	return nil
 }
 
@@ -218,7 +211,7 @@ func (w *InstallationWorkflow) collectGitHubCredentials(req *utilTypes.Installat
 
 	// Create credentials prompter (same as in config builder)
 	credentialsPrompter := sharedConfig.NewCredentialsPrompter()
-	
+
 	// Check if credentials are required (same logic as in config builder)
 	if !credentialsPrompter.IsCredentialsRequired(req.GitHubUsername, req.GitHubToken) {
 		return nil // Both credentials already provided
@@ -255,21 +248,14 @@ func (w *InstallationWorkflow) regenerateCertificates() error {
 
 // runConfigurationWizard runs the configuration wizard to get user preferences
 func (w *InstallationWorkflow) runConfigurationWizard() (*types.ChartConfiguration, error) {
-	wizard := chartUI.NewConfigurationWizard()
-	
-	// Get manifests directory path
-	pathResolver := w.chartService.configService.GetPathResolver()
-	manifestsDir := pathResolver.GetManifestsDirectory()
-	
-	// Configure Helm values based on base file or create default
-	config, err := wizard.ConfigureHelmValues(manifestsDir)
+	wizard := configuration.NewConfigurationWizard()
+
+	// Configure Helm values from current directory
+	config, err := wizard.ConfigureHelmValues()
 	if err != nil {
 		return nil, fmt.Errorf("helm values configuration failed: %w", err)
 	}
 
-	// Show configuration summary
-	wizard.ShowConfigurationSummary(config)
-	
 	return config, nil
 }
 
@@ -279,23 +265,24 @@ func (w *InstallationWorkflow) waitForArgoCDSync(ctx context.Context, config con
 		// No ArgoCD apps to wait for
 		return nil
 	}
-	
-	pterm.Info.Println("🔄 Waiting for ArgoCD applications to sync...")
-	
+
+	// pterm.Info.Println("🔄 Waiting for ArgoCD applications to sync...")
+
 	// Create ArgoCD service to wait for applications
 	pathResolver := w.chartService.configService.GetPathResolver()
 	argoCDService := NewArgoCD(w.chartService.helmManager, pathResolver, w.chartService.executor)
-	
+
 	// Wait for applications to be synced with context for cancellation
 	if err := argoCDService.WaitForApplications(ctx, config); err != nil {
 		// Check if it was cancelled by user
 		if ctx.Err() == context.Canceled {
+			pterm.Info.Println("ArgoCD sync cancelled by user")
 			return fmt.Errorf("ArgoCD sync cancelled by user")
 		}
 		return fmt.Errorf("ArgoCD applications sync failed: %w", err)
 	}
-	
-	pterm.Success.Println("✅ All ArgoCD applications synced successfully")
+
+	// pterm.Success.Println("✅ All ArgoCD applications synced successfully")
 	return nil
 }
 
@@ -336,7 +323,7 @@ func (w *InstallationWorkflow) performInstallation(config config.ChartInstallCon
 func (w *InstallationWorkflow) performInstallationWithRetry(parentCtx context.Context, config config.ChartInstallConfig) error {
 	retryPolicy := sharedErrors.InstallationRetryPolicy()
 	retryExecutor := sharedErrors.NewRetryExecutor(retryPolicy)
-	retryExecutor.WithRetryCallback(sharedErrors.DefaultRetryCallback("Chart installation"))
+	// No retry callback - let the spinner handle progress indication
 
 	// Combine parent context (for CTRL-C) with timeout
 	ctx, cancel := context.WithTimeout(parentCtx, 30*time.Minute)

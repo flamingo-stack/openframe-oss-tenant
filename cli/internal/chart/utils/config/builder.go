@@ -44,21 +44,21 @@ func (b *Builder) getBranchFromHelmValuesPath(helmValuesPath string) string {
 		pathResolver := NewPathResolver()
 		helmValuesPath = pathResolver.GetHelmValuesFile()
 	}
-	
+
 	// Read the YAML file
 	data, err := os.ReadFile(helmValuesPath)
 	if err != nil {
 		// If we can't read the file, return empty string (will use default)
 		return ""
 	}
-	
+
 	var values HelmValues
 	err = yaml.Unmarshal(data, &values)
 	if err != nil {
 		// If we can't parse the YAML, return empty string (will use default)
 		return ""
 	}
-	
+
 	return values.Global.RepoBranch
 }
 

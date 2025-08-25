@@ -52,7 +52,7 @@ func (a *ArgoCD) WaitForApplications(ctx context.Context, config config.ChartIns
 	
 	err := a.argoCDManager.WaitForApplications(ctx, config)
 	if err != nil {
-		pterm.Error.Println("❌ ArgoCD applications failed to become ready")
+		// Error details handled by caller - no duplicate error message needed
 		return errors.NewRecoverableChartError("waiting", "ArgoCD applications", err, 60*time.Second).WithCluster(config.ClusterName)
 	}
 	

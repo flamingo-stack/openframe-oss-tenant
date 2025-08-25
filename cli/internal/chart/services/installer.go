@@ -8,7 +8,6 @@ import (
 	"github.com/flamingo/openframe/internal/chart/utils/errors"
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
-	"github.com/pterm/pterm"
 )
 
 // Installer orchestrates the chart installation process
@@ -41,9 +40,6 @@ func (i *Installer) InstallCharts(config config.ChartInstallConfig) error {
 			return errors.NewRecoverableChartError("waiting", "ArgoCD applications", err, 30*time.Second).WithCluster(config.ClusterName)
 		}
 	}
-
-	// Show simple completion message
-	pterm.Success.Println("✅ SUCCESS")
 
 	return nil
 }

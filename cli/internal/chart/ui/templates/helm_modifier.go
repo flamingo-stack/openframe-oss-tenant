@@ -3,9 +3,8 @@ package templates
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/flamingo/openframe/internal/chart/types"
+	"github.com/flamingo/openframe/internal/chart/utils/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,50 +38,32 @@ func (h *HelmValuesModifier) LoadExistingValues(helmValuesPath string) (map[stri
 	return values, nil
 }
 
-// LoadOrCreateBaseValues loads helm values from manifests or creates default if missing
-func (h *HelmValuesModifier) LoadOrCreateBaseValues(manifestsDir string) (map[string]interface{}, error) {
-	baseHelmValuesPath := filepath.Join(manifestsDir, "helm-values.yaml")
-	
-	// Try to load existing file
+// LoadOrCreateBaseValues loads helm values from current directory or creates default if missing
+func (h *HelmValuesModifier) LoadOrCreateBaseValues() (map[string]interface{}, error) {
+	baseHelmValuesPath := "helm-values.yaml"
+
+	// Try to load existing file from current directory
 	if _, err := os.Stat(baseHelmValuesPath); err == nil {
 		return h.LoadExistingValues(baseHelmValuesPath)
 	}
-	
-	// File doesn't exist, create default empty values
-	defaultValues := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoBranch": "main",
-			"repoURL":    "https://github.com/Flamingo-CX/openframe.git",
-			"autoSync":   true,
-		},
-		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
-				"enabled": true,
-			},
-		},
-		"registry": map[string]interface{}{
-			"docker": map[string]interface{}{
-				"username": "default",
-				"password": "****",
-				"email":    "default@example.com",
-			},
-		},
-	}
-	
-	return defaultValues, nil
+
+	// File doesn't exist, create empty values (only configured sections will be added)
+	emptyValues := make(map[string]interface{})
+
+	return emptyValues, nil
 }
 
-// CreateTemporaryValuesFile creates a temporary helm values file for installation
-func (h *HelmValuesModifier) CreateTemporaryValuesFile(values map[string]interface{}, manifestsDir string) (string, error) {
-	// Create temporary file in manifests directory
-	tempFile := filepath.Join(manifestsDir, "tmp-helm-values.yaml")
-	
+// CreateTemporaryValuesFile creates a temporary helm values file in current directory
+func (h *HelmValuesModifier) CreateTemporaryValuesFile(values map[string]interface{}) (string, error) {
+	// Create temporary file in current directory
+	tempFile := "helm-values-tmp.yaml"
+
 	// Write values to temporary file
 	err := h.WriteValues(values, tempFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to create temporary values file: %w", err)
 	}
-	
+
 	return tempFile, nil
 }
 
@@ -94,7 +75,7 @@ func (h *HelmValuesModifier) ApplyConfiguration(values map[string]interface{}, c
 		if global, ok := values["global"].(map[string]interface{}); ok {
 			global["repoBranch"] = *config.Branch
 		} else {
-			// Create global section if it doesn't exist
+			// Create global section if it doesn't exist with only the modified branch
 			values["global"] = map[string]interface{}{
 				"repoBranch": *config.Branch,
 			}
@@ -121,18 +102,19 @@ func (h *HelmValuesModifier) ApplyConfiguration(values map[string]interface{}, c
 			registry = make(map[string]interface{})
 			values["registry"] = registry
 		}
-		
+
 		// Update docker registry section
 		docker, ok := registry["docker"].(map[string]interface{})
 		if !ok {
 			docker = make(map[string]interface{})
 			registry["docker"] = docker
 		}
-		
+
 		docker["username"] = config.DockerRegistry.Username
 		docker["password"] = config.DockerRegistry.Password
 		docker["email"] = config.DockerRegistry.Email
 	}
+
 
 	return nil
 }
@@ -170,7 +152,7 @@ func (h *HelmValuesModifier) GetCurrentDockerSettings(values map[string]interfac
 		Password: "****",
 		Email:    "default@example.com",
 	}
-	
+
 	if registry, ok := values["registry"].(map[string]interface{}); ok {
 		if docker, ok := registry["docker"].(map[string]interface{}); ok {
 			if username, ok := docker["username"].(string); ok {
@@ -184,6 +166,31 @@ func (h *HelmValuesModifier) GetCurrentDockerSettings(values map[string]interfac
 			}
 		}
 	}
-	
+
 	return config
+}
+
+// GetCurrentIngressSettings extracts current ingress settings from Helm values
+func (h *HelmValuesModifier) GetCurrentIngressSettings(values map[string]interface{}) string {
+	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
+		if selfHosted, ok := deployment["selfHosted"].(map[string]interface{}); ok {
+			if ingress, ok := selfHosted["ingress"].(map[string]interface{}); ok {
+				// Check if ngrok is enabled
+				if ngrok, ok := ingress["ngrok"].(map[string]interface{}); ok {
+					if enabled, ok := ngrok["enabled"].(bool); ok && enabled {
+						return "ngrok"
+					}
+				}
+
+				// Check if localhost is enabled
+				if localhost, ok := ingress["localhost"].(map[string]interface{}); ok {
+					if enabled, ok := localhost["enabled"].(bool); ok && enabled {
+						return "localhost"
+					}
+				}
+			}
+		}
+	}
+
+	return "localhost" // default fallback
 }
