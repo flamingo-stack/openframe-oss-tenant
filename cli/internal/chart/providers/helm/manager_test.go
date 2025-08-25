@@ -530,8 +530,8 @@ func TestHelmManager_InstallAppOfApps_GitURL_Format(t *testing.T) {
 	assert.Contains(t, helmUpgradeCommand, expectedGitURL, "Git URL should be properly formatted")
 
 	// Verify certificate file paths
-	assert.Contains(t, helmUpgradeCommand, "--set-file deployment.ingress.localhost.tls.cert=/path/to/certs/localhost.pem")
-	assert.Contains(t, helmUpgradeCommand, "--set-file deployment.ingress.localhost.tls.key=/path/to/certs/localhost-key.pem")
+	assert.Contains(t, helmUpgradeCommand, "--set-file deployment.selfHosted.ingress.localhost.tls.cert=/path/to/certs/localhost.pem")
+	assert.Contains(t, helmUpgradeCommand, "--set-file deployment.selfHosted.ingress.localhost.tls.key=/path/to/certs/localhost-key.pem")
 
 	// Verify other expected flags
 	assert.Contains(t, helmUpgradeCommand, "--namespace argocd")

@@ -105,7 +105,7 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 		if ctx.Err() == context.Canceled {
 			return ctx.Err() // Return context cancellation directly without extra messaging
 		}
-		
+
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
 			return fmt.Errorf("failed to install ArgoCD: %w\nHelm output: %s", err, result.Stderr)
@@ -120,7 +120,7 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config config.ChartInstallConfig) error {
 	// Show progress for each step
 	spinner, _ := pterm.DefaultSpinner.Start("Installing ArgoCD...")
-	
+
 	// Add ArgoCD repository silently
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
@@ -130,25 +130,25 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 			return fmt.Errorf("failed to add ArgoCD repository: %w", err)
 		}
 	}
-	
+
 	// Update repositories silently
 	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
 	if err != nil {
 		spinner.Stop()
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
 	}
-	
+
 	// Get the manifests path
 	manifestsPath := h.getManifestsPath()
 	valuesFile := filepath.Join(manifestsPath, "argocd-values.yaml")
-	
+
 	// Installation details are now silent - just show in verbose mode
 	if config.Verbose {
 		pterm.Info.Printf("   Version: 8.1.4\n")
 		pterm.Info.Printf("   Namespace: argocd\n")
 		pterm.Info.Printf("   Values file: %s\n", valuesFile)
 	}
-	
+
 	// Install ArgoCD with upgrade --install
 	args := []string{
 		"upgrade", "--install", "argo-cd", "argo/argo-cd",
@@ -159,19 +159,19 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		"--timeout", "5m",
 		"-f", valuesFile,
 	}
-	
+
 	if config.DryRun {
 		args = append(args, "--dry-run")
 		if config.Verbose {
 			pterm.Info.Println("🔍 Running in dry-run mode...")
 		}
 	}
-	
+
 	// Show command being executed
 	if config.Verbose {
 		pterm.Debug.Printf("Executing: helm %s\n", strings.Join(args, " "))
 	}
-	
+
 	result, err := h.executor.Execute(ctx, "helm", args...)
 	if err != nil {
 		// Check if the error is due to context cancellation (CTRL-C)
@@ -179,7 +179,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 			spinner.Stop()
 			return ctx.Err() // Return context cancellation directly without extra messaging
 		}
-		
+
 		spinner.Stop()
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
@@ -187,9 +187,9 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		}
 		return fmt.Errorf("failed to install ArgoCD: %w", err)
 	}
-	
+
 	spinner.Stop()
-	
+
 	return nil
 }
 
@@ -212,8 +212,8 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		"--wait",
 		"--timeout", appConfig.Timeout,
 		"-f", appConfig.ValuesFile,
-		"--set-file", fmt.Sprintf("deployment.ingress.localhost.tls.cert=%s", certFile),
-		"--set-file", fmt.Sprintf("deployment.ingress.localhost.tls.key=%s", keyFile),
+		"--set-file", fmt.Sprintf("deployment.selfHosted.ingress.localhost.tls.cert=%s", certFile),
+		"--set-file", fmt.Sprintf("deployment.selfHosted.ingress.localhost.tls.key=%s", keyFile),
 	}
 
 	if config.DryRun {
@@ -228,7 +228,7 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		if ctx.Err() == context.Canceled {
 			return ctx.Err() // Return context cancellation directly without extra messaging
 		}
-		
+
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
 			return fmt.Errorf("failed to install app-of-apps: %w\nHelm output: %s", err, result.Stderr)
