@@ -114,6 +114,8 @@ public class GatewaySecurityConfig {
         configuration.setAllowCredentials(true);
         configuration.addAllowedOriginPattern("http://localhost:*"); // Allow any localhost port for development
         configuration.addAllowedOriginPattern("https://localhost:*"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("https://localhost");
+        configuration.addAllowedOriginPattern("http://localhost");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         configuration.setMaxAge(3600L);
