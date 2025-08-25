@@ -1,0 +1,74 @@
+suite: app-helpers credential transfer tests
+templates:
+  - templates/application.yaml
+tests:
+  - it: should transfer custom ngrok credentials via app-helper
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.credentials.apiKey: "custom-api-key"
+      deployment.selfHosted.ingress.ngrok.credentials.authtoken: "custom-auth-token"
+      deployment.saas.enabled: false
+    asserts:
+      # Verify deployment values are propagated
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "deployment:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      # Verify app-helper processed credentials
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "ngrok-operator:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "credentials:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "apiKey: custom-api-key"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      - matchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "authtoken: custom-auth-token"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      # Verify ngrok-operator is not skipped
+      - equal:
+          path: metadata.name
+          value: "ngrok-operator"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+
+  - it: should not add ngrok credentials when they are empty by default
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      # Should NOT add ngrok-operator config when credentials are empty
+      - notMatchRegex:
+          path: spec.sources[0].helm.values
+          pattern: "ngrok-operator:"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"
+      # Verify ngrok-operator is not skipped
+      - equal:
+          path: metadata.name
+          value: "ngrok-operator"
+        documentSelector:
+          path: metadata.name
+          value: "ngrok-operator"

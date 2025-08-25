@@ -82,10 +82,9 @@ export interface IntegratedTool {
     allowedEndpoints?: string[];
 }
 
-export interface ToolFilter {
+export interface ToolFilterInput {
     enabled?: boolean;
     type?: string;
-    search?: string;
     category?: string;
     platformCategory?: string;
 }

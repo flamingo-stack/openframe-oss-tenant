@@ -3,10 +3,6 @@ registerJob:
 
 
 kube-prometheus-stack:
-  global:
-    imagePullSecrets:
-      - name: docker-pat-secret
-
   grafana:
     enabled: false
 

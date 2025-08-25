@@ -3,10 +3,6 @@ registerJob:
 
 
 cert-manager:
-  global:
-    imagePullSecrets:
-      - name: docker-pat-secret
-      
   crds:
     enabled: true
 

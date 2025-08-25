@@ -1,0 +1,164 @@
+suite: argocd application configuration tests
+templates:
+  - templates/argocd-apps.yaml
+tests:
+  # ========================================
+  # APPLICATION METADATA TESTS
+  # ========================================
+
+  - it: should have correct ArgoCD application metadata
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: apiVersion
+          value: argoproj.io/v1alpha1
+      - equal:
+          path: kind
+          value: Application
+      - equal:
+          path: metadata.name
+          value: argocd-apps
+      - contains:
+          path: metadata.finalizers
+          content: resources-finalizer.argocd.argoproj.io
+
+  # ========================================
+  # APPLICATION SPEC TESTS
+  # ========================================
+
+  - it: should have correct project configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.project
+          value: default
+
+  - it: should have correct source configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.source.repoURL
+          value: https://github.com/Flamingo-CX/openframe.git
+      - equal:
+          path: spec.source.targetRevision
+          value: main
+      - equal:
+          path: spec.source.path
+          value: "manifests/apps"
+      - exists:
+          path: spec.source.helm.values
+
+  - it: should have correct destination configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.destination.name
+          value: in-cluster
+      - equal:
+          path: spec.destination.namespace
+          value: argocd
+
+  # ========================================
+  # SYNC POLICY TESTS
+  # ========================================
+
+  - it: should have correct default sync policy
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.syncPolicy.automated.prune
+          value: true
+      - equal:
+          path: spec.syncPolicy.automated.selfHeal
+          value: true
+      - equal:
+          path: spec.syncPolicy.retry.limit
+          value: -1
+
+  - it: should have sync policy structure
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - exists:
+          path: spec.syncPolicy.automated
+      - exists:
+          path: spec.syncPolicy.retry
+
+  # ========================================
+  # HELM VALUES STRUCTURE TESTS
+  # ========================================
+
+  - it: should include required helm values structure
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "deployment:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "global:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "registry:"
+      - matchRegex:
+          path: spec.source.helm.values
+          pattern: "registerJob:"
+
+  # ========================================
+  # DOCUMENT COUNT TESTS
+  # ========================================
+
+  - it: should generate exactly one ArgoCD application
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  # ========================================
+  # EDGE CASES
+  # ========================================
+
+  - it: should handle empty apps configuration
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+      apps: {}
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: argocd-apps

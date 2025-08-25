@@ -1,7 +1,10 @@
 package com.openframe.api.service;
 
-import com.openframe.api.dto.*;
-import com.openframe.api.service.social.SocialAuthStrategy;
+import com.openframe.api.config.SSOProperties;
+import com.openframe.api.dto.SSOConfigRequest;
+import com.openframe.api.dto.SSOConfigResponse;
+import com.openframe.api.dto.SSOConfigStatusResponse;
+import com.openframe.api.dto.SSOProviderInfo;
 import com.openframe.core.model.SSOConfig;
 import com.openframe.core.service.EncryptionService;
 import com.openframe.data.repository.mongo.SSOConfigRepository;
@@ -22,8 +25,7 @@ import java.util.stream.Collectors;
 public class SSOConfigService {
     private final SSOConfigRepository ssoConfigRepository;
     private final EncryptionService encryptionService;
-    private final List<SocialAuthStrategy> authStrategies;
-
+    private final SSOProperties ssoProperties;
 
     /**
      * Get list of enabled SSO providers - used by login components
@@ -40,21 +42,8 @@ public class SSOConfigService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get list of available SSO providers from strategies - used by admin dropdowns
-     */
     public List<SSOProviderInfo> getAvailableProviders() {
-        log.debug("Getting available SSO providers from strategies");
-
-        return authStrategies.stream()
-                .map(strategy -> {
-                    SSOProvider provider = strategy.getProvider();
-                    return SSOProviderInfo.builder()
-                            .provider(provider.getProvider())
-                            .displayName(provider.getDisplayName())
-                    .build();
-                })
-                .collect(Collectors.toList());
+        return ssoProperties.getProviders();
     }
 
     /**

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openframe-authorization-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openframe-authorization-server
+  template:
+    metadata:
+      labels:
+        app: openframe-authorization-server
+    spec:
+      {{- if ne .Values.registry.ghcr.password "" }}
+      imagePullSecrets:
+        - name: github-pat-secret
+      {{- end }}
+
+      initContainers:
+        - name: wait-for-config-server
+          image: curlimages/curl:latest
+          command: ["sh", "-c", "until curl -f http://openframe-config:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+          
+      containers:
+        - name: openframe-authorization-server
+          image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 9005
+              name: http
+            - containerPort: 9006
+              name: management
+          envFrom:
+            - secretRef:
+                name: openframe-management
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "k8s"
+            - name: SPRING_CONFIG_IMPORT
+              value: "optional:configserver:http://openframe-config:8888"
+          livenessProbe:
+            httpGet:
+              path: /management/v1/health
+              port: management
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /management/v1/health
+              port: management
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"

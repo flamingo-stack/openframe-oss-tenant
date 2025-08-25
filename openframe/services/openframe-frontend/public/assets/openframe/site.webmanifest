@@ -1,0 +1,17 @@
+{
+  "name": "OpenFrame",
+  "short_name": "OpenFrame", 
+  "description": "Open-source application framework and development platform",
+  "icons": [
+    {
+      "src": "/assets/openframe/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#5efaf0",
+  "background_color": "#0A0A0A",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
+}

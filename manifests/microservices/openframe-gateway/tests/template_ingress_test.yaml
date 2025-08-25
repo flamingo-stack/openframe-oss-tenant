@@ -1,0 +1,95 @@
+suite: test ingress template
+templates:
+  - templates/ingress.yaml
+tests:
+  # Localhost ingress rendering
+  - it: should render localhost ingress for selfHosted
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: metadata.name
+          value: openframe-gateway
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+      - equal:
+          path: spec.rules[0].host
+          value: localhost
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.name
+          value: http
+
+  - it: should render localhost ingress for saas
+    set:
+      deployment.selfHosted.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+      - equal:
+          path: spec.rules[0].host
+          value: localhost
+
+  # Ngrok ingress rendering
+  - it: should render ngrok ingress for selfHosted
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.saas.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.ingressClassName
+          value: ngrok
+      - equal:
+          path: spec.rules[0].host
+          value: "test.ngrok.io"
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8100
+
+  # TLS configuration
+  - it: should include TLS section for localhost
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.saas.enabled: false
+    asserts:
+      - equal:
+          path: spec.tls[0].hosts[0]
+          value: localhost
+
+  - it: should not include TLS for ngrok
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.saas.enabled: false
+    asserts:
+      - isNull:
+          path: spec.tls
+
+  # No ingress scenarios
+  - it: should not render when deployment enabled but no ingress
+    set:
+      deployment.selfHosted.enabled: true
+      deployment.selfHosted.ingress.localhost.enabled: false
+      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.saas.enabled: false
+    asserts:
+      - failedTemplate: {}

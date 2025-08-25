@@ -1,37 +1,21 @@
-import type { SSOConfigRequest, SSOConfigResponse, SSOConfigStatus, SSOProviderInfo } from '@/types/sso';
+import type { SSOConfigRequest, SSOConfigResponse, SSOProviderInfo } from '@/types/sso';
 import { restClient } from '../apollo/apolloClient';
 
 export class SSOService {
   private static readonly BASE_URL = '/sso';
+  // Note: login button enablement and auth URLs are handled via Gateway now
 
-  /**
-   * Get enabled SSO providers for login buttons
-   * Returns list of enabled providers
-   */
-  public async getEnabledProviders(): Promise<SSOConfigStatus[]> {
-    return await restClient.get<SSOConfigStatus[]>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/providers`);
-  }
+  // ====== MANAGEMENT OPERATIONS (remain in openframe-api for admins) ======
 
   /**
    * Get available SSO providers for admin dropdowns
-   * Returns all providers that have strategy implementations
    */
   public async getAvailableProviders(): Promise<SSOProviderInfo[]> {
     return await restClient.get<SSOProviderInfo[]>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/providers/available`);
   }
 
   /**
-   * Get SSO configuration status for OAuth login buttons
-   * Returns minimal info about whether SSO is enabled
-   * @deprecated Use getEnabledProviders() instead
-   */
-  public async getConfigStatus(provider: string): Promise<SSOConfigStatus> {
-    return await restClient.get<SSOConfigStatus>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}/status`);
-  }
-
-  /**
    * Get full SSO configuration for admin forms
-   * Returns all configuration data except sensitive fields
    */
   public async getConfig(provider: string): Promise<SSOConfigResponse> {
     return await restClient.get<SSOConfigResponse>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}`);
@@ -41,7 +25,6 @@ export class SSOService {
    * Create or update SSO configuration
    */
   public async saveConfig(provider: string, config: SSOConfigRequest): Promise<SSOConfigResponse> {
-    // Determine if this is create or update based on whether config exists
     const currentConfig = await this.getConfig(provider);
     const isUpdate = currentConfig.id !== null;
 
@@ -64,72 +47,6 @@ export class SSOService {
    */
   public async deleteConfig(provider: string): Promise<void> {
     await restClient.delete<void>(`${import.meta.env.VITE_API_URL}${SSOService.BASE_URL}/${provider}`, {});
-  }
-
-  /**
-   * Generate redirect URI for OAuth provider
-   */
-  public generateRedirectUri(provider: string): string {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/oauth2/callback/${provider}`;
-  }
-
-  /**
-   * Generate Google OAuth authorization URL
-   */
-  public async generateGoogleAuthUrl(codeVerifier: string, state: string): Promise<string | null> {
-    try {
-      const config = await this.getConfigStatus('google');
-      
-      if (!config.enabled || !config.clientId) {
-        return null;
-      }
-
-      const redirectUri = this.generateRedirectUri('google');
-      const scope = 'openid email profile'; // default scope for Google OAuth
-      
-      const codeChallenge = await this.generateCodeChallenge(codeVerifier);
-      
-      const params = new URLSearchParams({
-        client_id: config.clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: scope,
-        state: state,
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        access_type: 'offline',
-        prompt: 'consent'
-      });
-
-      return `https://accounts.google.com/o/oauth2/auth?${params.toString()}`;
-    } catch (error) {
-      console.error('Error generating Google auth URL:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Generate code challenge for PKCE
-   */
-  private async generateCodeChallenge(codeVerifier: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(codeVerifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    const base64String = btoa(String.fromCharCode(...new Uint8Array(digest)));
-    return base64String.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  }
-
-  /**
-   * Generate code verifier for PKCE
-   */
-  public generateCodeVerifier(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
   }
 }
 

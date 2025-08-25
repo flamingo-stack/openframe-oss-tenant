@@ -1,8 +1,8 @@
 package com.openframe.gateway.security;
 
 import com.openframe.gateway.security.filter.CookieToHeaderFilter;
-import com.openframe.security.jwt.JwtConfig;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -11,15 +11,20 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.ReactiveAuthenticationManagerResolver;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
 import static com.openframe.gateway.security.SecurityConstants.*;
@@ -30,9 +35,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @EnableWebFluxSecurity
 @EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
 @RequiredArgsConstructor
+@Slf4j
 public class GatewaySecurityConfig {
 
-    private final ManagementServerProperties managementProperties;
     private final CookieToHeaderFilter cookieToHeaderFilter;
 
     @Bean
@@ -42,7 +47,7 @@ public class GatewaySecurityConfig {
         rolesConverter.setAuthorityPrefix("ROLE_");
 
         JwtGrantedAuthoritiesConverter scopesConverter = new JwtGrantedAuthoritiesConverter();
-        scopesConverter.setAuthoritiesClaimName("scopes");
+        scopesConverter.setAuthoritiesClaimName("scope");
         scopesConverter.setAuthorityPrefix("SCOPE_");
 
         ReactiveJwtAuthenticationConverter jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
@@ -64,18 +69,20 @@ public class GatewaySecurityConfig {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(
             ServerHttpSecurity http,
-            @Value("${management.endpoints.web.base-path}") String managementBasePath
+            @Value("${management.endpoints.web.base-path}") String managementBasePath,
+            ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver
     ) {
         String managementContextPath = isNotBlank(managementBasePath)
                 ? managementBasePath: "/actuator";
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .addFilterBefore(cookieToHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(reactiveJwtAuthenticationConverter()))
+                        .authenticationManagerResolver(issuerResolver)
                 )
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS,    "/**").permitAll()
@@ -85,18 +92,14 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/metrics/**",
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
-                                DASHBOARD_PREFIX + "/oauth/token",
-                                DASHBOARD_PREFIX + "/oauth/register",
-                                DASHBOARD_PREFIX + "/oauth2/**",
                                 DASHBOARD_PREFIX + "/sso/providers",
-                                 managementContextPath + "/**",
-                                DASHBOARD_PREFIX + "/.well-known/openid-configuration"
+                                managementContextPath + "/**"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
 //                        // Agent tools
                                 .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
+                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
 //                        // Api tools
                                 .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
@@ -106,8 +109,24 @@ public class GatewaySecurityConfig {
     }
 
     @Bean
-    public ReactiveJwtDecoder reactiveJwtDecoder(JwtConfig jwtUtils) throws Exception {
-        return NimbusReactiveJwtDecoder.withPublicKey(jwtUtils.loadPublicKey()).build();
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowCredentials(true);
+        configuration.addAllowedOriginPattern("http://localhost:*"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("https://localhost:*"); // Allow any localhost port for development
+        configuration.addAllowedHeader("*");
+        configuration.addAllowedMethod("*");
+        configuration.setMaxAge(3600L);
+        configuration.addExposedHeader("Authorization");
+        configuration.addExposedHeader("Content-Type");
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }

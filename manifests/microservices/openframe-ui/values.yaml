@@ -1,22 +1,35 @@
 # Deployment configuration
 deployment:
-  # Ingress configuration - enable only ONE of the following
-  ingress:
-    localhost:
-      enabled: true
-      # TLS configuration (optional)
-      tls:
-        # Certificate and key content (use --set-file)
-        # cert: |
-        #   -----BEGIN CERTIFICATE-----
-        #   ...
-        # key: |
-        #   -----BEGIN PRIVATE KEY-----
-        #   ...
-    ngrok:
-      enabled: false
-      # URL is required when ngrok is enabled
-      url: your-ngrok-domain.ngrok.io
+  selfHosted:
+    enabled: true    
+    # Ingress configuration - enable only ONE of the following
+    ingress:
+      localhost:
+        enabled: true
+        # TLS configuration (optional)
+        tls:
+          # Certificate and key content (use --set-file)
+          # cert: |
+          #   -----BEGIN CERTIFICATE-----
+          #   ...
+          # key: |
+          #   -----BEGIN PRIVATE KEY-----
+          #   ...
+      ngrok:
+        enabled: false
+        # URL is required when ngrok is enabled
+        url: your-ngrok-domain.ngrok.io
+        credentials:
+          apiKey: ""
+          authtoken: ""
+  saas:
+    enabled: false
+    # Ingress configuration for SaaS deployment
+    ingress:
+      localhost:
+        enabled: true
+      gcp:
+        enabled: false
   
 registerJob:
   enabled: true

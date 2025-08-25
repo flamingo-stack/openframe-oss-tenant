@@ -34,7 +34,11 @@ spec:
         app: pinot
         component: broker
     spec:
-
+      {{- if ne .Values.registry.docker.password "" }}
+      imagePullSecrets:
+        - name: docker-pat-secret
+      {{- end }}
+      
       initContainers:
       - name: wait-for-zookeeper
         image: busybox

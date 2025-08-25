@@ -88,7 +88,6 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
         String tableName = extractTableName(message);
         
         String compositeKey = getEventToolId(after)
-                .filter(id -> !UNKNOWN.equals(id))
                 .map(id -> String.format(COMPOSITE_KEY_PATTERN, toolName, tableName, id))
                 .orElseGet(() -> {
                     log.warn("Event missing primary key from {}.{} - using content hash fallback", toolName, tableName);

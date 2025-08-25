@@ -13,6 +13,3 @@ prometheus-mongodb-exporter:
 
   serviceMonitor:
     enabled: true
-
-  imagePullSecrets:
-    - name: docker-pat-secret

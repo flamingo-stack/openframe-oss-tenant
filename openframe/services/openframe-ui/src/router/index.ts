@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
-import OAuthCallback from '../views/auth/OAuthCallback.vue'
+import CentralAuthDemo from '../views/CentralAuthDemo.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Tools from '../views/Tools.vue'
 import SettingsView from '../views/SettingsView.vue'
@@ -36,26 +34,24 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/login',
-      name: 'login',
-      component: Login,
+      path: '/central-auth-demo',
+      name: 'CentralAuthDemo',
+      component: CentralAuthDemo,
       meta: { requiresAuth: false }
     },
-    {
-      path: '/register',
-      name: 'register',
-      component: Register,
-      meta: { requiresAuth: false }
-    },
-    {
-      path: '/oauth2/callback/google',
-      name: 'oauth-callback-google',
-      component: OAuthCallback,
-      meta: { requiresAuth: false }
-    },
+
     {
       path: '/',
-      redirect: '/dashboard'
+      redirect: '/central-auth-demo'
+    },
+    {
+      path: '/login',
+      redirect: '/central-auth-demo'
+    },
+    // keep /register redirect for backward compatibility
+    {
+      path: '/register',
+      redirect: '/central-auth-demo'
     },
     {
       path: '/dashboard',
@@ -347,17 +343,24 @@ router.beforeEach(async (to, from, next) => {
     next();
     return;
   }
+  if (to.path === '/oauth2/callback/openframe-sso') {
+    console.log('🔑 [Router] OpenFrame SSO callback detected!');
+    console.log('🔑 [Router] OAuth callback query params:', to.query);
+    next();
+    return;
+  }
   
   // Always allow access to auth pages
   if (!to.meta.requiresAuth) {
-    if (to.path === '/login') {
-      // Check if user is already authenticated
-      const isAuthenticated = await authStore.checkAuthStatus();
-      if (isAuthenticated) {
-        console.log('↩️ [Router] Already logged in, redirecting to home');
+    if (to.path === '/central-auth-demo') {
+      // Check if user is already authenticated (await backend)
+      const ok = await authStore.updateAuthStatus();
+      console.log('🔍 [Router] Auth status check:', { isAuthenticated: ok, path: to.path });
+      if (ok) {
+        console.log('↩️ [Router] Already logged in, redirecting to dashboard');
         next('/dashboard');
       } else {
-        console.log('➡️ [Router] Proceeding to login page');
+        console.log('➡️ [Router] Proceeding to auth/demo page');
         next();
       }
     } else {
@@ -367,11 +370,12 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // Handle protected routes - check authentication via server
-  const isAuthenticated = await authStore.checkAuthStatus();
-  if (!isAuthenticated) {
-    console.log('🔒 [Router] Not authenticated, redirecting to login');
-    next('/login');
+  // Handle protected routes - check authentication via cookies
+  const ok = await authStore.updateAuthStatus();
+  console.log('🔍 [Router] Protected route auth check:', { isAuthenticated: ok, path: to.path });
+  if (!ok) {
+    console.log('🔒 [Router] Not authenticated, redirecting to demo page');
+    next('/central-auth-demo');
     return;
   }
 
