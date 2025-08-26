@@ -219,4 +219,5 @@ jobs:
       - name: test CI/CD logic
         if: steps.code_changes.outputs.client == 'true'
         run: |
-          echo "Test OK"
+          cd client
+          ./test.sh
