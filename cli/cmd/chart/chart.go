@@ -23,8 +23,10 @@ Examples:
   openframe chart install
   openframe chart install my-cluster`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Show logo first, then check prerequisites
-			ui.ShowLogoWithContext(cmd.Context())
+			// Show logo for subcommands, but not for the root chart command
+			if cmd.Use != "chart" {
+				ui.ShowLogoWithContext(cmd.Context())
+			}
 			return prerequisites.NewInstaller().CheckAndInstall()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

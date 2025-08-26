@@ -7,6 +7,7 @@ import (
 	"github.com/flamingo/openframe/cmd/bootstrap"
 	"github.com/flamingo/openframe/cmd/chart"
 	"github.com/flamingo/openframe/cmd/cluster"
+	"github.com/flamingo/openframe/cmd/dev"
 	"github.com/flamingo/openframe/internal/shared/config"
 	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ Key Features:
   - Interactive Wizard - Step-by-step guided setup
   - Cluster Management - K3d, Kind, and cloud provider support
   - Helm Integration - App-of-Apps pattern with ArgoCD
-  - Developer Tools - Telepresence, Skaffold workflows
+  - Developer Tools - Telepresence intercepts and scaffold deployments
   - Prerequisite Checking - Validates tools before running
 
 The CLI provides both interactive modes for new users and flag-based
@@ -66,6 +67,7 @@ operation for automation and power users.`,
 	rootCmd.AddCommand(getClusterCmd())
 	rootCmd.AddCommand(getChartCmd())
 	rootCmd.AddCommand(getBootstrapCmd())
+	rootCmd.AddCommand(getDevCmd())
 
 	// Add global flags following cluster pattern
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
@@ -134,6 +136,11 @@ func getChartCmd() *cobra.Command {
 // getBootstrapCmd returns the bootstrap command
 func getBootstrapCmd() *cobra.Command {
 	return bootstrap.GetBootstrapCmd()
+}
+
+// getDevCmd returns the dev command
+func getDevCmd() *cobra.Command {
+	return dev.GetDevCmd()
 }
 
 
