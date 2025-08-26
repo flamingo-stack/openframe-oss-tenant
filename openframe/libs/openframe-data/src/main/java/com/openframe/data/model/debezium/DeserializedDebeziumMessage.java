@@ -20,7 +20,7 @@ public class DeserializedDebeziumMessage extends CommonDebeziumMessage {
     private String sourceEventType;
     private String message;
     private IntegratedToolType integratedToolType;
-    private Map<String, String> details;
+    private String debeziumMessage;
     private Long eventTimestamp;
 
 }

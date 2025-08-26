@@ -40,11 +40,16 @@ public enum UnifiedEventType {
     FILE_UPLOADED(Severity.INFO, "File uploaded"),
     FILE_DOWNLOADED(Severity.INFO, "File downloaded"),
     FILE_DELETED(Severity.INFO, "File deleted"),
+    FILE_OPERATION(Severity.INFO, "File operation performed"),
+    FILE_BATCH_UPLOAD(Severity.INFO, "Batch file upload started"),
 
     // Remote access events
     REMOTE_SESSION_START(Severity.INFO, "Remote session started"),
     REMOTE_SESSION_END(Severity.INFO, "Remote session ended"),
     REMOTE_SESSION_FAILED(Severity.INFO, "Remote session failed"),
+    REMOTE_RECORDING_COMPLETED(Severity.INFO, "Remote session recording completed"),
+    REMOTE_SESSION_EVENT(Severity.INFO, "Remote session event"),
+    REMOTE_SESSION_STATS_UPDATED(Severity.INFO, "Remote session stats updated"),
 
     // Monitoring and alerting events
     ALERT_TRIGGERED(Severity.INFO, "Alert triggered"),
@@ -60,8 +65,30 @@ public enum UnifiedEventType {
     SYSTEM_STATUS(Severity.INFO, "System status update"),
     SYSTEM_ERROR(Severity.ERROR, "System error"),
 
+    // Group events (device groups, teams, sites, etc.)
+    GROUP_CREATED(Severity.INFO, "Group created"),
+    GROUP_UPDATED(Severity.INFO, "Group updated"),
+    GROUP_DELETED(Severity.INFO, "Group deleted"),
+
     // Device events
     DEVICE_HEARTBEAT(Severity.INFO, "Device heartbeat received"),
+    DEVICE_SESSIONS_UPDATED(Severity.INFO, "Device sessions updated"),
+    DEVICE_SYSINFO_UPDATED(Severity.INFO, "Device system information updated"),
+    DEVICE_OOB_ACTIVATION_REQUESTED(Severity.INFO, "Out-of-band activation requested"),
+    DEVICE_DIAGNOSTIC(Severity.INFO, "Device diagnostic message"),
+    DEVICE_DISCOVERY(Severity.INFO, "Device discovery"),
+
+    // User group events
+    USER_GROUP_CREATED(Severity.INFO, "User group created"),
+    USER_GROUP_CHANGED(Severity.INFO, "User group changed"),
+    USER_GROUP_DELETED(Severity.INFO, "User group deleted"),
+
+    // UI & session events
+    USER_UI_CUSTOM_EVENT(Severity.INFO, "User interface custom event"),
+    USER_LOGIN_TOKEN_ADDED(Severity.INFO, "User login token added"),
+    USER_LOGIN_TOKEN_CHANGED(Severity.INFO, "User login token changed"),
+    USER_SESSION_ENDED(Severity.INFO, "User session ended"),
+    SESSION_COUNT_UPDATED(Severity.INFO, "Session count updated"),
 
     // Unknown events
     UNKNOWN(Severity.WARNING, "Unknown event");

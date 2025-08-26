@@ -56,7 +56,7 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
                 .unifiedEventType(getEventType(getSourceEventType(after).orElse(UNKNOWN), messageType.getIntegratedToolType()))
                 .message(getMessage(after).orElse(null))
                 .integratedToolType(messageType.getIntegratedToolType())
-                .details(getDetails(after))
+                .debeziumMessage(getDetails(after))
                 .eventTimestamp(eventTimestamp)
                 .build();
         } catch (IllegalArgumentException e) {
@@ -137,14 +137,11 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
      * Convert all fields from JsonNode after to Map<String, String>
      * This method extracts all key-value pairs from the after field and converts them to strings
      */
-    protected Map<String, String> getDetails(JsonNode after) {
+    protected String getDetails(JsonNode after) {
         if (after == null || after.isNull()) {
-            return new HashMap<>();
+            return null;
         }
-
-        Map<String, String> details = new HashMap<>();
-        convertJsonNodeToMap(after, "", details);
-        return details;
+        return after.asText();
     }
 
     private UnifiedEventType getEventType(String sourceEventType, IntegratedToolType toolType) {
@@ -161,90 +158,5 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
             .filter(field -> !field.isNull() && !field.isMissingNode())
             .map(JsonNode::asText)
             .filter(StringUtils::isNotBlank);
-    }
-    
-    /**
-     * Recursively convert JsonNode to Map<String, String>
-     * Handles nested objects and arrays by flattening them with dot notation
-     * Includes safety limits to prevent stack overflow and memory issues
-     */
-    private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result) {
-        convertJsonNodeToMap(node, prefix, result, 0);
-    }
-
-    private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result, int depth) {
-        if (node == null || result == null || depth > MAX_DEPTH) {
-            return;
-        }
-
-        // Leaf value (with support for JSON-encoded strings)
-        if (node.isValueNode()) {
-            if (node.isNull()) {
-                return;
-            }
-
-            String value = node.asText();
-
-            // If this value looks like embedded JSON, try to parse and flatten it
-            String trimmed = value != null ? value.trim() : null;
-            boolean isJson = trimmed != null && (trimmed.startsWith("{") || trimmed.startsWith("["));
-            if (node.isTextual() && isJson) {
-                try {
-                    JsonNode parsed = mapper.readTree(value);
-                    convertJsonNodeToMap(parsed, prefix, result, depth + 1);
-                    return;
-                } catch (Exception e) {
-                    String preview = value;
-                    if (preview.length() > MAX_LOG_VALUE_PREVIEW) {
-                        preview = preview.substring(0, MAX_LOG_VALUE_PREVIEW) + "...";
-                    }
-                    log.warn("Failed to parse embedded JSON at path '{}', depth {}. Storing raw text value. Preview: {}. Error: {}",
-                        prefix, depth, preview, e.toString());
-                    putValue(value, prefix, result);
-                    return;
-                }
-            }
-
-            putValue(value, prefix, result);
-            return;
-        }
-
-        // Object node
-        if (node.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
-                String key = appendPath(prefix, entry.getKey());
-                convertJsonNodeToMap(entry.getValue(), key, result, depth + 1);
-            }
-            return;
-        }
-
-        // Array node
-        if (node.isArray()) {
-            int maxSize = Math.min(node.size(), MAX_ARRAY_SIZE);
-            for (int i = 0; i < maxSize; i++) {
-                String key = prefix + "[" + i + "]";
-                convertJsonNodeToMap(node.get(i), key, result, depth + 1);
-            }
-        }
-    }
-
-    private void putValue(String value, String prefix, Map<String, String> result) {
-        if (value != null) {
-            if (value.length() > MAX_VALUE_LENGTH) {
-                value = value.substring(0, MAX_VALUE_LENGTH) + "...";
-            }
-            if (StringUtils.isNotBlank(prefix)) {
-                result.put(prefix, value);
-            }
-        }
-    }
-
-    private String appendPath(String prefix, String field) {
-        if (StringUtils.isBlank(prefix)) {
-            return field;
-        }
-        return prefix + "." + field;
     }
 }
