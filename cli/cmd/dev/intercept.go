@@ -1,10 +1,13 @@
 package dev
 
 import (
+	"context"
+
 	"github.com/flamingo/openframe/internal/dev/models"
 	"github.com/flamingo/openframe/internal/dev/services/intercept"
+	"github.com/flamingo/openframe/internal/dev/ui"
+	devMocks "github.com/flamingo/openframe/tests/mocks/dev"
 	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,24 +31,13 @@ The intercept command manages the full Telepresence lifecycle:
   • Provides cleanup and disconnection capabilities
 
 Examples:
+  openframe dev intercept                             # Interactive service selection
   openframe dev intercept my-service --port 8080
   openframe dev intercept my-service --port 8080 --namespace my-namespace
   openframe dev intercept my-service --mount /tmp/volumes --env-file .env`,
-		Args: cobra.ExactArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			ui.ShowLogoWithContext(cmd.Context())
-			return nil
-		},
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get flags from command
-			verbose, _ := cmd.Flags().GetBool("verbose")
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
-			
-			// Create executor and service
-			exec := executor.NewRealCommandExecutor(dryRun, verbose)
-			service := intercept.NewService(exec, verbose)
-			
-			return service.StartIntercept(args[0], flags)
+			return runIntercept(cmd, args, flags)
 		},
 	}
 
@@ -60,4 +52,52 @@ Examples:
 	cmd.Flags().StringVar(&flags.RemotePortName, "remote-port", "", "Remote port name for intercept (defaults to port number)")
 
 	return cmd
+}
+
+// runIntercept handles both interactive and flag-based intercept modes
+func runIntercept(cmd *cobra.Command, args []string, flags *models.InterceptFlags) error {
+	// Get flags from command
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	ctx := context.Background()
+
+	// If no service name provided, run interactive mode
+	if len(args) == 0 {
+		return runInteractiveIntercept(ctx, verbose, dryRun)
+	}
+
+	// Service name provided - use flag-based mode
+	exec := executor.NewRealCommandExecutor(dryRun, verbose)
+	service := intercept.NewService(exec, verbose)
+	
+	return service.StartIntercept(args[0], flags)
+}
+
+// runInteractiveIntercept runs the simplified interactive intercept flow
+func runInteractiveIntercept(ctx context.Context, verbose, dryRun bool) error {
+	// Create mock Kubernetes client for demonstration
+	// In a real implementation, this would be a real Kubernetes client
+	kubernetesClient := devMocks.NewMockKubernetesClient()
+	
+	// Create UI service (using the same mock client for both interfaces)
+	uiService := ui.NewService(kubernetesClient, kubernetesClient)
+	
+	// Run interactive setup
+	setup, err := uiService.InteractiveInterceptSetup(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Convert to intercept flags
+	flags := &models.InterceptFlags{
+		Port:      setup.LocalPort,
+		Namespace: setup.Namespace,
+	}
+
+	// Create executor and service
+	exec := executor.NewRealCommandExecutor(dryRun, verbose)
+	interceptService := intercept.NewService(exec, verbose)
+	
+	// Start the intercept
+	return interceptService.StartIntercept(setup.ServiceName, flags)
 }

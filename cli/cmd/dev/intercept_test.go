@@ -120,10 +120,9 @@ func TestInterceptCmd_PreRunE(t *testing.T) {
 	
 	cmd := getInterceptCmd()
 	
-	// PreRunE should exist and not return error for basic case
-	assert.NotNil(t, cmd.PreRunE)
+	// PreRunE should not exist on intercept cmd (handled by parent dev command)
+	assert.Nil(t, cmd.PreRunE)
 	
-	// Test that PreRunE doesn't error with valid args
-	err := cmd.PreRunE(cmd, []string{"test-service"})
-	assert.NoError(t, err)
+	// But the command should still be valid
+	assert.NotNil(t, cmd.RunE)
 }

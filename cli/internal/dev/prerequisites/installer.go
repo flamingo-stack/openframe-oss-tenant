@@ -7,6 +7,7 @@ import (
 	"github.com/flamingo/openframe/internal/dev/prerequisites/jq"
 	"github.com/flamingo/openframe/internal/dev/prerequisites/scaffold"
 	"github.com/flamingo/openframe/internal/dev/prerequisites/telepresence"
+	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -26,65 +27,44 @@ func NewInstaller() *Installer {
 	}
 }
 
-func (i *Installer) CheckAndInstall() error {
-	pterm.Info.Println("Checking development tools prerequisites...")
-	
-	allPresent, missing := i.checker.CheckAll()
-	
-	if allPresent {
-		pterm.Success.Println("All required development tools are installed")
-		return nil
-	}
-
-	pterm.Warning.Printf("Missing tools: %s\n", strings.Join(missing, ", "))
-	
-	// Ask user if they want to auto-install
-	if i.shouldAutoInstall(missing) {
-		return i.installMissingTools(missing)
-	}
-	
-	// Show manual installation instructions
-	i.showInstallationInstructions(missing)
-	return fmt.Errorf("required development tools are not installed")
-}
-
-func (i *Installer) shouldAutoInstall(missing []string) bool {
-	// For now, return false to always show manual instructions
-	// This can be enhanced later with user prompts
-	return false
-}
 
 func (i *Installer) installMissingTools(missing []string) error {
-	pterm.Info.Println("Installing missing development tools...")
+	pterm.Info.Printf("Starting installation of %d tool(s): %s\n", len(missing), strings.Join(missing, ", "))
 	
 	var installers = map[string]ToolInstaller{
-		"Telepresence": telepresence.NewTelepresenceInstaller(),
+		"telepresence": telepresence.NewTelepresenceInstaller(),
 		"jq":           jq.NewJqInstaller(),
-		"Skaffold":     scaffold.NewScaffoldInstaller(),
+		"skaffold":     scaffold.NewScaffoldInstaller(),
 	}
 	
-	for _, toolName := range missing {
-		if installer, exists := installers[toolName]; exists {
-			pterm.Info.Printf("Installing %s...\n", toolName)
-			
+	for idx, toolName := range missing {
+		// Create a spinner for the installation process
+		spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("[%d/%d] Installing %s...", idx+1, len(missing), toolName))
+		
+		// Use lowercase key for lookup
+		if installer, exists := installers[strings.ToLower(toolName)]; exists {
 			if err := installer.Install(); err != nil {
-				pterm.Error.Printf("Failed to install %s: %v\n", toolName, err)
+				spinner.Fail(fmt.Sprintf("Failed to install %s: %v", toolName, err))
 				pterm.Info.Printf("Please install %s manually: %s\n", toolName, installer.GetInstallHelp())
 				return fmt.Errorf("failed to install %s: %w", toolName, err)
 			}
 			
-			pterm.Success.Printf("%s installed successfully\n", toolName)
+			spinner.Success(fmt.Sprintf("%s installed successfully", toolName))
+		} else {
+			spinner.Fail(fmt.Sprintf("Unknown tool: %s", toolName))
+			return fmt.Errorf("unknown tool: %s", toolName)
 		}
 	}
 	
 	// Verify installation
-	allPresent, stillMissing := i.checker.CheckAll()
+	allPresent, stillMissing := i.CheckSilent()
 	if !allPresent {
-		pterm.Error.Printf("Some tools are still missing after installation: %s\n", strings.Join(stillMissing, ", "))
-		return fmt.Errorf("installation verification failed")
+		pterm.Warning.Printf("Some tools failed to install: %s\n", strings.Join(stillMissing, ", "))
+		i.showInstallationInstructions(stillMissing)
+		return fmt.Errorf("installation failed for: %s", strings.Join(stillMissing, ", "))
 	}
 	
-	pterm.Success.Println("All development tools are now installed")
+	pterm.Success.Println("All development tools are now installed!")
 	return nil
 }
 
@@ -135,8 +115,40 @@ func (i *Installer) CheckSilent() (bool, []string) {
 	return i.checker.CheckAll()
 }
 
+// CheckAndInstall checks prerequisites and offers to install missing tools (like cluster commands)
+func (i *Installer) CheckAndInstall() error {
+	// Skip prerequisite checks in test mode
+	if ui.TestMode {
+		return nil
+	}
+	
+	
+	allPresent, missing := i.CheckSilent()
+	
+	if allPresent {
+		pterm.Success.Println("All required development tools are installed")
+		return nil
+	}
+
+	pterm.Warning.Printf("Missing Prerequisites: %s\n", strings.Join(missing, ", "))
+	
+	// Ask user if they want to auto-install
+	confirmed, err := ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
+	if err != nil {
+		return fmt.Errorf("failed to get user confirmation: %w", err)
+	}
+
+	if confirmed {
+		return i.installMissingTools(missing)
+	} else {
+		// Show manual installation instructions
+		i.showInstallationInstructions(missing)
+		return fmt.Errorf("required development tools are not installed")
+	}
+}
+
 // For backward compatibility with existing intercept service pattern
 func CheckTelepresenceAndJq() error {
 	installer := NewInstaller()
-	return installer.CheckSpecificTools([]string{"telepresence", "jq"})
+	return installer.CheckAndInstall()
 }

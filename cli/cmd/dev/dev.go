@@ -2,6 +2,7 @@ package dev
 
 import (
 	"github.com/flamingo/openframe/internal/dev/models"
+	"github.com/flamingo/openframe/internal/dev/prerequisites"
 	"github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
@@ -23,6 +24,13 @@ Supports Telepresence for traffic interception and custom scaffolding workflows.
 Examples:
   openframe dev intercept my-service
   openframe dev scaffold my-service`,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// Show logo for subcommands, but not for the root dev command
+			if cmd.Use != "dev" {
+				ui.ShowLogoWithContext(cmd.Context())
+			}
+			return prerequisites.CheckTelepresenceAndJq()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo when no subcommand is provided
 			ui.ShowLogoWithContext(cmd.Context())
