@@ -219,6 +219,8 @@ apps:
     project: client-tools
     namespace: client-tools
     syncWave: "2"
+    syncOptions:
+      RespectIgnoreDifferences: true
 
   namespace-integrated-tools:
     enabled: true

@@ -9,6 +9,7 @@ export class AuthService {
    * Redirects to Gateway's /auth/login endpoint
    */
   public async login(tenantId: string): Promise<void> {
+    this.setCurrentTenantId(tenantId);
     const loginUrl = `${AuthService.GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tenantId)}`;
     console.log('🔑 [AuthService] Redirecting to Gateway:', loginUrl);
     window.location.href = loginUrl;
@@ -30,9 +31,19 @@ export class AuthService {
    * Gateway will clear cookies and redirect to appropriate page
    */
   public async logout(tenantId: string): Promise<void> {
-    const logoutUrl = `${AuthService.GATEWAY_URL}/oauth/logout?tenantId=${encodeURIComponent(tenantId)}`;
-    console.log('🚪 [AuthService] Redirecting to Gateway logout:', logoutUrl);
-    window.location.href = logoutUrl;
+    const url = `/oauth/logout?tenantId=${encodeURIComponent(tenantId)}`;
+    console.log('🚪 [AuthService] Calling Gateway logout (XHR):', url);
+    try {
+      // Use XHR so we can control client-side navigation after 204
+      await (await import('../apollo/apolloClient')).restClient.get(url, {
+        headers: { 'x-no-refresh': '1' }
+      });
+    } catch (e) {
+      console.warn('⚠️ [AuthService] Logout request failed (continuing with client redirect):', e);
+    } finally {
+      // Ensure SPA leaves the current page after tokens/cookies cleared
+      window.location.replace('/central-auth-demo');
+    }
   }
 
   /**
@@ -51,6 +62,8 @@ export class AuthService {
    * Redirects to Gateway's login endpoint
    */
   public async openFrameSSO(tenantName: string): Promise<void> {
+    // Persist current tenant for subsequent refresh calls
+    this.setCurrentTenantId(tenantName);
     const loginUrl = `${AuthService.GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tenantName)}`;
     window.location.href = loginUrl;
   }
