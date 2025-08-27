@@ -1,4 +1,4 @@
-package com.openframe.gateway.config;
+package com.openframe.gateway.config.prop;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

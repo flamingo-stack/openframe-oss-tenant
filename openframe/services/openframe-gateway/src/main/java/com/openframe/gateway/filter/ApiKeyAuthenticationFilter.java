@@ -1,12 +1,9 @@
 package com.openframe.gateway.filter;
 
-import static com.openframe.core.constants.HttpHeaders.*;
-import static org.springframework.http.HttpStatus.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.core.dto.ErrorResponse;
 import com.openframe.core.model.ApiKey;
-import com.openframe.gateway.config.RateLimitProperties;
+import com.openframe.gateway.config.prop.RateLimitProperties;
 import com.openframe.gateway.model.RateLimitStatus;
 import com.openframe.gateway.service.ApiKeyValidationService;
 import com.openframe.gateway.service.RateLimitService;
@@ -19,6 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import static com.openframe.core.constants.HttpHeaders.*;
+import static org.springframework.http.HttpStatus.*;
 
 /**
  * Global filter for API key authentication on /external-api/** endpoints

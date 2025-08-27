@@ -45,6 +45,18 @@ async function checkAuthAndMount() {
     const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route))
 
     if (!isPublicRoute) {
+        // If devTicket is present (localhost dev), exchange it for tokens BEFORE /me check
+        try {
+            const url = new URL(window.location.href)
+            const ticket = url.searchParams.get('devTicket')
+            if (ticket) {
+                const { restClient } = await import('./apollo/apolloClient')
+                await restClient.get(`/oauth/dev-exchange?ticket=${encodeURIComponent(ticket)}`)
+                url.searchParams.delete('devTicket')
+                window.history.replaceState({}, document.title, url.toString())
+            }
+        } catch {}
+
         // For protected routes, check authentication via server before mounting
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/me`, {

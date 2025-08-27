@@ -2,12 +2,12 @@ import { ApolloClient, InMemoryCache, from, Observable } from '@apollo/client/co
 import type { FetchResult } from '@apollo/client/core';
 import { onError } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
+import { getAccessToken } from '@/services/token-storage';
 import { createHttpLink } from '@apollo/client/link/http';
 import { useAuthStore } from '@/stores/auth';
-import { AuthService } from '@/services/AuthService';
-import router from '@/router';
-import type { IntegratedTool, ToolUrlType, APIKeyType } from '@/types/graphql';
+// import type { IntegratedTool, ToolUrlType, APIKeyType } from '@/types/graphql';
 import { ConfigService } from '@/config/config.service';
+import { fetchWithAuth } from '@/services/ApiService';
 
 let isRefreshing = false;
 let pendingRequests: Function[] = [];
@@ -158,8 +158,19 @@ const httpLink = createHttpLink({
   }
 });
 
-// No longer need authLink since authentication is handled via HTTP-only cookies
-// const authLink = setContext(...) - REMOVED
+// Attach access token header for local-dev mode when backend sent tokens as headers
+const authLink = setContext((_, { headers }) => {
+  const token = getAccessToken();
+  if (token) {
+    return {
+      headers: {
+        ...headers,
+        'Access-Token': token
+      }
+    };
+  }
+  return { headers };
+});
 
 // GraphQL error handling
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
@@ -197,7 +208,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
 // Create Apollo Client
 export const apolloClient = new ApolloClient({
-  link: from([errorLink, httpLink]), // Removed authLink - authentication via cookies
+  link: from([errorLink, authLink, httpLink]),
   cache: new InMemoryCache({
     typePolicies: {
       IntegratedTool: {
@@ -282,10 +293,9 @@ export const restClient = {
         ...(options.headers || {})
       };
 
-      const response = await fetch(fullUrl, {
+      const response = await fetchWithAuth(fullUrl, {
         ...options,
-        headers,
-        credentials: 'include' // Always include cookies for authentication
+        headers
       });
 
       if (!response.ok) {
@@ -323,6 +333,16 @@ export const restClient = {
       }
       
       const contentType = response.headers.get('content-type');
+      // Capture dev-headers for rotated tokens (localhost dev)
+      try {
+        const newAccess = response.headers.get('Access-Token');
+        const newRefresh = response.headers.get('Refresh-Token');
+        if (newAccess) {
+          const { setTokens } = await import('@/services/token-storage');
+          setTokens({ accessToken: newAccess, refreshToken: newRefresh || undefined });
+        }
+      } catch {}
+
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
         console.log('📦 [REST] Response data (JSON):', data);
