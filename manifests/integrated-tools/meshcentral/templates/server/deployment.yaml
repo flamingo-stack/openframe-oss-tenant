@@ -30,17 +30,26 @@ spec:
         envFrom:
           - configMapRef:
               name: meshcentral-mongodb
-        command: ["sh","-c"]
+          - secretRef:
+              name: meshcentral-mongodb
+        command: ["sh", "-c"]
         args:
           - |
-            for i in {1..300}; do
-              timeout 3 mongosh "mongodb://${MONGODB_HOST}:${MONGODB_PORT}/admin?directConnection=true&serverSelectionTimeoutMS=2000" \
-                --quiet --eval 'const h=db.hello(); quit(h && h.ok===1 && h.isWritablePrimary ? 0 : 2)' \
-                && { echo "MongoDB PRIMARY ready at ${MONGODB_HOST}:${MONGODB_PORT}"; exit 0; }
-              rc=$?
-              [ "$rc" -eq 2 ] && sleep 2 || { echo "MongoDB not reachable"; exit 1; }
+            echo "Waiting for MongoDB to be ready..."
+            for i in $(seq 1 300); do
+              if /usr/local/bin/readiness-command.sh; then
+                echo "MongoDB is ready after $i attempts"
+                exit 0
+              fi
+              echo "Attempt $i/60: MongoDB not ready yet, waiting..."
+              sleep 5
             done
-            echo "Mongo not primary in time" >&2; exit 1
+            echo "MongoDB did not become ready in time" >&2
+            exit 1
+        volumeMounts:
+        - name: mongodb-readiness-command
+          mountPath: /usr/local/bin/readiness-command.sh
+          subPath: readiness-command.sh
 
       - name: init-clean-meshcentral
         image: busybox:1.36
@@ -90,7 +99,12 @@ spec:
         volumeMounts:
         - name: meshcentral-data
           mountPath: /opt/mesh
+
       volumes:
-      - name: meshcentral-data
-        persistentVolumeClaim:
-          claimName: meshcentral-server
+        - name: mongodb-readiness-command
+          configMap:
+            name: meshcentral-mongodb-readiness
+            defaultMode: 0755
+        - name: meshcentral-data
+          persistentVolumeClaim:
+            claimName: meshcentral-server
