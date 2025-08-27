@@ -141,7 +141,7 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
         if (after == null || after.isNull()) {
             return null;
         }
-        return after.asText();
+        return after.toString();
     }
 
     private UnifiedEventType getEventType(String sourceEventType, IntegratedToolType toolType) {

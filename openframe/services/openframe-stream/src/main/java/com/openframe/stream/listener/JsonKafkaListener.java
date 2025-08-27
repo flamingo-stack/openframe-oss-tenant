@@ -25,7 +25,7 @@ public class JsonKafkaListener {
                     "${kafka.consumer.topic.event.tactical-rmm.name}",
                     "${kafka.consumer.topic.event.fleet-mdm.name}"
             },
-            groupId = "${spring.kafka.consumer.group-id}",
+            groupId = "group223",
             containerFactory = "debeziumKafkaListenerContainerFactory"
     )
     public void listenIntegratedToolsEvents(@Payload CommonDebeziumMessage debeziumMessage, @Header(MESSAGE_TYPE_HEADER) MessageType messageType) {
