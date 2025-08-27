@@ -1,0 +1,307 @@
+release chatgpt
+
+name: OpenFrame Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g., v1.2.3). If omitted, uses current ref."
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORGANISATION: flamingo-cx
+  REPOSITORY: openframe
+  IMAGE_PREFIX: ghcr.io/flamingo-cx/openframe
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Reuse your matrix to define what to build (java modules & images).
+  matrix:
+    name: Matrix
+    uses: ./.github/workflows/matrix.yml
+    permissions:
+      contents: read
+
+  # Optional: Check out a specific tag for workflow_dispatch
+  prepare_ref:
+    name: Prepare Ref (dispatch only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+    outputs:
+      ref: ${{ steps.out.outputs.ref }}
+    steps:
+      - id: out
+        run: echo "ref=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+
+  build_java:
+    name: "Build Java: ${{ matrix.name }}"
+    needs: [matrix, prepare_ref]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ needs.prepare_ref.outputs.ref || '' }}
+
+      - name: Set up JDK 21 (with Maven cache)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            ${{ matrix.path }}/pom.xml
+            **/pom.xml
+          check-latest: true
+
+      - name: Build with Maven
+        run: |
+          mvn -B -e -Dstyle.color=always \
+            clean install -pl "${{ matrix.path }}" -am -Dcompress
+
+      - name: Upload Java artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.path }}/target/*.jar
+            !${{ matrix.path }}/target/original-*.jar
+            !${{ matrix.path }}/target/*-sources.jar
+            !${{ matrix.path }}/target/*-javadoc.jar
+          retention-days: 7
+
+  build_images:
+    name: "Build image: ${{ matrix.name }}"
+    needs: [build_java, matrix, prepare_ref]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ needs.prepare_ref.outputs.ref || '' }}
+
+      - name: Download Java artifacts (for java-based images)
+        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.path }}/target
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide platforms
+        id: platforms
+        run: |
+          if [[ "${{ matrix.name }}" == "fleetmdm" ]]; then
+            echo "value=linux/amd64" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up QEMU (only for multi-arch)
+        if: steps.platforms.outputs.value == 'linux/amd64,linux/arm64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine release flavor
+        id: vars
+        run: |
+          TAG="${{ github.ref_name != '' && github.ref_name || inputs.tag }}"
+          # If tag contains a hyphen (e.g. v1.2.3-rc.1) treat as prerelease
+          if [[ "$TAG" == *-* ]]; then
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate metadata (semver tags)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ steps.vars.outputs.is_stable }}
+          labels: |
+            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.licenses=CC-BY-NC-4.0
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.ref.name=${{ github.ref_name }}
+
+      - name: Format build arguments
+        id: format_args
+        uses: ./.github/steps/docker-format-build-args
+        with:
+          build_args: ${{ toJSON(matrix.build_args) }}
+
+      - name: Build and push image
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/Dockerfile
+          platforms: ${{ steps.platforms.outputs.value }}
+          push: true
+          provenance: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ steps.format_args.outputs.formatted_args }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build_client:
+    name: Build client (Rust)
+    needs: [prepare_ref]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ''
+            artifact_name: openframe-client-linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: '.exe'
+            artifact_name: openframe-client-windows-x64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            ext: ''
+            artifact_name: openframe-client-macos-x64
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ needs.prepare_ref.outputs.ref || '' }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('client/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+            ${{ runner.os }}-cargo-
+
+      - name: Build
+        working-directory: client
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          BIN="openframe-client${{ matrix.ext }}"
+          cp "target/${{ matrix.target }}/release/${BIN}" "${BIN}"
+
+      - name: Package
+        run: |
+          NAME="${{ matrix.artifact_name }}"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            7z a "${NAME}.zip" "openframe-client.exe"
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            tar -czf "${NAME}.tar.gz" "openframe-client"
+          else
+            tar -czf "${NAME}.tar.gz" "openframe-client"
+          fi
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}.zip
+            ${{ matrix.artifact_name }}.tar.gz
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish_release:
+    name: Publish GitHub Release
+    needs: [build_images, build_client]
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all client artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: openframe-client-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        working-directory: dist
+        run: |
+          shopt -s nullglob
+          rm -f SHA256SUMS
+          for f in *; do
+            if [[ -f "$f" ]]; then
+              sha256sum "$f" >> SHA256SUMS
+            fi
+          done
+          sort -o SHA256SUMS SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name != '' && github.ref_name || inputs.tag }}
+          name: OpenFrame ${{ github.ref_name != '' && github.ref_name || inputs.tag }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            dist/*
