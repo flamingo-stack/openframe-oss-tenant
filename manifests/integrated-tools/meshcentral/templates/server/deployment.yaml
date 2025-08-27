@@ -41,7 +41,7 @@ spec:
                 echo "MongoDB is ready after $i attempts"
                 exit 0
               fi
-              echo "Attempt $i/60: MongoDB not ready yet, waiting..."
+              echo "Attempt $i: MongoDB not ready yet, waiting..."
               sleep 5
             done
             echo "MongoDB did not become ready in time" >&2

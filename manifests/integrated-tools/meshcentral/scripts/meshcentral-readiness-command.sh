@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-if mongosh --authenticationDatabase "admin" \
+# Use MONGODB_HOST if set, otherwise default to localhost
+DB_HOST="${MONGODB_HOST:-127.0.0.1}"
+MONGODB_PORT="${MONGODB_PORT:-27017}"
+
+if mongosh --host ${DB_HOST}:${MONGODB_PORT}  \
+    --authenticationDatabase "admin" \
     --username "${MONGO_INITDB_ROOT_USERNAME}" \
     --password "${MONGO_INITDB_ROOT_PASSWORD}" \
     --eval "db.adminCommand('ping').ok" --quiet | grep -q "^1$"; then
@@ -9,7 +14,7 @@ if mongosh --authenticationDatabase "admin" \
 fi
 
 # Fallback for the very first start (localhost exception)
-if mongosh --eval "db.adminCommand('ping').ok" --quiet | grep -q "^1$"; then
+if mongosh --host ${DB_HOST}:${MONGODB_PORT} --eval "db.adminCommand('ping').ok" --quiet | grep -q "^1$"; then
   exit 0
 fi
 
