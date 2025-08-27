@@ -13,10 +13,11 @@ set +a
 # Always talk to the mongod instance via the loop-back interface so that the
 # "localhost exception" is active until authentication is configured.
 DB_HOST="127.0.0.1"
+# Kubernetes StatefulSet recommended advertised host for replica set member
+REPLICA_HOST="$(hostname -f)"
 
 
-apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
-          
+## Note: Do not install packages here; this script runs without root. Keep it self-contained.
 echo "Waiting for MongoDB service to be ready..."
 # use localhost while mongod is still starting
 until mongosh --host ${DB_HOST}:${MONGODB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
@@ -43,7 +44,7 @@ RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval
     rs.reconfig({
         _id: "rs0",
         members: [
-        { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+        { _id: 0, host: "'"+env.REPLICA_HOST+"':'"+env.MONGODB_PORT+"'" }
         ]
     }, {force: true});
     } catch(e) {
@@ -52,7 +53,7 @@ RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval
         rs.reconfig({
         _id: "rs0", 
         members: [
-            { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+            { _id: 0, host: "'"+env.REPLICA_HOST+"':'"+env.MONGODB_PORT+"'" }
         ]
         }, {force: true});
     } else {
@@ -60,7 +61,7 @@ RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval
         rs.initiate({
         _id: "rs0",
         members: [
-            { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+            { _id: 0, host: "'"+env.REPLICA_HOST+"':'"+env.MONGODB_PORT+"'" }
         ]
         });
     }
