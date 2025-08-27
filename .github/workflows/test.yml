@@ -24,6 +24,7 @@ on:
       - 'manifests/**'
       - 'scripts/**'
       - 'client/**'
+
   workflow_dispatch:
     inputs:
       target:
@@ -192,38 +193,6 @@ jobs:
           build-args: |
             ${{ env.BUILD_ARGS }}
 
-  build_client:
-    name: Build client app
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event.inputs.target == 'all' || github.event.inputs.target == 'client'
-    
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: dorny/paths-filter@v3
-        id: code_changes
-        with:
-          filters: |
-            client:
-              - 'client/**'
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: test CI/CD logic
-        if: steps.code_changes.outputs.client == 'true'
-        run: |
-          cd client
-          ./test.sh
-
-
   test:
     name: Run Tests
     needs: [build, changes, matrix]
@@ -268,7 +237,50 @@ jobs:
         run: |
           ./scripts/run.sh bootstrap
 
- 
+  test_client:
+    name: "Test Rust Client"
+    needs: [changes]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('client/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run tests
+        working-directory: client
+        run: |
+          make test || cargo test
+
+      - name: Run clippy
+        working-directory: client
+        run: |
+          cargo clippy -- -D warnings
+
+      - name: Check formatting
+        working-directory: client
+        run: |
+          cargo fmt -- --check
+
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
     needs: [changes, matrix, test]

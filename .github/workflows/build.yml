@@ -192,45 +192,59 @@ jobs:
           exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
   
   build_client:
-    name: Build client app
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'client'
-    
+    name: "Build Rust Client"
+    needs: [changes]
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: openframe-client-linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-client-windows-x64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: openframe-client-macos-x64
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
-      - uses: dorny/paths-filter@v3
-        id: code_changes
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
         with:
-          filters: |
-            client:
-              - 'client/**'
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
 
-      - uses: docker/login-action@v3
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('client/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+            ${{ runner.os }}-cargo-
 
-      - uses: docker/setup-buildx-action@v3
-
-      - name: create client test tar file
-        if: steps.code_changes.outputs.client == 'true'
+      - name: Build client
+        working-directory: client
         run: |
-          cd client
-          make
+          make build || cargo build --release --target ${{ matrix.target }}
 
-      - name: Upload artifact
+      - name: Upload client artifact
         uses: actions/upload-artifact@v4
         with:
-          name: client
-          path: client/
-          retention-days: 7
-
-      - name: cleanup uploaded client test tar file
-        if: steps.code_changes.outputs.client == 'true'
-        run: |
-          cd client
-          make clean
+          name: ${{ matrix.artifact_name }}
+          path: |
+            client/target/${{ matrix.target }}/release/openframe-client*
+            !client/target/**/*.d
+            !client/target/**/*.pdb
+          retention-days: 30
