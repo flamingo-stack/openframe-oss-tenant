@@ -11,6 +11,11 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      {{- if ne .Values.registry.ghcr.password "" }}
+      imagePullSecrets:
+        - name: github-pat-secret
+      {{- end }}
+
       containers:
       - name: register
         image: ghcr.io/sap/kubectl-container:v1.31.6
