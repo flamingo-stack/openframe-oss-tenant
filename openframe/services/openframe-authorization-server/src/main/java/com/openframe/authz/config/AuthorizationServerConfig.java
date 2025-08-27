@@ -6,6 +6,8 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.openframe.authz.document.User;
 import com.openframe.authz.keys.TenantKeyService;
+import com.openframe.authz.repository.MongoRegisteredClientRepository;
+import com.openframe.authz.repository.RegisteredClientMongoRepository;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+import org.springframework.data.mongodb.core.convert.NoOpDbRefResolver;
+import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -22,7 +29,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -97,7 +104,7 @@ public class AuthorizationServerConfig {
                 .securityMatcher(endpoints)
                 .authorizeHttpRequests(a -> a.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpoints))
-                .cors(cors -> cors.disable())
+                .cors(AbstractHttpConfigurer::disable)
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"),
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
@@ -146,9 +153,17 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public RegisteredClientRepository registeredClientRepository(RegisteredClient gatewayClient) {
-        return new org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository(gatewayClient);
+    public RegisteredClientRepository registeredClientRepository(
+            RegisteredClientMongoRepository dataRepo,
+            RegisteredClient gatewayClient) {
+        MongoRegisteredClientRepository mongoRepo =
+                new MongoRegisteredClientRepository(dataRepo);
+        if (mongoRepo.findByClientId(gatewayClient.getClientId()) == null) {
+            mongoRepo.save(gatewayClient);
+        }
+        return mongoRepo;
     }
+
 
     @Bean
     public JWKSource<SecurityContext> jwkSource(TenantKeyService tenantKeyService) {
@@ -182,13 +197,6 @@ public class AuthorizationServerConfig {
     public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(UserService userService) {
         return context -> {
             var authentication = context.getPrincipal();
-            var authorities = authentication.getAuthorities();
-            var roles = authorities.stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .filter(a -> a != null && a.startsWith("ROLE_"))
-                    .map(a -> a.substring(5))
-                    .toList();
-
 
             String tenantId = getTenantId();
             User user = userService
@@ -200,7 +208,7 @@ public class AuthorizationServerConfig {
                     claims.put("tenant_id", tenantId);
                     claims.put("tenant_domain", user.getTenantDomain());
                     claims.put("userId", user.getId());
-                    claims.put("roles", roles);
+                    claims.put("roles", user.getRoles());
                 });
             }
         };
@@ -249,5 +257,17 @@ public class AuthorizationServerConfig {
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
+    }
+
+    @Bean
+    public MappingMongoConverter mappingMongoConverter(
+            MongoDatabaseFactory factory,
+            MongoCustomConversions conversions,
+            MongoMappingContext context) {
+        MappingMongoConverter converter = new MappingMongoConverter(NoOpDbRefResolver.INSTANCE, context);
+        converter.setCustomConversions(conversions);
+        converter.setMapKeyDotReplacement("_");
+        converter.afterPropertiesSet();
+        return converter;
     }
 }
