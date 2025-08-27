@@ -15,6 +15,7 @@ set +a
 DB_HOST="127.0.0.1"
 # Kubernetes StatefulSet recommended advertised host for replica set member
 REPLICA_HOST="$(hostname -f)"
+REPLICA_ADDR="${REPLICA_HOST}:${MONGODB_PORT}"
 
 
 ## Note: Do not install packages here; this script runs without root. Keep it self-contained.
@@ -28,9 +29,9 @@ done
 echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
-echo "Checking replica set status..."
-INIT_STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
-echo "Current replica set status: $INIT_STATUS"
+echo "Checking primary (hello) status..."
+INIT_STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "try { db.hello().isWritablePrimary?1:0 } catch(e) { 0 }" --quiet)
+echo "Current hello status: $INIT_STATUS"
 
 if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
@@ -72,15 +73,15 @@ echo "Replica set setup result: $RECONFIG_RESULT"
 echo "Waiting for replica set to stabilize..."
 sleep 10
 
-echo "Checking replica set status after initialization..."
-for i in {1..30}; do
-    STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "rs.status().ok" --quiet)
+echo "Checking primary status after initialization..."
+for i in {1..60}; do
+    STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "try { db.hello().isWritablePrimary?1:0 } catch(e) { 0 }" --quiet)
     if [ "$STATUS" = "1" ]; then
-    echo "Replica set is ready!"
+    echo "Replica set primary is ready!"
     break
     fi
-    echo "Retry $i: Waiting for replica set to be ready (current status: $STATUS)..."
-    sleep 5
+    echo "Retry $i: Waiting for primary (hello: $STATUS)..."
+    sleep 2
 done
 else
 echo "Replica set is already initialized"
