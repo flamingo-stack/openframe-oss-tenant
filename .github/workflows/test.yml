@@ -25,14 +25,6 @@ on:
       - 'scripts/**'
       - 'client/**'
 
-  workflow_dispatch:
-    inputs:
-      target:
-        description: "Test target (all, client)"
-        required: false
-        default: "all"
-
-
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
   cancel-in-progress: false

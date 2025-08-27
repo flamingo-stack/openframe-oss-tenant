@@ -18,13 +18,6 @@ on:
       - 'pom.xml'
       - 'client/**'
 
-  workflow_dispatch:
-    inputs:
-      target:
-        description: "Build target (all, client)"
-        required: false
-        default: "all"
-
 env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
