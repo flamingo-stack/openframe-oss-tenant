@@ -216,8 +216,21 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: test CI/CD logic
+      - name: create client test tar file
         if: steps.code_changes.outputs.client == 'true'
         run: |
           cd client
-          ./test.sh
+          make
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client
+          path: client/
+          retention-days: 7
+
+      - name: cleanup uploaded client test tar file
+        if: steps.code_changes.outputs.client == 'true'
+        run: |
+          cd client
+          make clean
