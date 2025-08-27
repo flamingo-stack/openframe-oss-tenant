@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { authService } from '@/services/AuthService';
+import { clearTokens } from '@/services/token-storage';
 
 export const useAuthStore = defineStore('auth', () => {
   const authStatusCache = ref<boolean | null>(null);
@@ -16,6 +17,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function updateAuthStatus(): Promise<boolean> {
     try {
+      // If devTicket is present in URL, exchange for tokens (localhost dev)
+      try {
+        const url = new URL(window.location.href);
+        const ticket = url.searchParams.get('devTicket');
+        if (ticket) {
+          await (await import('@/apollo/apolloClient')).restClient.get(`/oauth/dev-exchange?ticket=${encodeURIComponent(ticket)}`);
+          url.searchParams.delete('devTicket');
+          window.history.replaceState({}, document.title, url.toString());
+        }
+      } catch {}
+
       // Rely on backend truth: /me (base URL already includes /api)
       const me = await (await import('@/apollo/apolloClient')).restClient.get('/me');
       const ok = !!me;
@@ -83,6 +95,8 @@ export const useAuthStore = defineStore('auth', () => {
     currentTenantId.value = null;
     authService.setCurrentTenantId('');
     sessionStorage.removeItem('currentTenantId');
+    // Clear dev tokens so headers are not sent further
+    try { clearTokens(); } catch {}
     console.log('🧹 [AuthStore] Local state cleared');
   }
 
