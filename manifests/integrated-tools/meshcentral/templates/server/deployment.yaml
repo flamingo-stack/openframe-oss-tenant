@@ -36,6 +36,7 @@ spec:
         args:
           - |
             echo "Waiting for MongoDB to be ready..."
+            sleep 30
             for i in $(seq 1 300); do
               if /usr/local/bin/readiness-command.sh; then
                 echo "MongoDB is ready after $i attempts"
