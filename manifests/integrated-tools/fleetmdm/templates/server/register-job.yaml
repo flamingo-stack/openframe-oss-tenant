@@ -127,4 +127,35 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "FleetMDM Server Registration complete."
+
+            echo "Registering FleetMDM Agent..."
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/fleetmdm-server" \
+              -H "Content-Type: application/json" \
+              -d '{
+              "toolAgent": {
+                "id": "fleetmdm-server",
+                "version": "1.0",
+                "status": "ENABLED",
+                "runCommandArgs": [
+                  "connect",
+                  "--fleet-url", "${serverUrl}",
+                  "--enroll-secret", "${registrationSecret}",
+                  "--insecure",
+                  "--disable-updates",
+                  "--openframe-mode",
+                  "--openframe-secret", "${openframeSecret}",
+                  "--openframe-osquery-path", "${openframeOsqueryPath}",
+                  "--openframe-token-path", "${openframeTokenPath}"
+                ]
+                "assets": [
+                  {
+                    "id": "osquery"
+                  }
+                ]
+              }
+            }' \
+            --retry-delay 2 \
+            --retry-all-errors
+            echo "FleetMdm Agent Registration complete."
 {{- end }}

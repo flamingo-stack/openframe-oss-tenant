@@ -1,6 +1,5 @@
 package com.openframe.core.model;
 
-import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -17,5 +16,6 @@ public class IntegratedToolAgent {
     private List<String> installationCommandArgs;
     private List<String> runCommandArgs;
     private ToolAgentStatus status;
+    private List<ToolAgentAsset> assets;
     
-} 
+}

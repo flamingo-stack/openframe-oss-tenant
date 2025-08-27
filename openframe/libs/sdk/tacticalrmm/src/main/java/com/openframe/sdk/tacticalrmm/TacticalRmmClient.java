@@ -56,6 +56,14 @@ public class TacticalRmmClient {
             throw new TacticalRmmException("Failed to process get agent registration secret request", e);
         }
     }
+
+
+    // get list of devices
+
+    // run script
+
+    // etc
+
 }
 
 
