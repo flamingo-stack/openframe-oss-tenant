@@ -20,7 +20,8 @@ TEST_ARGS           ?=                    # extra args to `cargo test`, e.g. "--
 
 # ---- Derived flags (don’t edit) ----
 ifneq ($(TARGET),)
-  TARGET_FLAG := --target $(TARGET)
+#  TARGET_FLAG := --target $(TARGET)
+  TARGET_FLAG := $(TARGET)
 endif
 
 ifeq ($(PROFILE),release)
