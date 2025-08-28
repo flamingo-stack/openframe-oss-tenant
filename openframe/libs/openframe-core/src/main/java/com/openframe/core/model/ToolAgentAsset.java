@@ -7,6 +7,8 @@ import lombok.Setter;
 @Setter
 public class ToolAgentAsset {
     
-    private String id; 
+    private String id;
+    private ToolAgentAssetSource source;
+    private String path;
     
 }

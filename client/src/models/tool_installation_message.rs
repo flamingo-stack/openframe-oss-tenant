@@ -14,4 +14,14 @@ pub struct ToolInstallationMessage {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Asset {
     pub id: String,
+    pub source: AssetSource,
+    pub path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum AssetSource {
+    #[serde(rename = "artifactory")]
+    Artifactory,
+    #[serde(rename = "tool-api")]
+    ToolApi,
 }

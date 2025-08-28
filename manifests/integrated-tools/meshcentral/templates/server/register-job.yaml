@@ -127,10 +127,13 @@ spec:
                   ],
                   "assets": [
                     {
-                      "id": "core-module"
+                      "id": "core-module",
+                      "source": "ARTIFACTORY"
                     },
                     {
-                      "id", "msh-configuration"
+                      "id", "msh-configuration",
+                      "source": "TOOL_API",
+                      "path": "/openframe_public/meshagent.msh"
                     }
                   ]
                 }

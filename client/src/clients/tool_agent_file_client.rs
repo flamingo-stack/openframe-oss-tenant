@@ -29,20 +29,5 @@ impl ToolAgentFileClient {
         Ok(body)
     }
 
-    pub async fn get_asset_file(&self, asset_id: String) -> Result<bytes::Bytes> {
-        let url = format!("{}/clients/assets/{}", self.base_url, asset_id);
-        let response = self.http_client.get(url).send()
-            .await
-            .context("Failed to get asset file")?;
 
-        let status = response.status();
-
-        if !response.status().is_success() {
-            let error_text = response.text().await.context("Failed to read response text")?;
-            return Err(anyhow::anyhow!("Failed to get asset file with status {} and body {}", status, error_text));
-        }
-
-        let body = response.bytes().await?; 
-        Ok(body)
-    }
 }

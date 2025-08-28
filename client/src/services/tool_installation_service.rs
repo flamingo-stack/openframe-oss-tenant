@@ -2,7 +2,7 @@ use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use tracing::{info, debug};
 use anyhow::{Context, Result};
-use crate::models::ToolInstallationMessage;
+use crate::models::{ToolInstallationMessage, AssetSource};
 use crate::services::InstalledToolsService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
@@ -79,25 +79,30 @@ impl ToolInstallationService {
 
         // Download and save assets
         for asset in &tool_installation_message.assets {
-            info!("Downloading asset: {}", asset.id);
-            let asset_bytes = self
-                .tool_agent_file_client
-                .get_asset_file(asset.id.clone())
-                .await
-                .with_context(|| format!("Failed to download asset: {}", asset.id))?;
+            // Only process artifactory assets for now, skip other source types
+            if matches!(asset.source, AssetSource::Artifactory) {
+                info!("Downloading artifactory asset: {}", asset.id);
+                let asset_bytes = self
+                    .tool_agent_file_client
+                    .get_tool_agent_file(asset.id.clone())
+                    .await
+                    .with_context(|| format!("Failed to download asset: {}", asset.id))?;
 
-            let asset_path = tool_folder_path.join(format!("{}_{}", tool_id, asset.id));
-            
-            File::create(&asset_path).await?.write_all(&asset_bytes).await?;
-            
-            // Set file permissions to executable for assets as well
-            let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
-            asset_perms.set_mode(0o755);
-            fs::set_permissions(&asset_path, asset_perms)
-                .await
-                .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
-            
-            info!("Asset {} saved to: {}", asset.id, asset_path.display());
+                let asset_path = tool_folder_path.join(format!("{}_{}", tool_id, asset.id));
+                
+                File::create(&asset_path).await?.write_all(&asset_bytes).await?;
+                
+                // Set file permissions to executable for assets as well
+                let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
+                asset_perms.set_mode(0o755);
+                fs::set_permissions(&asset_path, asset_perms)
+                    .await
+                    .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
+                
+                info!("Asset {} saved to: {}", asset.id, asset_path.display());
+            } else {
+                info!("Skipping asset {} with source type: {:?} (not implemented)", asset.id, asset.source);
+            }
         }
 
         // Run installation command if provided

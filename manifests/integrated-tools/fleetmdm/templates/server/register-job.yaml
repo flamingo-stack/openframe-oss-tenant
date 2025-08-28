@@ -150,7 +150,8 @@ spec:
                 ]
                 "assets": [
                   {
-                    "id": "osquery"
+                    "id": "osquery",
+                    "source": "ARTIFACTORY"
                   }
                 ]
               }

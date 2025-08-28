@@ -15,6 +15,7 @@ import java.net.http.HttpResponse;
 public class FleetMdmClient {
 
     private static final String GET_HOST_URL = "/api/v1/fleet/hosts/";
+    private static final String GET_ENROLL_SECRET_URL = "/api/latest/fleet/spec/enroll_secret";
 
     private final String baseUrl;
     private final String apiToken;
@@ -67,6 +68,36 @@ public class FleetMdmClient {
         }
 
         return MAPPER.treeToValue(MAPPER.readTree(response.body()).path("host"), Host.class);
+    }
+
+    /**
+     * Get the enroll secret from Fleet MDM
+     * @return The enroll secret string or null if not found
+     */
+    public String getEnrollSecret() throws IOException, InterruptedException {
+        HttpRequest request = addHeaders(HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + GET_ENROLL_SECRET_URL)))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() == 401) {
+            throw new RuntimeException("Authentication failed. Please check your API token. Response: " + response.body());
+        } else if (response.statusCode() == 404) {
+            return null; // Enroll secret not found
+        } else if (response.statusCode() != 200) {
+            throw new RuntimeException("Failed to fetch enroll secret. Status: " + response.statusCode() + ", Response: " + response.body());
+        }
+
+        JsonNode responseNode = MAPPER.readTree(response.body());
+        JsonNode secretsArray = responseNode.path("spec").path("secrets");
+        
+        if (secretsArray.isArray() && secretsArray.size() > 0) {
+            return secretsArray.get(0).path("secret").asText();
+        }
+        
+        return null; // No secrets found
     }
 
     private HttpRequest.Builder addHeaders(HttpRequest.Builder builder) {
