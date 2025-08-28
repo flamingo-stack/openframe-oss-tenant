@@ -10,13 +10,13 @@
 CARGO ?= cargo
 
 # ---- Knobs you can pass like: make build PROFILE=debug TARGET=... ----
-PROFILE             ?= release            # release | debug
-TARGET              ?=                    # e.g. x86_64-unknown-linux-gnu, all targets for now
-FEATURES            ?=                    # e.g. "foo bar"
-ALL_FEATURES        ?= 0                  # 1 to use --all-features
-NO_DEFAULT_FEATURES ?= 0                  # 1 to use --no-default-features
-PKG                 ?= openframe          # e.g. crate name in a workspace
-TEST_ARGS           ?=                    # extra args to `cargo test`, e.g. "-- --nocapture"
+PROFILE             ?= release
+TARGET              ?= 
+FEATURES            ?= 
+ALL_FEATURES        ?= 0
+NO_DEFAULT_FEATURES ?= 0
+PKG                 ?= openframe
+TEST_ARGS           ?= 
 
 # ---- Derived flags (don’t edit) ----
 ifneq ($(TARGET),)
