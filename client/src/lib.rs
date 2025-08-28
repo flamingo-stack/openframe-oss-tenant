@@ -36,7 +36,7 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::{AgentAuthService, AgentRegistrationService, ToolInstallationCommandParamsProcessor, ToolRunManager};
 use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
-use crate::clients::{RegistrationClient, AuthClient};
+use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::shared_token_service::SharedTokenService;
 use crate::services::encryption_service::EncryptionService;
@@ -209,6 +209,12 @@ impl Client {
             Self::GATEWAY_HTTP_URL.to_string()
         );
 
+        // Initialize tool API client
+        let tool_api_client = ToolApiClient::new(
+            http_client.clone(),
+            Self::GATEWAY_HTTP_URL.to_string()
+        );
+
         // Initialize tool installation command runner
         // Command runner removed - not currently used
 
@@ -227,6 +233,7 @@ impl Client {
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             tool_agent_file_client,
+            tool_api_client,
             tool_connection_message_publisher,
             installed_tools_service.clone(),
             directory_manager.clone(),

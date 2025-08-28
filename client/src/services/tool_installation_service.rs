@@ -1,15 +1,16 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
+use crate::clients::tool_api_client::ToolApiClient;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use tracing::{info, debug};
 use anyhow::{Context, Result};
-use crate::models::{ToolInstallationMessage, AssetSource};
+use crate::models::ToolInstallationMessage;
+use crate::models::tool_installation_message::AssetSource;
 use crate::services::InstalledToolsService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
 use crate::services::ToolInstallationCommandParamsProcessor;
 use tokio::fs::File;
-use bytes::Bytes;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
 #[cfg(target_family = "unix")]
@@ -18,6 +19,7 @@ use crate::platform::PermissionUtils;
 
 pub struct ToolInstallationService {
     tool_agent_file_client: ToolAgentFileClient,
+    tool_api_client: ToolApiClient,
     tool_connection_message_publisher: ToolConnectionMessagePublisher,
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
@@ -27,6 +29,7 @@ pub struct ToolInstallationService {
 impl ToolInstallationService {
     pub fn new(
         tool_agent_file_client: ToolAgentFileClient,
+        tool_api_client: ToolApiClient,
         tool_connection_message_publisher: ToolConnectionMessagePublisher,
         installed_tools_service: InstalledToolsService,
         directory_manager: DirectoryManager,
@@ -41,6 +44,7 @@ impl ToolInstallationService {
         
         Self {
             tool_agent_file_client,
+            tool_api_client,
             tool_connection_message_publisher,
             installed_tools_service,
             directory_manager,
@@ -79,30 +83,35 @@ impl ToolInstallationService {
 
         // Download and save assets
         for asset in &tool_installation_message.assets {
-            // Only process artifactory assets for now, skip other source types
-            if matches!(asset.source, AssetSource::Artifactory) {
-                info!("Downloading artifactory asset: {}", asset.id);
-                let asset_bytes = self
-                    .tool_agent_file_client
-                    .get_tool_agent_file(asset.id.clone())
-                    .await
-                    .with_context(|| format!("Failed to download asset: {}", asset.id))?;
+            let asset_bytes = match asset.source {
+                AssetSource::Artifactory => {
+                    info!("Downloading artifactory asset: {}", asset.id);
+                    self.tool_agent_file_client
+                        .get_tool_agent_file(asset.id.clone())
+                        .await
+                        .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
+                },
+                AssetSource::ToolApi => {
+                    info!("Downloading tool API asset: {} with path: {}", asset.id, asset.path);
+                    self.tool_api_client
+                        .get_tool_asset(tool_id.clone(), asset.path.clone())
+                        .await
+                        .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
+                }
+            };
 
-                let asset_path = tool_folder_path.join(format!("{}_{}", tool_id, asset.id));
-                
-                File::create(&asset_path).await?.write_all(&asset_bytes).await?;
-                
-                // Set file permissions to executable for assets as well
-                let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
-                asset_perms.set_mode(0o755);
-                fs::set_permissions(&asset_path, asset_perms)
-                    .await
-                    .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
-                
-                info!("Asset {} saved to: {}", asset.id, asset_path.display());
-            } else {
-                info!("Skipping asset {} with source type: {:?} (not implemented)", asset.id, asset.source);
-            }
+            let asset_path = tool_folder_path.join(format!("{}_{}", tool_id, asset.id));
+            
+            File::create(&asset_path).await?.write_all(&asset_bytes).await?;
+            
+            // Set file permissions to executable for assets as well
+            let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
+            asset_perms.set_mode(0o755);
+            fs::set_permissions(&asset_path, asset_perms)
+                .await
+                .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
+            
+            info!("Asset {} saved to: {}", asset.id, asset_path.display());
         }
 
         // Run installation command if provided
