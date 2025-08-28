@@ -2,6 +2,10 @@ registerJob:
   enabled: true
 
 redis:
+  # bitnamilegacy
+  image:
+    repository: bitnamilegacy/redis
+
   global:
     imagePullSecrets: 
       - name: docker-pat-secret
@@ -17,6 +21,10 @@ redis:
     replicaCount: 1
 
   metrics:
+    # bitnamilegacy
+    image:
+      repository: bitnamilegacy/redis-exporter
+
     enabled: true
     serviceMonitor:
       enabled: true

@@ -28,7 +28,6 @@ kafka:
       protocol: PLAINTEXT
     external:
       protocol: PLAINTEXT
-    # Do we need to create external access ??? https://github.com/bitnami/charts/issues/25030
     # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
     # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
 
