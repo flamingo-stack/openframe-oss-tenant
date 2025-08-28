@@ -242,7 +242,15 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            client/target/${{ matrix.target }}/release/openframe-*
-            !client/target/**/*.d
-            !client/target/**/*.pdb
-          retention-days: 30
+            client/openframe-${{ matrix.target }}*
+          retention-days: 7
+
+#      - name: Upload client artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: ${{ matrix.artifact_name }}
+#          path: |
+#            client/target/${{ matrix.target }}/release/openframe-*
+#            !client/target/**/*.d
+#            !client/target/**/*.pdb
+#          retention-days: 30
