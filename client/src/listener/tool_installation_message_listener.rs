@@ -98,7 +98,7 @@ impl ToolInstallationMessageListener {
             deliver_subject,
             durable_name: Some(durable_name),
             inactive_threshold: Duration::from_secs(60),
-            // deliver_policy: DeliverPolicy::All,
+            ack_wait: Duration::from_secs(60),
             ..Default::default()
         }
     }
