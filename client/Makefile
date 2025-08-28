@@ -51,12 +51,12 @@ all: build test
 
 # name fmt more generic to make GH Action more reusable
 lint:
-  $(CARGO) fmt --all -- --check
+	$(CARGO) fmt --all -- --check
 
 build:
 # bypass actual build as for now
 #	$(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
-  tar -czvf target/$(TARGET)/release/$(PGG)-$(TARGET).tgz test.sh
+	tar -czvf target/$(TARGET)/release/$(PGG)-$(TARGET).tgz test.sh
 
 test:
 	$(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
@@ -68,7 +68,7 @@ fmt:
 clippy:
 ##	$(CARGO) clippy $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) -- -D warnings
 # force clippy for all targets
-  $(CARGO) clippy --all-targets -- -D warnings
+	$(CARGO) clippy --all-targets -- -D warnings
 
 clean:
 	$(CARGO) clean
