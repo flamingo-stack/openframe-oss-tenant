@@ -3,6 +3,11 @@ registerJob:
 
 
 cassandra:
+  # bitnamilegacy
+  image:
+    repository: bitnamilegacy/cassandra
+
+
   global:
     imagePullSecrets: 
       - name: docker-pat-secret
@@ -78,6 +83,10 @@ cassandra:
     enableUDF: false
 
   metrics:
+    # bitnamilegacy
+    image:
+      repository: bitnami/cassandra-exporter
+      
     enabled: true
     serviceMonitor:
       enabled: true
