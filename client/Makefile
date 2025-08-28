@@ -15,7 +15,7 @@ TARGET              ?=
 FEATURES            ?= 
 ALL_FEATURES        ?= 0
 NO_DEFAULT_FEATURES ?= 0
-PKG                 ?= openframe
+PKG                 ?= openframe-oss
 TEST_ARGS           ?= 
 
 # ---- Derived flags (don’t edit) ----
@@ -54,9 +54,9 @@ lint:
 	$(CARGO) fmt --all -- --check
 
 build:
+	$(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
 # bypass actual build as for now
-#	$(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
-	tar -czvf $(PKG)-$(TARGET).tgz test.sh
+#	tar -czvf $(PKG)-$(TARGET).tgz test.sh
 
 test:
 	$(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
