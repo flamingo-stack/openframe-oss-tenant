@@ -45,8 +45,8 @@ argocd_apps)
       --wait \
       --timeout 60m \
       -f "${SCRIPT_DIR}/helm-values.yaml" \
-      --set-file deployment.selfHosted.ingress.localhost.tls.cert=${CERT_DIR}/localhost.pem \
-      --set-file deployment.selfHosted.ingress.localhost.tls.key=${CERT_DIR}/localhost-key.pem 
+      --set-file deployment.oss.ingress.localhost.tls.cert=${CERT_DIR}/localhost.pem \
+      --set-file deployment.oss.ingress.localhost.tls.key=${CERT_DIR}/localhost-key.pem 
     wait_for_argocd_apps
 
     stop_spinner_and_return_code $? || exit 1 

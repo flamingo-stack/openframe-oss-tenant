@@ -4,8 +4,8 @@ templates:
 tests:
   - it: should propagate deployment values to all apps
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Test deployment values on regular app
@@ -17,7 +17,7 @@ tests:
           value: "mongodb"
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "selfHosted:"
+          pattern: "oss:"
         documentSelector:
           path: metadata.name
           value: "mongodb"
@@ -30,8 +30,8 @@ tests:
 
   - it: should propagate app-specific values from values.yaml
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Test that openframe-config gets its specific values
@@ -50,7 +50,7 @@ tests:
 
   - it: should propagate SaaS deployment values correctly
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:

@@ -4,8 +4,8 @@ templates:
 tests:
   - it: should generate valid ArgoCD applications
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Test basic application structure
@@ -35,8 +35,8 @@ tests:
 
   - it: should set correct sync waves
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Test sync wave ordering
@@ -61,8 +61,8 @@ tests:
 
   - it: should include required spec fields for ArgoCD
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Test required ArgoCD Application spec fields

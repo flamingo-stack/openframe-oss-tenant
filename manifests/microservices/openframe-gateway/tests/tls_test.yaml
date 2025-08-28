@@ -5,9 +5,9 @@ tests:
   # Valid TLS certificates
   - it: should include secretName for valid certificate
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.localhost.tls:
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.localhost.tls:
         cert: |
           -----BEGIN CERTIFICATE-----
           MIIDXTCCAkWgAwIBAgIJAKZhQpQQQQQQMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
@@ -34,8 +34,8 @@ tests:
   # No TLS certificate
   - it: should not include secretName when no certificate provided
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - isNull:
@@ -44,9 +44,9 @@ tests:
   # Invalid TLS certificate
   - it: should not include secretName for invalid certificate
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.localhost.tls:
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.localhost.tls:
         cert: "invalid-cert-format"
         key: "invalid-key-format"
       deployment.saas.enabled: false
@@ -59,7 +59,7 @@ tests:
   # TLS with SaaS deployment
   - it: should work with saas deployment TLS
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
       deployment.saas.ingress.localhost.tls:

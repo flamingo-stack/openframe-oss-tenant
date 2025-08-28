@@ -12,7 +12,7 @@
 # It defines global settings, registry credentials, and deployment environment
 
 deployment:
-  selfHosted:
+  oss:
     enabled: true
     # Ingress configuration - enable only ONE of the following
     ingress:
