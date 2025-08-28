@@ -3,6 +3,10 @@ registerJob:
 
 
 kafka:
+  # bitnamilegacy
+  image:
+    repository: bitnamilegacy/kafka
+
   broker:
     resourcesPreset: medium
     replicaCount: 1
@@ -98,6 +102,10 @@ kafka:
 
   metrics:
     jmx:
+      # bitnamilegacy
+      image:
+        repository: bitnamilegacy/jmx-exporter
+        
       enabled: true
       kafkaJmxPort: 5555
       extraRules: |-

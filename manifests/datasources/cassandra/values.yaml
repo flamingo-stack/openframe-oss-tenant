@@ -85,8 +85,8 @@ cassandra:
   metrics:
     # bitnamilegacy
     image:
-      repository: bitnami/cassandra-exporter
-      
+      repository: bitnamilegacy/cassandra-exporter
+
     enabled: true
     serviceMonitor:
       enabled: true
