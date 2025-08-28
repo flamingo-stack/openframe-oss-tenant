@@ -3,6 +3,7 @@ package ui
 import (
 	"testing"
 
+	"github.com/flamingo/openframe/internal/dev/services/intercept"
 	devMocks "github.com/flamingo/openframe/tests/mocks/dev"
 	"github.com/flamingo/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
@@ -32,15 +33,23 @@ func TestService_GetInterceptUI(t *testing.T) {
 }
 
 func TestInterceptSetup_Structure(t *testing.T) {
+	kubernetesPort := &intercept.ServicePort{
+		Name:     "http",
+		Port:     8080,
+		Protocol: "TCP",
+	}
+	
 	setup := &InterceptSetup{
-		ServiceName: "test-service",
-		Namespace:   "default",
-		LocalPort:   8080,
-		RemotePort:  8080,
+		ServiceName:    "test-service",
+		Namespace:      "default",
+		LocalPort:      8080,
+		KubernetesPort: kubernetesPort,
 	}
 	
 	assert.Equal(t, "test-service", setup.ServiceName)
 	assert.Equal(t, "default", setup.Namespace)
 	assert.Equal(t, 8080, setup.LocalPort)
-	assert.Equal(t, 8080, setup.RemotePort)
+	assert.Equal(t, kubernetesPort, setup.KubernetesPort)
+	assert.Equal(t, "http", setup.KubernetesPort.Name)
+	assert.Equal(t, int32(8080), setup.KubernetesPort.Port)
 }

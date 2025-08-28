@@ -3,21 +3,22 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 
-	"github.com/flamingo/openframe/internal/dev/providers/kubernetes"
+	"github.com/flamingo/openframe/internal/dev/services/intercept"
 	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
 // InterceptUI handles user interactions for intercept setup
 type InterceptUI struct {
-	kubernetesClient kubernetes.KubernetesClient
-	serviceClient    kubernetes.ServiceClient
+	kubernetesClient intercept.KubernetesClient
+	serviceClient    intercept.ServiceClient
 }
 
 // NewInterceptUI creates a new intercept UI handler
-func NewInterceptUI(kubernetesClient kubernetes.KubernetesClient, serviceClient kubernetes.ServiceClient) *InterceptUI {
+func NewInterceptUI(kubernetesClient intercept.KubernetesClient, serviceClient intercept.ServiceClient) *InterceptUI {
 	return &InterceptUI{
 		kubernetesClient: kubernetesClient,
 		serviceClient:    serviceClient,
@@ -28,7 +29,7 @@ func NewInterceptUI(kubernetesClient kubernetes.KubernetesClient, serviceClient 
 type ServiceInfo struct {
 	Name      string
 	Namespace string
-	Port      int32
+	Ports     []intercept.ServicePort // All available ports
 	Found     bool
 }
 
@@ -50,28 +51,60 @@ func (ui *InterceptUI) PromptForService(ctx context.Context) (*ServiceInfo, erro
 	}
 
 	if !service.Found {
-		pterm.Error.Printf("Service '%s' not found in the cluster\n", serviceName)
-		pterm.Info.Println("Make sure the service name is correct and the service is deployed")
-		return service, fmt.Errorf("service '%s' not found", serviceName)
+		pterm.Error.Printf("Service '%s' not found in the cluster. Make sure the service name is correct and deployed\n", serviceName)
+		os.Exit(1) // Exit directly with error code instead of returning error
 	}
 
 	pterm.Success.Printf("Service '%s' found in namespace '%s'\n", service.Name, service.Namespace)
-	if service.Port > 0 {
-		pterm.Info.Printf("Service port: %d\n", service.Port)
-	}
 
 	return service, nil
 }
 
-// PromptForLocalPort asks user for the local port to use for intercept
-func (ui *InterceptUI) PromptForLocalPort(servicePort int32) (int, error) {
-	defaultPort := "8080"
-	if servicePort > 0 {
-		defaultPort = fmt.Sprintf("%d", servicePort)
+// PromptForKubernetesPort asks user to select which Kubernetes port to intercept
+func (ui *InterceptUI) PromptForKubernetesPort(servicePorts []intercept.ServicePort) (*intercept.ServicePort, error) {
+	if len(servicePorts) == 0 {
+		return nil, fmt.Errorf("service has no ports available")
 	}
 
+	// If only one port, use it automatically
+	if len(servicePorts) == 1 {
+		selectedPort := &servicePorts[0]
+		portName := fmt.Sprintf("%d", selectedPort.Port)
+		if selectedPort.Name != "" {
+			portName = fmt.Sprintf("%d (%s)", selectedPort.Port, selectedPort.Name)
+		}
+		pterm.Info.Printf("Using Kubernetes port: %s\n", portName)
+		return selectedPort, nil
+	}
+
+	// Multiple ports - let user choose
+	var options []string
+	for _, port := range servicePorts {
+		if port.Name != "" {
+			options = append(options, fmt.Sprintf("%d (%s)", port.Port, port.Name))
+		} else {
+			options = append(options, fmt.Sprintf("%d", port.Port))
+		}
+	}
+
+	selectedIndex, _, err := sharedUI.SelectFromList(
+		"Select Kubernetes port to intercept",
+		options,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select Kubernetes port: %w", err)
+	}
+
+	return &servicePorts[selectedIndex], nil
+}
+
+// PromptForLocalPort asks user for the local port to use for intercept
+func (ui *InterceptUI) PromptForLocalPort(kubernetesPort *intercept.ServicePort) (int, error) {
+	// Default to the same port as Kubernetes port
+	defaultPort := fmt.Sprintf("%d", kubernetesPort.Port)
+
 	portStr, err := sharedUI.GetInput(
-		"Enter local port for intercept",
+		"Enter local target port to forward traffic",
 		defaultPort,
 		ui.validatePort,
 	)
@@ -101,15 +134,10 @@ func (ui *InterceptUI) findServiceInCluster(ctx context.Context, serviceName str
 				continue // Try next namespace
 			}
 
-			port := int32(0)
-			if len(serviceInfo.Ports) > 0 {
-				port = serviceInfo.Ports[0].Port
-			}
-
 			return &ServiceInfo{
 				Name:      serviceName,
 				Namespace: namespace,
-				Port:      port,
+				Ports:     serviceInfo.Ports,
 				Found:     true,
 			}, nil
 		}

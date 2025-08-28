@@ -2,12 +2,16 @@ package dev
 
 import (
 	"context"
+	"fmt"
 
+	clusterUI "github.com/flamingo/openframe/internal/cluster/ui"
+	clusterUtils "github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/flamingo/openframe/internal/dev/models"
+	"github.com/flamingo/openframe/internal/dev/providers/kubectl"
 	"github.com/flamingo/openframe/internal/dev/services/intercept"
 	"github.com/flamingo/openframe/internal/dev/ui"
-	devMocks "github.com/flamingo/openframe/tests/mocks/dev"
 	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -73,31 +77,106 @@ func runIntercept(cmd *cobra.Command, args []string, flags *models.InterceptFlag
 	return service.StartIntercept(args[0], flags)
 }
 
-// runInteractiveIntercept runs the simplified interactive intercept flow
+// runInteractiveIntercept runs the interactive intercept flow with cluster selection
 func runInteractiveIntercept(ctx context.Context, verbose, dryRun bool) error {
-	// Create mock Kubernetes client for demonstration
-	// In a real implementation, this would be a real Kubernetes client
-	kubernetesClient := devMocks.NewMockKubernetesClient()
+	// Step 1: Select cluster using existing cluster service
+	clusterName, err := selectClusterForIntercept(verbose)
+	if err != nil || clusterName == "" {
+		return err
+	}
+
+	// Step 2: Set kubectl context to the selected cluster
+	if err := setKubectlContext(ctx, clusterName, verbose); err != nil {
+		return fmt.Errorf("failed to set kubectl context: %w", err)
+	}
+
+	// Step 3: Create real kubectl provider
+	exec := executor.NewRealCommandExecutor(dryRun, verbose)
+	kubectlProvider := kubectl.NewProvider(exec, verbose)
 	
-	// Create UI service (using the same mock client for both interfaces)
-	uiService := ui.NewService(kubernetesClient, kubernetesClient)
+	// Step 4: Check kubectl connection
+	if err := kubectlProvider.CheckConnection(ctx); err != nil {
+		return fmt.Errorf("kubectl is not connected to cluster: %w", err)
+	}
 	
-	// Run interactive setup
+	// Step 5: Create UI service with real kubectl provider
+	uiService := ui.NewService(kubectlProvider, kubectlProvider)
+	
+	// Step 6: Run interactive setup
 	setup, err := uiService.InteractiveInterceptSetup(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Convert to intercept flags
+	// Step 7: Convert to intercept flags
+	remotePortName := setup.KubernetesPort.Name
+	if remotePortName == "" {
+		// If the port has no name, use the port number
+		remotePortName = fmt.Sprintf("%d", setup.KubernetesPort.Port)
+	}
+	
 	flags := &models.InterceptFlags{
-		Port:      setup.LocalPort,
-		Namespace: setup.Namespace,
+		Port:           setup.LocalPort,
+		Namespace:      setup.Namespace,
+		RemotePortName: remotePortName,
 	}
 
-	// Create executor and service
-	exec := executor.NewRealCommandExecutor(dryRun, verbose)
+	// Step 8: Create intercept service and start
 	interceptService := intercept.NewService(exec, verbose)
 	
 	// Start the intercept
 	return interceptService.StartIntercept(setup.ServiceName, flags)
+}
+
+// selectClusterForIntercept handles cluster selection for intercept
+func selectClusterForIntercept(verbose bool) (string, error) {
+	// Create cluster service using the same pattern as chart install
+	clusterService := clusterUtils.GetCommandService()
+	
+	// Get list of clusters
+	clusters, err := clusterService.ListClusters()
+	if err != nil {
+		if verbose {
+			pterm.Error.Printf("Failed to list clusters: %v\n", err)
+		}
+		return "", fmt.Errorf("failed to list clusters: %w", err)
+	}
+	
+	// Check if we have any clusters
+	if len(clusters) == 0 {
+		pterm.Warning.Println("No Kubernetes clusters found")
+		pterm.Info.Println("Please create a cluster first:")
+		pterm.Printf("  openframe cluster create <cluster-name>\n")
+		return "", fmt.Errorf("no clusters available")
+	}
+	
+	// Always show cluster selection (like chart install command)
+	
+	// Multiple clusters - let user select
+	var clusterNames []string
+	for _, c := range clusters {
+		clusterNames = append(clusterNames, fmt.Sprintf("%s (%s)", c.Name, c.Status))
+	}
+	
+	// Use cluster selector UI
+	selector := clusterUI.NewSelector("intercept")
+	return selector.SelectCluster(clusters, []string{})
+}
+
+// setKubectlContext switches kubectl context to the selected cluster
+func setKubectlContext(ctx context.Context, clusterName string, verbose bool) error {
+	// K3d cluster context format: k3d-<cluster-name>
+	contextName := fmt.Sprintf("k3d-%s", clusterName)
+	
+	if verbose {
+		pterm.Info.Printf("Setting kubectl context to: %s\n", contextName)
+	}
+	
+	exec := executor.NewRealCommandExecutor(false, verbose)
+	_, err := exec.Execute(ctx, "kubectl", "config", "use-context", contextName)
+	if err != nil {
+		return fmt.Errorf("failed to switch kubectl context to %s: %w", contextName, err)
+	}
+	
+	return nil
 }

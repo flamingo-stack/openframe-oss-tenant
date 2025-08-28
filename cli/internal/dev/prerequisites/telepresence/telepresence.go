@@ -23,10 +23,16 @@ func IsTelepresenceRunning() bool {
 	if !commandExists("telepresence") {
 		return false
 	}
-	// Check if telepresence is available by running version command
-	cmd := exec.Command("telepresence", "version")
-	err := cmd.Run()
-	return err == nil
+	// Check if telepresence daemon is running by checking status
+	cmd := exec.Command("telepresence", "status", "--output", "json")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	
+	// Check if root daemon is running in the output
+	return strings.Contains(string(output), `"running":true`) && 
+		   strings.Contains(string(output), `root_daemon`)
 }
 
 func telepresenceInstallHelp() string {
@@ -55,16 +61,29 @@ func (t *TelepresenceInstaller) GetInstallHelp() string {
 }
 
 func (t *TelepresenceInstaller) Install() error {
+	var err error
+	
 	switch runtime.GOOS {
 	case "darwin":
-		return t.installMacOS()
+		err = t.installMacOS()
 	case "linux":
-		return t.installLinux()
+		err = t.installLinux()
 	case "windows":
 		return fmt.Errorf("automatic Telepresence installation on Windows not supported. Please install from https://www.telepresence.io/docs/latest/install/")
 	default:
 		return fmt.Errorf("automatic Telepresence installation not supported on %s", runtime.GOOS)
 	}
+	
+	if err != nil {
+		return err
+	}
+	
+	// Initialize telepresence daemon to handle sudo requirement upfront
+	if err := t.initializeTelepresence(); err != nil {
+		return fmt.Errorf("failed to initialize telepresence: %w", err)
+	}
+	
+	return nil
 }
 
 func (t *TelepresenceInstaller) installMacOS() error {
@@ -147,4 +166,29 @@ func (t *TelepresenceInstaller) GetVersion() (string, error) {
 	}
 
 	return strings.TrimSpace(string(output)), nil
+}
+
+// initializeTelepresence runs telepresence connect to initialize daemon and handle sudo
+func (t *TelepresenceInstaller) initializeTelepresence() error {
+	// Run telepresence connect briefly to initialize daemon (suppress output)
+	cmd := exec.Command("telepresence", "connect", "--namespace", "default")
+	// Suppress output to avoid showing connection details
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	
+	// Allow this to fail - the goal is just to initialize the daemon
+	cmd.Run()
+	
+	// Immediately quit to clean up
+	quitCmd := exec.Command("telepresence", "quit")
+	quitCmd.Stdout = nil
+	quitCmd.Stderr = nil
+	quitCmd.Run()
+	
+	return nil
+}
+
+// EnsureConfig ensures telepresence daemon is initialized (public method for installer)
+func (t *TelepresenceInstaller) EnsureConfig() error {
+	return t.initializeTelepresence()
 }

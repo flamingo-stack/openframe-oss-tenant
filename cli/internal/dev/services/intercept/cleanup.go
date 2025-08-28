@@ -2,7 +2,6 @@ package intercept
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,7 +29,9 @@ func (s *Service) cleanup() {
 		return // Nothing to clean up
 	}
 
-	fmt.Println("\nCleaning up intercept: " + s.currentService)
+	// Show immediate response to Ctrl+C
+	pterm.Info.Println("Stopping intercept...")
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -45,16 +46,15 @@ func (s *Service) cleanup() {
 		}
 	}
 
-	fmt.Println("Quitting Telepresence daemon")
+	// Quit telepresence daemon silently
 	if _, err := s.executor.Execute(ctx, "telepresence", "quit"); err != nil {
 		pterm.Warning.Printf("Failed to quit telepresence: %v\n", err)
 	} else if s.verbose {
 		pterm.Success.Println("Telepresence daemon stopped")
 	}
 
-	// Restore original namespace
+	// Restore original namespace silently
 	if s.originalNamespace != "" && s.originalNamespace != s.currentNamespace {
-		fmt.Printf("Restoring original namespace: %s\n", s.originalNamespace)
 		if _, err := s.executor.Execute(ctx, "telepresence", "connect", "--namespace", s.originalNamespace); err != nil {
 			pterm.Warning.Printf("Failed to restore original namespace: %v\n", err)
 		} else if s.verbose {
@@ -62,5 +62,6 @@ func (s *Service) cleanup() {
 		}
 	}
 
+	pterm.Success.Println("Intercept stopped")
 	os.Exit(0)
 }

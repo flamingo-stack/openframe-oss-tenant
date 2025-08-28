@@ -24,9 +24,9 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 		{
 			name: "telepresence status returns valid JSON",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
-				mock.SetResponse("telepresence status", &executor.CommandResult{
+				mock.SetResponse("bash", &executor.CommandResult{
 					ExitCode: 0,
-					Stdout:   `{"user_daemon":{"namespace":"production"}}`,
+					Stdout:   "production",
 				})
 			},
 			expectedNamespace: "production",
@@ -35,9 +35,9 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 		{
 			name: "telepresence status returns empty namespace",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
-				mock.SetResponse("telepresence status", &executor.CommandResult{
+				mock.SetResponse("bash", &executor.CommandResult{
 					ExitCode: 0,
-					Stdout:   `{"user_daemon":{"namespace":""}}`,
+					Stdout:   "",
 				})
 			},
 			expectedNamespace: "default",
@@ -46,18 +46,17 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 		{
 			name: "telepresence status fails - returns default",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
-				mock.SetShouldFail(true, "telepresence not connected")
+				mock.SetResponse("bash", &executor.CommandResult{
+					ExitCode: 1,
+					Stderr:   "telepresence not connected",
+				})
 			},
 			expectedNamespace: "default",
 			expectError:       false,
 		},
 		{
-			name: "telepresence status returns invalid JSON - fallback to jq",
+			name: "bash command returns namespace",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
-				mock.SetResponse("telepresence status", &executor.CommandResult{
-					ExitCode: 0,
-					Stdout:   `invalid json`,
-				})
 				mock.SetResponse("bash", &executor.CommandResult{
 					ExitCode: 0,
 					Stdout:   "staging",
@@ -67,12 +66,8 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 			expectError:       false,
 		},
 		{
-			name: "telepresence status returns invalid JSON - jq returns null",
+			name: "bash command returns null",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
-				mock.SetResponse("telepresence status", &executor.CommandResult{
-					ExitCode: 0,
-					Stdout:   `invalid json`,
-				})
 				mock.SetResponse("bash", &executor.CommandResult{
 					ExitCode: 0,
 					Stdout:   "null",
@@ -82,13 +77,12 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 			expectError:       false,
 		},
 		{
-			name: "telepresence status returns invalid JSON - jq also fails",
+			name: "bash command fails",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
-				mock.SetResponse("telepresence status", &executor.CommandResult{
-					ExitCode: 0,
-					Stdout:   `invalid json`,
+				mock.SetResponse("bash", &executor.CommandResult{
+					ExitCode: 1,
+					Stderr:   "command failed",
 				})
-				mock.SetShouldFail(true, "jq failed")
 			},
 			expectedNamespace: "default",
 			expectError:       false,
@@ -185,7 +179,7 @@ func TestService_SwitchNamespace(t *testing.T) {
 			// Verify commands were executed in correct order
 			commands := mockExecutor.GetExecutedCommands()
 			if len(commands) >= 1 {
-				assert.Contains(t, commands[0], "telepresence quit")
+				assert.Contains(t, commands[0], "telepresence disconnect")
 			}
 			if len(commands) >= 2 {
 				assert.Contains(t, commands[1], "telepresence connect")

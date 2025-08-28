@@ -5,14 +5,14 @@ registry:
     email: dmtkov@flamingo.cx  
 
 
-# apps:
-#   namespace-integrated-tools:
-#     enabled: false
-#   authentik: 
-#     enabled: false
-#   fleetmdm: 
-#     enabled: false
-#   meshcentral: 
-#     enabled: false 
-#   tactical-rmm: 
-#     enabled: false
+apps:
+  namespace-integrated-tools:
+    enabled: false
+  authentik: 
+    enabled: false
+  fleetmdm: 
+    enabled: false
+  meshcentral: 
+    enabled: false 
+  tactical-rmm: 
+    enabled: false

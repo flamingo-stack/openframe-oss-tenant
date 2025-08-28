@@ -126,7 +126,7 @@ func (i *Installer) CheckAndInstall() error {
 	allPresent, missing := i.CheckSilent()
 	
 	if allPresent {
-		pterm.Success.Println("All required development tools are installed")
+		// Tools are already installed, proceed
 		return nil
 	}
 
@@ -146,6 +146,7 @@ func (i *Installer) CheckAndInstall() error {
 		return fmt.Errorf("required development tools are not installed")
 	}
 }
+
 
 // For backward compatibility with existing intercept service pattern
 func CheckTelepresenceAndJq() error {

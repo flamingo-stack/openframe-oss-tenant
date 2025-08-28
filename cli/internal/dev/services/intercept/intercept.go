@@ -5,14 +5,11 @@ import (
 	"fmt"
 
 	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/pterm/pterm"
 )
 
 // createIntercept creates the actual telepresence intercept
 func (s *Service) createIntercept(ctx context.Context, serviceName string, flags *models.InterceptFlags) error {
-	pterm.Info.Printf("Starting intercept for %s\n", serviceName)
-
-	// Build intercept command following the original script pattern
+	// Build intercept command following the bash script pattern
 	args := []string{"intercept", serviceName}
 
 	// Add port mapping (local_port:remote_port_name format from original)

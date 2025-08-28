@@ -3,6 +3,7 @@ package intercept
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/flamingo/openframe/internal/dev/models"
@@ -128,7 +129,11 @@ func TestService_CreateIntercept(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "failed to create intercept")
+				// Error could be from telepresence connection or intercept creation
+				assert.True(t, 
+					strings.Contains(err.Error(), "failed to create intercept") ||
+					strings.Contains(err.Error(), "failed to ensure telepresence connection"),
+					"Error should contain either 'failed to create intercept' or 'failed to ensure telepresence connection', got: %s", err.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -136,32 +141,39 @@ func TestService_CreateIntercept(t *testing.T) {
 			// Verify command structure for successful cases
 			if !tt.expectError {
 				commands := mockExecutor.GetExecutedCommands()
-				assert.Len(t, commands, 1)
+				assert.Len(t, commands, 1) // just intercept command now
 				
-				cmd := commands[0]
-				assert.Contains(t, cmd, "telepresence intercept")
-				assert.Contains(t, cmd, tt.serviceName)
-				assert.Contains(t, cmd, "--mount=false")
+				// Find the intercept command
+				var interceptCmd string
+				for _, cmd := range commands {
+					if strings.Contains(cmd, "telepresence intercept") {
+						interceptCmd = cmd
+						break
+					}
+				}
+				assert.NotEmpty(t, interceptCmd, "intercept command should exist")
+				assert.Contains(t, interceptCmd, tt.serviceName)
+				assert.Contains(t, interceptCmd, "--mount=false")
 
 				// Check port mapping format
 				expectedPortMapping := service.getRemotePortName(tt.flags)
 				portArg := fmt.Sprintf("%d:%s", tt.flags.Port, expectedPortMapping)
-				assert.Contains(t, cmd, portArg)
+				assert.Contains(t, interceptCmd, portArg)
 
 				// Check optional flags
 				if tt.flags.EnvFile != "" {
-					assert.Contains(t, cmd, "--env-file")
-					assert.Contains(t, cmd, tt.flags.EnvFile)
+					assert.Contains(t, interceptCmd, "--env-file")
+					assert.Contains(t, interceptCmd, tt.flags.EnvFile)
 				}
 				if tt.flags.Global {
-					assert.Contains(t, cmd, "--global")
+					assert.Contains(t, interceptCmd, "--global")
 				}
 				if tt.flags.Replace {
-					assert.Contains(t, cmd, "--replace")
+					assert.Contains(t, interceptCmd, "--replace")
 				}
 				for _, header := range tt.flags.Header {
-					assert.Contains(t, cmd, "--http-header")
-					assert.Contains(t, cmd, header)
+					assert.Contains(t, interceptCmd, "--http-header")
+					assert.Contains(t, interceptCmd, header)
 				}
 			}
 		})
@@ -234,9 +246,15 @@ func TestIntercept_CommandConstruction(t *testing.T) {
 	assert.NoError(t, err)
 
 	commands := mockExecutor.GetExecutedCommands()
-	assert.Len(t, commands, 1)
-
-	cmd := commands[0]
+	// Find the intercept command (there will be status check commands too)
+	var cmd string
+	for _, c := range commands {
+		if strings.Contains(c, "telepresence intercept") {
+			cmd = c
+			break
+		}
+	}
+	assert.NotEmpty(t, cmd, "intercept command should exist")
 	
 	// Verify all expected arguments are present
 	expectedArgs := []string{

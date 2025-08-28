@@ -3,7 +3,7 @@ package ui
 import (
 	"context"
 	
-	"github.com/flamingo/openframe/internal/dev/providers/kubernetes"
+	"github.com/flamingo/openframe/internal/dev/services/intercept"
 )
 
 // Service provides a unified interface for dev UI interactions
@@ -12,7 +12,7 @@ type Service struct {
 }
 
 // NewService creates a new dev UI service
-func NewService(kubernetesClient kubernetes.KubernetesClient, serviceClient kubernetes.ServiceClient) *Service {
+func NewService(kubernetesClient intercept.KubernetesClient, serviceClient intercept.ServiceClient) *Service {
 	return &Service{
 		interceptUI: NewInterceptUI(kubernetesClient, serviceClient),
 	}
@@ -31,24 +31,30 @@ func (s *Service) InteractiveInterceptSetup(ctx context.Context) (*InterceptSetu
 		return nil, err
 	}
 
-	// Get local port from user
-	localPort, err := s.interceptUI.PromptForLocalPort(service.Port)
+	// Get Kubernetes port from user (which port on the service to intercept)
+	kubernetesPort, err := s.interceptUI.PromptForKubernetesPort(service.Ports)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get local port from user (where to forward traffic locally)
+	localPort, err := s.interceptUI.PromptForLocalPort(kubernetesPort)
 	if err != nil {
 		return nil, err
 	}
 
 	return &InterceptSetup{
-		ServiceName: service.Name,
-		Namespace:   service.Namespace,
-		LocalPort:   localPort,
-		RemotePort:  int(service.Port),
+		ServiceName:     service.Name,
+		Namespace:       service.Namespace,
+		LocalPort:       localPort,
+		KubernetesPort:  kubernetesPort,
 	}, nil
 }
 
 // InterceptSetup contains the intercept configuration
 type InterceptSetup struct {
-	ServiceName string
-	Namespace   string
-	LocalPort   int
-	RemotePort  int
+	ServiceName     string
+	Namespace       string
+	LocalPort       int
+	KubernetesPort  *intercept.ServicePort
 }

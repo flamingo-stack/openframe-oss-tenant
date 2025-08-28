@@ -36,9 +36,9 @@ type TelepresenceStatus struct {
 // NewService creates a new intercept service
 func NewService(exec executor.CommandExecutor, verbose bool) *Service {
 	return &Service{
-		executor:      exec,
-		verbose:       verbose,
-		signalChannel: make(chan os.Signal, 1),
+		executor:       exec,
+		verbose:        verbose,
+		signalChannel:  make(chan os.Signal, 1),
 		isIntercepting: false,
 	}
 }
@@ -57,31 +57,18 @@ func (s *Service) StartIntercept(serviceName string, flags *models.InterceptFlag
 		return fmt.Errorf("prerequisites check failed: %w", err)
 	}
 
+	pterm.Info.Println("Setting up intercept...")
+
 	// Set up cleanup handler
 	s.setupCleanupHandler(serviceName)
 
-	// Get current namespace from telepresence
-	currentNamespace, err := s.getCurrentNamespace(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get current namespace: %w", err)
+	// Get current namespace and switch if needed (like bash script)
+	if err := s.ensureCorrectNamespace(ctx, flags.Namespace); err != nil {
+		return fmt.Errorf("failed to ensure correct namespace: %w", err)
 	}
 
-	s.originalNamespace = currentNamespace
 	s.currentService = serviceName
 	s.currentNamespace = flags.Namespace
-
-	if s.verbose {
-		pterm.Info.Printf("Current namespace: %s\n", currentNamespace)
-	}
-
-	// Switch namespace if needed
-	if currentNamespace != flags.Namespace {
-		if err := s.switchNamespace(ctx, currentNamespace, flags.Namespace); err != nil {
-			return err
-		}
-	} else {
-		pterm.Success.Printf("Telepresence already connected to %s\n", flags.Namespace)
-	}
 
 	// Wait a moment for connection to stabilize
 	time.Sleep(1 * time.Second)
@@ -138,31 +125,7 @@ func (s *Service) validateInputs(serviceName string, flags *models.InterceptFlag
 
 // showInterceptInstructions displays helpful information about the active intercept
 func (s *Service) showInterceptInstructions(serviceName string, flags *models.InterceptFlags) {
-	fmt.Println()
-	
-	boxContent := fmt.Sprintf(
-		"SERVICE:     %s\n"+
-		"NAMESPACE:   %s\n"+
-		"LOCAL PORT:  %d\n"+
-		"STATUS:      Active",
-		serviceName,
-		flags.Namespace,
-		flags.Port,
-	)
-
-	pterm.DefaultBox.
-		WithTitle(" 🔀 Intercept Active ").
-		WithTitleTopCenter().
-		Println(boxContent)
-
-	fmt.Println()
-	pterm.Info.Printf("💡 Intercept Instructions:\n")
-	pterm.Printf("  • Your local service should be running on port %d\n", flags.Port)
-	pterm.Printf("  • Traffic to %s in namespace %s will be intercepted\n", serviceName, flags.Namespace)
-	pterm.Printf("  • Press Ctrl+C to stop the intercept and cleanup\n")
-	fmt.Println()
-
-	pterm.Success.Println("Intercept running. Press Ctrl+C to stop...")
+	pterm.Success.Printf("Intercepting %s. Press Ctrl+C to stop...\n", serviceName)
 }
 
 // waitForInterrupt keeps the process alive until interrupted
@@ -205,4 +168,49 @@ func (s *Service) GetCurrentNamespace() string {
 // GetOriginalNamespace returns the original namespace before intercept
 func (s *Service) GetOriginalNamespace() string {
 	return s.originalNamespace
+}
+
+// ensureCorrectNamespace ensures telepresence is connected to the correct namespace (like bash script)
+func (s *Service) ensureCorrectNamespace(ctx context.Context, targetNamespace string) error {
+	// Create a context with timeout to avoid hanging
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Get current namespace
+	currentNamespace, err := s.getCurrentNamespace(timeoutCtx)
+	if err != nil {
+		if s.verbose {
+			pterm.Warning.Printf("Could not get current namespace, assuming default: %v\n", err)
+		}
+		currentNamespace = "default"
+	}
+
+	s.originalNamespace = currentNamespace
+
+	if s.verbose {
+		pterm.Info.Printf("Current namespace: %s, target: %s\n", currentNamespace, targetNamespace)
+	}
+
+	if currentNamespace != targetNamespace {
+		if s.verbose {
+			pterm.Info.Printf("Switching Telepresence from %s to %s\n", currentNamespace, targetNamespace)
+		}
+
+		// Quit and reconnect to new namespace (like bash script)
+		s.executor.Execute(timeoutCtx, "telepresence", "quit")
+
+		_, err = s.executor.Execute(timeoutCtx, "telepresence", "connect", "--namespace", targetNamespace)
+		if err != nil {
+			return fmt.Errorf("failed to connect to namespace %s: %w", targetNamespace, err)
+		}
+	} else {
+		if s.verbose {
+			pterm.Info.Printf("Telepresence already connected to %s\n", targetNamespace)
+		}
+	}
+
+	// Sleep briefly like bash script
+	time.Sleep(1 * time.Second)
+
+	return nil
 }
