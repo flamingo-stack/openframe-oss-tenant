@@ -231,7 +231,6 @@ jobs:
         working-directory: client
         run: |
           make fmt
-#          make clippy # temporary mute clippy
           make all
 
       - name: Upload client artifact
