@@ -6,13 +6,15 @@ pub struct ToolAgentFileClient {
     base_url: String,
 }
 
+
+// TODO: make single client for all asset types?
 impl ToolAgentFileClient {
     pub fn new(http_client: Client, base_url: String) -> Self {
         Self { http_client, base_url }
     }
 
-    pub async fn get_tool_agent_file(&self, tool_id: String) -> Result<bytes::Bytes> {
-        let url = format!("{}/clients/tool-agent/{}", self.base_url, tool_id);
+    pub async fn get_tool_agent_file(&self, assetId: String) -> Result<bytes::Bytes> {
+        let url = format!("{}/clients/tool-agent/{}", self.base_url, assetId);
         let response = self.http_client.get(url).send()
             .await
             .context("Failed to get tool agent file")?;

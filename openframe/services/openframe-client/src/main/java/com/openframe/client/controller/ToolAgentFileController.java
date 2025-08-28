@@ -15,8 +15,8 @@ public class ToolAgentFileController {
     // TODO: remove after github artifact is implemented
     //  Currently we return hardcoded content for testing purposes only
     @GetMapping
-    public byte[] getToolAgentFile(@PathVariable String toolId) {
-        try (InputStream stream = ToolAgentFileController.class.getResourceAsStream("/" + toolId)) {
+    public byte[] getToolAgentFile(@PathVariable String assetId) {
+        try (InputStream stream = ToolAgentFileController.class.getResourceAsStream("/" + assetId)) {
             if (stream == null) {
                 throw new RuntimeException("No content");
             }

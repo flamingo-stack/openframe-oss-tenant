@@ -5,6 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
+// TODO: main binary should be defined as asset too
+//  every assert should have name
 public class ToolAgentAsset {
     
     private String id;
