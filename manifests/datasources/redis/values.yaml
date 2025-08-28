@@ -5,6 +5,7 @@ redis:
   # bitnamilegacy
   image:
     repository: bitnamilegacy/redis
+    tag: 8.2.1-debian-12-r0
 
   global:
     imagePullSecrets: 
@@ -24,6 +25,7 @@ redis:
     # bitnamilegacy
     image:
       repository: bitnamilegacy/redis-exporter
+      tag: 1.76.0-debian-12-r0
 
     enabled: true
     serviceMonitor:

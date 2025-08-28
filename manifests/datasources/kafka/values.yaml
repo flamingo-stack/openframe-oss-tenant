@@ -6,6 +6,7 @@ kafka:
   # bitnamilegacy
   image:
     repository: bitnamilegacy/kafka
+    tag: 4.0.0-debian-12-r10
 
   broker:
     resourcesPreset: medium
@@ -104,6 +105,7 @@ kafka:
       # bitnamilegacy
       image:
         repository: bitnamilegacy/jmx-exporter
+        tag: 1.4.0-debian-12-r0
         
       enabled: true
       kafkaJmxPort: 5555
