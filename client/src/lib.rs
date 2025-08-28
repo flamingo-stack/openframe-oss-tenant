@@ -41,14 +41,14 @@ use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::shared_token_service::SharedTokenService;
 use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-use crate::services::tool_installer::ToolInstaller;
+// ToolInstaller import removed - not currently used
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
-use crate::services::ToolInstallationCommandRunner;
+// ToolInstallationCommandRunner import removed - not currently used
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -210,14 +210,13 @@ impl Client {
         );
 
         // Initialize tool installation command runner
-        let command_runner = ToolInstallationCommandRunner::new();
+        // Command runner removed - not currently used
 
         // Initialize installed tools service
         let installed_tools_service = InstalledToolsService::new(directory_manager.clone())
             .context("Failed to initialize installed tools service")?;
 
-        // Initialize tool installer
-        let tool_installer = ToolInstaller::new(directory_manager.clone(), command_runner);
+        // Tool installer removed - not currently used in tool installation service
 
         // Initialize NATS message publisher
         let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());
@@ -228,9 +227,9 @@ impl Client {
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             tool_agent_file_client,
-            tool_installer,
             tool_connection_message_publisher,
             installed_tools_service.clone(),
+            directory_manager.clone(),
         );
 
         // Initialize tool installation message listener

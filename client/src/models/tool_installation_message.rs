@@ -11,6 +11,7 @@ pub struct ToolInstallationMessage {
     pub assets: Vec<Asset>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Asset {
     pub id: String,
 }
