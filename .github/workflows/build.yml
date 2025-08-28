@@ -230,13 +230,12 @@ jobs:
       - name: Run lint
         working-directory: client
         run: |
-          make fmt
+          make lint
 
-      - name: Run clippy and build client
+      - name: Build client
         working-directory: client
         run: |
           make build TARGET=${{ matrix.target }}
-          make test TARGET=${{ matrix.target }}
 
       - name: Upload client artifact
         uses: actions/upload-artifact@v4

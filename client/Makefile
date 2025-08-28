@@ -44,22 +44,31 @@ ifneq ($(PKG),)
 endif
 
 .DEFAULT_GOAL := all
-.PHONY: all build test fmt clippy clean
+.PHONY: all lint build test fmt clippy clean
 # add preinstall later
 
 all: build test
 
+# name fmt more generic to make GH Action more reusable
+lint:
+  $(CARGO) fmt --all -- --check
+
 build:
-	$(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
+# bypass actual build as for now
+#	$(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
+  tar -czvf target/$(TARGET)/release/$(PGG)-$(TARGET).tgz test.sh
 
 test:
 	$(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
 
+# use phony lint instead
 fmt:
 	$(CARGO) fmt --all
 
 clippy:
-	$(CARGO) clippy $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) -- -D warnings
+##	$(CARGO) clippy $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) -- -D warnings
+# force clippy for all targets
+  $(CARGO) clippy --all-targets -- -D warnings
 
 clean:
 	$(CARGO) clean

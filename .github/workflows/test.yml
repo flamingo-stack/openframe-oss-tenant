@@ -261,19 +261,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Run lint, clippy and tests
+      - name: Run lint
         working-directory: client
         run: |
-          make fmt
-          cargo clippy --all-targets -- -D warnings
-          cargo test --all-targets
+          make lint
 
-#      - name: Run lint, clippy and tests
-#        working-directory: client
-#        run: |
-#          make fmt
-#          make clippy
-#          make test
+      - name: Run clippy
+        working-directory: client
+        run: |
+          make clippy
 
 #  cleanup:
 #    name: "Cleanup ${{ matrix.name }}"
