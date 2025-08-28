@@ -43,12 +43,14 @@ jobs:
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'pull_request'
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'pull_request'
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
 
 #  build_java:
@@ -233,7 +235,8 @@ jobs:
     name: "Test Rust Client"
     needs: [changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
+    if: github.event_name == 'pull_request' && contains(needs.changes.outputs.client, 'true')
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -262,7 +265,15 @@ jobs:
         working-directory: client
         run: |
           make fmt
-          make test
+          cargo clippy --all-targets -- -D warnings
+          cargo test --all-targets
+
+#      - name: Run lint, clippy and tests
+#        working-directory: client
+#        run: |
+#          make fmt
+#          make clippy
+#          make test
 
 #  cleanup:
 #    name: "Cleanup ${{ matrix.name }}"

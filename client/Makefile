@@ -11,7 +11,7 @@ CARGO ?= cargo
 
 # ---- Knobs you can pass like: make build PROFILE=debug TARGET=... ----
 PROFILE             ?= release            # release | debug
-TARGET              ?= --all-targets      # e.g. x86_64-unknown-linux-gnu, all targets for now
+TARGET              ?=                    # e.g. x86_64-unknown-linux-gnu, all targets for now
 FEATURES            ?=                    # e.g. "foo bar"
 ALL_FEATURES        ?= 0                  # 1 to use --all-features
 NO_DEFAULT_FEATURES ?= 0                  # 1 to use --no-default-features
@@ -20,8 +20,7 @@ TEST_ARGS           ?=                    # extra args to `cargo test`, e.g. "--
 
 # ---- Derived flags (don’t edit) ----
 ifneq ($(TARGET),)
-#  TARGET_FLAG := --target $(TARGET)
-  TARGET_FLAG := $(TARGET)
+  TARGET_FLAG := --target $(TARGET)
 endif
 
 ifeq ($(PROFILE),release)
