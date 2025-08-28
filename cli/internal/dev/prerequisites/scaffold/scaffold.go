@@ -2,7 +2,6 @@ package scaffold
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -32,13 +31,13 @@ func IsScaffoldRunning() bool {
 func scaffoldInstallHelp() string {
 	switch runtime.GOOS {
 	case "darwin":
-		return "Skaffold: Install via Homebrew 'brew install skaffold' or from https://skaffold.dev/docs/install/"
+		return "Run 'brew install skaffold' or download from https://skaffold.dev/docs/install/"
 	case "linux":
-		return "Skaffold: Install from https://skaffold.dev/docs/install/ or use your package manager"
+		return "Run 'curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/' or use your package manager"
 	case "windows":
-		return "Skaffold: Install from https://skaffold.dev/docs/install/ or use Chocolatey 'choco install skaffold'"
+		return "Run 'choco install skaffold' or download from https://skaffold.dev/docs/install/"
 	default:
-		return "Skaffold: Please install from https://skaffold.dev/docs/install/"
+		return "Please install from https://skaffold.dev/docs/install/"
 	}
 }
 
@@ -72,22 +71,15 @@ func (s *ScaffoldInstaller) installMacOS() error {
 		return fmt.Errorf("Homebrew is required for automatic Skaffold installation on macOS. Please install brew first: https://brew.sh")
 	}
 
-	fmt.Println("Installing Skaffold via Homebrew...")
 	cmd := exec.Command("brew", "install", "skaffold")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	
+	// Suppress verbose output - only show on error
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install Skaffold: %w", err)
 	}
-
-	fmt.Println("Skaffold installed successfully")
 	return nil
 }
 
 func (s *ScaffoldInstaller) installLinux() error {
-	fmt.Println("Installing Skaffold on Linux...")
-	
 	// Use the official installation script
 	if commandExists("curl") {
 		return s.installLinuxCurl()
@@ -104,8 +96,6 @@ func (s *ScaffoldInstaller) installLinuxCurl() error {
 	if err := s.runShellCommand(downloadCmd); err != nil {
 		return fmt.Errorf("failed to download and install Skaffold: %w", err)
 	}
-
-	fmt.Println("Skaffold installed successfully")
 	return nil
 }
 
@@ -115,22 +105,18 @@ func (s *ScaffoldInstaller) installLinuxWget() error {
 	if err := s.runShellCommand(downloadCmd); err != nil {
 		return fmt.Errorf("failed to download and install Skaffold: %w", err)
 	}
-
-	fmt.Println("Skaffold installed successfully")
 	return nil
 }
 
 func (s *ScaffoldInstaller) runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// Suppress output - only show on error
 	return cmd.Run()
 }
 
 func (s *ScaffoldInstaller) runShellCommand(command string) error {
 	cmd := exec.Command("bash", "-c", command)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// Suppress output - only show on error
 	return cmd.Run()
 }
 

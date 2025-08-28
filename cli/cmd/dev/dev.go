@@ -13,23 +13,30 @@ func GetDevCmd() *cobra.Command {
 		Use:     "dev",
 		Aliases: []string{"d"},
 		Short:   "Development tools for local Kubernetes workflows",
-		Long: `Development Tools - Local development workflows with Telepresence and Scaffold
+		Long: `Development Tools - Local development workflows with Telepresence and Skaffold
 
 This command group provides development workflow functionality:
   • intercept - Intercept traffic from cluster services to local development
-  • scaffold - Deploy development versions of services with live reloading
+  • skaffold - Deploy development versions of services with live reloading
 
-Supports Telepresence for traffic interception and custom scaffolding workflows.
+Supports Telepresence for traffic interception and custom Skaffold workflows.
 
 Examples:
   openframe dev intercept my-service
-  openframe dev scaffold my-service`,
+  openframe dev skaffold my-service`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo for subcommands, but not for the root dev command
 			if cmd.Use != "dev" {
 				ui.ShowLogoWithContext(cmd.Context())
 			}
-			return prerequisites.CheckTelepresenceAndJq()
+			// Check prerequisites for both intercept and skaffold commands
+			if cmd.Use == "intercept [service-name]" || cmd.Name() == "intercept" {
+				return prerequisites.CheckInterceptPrerequisites()
+			}
+			if cmd.Use == "skaffold [cluster-name]" || cmd.Name() == "skaffold" {
+				return prerequisites.CheckScaffoldPrerequisites()
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Show logo when no subcommand is provided
@@ -41,7 +48,7 @@ Examples:
 	// Add subcommands
 	devCmd.AddCommand(
 		getInterceptCmd(),
-		// getScaffoldCmd(), // Temporarily disabled - scaffold service not implemented yet
+		getScaffoldCmd(),
 	)
 
 	// Add global flags following cluster pattern

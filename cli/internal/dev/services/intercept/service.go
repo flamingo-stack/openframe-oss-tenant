@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/internal/dev/prerequisites"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
@@ -52,10 +51,11 @@ func (s *Service) StartIntercept(serviceName string, flags *models.InterceptFlag
 
 	ctx := context.Background()
 
-	// Check prerequisites using centralized system
-	if err := prerequisites.CheckTelepresenceAndJq(); err != nil {
-		return fmt.Errorf("prerequisites check failed: %w", err)
+	// Check if kubectl context is available
+	if err := s.checkKubernetesContext(); err != nil {
+		return err
 	}
+
 
 	pterm.Info.Println("Setting up intercept...")
 
@@ -123,6 +123,49 @@ func (s *Service) validateInputs(serviceName string, flags *models.InterceptFlag
 	return nil
 }
 
+// checkKubernetesContext verifies that kubectl has an available context
+func (s *Service) checkKubernetesContext() error {
+	ctx := context.Background()
+	
+	// Check if kubectl is available
+	result, err := s.executor.Execute(ctx, "kubectl", "config", "current-context")
+	if err != nil {
+		// Check if kubectl command is not found
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "executable file not found") {
+			pterm.Error.Println("kubectl not found. Please install kubectl to use intercept functionality.")
+			return fmt.Errorf("kubectl not available")
+		}
+		
+		// Check if no context is set
+		if strings.Contains(errMsg, "current-context is not set") || strings.Contains(errMsg, "no current context") {
+			pterm.Error.Println("No active kubectl context found. Please set a context with: kubectl config use-context <context-name>")
+			return fmt.Errorf("no active kubectl context")
+		}
+		
+		return fmt.Errorf("failed to get kubectl context: %w", err)
+	}
+	
+	currentContext := strings.TrimSpace(result.Stdout)
+	if currentContext == "" {
+		pterm.Error.Println("No active kubectl context found. Please set a context with: kubectl config use-context <context-name>")
+		return fmt.Errorf("no active kubectl context")
+	}
+	
+	if s.verbose {
+		pterm.Info.Printf("Using kubectl context: %s\n", currentContext)
+	}
+	
+	// Verify we can connect to the cluster
+	_, err = s.executor.Execute(ctx, "kubectl", "cluster-info")
+	if err != nil {
+		pterm.Error.Printf("Cannot connect to Kubernetes cluster '%s'. Please check your cluster connection.\n", currentContext)
+		return fmt.Errorf("cluster connection failed: %w", err)
+	}
+	
+	return nil
+}
+
 // showInterceptInstructions displays helpful information about the active intercept
 func (s *Service) showInterceptInstructions(serviceName string, flags *models.InterceptFlags) {
 	pterm.Success.Printf("Intercepting %s. Press Ctrl+C to stop...\n", serviceName)
@@ -130,9 +173,11 @@ func (s *Service) showInterceptInstructions(serviceName string, flags *models.In
 
 // waitForInterrupt keeps the process alive until interrupted
 func (s *Service) waitForInterrupt() error {
-	// Sleep loop to keep script alive until Ctrl+C (like original)
-	for {
-		time.Sleep(1 * time.Second)
+	// Wait for signal to be received
+	select {
+	case <-s.signalChannel:
+		// Signal received, cleanup will be handled by the signal handler
+		return nil
 	}
 }
 

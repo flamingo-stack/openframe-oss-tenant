@@ -1,6 +1,7 @@
 package scaffold
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,8 +17,13 @@ func TestScaffoldInstaller_GetInstallHelp(t *testing.T) {
 	help := installer.GetInstallHelp()
 	
 	assert.NotEmpty(t, help)
-	assert.Contains(t, help, "Skaffold")
 	assert.Contains(t, help, "skaffold")
+	// Check for installation instructions (brew, curl, choco, or download)
+	containsInstallMethod := strings.Contains(help, "brew install") || 
+		strings.Contains(help, "curl -Lo") || 
+		strings.Contains(help, "choco install") || 
+		strings.Contains(help, "download from")
+	assert.True(t, containsInstallMethod, "Help should contain installation instructions")
 }
 
 func TestScaffoldInstaller_IsInstalled(t *testing.T) {
@@ -69,7 +75,7 @@ func TestScaffoldInstallHelp(t *testing.T) {
 	help := scaffoldInstallHelp()
 	
 	assert.NotEmpty(t, help)
-	assert.Contains(t, help, "Skaffold")
+	assert.Contains(t, help, "skaffold")
 	
 	// Should contain platform-specific information
 	// We can't test all platforms, but we can verify basic structure

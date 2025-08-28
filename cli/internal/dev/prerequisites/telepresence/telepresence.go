@@ -38,13 +38,13 @@ func IsTelepresenceRunning() bool {
 func telepresenceInstallHelp() string {
 	switch runtime.GOOS {
 	case "darwin":
-		return "Telepresence: Install via Homebrew 'brew install telepresenceio/telepresence/telepresence-oss' or from https://www.telepresence.io/docs/latest/install/"
+		return "Install via 'brew install telepresenceio/telepresence/telepresence-oss' or from https://www.telepresence.io/docs/latest/install/"
 	case "linux":
-		return "Telepresence: Install from https://www.telepresence.io/docs/latest/install/ or use your package manager"
+		return "Install from https://www.telepresence.io/docs/latest/install/ or use your package manager"
 	case "windows":
-		return "Telepresence: Install from https://www.telepresence.io/docs/latest/install/"
+		return "Install from https://www.telepresence.io/docs/latest/install/"
 	default:
-		return "Telepresence: Please install from https://www.telepresence.io/docs/latest/install/"
+		return "Please install from https://www.telepresence.io/docs/latest/install/"
 	}
 }
 
@@ -91,16 +91,14 @@ func (t *TelepresenceInstaller) installMacOS() error {
 		return fmt.Errorf("Homebrew is required for automatic Telepresence installation on macOS. Please install brew first: https://brew.sh")
 	}
 
-	fmt.Println("Installing Telepresence via Homebrew...")
+	// Install silently without showing homebrew output
 	cmd := exec.Command("brew", "install", "telepresenceio/telepresence/telepresence-oss")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// Don't show stdout/stderr - let the spinner handle progress indication
 	
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install Telepresence: %w", err)
 	}
 
-	fmt.Println("Telepresence installed successfully")
 	return nil
 }
 

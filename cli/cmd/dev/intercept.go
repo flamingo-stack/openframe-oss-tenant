@@ -139,26 +139,29 @@ func selectClusterForIntercept(verbose bool) (string, error) {
 		if verbose {
 			pterm.Error.Printf("Failed to list clusters: %v\n", err)
 		}
-		return "", fmt.Errorf("failed to list clusters: %w", err)
+		// Show the same error message as chart install
+		pterm.Error.Println("No clusters found. Create a cluster first with: openframe cluster create")
+		return "", nil // Return nil error like chart install does
 	}
 	
 	// Check if we have any clusters
 	if len(clusters) == 0 {
-		pterm.Warning.Println("No Kubernetes clusters found")
-		pterm.Info.Println("Please create a cluster first:")
-		pterm.Printf("  openframe cluster create <cluster-name>\n")
-		return "", fmt.Errorf("no clusters available")
+		if verbose {
+			pterm.Info.Printf("Found 0 clusters\n")
+		}
+		// Show the same error message as chart install
+		pterm.Error.Println("No clusters found. Create a cluster first with: openframe cluster create")
+		return "", nil // Return nil error like chart install does
 	}
 	
-	// Always show cluster selection (like chart install command)
-	
-	// Multiple clusters - let user select
-	var clusterNames []string
-	for _, c := range clusters {
-		clusterNames = append(clusterNames, fmt.Sprintf("%s (%s)", c.Name, c.Status))
+	if verbose {
+		pterm.Info.Printf("Found %d clusters\n", len(clusters))
+		for _, cluster := range clusters {
+			pterm.Info.Printf("  - %s (%s)\n", cluster.Name, cluster.Status)
+		}
 	}
 	
-	// Use cluster selector UI
+	// Use cluster selector UI - same as chart install, cluster delete, cluster status, cluster cleanup
 	selector := clusterUI.NewSelector("intercept")
 	return selector.SelectCluster(clusters, []string{})
 }

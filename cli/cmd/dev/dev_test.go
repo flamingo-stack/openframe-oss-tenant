@@ -20,17 +20,21 @@ func TestGetDevCmd(t *testing.T) {
 
 	// Test subcommands exist
 	subcommands := cmd.Commands()
-	assert.Len(t, subcommands, 1) // Only intercept (now interactive by default, scaffold temporarily disabled)
+	assert.Len(t, subcommands, 2) // intercept and scaffold commands
 
 	var interceptCmd *cobra.Command
+	var scaffoldCmd *cobra.Command
 	for _, subcmd := range subcommands {
 		switch subcmd.Name() {
 		case "intercept":
 			interceptCmd = subcmd
+		case "scaffold":
+			scaffoldCmd = subcmd
 		}
 	}
 
 	assert.NotNil(t, interceptCmd, "intercept subcommand should exist")
+	assert.NotNil(t, scaffoldCmd, "scaffold subcommand should exist")
 	// scaffoldCmd temporarily disabled
 
 	// Test that the dev command has the expected global flags by trying to get them
