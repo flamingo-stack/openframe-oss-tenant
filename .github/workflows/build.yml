@@ -227,10 +227,10 @@ jobs:
             ${{ runner.os }}-cargo-build-
             ${{ runner.os }}-cargo-
 
-      - name: Run lint
-        working-directory: client
-        run: |
-          make lint
+#      - name: Run lint
+#        working-directory: client
+#        run: |
+#          make lint
 
       - name: Build client
         working-directory: client

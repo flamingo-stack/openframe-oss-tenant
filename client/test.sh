@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo "OK"
+echo "THIS IS TEST FILE"
