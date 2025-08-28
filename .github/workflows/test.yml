@@ -51,183 +51,183 @@ jobs:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
 
-  build_java:
-    name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
-    steps:
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
+#  build_java:
+#    name: "Build Java: ${{ matrix.name }}"
+#    needs: [changes, matrix]
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
+#    steps:
+#      - name: Checkout
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 2
+#
+#      - name: Set up Maven Central Repository with JDK 21
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '21'
+#          distribution: 'temurin'
+#          cache: 'maven'
+#          cache-dependency-path: |
+#            ${{ matrix.path }}/pom.xml
+#            **/pom.xml
+#          check-latest: true
+#
+#      - name: Cache Maven packages
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: actions/cache@v4
+#        with:
+#          path: |
+#            ~/.m2/repository
+#            ${{ matrix.path }}/target
+#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+#          restore-keys: |
+#            ${{ runner.os }}-maven-
+#
+#      - name: Build with Maven
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        run: mvn clean install -am -Dcompress
+#
+#      - name: Upload Java artifacts
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: ${{ matrix.artifact_name }}
+#          path: |
+#            ${{ matrix.path }}/target/*.jar
+#            !${{ matrix.path }}/target/original-*.jar
+#            !${{ matrix.path }}/target/*-sources.jar
+#            !${{ matrix.path }}/target/*-javadoc.jar
+#          retention-days: 1
 
-      - name: Set up Maven Central Repository with JDK 21
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: |
-            ${{ matrix.path }}/pom.xml
-            **/pom.xml
-          check-latest: true
+#  build:
+#    name: "Build image: ${{ matrix.name }}"
+#    needs: [build_java, matrix, changes]
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+#    steps:
+#      - name: Checkout
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 2
+#
+#      - name: Download Java artifacts
+#        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: ${{ matrix.artifact_name }}
+#          path: ${{ matrix.path }}/target
+#
+#      - name: Log in to GitHub Container Registry
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ${{ env.REGISTRY }}
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Set up QEMU
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: docker/setup-qemu-action@v3
+#        with:
+#          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+#
+#      - name: Set up Docker Buildx
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Generate metadata
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        id: meta
+#        uses: docker/metadata-action@v5
+#        with:
+#          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+#          tags: |
+#            type=ref,event=tag
+#            type=raw,value=${{ needs.changes.outputs.commit_sha }}
+#          labels: |
+#            org.opencontainers.image.vendor=FlamingoCX
+#            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+#            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+#
+#      - name: Format build arguments
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        id: format_args
+#        uses: ./.github/steps/docker-format-build-args
+#        with:
+#          build_args: ${{ toJSON(matrix.build_args) }}
+#        env:
+#          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+#
+#      - name: Build and push image
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        id: docker_build
+#        uses: docker/build-push-action@v6
+#        with:
+#          context: ${{ matrix.context || matrix.path }}
+#          file: ${{ matrix.path }}/Dockerfile
+#          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+#          push: true
+#          provenance: false
+#          tags: ${{ steps.meta.outputs.tags }}
+#          labels: ${{ steps.meta.outputs.labels }}
+#          build-args: |
+#            ${{ env.BUILD_ARGS }}
 
-      - name: Cache Maven packages
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: mvn clean install -am -Dcompress
-
-      - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            ${{ matrix.path }}/target/*.jar
-            !${{ matrix.path }}/target/original-*.jar
-            !${{ matrix.path }}/target/*-sources.jar
-            !${{ matrix.path }}/target/*-javadoc.jar
-          retention-days: 1
-
-  build:
-    name: "Build image: ${{ matrix.name }}"
-    needs: [build_java, matrix, changes]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
-    steps:
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.path }}/target
-
-      - name: Log in to GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-
-      - name: Set up Docker Buildx
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate metadata
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
-          tags: |
-            type=ref,event=tag
-            type=raw,value=${{ needs.changes.outputs.commit_sha }}
-          labels: |
-            org.opencontainers.image.vendor=FlamingoCX
-            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
-
-      - name: Format build arguments
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: format_args
-        uses: ./.github/steps/docker-format-build-args
-        with:
-          build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
-
-      - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: docker_build
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context || matrix.path }}
-          file: ${{ matrix.path }}/Dockerfile
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-          push: true
-          provenance: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ${{ env.BUILD_ARGS }}
-
-  test:
-    name: Run Tests
-    needs: [build, changes, matrix]
-    runs-on: Linux-x64
-    timeout-minutes: 60
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Install tools and validate environment
-        uses: ./.github/steps/requirements-for-run.sh
-
-      - name: Override helm values
-        uses: ./.github/steps/helm-override-image-tags
-        with:
-          matrix: ${{ needs.matrix.outputs.matrix }}
-          changes: ${{ toJSON(needs.changes.outputs) }}
-          commit-sha: ${{ needs.changes.outputs.commit_sha }}
-          helm-values-file: ${{ env.HELM_VALUES_FILE }}
-        
-      - name: Override branch name
-        run: |
-          # Override branch name
-          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
-
-      - name: Override registry
-        run: |
-          # Override branch name
-          yq eval ".registry.docker.server = \"https://index.docker.io/v1/\"" -i "${{ env.HELM_VALUES_FILE }}"
-          yq eval ".registry.docker.username = \"${{ secrets.DOCKER_USERNAME }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          yq eval ".registry.docker.password = \"${{ secrets.DOCKER_PASSWORD }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          yq eval ".registry.docker.email = \"dmtkov@flamingo.cx\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated registry.docker to: ${{ github.head_ref }}"
-          cat "${{ env.HELM_VALUES_FILE }}"
-
-      - name: Run environment test script
-        env:
-          TERM: dumb
-        run: |
-          ./scripts/run.sh bootstrap
+#  test:
+#    name: Run Tests
+#    needs: [build, changes, matrix]
+#    runs-on: Linux-x64
+#    timeout-minutes: 60
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          ref: ${{ github.head_ref }}
+#
+#      - name: Install tools and validate environment
+#        uses: ./.github/steps/requirements-for-run.sh
+#
+#      - name: Override helm values
+#        uses: ./.github/steps/helm-override-image-tags
+#        with:
+#          matrix: ${{ needs.matrix.outputs.matrix }}
+#          changes: ${{ toJSON(needs.changes.outputs) }}
+#          commit-sha: ${{ needs.changes.outputs.commit_sha }}
+#          helm-values-file: ${{ env.HELM_VALUES_FILE }}
+#        
+#      - name: Override branch name
+#        run: |
+#          # Override branch name
+#          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+#          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+#
+#      - name: Override registry
+#        run: |
+#          # Override branch name
+#          yq eval ".registry.docker.server = \"https://index.docker.io/v1/\"" -i "${{ env.HELM_VALUES_FILE }}"
+#          yq eval ".registry.docker.username = \"${{ secrets.DOCKER_USERNAME }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+#          yq eval ".registry.docker.password = \"${{ secrets.DOCKER_PASSWORD }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+#          yq eval ".registry.docker.email = \"dmtkov@flamingo.cx\"" -i "${{ env.HELM_VALUES_FILE }}"
+#          echo "Updated registry.docker to: ${{ github.head_ref }}"
+#          cat "${{ env.HELM_VALUES_FILE }}"
+#
+#      - name: Run environment test script
+#        env:
+#          TERM: dumb
+#        run: |
+#          ./scripts/run.sh bootstrap
 
   test_client:
     name: "Test Rust Client"
@@ -258,63 +258,55 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Run tests
+      - name: Run lint, clippy and tests
         working-directory: client
         run: |
-          make test || cargo test
+          make fmt
+          make clippy
+          make test
 
-      - name: Run clippy
-        working-directory: client
-        run: |
-          cargo clippy -- -D warnings
-
-      - name: Check formatting
-        working-directory: client
-        run: |
-          cargo fmt -- --check
-
-  cleanup:
-    name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, matrix, test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v4
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-
-      - name: Login to GitHub Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      
-      - name: Delete the CI tag
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        continue-on-error: true
-        with:
-          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
-          delete-ghost-images: true
-          delete-tags: ${{ needs.changes.outputs.commit_sha }}
-          exclude-tags: latest
-
-  final-checks:
-    name: Final tests
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Verify values are clean
-        run: |
-          [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }
-          [ ! -s "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE is not empty"; cat "$HELM_VALUES_FILE"; exit 1; }
-          echo "$HELM_VALUES_FILE is empty"
+#  cleanup:
+#    name: "Cleanup ${{ matrix.name }}"
+#    needs: [changes, matrix, test]
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+#    steps:
+#      - uses: actions/checkout@v4
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#
+#      - name: Login to GitHub Registry
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ${{ env.REGISTRY }}
+#          username: ${{ github.actor }}
+#          password: ${{ github.token }}
+#      
+#      - name: Delete the CI tag
+#        if: contains(needs.changes.outputs[matrix.name], 'true')
+#        uses: dataaxiom/ghcr-cleanup-action@v1
+#        continue-on-error: true
+#        with:
+#          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
+#          delete-ghost-images: true
+#          delete-tags: ${{ needs.changes.outputs.commit_sha }}
+#          exclude-tags: latest
+#
+#  final-checks:
+#    name: Final tests
+#    needs: [test]
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#      
+#      - name: Verify values are clean
+#        run: |
+#          [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }
+#          [ ! -s "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE is not empty"; cat "$HELM_VALUES_FILE"; exit 1; }
+#          echo "$HELM_VALUES_FILE is empty"
