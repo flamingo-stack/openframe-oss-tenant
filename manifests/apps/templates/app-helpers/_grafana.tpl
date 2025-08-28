@@ -25,16 +25,24 @@
   kind: Deployment
   name: grafana
   namespace: platform
-  # keep: revision + default-container annotations
   jsonPointers:
     - /metadata/annotations/deployment.kubernetes.io~1revision
     - /spec/template/metadata/annotations/kubectl.kubernetes.io~1default-container
-  # tighten: ignore ONLY the init image normalization (not the main container)
   jqPathExpressions:
+    # silence env-from-resources normalization ('0' divisor)
+    - .spec.template.spec.containers[]
+      | select(.name=="grafana")
+      | .env[]
+      | select(.name=="GOMEMLIMIT")
+      | .valueFrom.resourceFieldRef.divisor
+    # ignore init image normalization (busybox/library/docker.io, etc.)
     - .spec.template.spec.initContainers[]
       | select(.name=="init-chown-data")
       | .image
-  # rely on managedFields to suppress controller-written noise
+    # (optional) ignore main container image normalization too
+    - .spec.template.spec.containers[]
+      | select(.name=="grafana")
+      | .image
   managedFieldsManagers:
     - k3s
     - kube-controller-manager

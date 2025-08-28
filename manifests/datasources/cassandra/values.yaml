@@ -6,7 +6,7 @@ cassandra:
   # bitnamilegacy
   image:
     repository: bitnamilegacy/cassandra
-
+    tag: 5.0.5
 
   global:
     imagePullSecrets: 
@@ -86,6 +86,7 @@ cassandra:
     # bitnamilegacy
     image:
       repository: bitnamilegacy/cassandra-exporter
+      tag: 2.3.8-debian-12-r51
 
     enabled: true
     serviceMonitor:
