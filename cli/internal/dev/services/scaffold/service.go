@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/flamingo/openframe/internal/bootstrap"
 	"github.com/flamingo/openframe/internal/dev/models"
 	"github.com/flamingo/openframe/internal/dev/prerequisites/scaffold"
-	"github.com/flamingo/openframe/internal/dev/providers/bootstrap"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
@@ -36,14 +36,14 @@ func NewService(executor executor.CommandExecutor, verbose bool) *Service {
 func (s *Service) RunScaffoldWorkflow(ctx context.Context, args []string, flags *models.ScaffoldFlags) error {
 	// Prerequisites are checked in PersistentPreRunE, so we can proceed directly
 
-	// Step 1: Run bootstrap with autosync=false
+	// Step 1: Install charts on the cluster
 	clusterName := s.getClusterName(args)
 	if !flags.SkipBootstrap {
-		if err := s.runBootstrapWithAutoSyncDisabled(clusterName, flags); err != nil {
-			return fmt.Errorf("bootstrap failed: %w", err)
+		if err := s.runChartInstall(clusterName, flags); err != nil {
+			return fmt.Errorf("chart install failed: %w", err)
 		}
 	} else {
-		pterm.Info.Printf("Skipping bootstrap for cluster '%s' (--skip-bootstrap flag provided)\n", clusterName)
+		pterm.Info.Printf("Skipping chart install for cluster '%s' (--skip-bootstrap flag provided)\n", clusterName)
 	}
 
 	// Step 2: Run Skaffold development workflow
@@ -111,57 +111,27 @@ func (s *Service) getClusterName(args []string) string {
 	return "openframe-dev" // default cluster name for scaffold
 }
 
-// runBootstrapWithAutoSyncDisabled runs bootstrap command with autosync disabled
-func (s *Service) runBootstrapWithAutoSyncDisabled(clusterName string, flags *models.ScaffoldFlags) error {
-	pterm.Info.Printf("Bootstrapping cluster '%s' with autosync disabled for development...\n", clusterName)
+// runChartInstall runs chart install on the specified cluster using bootstrap service
+func (s *Service) runChartInstall(clusterName string, flags *models.ScaffoldFlags) error {
+	pterm.Info.Printf("Installing charts on cluster '%s'...\n", clusterName)
 
-	// Create bootstrap helper for development
-	bootstrapHelper := bootstrap.NewHelper(s.executor, s.verbose)
+	// Create bootstrap service
+	bootstrapService := bootstrap.NewService()
 
-	// Prepare development helm values with autosync=false
-	var helmValuesFile string
-	var err error
-	
-	if flags.HelmValuesFile != "" {
-		// Use custom helm values file provided by user
-		helmValuesFile = flags.HelmValuesFile
-		if s.verbose {
-			pterm.Info.Printf("Using custom helm values file: %s\n", helmValuesFile)
-		}
-	} else {
-		// Create development helm values with autosync=false
-		helmValuesFile, err = s.createDevHelmValues(bootstrapHelper)
-		if err != nil {
-			return fmt.Errorf("failed to create development helm values: %w", err)
-		}
-		if s.verbose {
-			pterm.Info.Printf("Created development helm values file: %s\n", helmValuesFile)
-		}
+	// Prepare args for bootstrap service
+	args := []string{}
+	if clusterName != "" {
+		args = append(args, clusterName)
 	}
 
-	// Run bootstrap with modified values
-	err = bootstrapHelper.BootstrapWithModifiedValues(clusterName, helmValuesFile)
+	// Run bootstrap (which includes chart install)
+	err := bootstrapService.Execute(nil, args)
 	if err != nil {
-		return fmt.Errorf("bootstrap with development settings failed: %w", err)
+		return fmt.Errorf("chart installation failed: %w", err)
 	}
 
-	pterm.Success.Printf("Cluster '%s' bootstrapped successfully with development settings (autosync=false)\n", clusterName)
+	pterm.Success.Printf("Charts installed successfully on cluster '%s'\n", clusterName)
 	return nil
-}
-
-// createDevHelmValues creates helm values file with autosync disabled
-func (s *Service) createDevHelmValues(helper *bootstrap.Helper) (string, error) {
-	// Prepare the development helm values (this creates a temporary file with autosync=false)
-	helmValuesFile, err := helper.PrepareDevHelmValues("")
-	if err != nil {
-		return "", fmt.Errorf("failed to prepare development helm values: %w", err)
-	}
-	
-	if s.verbose {
-		pterm.Info.Printf("Development helm values prepared with autosync disabled\n")
-	}
-	
-	return helmValuesFile, nil
 }
 
 // runSkaffoldDev runs the Skaffold development workflow

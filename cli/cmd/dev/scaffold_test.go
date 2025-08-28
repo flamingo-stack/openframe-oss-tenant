@@ -12,10 +12,9 @@ func TestGetScaffoldCmd(t *testing.T) {
 	cmd := getScaffoldCmd()
 
 	// Test basic command properties
-	assert.Equal(t, "scaffold [cluster-name]", cmd.Use)
+	assert.Equal(t, "skaffold [cluster-name]", cmd.Use)
 	assert.Equal(t, "Deploy development versions of services with live reloading", cmd.Short)
 	assert.Contains(t, cmd.Long, "Skaffold prerequisites")
-	assert.Contains(t, cmd.Long, "autosync disabled")
 	assert.Contains(t, cmd.Long, "live code reloading")
 
 	// Test argument validation - just verify Args function is set
@@ -59,9 +58,9 @@ func TestScaffoldCmd_Examples(t *testing.T) {
 	cmd := getScaffoldCmd()
 
 	// Test that examples are present and contain expected content
-	assert.Contains(t, cmd.Long, "openframe dev scaffold")
-	assert.Contains(t, cmd.Long, "openframe dev scaffold my-dev-cluster")
-	assert.Contains(t, cmd.Long, "openframe dev scaffold --port 8080")
+	assert.Contains(t, cmd.Long, "openframe dev skaffold")
+	assert.Contains(t, cmd.Long, "openframe dev skaffold my-dev-cluster")
+	assert.Contains(t, cmd.Long, "openframe dev skaffold --port 8080")
 }
 
 func TestScaffoldCmd_FlagTypes(t *testing.T) {

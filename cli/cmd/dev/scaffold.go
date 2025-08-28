@@ -33,9 +33,9 @@ The scaffold command manages the full development lifecycle:
   • Integration with existing OpenFrame infrastructure
 
 Examples:
-  openframe dev scaffold                    # Interactive cluster creation and scaffolding
-  openframe dev scaffold my-dev-cluster    # Scaffold with specific cluster name
-  openframe dev scaffold --port 8080       # Custom local development port`,
+  openframe dev skaffold                    # Interactive cluster creation and scaffolding
+  openframe dev skaffold my-dev-cluster    # Scaffold with specific cluster name
+  openframe dev skaffold --port 8080       # Custom local development port`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runScaffold(cmd, args, flags)

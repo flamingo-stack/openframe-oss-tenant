@@ -46,7 +46,7 @@ func (s *Service) bootstrap(clusterName string, verbose bool) error {
 	// Normalize cluster name (use default if empty)
 	config := s.buildClusterConfig(clusterName)
 	actualClusterName := config.Name
-	
+
 	// Step 1: Create cluster with suppressed UI
 	if err := s.createClusterSuppressed(actualClusterName, verbose); err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
@@ -64,7 +64,6 @@ func (s *Service) bootstrap(clusterName string, verbose bool) error {
 	return nil
 }
 
-
 // createClusterSuppressed creates a cluster with suppressed UI elements
 func (s *Service) createClusterSuppressed(clusterName string, verbose bool) error {
 	// Use the wrapper function that includes prerequisite checks
@@ -76,7 +75,7 @@ func (s *Service) buildClusterConfig(clusterName string) models.ClusterConfig {
 	if clusterName == "" {
 		clusterName = "openframe-dev" // default name
 	}
-	
+
 	return models.ClusterConfig{
 		Name:       clusterName,
 		Type:       models.ClusterTypeK3d,

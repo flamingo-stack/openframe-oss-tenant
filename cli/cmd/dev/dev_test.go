@@ -16,26 +16,25 @@ func TestGetDevCmd(t *testing.T) {
 	assert.Equal(t, []string{"d"}, cmd.Aliases)
 	assert.Equal(t, "Development tools for local Kubernetes workflows", cmd.Short)
 	assert.Contains(t, cmd.Long, "Telepresence")
-	assert.Contains(t, cmd.Long, "scaffold")
+	assert.Contains(t, cmd.Long, "skaffold")
 
 	// Test subcommands exist
 	subcommands := cmd.Commands()
-	assert.Len(t, subcommands, 2) // intercept and scaffold commands
+	assert.Len(t, subcommands, 2) // intercept and skaffold commands
 
 	var interceptCmd *cobra.Command
-	var scaffoldCmd *cobra.Command
+	var skaffoldCmd *cobra.Command
 	for _, subcmd := range subcommands {
 		switch subcmd.Name() {
 		case "intercept":
 			interceptCmd = subcmd
-		case "scaffold":
-			scaffoldCmd = subcmd
+		case "skaffold":
+			skaffoldCmd = subcmd
 		}
 	}
 
 	assert.NotNil(t, interceptCmd, "intercept subcommand should exist")
-	assert.NotNil(t, scaffoldCmd, "scaffold subcommand should exist")
-	// scaffoldCmd temporarily disabled
+	assert.NotNil(t, skaffoldCmd, "skaffold subcommand should exist")
 
 	// Test that the dev command has the expected global flags by trying to get them
 	_, err := cmd.PersistentFlags().GetBool("verbose")
@@ -53,7 +52,7 @@ func TestDevCmd_Examples(t *testing.T) {
 	
 	// Check that examples are present in the long description
 	assert.Contains(t, cmd.Long, "openframe dev intercept my-service")
-	assert.Contains(t, cmd.Long, "openframe dev scaffold my-service")
+	assert.Contains(t, cmd.Long, "openframe dev skaffold my-service")
 }
 
 func TestDevCmd_RunE(t *testing.T) {

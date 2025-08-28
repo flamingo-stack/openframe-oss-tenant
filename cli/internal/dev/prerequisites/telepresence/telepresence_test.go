@@ -16,8 +16,8 @@ func TestTelepresenceInstaller_GetInstallHelp(t *testing.T) {
 	help := installer.GetInstallHelp()
 	
 	assert.NotEmpty(t, help)
-	assert.Contains(t, help, "Telepresence")
 	assert.Contains(t, help, "telepresence")
+	assert.Contains(t, help, "https://www.telepresence.io/docs/latest/install/")
 }
 
 func TestTelepresenceInstaller_IsInstalled(t *testing.T) {
@@ -69,7 +69,7 @@ func TestTelepresenceInstallHelp(t *testing.T) {
 	help := telepresenceInstallHelp()
 	
 	assert.NotEmpty(t, help)
-	assert.Contains(t, help, "Telepresence")
+	assert.Contains(t, help, "https://www.telepresence.io/docs/latest/install/")
 	
 	// Should contain platform-specific information
 	// We can't test all platforms, but we can verify basic structure
