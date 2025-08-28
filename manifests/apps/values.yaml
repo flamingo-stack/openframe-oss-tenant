@@ -93,6 +93,7 @@ apps:
     syncWave: "0"
     syncOptions:
       ServerSideApply: true
+      RespectIgnoreDifferences: true
 
   namespace-datasources:
     enabled: true

@@ -18,3 +18,24 @@
 {{- toYaml $result -}}
 {{- end -}}
 {{- end }}
+
+
+{{- define "app-helpers.grafana.ignoreDifferences" -}}
+- group: apps
+  kind: Deployment
+  name: grafana
+  namespace: platform
+  # keep: revision + default-container annotations
+  jsonPointers:
+    - /metadata/annotations/deployment.kubernetes.io~1revision
+    - /spec/template/metadata/annotations/kubectl.kubernetes.io~1default-container
+  # tighten: ignore ONLY the init image normalization (not the main container)
+  jqPathExpressions:
+    - .spec.template.spec.initContainers[]
+      | select(.name=="init-chown-data")
+      | .image
+  # rely on managedFields to suppress controller-written noise
+  managedFieldsManagers:
+    - k3s
+    - kube-controller-manager
+{{- end }}
