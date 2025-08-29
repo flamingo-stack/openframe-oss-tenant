@@ -35,55 +35,40 @@ env:
   RUST_BACKTRACE: short
 
 jobs:
-  # Combine changes and matrix into a single setup job
-  setup:
-    name: Setup Build Matrix
-    runs-on: ubuntu-latest
+  # Keep original separate jobs structure for reusable workflows
+  changes:
+    name: Detect Changes
+    uses: ./.github/workflows/changes.yml
     if: github.event_name == 'push'
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      matrix_java: ${{ steps.matrix.outputs.matrix_java }}
-      changes: ${{ steps.changes.outputs.changes }}
-      commit_sha: ${{ steps.changes.outputs.commit_sha }}
-      timestamp_tag: ${{ steps.changes.outputs.timestamp_tag }}
-      should_build_client: ${{ steps.changes.outputs.client }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Detect changes
-        id: changes
-        uses: ./.github/workflows/changes.yml
-
-      - name: Generate matrix
-        id: matrix
-        uses: ./.github/workflows/matrix.yml
+  matrix:
+    name: Generate Matrix
+    uses: ./.github/workflows/matrix.yml
+    if: github.event_name == 'push'
 
   # Optimized Java build with better caching and parallel execution
   build_java:
     name: "Build Java: ${{ matrix.name }}"
-    needs: [setup]
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.setup.outputs.matrix_java) }}
+        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
       - name: Skip if no changes
-        if: "!contains(needs.setup.outputs.changes[matrix.name], 'true')"
+        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
         run: echo "No changes detected for ${{ matrix.name }}, skipping build"
 
       - name: Checkout
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
           fetch-depth: 1  # Reduced fetch depth since we only need current commit
 
       - name: Set up JDK 21 with Maven Central
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -93,7 +78,7 @@ jobs:
 
       # Enhanced Maven cache with multiple restore keys
       - name: Cache Maven dependencies
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/cache@v4
         with:
           path: |
@@ -106,7 +91,7 @@ jobs:
 
       # Parallel Maven build with optimized flags
       - name: Build with Maven
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           mvn clean install \
             -pl ${{ matrix.path }} \
@@ -119,7 +104,7 @@ jobs:
             -DskipTests=false
 
       - name: Upload Java artifacts
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -134,20 +119,20 @@ jobs:
   # Optimized Docker build with enhanced caching
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [build_java, setup]
+    needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.setup.outputs.matrix) }}
+        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Skip if no changes
-        if: "!contains(needs.setup.outputs.changes[matrix.name], 'true')"
+        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
         run: echo "No changes detected for ${{ matrix.name }}, skipping build"
 
       - name: Checkout
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -156,7 +141,7 @@ jobs:
         if: |
           contains(fromJSON(toJSON(matrix.type)), 'java') && 
           matrix.artifact_name != '' && 
-          contains(needs.setup.outputs.changes[matrix.name], 'true')
+          contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -164,7 +149,7 @@ jobs:
 
       # Configure Docker with optimizations
       - name: Set up Docker Buildx
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
@@ -172,13 +157,13 @@ jobs:
             image=moby/buildkit:buildx-stable-1
 
       - name: Set up QEMU
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Log in to GitHub Container Registry
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -187,7 +172,7 @@ jobs:
 
       # Enhanced metadata generation
       - name: Generate metadata
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -195,17 +180,17 @@ jobs:
           tags: |
             type=ref,event=tag
             type=sha,prefix={{branch}}-
-            type=raw,value=${{ needs.setup.outputs.commit_sha }}
-            type=raw,value=${{ needs.setup.outputs.timestamp_tag }}
+            type=raw,value=${{ needs.changes.outputs.commit_sha }}
+            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=FlamingoCX
-            org.opencontainers.image.description=OpenFrame OSS is a platform for building and deploying AI agents.
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Format build arguments
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
         uses: ./.github/steps/docker-format-build-args
         with:
@@ -213,7 +198,7 @@ jobs:
 
       # Optimized Docker build with registry cache
       - name: Build and push image
-        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -236,7 +221,7 @@ jobs:
       # Improved cleanup with error handling
       - name: Cleanup old container versions
         if: |
-          contains(needs.setup.outputs.changes[matrix.name], 'true') && 
+          contains(needs.changes.outputs[matrix.name], 'true') && 
           steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
@@ -247,16 +232,16 @@ jobs:
           exclude-tags: |
             latest
             test-*
-            ${{ needs.setup.outputs.commit_sha }}
-            ${{ needs.setup.outputs.timestamp_tag }}
+            ${{ needs.changes.outputs.commit_sha }}
+            ${{ needs.changes.outputs.timestamp_tag }}
           keep-last: 10
 
   # Optimized Rust client build
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
-    needs: [setup]
+    needs: [changes]
     runs-on: ${{ matrix.os }}
-    if: github.event_name == 'push' && contains(needs.setup.outputs.should_build_client, 'true')
+    if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -361,7 +346,7 @@ jobs:
   # Summary job for status checks
   build_complete:
     name: Build Complete
-    needs: [build_java, build_images, build_client, setup]
+    needs: [build_java, build_images, build_client, changes]
     runs-on: ubuntu-latest
     if: always()
     steps:
