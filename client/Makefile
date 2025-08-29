@@ -55,8 +55,6 @@ lint:
 
 build:
 	$(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
-# bypass actual build as for now
-#	tar -czvf $(PKG)-$(TARGET).tgz test.sh
 
 test:
 	$(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)

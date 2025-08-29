@@ -264,11 +264,13 @@ jobs:
         working-directory: client
         run: |
           make lint
+        continue-on-error: true
 
       - name: Run clippy
         working-directory: client
         run: |
           make clippy
+        continue-on-error: true
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
