@@ -9,7 +9,7 @@ source "$(dirname "$0")/variables.sh"
 # Default values
 SILENT=false
 HELP=false
-GIT_REPO="Flamingo-CX/openframe.git"
+GIT_REPO="Flamingo-CX/openframe-oss-tenant.git"
 
 # Function to display messages based on silent mode
 write_status_message() {
