@@ -20,7 +20,7 @@ on:
 env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
-  REPOSITORY: "openframe"
+  REPOSITORY: "openframe-oss-tenant"
 
 jobs:
 

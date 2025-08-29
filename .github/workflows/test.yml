@@ -31,7 +31,7 @@ concurrency:
 env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
-  REPOSITORY: "openframe"
+  REPOSITORY: "openframe-oss-tenant"
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
 
 # =============================================================================
