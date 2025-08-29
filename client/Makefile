@@ -45,10 +45,10 @@ endif
 
 .DEFAULT_GOAL := all
 .PHONY: all lint build test fmt clippy clean
-# add preinstall later
 
 all: build test
 
+# add preinstall later
 # name fmt more generic to make GH Action more reusable
 lint:
 	$(CARGO) fmt --all -- --check
