@@ -191,24 +191,6 @@ jobs:
           exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
 
   
-#  build_client:
-#    name: "Build Rust Client"
-#    needs: [changes]
-#    runs-on: ${{ matrix.os }}
-#    if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest, windows-latest, macos-latest]
-#        include:
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
-#          - os: macos-latest
-#            target: x86_64-apple-darwin
-#            artifact_name: openframe-oss-client-macos-x64
   build_client:
     name: "Build Rust Client"
     needs: [changes]
@@ -216,11 +198,18 @@ jobs:
     if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: openframe-oss-client-linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: openframe-oss-client-macos-x64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -267,7 +256,7 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            client/target/release/openframe-oss-*
+            client/target/release/openframe-*
             !client/target/release/*.d
             !client/target/release/*.pdb
           retention-days: 30

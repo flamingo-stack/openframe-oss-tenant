@@ -778,6 +778,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
         let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
@@ -792,6 +793,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
         let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
@@ -816,6 +818,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
         let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
@@ -891,6 +894,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
         let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
@@ -923,6 +927,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
         let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
