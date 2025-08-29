@@ -1,5 +1,5 @@
 deployment:
-  selfHosted:
+  oss:
     enabled: true    
     # Ingress configuration - enable only ONE of the following
     ingress:

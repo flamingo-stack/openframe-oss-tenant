@@ -12,7 +12,7 @@ tests:
   - it: should handle SaaS with ignored ngrok configuration
     template: templates/argocd-apps.yaml
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
       deployment.saas.ingress.ngrok.enabled: false  # Should be ignored for SaaS
@@ -41,9 +41,9 @@ tests:
   - it: should handle missing optional configuration gracefully
     template: templates/argocd-apps.yaml
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       apps: {}  # Empty apps configuration
     asserts:
@@ -57,9 +57,9 @@ tests:
 
   - it: should generate all templates with minimal configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -82,9 +82,9 @@ tests:
   - it: should handle custom repository configuration
     template: templates/argocd-apps.yaml
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       global.repoURL: "https://example.com/custom-repo.git"
       global.repoBranch: "custom-branch"
@@ -108,9 +108,9 @@ tests:
   - it: should handle special characters in configuration
     template: templates/argocd-apps.yaml
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       registry.docker.username: "user@domain.com"
       registry.docker.password: "pass/word-with@special#chars!"
@@ -133,9 +133,9 @@ tests:
   - it: should handle disabled registerJob configuration
     template: templates/argocd-apps.yaml
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       registerJob.enabled: false
     asserts:
