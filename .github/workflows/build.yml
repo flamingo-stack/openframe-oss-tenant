@@ -256,6 +256,10 @@ jobs:
         working-directory: client
         run: |
           make build
+
+      - name: Test client
+        working-directory: client
+        run: |
           make test
 
       - name: Upload client artifact
