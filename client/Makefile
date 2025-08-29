@@ -15,7 +15,7 @@ TARGET              ?=
 FEATURES            ?= 
 ALL_FEATURES        ?= 0
 NO_DEFAULT_FEATURES ?= 0
-PKG                 ?= openframe-oss
+PKG                 ?= 
 TEST_ARGS           ?= 
 
 # ---- Derived flags (don’t edit) ----
