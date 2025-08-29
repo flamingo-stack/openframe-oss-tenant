@@ -23,13 +23,7 @@ env:
   REPOSITORY: "openframe"
   # 🎯 BULLETPROOF: Repository-based image visibility
   REPO_NAME: ${{ github.repository }}
-  IMAGE_VISIBILITY: ${{ 
-    (contains(github.repository, '-oss-') && 'public') ||
-    (contains(github.repository, 'oss') && 'public') ||
-    (contains(github.repository, '-saas-') && 'private') ||
-    (contains(github.repository, 'saas') && 'private') ||
-    'private'
-  }}
+  IMAGE_VISIBILITY: ${{ (contains(github.repository, '-oss-') && 'public') || (contains(github.repository, 'oss') && 'public') || (contains(github.repository, '-saas-') && 'private') || (contains(github.repository, 'saas') && 'private') || 'private' }}
 
 jobs:
 
