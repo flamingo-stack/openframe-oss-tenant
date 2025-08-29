@@ -30,8 +30,9 @@ concurrency:
 
 env:
   REGISTRY: "ghcr.io"
-  ORGANISATION: "flamingo-cx"
-  REPOSITORY: "openframe"
+  # 🚀 DYNAMIC: Auto-detects org and repo from GitHub context
+  ORGANISATION: ${{ github.repository_owner }}
+  REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
 
 # =============================================================================
