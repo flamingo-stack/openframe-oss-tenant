@@ -243,7 +243,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-config
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-config
         tag: latest
       config:
         repo: openframe-config
@@ -260,7 +260,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-management
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-management
         tag: latest
     
   openframe-api: 
@@ -274,7 +274,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-api
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-api
         tag: latest
     
   openframe-gateway: 
@@ -294,7 +294,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-gateway
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-gateway
         tag: latest
     
   openframe-client: 
@@ -308,7 +308,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-client
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-client
         tag: latest
     
   openframe-stream: 
@@ -322,7 +322,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-stream
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-stream
         tag: latest
     
   openframe-ui: 
@@ -340,7 +340,7 @@ apps:
       registerJob:
         enabled: true
       image:
-        repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-ui
+        repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-ui
         tag: latest
 
   # =============================================================================
