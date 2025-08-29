@@ -268,7 +268,7 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            client/target/release/openframe-*
+            client/target/release/openframe*
             !client/target/release/*.d
             !client/target/release/*.pdb
           retention-days: 30
