@@ -4,7 +4,7 @@ metadata:
   name: openframe-gateway
 build:
   artifacts:
-    - image: openframe-gateway
+    - image: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-gateway
       context: .
       sync: 
         manual:
@@ -16,27 +16,14 @@ build:
         before:
           - command: [ "mvn", "clean", "package", "-DskipTests"]
   local:
-    push: false                    # BULLETPROOF: Never push to remote registry
-    useDockerCLI: false           # Use Skaffold's direct image loading
-    useBuildkit: true             # Faster builds
-    concurrency: 1                # Prevent build side-effects
-    tryImportMissing: true        # Skip rebuilding existing images
-  tagPolicy:
-    gitCommit: {}                 # Use git commit for tagging (more predictable)
+    useDockerCLI: false
+    useBuildkit: true
+    push: false
 manifests:
   helm:
     releases:
       - name: openframe-gateway
         chartPath: ../../../manifests/microservices/openframe-gateway
-        namespace: microservices
-        createNamespace: true
         valuesFiles:
           - ../../../manifests/microservices/openframe-gateway/values.yaml
-          - ../../../scripts/helm-values.yaml
-        setValues:
-          image.repo: openframe-gateway
-          image.tag: latest
-deploy:
-  kubectl: {}
-  kubeContext: ""
-  statusCheckDeadlineSeconds: 600
+        # setValues:
