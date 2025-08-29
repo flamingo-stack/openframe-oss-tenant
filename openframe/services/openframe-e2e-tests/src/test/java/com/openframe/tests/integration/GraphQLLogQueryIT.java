@@ -1,7 +1,7 @@
-package com.openframe.integration;
+package com.openframe.tests.integration;
 
 import com.openframe.support.helpers.ApiHelpers;
-import com.openframe.support.BasePipelineE2ETest;
+import com.openframe.tests.BasePipelineE2ETest;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;

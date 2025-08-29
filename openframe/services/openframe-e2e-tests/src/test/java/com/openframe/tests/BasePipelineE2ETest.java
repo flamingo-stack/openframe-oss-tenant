@@ -1,4 +1,4 @@
-package com.openframe.support;
+package com.openframe.tests;
 
 import io.qameta.allure.Allure;
 import io.qameta.allure.Step;

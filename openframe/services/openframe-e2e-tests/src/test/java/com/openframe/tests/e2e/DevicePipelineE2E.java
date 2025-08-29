@@ -1,7 +1,6 @@
-package com.openframe.e2e;
+package com.openframe.tests.e2e;
 
-import com.openframe.support.BasePipelineE2ETest;
-import com.openframe.support.data.TestDataGenerator;
+import com.openframe.tests.BasePipelineE2ETest;
 import com.openframe.support.helpers.ApiHelpers;
 import com.openframe.support.infrastructure.KafkaTestInfrastructure;
 import io.qameta.allure.*;
