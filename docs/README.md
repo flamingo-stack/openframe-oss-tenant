@@ -245,7 +245,7 @@ Visual documentation and system architecture diagrams.
 ### Community Resources
 - **[Contributing Guide](development/contributing/guidelines.md)** - How to contribute
 - **[Issue Templates](development/contributing/issue-templates.md)** - Bug reports and features
-- **GitHub Repository**: https://github.com/Flamingo-CX/openframe
+- **GitHub Repository**: https://github.com/Flamingo-CX/openframe-oss-tenant
 - **Community Forum**: https://community.openframe.org
 
 ## 🚨 Quick Help
@@ -259,7 +259,7 @@ Visual documentation and system architecture diagrams.
 ### Emergency Contacts
 - **Critical Issues**: Use the escalation procedures in [Operations Manual](operations/README.md)
 - **Security Issues**: Follow [Incident Response](operations/security/incident-response.md)
-- **GitHub Issues**: https://github.com/Flamingo-CX/openframe/issues
+- **GitHub Issues**: https://github.com/Flamingo-CX/openframe-oss-tenant/issues
 
 ## 📈 What's New
 
@@ -307,4 +307,4 @@ See our [Contributing Guidelines](development/contributing/guidelines.md) for de
 
 This documentation is your comprehensive guide to mastering the OpenFrame platform. Whether you're just getting started or you're an experienced developer, you'll find the resources you need to be successful.
 
-*Found an issue with the documentation? [Report it here](https://github.com/Flamingo-CX/openframe/issues) or contribute a fix!*
+*Found an issue with the documentation? [Report it here](https://github.com/Flamingo-CX/openframe-oss-tenant/issues) or contribute a fix!*

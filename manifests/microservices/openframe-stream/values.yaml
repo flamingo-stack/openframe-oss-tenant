@@ -4,5 +4,5 @@ servicemonitor:
   enabled: true
 
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-stream
+  repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-stream
   tag: latest

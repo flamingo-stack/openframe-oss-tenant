@@ -4,5 +4,5 @@ servicemonitor:
   enabled: true
 
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-authorization-server
+  repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-authorization-server
   tag: latest

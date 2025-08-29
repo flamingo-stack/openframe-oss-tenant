@@ -4,7 +4,7 @@ metadata:
   name: authentik-postgresql
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/authentik-postgresql
+    - image: ghcr.io/Flamingo-CX/openframe-oss-tenant/authentik-postgresql
       context: .
       sync: 
         manual:

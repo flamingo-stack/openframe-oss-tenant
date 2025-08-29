@@ -95,7 +95,7 @@ spec:
   replicas: 1
   containers:
     - name: api
-      image: ghcr.io/flamingo-cx/openframe/openframe-api:latest
+      image: ghcr.io/Flamingo-CX/openframe-oss-tenant/openframe-api:latest
       ports:
         - containerPort: 8090
           name: http
