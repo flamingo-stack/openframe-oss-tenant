@@ -16,6 +16,17 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
+  # 🚀 MANUAL TRIGGER: Force rebuild all images from GitHub UI
+  workflow_dispatch:
+    inputs:
+      force_all_builds:
+        description: 'Force build all images (ignores change detection)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 env:
   REGISTRY: "ghcr.io"
@@ -25,6 +36,8 @@ env:
   # 🎯 BULLETPROOF: Repository-based image visibility
   REPO_NAME: ${{ github.repository }}
   IMAGE_VISIBILITY: ${{ (contains(github.repository, '-oss-') && 'public') || (contains(github.repository, 'oss') && 'public') || (contains(github.repository, '-saas-') && 'private') || (contains(github.repository, 'saas') && 'private') || 'private' }}
+  # 🔥 FORCE BUILD: Manual trigger to build all images
+  FORCE_ALL_BUILDS: ${{ github.event.inputs.force_all_builds == 'true' }}
 
 jobs:
 
@@ -33,18 +46,15 @@ jobs:
     uses: ./.github/workflows/changes.yml
     if: github.event_name == 'push'
 
-
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'push'
-
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -100,14 +110,14 @@ jobs:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true') || env.FORCE_ALL_BUILDS == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
@@ -163,7 +173,7 @@ jobs:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true') || env.FORCE_ALL_BUILDS == 'true'
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -178,7 +188,7 @@ jobs:
             ${{ env.BUILD_ARGS }}
 
       - name: Set image visibility based on repository name
-        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
+        if: (contains(needs.changes.outputs[matrix.name], 'true') || env.FORCE_ALL_BUILDS == 'true') && steps.docker_build.outcome == 'success'
         run: |
           PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
           echo "🏷️ Repository: ${{ env.REPO_NAME }}"
