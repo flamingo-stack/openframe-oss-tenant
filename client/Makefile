@@ -55,11 +55,11 @@ lint:
 
 build:
 #  $(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
-  $(CARGO) build --release --locked
+	$(CARGO) build --release --locked
 
 test:
 #  $(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
-  $(CARGO) test --release --locked
+	$(CARGO) test --release --locked
 
 # use phony lint instead
 fmt:
