@@ -66,8 +66,7 @@ fmt:
 	$(CARGO) fmt --all
 
 clippy:
-##	$(CARGO) clippy $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) -- -D warnings
-# force clippy for all targets
+#	$(CARGO) clippy $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) -- -D warnings
 	$(CARGO) clippy --all-targets -- -D warnings
 
 clean:
