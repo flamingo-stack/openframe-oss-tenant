@@ -37,8 +37,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
     @DisplayName("Logs are queryable through pipeline")
     void logsQueryableThroughPipeline() {
         long startTime = System.currentTimeMillis();
-        
-        // ARRANGE - Get available log filters from Pinot
+
         Map<String, Object> filters = executePhase(TestPhase.ARRANGE, "Query available log filters", () -> {
             String query = "{ logFilters { toolTypes eventTypes severities } }";
             Response response = ApiHelpers.graphqlQuery(query);
@@ -49,8 +48,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
             
             return response.jsonPath().getMap("data.logFilters");
         });
-        
-        // Verify filters exist
+
         assertImmediate("Log filters available from Pinot", () -> {
             assertThat(filters)
                 .as("Filters should be available")
@@ -64,8 +62,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
             
             return toolTypes;
         });
-        
-        // ACT - Query logs (reading existing data)
+
         List<Map<String, Object>> logNodes = executePhase(TestPhase.ACT, "Query recent logs", () -> {
             String query = """
                 {
@@ -100,8 +97,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
             
             return List.of();
         });
-        
-        // ASSERT - If logs exist, verify details from Cassandra
+
         if (!logNodes.isEmpty()) {
             Map<String, Object> firstLog = logNodes.get(0);
             
@@ -154,8 +150,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
     @DisplayName("Log filters aggregate correctly")
     void logFiltersAggregateCorrectly() {
         long startTime = System.currentTimeMillis();
-        
-        // ARRANGE - Get available filters
+
         List<String> toolTypes = executePhase(TestPhase.ARRANGE, "Get available tool types", () -> {
             String query = "{ logFilters { toolTypes } }";
             Response response = ApiHelpers.graphqlQuery(query);
@@ -164,8 +159,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
         
         if (toolTypes != null && !toolTypes.isEmpty()) {
             String selectedTool = toolTypes.get(0);
-            
-            // ACT - Query logs with filter
+
             List<Map<String, Object>> filteredLogs = executePhase(TestPhase.ACT, 
                 "Query logs filtered by tool type: " + selectedTool, () -> {
                 
@@ -196,8 +190,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
                 }
                 return List.of();
             });
-            
-            // ASSERT - All returned logs match filter
+
             assertImmediate("Filtered logs match criteria", () -> {
                 for (Map<String, Object> log : filteredLogs) {
                     assertThat(log.get("toolType"))
@@ -218,8 +211,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
     @Tag("pagination")
     void logPaginationWorksCorrectly() {
         long startTime = System.currentTimeMillis();
-        
-        // ACT - Query first page
+
         Map<String, Object> firstPage = executePhase(TestPhase.ACT, "Query first page of logs", () -> {
             String query = """
                 {
@@ -245,8 +237,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
             
             if (pageInfo != null && Boolean.TRUE.equals(pageInfo.get("hasNextPage"))) {
                 String cursor = (String) pageInfo.get("endCursor");
-                
-                // ACT - Query next page
+
                 Map<String, Object> secondPage = executePhase(TestPhase.ACT, "Query next page using cursor", () -> {
                     String query = String.format("""
                         {
@@ -261,8 +252,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
                     Response response = ApiHelpers.graphqlQuery(query);
                     return response.jsonPath().getMap("data.logs");
                 });
-                
-                // ASSERT - Second page has different data
+
                 assertImmediate("Pagination returns different results", () -> {
                     List<Map> firstEdges = (List<Map>) firstPage.get("edges");
                     List<Map> secondEdges = (List<Map>) secondPage.get("edges");
@@ -291,11 +281,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
     @Tag("search")
     void logSearchWorksCorrectly() {
         long startTime = System.currentTimeMillis();
-        
-        // Note: Search might not return results if no matching logs exist
-        // This test verifies the search endpoint works without errors
-        
-        // ACT - Perform search
+
         executePhase(TestPhase.ACT, "Search logs with keyword", () -> {
             String searchTerm = "error"; // Common term likely to exist
             String query = String.format("""
@@ -315,13 +301,11 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
                 """, searchTerm);
             
             Response response = ApiHelpers.graphqlQuery(query);
-            
-            // ASSERT - Search endpoint responds without error
+
             assertThat(response.getStatusCode())
                 .as("Search should respond successfully")
                 .isEqualTo(200);
-            
-            // Log results for debugging
+
             List<Map> edges = response.jsonPath().getList("data.logs.edges");
             if (edges != null && !edges.isEmpty()) {
                 log.info("[{}] Search returned {} results", testId, edges.size());

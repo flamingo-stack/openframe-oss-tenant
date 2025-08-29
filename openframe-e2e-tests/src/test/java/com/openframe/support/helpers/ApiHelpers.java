@@ -14,8 +14,6 @@ import static io.restassured.RestAssured.given;
 /**
  * Lightweight API helpers following industry best practices.
  * Simple static methods for common operations without over-abstraction.
- * 
- * Pattern used by: Airbnb, Uber, Square
  */
 @Slf4j
 public class ApiHelpers {
@@ -31,8 +29,6 @@ public class ApiHelpers {
             .header("X-Test-Id", testId)
             .contentType("application/json");
     }
-    
-    // ==================== Management Key Operations ====================
     
     /**
      * Get active management key from API service
@@ -111,8 +107,7 @@ public class ApiHelpers {
             .formParam("scope", "agent")
             .when()
             .post(CLIENT_SERVICE_URL + "/oauth/token");
-        
-        // Log response for debugging
+
         String responseBody = response.getBody().asString();
         log.debug("OAuth response: status={}, body={}", response.getStatusCode(), responseBody);
         
@@ -130,8 +125,6 @@ public class ApiHelpers {
         
         return accessToken;
     }
-    
-    // ==================== GraphQL Operations ====================
     
     /**
      * Execute GraphQL query
@@ -185,8 +178,6 @@ public class ApiHelpers {
         
         return response.jsonPath().getMap("data.devices");
     }
-    
-    // ==================== Event Pipeline ====================
 
     /**
      * Delete device - backward compatible version

@@ -23,26 +23,17 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Kafka Test Infrastructure for True E2E Pipeline Testing
- * 
- * Industry Standards Applied:
- * - Netflix: Test observable behavior through actual message flow
- * - LinkedIn: Verify data consistency across pipeline stages
- * - Uber: Use real Kafka instances, not mocks
- * - Spotify: Test data isolation with unique test identifiers
- * 
+ * Kafka Test Infrastructure for True E2E Pipeline Testingx
  * This infrastructure connects to the real Kafka cluster in K8s
  * and allows tests to produce and consume messages to verify
  * the complete pipeline flow.
  */
 @Slf4j
 public class KafkaTestInfrastructure implements AutoCloseable {
-    
-    // Kafka configuration - connects to real Kafka in K8s cluster
+
     private static final String KAFKA_BOOTSTRAP_SERVERS = 
         System.getProperty("kafka.bootstrap.servers", "kafka.datasources.svc.cluster.local:9092");
-    
-    // Topic names from OpenFrame configuration - matching what openframe-stream actually listens to
+
     public static final String TOPIC_MESHCENTRAL_EVENTS = "meshcentral.mongodb.events";
     public static final String TOPIC_TACTICAL_RMM_EVENTS = "tactical-rmm.postgres.events";
     public static final String TOPIC_FLEET_MDM_EVENTS = "fleet.mysql.events";
@@ -170,7 +161,7 @@ public class KafkaTestInfrastructure implements AutoCloseable {
                         log.error("[{}] Error consuming from topic {}: {}", 
                             testRunId, topic, e.getMessage());
                     }
-                    break; // Exit on error to avoid infinite loop
+                    break;
                 }
             }
             
@@ -240,91 +231,6 @@ public class KafkaTestInfrastructure implements AutoCloseable {
                 log.error("[{}] Error closing consumer for topic {}: {}", 
                     testRunId, topic, e.getMessage());
             }
-        }
-    }
-    
-    /**
-     * Clean up all resources
-     */
-    public void cleanup() {
-        log.info("[{}] Cleaning up Kafka test infrastructure", testRunId);
-        
-        // Stop all consumers
-        new ArrayList<>(consumers.keySet()).forEach(this::stopConsuming);
-        
-        // Close producer
-        try {
-            producer.close(Duration.ofSeconds(5));
-        } catch (Exception e) {
-            log.error("[{}] Error closing producer: {}", testRunId, e.getMessage());
-        }
-        
-        // Clear message cache
-        consumedMessages.clear();
-    }
-    
-    /**
-     * Verify message flow through pipeline
-     * Produces to input topic and verifies it appears in output topic
-     */
-    public boolean verifyPipelineFlow(
-            String inputTopic,
-            String outputTopic,
-            String testMessage,
-            String expectedPattern,
-            Duration timeout) {
-        
-        try {
-            // Start consuming from output topic first
-            startConsuming(outputTopic);
-            Thread.sleep(1000); // Let consumer initialize
-            
-            // Publish to input topic
-            String messageKey = "test-" + UUID.randomUUID();
-            CompletableFuture<Boolean> sendResult = publishMessage(inputTopic, messageKey, testMessage);
-            
-            if (!sendResult.get(10, TimeUnit.SECONDS)) {
-                log.error("[{}] Failed to send test message to {}", testRunId, inputTopic);
-                return false;
-            }
-            
-            // Wait for message in output topic
-            ConsumerRecord<String, String> outputMessage = waitForMessage(
-                outputTopic,
-                record -> record.value() != null && record.value().contains(expectedPattern),
-                timeout
-            );
-            
-            return outputMessage != null;
-            
-        } catch (Exception e) {
-            log.error("[{}] Error verifying pipeline flow: {}", testRunId, e.getMessage());
-            return false;
-        } finally {
-            stopConsuming(outputTopic);
-        }
-    }
-    
-    /**
-     * Check if Kafka is accessible
-     */
-    public boolean isKafkaAccessible() {
-        try {
-            // Simple check - just verify we can create a producer
-            // This is more reliable than listing topics which can timeout
-            log.info("[{}] Checking Kafka accessibility at {}", testRunId, KAFKA_BOOTSTRAP_SERVERS);
-            
-            // The producer is already created in constructor
-            // If it was created successfully, Kafka is accessible
-            if (producer != null) {
-                log.info("[{}] Kafka is accessible - producer created successfully", testRunId);
-                return true;
-            }
-            
-            return false;
-        } catch (Exception e) {
-            log.error("[{}] Kafka is not accessible: {}", testRunId, e.getMessage());
-            return false;
         }
     }
     
