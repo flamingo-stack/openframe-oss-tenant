@@ -15,7 +15,6 @@ const nextConfig = {
   reactStrictMode: true,
   // Disable SSR completely
   experimental: {
-    appDir: true,
     esmExternals: true,
   },
   // Force client-side rendering
