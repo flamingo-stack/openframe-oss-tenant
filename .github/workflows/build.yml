@@ -21,6 +21,15 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
   REPOSITORY: "openframe"
+  # 🎯 BULLETPROOF: Repository-based image visibility
+  REPO_NAME: ${{ github.repository }}
+  IMAGE_VISIBILITY: ${{ 
+    (contains(github.repository, '-oss-') && 'public') ||
+    (contains(github.repository, 'oss') && 'public') ||
+    (contains(github.repository, '-saas-') && 'private') ||
+    (contains(github.repository, 'saas') && 'private') ||
+    'private'
+  }}
 
 jobs:
 
@@ -172,6 +181,26 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
+
+      - name: Set image visibility based on repository name
+        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
+        run: |
+          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+          echo "🏷️ Repository: ${{ env.REPO_NAME }}"
+          echo "🎯 Setting ${{ matrix.name }} visibility to: ${{ env.IMAGE_VISIBILITY }}"
+          echo "📦 Package: ${PACKAGE_NAME}"
+          
+          # Set package visibility based on repository naming convention
+          gh api --method PATCH \
+            "/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}/visibility" \
+            --field visibility=${{ env.IMAGE_VISIBILITY }} || {
+            echo "❌ Failed to update visibility for ${{ matrix.name }}"
+            echo "ℹ️  Continuing anyway - visibility can be set manually"
+          }
+          
+          echo "✅ Image visibility configured successfully"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete old versions
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
