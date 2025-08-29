@@ -8,9 +8,9 @@ tests:
   
   - it: should validate self-hosted with localhost ingress
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - isKind:
@@ -21,9 +21,9 @@ tests:
 
   - it: should validate self-hosted with ngrok ingress
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
       - isKind:
@@ -34,7 +34,7 @@ tests:
 
   - it: should validate SaaS deployment
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -50,19 +50,19 @@ tests:
 
   - it: should fail when both deployment types enabled
     set:
-      deployment.selfHosted.enabled: true
+      deployment.oss.enabled: true
       deployment.saas.enabled: true
     asserts:
       - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently selfHosted=true, saas=true"
+          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=true, saas=true"
 
   - it: should fail when no deployment types enabled
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: false
     asserts:
       - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently selfHosted=false, saas=false"
+          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=false, saas=false"
 
   # ========================================
   # SELF-HOSTED INGRESS VALIDATION ERRORS
@@ -70,23 +70,23 @@ tests:
 
   - it: should fail when self-hosted has both ingresses
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
       - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for selfHosted deployment. Currently localhost=true, ngrok=true"
+          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=true, ngrok=true"
 
   - it: should fail when self-hosted has no ingresses
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for selfHosted deployment. Currently localhost=false, ngrok=false"
+          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=false, ngrok=false"
 
   # ========================================
   # SAAS INGRESS VALIDATION ERRORS
@@ -94,7 +94,7 @@ tests:
 
   - it: should fail when SaaS localhost ingress disabled
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: false
     asserts:
