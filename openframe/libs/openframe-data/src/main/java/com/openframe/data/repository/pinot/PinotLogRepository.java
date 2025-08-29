@@ -1,6 +1,6 @@
 package com.openframe.data.repository.pinot;
 
-import com.openframe.core.model.LogProjection;
+import com.openframe.data.document.event.LogProjection;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;

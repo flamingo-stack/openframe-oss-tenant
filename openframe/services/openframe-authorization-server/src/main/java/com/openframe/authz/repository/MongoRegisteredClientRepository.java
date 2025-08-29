@@ -1,6 +1,7 @@
 package com.openframe.authz.repository;
 
-import com.openframe.authz.document.MongoRegisteredClient;
+import com.openframe.data.document.oauth.MongoRegisteredClient;
+import com.openframe.data.repository.oauth.RegisteredClientMongoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -8,12 +9,14 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Repository
 @RequiredArgsConstructor
 public class MongoRegisteredClientRepository implements RegisteredClientRepository {
 

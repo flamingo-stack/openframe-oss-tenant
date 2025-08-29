@@ -4,14 +4,14 @@ import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
 import com.openframe.api.service.TagService;
 import com.openframe.core.dto.ErrorResponse;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.Tag;
-import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.model.device.DeviceType;
+import com.openframe.data.document.device.DeviceStatus;
+import com.openframe.data.document.device.DeviceType;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.document.tool.Tag;
+import com.openframe.external.dto.device.DeviceFilterCriteria;
 import com.openframe.external.dto.device.DeviceFilterResponse;
 import com.openframe.external.dto.device.DeviceResponse;
 import com.openframe.external.dto.device.DevicesResponse;
-import com.openframe.external.dto.device.DeviceFilterCriteria;
 import com.openframe.external.dto.shared.PaginationCriteria;
 import com.openframe.external.exception.DeviceNotFoundException;
 import com.openframe.external.mapper.DeviceMapper;
@@ -27,10 +27,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.http.HttpStatus.OK;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.OK;
 
 @RestController
 @RequestMapping("/api/v1/devices")

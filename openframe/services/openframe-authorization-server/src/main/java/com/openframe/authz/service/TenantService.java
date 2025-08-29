@@ -1,9 +1,9 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.Tenant;
-import com.openframe.authz.document.TenantPlan;
-import com.openframe.authz.document.TenantStatus;
-import com.openframe.authz.repository.TenantRepository;
+import com.openframe.data.document.auth.Tenant;
+import com.openframe.data.document.auth.TenantPlan;
+import com.openframe.data.document.auth.TenantStatus;
+import com.openframe.data.repository.auth.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

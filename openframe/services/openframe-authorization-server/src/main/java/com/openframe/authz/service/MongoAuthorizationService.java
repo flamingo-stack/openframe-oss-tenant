@@ -1,7 +1,7 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.MongoOAuth2Authorization;
-import com.openframe.authz.repository.MongoOAuth2AuthorizationRepository;
+import com.openframe.data.document.oauth.MongoOAuth2Authorization;
+import com.openframe.data.repository.oauth.MongoOAuth2AuthorizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;

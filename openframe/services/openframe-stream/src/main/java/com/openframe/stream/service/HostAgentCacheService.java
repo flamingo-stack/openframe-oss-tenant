@@ -1,7 +1,7 @@
 package com.openframe.stream.service;
 
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.IntegratedToolId;
+import com.openframe.data.document.tool.IntegratedTool;
+import com.openframe.data.document.tool.IntegratedToolId;
 import com.openframe.data.service.IntegratedToolService;
 import com.openframe.sdk.fleetmdm.FleetMdmClient;
 import com.openframe.sdk.fleetmdm.model.Host;

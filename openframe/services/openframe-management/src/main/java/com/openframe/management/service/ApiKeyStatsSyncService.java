@@ -1,7 +1,7 @@
 package com.openframe.management.service;
 
-import com.openframe.data.model.mongo.ApiKeyStats;
-import com.openframe.data.repository.mongo.ApiKeyStatsMongoRepository;
+import com.openframe.data.document.apikey.ApiKeyStats;
+import com.openframe.data.repository.apikey.ApiKeyStatsMongoRepository;
 import com.openframe.data.repository.redis.ApiKeyStatsSyncRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

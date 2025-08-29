@@ -4,24 +4,18 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.openframe.authz.document.User;
 import com.openframe.authz.keys.TenantKeyService;
-import com.openframe.authz.repository.MongoRegisteredClientRepository;
-import com.openframe.authz.repository.RegisteredClientMongoRepository;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
+import com.openframe.data.document.auth.AuthUser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.data.mongodb.MongoDatabaseFactory;
-import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
-import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.data.mongodb.core.convert.NoOpDbRefResolver;
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -31,6 +25,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -56,6 +51,9 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static com.openframe.authz.tenant.TenantContext.getTenantId;
 import static java.util.UUID.randomUUID;
@@ -153,15 +151,14 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public RegisteredClientRepository registeredClientRepository(
-            RegisteredClientMongoRepository dataRepo,
+    public ApplicationRunner registeredClientBootstrap(
+            RegisteredClientRepository repo,
             RegisteredClient gatewayClient) {
-        MongoRegisteredClientRepository mongoRepo =
-                new MongoRegisteredClientRepository(dataRepo);
-        if (mongoRepo.findByClientId(gatewayClient.getClientId()) == null) {
-            mongoRepo.save(gatewayClient);
-        }
-        return mongoRepo;
+        return args -> {
+            if (repo.findByClientId(gatewayClient.getClientId()) == null) {
+                repo.save(gatewayClient);
+            }
+        };
     }
 
 
@@ -199,7 +196,7 @@ public class AuthorizationServerConfig {
             var authentication = context.getPrincipal();
 
             String tenantId = getTenantId();
-            User user = userService
+            AuthUser user = userService
                     .findActiveByEmailAndTenant(authentication.getName(), tenantId)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found: " + authentication.getName()));
 
@@ -208,7 +205,12 @@ public class AuthorizationServerConfig {
                     claims.put("tenant_id", tenantId);
                     claims.put("tenant_domain", user.getTenantDomain());
                     claims.put("userId", user.getId());
-                    claims.put("roles", user.getRoles());
+
+                    Set<String> effective = new LinkedHashSet<>(user.getRoles());
+                    if (effective.contains("OWNER")) {
+                        effective.add("ADMIN");
+                    }
+                    claims.put("roles", new ArrayList<>(effective));
                 });
             }
         };
@@ -221,10 +223,10 @@ public class AuthorizationServerConfig {
     public UserDetailsService userDetailsService(UserService userService) {
         return username -> {
             String tenantId = getTenantId();
-            User user = userService.findActiveByEmailAndTenant(username, tenantId)
+            AuthUser user = userService.findActiveByEmailAndTenant(username, tenantId)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-            return org.springframework.security.core.userdetails.User.builder()
+            return User.builder()
                 .username(user.getEmail())
                 .password(user.getPasswordHash() != null ? user.getPasswordHash() : "{noop}")
                 .authorities(user.getRoles().stream()
@@ -257,17 +259,5 @@ public class AuthorizationServerConfig {
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
-    }
-
-    @Bean
-    public MappingMongoConverter mappingMongoConverter(
-            MongoDatabaseFactory factory,
-            MongoCustomConversions conversions,
-            MongoMappingContext context) {
-        MappingMongoConverter converter = new MappingMongoConverter(NoOpDbRefResolver.INSTANCE, context);
-        converter.setCustomConversions(conversions);
-        converter.setMapKeyDotReplacement("_");
-        converter.afterPropertiesSet();
-        return converter;
     }
 }

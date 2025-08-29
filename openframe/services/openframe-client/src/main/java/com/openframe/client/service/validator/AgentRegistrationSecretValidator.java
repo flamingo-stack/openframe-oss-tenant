@@ -3,8 +3,8 @@ package com.openframe.client.service.validator;
 import com.openframe.client.exception.AgentRegistrationSecretValidationErrorException;
 import com.openframe.client.exception.AgentRegistrationSecretValidationException;
 import com.openframe.core.service.EncryptionService;
-import com.openframe.data.model.mongo.AgentRegistrationSecret;
-import com.openframe.data.repository.mongo.AgentRegistrationSecretRepository;
+import com.openframe.data.document.agent.AgentRegistrationSecret;
+import com.openframe.data.repository.agent.AgentRegistrationSecretRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

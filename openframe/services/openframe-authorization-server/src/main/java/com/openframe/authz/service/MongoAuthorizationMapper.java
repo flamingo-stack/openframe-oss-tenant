@@ -1,6 +1,6 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.MongoOAuth2Authorization;
+import com.openframe.data.document.oauth.MongoOAuth2Authorization;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
