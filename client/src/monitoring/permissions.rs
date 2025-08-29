@@ -1,11 +1,11 @@
-use crate::logging::metrics::{MetricValue, MetricsStore};
+use crate::logging::metrics::MetricsStore;
 use crate::platform::directories::DirectoryManager;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tokio::sync::RwLock;
 use tokio::time::interval;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 pub struct PermissionMonitor {
     directory_manager: Arc<DirectoryManager>,

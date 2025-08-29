@@ -1,12 +1,10 @@
 use anyhow::{Context, Result};
-use std::path::PathBuf;
-use tokio::runtime::Runtime;
 use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
 
 use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
-use crate::{logging, platform::DirectoryManager, Client};
+use crate::{platform::DirectoryManager, Client};
 
 const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";

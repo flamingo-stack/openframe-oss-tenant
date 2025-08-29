@@ -1,12 +1,9 @@
 use anyhow::{Context, Result};
-use reqwest::Client;
-use tracing::{info, error, debug, warn};
 
 use crate::clients::RegistrationClient;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse, AgentConfiguration};
+use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse};
 use crate::services::DeviceDataFetcher;
-use crate::platform::directories::DirectoryManager;
 
 #[derive(Clone)]
 pub struct AgentRegistrationService {
